@@ -1,9 +1,12 @@
 #include <iostream>
+#include "Globals.h"
 
 #include "Logger.h"
 #include "Asserts.h"
 
-int main() {
+int main(int argc, char** argv) {
+
+	NOUS_INFO("Starting engine '%s'....", TITLE);
 
 	NOUS_FATAL("A test message: %f", 3.14F);
 	NOUS_ERROR("A test message: %f", 3.14F);
