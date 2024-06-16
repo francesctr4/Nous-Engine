@@ -12,7 +12,7 @@
 #define LOG_TRACE_ENABLED 0
 #endif // _DEBUG
 
-enum class LogLevel {
+typedef enum LogLevel {
 
 	NONE = -1,
 
@@ -26,7 +26,8 @@ enum class LogLevel {
 	LOG_LEVEL_TRACE = 5,
 
 	ALL
-};
+
+} LogLevel;
 
 bool InitializeLogging();
 void ShutdownLogging();

@@ -23,18 +23,39 @@ void ShutdownLogging()
 
 void LogOutput(LogLevel level, const char* message, ...)
 {
-	const char* levelStrings[6] = {"[FATAL]: ", "[ERROR]: ", "[WARN]: ", "[INFO]: ", "[DEBUG]: ", "[TRACE]: "};
+    const char* levelStrings[6] = { "[FATAL]: ", "[ERROR]: ", "[WARN]: ", "[INFO]: ", "[DEBUG]: ", "[TRACE]: " };
 
-	char out_message[32000];
-	memset(out_message, 0, sizeof(out_message));
+    // Calculate the size needed for the formatted message
+    va_list arg_ptr;
+    va_start(arg_ptr, message);
+    int message_len = vsnprintf(NULL, 0, message, arg_ptr);
+    va_end(arg_ptr);
 
-	va_list arg_ptr;
-	va_start(arg_ptr, message);
-	vsnprintf_s(out_message, 32000, message, arg_ptr);
-	va_end(arg_ptr);
+    NOUS_ASSERT_MSG(message_len >= 0, "vsnprintf failed to calculate the message length");
 
-	char out_message2[32000];
-	sprintf_s(out_message2, "%s%s\n", levelStrings[(int)level], out_message);
+    // Allocate memory for the formatted message
+    char* out_message = (char*)malloc(message_len + 1);
+    NOUS_ASSERT_MSG(out_message != NULL, "Memory allocation for out_message failed");
 
-	printf_s("%s", out_message2);
+    va_start(arg_ptr, message);
+    vsnprintf(out_message, message_len + 1, message, arg_ptr);
+    va_end(arg_ptr);
+
+    // Calculate the total size needed for the final message
+    int level_len = strlen(levelStrings[level]);
+    int total_len = level_len + message_len + 2; // +2 for the newline and null terminator
+
+    // Allocate memory for the final message
+    char* out_message2 = (char*)malloc(total_len);
+    NOUS_ASSERT_MSG(out_message2 != NULL, "Memory allocation for out_message2 failed");
+
+    // Construct the final message
+    snprintf(out_message2, total_len, "%s%s\n", levelStrings[level], out_message);
+
+    // Print the final message
+    printf("%s", out_message2);
+
+    // Free allocated memory
+    free(out_message);
+    free(out_message2);
 }
