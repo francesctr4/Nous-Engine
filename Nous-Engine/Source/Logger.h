@@ -33,8 +33,44 @@ void ShutdownLogging();
 
 void LogOutput(LogLevel level, const char* message, ...);
 
+#ifndef NOUS_FATAL
 // Logs a fatal-level message.
-#define KFATAL(message, ...) LogOutput(LogLevel::LOG_LEVEL_FATAL, message, ##__VA_ARGS__)
+#define NOUS_FATAL(message, ...) LogOutput(LogLevel::LOG_LEVEL_FATAL, message, ##__VA_ARGS__)
+#endif // NOUS_FATAL
 
-// Logs a fatal-level message.
-#define KFATAL(message, ...) LogOutput(LogLevel::LOG_LEVEL_FATAL, message, ##__VA_ARGS__)
+#ifndef NOUS_ERROR
+// Logs a error-level message.
+#define NOUS_ERROR(message, ...) LogOutput(LogLevel::LOG_LEVEL_ERROR, message, ##__VA_ARGS__)
+#endif // NOUS_ERROR
+
+#if LOG_WARN_ENABLED == 1
+// Logs a warning-level message.
+#define NOUS_WARN(message, ...) LogOutput(LogLevel::LOG_LEVEL_WARN, message, ##__VA_ARGS__)
+#else
+// Does nothing when LOG_WARN_ENABLED != 1
+#define NOUS_WARN(message, ...)
+#endif
+
+#if LOG_INFO_ENABLED == 1
+// Logs a info-level message.
+#define NOUS_INFO(message, ...) LogOutput(LogLevel::LOG_LEVEL_INFO, message, ##__VA_ARGS__)
+#else
+// Does nothing when LOG_INFO_ENABLED != 1
+#define NOUS_INFO(message, ...)
+#endif
+
+#if LOG_DEBUG_ENABLED == 1
+// Logs a debug-level message.
+#define NOUS_DEBUG(message, ...) LogOutput(LogLevel::LOG_LEVEL_DEBUG, message, ##__VA_ARGS__)
+#else 
+// Does nothing when LOG_DEBUG_ENABLED != 1
+#define NOUS_DEBUG(message, ...)
+#endif
+
+#if LOG_TRACE_ENABLED == 1
+// Logs a trace-level message.
+#define NOUS_TRACE(message, ...) LogOutput(LogLevel::LOG_LEVEL_TRACE, message, ##__VA_ARGS__)
+#else
+// Does nothing when LOG_TRACE_ENABLED != 1
+#define NOUS_TRACE(message, ...)
+#endif

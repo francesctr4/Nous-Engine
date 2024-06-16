@@ -12,12 +12,18 @@
     <ClCompile Include="Source\Main.cpp">
       <Filter>Source Code\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Logger.cpp">
+      <Filter>Source Code\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Logger.h">
       <Filter>Source Code\Core</Filter>
     </ClInclude>
     <ClInclude Include="Source\Globals.h">
+      <Filter>Source Code\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Asserts.h">
       <Filter>Source Code\Core</Filter>
     </ClInclude>
   </ItemGroup>
