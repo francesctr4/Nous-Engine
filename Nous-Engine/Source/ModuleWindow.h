@@ -1,0 +1,26 @@
+#pragma once
+
+#include "Module.h"
+
+#include "SDL2.h"
+
+class ModuleWindow : public Module 
+{
+public:
+
+	// Constructor
+	ModuleWindow(Application* app, bool start_enabled = true);
+
+	// Destructor
+	virtual ~ModuleWindow();
+
+	bool Awake() override;
+	bool CleanUp() override;
+
+	bool InitSDLWindow();
+
+private:
+
+	SDL_Window* window;
+
+};

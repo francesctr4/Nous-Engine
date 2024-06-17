@@ -11,6 +11,27 @@ void ReportAssertionFailure(const char* expression, const char* message, const c
 	LogOutput(LogLevel::LOG_LEVEL_FATAL, "Assertion Failure: %s, message: '%s', in file: %s, line: %d\n", expression, message, file, line);
 }
 
+// Platform-Specific Windows
+void PrintToConsoleColor(const char* message, WORD color) {
+
+    // Get the handle to the console
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    // Save the current text color
+    CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+    GetConsoleScreenBufferInfo(hConsole, &consoleInfo);
+    WORD savedAttributes = consoleInfo.wAttributes;
+
+    // Set the text color
+    SetConsoleTextAttribute(hConsole, color);
+
+    // Print the message
+    printf("%s", message);
+
+    // Restore the original text color
+    SetConsoleTextAttribute(hConsole, savedAttributes);
+}
+
 bool InitializeLogging()
 {
 	return false;
@@ -24,7 +45,8 @@ void ShutdownLogging()
 void LogOutput(LogLevel level, const char* message, ...)
 {
     const char* levelStrings[6] = { "[FATAL]: ", "[ERROR]: ", "[WARN]: ", "[INFO]: ", "[DEBUG]: ", "[TRACE]: " };
-
+    uint8_t levelColor[6] = { 64, 4, 6, 2, 1, 8 };
+    
     // Calculate the size needed for the formatted message
     va_list arg_ptr;
     va_start(arg_ptr, message);
@@ -53,7 +75,7 @@ void LogOutput(LogLevel level, const char* message, ...)
     snprintf(out_message2, total_len, "%s%s\n", levelStrings[level], out_message);
 
     // Print the final message
-    printf("%s", out_message2);
+    PrintToConsoleColor(out_message2, levelColor[level]);
 
     // Free allocated memory
     free(out_message);

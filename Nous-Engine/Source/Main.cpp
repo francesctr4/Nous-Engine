@@ -1,21 +1,92 @@
-#include <iostream>
 #include "Globals.h"
-
+#include "Application.h"
 #include "Logger.h"
 #include "Asserts.h"
+
+typedef enum MainState
+{
+	MAIN_CREATION,
+	MAIN_START,
+	MAIN_UPDATE,
+	MAIN_FINISH,
+	MAIN_EXIT
+
+} MainState;
 
 int main(int argc, char** argv) {
 
 	NOUS_INFO("Starting engine '%s'....", TITLE);
 
-	NOUS_FATAL("A test message: %f", 3.14F);
-	NOUS_ERROR("A test message: %f", 3.14F);
-	NOUS_WARN("A test message: %f", 3.14F);
-	NOUS_INFO("A test message: %f", 6.14F);
-	NOUS_DEBUG("A test message: %f", 3.14F);
-	NOUS_TRACE("A test message: %f", 3.14F);
+	int mainReturn = EXIT_FAILURE;
+	MainState nousState = MAIN_CREATION;
+	Application* App = nullptr;
 
-	//NOUS_ASSERT_MSG(1 == 0, "message");
+	while (nousState != MAIN_EXIT) 
+	{
+		switch (nousState)
+		{
+		case MAIN_CREATION:
 
-	return 0;
+			NOUS_INFO("-------------- Application Creation --------------");
+			App = new Application();
+			nousState = MAIN_START;
+			break;
+
+		case MAIN_START:
+
+			NOUS_INFO("-------------- Application Init --------------");
+			if (App->Awake() == false)
+			{
+				NOUS_INFO("[ERROR] Application Init exits with ERROR");
+				nousState = MAIN_EXIT;
+			}
+			else
+			{
+				nousState = MAIN_UPDATE;
+				NOUS_INFO("-------------- Application Update --------------");
+			}
+
+			break;
+
+		case MAIN_UPDATE:
+		{
+			int updateReturn = App->Update();
+
+			if (updateReturn == UPDATE_ERROR)
+			{
+				NOUS_INFO("[ERROR] Application Update exits with ERROR");
+				nousState = MAIN_EXIT;
+			}
+			else if (updateReturn == UPDATE_STOP) {
+				nousState = MAIN_FINISH;
+			}
+
+			break;
+		}
+
+		case MAIN_FINISH:
+
+			NOUS_INFO("-------------- Application CleanUp --------------");
+			if (App->CleanUp() == false)
+			{
+				NOUS_INFO("[ERROR] Application CleanUp exits with ERROR");
+			}
+			else 
+			{
+				mainReturn = EXIT_SUCCESS;
+			}
+				
+			nousState = MAIN_EXIT;
+
+			break;
+
+		}
+	}
+
+	External = nullptr;
+
+	delete App;
+	NOUS_INFO("Exiting engine '%s'...\n", TITLE);
+
+	return mainReturn;
 }
