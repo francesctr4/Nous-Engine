@@ -29,7 +29,9 @@ int main(int argc, char** argv) {
 
 			NOUS_INFO("-------------- Application Creation --------------");
 			App = new Application();
+
 			nousState = MAIN_START;
+
 			break;
 
 		case MAIN_START:
@@ -57,7 +59,8 @@ int main(int argc, char** argv) {
 				NOUS_INFO("[ERROR] Application Update exits with ERROR");
 				nousState = MAIN_EXIT;
 			}
-			else if (updateReturn == UPDATE_STOP) {
+			else if (updateReturn == UPDATE_STOP) 
+			{
 				nousState = MAIN_FINISH;
 			}
 
@@ -86,6 +89,7 @@ int main(int argc, char** argv) {
 	External = nullptr;
 
 	delete App;
+
 	NOUS_INFO("Exiting engine '%s'...\n", TITLE);
 
 	return mainReturn;

@@ -8,7 +8,7 @@ class Module
 {
 public:
 
-	Module(Application* app, bool startEnabled = true);
+	Module(Application* app, std::string name, bool startEnabled = true);
 	virtual ~Module();
 
 	virtual bool Awake();
@@ -27,5 +27,6 @@ public:
 private:
 
 	bool enabled;
+	std::string name;
 
 };

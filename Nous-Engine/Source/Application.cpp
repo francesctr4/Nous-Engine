@@ -10,8 +10,9 @@ extern Application* External = nullptr;
 Application::Application()
 {
 	External = this;
-	window = new ModuleWindow(this);
-	input = new ModuleInput(this);
+
+	window = new ModuleWindow(this, "ModuleWindow");
+	input = new ModuleInput(this, "ModuleInput");
 
 	list_modules[0] = window;
 	list_modules[1] = input;

@@ -9,7 +9,7 @@ class ModuleWindow : public Module
 public:
 
 	// Constructor
-	ModuleWindow(Application* app, bool start_enabled = true);
+	ModuleWindow(Application* app, std::string name, bool start_enabled = true);
 
 	// Destructor
 	virtual ~ModuleWindow();
