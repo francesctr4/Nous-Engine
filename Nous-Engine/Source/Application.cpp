@@ -1,8 +1,11 @@
 #include "Application.h"
-
 #include "Module.h"
+
 #include "ModuleWindow.h"
 #include "ModuleInput.h"
+#include "ModuleCamera3D.h"
+#include "ModuleRenderer3D.h"
+
 #include "Logger.h"
 
 extern Application* External = nullptr;
@@ -11,11 +14,17 @@ Application::Application()
 {
 	External = this;
 
+    targetFPS = 1.0f / 60.0f;
+
 	window = new ModuleWindow(this, "ModuleWindow");
 	input = new ModuleInput(this, "ModuleInput");
+    camera = new ModuleCamera3D(this, "ModuleCamera3D");
+    renderer = new ModuleRenderer3D(this, "ModuleRenderer3D");
 
 	list_modules[0] = window;
 	list_modules[1] = input;
+    list_modules[2] = camera;
+    list_modules[3] = renderer;
 }
 
 Application::~Application()
@@ -61,21 +70,21 @@ UpdateStatus Application::Update()
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
         if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->PreUpdate((1 / 60));
+            ret = list_modules[i]->PreUpdate((targetFPS));
         }
     }
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
         if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->Update((1 / 60));
+            ret = list_modules[i]->Update(targetFPS);
         }
     }
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
         if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->PostUpdate((1 / 60));
+            ret = list_modules[i]->PostUpdate(targetFPS);
         }
     }
 
@@ -93,11 +102,6 @@ bool Application::CleanUp()
         }
     }
     return ret;
-}
-
-void Application::AddModule(Module* mod)
-{
-
 }
 
 void Application::PrepareUpdate()

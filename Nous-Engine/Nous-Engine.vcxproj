@@ -136,7 +136,9 @@
     <ClCompile Include="Source\Logger.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Module.cpp" />
+    <ClCompile Include="Source\ModuleCamera3D.cpp" />
     <ClCompile Include="Source\ModuleInput.cpp" />
+    <ClCompile Include="Source\ModuleRenderer3D.cpp" />
     <ClCompile Include="Source\ModuleWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -223,7 +225,9 @@
     <ClInclude Include="Source\Globals.h" />
     <ClInclude Include="Source\Logger.h" />
     <ClInclude Include="Source\Module.h" />
+    <ClInclude Include="Source\ModuleCamera3D.h" />
     <ClInclude Include="Source\ModuleInput.h" />
+    <ClInclude Include="Source\ModuleRenderer3D.h" />
     <ClInclude Include="Source\ModuleWindow.h" />
     <ClInclude Include="Source\SDL2.h" />
   </ItemGroup>

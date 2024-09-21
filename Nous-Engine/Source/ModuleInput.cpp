@@ -25,7 +25,10 @@ bool ModuleInput::Start()
 
 UpdateStatus ModuleInput::PreUpdate(float dt)
 {
-	//NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE("%s()", __FUNCTION__);
+
+	// Make the system sleep for 2 seconds
+	std::this_thread::sleep_for(std::chrono::seconds(2));
 
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
