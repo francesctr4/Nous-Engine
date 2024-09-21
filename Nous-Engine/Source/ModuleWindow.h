@@ -15,6 +15,7 @@ public:
 	virtual ~ModuleWindow();
 
 	bool Awake() override;
+	bool Start() override;
 	bool CleanUp() override;
 
 	bool InitSDLWindow();

@@ -20,13 +20,16 @@ public:
 
 	virtual bool CleanUp();
 
+	std::string GetName();
+
 public:
 
 	Application* App;
+	
 
 private:
 
 	bool enabled;
 	std::string name;
-
+	
 };

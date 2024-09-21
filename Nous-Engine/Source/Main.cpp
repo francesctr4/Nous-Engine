@@ -36,10 +36,10 @@ int main(int argc, char** argv) {
 
 		case MAIN_START:
 
-			NOUS_INFO("-------------- Application Init --------------");
+			NOUS_INFO("-------------- Application Awake --------------");
 			if (App->Awake() == false)
 			{
-				NOUS_INFO("[ERROR] Application Init exits with ERROR");
+				NOUS_INFO("[ERROR] Application Awake exits with ERROR");
 				nousState = MAIN_EXIT;
 			}
 			else
@@ -88,6 +88,7 @@ int main(int argc, char** argv) {
 
 	External = nullptr;
 
+	NOUS_INFO("-------------- Application Destruction --------------");
 	delete App;
 
 	NOUS_INFO("Exiting engine '%s'...\n", TITLE);

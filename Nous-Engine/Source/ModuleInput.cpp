@@ -1,27 +1,32 @@
 #include "ModuleInput.h"
+#include "Logger.h"
 
 ModuleInput::ModuleInput(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
-
+	NOUS_TRACE("%s()", __FUNCTION__);
 }
 
 ModuleInput::~ModuleInput()
 {
-
+	NOUS_TRACE("%s()", __FUNCTION__);
 }
 
 bool ModuleInput::Awake()
 {
+	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
 }
 
 bool ModuleInput::Start()
 {
+	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
 }
 
 UpdateStatus ModuleInput::PreUpdate(float dt)
 {
+	//NOUS_TRACE("%s()", __FUNCTION__);
+
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
 	{
@@ -40,5 +45,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 
 bool ModuleInput::CleanUp()
 {
+	NOUS_TRACE("%s()", __FUNCTION__);
+
 	return true;
 }

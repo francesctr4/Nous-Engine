@@ -33,7 +33,7 @@ bool Application::Awake()
 {
     bool ret = true;
 
-    // Call Init() in all modules
+    // Call Awake() in all modules
     for (int i = 0; i < NUM_MODULES && ret; ++i)
     {
         if (list_modules[i] != nullptr) {
@@ -41,7 +41,7 @@ bool Application::Awake()
         }
     }
 
-    // After all Init calls we call Start() in all modules
+    // After all Awake calls we call Start() in all modules
     NOUS_INFO("-------------- Application Start --------------");
     for (int i = 0; i < NUM_MODULES && ret; ++i)
     {

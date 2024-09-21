@@ -1,17 +1,22 @@
 #include "ModuleWindow.h"
+#include "Logger.h"
 
 ModuleWindow::ModuleWindow(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
+    NOUS_TRACE("%s()", __FUNCTION__);
+
     window = nullptr;
 }
 
 ModuleWindow::~ModuleWindow()
 {
-
+    NOUS_TRACE("%s()", __FUNCTION__);
 }
 
 bool ModuleWindow::Awake()
 {
+    NOUS_TRACE("%s()", __FUNCTION__);
+
     bool ret = true;
 
     // Initialize SDL
@@ -39,8 +44,15 @@ bool ModuleWindow::Awake()
     return ret;
 }
 
+bool ModuleWindow::Start()
+{
+    NOUS_TRACE("%s()", __FUNCTION__);
+    return true;
+}
+
 bool ModuleWindow::CleanUp()
 {
+    NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
 }
 
