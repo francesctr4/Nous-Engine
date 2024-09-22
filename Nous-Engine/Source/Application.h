@@ -36,7 +36,7 @@ public:
 
 private:
 
-	void PrepareUpdate();
+	UpdateStatus PrepareUpdate();
 	void FinishUpdate();
 
 };

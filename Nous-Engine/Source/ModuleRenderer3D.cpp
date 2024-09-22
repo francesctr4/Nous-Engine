@@ -26,24 +26,21 @@ bool ModuleRenderer3D::Start()
 UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-	// Make the system sleep for 2 seconds
-	std::this_thread::sleep_for(std::chrono::seconds(2));
+
 	return UPDATE_CONTINUE;
 }
 
 UpdateStatus ModuleRenderer3D::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-	// Make the system sleep for 2 seconds
-	std::this_thread::sleep_for(std::chrono::seconds(2));
+
 	return UPDATE_CONTINUE;
 }
 
 UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-	// Make the system sleep for 2 seconds
-	std::this_thread::sleep_for(std::chrono::seconds(2));
+
 	return UPDATE_CONTINUE;
 }
 
