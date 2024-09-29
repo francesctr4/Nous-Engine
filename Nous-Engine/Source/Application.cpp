@@ -7,6 +7,7 @@
 #include "ModuleRenderer3D.h"
 
 #include "Logger.h"
+#include "ThreadPool.h"
 
 extern Application* External = nullptr;
 

@@ -51,6 +51,12 @@
     <ClCompile Include="Source\ModuleCamera3D.cpp">
       <Filter>Source Code\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Source\ThreadPool.cpp">
+      <Filter>Source Code\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\TSQueue.cpp">
+      <Filter>Source Code\Data Structures</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -316,6 +322,15 @@
     </ClInclude>
     <ClInclude Include="Source\ModuleCamera3D.h">
       <Filter>Source Code\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThreadPool.h">
+      <Filter>Source Code\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TSQueue.h">
+      <Filter>Source Code\Data Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\concurrentqueue.h">
+      <Filter>Source Code\Data Structures</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

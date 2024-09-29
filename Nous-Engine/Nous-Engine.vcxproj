@@ -140,10 +140,13 @@
     <ClCompile Include="Source\ModuleInput.cpp" />
     <ClCompile Include="Source\ModuleRenderer3D.cpp" />
     <ClCompile Include="Source\ModuleWindow.cpp" />
+    <ClCompile Include="Source\ThreadPool.cpp" />
+    <ClCompile Include="Source\TSQueue.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Asserts.h" />
+    <ClInclude Include="Source\concurrentqueue.h" />
     <ClInclude Include="Source\External\SDL2\include\begin_code.h" />
     <ClInclude Include="Source\External\SDL2\include\close_code.h" />
     <ClInclude Include="Source\External\SDL2\include\SDL.h" />
@@ -230,6 +233,8 @@
     <ClInclude Include="Source\ModuleRenderer3D.h" />
     <ClInclude Include="Source\ModuleWindow.h" />
     <ClInclude Include="Source\SDL2.h" />
+    <ClInclude Include="Source\ThreadPool.h" />
+    <ClInclude Include="Source\TSQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
