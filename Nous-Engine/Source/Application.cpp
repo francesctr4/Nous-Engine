@@ -41,26 +41,72 @@ Application::~Application()
 
 bool Application::Awake()
 {
-    bool ret = true;
+    //bool ret = true;
 
-    // Call Awake() in all modules
-    for (int i = 0; i < NUM_MODULES && ret; ++i)
+    //// Call Awake() in all modules
+    //for (int i = 0; i < NUM_MODULES && ret; ++i)
+    //{
+    //    if (list_modules[i] != nullptr) {
+    //        ret = list_modules[i]->Awake();
+    //    }
+    //}
+
+    //// After all Awake calls we call Start() in all modules
+    //NOUS_INFO("-------------- Application Start --------------");
+    //for (int i = 0; i < NUM_MODULES && ret; ++i)
+    //{
+    //    if (list_modules[i] != nullptr) {
+    //        ret = list_modules[i]->Start();
+    //    }
+    //}
+
+    //return ret;
+
+    std::atomic<bool> result = true;
+
+    // Submit each module's Awake() task to the ThreadPool
+    for (int i = 0; i < NUM_MODULES; ++i)
     {
-        if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->Awake();
+        if (list_modules[i] != nullptr)
+        {
+            threadPool->Submit([this, i, &result]() {
+                if (!list_modules[i]->Awake())
+                {
+                    result = false;
+                }
+                syncPoint.arrive_and_wait();  // Hit the barrier after each module completes
+                });
         }
     }
 
-    // After all Awake calls we call Start() in all modules
+    // Wait for all Awake() tasks to finish
+    syncPoint.arrive_and_wait();  // Wait for all tasks to hit the barrier before continuing
+
+    if (!result.load())  // If any module's Awake failed
+        return false;
+
+    // Now we move to the Start phase
     NOUS_INFO("-------------- Application Start --------------");
-    for (int i = 0; i < NUM_MODULES && ret; ++i)
+
+    // Submit each module's Start() task to the ThreadPool
+    for (int i = 0; i < NUM_MODULES; ++i)
     {
-        if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->Start();
+        if (list_modules[i] != nullptr)
+        {
+            threadPool->Submit([this, i, &result]() {
+                if (!list_modules[i]->Start())
+                {
+                    result = false;
+                }
+                syncPoint.arrive_and_wait();  // Hit the barrier after Start finishes
+                });
         }
     }
 
-    return ret;
+    // Wait for all Start() tasks to finish
+    syncPoint.arrive_and_wait();
+
+    return result.load();
 }
 
 // Barrier to synchronize all threads at the end of each phase

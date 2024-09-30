@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cstdint>
 
+#include "Logger.h"
+
 // Threading Library
 #include <thread>
 #include <barrier>
