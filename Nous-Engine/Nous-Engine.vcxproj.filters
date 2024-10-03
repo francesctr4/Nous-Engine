@@ -25,6 +25,9 @@
     <Filter Include="Source Code\Modules">
       <UniqueIdentifier>{39678d32-f26d-435d-8501-2af78fa44896}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Externals\Tracy">
+      <UniqueIdentifier>{46a3a962-8f52-4514-9b74-6c75c4f759f5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -56,6 +59,9 @@
     </ClCompile>
     <ClCompile Include="Source\TSQueue.cpp">
       <Filter>Source Code\Data Structures</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\External\Tracy\TracyClient.cpp">
+      <Filter>Externals\Tracy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -331,6 +337,12 @@
     </ClInclude>
     <ClInclude Include="Source\concurrentqueue.h">
       <Filter>Source Code\Data Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Tracy.h">
+      <Filter>Source Code\Includes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Tracy\tracy\Tracy.hpp">
+      <Filter>Externals\Tracy</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

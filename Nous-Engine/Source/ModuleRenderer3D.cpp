@@ -1,6 +1,8 @@
 #include "ModuleRenderer3D.h"
 #include "Logger.h"
 
+#include "Tracy.h"
+
 ModuleRenderer3D::ModuleRenderer3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -39,6 +41,10 @@ UpdateStatus ModuleRenderer3D::Update(float dt)
 
 UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 {
+#ifdef TRACY_ENABLE
+	ZoneScoped;
+#endif
+
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	return UPDATE_CONTINUE;

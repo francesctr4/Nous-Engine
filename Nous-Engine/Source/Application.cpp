@@ -9,6 +9,8 @@
 #include "Logger.h"
 #include "ThreadPool.h"
 
+#include "Tracy.h"
+
 extern Application* External = nullptr;
 
 Application::Application()
@@ -119,6 +121,11 @@ bool Application::Awake()
 
 UpdateStatus Application::Update()
 {
+
+#ifdef TRACY_ENABLE
+    ZoneScoped;
+#endif
+    
     UpdateStatus ret = UPDATE_CONTINUE;
 
     ret = PrepareUpdate();
@@ -183,6 +190,10 @@ UpdateStatus Application::Update()
     }
 
     FinishUpdate();
+
+#ifdef TRACY_ENABLE
+    FrameMark;
+#endif
 
     return ret;
 }
