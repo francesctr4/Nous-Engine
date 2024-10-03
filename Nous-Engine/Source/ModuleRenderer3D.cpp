@@ -41,10 +41,6 @@ UpdateStatus ModuleRenderer3D::Update(float dt)
 
 UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 {
-#ifdef TRACY_ENABLE
-	ZoneScoped;
-#endif
-
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	return UPDATE_CONTINUE;
