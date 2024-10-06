@@ -57,11 +57,14 @@
     <ClCompile Include="Source\ThreadPool.cpp">
       <Filter>Source Code\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Source\TSQueue.cpp">
+    <ClCompile Include="Source\RingQueue.cpp">
       <Filter>Source Code\Data Structures</Filter>
     </ClCompile>
     <ClCompile Include="Source\External\Tracy\TracyClient.cpp">
       <Filter>Externals\Tracy</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\MemoryManager.cpp">
+      <Filter>Source Code\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -332,7 +335,7 @@
     <ClInclude Include="Source\ThreadPool.h">
       <Filter>Source Code\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Source\TSQueue.h">
+    <ClInclude Include="Source\RingQueue.h">
       <Filter>Source Code\Data Structures</Filter>
     </ClInclude>
     <ClInclude Include="Source\concurrentqueue.h">
@@ -343,6 +346,9 @@
     </ClInclude>
     <ClInclude Include="Source\External\Tracy\tracy\Tracy.hpp">
       <Filter>Externals\Tracy</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\MemoryManager.h">
+      <Filter>Source Code\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

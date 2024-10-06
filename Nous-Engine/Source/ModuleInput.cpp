@@ -27,18 +27,18 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	//SDL_Event e;
-	//while (SDL_PollEvent(&e))
-	//{
-	//	switch (e.type)
-	//	{
-	//		case SDL_QUIT:
-	//		{
-	//			return UPDATE_STOP;
-	//			break;
-	//		}
-	//	}
-	//}
+	SDL_Event e;
+	while (SDL_PollEvent(&e))
+	{
+		switch (e.type)
+		{
+			case SDL_QUIT:
+			{
+				return UPDATE_STOP;
+				break;
+			}
+		}
+	}
 
 	return UPDATE_CONTINUE;
 }

@@ -8,6 +8,7 @@
 
 #include "Logger.h"
 #include "ThreadPool.h"
+#include "MemoryManager.h"
 
 #include "Tracy.h"
 
@@ -19,17 +20,24 @@ Application::Application()
 
     targetFPS = 1.0f / 60.0f;
 
-	window = new ModuleWindow(this, "ModuleWindow");
-	input = new ModuleInput(this, "ModuleInput");
-    camera = new ModuleCamera3D(this, "ModuleCamera3D");
-    renderer = new ModuleRenderer3D(this, "ModuleRenderer3D");
+    // We allocate the memory for the module first, then we use it with new to call the constructor
+
+    void* windowMemory = MemoryManager::Allocate(sizeof(ModuleWindow), MemoryManager::MemoryTag::APPLICATION);
+    window = new(windowMemory) ModuleWindow(this, "ModuleWindow");
+
+    void* inputMemory = MemoryManager::Allocate(sizeof(ModuleInput), MemoryManager::MemoryTag::APPLICATION);
+    input = new(inputMemory) ModuleInput(this, "ModuleInput");
+
+    void* cameraMemory = MemoryManager::Allocate(sizeof(ModuleCamera3D), MemoryManager::MemoryTag::APPLICATION);
+    camera = new(cameraMemory) ModuleCamera3D(this, "ModuleCamera3D");
+
+    void* rendererMemory = MemoryManager::Allocate(sizeof(ModuleRenderer3D), MemoryManager::MemoryTag::APPLICATION);
+    renderer = new(rendererMemory) ModuleRenderer3D(this, "ModuleRenderer3D");
 
 	list_modules[0] = window;
 	list_modules[1] = input;
     list_modules[2] = camera;
     list_modules[3] = renderer;
-
-    threadPool = new ThreadPool();
 }
 
 Application::~Application()
@@ -37,18 +45,17 @@ Application::~Application()
 	for (int i = 0; i < NUM_MODULES; ++i)
 	{
 		if (list_modules[i] != nullptr) {
-			delete list_modules[i];
-			list_modules[i] = nullptr;
+
+            // Call the destructor of the module before deallocating memory
+            list_modules[i]->~Module(); 
+
+            // We use MemoryManager to free the memory
+            MemoryManager::Free(list_modules[i], sizeof(*list_modules[i]), MemoryManager::MemoryTag::APPLICATION);
+
+            list_modules[i] = nullptr;
 		}
 	}
 }
-
-// Barrier to synchronize all threads at the end of each phase
-std::barrier sync_point(NUM_MODULES, []() noexcept {
-    // This completion function is called once all threads reach the barrier
-    // You can use this to check for exit conditions after each phase if needed.
-    NOUS_DEBUG("%s", "Barrier Surpassed");
-    });
 
 bool Application::Awake()
 {
@@ -71,52 +78,9 @@ bool Application::Awake()
         }
     }
 
+    NOUS_INFO(MemoryManager::GetMemoryUsageStats());
+
     return ret;
-
-    //bool ret = true;
-    //std::atomic<bool> result = true;
-
-    //// Barrier to synchronize the number of modules before moving to the next phase
-    //std::barrier syncPointAwake(NUM_MODULES, [&]() noexcept {
-    //    NOUS_INFO("All modules reached the barrier after Awake, moving to Start...");
-    //    });
-
-    //std::barrier syncPointStart(NUM_MODULES, [&]() noexcept {
-    //    NOUS_INFO("All modules reached the barrier after Start, moving to the next phase...");
-    //    });
-
-    //// Define the worker function for the Awake and Start phases
-    //auto WorkerFunction = [&](int moduleIndex) {
-    //    if (list_modules[moduleIndex] != nullptr) {
-    //        // Awake phase
-    //        if (result) {
-    //            if (!list_modules[moduleIndex]->Awake()) {
-    //                result = false;  // Mark result as false if any module's Awake fails
-    //            }
-    //        }
-    //        syncPointAwake.arrive_and_wait();  // Synchronize at the end of Awake
-
-    //        // Start phase
-    //        if (result) {
-    //            if (!list_modules[moduleIndex]->Start()) {
-    //                result = false;  // Mark result as false if any module's Start fails
-    //            }
-    //        }
-    //        syncPointStart.arrive_and_wait();  // Synchronize at the end of Start
-    //    }
-    //    };
-
-    //// Submit the tasks for all modules to the ThreadPool
-    //for (int i = 0; i < NUM_MODULES; ++i) {
-    //    if (list_modules[i] != nullptr) {
-    //        threadPool->Submit([&, i]() {
-    //            WorkerFunction(i);  // Pass the index to the worker function
-    //            });
-    //    }
-    //}
-
-    //// Return the final result status
-    //return result.load();
 }
 
 UpdateStatus Application::Update()
@@ -130,12 +94,16 @@ UpdateStatus Application::Update()
 
     ret = PrepareUpdate();
 
-    /*for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
+    NOUS_INFO("-------------- PreUpdate --------------");
+
+    for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
         if (list_modules[i] != nullptr) {
             ret = list_modules[i]->PreUpdate(targetFPS);
         }
     }
+
+    NOUS_INFO("-------------- Update --------------");
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
@@ -144,48 +112,12 @@ UpdateStatus Application::Update()
         }
     }
 
+    NOUS_INFO("-------------- PostUpdate --------------");
+
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
         if (list_modules[i] != nullptr) {
             ret = list_modules[i]->PostUpdate(targetFPS);
-        }
-    }*/
-
-    // Worker function that handles the module's tasks for each phase
-    auto WorkerFunction = [&](int moduleIndex) {
-        if (list_modules[moduleIndex] != nullptr) {
-            // PreUpdate phase
-            if (ret == UPDATE_CONTINUE) {
-                ret = list_modules[moduleIndex]->PreUpdate(targetFPS);
-            }
-            sync_point.arrive_and_wait(); // Wait for all threads to finish PreUpdate
-
-            // Update phase
-            if (ret == UPDATE_CONTINUE) {
-                ret = list_modules[moduleIndex]->Update(targetFPS);
-            }
-            sync_point.arrive_and_wait(); // Wait for all threads to finish Update
-
-            // PostUpdate phase
-            if (ret == UPDATE_CONTINUE) {
-                ret = list_modules[moduleIndex]->PostUpdate(targetFPS);
-            }
-            sync_point.arrive_and_wait(); // Wait for all threads to finish PostUpdate
-        }
-        };
-
-    // Create and launch threads
-    std::vector<std::thread> threads;
-    for (int i = 0; i < NUM_MODULES; ++i) {
-        if (list_modules[i] != nullptr) {
-            threads.emplace_back(WorkerFunction, i);
-        }
-    }
-
-    // Join all threads to ensure they complete before moving forward
-    for (std::thread& t : threads) {
-        if (t.joinable()) {
-            t.join();
         }
     }
 
@@ -213,19 +145,6 @@ bool Application::CleanUp()
 UpdateStatus Application::PrepareUpdate()
 {
     UpdateStatus ret = UPDATE_CONTINUE;
-
-    SDL_Event e;
-    while (SDL_PollEvent(&e))
-    {
-        switch (e.type)
-        {
-        case SDL_QUIT:
-        {
-            ret = UPDATE_STOP;
-            break;
-        }
-        }
-    }
 
     return ret;
 }

@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "Logger.h"
 #include "Asserts.h"
+#include "MemoryManager.h"
 
 typedef enum MainState
 {
@@ -14,6 +15,8 @@ typedef enum MainState
 } MainState;
 
 int main(int argc, char** argv) {
+
+	MemoryManager::InitializeMemory();
 
 	NOUS_INFO("Starting engine '%s'....", TITLE);
 
@@ -92,6 +95,8 @@ int main(int argc, char** argv) {
 	delete App;
 
 	NOUS_INFO("Exiting engine '%s'...\n", TITLE);
+
+	MemoryManager::ShutdownMemory();
 
 	return mainReturn;
 }
