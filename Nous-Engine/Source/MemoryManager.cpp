@@ -2,6 +2,10 @@
 
 #include "Logger.h"
 
+#ifdef _PROFILING
+#include "Tracy.h"
+#endif // _PROFILING
+
 struct MemoryStats 
 {
 	uint64 totalAllocated;
@@ -55,6 +59,10 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 	void* block = malloc(size);
 	ZeroMemory(block, size);
 
+#ifdef _PROFILING
+	TracyAlloc(block, size);
+#endif // _PROFILING
+
 	return block;
 }
 
@@ -67,6 +75,10 @@ void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UN
 
 	stats.totalAllocated -= size;
 	stats.taggedAllocations[static_cast<uint64>(tag)] -= size;
+
+#ifdef _PROFILING
+	TracyFree(block);
+#endif // _PROFILING
 
 	// TODO: Memory Alignment
 	free(block);
