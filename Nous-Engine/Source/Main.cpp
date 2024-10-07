@@ -14,6 +14,11 @@ typedef enum MainState
 
 } MainState;
 
+void DumpMemoryLeaks()
+{
+	_CrtDumpMemoryLeaks();
+}
+
 int main(int argc, char** argv) {
 
 	MemoryManager::InitializeMemory();
@@ -31,7 +36,7 @@ int main(int argc, char** argv) {
 		case MAIN_CREATION:
 
 			NOUS_INFO("-------------- Application Creation --------------");
-			App = new Application();
+			App = NOUS_NEW<Application>(MemoryManager::MemoryTag::APPLICATION);
 
 			nousState = MAIN_START;
 
@@ -92,11 +97,15 @@ int main(int argc, char** argv) {
 	External = nullptr;
 
 	NOUS_INFO("-------------- Application Destruction --------------");
-	delete App;
+	NOUS_DELETE(App, MemoryManager::MemoryTag::APPLICATION);
 
 	NOUS_INFO("Exiting engine '%s'...\n", TITLE);
 
+	NOUS_INFO(MemoryManager::GetMemoryUsageStats());
+
 	MemoryManager::ShutdownMemory();
+
+	atexit(DumpMemoryLeaks);
 
 	return mainReturn;
 }

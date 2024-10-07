@@ -22,17 +22,22 @@ Application::Application()
 
     // We allocate the memory for the module first, then we use it with new to call the constructor
 
-    void* windowMemory = MemoryManager::Allocate(sizeof(ModuleWindow), MemoryManager::MemoryTag::APPLICATION);
-    window = new(windowMemory) ModuleWindow(this, "ModuleWindow");
+    //void* windowMemory = MemoryManager::Allocate(sizeof(ModuleWindow), MemoryManager::MemoryTag::APPLICATION);
+    //window = new(windowMemory) ModuleWindow(this, "ModuleWindow");
 
-    void* inputMemory = MemoryManager::Allocate(sizeof(ModuleInput), MemoryManager::MemoryTag::APPLICATION);
+    window = NOUS_NEW<ModuleWindow>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleWindow");
+    input = NOUS_NEW<ModuleInput>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleInput");
+    camera = NOUS_NEW<ModuleCamera3D>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleCamera3D");
+    renderer = NOUS_NEW<ModuleRenderer3D>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleRenderer3D");
+
+    /*void* inputMemory = MemoryManager::Allocate(sizeof(ModuleInput), MemoryManager::MemoryTag::APPLICATION);
     input = new(inputMemory) ModuleInput(this, "ModuleInput");
 
     void* cameraMemory = MemoryManager::Allocate(sizeof(ModuleCamera3D), MemoryManager::MemoryTag::APPLICATION);
     camera = new(cameraMemory) ModuleCamera3D(this, "ModuleCamera3D");
 
     void* rendererMemory = MemoryManager::Allocate(sizeof(ModuleRenderer3D), MemoryManager::MemoryTag::APPLICATION);
-    renderer = new(rendererMemory) ModuleRenderer3D(this, "ModuleRenderer3D");
+    renderer = new(rendererMemory) ModuleRenderer3D(this, "ModuleRenderer3D");*/
 
 	list_modules[0] = window;
 	list_modules[1] = input;
@@ -44,16 +49,18 @@ Application::~Application()
 {
 	for (int i = 0; i < NUM_MODULES; ++i)
 	{
-		if (list_modules[i] != nullptr) {
+        NOUS_DELETE(list_modules[i], MemoryManager::MemoryTag::APPLICATION);
 
-            // Call the destructor of the module before deallocating memory
-            list_modules[i]->~Module(); 
+		//if (list_modules[i] != nullptr) {
 
-            // We use MemoryManager to free the memory
-            MemoryManager::Free(list_modules[i], sizeof(*list_modules[i]), MemoryManager::MemoryTag::APPLICATION);
+  //          // Call the destructor of the module before deallocating memory
+  //          list_modules[i]->~Module(); 
 
-            list_modules[i] = nullptr;
-		}
+  //          // We use MemoryManager to free the memory
+  //          MemoryManager::Free(list_modules[i], sizeof(*list_modules[i]), MemoryManager::MemoryTag::APPLICATION);
+
+  //          list_modules[i] = nullptr;
+		//}
 	}
 }
 

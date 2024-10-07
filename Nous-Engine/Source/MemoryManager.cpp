@@ -1,6 +1,7 @@
 #include "MemoryManager.h"
 
 #include "Logger.h"
+#include "Asserts.h"
 
 #ifdef _PROFILING
 #include "Tracy.h"
@@ -42,7 +43,16 @@ void MemoryManager::InitializeMemory()
 
 void MemoryManager::ShutdownMemory()
 {
+	MemoryTag tag = MemoryTag::UNKNOWN;
+	float32 amount = 0.0f;
 
+	for (uint32 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
+	{
+		tag = static_cast<MemoryTag>(i);
+		amount = static_cast<float32>(stats.taggedAllocations[i]);
+		
+		NOUS_ASSERT_MSG(amount == 0.0f, "Memory Leaks Detected!");
+	}
 }
 
 void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)

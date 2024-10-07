@@ -1,6 +1,8 @@
 #include "ModuleWindow.h"
 #include "Logger.h"
 
+#include "MemoryManager.h"
+
 ModuleWindow::ModuleWindow(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
     NOUS_TRACE("%s()", __FUNCTION__);
@@ -11,6 +13,18 @@ ModuleWindow::ModuleWindow(Application* app, std::string name, bool start_enable
 ModuleWindow::~ModuleWindow()
 {
     NOUS_TRACE("%s()", __FUNCTION__);
+
+    if (window != nullptr) 
+    {
+        SDL_DestroyWindow(window); 
+        window = nullptr;  
+    }
+
+    MemoryManager::Free(window, sizeof(window), MemoryManager::MemoryTag::APPLICATION);
+
+    SDL_DestroyWindow(window);
+    SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    SDL_Quit();
 }
 
 bool ModuleWindow::Awake()
@@ -53,6 +67,7 @@ bool ModuleWindow::Start()
 bool ModuleWindow::CleanUp()
 {
     NOUS_TRACE("%s()", __FUNCTION__);
+
 	return true;
 }
 

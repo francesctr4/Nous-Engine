@@ -45,3 +45,27 @@ namespace MemoryManager
 	char* GetMemoryUsageStats();
 
 }
+
+#define CUSTOM_NEW(name) \
+template<typename T, typename... Args> \
+T* name(MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN, Args&&... args) \
+{ \
+    void* memory = MemoryManager::Allocate(sizeof(T), tag); \
+    auto ptr = new(memory) T(std::forward<Args>(args)...); \
+    return ptr; \
+}
+
+#define CUSTOM_DELETE(name) \
+template<typename T> \
+void name(T* ptr, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) noexcept \
+{ \
+    if (ptr != nullptr) \
+    { \
+        ptr->~T(); \
+        MemoryManager::Free(ptr, sizeof(*ptr), tag); \
+        ptr = nullptr; \
+    } \
+}
+
+CUSTOM_NEW(NOUS_NEW)
+CUSTOM_DELETE(NOUS_DELETE)
