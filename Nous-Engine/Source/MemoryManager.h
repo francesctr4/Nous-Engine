@@ -43,8 +43,9 @@ namespace MemoryManager
 	void* SetMemory(void* destination, int32 value, uint64 size);
 
 	char* GetMemoryUsageStats();
-
 }
+
+// Custom Memory Management Macros to monitorize allocations
 
 #define CUSTOM_NEW(name) \
 template<typename T, typename... Args> \
@@ -67,5 +68,13 @@ void name(T* ptr, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNO
     } \
 }
 
+/**
+ * @brief Allocates memory and constructs an object of type T.
+ *
+ * @param tag: The memory tag used for tracking allocations. Defaults to `UNKNOWN`.
+ * @param args: Constructor arguments for the object of type `T`.
+ *
+ * @return T*: A pointer to the newly constructed object of type `T`.
+ */
 CUSTOM_NEW(NOUS_NEW)
 CUSTOM_DELETE(NOUS_DELETE)
