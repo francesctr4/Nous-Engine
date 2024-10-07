@@ -210,7 +210,6 @@
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Asserts.h" />
-    <ClInclude Include="Source\concurrentqueue.h" />
     <ClInclude Include="Source\External\SDL2\include\begin_code.h" />
     <ClInclude Include="Source\External\SDL2\include\close_code.h" />
     <ClInclude Include="Source\External\SDL2\include\SDL.h" />

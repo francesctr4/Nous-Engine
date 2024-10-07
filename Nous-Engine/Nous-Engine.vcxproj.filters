@@ -338,9 +338,6 @@
     <ClInclude Include="Source\RingQueue.h">
       <Filter>Source Code\Data Structures</Filter>
     </ClInclude>
-    <ClInclude Include="Source\concurrentqueue.h">
-      <Filter>Source Code\Data Structures</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Tracy.h">
       <Filter>Source Code\Includes</Filter>
     </ClInclude>

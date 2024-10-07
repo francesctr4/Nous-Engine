@@ -4,14 +4,11 @@
 #include <thread>
 #include <functional>
 
-#include "concurrentqueue.h"
-
 // Adapt the thread pool size according to the hardware capabilities.
 #define MAX_THREADS std::thread::hardware_concurrency()
 
 // Lock-free thread-safe concurrent FIFO queue. Multiple producer, multiple consumer. Third Party.
-template<typename T>
-using TSQueue = moodycamel::ConcurrentQueue<T>;
+// TODO
 
 class ThreadPool
 {
@@ -33,7 +30,7 @@ private:
 
 	// ---------------------------------------- \\
 
-	TSQueue<std::function<void()>> workQueue;
+	//TSQueue<std::function<void()>> workQueue;
 
 	std::vector<std::jthread> threads;
 	std::atomic_bool done;
@@ -44,5 +41,5 @@ private:
 template<typename T>
 void ThreadPool::Submit(T task)
 {
-	workQueue.enqueue(std::function<void()>(task));
+	//workQueue.enqueue(std::function<void()>(task));
 }

@@ -29,13 +29,13 @@ void ThreadPool::WorkerThread()
 	{
 		std::function<void()> task;
 
-		if (workQueue.try_dequeue(task))
+		/*if (workQueue.try_dequeue(task))
 		{
 			task();
 		}
 		else
 		{
 			std::this_thread::yield();
-		}
+		}*/
 	}
 }
