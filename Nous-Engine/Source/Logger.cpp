@@ -64,8 +64,8 @@ void LogOutput(LogLevel level, const char* message, ...)
     va_end(arg_ptr);
 
     // Calculate the total size needed for the final message
-    int level_len = strlen(levelStrings[level]);
-    int total_len = level_len + message_len + 2; // +2 for the newline and null terminator
+    size_t level_len = strlen(levelStrings[level]);
+    size_t total_len = level_len + message_len + 2; // +2 for the newline and null terminator
 
     // Allocate memory for the final message
     char* out_message2 = (char*)malloc(total_len);

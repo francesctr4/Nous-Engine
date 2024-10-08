@@ -96,17 +96,17 @@ void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UN
 
 void* MemoryManager::ZeroMemory(void* block, uint64 size)
 {
-	return memset(block, 0, size);
+	return std::memset(block, 0, size);
 }
 
 void* MemoryManager::CopyMemory(void* destination, const void* source, uint64 size)
 {
-	return memcpy(destination, source, size);
+	return std::memcpy(destination, source, size);
 }
 
 void* MemoryManager::SetMemory(void* destination, int32 value, uint64 size)
 {
-	return memset(destination, value, size);
+	return std::memset(destination, value, size);
 }
 
 char* MemoryManager::GetMemoryUsageStats()
