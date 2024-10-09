@@ -195,6 +195,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Application.cpp" />
+    <ClCompile Include="Source\DynamicArray.cpp" />
+    <ClCompile Include="Source\EventSystem.cpp" />
     <ClCompile Include="Source\External\Tracy\TracyClient.cpp" />
     <ClCompile Include="Source\Logger.cpp" />
     <ClCompile Include="Source\Main.cpp" />
@@ -210,6 +212,8 @@
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Asserts.h" />
+    <ClInclude Include="Source\DynamicArray.h" />
+    <ClInclude Include="Source\EventSystem.h" />
     <ClInclude Include="Source\External\SDL2\include\begin_code.h" />
     <ClInclude Include="Source\External\SDL2\include\close_code.h" />
     <ClInclude Include="Source\External\SDL2\include\SDL.h" />
