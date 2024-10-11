@@ -130,9 +130,22 @@ bool Application::CleanUp()
     return ret;
 }
 
+void Application::BroadcastEvent(const Event& event)
+{
+    for (int i = 0; i < NUM_MODULES; ++i)
+    {
+        if (list_modules[i] != nullptr) 
+        {
+            list_modules[i]->ReceiveEvent(event);
+        }
+    }
+}
+
 UpdateStatus Application::PrepareUpdate()
 {
     UpdateStatus ret = UPDATE_CONTINUE;
+
+    BroadcastEvent(Event(EventType::TEST, { .int64 = {100, 200} }));
 
     return ret;
 }

@@ -2,6 +2,7 @@
 
 #include "Module.h"
 #include "SDL2.h"
+#include "Globals.h"
 
 class ModuleInput : public Module 
 {
@@ -14,5 +15,7 @@ public:
 	bool Start() override;
 	UpdateStatus PreUpdate(float dt) override;
 	bool CleanUp() override;
+
+	void ReceiveEvent(const Event& event) override;
 
 };

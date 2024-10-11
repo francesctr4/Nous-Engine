@@ -22,11 +22,12 @@ public:
 
 	std::string GetName();
 
+	virtual void ReceiveEvent(const Event& event);
+
 public:
 
 	Application* App;
 	
-
 private:
 
 	bool enabled;

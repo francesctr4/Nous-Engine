@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Globals.h"
+#include "EventSystem.h"
 
 #define NUM_MODULES 4
 
@@ -20,6 +21,8 @@ public:
 	bool Awake();
 	UpdateStatus Update();
 	bool CleanUp();
+
+	void BroadcastEvent(const Event& event);
 
 	// ---------------------------------------- \\
 

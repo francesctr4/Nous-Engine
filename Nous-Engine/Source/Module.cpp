@@ -44,3 +44,8 @@ std::string Module::GetName()
 {
 	return name;
 }
+
+void Module::ReceiveEvent(const Event& event)
+{
+
+}

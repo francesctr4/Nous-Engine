@@ -22,4 +22,6 @@ public:
 
 	DynamicArray<uint64> mydarray;
 
+	void ReceiveEvent(const Event& event);
+
 };
