@@ -28,10 +28,14 @@ public:
 	uint64 GetCapacity() const;
 	uint64 GetLength() const;
 	uint64 GetStride() const;
+	T* GetElements() const;
+
+	void Clear();
 
 private:
 
 	void Create(uint64 capacity, uint64 stride);
+
 	void Destroy();
 
 	// ----------------------- \\
@@ -52,26 +56,30 @@ inline DynamicArray<T>::DynamicArray(uint64 capacity)
 template<typename T>
 inline DynamicArray<T>::~DynamicArray()
 {
-	Destroy();
+	if (elements != nullptr) 
+	{
+		Destroy();
+	}
 }
 
 template<typename T>
 void DynamicArray<T>::Create(uint64 capacity, uint64 stride)
 {
-	uint64 headerSize = DARRAY_FIELD_LENGTH * sizeof(uint64);
-	uint64 arraySize = capacity * stride;
-	elements = NOUS_NEW_ARRAY<T>(capacity, MemoryManager::MemoryTag::DARRAY);
-	MemoryManager::SetMemory(elements, 0, headerSize + arraySize);
-
 	this->capacity = capacity;
 	this->length = 0;
 	this->stride = stride;
+
+	elements = NOUS_NEW_ARRAY<T>(capacity, MemoryManager::MemoryTag::DARRAY);
 }
 
 template<typename T>
 void DynamicArray<T>::Destroy()
 {
-	NOUS_DELETE_ARRAY<T>(elements, length, MemoryManager::MemoryTag::DARRAY);
+	NOUS_DELETE_ARRAY(elements, capacity, MemoryManager::MemoryTag::DARRAY);
+
+	length = 0;
+	capacity = 0;
+	stride = 0;
 }
 
 template<typename T>
@@ -90,4 +98,16 @@ template<typename T>
 inline uint64 DynamicArray<T>::GetStride() const
 {
 	return stride;
+}
+
+template<typename T>
+inline T* DynamicArray<T>::GetElements() const
+{
+	return elements;
+}
+
+template<typename T>
+void DynamicArray<T>::Clear()
+{
+
 }

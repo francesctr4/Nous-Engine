@@ -3,8 +3,6 @@
 
 #include "Tracy.h"
 
-#include "DynamicArray.h"
-
 ModuleRenderer3D::ModuleRenderer3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -25,8 +23,6 @@ bool ModuleRenderer3D::Awake()
 bool ModuleRenderer3D::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
-	//DynamicArray<int> mydarray(5);
 
 	return true;
 }

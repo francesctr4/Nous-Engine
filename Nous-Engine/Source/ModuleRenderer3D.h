@@ -2,6 +2,8 @@
 
 #include "Module.h"
 
+#include "DynamicArray.h"
+
 class ModuleRenderer3D : public Module
 {
 public:
@@ -17,5 +19,7 @@ public:
 	UpdateStatus PostUpdate(float dt) override;
 
 	bool CleanUp() override;
+
+	DynamicArray<uint64> mydarray;
 
 };
