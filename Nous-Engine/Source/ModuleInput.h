@@ -4,6 +4,7 @@
 #include "SDL2.h"
 #include "Globals.h"
 
+#define MAX_KEYBOARD_KEYS 300
 #define MAX_MOUSE_BUTTONS 5
 #define SDL_MAX_SINT16 32767
 
@@ -30,17 +31,25 @@ public:
 	void ReceiveEvent(const Event& event) override;
 
 	KeyState GetKey(int id) const;
+	KeyState GetMouseButton(int id) const;
+
+	uint32 GetMouseX() const;
+	uint32 GetMouseY() const;
+	uint32 GetMouseZ() const;
+
+	uint32 GetMouseXMotion() const;
+	uint32 GetMouseYMotion() const;
 
 private:
 
 	KeyState* keyboard;
-	KeyState mouse_buttons[MAX_MOUSE_BUTTONS];
+	KeyState mouseButtons[MAX_MOUSE_BUTTONS];
 
-	int mouse_x;
-	int mouse_y;
-	int mouse_z;
+	uint32 mouseX;
+	uint32 mouseY;
+	uint32 mouseZ;
 
-	int mouse_x_motion;
-	int mouse_y_motion;
+	uint32 mouseXMotion;
+	uint32 mouseYMotion;
 
 };

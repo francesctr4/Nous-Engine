@@ -24,6 +24,7 @@ namespace MemoryManager
 		ENTITY,
 		ENTITY_NODE,
 		SCENE,
+		INPUT,
 
 		MAX
 	};

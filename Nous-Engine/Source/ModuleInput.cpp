@@ -1,20 +1,44 @@
 #include "ModuleInput.h"
 #include "Logger.h"
+#include "MemoryManager.h"
 
 ModuleInput::ModuleInput(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryManager::MemoryTag::INPUT);
+
+	MemoryManager::SetMemory(keyboard, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_KEYBOARD_KEYS);
+	MemoryManager::SetMemory(mouseButtons, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_MOUSE_BUTTONS);
+
+	mouseX = 0;
+	mouseY = 0;
+	mouseZ = 0;
+
+	mouseXMotion = 0;
+	mouseYMotion = 0;
 }
 
 ModuleInput::~ModuleInput()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	NOUS_DELETE_ARRAY(keyboard, MAX_KEYBOARD_KEYS, MemoryManager::MemoryTag::INPUT);
 }
 
 bool ModuleInput::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-	return true;
+
+	bool ret = true;
+
+	if (SDL_InitSubSystem(SDL_INIT_EVENTS) < 0)
+	{
+		NOUS_ERROR("SDL_EVENTS could not initialize! SDL_Error: %s\n", SDL_GetError());
+		ret = false;
+	}
+
+	return ret;
 }
 
 bool ModuleInput::Start()
@@ -26,6 +50,65 @@ bool ModuleInput::Start()
 UpdateStatus ModuleInput::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	// Handle Keyboard State
+
+	const uint8* keys = SDL_GetKeyboardState(NULL);
+
+	for (int i = 0; i < MAX_KEYBOARD_KEYS; ++i)
+	{
+		if (keys[i] == 1)
+		{
+			if (keyboard[i] == KeyState::IDLE) 
+			{
+				keyboard[i] = KeyState::DOWN;
+			}
+			else 
+			{
+				keyboard[i] = KeyState::REPEAT;
+			}
+		}
+		else
+		{
+			if (keyboard[i] == KeyState::REPEAT || keyboard[i] == KeyState::DOWN) 
+			{
+				keyboard[i] = KeyState::UP;
+			}
+			else 
+			{
+				keyboard[i] = KeyState::IDLE;
+			}
+		}
+	}
+
+	// Handle Mouse State
+
+	/*uint32 buttons = SDL_GetMouseState(&mouseX, &mouseY);
+
+	mouseZ = 0;
+
+	for (int i = 0; i < 5; ++i)
+	{
+		if (buttons & SDL_BUTTON(i))
+		{
+			if (mouse_buttons[i] == KEY_IDLE)
+				mouse_buttons[i] = KEY_DOWN;
+			else
+				mouse_buttons[i] = KEY_REPEAT;
+		}
+		else
+		{
+			if (mouse_buttons[i] == KEY_REPEAT || mouse_buttons[i] == KEY_DOWN)
+				mouse_buttons[i] = KEY_UP;
+			else
+				mouse_buttons[i] = KEY_IDLE;
+		}
+	}*/
+
+	mouseXMotion = 0;
+	mouseYMotion = 0;
+
+	// Handle SDL Input Events
 
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
@@ -122,6 +205,9 @@ bool ModuleInput::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	SDL_QuitSubSystem(SDL_INIT_EVENTS);
+	SDL_Quit();
+
 	return true;
 }
 
@@ -141,30 +227,30 @@ KeyState ModuleInput::GetKey(int id) const
 
 KeyState ModuleInput::GetMouseButton(int id) const
 {
-	return mouse_buttons[id];
+	return mouseButtons[id];
 }
 
-int ModuleInput::GetMouseX() const
+uint32 ModuleInput::GetMouseX() const
 {
-	return mouse_x;
+	return mouseX;
 }
 
-int ModuleInput::GetMouseY() const
+uint32 ModuleInput::GetMouseY() const
 {
-	return mouse_y;
+	return mouseY;
 }
 
-int ModuleInput::GetMouseZ() const
+uint32 ModuleInput::GetMouseZ() const
 {
-	return mouse_z;
+	return mouseZ;
 }
 
-int ModuleInput::GetMouseXMotion() const
+uint32 ModuleInput::GetMouseXMotion() const
 {
-	return mouse_x_motion;
+	return mouseXMotion;
 }
 
-int ModuleInput::GetMouseYMotion() const
+uint32 ModuleInput::GetMouseYMotion() const
 {
-	return mouse_y_motion;
+	return mouseYMotion;
 }

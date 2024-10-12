@@ -31,7 +31,8 @@ static const char* memoryTagStrings[static_cast<uint64>(MemoryManager::MemoryTag
 	"TRANSFORM		",
 	"ENTITY			",
 	"ENTITY_NODE		",
-	"SCENE			"
+	"SCENE			",
+	"INPUT			"
 };
 
 static struct MemoryStats stats;
