@@ -35,31 +35,31 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			case SDL_KEYDOWN:
 			{
 				// Handle key press event
-				KEY_STATE state = GetKey(e.key.keysym.scancode);
-				App->BroadcastEvent(Event(EventType::KEY_PRESSED, { .int64 = {e.key.keysym.scancode, state }));
+				/*KEY_STATE state = GetKey(e.key.keysym.scancode);
+				App->BroadcastEvent(Event(EventType::KEY_PRESSED, { .int64 = {e.key.keysym.scancode, state }));*/
 
 				break;
 			}
 			case SDL_KEYUP:
 			{
 				// Handle key release event
-				KEY_STATE state = GetKey(e.key.keysym.scancode);
-				App->BroadcastEvent(Event(EventType::KEY_RELEASED, { .int64 = {e.key.keysym.scancode, state }));
+				/*KEY_STATE state = GetKey(e.key.keysym.scancode);
+				App->BroadcastEvent(Event(EventType::KEY_RELEASED, { .int64 = {e.key.keysym.scancode, state }));*/
 				
 				break;
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
 				// Handle mouse button press event
-				KEY_STATE state = GetMouseButton(e.button.button);
-				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_PRESSED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));
+				/*KEY_STATE state = GetMouseButton(e.button.button);
+				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_PRESSED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));*/
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
 			{
 				// Handle mouse button release event
-				KEY_STATE state = GetMouseButton(e.button.button);
-				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_RELEASED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));
+				/*KEY_STATE state = GetMouseButton(e.button.button);
+				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_RELEASED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));*/
 				break;
 			}
 			case SDL_MOUSEWHEEL:
@@ -132,4 +132,39 @@ void ModuleInput::ReceiveEvent(const Event& event)
 	default:
 		break;
 	}
+}
+
+KeyState ModuleInput::GetKey(int id) const
+{
+	return keyboard[id];
+}
+
+KeyState ModuleInput::GetMouseButton(int id) const
+{
+	return mouse_buttons[id];
+}
+
+int ModuleInput::GetMouseX() const
+{
+	return mouse_x;
+}
+
+int ModuleInput::GetMouseY() const
+{
+	return mouse_y;
+}
+
+int ModuleInput::GetMouseZ() const
+{
+	return mouse_z;
+}
+
+int ModuleInput::GetMouseXMotion() const
+{
+	return mouse_x_motion;
+}
+
+int ModuleInput::GetMouseYMotion() const
+{
+	return mouse_y_motion;
 }
