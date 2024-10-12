@@ -5,6 +5,8 @@
 enum class EventType
 {
 	TEST,
+	KEY_PRESSED
+
 };
 
 union EventContext

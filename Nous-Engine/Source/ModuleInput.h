@@ -6,7 +6,6 @@
 
 #define MAX_KEYBOARD_KEYS 300
 #define MAX_MOUSE_BUTTONS 5
-#define SDL_MAX_SINT16 32767
 
 enum class KeyState
 {
@@ -33,23 +32,23 @@ public:
 	KeyState GetKey(int id) const;
 	KeyState GetMouseButton(int id) const;
 
-	uint32 GetMouseX() const;
-	uint32 GetMouseY() const;
-	uint32 GetMouseZ() const;
+	int32 GetMouseX() const;
+	int32 GetMouseY() const;
+	int32 GetMouseZ() const;
 
-	uint32 GetMouseXMotion() const;
-	uint32 GetMouseYMotion() const;
+	int32 GetMouseXMotion() const;
+	int32 GetMouseYMotion() const;
 
 private:
 
 	KeyState* keyboard;
 	KeyState mouseButtons[MAX_MOUSE_BUTTONS];
 
-	uint32 mouseX;
-	uint32 mouseY;
-	uint32 mouseZ;
+	int32 mouseX;
+	int32 mouseY;
+	int32 mouseZ;
 
-	uint32 mouseXMotion;
-	uint32 mouseYMotion;
+	int32 mouseXMotion;
+	int32 mouseYMotion;
 
 };

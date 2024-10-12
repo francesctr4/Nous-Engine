@@ -51,8 +51,10 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	// Handle Keyboard State
+	SDL_PumpEvents();
 
+	// --------------- Handle Keyboard State --------------- \\
+	
 	const uint8* keys = SDL_GetKeyboardState(NULL);
 
 	for (int i = 0; i < MAX_KEYBOARD_KEYS; ++i)
@@ -81,9 +83,9 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 		}
 	}
 
-	// Handle Mouse State
+	// --------------- Handle Mouse State --------------- \\
 
-	/*uint32 buttons = SDL_GetMouseState(&mouseX, &mouseY);
+	int32 buttons = SDL_GetMouseState(&mouseX, &mouseY);
 
 	mouseZ = 0;
 
@@ -91,19 +93,27 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 	{
 		if (buttons & SDL_BUTTON(i))
 		{
-			if (mouse_buttons[i] == KEY_IDLE)
-				mouse_buttons[i] = KEY_DOWN;
-			else
-				mouse_buttons[i] = KEY_REPEAT;
+			if (mouseButtons[i] == KeyState::IDLE) 
+			{
+				mouseButtons[i] = KeyState::DOWN;
+			}
+			else 
+			{
+				mouseButtons[i] = KeyState::REPEAT;
+			}	
 		}
 		else
 		{
-			if (mouse_buttons[i] == KEY_REPEAT || mouse_buttons[i] == KEY_DOWN)
-				mouse_buttons[i] = KEY_UP;
-			else
-				mouse_buttons[i] = KEY_IDLE;
+			if (mouseButtons[i] == KeyState::REPEAT || mouseButtons[i] == KeyState::DOWN)
+			{
+				mouseButtons[i] = KeyState::UP;
+			}
+			else 
+			{
+				mouseButtons[i] = KeyState::IDLE;
+			}
 		}
-	}*/
+	}
 
 	mouseXMotion = 0;
 	mouseYMotion = 0;
@@ -118,8 +128,8 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			case SDL_KEYDOWN:
 			{
 				// Handle key press event
-				/*KEY_STATE state = GetKey(e.key.keysym.scancode);
-				App->BroadcastEvent(Event(EventType::KEY_PRESSED, { .int64 = {e.key.keysym.scancode, state }));*/
+				KeyState state = GetKey(e.key.keysym.scancode);
+				App->BroadcastEvent(Event(EventType::KEY_PRESSED, { .int64 = {e.key.keysym.scancode, static_cast<int64>(state) }}));
 
 				break;
 			}
@@ -128,7 +138,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 				// Handle key release event
 				/*KEY_STATE state = GetKey(e.key.keysym.scancode);
 				App->BroadcastEvent(Event(EventType::KEY_RELEASED, { .int64 = {e.key.keysym.scancode, state }));*/
-				
+				//NOUS_ERROR(" ");
 				break;
 			}
 			case SDL_MOUSEBUTTONDOWN:
@@ -136,6 +146,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 				// Handle mouse button press event
 				/*KEY_STATE state = GetMouseButton(e.button.button);
 				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_PRESSED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));*/
+				//NOUS_ERROR(" ");
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
@@ -148,6 +159,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			case SDL_MOUSEWHEEL:
 			{
 				//int32 mouse_z = e.wheel.y;
+				NOUS_ERROR(" ");
 				break;
 			}
 			case SDL_MOUSEMOTION:
@@ -198,6 +210,12 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 		}
 	}
 
+	//if (GetKey(SDL_SCANCODE_H) == KeyState::DOWN) 
+	//{
+	//	NOUS_ERROR("ModuleInput Listened");
+	//	NOUS_ERROR("Received context: %d, %d");
+	//}
+
 	return UPDATE_CONTINUE;
 }
 
@@ -215,8 +233,7 @@ void ModuleInput::ReceiveEvent(const Event& event)
 {
 	switch (event.type)
 	{
-	default:
-		break;
+		
 	}
 }
 
@@ -230,27 +247,27 @@ KeyState ModuleInput::GetMouseButton(int id) const
 	return mouseButtons[id];
 }
 
-uint32 ModuleInput::GetMouseX() const
+int32 ModuleInput::GetMouseX() const
 {
 	return mouseX;
 }
 
-uint32 ModuleInput::GetMouseY() const
+int32 ModuleInput::GetMouseY() const
 {
 	return mouseY;
 }
 
-uint32 ModuleInput::GetMouseZ() const
+int32 ModuleInput::GetMouseZ() const
 {
 	return mouseZ;
 }
 
-uint32 ModuleInput::GetMouseXMotion() const
+int32 ModuleInput::GetMouseXMotion() const
 {
 	return mouseXMotion;
 }
 
-uint32 ModuleInput::GetMouseYMotion() const
+int32 ModuleInput::GetMouseYMotion() const
 {
 	return mouseYMotion;
 }

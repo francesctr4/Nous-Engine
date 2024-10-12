@@ -145,8 +145,6 @@ UpdateStatus Application::PrepareUpdate()
 {
     UpdateStatus ret = UPDATE_CONTINUE;
 
-    BroadcastEvent(Event(EventType::TEST, { .int64 = {100, 200} }));
-
     return ret;
 }
 
