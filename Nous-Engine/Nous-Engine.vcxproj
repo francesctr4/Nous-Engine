@@ -302,6 +302,7 @@
     <ClInclude Include="Source\ModuleRenderer3D.h" />
     <ClInclude Include="Source\ModuleWindow.h" />
     <ClInclude Include="Source\MemoryManager.h" />
+    <ClInclude Include="Source\RendererFrontend.h" />
     <ClInclude Include="Source\SDL2.h" />
     <ClInclude Include="Source\ThreadPool.h" />
     <ClInclude Include="Source\TimeManager.h" />

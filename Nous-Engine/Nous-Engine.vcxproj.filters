@@ -31,6 +31,18 @@
     <Filter Include="Source Code\Time Management">
       <UniqueIdentifier>{01d6b9c2-add3-4cd7-95af-8172d197a115}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\Core\Renderer">
+      <UniqueIdentifier>{723ab429-44d4-4e44-a10b-220eb3958936}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Core\Renderer\Vulkan">
+      <UniqueIdentifier>{767c6614-5cfa-4da8-b636-893fa22b4853}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Core\Renderer\OpenGL">
+      <UniqueIdentifier>{3fd35134-218f-40fd-bbf5-1a9fc81ffe30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Core\Renderer\DirectX">
+      <UniqueIdentifier>{3179d930-04df-4630-a054-c63c1d2d172e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -370,6 +382,9 @@
     </ClInclude>
     <ClInclude Include="Source\Timer.h">
       <Filter>Source Code\Time Management</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RendererFrontend.h">
+      <Filter>Source Code\Core\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
