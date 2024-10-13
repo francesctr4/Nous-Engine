@@ -20,7 +20,8 @@ Application::Application()
 {
 	External = this;
 
-    targetFPS = 60.0f;
+    targetFPS = 144.0f;
+    dt = 0.0f;
 
     // We allocate the memory for the module first, then we use it with new to call the constructor.
     // The application itself should NOT use custom allocators.
@@ -82,24 +83,24 @@ UpdateStatus Application::PrepareUpdate()
 {
     UpdateStatus ret = UPDATE_CONTINUE;
 
-    //// Measure the time elapsed since the last frame
-    //dt = (float)ms_timer.ReadMS() / 1000.0f;
-    //ms_timer.Start();
+    // Measure the time elapsed since the last frame
+    dt = (float32)msTimer.ReadMS() / 1000.0f;
+    msTimer.Start();
 
-    //const float targetFrameTime = 1.0f / targetFPS;
+    const float32 targetFrameTime = 1.0f / targetFPS;
 
-    //if (dt < targetFrameTime) {
+    if (dt < targetFrameTime) {
 
-    //    /* If the time elapsed since the last frame is less than the target frame time,
-    //    introduce a delay to ensure we wait until the target frame time has elapsed. */
+        /* If the time elapsed since the last frame is less than the target frame time,
+        introduce a delay to ensure we wait until the target frame time has elapsed. */
 
-    //    Sleep((targetFrameTime - dt) * 1000); // Convert to milliseconds
+        SDL_Delay((targetFrameTime - dt) * 1000); // Convert to milliseconds
 
-    //    dt = targetFrameTime; // Update dt to match the target frame time.
-    //}
+        dt = targetFrameTime; // Update dt to match the target frame time.
+    }
 
-    //TimeManager::DeltaTime = dt;
-    //TimeManager::FrameCount++;
+    TimeManager::deltaTime = dt;
+    TimeManager::frameCount++;
 
     return ret;
 }
@@ -120,7 +121,7 @@ UpdateStatus Application::Update()
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
         if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->PreUpdate(targetFPS);
+            ret = list_modules[i]->PreUpdate(dt);
         }
     }
 
@@ -129,7 +130,7 @@ UpdateStatus Application::Update()
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
         if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->Update(targetFPS);
+            ret = list_modules[i]->Update(dt);
         }
     }
 
@@ -138,7 +139,7 @@ UpdateStatus Application::Update()
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
         if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->PostUpdate(targetFPS);
+            ret = list_modules[i]->PostUpdate(dt);
         }
     }
 
@@ -181,7 +182,7 @@ void Application::BroadcastEvent(const Event& event)
 
 void Application::SetTargetFPS(float FPS)
 {
-    
+    targetFPS = FPS;
 }
 
 float32 Application::GetTargetFPS()
@@ -191,15 +192,15 @@ float32 Application::GetTargetFPS()
 
 float32 Application::GetFPS()
 {
-    return float32();
+    return 1 / dt;
 }
 
 float32 Application::GetDT()
 {
-    return float32();
+    return dt;
 }
 
 float32 Application::GetMS()
 {
-    return float32();
+    return dt * 1000;
 }
