@@ -2,6 +2,7 @@
 
 #include "Globals.h"
 #include "EventSystem.h"
+#include "Timer.h"
 
 #define NUM_MODULES 4
 
@@ -24,6 +25,13 @@ public:
 
 	void BroadcastEvent(const Event& event);
 
+	void SetTargetFPS(float FPS);
+	float32 GetTargetFPS();
+
+	float32 GetFPS();
+	float32 GetDT();
+	float32 GetMS();
+
 	// ---------------------------------------- \\
 
 	ModuleWindow* window;
@@ -39,7 +47,10 @@ private:
 	// ---------------------------------------- \\
 
 	Module* list_modules[NUM_MODULES];
-	float targetFPS;
+
+	Timer msTimer;
+	float32	dt;
+	float32 targetFPS;
 
 };
 

@@ -28,6 +28,9 @@
     <Filter Include="Externals\Tracy">
       <UniqueIdentifier>{46a3a962-8f52-4514-9b74-6c75c4f759f5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\Time Management">
+      <UniqueIdentifier>{01d6b9c2-add3-4cd7-95af-8172d197a115}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -71,6 +74,9 @@
     </ClCompile>
     <ClCompile Include="Source\DynamicArray.cpp">
       <Filter>Source Code\Data Structures</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Timer.cpp">
+      <Filter>Source Code\Time Management</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -358,6 +364,12 @@
     </ClInclude>
     <ClInclude Include="Source\DynamicArray.h">
       <Filter>Source Code\Data Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TimeManager.h">
+      <Filter>Source Code\Time Management</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Timer.h">
+      <Filter>Source Code\Time Management</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

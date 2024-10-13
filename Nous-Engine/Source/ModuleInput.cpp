@@ -51,6 +51,8 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	UpdateStatus ret = UPDATE_CONTINUE;
+
 	SDL_PumpEvents();
 
 	// --------------- Handle Keyboard State --------------- \\
@@ -128,8 +130,13 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			case SDL_KEYDOWN:
 			{
 				// Handle key press event
-				KeyState state = GetKey(e.key.keysym.scancode);
-				App->BroadcastEvent(Event(EventType::KEY_PRESSED, { .int64 = {e.key.keysym.scancode, static_cast<int64>(state) }}));
+				/*KeyState state = GetKey(e.key.keysym.scancode);
+				App->BroadcastEvent(Event(EventType::KEY_PRESSED, { .int64 = {e.key.keysym.scancode, static_cast<int64>(state) }}));*/
+
+				if (GetKey(SDL_SCANCODE_ESCAPE) == KeyState::DOWN)
+				{
+					ret = UPDATE_STOP;
+				}
 
 				break;
 			}
@@ -146,7 +153,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 				// Handle mouse button press event
 				/*KEY_STATE state = GetMouseButton(e.button.button);
 				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_PRESSED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));*/
-				//NOUS_ERROR(" ");
+				
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
@@ -159,7 +166,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			case SDL_MOUSEWHEEL:
 			{
 				//int32 mouse_z = e.wheel.y;
-				NOUS_ERROR(" ");
+				//NOUS_ERROR(" ");
 				break;
 			}
 			case SDL_MOUSEMOTION:
@@ -204,19 +211,13 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			}
 			case SDL_QUIT:
 			{
-				return UPDATE_STOP;
+				ret = UPDATE_STOP;
 				break;
 			}
 		}
 	}
 
-	//if (GetKey(SDL_SCANCODE_H) == KeyState::DOWN) 
-	//{
-	//	NOUS_ERROR("ModuleInput Listened");
-	//	NOUS_ERROR("Received context: %d, %d");
-	//}
-
-	return UPDATE_CONTINUE;
+	return ret;
 }
 
 bool ModuleInput::CleanUp()

@@ -12,13 +12,15 @@
 
 #include "Tracy.h"
 
+#include "TimeManager.h"
+
 extern Application* External = nullptr;
 
 Application::Application()
 {
 	External = this;
 
-    targetFPS = 1.0f / 60.0f;
+    targetFPS = 60.0f;
 
     // We allocate the memory for the module first, then we use it with new to call the constructor.
     // The application itself should NOT use custom allocators.
@@ -67,6 +69,37 @@ bool Application::Awake()
     }
 
     NOUS_INFO(MemoryManager::GetMemoryUsageStats());
+
+    msTimer.Start();
+
+    TimeManager::frameCount = 0;
+    TimeManager::graphicsTimer.Start();
+
+    return ret;
+}
+
+UpdateStatus Application::PrepareUpdate()
+{
+    UpdateStatus ret = UPDATE_CONTINUE;
+
+    //// Measure the time elapsed since the last frame
+    //dt = (float)ms_timer.ReadMS() / 1000.0f;
+    //ms_timer.Start();
+
+    //const float targetFrameTime = 1.0f / targetFPS;
+
+    //if (dt < targetFrameTime) {
+
+    //    /* If the time elapsed since the last frame is less than the target frame time,
+    //    introduce a delay to ensure we wait until the target frame time has elapsed. */
+
+    //    Sleep((targetFrameTime - dt) * 1000); // Convert to milliseconds
+
+    //    dt = targetFrameTime; // Update dt to match the target frame time.
+    //}
+
+    //TimeManager::DeltaTime = dt;
+    //TimeManager::FrameCount++;
 
     return ret;
 }
@@ -118,6 +151,11 @@ UpdateStatus Application::Update()
     return ret;
 }
 
+void Application::FinishUpdate()
+{
+
+}
+
 bool Application::CleanUp()
 {
     bool ret = true;
@@ -141,14 +179,27 @@ void Application::BroadcastEvent(const Event& event)
     }
 }
 
-UpdateStatus Application::PrepareUpdate()
+void Application::SetTargetFPS(float FPS)
 {
-    UpdateStatus ret = UPDATE_CONTINUE;
-
-    return ret;
+    
 }
 
-void Application::FinishUpdate()
+float32 Application::GetTargetFPS()
 {
+    return targetFPS;
+}
 
+float32 Application::GetFPS()
+{
+    return float32();
+}
+
+float32 Application::GetDT()
+{
+    return float32();
+}
+
+float32 Application::GetMS()
+{
+    return float32();
 }
