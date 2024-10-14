@@ -90,6 +90,12 @@
     <ClCompile Include="Source\Timer.cpp">
       <Filter>Source Code\Time Management</Filter>
     </ClCompile>
+    <ClCompile Include="Source\RendererBackend.cpp">
+      <Filter>Source Code\Core\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RendererFrontend.cpp">
+      <Filter>Source Code\Core\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -386,5 +392,13 @@
     <ClInclude Include="Source\RendererFrontend.h">
       <Filter>Source Code\Core\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Source\RendererBackend.h">
+      <Filter>Source Code\Core\Renderer</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\RendererTypes.inl">
+      <Filter>Source Code\Core\Renderer</Filter>
+    </None>
   </ItemGroup>
 </Project>
