@@ -2,7 +2,7 @@
 
 #include "RendererTypes.inl"
 
-class RendererBackend 
+class RendererBackend
 {
 public:
 
@@ -15,7 +15,17 @@ public:
 	bool Initalize();
 	void Shutdown();
 
-private:
+	void Resized(uint16 width, uint16 height);
 
+	bool BeginFrame(float32 dt);
+	bool EndFrame(float32 dt);
+
+	// -------------------------------------- \\
+
+	uint64 frameNumber;
+
+private:
+	
+	IRendererBackend* backendInterface;
 
 };

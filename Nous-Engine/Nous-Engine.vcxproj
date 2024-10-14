@@ -211,6 +211,7 @@
     <ClCompile Include="Source\ThreadPool.cpp" />
     <ClCompile Include="Source\RingQueue.cpp" />
     <ClCompile Include="Source\Timer.cpp" />
+    <ClCompile Include="Source\VulkanBackend.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
@@ -312,9 +313,12 @@
     <ClInclude Include="Source\Timer.h" />
     <ClInclude Include="Source\Tracy.h" />
     <ClInclude Include="Source\RingQueue.h" />
+    <ClInclude Include="Source\Vulkan.h" />
+    <ClInclude Include="Source\VulkanBackend.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl" />
+    <None Include="Source\VulkanTypes.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

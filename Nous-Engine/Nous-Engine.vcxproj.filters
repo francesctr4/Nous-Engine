@@ -96,6 +96,9 @@
     <ClCompile Include="Source\RendererFrontend.cpp">
       <Filter>Source Code\Core\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanBackend.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -395,10 +398,19 @@
     <ClInclude Include="Source\RendererBackend.h">
       <Filter>Source Code\Core\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Source\VulkanBackend.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Vulkan.h">
+      <Filter>Source Code\Includes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">
       <Filter>Source Code\Core\Renderer</Filter>
+    </None>
+    <None Include="Source\VulkanTypes.inl">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </None>
   </ItemGroup>
 </Project>

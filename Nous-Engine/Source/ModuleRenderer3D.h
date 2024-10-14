@@ -4,6 +4,8 @@
 
 #include "DynamicArray.h"
 
+class RendererFrontend;
+
 class ModuleRenderer3D : public Module
 {
 public:
@@ -22,6 +24,10 @@ public:
 
 	DynamicArray<uint64> mydarray;
 
-	void ReceiveEvent(const Event& event);
+	void ReceiveEvent(const Event& event) override;
+
+private:
+
+	RendererFrontend* rendererFrontend;
 
 };

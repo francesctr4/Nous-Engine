@@ -1,0 +1,108 @@
+#include "VulkanBackend.h"
+
+#include "MemoryManager.h"
+#include "Logger.h"
+
+VulkanContext* VulkanBackend::vkContext = nullptr;
+
+VulkanBackend::VulkanBackend()
+{
+    vkContext = NOUS_NEW<VulkanContext>(MemoryManager::MemoryTag::RENDERER);
+}
+
+VulkanBackend::~VulkanBackend()
+{
+    NOUS_DELETE(vkContext, MemoryManager::MemoryTag::RENDERER);
+}
+
+bool VulkanBackend::Initialize()
+{
+    bool ret = true;
+
+    // TODO: Custom allocator
+    vkContext->allocator = 0;
+
+    if (!CreateInstance()) 
+    {
+        NOUS_ERROR("Failed to create Vulkan Instance. Shutting the Application.");
+        ret = false;
+    }
+
+	return ret;
+}
+
+void VulkanBackend::Shutdown()
+{
+}
+
+void VulkanBackend::Resized(uint16 width, uint16 height)
+{
+}
+
+bool VulkanBackend::BeginFrame(float32 dt)
+{
+	return false;
+}
+
+bool VulkanBackend::EndFrame(float32 dt)
+{
+	return false;
+}
+
+// --------------------------------------- \\
+
+bool VulkanBackend::CreateInstance()
+{
+    bool ret = true;
+
+    //if (enableValidationLayers && !CheckValidationLayerSupport(validationLayers)) {
+
+    //    std::cout << "Validation Layers Requested, but not available!" << std::endl;
+
+    //}
+
+    ////ShowSupportedExtensions();
+
+    //std::vector<const char*> extensions = GetRequiredExtensions();
+
+    //VkApplicationInfo appInfo = {};
+
+    //appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    //appInfo.pNext = nullptr;
+    //appInfo.pApplicationName = appName.c_str();
+    //appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    //appInfo.pEngineName = engineName.c_str();
+    //appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    //appInfo.apiVersion = VK_API_VERSION_1_3;
+
+    //VkInstanceCreateInfo createInfo{};
+
+    //createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    //createInfo.pNext = nullptr;
+    //createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    //createInfo.pApplicationInfo = &appInfo;
+    //createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    //createInfo.ppEnabledExtensionNames = extensions.data();
+    //createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
+    //createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
+
+    //VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+
+    //if (enableValidationLayers) PopulateDebugMessengerCreateInfo(debugCreateInfo);
+
+    //createInfo.pNext = enableValidationLayers ? (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo : nullptr;
+
+    //VkResult result = vkCreateInstance(&createInfo, vkContext->allocator, &vkContext->instance);
+
+    //if (result != VK_SUCCESS) 
+    //{
+    //    NOUS_ERROR("vkCreateInstance failed with result: %u", result);
+    //    ret = false;
+    //}
+    //else 
+    //{
+    //    NOUS_INFO("Vulkan Instance created successfully!");
+    //}
+
+    return ret;
+}

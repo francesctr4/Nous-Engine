@@ -6,14 +6,23 @@
 
 RendererBackend* RendererFrontend::backend = nullptr;
 
+RendererFrontend::RendererFrontend()
+{
+	backend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
+}
+
+RendererFrontend::~RendererFrontend()
+{
+	NOUS_DELETE(backend, MemoryManager::MemoryTag::RENDERER);
+}
+
 bool RendererFrontend::Initialize()
 {
 	bool ret = true;
 
-	backend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
-
 	// TODO: Make this configurable
 	backend->Create(RendererBackendType::VULKAN);
+	backend->frameNumber = 0;
 
 	if (!backend->Initalize()) 
 	{
@@ -27,5 +36,42 @@ bool RendererFrontend::Initialize()
 void RendererFrontend::Shutdown()
 {
 	backend->Shutdown();
-	NOUS_DELETE(backend, MemoryManager::MemoryTag::RENDERER);
+}
+
+void RendererFrontend::OnResized(uint16 width, uint16 height)
+{
+
+}
+
+bool RendererFrontend::BeginFrame(float32 dt)
+{
+	return backend->BeginFrame(dt);
+}
+
+bool RendererFrontend::EndFrame(float32 dt)
+{
+	bool result = backend->EndFrame(dt);
+	backend->frameNumber++;
+
+	return result;
+}
+
+bool RendererFrontend::DrawFrame(RenderPacket* packet)
+{
+	bool ret = true;
+
+	// If the begin frame returned successfully, mid-frame operations may continue.
+	if (BeginFrame(packet->deltaTime)) 
+	{
+		// End of the frame. If this fails, it is likely unrecoverable.
+		bool result = EndFrame(packet->deltaTime);
+
+		if (!result) 
+		{
+			NOUS_ERROR("RendererBackend::EndFrame() failed. Application shutting down...");
+			ret = false;
+		}
+	}
+
+	return ret;
 }
