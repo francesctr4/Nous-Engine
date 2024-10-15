@@ -23,7 +23,6 @@ ModuleRenderer3D::~ModuleRenderer3D()
 
 bool ModuleRenderer3D::Awake()
 {
-
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	bool ret = true;

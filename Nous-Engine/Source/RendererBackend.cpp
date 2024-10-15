@@ -26,18 +26,18 @@ bool RendererBackend::Create(RendererBackendType bType)
             ret = true;
             break;
         } 
-        //case RendererBackendType::OPENGL: 
-        //{
-        //    backendInterface = new OpenGLBackend();
-        //    ret = true;
-        //    break;
-        //}
-        //case RendererBackendType::DIRECTX: 
-        //{
-        //    backendInterface = new DirectXBackend();
-        //    ret = true;
-        //    break;
-        //}
+        case RendererBackendType::OPENGL: 
+        {
+            //backendInterface = new OpenGLBackend();
+            ret = true;
+            break;
+        }
+        case RendererBackendType::DIRECTX: 
+        {
+            //backendInterface = new DirectXBackend();
+            ret = true;
+            break;
+        }
     }
 
 	return ret;
@@ -54,6 +54,7 @@ bool RendererBackend::Initalize()
     {
         return backendInterface->Initialize();
     }
+
     return false;
 }
 
@@ -75,7 +76,8 @@ void RendererBackend::Resized(uint16 width, uint16 height)
 
 bool RendererBackend::BeginFrame(float32 dt)
 {
-    if (backendInterface != nullptr) {
+    if (backendInterface != nullptr) 
+    {
         return backendInterface->BeginFrame(dt);
     }
 

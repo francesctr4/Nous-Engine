@@ -40,7 +40,7 @@ void RendererFrontend::Shutdown()
 
 void RendererFrontend::OnResized(uint16 width, uint16 height)
 {
-
+	backend->Resized(width, height);
 }
 
 bool RendererFrontend::BeginFrame(float32 dt)
@@ -68,7 +68,7 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 
 		if (!result) 
 		{
-			NOUS_ERROR("RendererBackend::EndFrame() failed. Application shutting down...");
+			NOUS_ERROR("RendererFrontend::EndFrame() failed. Application shutting down...");
 			ret = false;
 		}
 	}
