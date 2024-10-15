@@ -1,14 +1,15 @@
 #pragma once
 
 #include "RendererBackend.h"
-#include "VulkanTypes.inl"
+
+struct VulkanContext;
 
 class VulkanBackend : public IRendererBackend 
 {
 public:
 
 	VulkanBackend();
-	virtual ~VulkanBackend();
+	virtual ~VulkanBackend() override;
 
 	bool Initialize() override;
 	void Shutdown() override;
@@ -18,7 +19,7 @@ public:
 	bool BeginFrame(float32 dt) override;
 	bool EndFrame(float32 dt) override;
 
-	// ---------------------- \\
+	// ------------- Vulkan Specific Functions ------------- \\
 
 	bool CreateInstance();
 

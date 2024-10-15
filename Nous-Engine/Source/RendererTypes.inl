@@ -2,6 +2,9 @@
 
 #include "Globals.h"
 
+/**
+ * @brief Interface to implement by all the Renderer Backends
+ */
 struct IRendererBackend 
 {
     virtual ~IRendererBackend() = default;

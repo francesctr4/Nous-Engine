@@ -1,5 +1,7 @@
 #include "ModuleRenderer3D.h"
+
 #include "Logger.h"
+#include "MemoryManager.h";
 
 #include "Tracy.h"
 

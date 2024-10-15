@@ -1,4 +1,5 @@
 #include "VulkanBackend.h"
+#include "VulkanTypes.inl"
 
 #include "MemoryManager.h"
 #include "Logger.h"
@@ -49,7 +50,7 @@ bool VulkanBackend::EndFrame(float32 dt)
 	return false;
 }
 
-// --------------------------------------- \\
+// ------------- Vulkan Specific Functions ------------- \\
 
 bool VulkanBackend::CreateInstance()
 {
