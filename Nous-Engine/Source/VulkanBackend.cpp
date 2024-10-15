@@ -20,6 +20,8 @@ bool VulkanBackend::Initialize()
 {
     bool ret = true;
 
+    NOUS_INFO("USING VULKAN");
+
     // TODO: Custom allocator
     vkContext->allocator = 0;
 

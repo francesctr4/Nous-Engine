@@ -206,6 +206,7 @@
     <ClCompile Include="Source\ModuleRenderer3D.cpp" />
     <ClCompile Include="Source\ModuleWindow.cpp" />
     <ClCompile Include="Source\MemoryManager.cpp" />
+    <ClCompile Include="Source\OpenGLBackend.cpp" />
     <ClCompile Include="Source\RendererBackend.cpp" />
     <ClCompile Include="Source\RendererFrontend.cpp" />
     <ClCompile Include="Source\ThreadPool.cpp" />
@@ -305,6 +306,7 @@
     <ClInclude Include="Source\ModuleRenderer3D.h" />
     <ClInclude Include="Source\ModuleWindow.h" />
     <ClInclude Include="Source\MemoryManager.h" />
+    <ClInclude Include="Source\OpenGLBackend.h" />
     <ClInclude Include="Source\RendererBackend.h" />
     <ClInclude Include="Source\RendererFrontend.h" />
     <ClInclude Include="Source\SDL2.h" />
@@ -317,6 +319,7 @@
     <ClInclude Include="Source\VulkanBackend.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Source\OpenGLTypes.inl" />
     <None Include="Source\RendererTypes.inl" />
     <None Include="Source\VulkanTypes.inl" />
   </ItemGroup>

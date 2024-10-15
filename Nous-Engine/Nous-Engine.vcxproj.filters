@@ -99,6 +99,9 @@
     <ClCompile Include="Source\VulkanBackend.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Source\OpenGLBackend.cpp">
+      <Filter>Source Code\Core\Renderer\OpenGL</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -404,6 +407,9 @@
     <ClInclude Include="Source\Vulkan.h">
       <Filter>Source Code\Includes</Filter>
     </ClInclude>
+    <ClInclude Include="Source\OpenGLBackend.h">
+      <Filter>Source Code\Core\Renderer\OpenGL</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">
@@ -411,6 +417,9 @@
     </None>
     <None Include="Source\VulkanTypes.inl">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </None>
+    <None Include="Source\OpenGLTypes.inl">
+      <Filter>Source Code\Core\Renderer\OpenGL</Filter>
     </None>
   </ItemGroup>
 </Project>

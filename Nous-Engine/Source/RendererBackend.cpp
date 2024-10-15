@@ -1,6 +1,7 @@
 #include "RendererBackend.h"
 
 #include "VulkanBackend.h"
+#include "OpenGLBackend.h"
 
 #include "MemoryManager.h"
 
@@ -28,7 +29,7 @@ bool RendererBackend::Create(RendererBackendType bType)
         } 
         case RendererBackendType::OPENGL: 
         {
-            //backendInterface = new OpenGLBackend();
+            backendInterface = NOUS_NEW<OpenGLBackend>(MemoryManager::MemoryTag::RENDERER);
             ret = true;
             break;
         }
