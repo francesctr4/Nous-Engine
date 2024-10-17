@@ -64,30 +64,40 @@ bool VulkanBackend::CreateInstance()
 
     //}
 
-    ////ShowSupportedExtensions();
+    //ShowSupportedExtensions();
 
     //std::vector<const char*> extensions = GetRequiredExtensions();
 
-    //VkApplicationInfo appInfo = {};
+    VkApplicationInfo appInfo{};
 
-    //appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    //appInfo.pNext = nullptr;
-    //appInfo.pApplicationName = appName.c_str();
-    //appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    //appInfo.pEngineName = engineName.c_str();
-    //appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    //appInfo.apiVersion = VK_API_VERSION_1_3;
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.apiVersion = VK_API_VERSION_1_3;
+    appInfo.pNext = nullptr;
 
-    //VkInstanceCreateInfo createInfo{};
+    appInfo.pApplicationName = TITLE;
+    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    //createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    //createInfo.pNext = nullptr;
-    //createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-    //createInfo.pApplicationInfo = &appInfo;
+    appInfo.pEngineName = TITLE;
+    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+
+    VkInstanceCreateInfo createInfo{};
+
+    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    createInfo.pApplicationInfo = &appInfo;
+    createInfo.pNext = nullptr;
+
     //createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     //createInfo.ppEnabledExtensionNames = extensions.data();
+
     //createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
     //createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
+
+    createInfo.enabledExtensionCount = 0;
+    createInfo.ppEnabledExtensionNames = 0;
+
+    createInfo.enabledLayerCount = 0;
+    createInfo.ppEnabledLayerNames = 0;
 
     //VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 
@@ -95,17 +105,17 @@ bool VulkanBackend::CreateInstance()
 
     //createInfo.pNext = enableValidationLayers ? (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo : nullptr;
 
-    //VkResult result = vkCreateInstance(&createInfo, vkContext->allocator, &vkContext->instance);
+    VkResult result = vkCreateInstance(&createInfo, vkContext->allocator, &vkContext->instance);
 
-    //if (result != VK_SUCCESS) 
-    //{
-    //    NOUS_ERROR("vkCreateInstance failed with result: %u", result);
-    //    ret = false;
-    //}
-    //else 
-    //{
-    //    NOUS_INFO("Vulkan Instance created successfully!");
-    //}
+    if (result != VK_SUCCESS) 
+    {
+        NOUS_ERROR("vkCreateInstance failed with result: %u", result);
+        ret = false;
+    }
+    else 
+    {
+        NOUS_INFO("Vulkan Instance created successfully!");
+    }
 
     return ret;
 }
