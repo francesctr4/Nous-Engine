@@ -113,7 +113,7 @@ inline void DynamicArray<T>::Resize()
 }
 
 template<typename T>
-void DynamicArray<T>::Create(uint64 capacity, uint64 stride)
+inline void DynamicArray<T>::Create(uint64 capacity, uint64 stride)
 {
 	this->capacity = capacity;
 	this->length = 0;
@@ -124,7 +124,7 @@ void DynamicArray<T>::Create(uint64 capacity, uint64 stride)
 }
 
 template<typename T>
-void DynamicArray<T>::Destroy()
+inline void DynamicArray<T>::Destroy()
 {
 	if (elements) 
 	{
@@ -229,9 +229,7 @@ inline T* DynamicArray<T>::GetElements() const
 }
 
 template<typename T>
-void DynamicArray<T>::Clear()
+inline void DynamicArray<T>::Clear()
 {
 	length = 0;
 }
-
-

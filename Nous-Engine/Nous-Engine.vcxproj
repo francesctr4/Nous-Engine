@@ -195,7 +195,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Application.cpp" />
-    <ClCompile Include="Source\DynamicArray.cpp" />
     <ClCompile Include="Source\EventSystem.cpp" />
     <ClCompile Include="Source\External\Tracy\TracyClient.cpp" />
     <ClCompile Include="Source\Logger.cpp" />

@@ -84,9 +84,6 @@
     <ClCompile Include="Source\EventSystem.cpp">
       <Filter>Source Code\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Source\DynamicArray.cpp">
-      <Filter>Source Code\Data Structures</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Timer.cpp">
       <Filter>Source Code\Time Management</Filter>
     </ClCompile>
