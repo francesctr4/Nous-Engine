@@ -14,6 +14,10 @@ class DynamicArray
 public:
 
 	DynamicArray(uint64 capacity = DARRAY_DEFAULT_CAPACITY);
+
+	// Constructor for initializer list
+	DynamicArray(std::initializer_list<T> init, uint64 capacity = DARRAY_DEFAULT_CAPACITY);
+
 	~DynamicArray();
 
 	void Push(const T* valuePtr);
@@ -54,6 +58,20 @@ inline DynamicArray<T>::DynamicArray(uint64 capacity)
 	: capacity(capacity), length(0), stride(sizeof(T)), elements(nullptr)
 {
 	Create(capacity, stride);
+}
+
+
+// Constructor for initializer list
+template<typename T>
+inline DynamicArray<T>::DynamicArray(std::initializer_list<T> init, uint64 capacity)
+	: capacity(capacity), length(0), stride(sizeof(T)), elements(nullptr)
+{
+	Create(capacity, stride);
+
+	for (const T& item : init) 
+	{
+		Push(item);
+	}
 }
 
 template<typename T>

@@ -2,14 +2,31 @@
 
 #include "RendererBackend.h"
 
+#include "VulkanTypes.inl"
+#include "DynamicArray.h"
+
+// --------------- Vulkan Validation Layers --------------- \\
+
+const DynamicArray<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+
 #ifdef _DEBUG
 const bool enableValidationLayers = true;
 #else
 const bool enableValidationLayers = false;
 #endif
 
-template<typename T>
-class DynamicArray;
+// --------------- Debug Messenger ---------------
+
+VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const
+	VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const
+	VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT*
+	pDebugMessenger);
+
+void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+	VkDebugUtilsMessengerEXT debugMessenger, const
+	VkAllocationCallbacks* pAllocator);
+
+// --------------- Vulkan Renderer Backend --------------- \\
 
 struct VulkanContext;
 
@@ -31,26 +48,26 @@ public:
 	// ------------------------------------ Vulkan Pipeline Functions ------------------------------------ \\
 
 	bool CreateInstance();
+	void SetupDebugMessenger();
 
 	// ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
 	
-	// --------------- Validation Layers ---------------
+	// --------------- Validation Layers --------------- \\
 
-	//bool CheckValidationLayerSupport(const std::vector<const char*>& validationLayers);
+	bool CheckValidationLayerSupport(const DynamicArray<const char*>& validationLayers);
 
-	// --------------- Vulkan Extensions ---------------
+	// --------------- Extensions --------------- \\
 
 	void ShowSupportedExtensions();
 	DynamicArray<const char*> GetRequiredExtensions();
 
-	//// --------------- Validation Layers Debug Messenger ---------------
+	// --------------- Debug Messenger --------------- \\
 
-	//static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	//	VkDebugUtilsMessageTypeFlagsEXT messageType,
-	//	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	//	void* pUserData);
+	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData);
 
-	//void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& debugCreateInfo);
 
 private:
 
