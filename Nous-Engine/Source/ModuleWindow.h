@@ -18,9 +18,7 @@ public:
 	bool Start() override;
 	bool CleanUp() override;
 
-	bool InitSDLWindow();
-
-private:
+	// ---------------------------------------- \\
 
 	SDL_Window* window;
 

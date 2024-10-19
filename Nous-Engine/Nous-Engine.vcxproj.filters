@@ -410,6 +410,9 @@
     <ClInclude Include="Source\OpenGLBackend.h">
       <Filter>Source Code\Core\Renderer\OpenGL</Filter>
     </ClInclude>
+    <ClInclude Include="Source\VulkanPlatform.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">

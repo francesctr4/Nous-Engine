@@ -68,7 +68,7 @@ bool ModuleWindow::CleanUp()
 	return true;
 }
 
-bool ModuleWindow::InitSDLWindow()
+SDL_Window* GetSDLWindowData()
 {
-	return true;
+    return External->window->window;
 }

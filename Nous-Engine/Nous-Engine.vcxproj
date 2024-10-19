@@ -317,6 +317,7 @@
     <ClInclude Include="Source\RingQueue.h" />
     <ClInclude Include="Source\Vulkan.h" />
     <ClInclude Include="Source\VulkanBackend.h" />
+    <ClInclude Include="Source\VulkanPlatform.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\OpenGLTypes.inl" />

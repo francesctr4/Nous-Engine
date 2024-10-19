@@ -17,6 +17,7 @@ public:
 	~DynamicArray();
 
 	void Push(const T* valuePtr);
+	void Push(const T& value);
 	void InsertAt(uint64 index, T* valuePtr);
 
 	T* Pop();
@@ -71,6 +72,21 @@ inline void DynamicArray<T>::Push(const T* valuePtr)
 
 	// Copy the value to the next available element
 	MemoryManager::CopyMemory(&elements[length], valuePtr, sizeof(T));
+
+	// Increase the length
+	length++;
+}
+
+template<typename T>
+inline void DynamicArray<T>::Push(const T& value)
+{
+	// Resize if necessary
+	if (length >= capacity) {
+		Resize();
+	}
+
+	// Copy the value to the next available element
+	MemoryManager::CopyMemory(&elements[length], &value, sizeof(T));
 
 	// Increase the length
 	length++;
