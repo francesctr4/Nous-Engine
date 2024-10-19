@@ -4,6 +4,8 @@
 #include "MemoryManager.h"
 #include "Logger.h"
 
+#include "DynamicArray.h"
+
 VulkanContext* VulkanBackend::vkContext = nullptr;
 
 VulkanBackend::VulkanBackend()
