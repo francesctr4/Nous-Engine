@@ -22,11 +22,24 @@
 }	
 
 /**
- * @brief Stores all the Vulkan-specific variables
+* @brief Stores both the Physical and Logical Vulkan Device
+*/
+struct VulkanDevice 
+{
+	VkPhysicalDevice physicalDevice;
+	VkDevice logicalDevice;
+};
+
+/**
+ * @brief Stores all the Vulkan Context variables
  */
 struct VulkanContext 
 {
 	VkInstance instance;
 	VkAllocationCallbacks* allocator;
+	VkSurfaceKHR surface;
+
 	VkDebugUtilsMessengerEXT debugMessenger;
+
+	VulkanDevice device;
 };

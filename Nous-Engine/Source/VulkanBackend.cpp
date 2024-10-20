@@ -30,8 +30,22 @@ bool VulkanBackend::Initialize()
         NOUS_ERROR("Failed to create Vulkan Instance. Shutting the Application.");
         ret = false;
     }
+    else 
+    {
+        NOUS_DEBUG("Vulkan Instance created successfully!");
+    }
 
     SetupDebugMessenger();
+
+    if (!CreateSurface()) 
+    {
+        NOUS_ERROR("Failed to create Vulkan surface!");
+        ret = false;
+    }
+    else 
+    {
+        NOUS_DEBUG("Vulkan Surface created successfully.");
+    }
 
 	return ret;
 }
@@ -113,8 +127,6 @@ bool VulkanBackend::CreateInstance()
 
     VK_CHECK_MSG(vkCreateInstance(&createInfo, vkContext->allocator, &vkContext->instance), "vkCreateInstance failed!");
 
-    NOUS_DEBUG("Vulkan Instance created successfully!");
-
     return ret;
 }
 
@@ -131,6 +143,11 @@ void VulkanBackend::SetupDebugMessenger()
     VK_CHECK_MSG(CreateDebugUtilsMessengerEXT(vkContext->instance, &debugCreateInfo, vkContext->allocator, &vkContext->debugMessenger) != VK_SUCCESS, "Failed to Set Up Debug Messenger!");
 
     NOUS_DEBUG("Vulkan Debugger created successfully!");
+}
+
+bool VulkanBackend::CreateSurface()
+{
+    return SDL_Vulkan_CreateSurface(GetSDLWindowData(), vkContext->instance, &vkContext->surface);
 }
 
 // ------------------------------------ Vulkan Helper Functions ------------------------------------ \\

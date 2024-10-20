@@ -49,6 +49,7 @@ public:
 
 	bool CreateInstance();
 	void SetupDebugMessenger();
+	bool CreateSurface();
 
 	// ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
 	

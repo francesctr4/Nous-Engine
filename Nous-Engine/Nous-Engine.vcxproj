@@ -212,6 +212,7 @@
     <ClCompile Include="Source\RingQueue.cpp" />
     <ClCompile Include="Source\Timer.cpp" />
     <ClCompile Include="Source\VulkanBackend.cpp" />
+    <ClCompile Include="Source\VulkanDevice.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
@@ -316,6 +317,7 @@
     <ClInclude Include="Source\RingQueue.h" />
     <ClInclude Include="Source\Vulkan.h" />
     <ClInclude Include="Source\VulkanBackend.h" />
+    <ClInclude Include="Source\VulkanDevice.h" />
     <ClInclude Include="Source\VulkanPlatform.h" />
   </ItemGroup>
   <ItemGroup>
