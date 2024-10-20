@@ -3,7 +3,6 @@
 #include "RendererBackend.h"
 
 #include "VulkanTypes.inl"
-#include "DynamicArray.h"
 
 // --------------- Vulkan Validation Layers --------------- \\
 
@@ -48,8 +47,11 @@ public:
 	// ------------------------------------ Vulkan Pipeline Functions ------------------------------------ \\
 
 	bool CreateInstance();
-	void SetupDebugMessenger();
+	bool SetupDebugMessenger();
 	bool CreateSurface();
+
+	bool PickPhysicalDevice();
+	bool CreateLogicalDevice();
 
 	// ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
 	

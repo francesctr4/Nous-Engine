@@ -1,5 +1,6 @@
 #include "VulkanBackend.h"
 #include "VulkanPlatform.h"
+#include "VulkanDevice.h"
 
 #include "MemoryManager.h"
 #include "Logger.h"
@@ -20,11 +21,13 @@ bool VulkanBackend::Initialize()
 {
     bool ret = true;
 
-    NOUS_INFO("USING VULKAN");
+    NOUS_INFO(" ----------------------- USING VULKAN BACKEND ----------------------- ");
 
     // TODO: Custom allocator
     vkContext->allocator = 0;
 
+    // Instance
+    NOUS_DEBUG("Creating Vulkan instance...");
     if (!CreateInstance()) 
     {
         NOUS_ERROR("Failed to create Vulkan Instance. Shutting the Application.");
@@ -35,28 +38,70 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Vulkan Instance created successfully!");
     }
 
-    SetupDebugMessenger();
-
-    if (!CreateSurface()) 
+    // Debugger
+    NOUS_DEBUG("Creating Vulkan Debugger...");
+    if (!SetupDebugMessenger()) 
     {
-        NOUS_ERROR("Failed to create Vulkan surface!");
+        NOUS_ERROR("Failed to create Vulkan Debugger. Shutting the Application.");
         ret = false;
     }
     else 
     {
-        NOUS_DEBUG("Vulkan Surface created successfully.");
+        NOUS_DEBUG("Vulkan Debugger created successfully!");
     }
+
+    // Surface
+    NOUS_DEBUG("Creating Vulkan surface...");
+    if (!CreateSurface()) 
+    {
+        NOUS_ERROR("Failed to create Vulkan Surface. Shutting the Application.");
+        ret = false;
+    }
+    else 
+    {
+        NOUS_DEBUG("Vulkan Surface created successfully!");
+    }
+
+    // Physical Device
+    NOUS_DEBUG("Searching for a suitable Physical Device...");
+    if (!PickPhysicalDevice())
+    {
+        NOUS_ERROR("Failed to find a suitable GPU!");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Suitable GPU found!");
+    }
+
+    // Logical Device
+    //NOUS_DEBUG("Creating Vulkan surface...");
+    //if (!CreateLogicalDevice())
+    //{
+    //    NOUS_ERROR("Failed to create Vulkan Surface. Shutting the Application.");
+    //    ret = false;
+    //}
+    //else
+    //{
+    //    NOUS_DEBUG("Vulkan Surface created successfully!");
+    //}
 
 	return ret;
 }
 
 void VulkanBackend::Shutdown()
 {
+    NOUS_DEBUG("Destroying Vulkan Logical Device...");
+    vkDestroyDevice(vkContext->device.logicalDevice, vkContext->allocator);
+
     if (enableValidationLayers) 
     {
         NOUS_DEBUG("Destroying Vulkan Debugger...");
         DestroyDebugUtilsMessengerEXT(vkContext->instance, vkContext->debugMessenger, vkContext->allocator);
     }
+
+    NOUS_DEBUG("Destroying Vulkan Surface...");
+    vkDestroySurfaceKHR(vkContext->instance, vkContext->surface, vkContext->allocator);
 
     NOUS_DEBUG("Destroying Vulkan Instance...");
     vkDestroyInstance(vkContext->instance, vkContext->allocator);
@@ -130,11 +175,11 @@ bool VulkanBackend::CreateInstance()
     return ret;
 }
 
-void VulkanBackend::SetupDebugMessenger()
+bool VulkanBackend::SetupDebugMessenger()
 {
-    if (!enableValidationLayers) return;
+    bool ret = true;
 
-    NOUS_DEBUG("Creating Vulkan Debugger...");
+    if (!enableValidationLayers) return ret;
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 
@@ -142,12 +187,57 @@ void VulkanBackend::SetupDebugMessenger()
 
     VK_CHECK_MSG(CreateDebugUtilsMessengerEXT(vkContext->instance, &debugCreateInfo, vkContext->allocator, &vkContext->debugMessenger) != VK_SUCCESS, "Failed to Set Up Debug Messenger!");
 
-    NOUS_DEBUG("Vulkan Debugger created successfully!");
+    return ret;
 }
 
 bool VulkanBackend::CreateSurface()
 {
     return SDL_Vulkan_CreateSurface(GetSDLWindowData(), vkContext->instance, &vkContext->surface);
+}
+
+bool VulkanBackend::PickPhysicalDevice()
+{
+    bool ret = true;
+    
+    uint32 deviceCount = 0;
+
+    VK_CHECK(vkEnumeratePhysicalDevices(vkContext->instance, &deviceCount, nullptr));
+
+    if (deviceCount == 0) 
+    {
+        NOUS_WARN("Failed to find GPUs with Vulkan support!");
+        ret = false;
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+
+    VK_CHECK(vkEnumeratePhysicalDevices(vkContext->instance, &deviceCount, devices.data()));
+
+    for (int i = 0; i < devices.size(); ++i) 
+    {
+        if (IsPhysicalDeviceSuitable(devices[i], vkContext)) 
+        {
+            vkContext->device.physicalDevice = devices[i];
+
+            LogInfoAboutDevice(vkContext);
+            // TODO: Multisampling
+            //msaaSamples = GetMaxUsableSampleCount();
+
+            break;
+        }
+    }
+
+    if (vkContext->device.physicalDevice == VK_NULL_HANDLE) 
+    {
+        ret = false;
+    }
+
+    return ret;
+}
+
+bool VulkanBackend::CreateLogicalDevice()
+{
+    return false;
 }
 
 // ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
@@ -166,7 +256,7 @@ bool VulkanBackend::CheckValidationLayerSupport(const DynamicArray<const char*>&
 
     for (int i = 0; i < validationLayers.GetLength(); ++i) 
     {
-        const char* layerName = validationLayers.GetElements()[i];
+        const char* layerName = validationLayers[i];
 
         NOUS_DEBUG("Searching for Vulkan Validation Layer: %s...", layerName);
 
@@ -175,7 +265,7 @@ bool VulkanBackend::CheckValidationLayerSupport(const DynamicArray<const char*>&
         for (int j = 0; j < availableLayers.GetLength(); ++j) 
         {
             
-            const auto& layerProperties = availableLayers.GetElements()[j];
+            const auto& layerProperties = availableLayers[j];
 
             if (strcmp(layerName, layerProperties.layerName) == 0) 
             {
@@ -210,7 +300,7 @@ void VulkanBackend::ShowSupportedExtensions()
 
     for (int i = 0; i < supportedExtensions.GetLength(); ++i) 
     {
-        NOUS_DEBUG("\t%s\n", supportedExtensions.GetElements()[i].extensionName);
+        NOUS_DEBUG("\t%s\n", supportedExtensions[i].extensionName);
     }
 }
 
@@ -245,7 +335,7 @@ DynamicArray<const char*> VulkanBackend::GetRequiredExtensions()
 
     for (int i = 0; i < extensions.GetLength(); ++i)
     {
-        NOUS_DEBUG("\t%s\n", extensions.GetElements()[i]);
+        NOUS_DEBUG("\t%s\n", extensions[i]);
     }
 
     return extensions;

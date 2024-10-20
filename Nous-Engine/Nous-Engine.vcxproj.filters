@@ -416,6 +416,9 @@
     <ClInclude Include="Source\VulkanDevice.h">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Source\STL.h">
+      <Filter>Source Code\Includes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">

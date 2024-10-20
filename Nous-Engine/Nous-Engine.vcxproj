@@ -310,6 +310,7 @@
     <ClInclude Include="Source\RendererBackend.h" />
     <ClInclude Include="Source\RendererFrontend.h" />
     <ClInclude Include="Source\SDL2.h" />
+    <ClInclude Include="Source\STL.h" />
     <ClInclude Include="Source\ThreadPool.h" />
     <ClInclude Include="Source\TimeManager.h" />
     <ClInclude Include="Source\Timer.h" />

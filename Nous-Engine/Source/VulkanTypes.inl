@@ -4,6 +4,7 @@
 
 #include "Vulkan.h"
 #include "SDL2.h"
+#include "DynamicArray.h"
 
 /**
  * @brief Checks the given expression's return value against VK_SUCCESS.
@@ -21,13 +22,29 @@
 	NOUS_ASSERT_MSG(expr == VK_SUCCESS, message);	\
 }	
 
+struct VkSwapChainSupportDetails 
+{
+    DynamicArray<VkSurfaceFormatKHR> formats;
+    DynamicArray<VkPresentModeKHR> presentModes;
+    VkSurfaceCapabilitiesKHR capabilities;
+};
+
 /**
-* @brief Stores both the Physical and Logical Vulkan Device
+* @brief Stores all the information related to the Vulkan Physical and Logical Device
 */
 struct VulkanDevice 
 {
 	VkPhysicalDevice physicalDevice;
 	VkDevice logicalDevice;
+    VkSwapChainSupportDetails swapChainSupport;
+
+    int32 graphicsQueueIndex;
+    int32 presentQueueIndex;
+    int32 transferQueueIndex;
+
+    VkPhysicalDeviceProperties properties;
+    VkPhysicalDeviceFeatures features;
+    VkPhysicalDeviceMemoryProperties memory;
 };
 
 /**
