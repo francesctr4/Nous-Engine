@@ -6,7 +6,7 @@
 
 // --------------- Vulkan Validation Layers --------------- \\
 
-const DynamicArray<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 
 #ifdef _DEBUG
 const bool enableValidationLayers = true;
@@ -57,7 +57,7 @@ public:
 	
 	// --------------- Validation Layers --------------- \\
 
-	bool CheckValidationLayerSupport(const DynamicArray<const char*>& validationLayers);
+	bool CheckValidationLayerSupport(const std::vector<const char*>& validationLayers);
 
 	// --------------- Extensions --------------- \\
 

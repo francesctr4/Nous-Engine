@@ -45,6 +45,11 @@ struct VulkanDevice
     int32 computeQueueIndex;
     int32 transferQueueIndex;
 
+    VkQueue graphicsQueue;
+    VkQueue presentQueue;
+    VkQueue computeQueue;
+    VkQueue transferQueue;
+
     VkPhysicalDeviceProperties properties;
     VkPhysicalDeviceFeatures features;
     VkPhysicalDeviceMemoryProperties memory;

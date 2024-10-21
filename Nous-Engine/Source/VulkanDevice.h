@@ -2,7 +2,7 @@
  *																							*
  *  Project Name: [ Nous Engine: a multithreaded game engine built with Vulkan in C++ ]		*
  *  File Name:    [ VulkanDevice.h ]														*
- *  Description:  [ TODO ]																	*
+ *  Description:  [ Header file for Managing and Querying Vulkan Physical Devices ]			*
  *																							*
  *  Author:       [ Francesc Teruel Rodríguez ]												*
  *  GitHub:       [ https://github.com/francesctr4 ]										*
@@ -14,7 +14,7 @@
 #include "Globals.h"
 #include "VulkanTypes.inl"
 
-const std::array<std::string, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+const std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 struct VkPhysicalDeviceQueueFamilyIndices
 {

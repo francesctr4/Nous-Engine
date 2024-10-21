@@ -75,16 +75,16 @@ bool VulkanBackend::Initialize()
     }
 
     // Logical Device
-    //NOUS_DEBUG("Creating Vulkan surface...");
-    //if (!CreateLogicalDevice())
-    //{
-    //    NOUS_ERROR("Failed to create Vulkan Surface. Shutting the Application.");
-    //    ret = false;
-    //}
-    //else
-    //{
-    //    NOUS_DEBUG("Vulkan Surface created successfully!");
-    //}
+    NOUS_DEBUG("Creating Vulkan Logical Device...");
+    if (!CreateLogicalDevice())
+    {
+        NOUS_ERROR("Failed to create Vulkan Logical Device. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Vulkan Logical Device created successfully!");
+    }
 
 	return ret;
 }
@@ -159,11 +159,11 @@ bool VulkanBackend::CreateInstance()
     createInfo.pApplicationInfo = &appInfo;
     createInfo.pNext = nullptr;
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.GetLength());
+    createInfo.enabledExtensionCount = static_cast<uint32>(extensions.GetLength());
     createInfo.ppEnabledExtensionNames = extensions.GetElements();
 
-    createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.GetLength()) : 0;
-    createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.GetElements() : nullptr;
+    createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32>(validationLayers.size()) : 0;
+    createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
 
     // Validation Layers Loading Debugger
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
@@ -230,12 +230,66 @@ bool VulkanBackend::PickPhysicalDevice()
 
 bool VulkanBackend::CreateLogicalDevice()
 {
-    return false;
+    bool ret = true;
+
+    VkPhysicalDeviceQueueFamilyIndices indices = FindQueueFamilies(vkContext->device.physicalDevice, vkContext);
+
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
+    std::unordered_set<uint32> uniqueQueueFamilies = 
+      { indices.graphicsFamilyIndex.value(), indices.computeFamilyIndex.value(),
+        indices.transferFamilyIndex.value(), indices.presentFamilyIndex.value() };
+
+    float queuePriority = 1.0f;
+
+    for (uint32 queueFamily : uniqueQueueFamilies) 
+    {
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+
+        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
+
+    // Specifying used device features
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.sampleRateShading = VK_TRUE; // Enable sample shading feature for the device.
+    // [...]
+
+    VkDeviceCreateInfo deviceCreateInfo{};
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+    deviceCreateInfo.queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size());
+    deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+
+    deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+
+    deviceCreateInfo.enabledExtensionCount = static_cast<uint32>(deviceExtensions.size());
+    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+    deviceCreateInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32>(validationLayers.size()) : 0;
+    deviceCreateInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
+
+    VK_CHECK_MSG(vkCreateDevice(vkContext->device.physicalDevice, &deviceCreateInfo, vkContext->allocator, &vkContext->device.logicalDevice), "Failed vkCreateDevice!");
+
+    vkGetDeviceQueue(vkContext->device.logicalDevice, indices.graphicsFamilyIndex.value(), 0, &vkContext->device.graphicsQueue);
+    vkGetDeviceQueue(vkContext->device.logicalDevice, indices.presentFamilyIndex.value(), 0, &vkContext->device.presentQueue);
+    vkGetDeviceQueue(vkContext->device.logicalDevice, indices.computeFamilyIndex.value(), 0, &vkContext->device.computeQueue);
+    vkGetDeviceQueue(vkContext->device.logicalDevice, indices.transferFamilyIndex.value(), 0, &vkContext->device.transferQueue);
+
+    NOUS_DEBUG("Logical Device Queues Obtained");
+
+    return ret;
 }
 
 // ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
 
-bool VulkanBackend::CheckValidationLayerSupport(const DynamicArray<const char*>& validationLayers)
+bool VulkanBackend::CheckValidationLayerSupport(const std::vector<const char*>& validationLayers)
 {
     bool ret = true;
 
@@ -247,7 +301,7 @@ bool VulkanBackend::CheckValidationLayerSupport(const DynamicArray<const char*>&
 
     availableLayers.SetLength(layerCount);
 
-    for (int i = 0; i < validationLayers.GetLength(); ++i) 
+    for (int i = 0; i < validationLayers.size(); ++i) 
     {
         const char* layerName = validationLayers[i];
 
