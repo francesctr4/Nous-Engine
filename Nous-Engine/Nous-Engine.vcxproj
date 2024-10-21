@@ -213,6 +213,7 @@
     <ClCompile Include="Source\Timer.cpp" />
     <ClCompile Include="Source\VulkanBackend.cpp" />
     <ClCompile Include="Source\VulkanDevice.cpp" />
+    <ClCompile Include="Source\VulkanSwapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
@@ -320,6 +321,7 @@
     <ClInclude Include="Source\VulkanBackend.h" />
     <ClInclude Include="Source\VulkanDevice.h" />
     <ClInclude Include="Source\VulkanPlatform.h" />
+    <ClInclude Include="Source\VulkanSwapchain.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\OpenGLTypes.inl" />

@@ -2,7 +2,7 @@
  *																							*
  *  Project Name: [ Nous Engine: a multithreaded game engine built with Vulkan in C++ ]		*
  *  File Name:    [ VulkanDevice.h ]														*
- *  Description:  [ Header file for Managing and Querying Vulkan Physical Devices ]			*
+ *  Description:  [ Header file for Managing Vulkan Physical and Logical Device ]			*
  *																							*
  *  Author:       [ Francesc Teruel Rodríguez ]												*
  *  GitHub:       [ https://github.com/francesctr4 ]										*
@@ -41,14 +41,16 @@ struct VkPhysicalDeviceRequirements
 
 	bool Completed() 
 	{
-		return discreteGPU &&
-			geometryShader &&
-			samplerAnisotropy &&
-			queueFamilies &&
-			extensionsSupported &&
-			swapChainAdequate;
+		return discreteGPU && geometryShader && samplerAnisotropy &&
+			queueFamilies && extensionsSupported && swapChainAdequate;
 	}
 };
+
+// ----------------------------------------------------------- //
+// --------------------- Physical Device --------------------- //
+// ----------------------------------------------------------- //
+
+bool PickPhysicalDevice(VulkanContext* vkContext);
 
 bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
@@ -58,11 +60,18 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext
 
 VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
-// --------------- Multisampling --------------- //
-VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties);
+VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties); // Multisampling
 
 /**
  * @brief Logs detailed information about the selected Vulkan physical device.
  * @param vkContext: The Vulkan context containing information about the selected device.
  */
 void LogInfoAboutDevice(VulkanContext* vkContext);
+
+// ----------------------------------------------------------- //
+// ---------------------- Logical Device --------------------- //
+// ----------------------------------------------------------- //
+
+bool CreateLogicalDevice(VulkanContext* vkContext);
+
+void DestroyLogicalDevice(VulkanContext* vkContext);

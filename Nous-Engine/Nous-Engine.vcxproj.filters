@@ -102,6 +102,9 @@
     <ClCompile Include="Source\VulkanDevice.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanSwapchain.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -418,6 +421,9 @@
     </ClInclude>
     <ClInclude Include="Source\STL.h">
       <Filter>Source Code\Includes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanSwapchain.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

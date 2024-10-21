@@ -1,6 +1,7 @@
 #include "VulkanBackend.h"
 #include "VulkanPlatform.h"
 #include "VulkanDevice.h"
+#include "VulkanSwapchain.h"
 
 #include "MemoryManager.h"
 #include "Logger.h"
@@ -64,7 +65,7 @@ bool VulkanBackend::Initialize()
 
     // Physical Device
     NOUS_DEBUG("Searching for a suitable Physical Device...");
-    if (!PickPhysicalDevice())
+    if (!PickPhysicalDevice(vkContext))
     {
         NOUS_ERROR("Failed to find a suitable GPU!");
         ret = false;
@@ -76,7 +77,7 @@ bool VulkanBackend::Initialize()
 
     // Logical Device
     NOUS_DEBUG("Creating Vulkan Logical Device...");
-    if (!CreateLogicalDevice())
+    if (!CreateLogicalDevice(vkContext))
     {
         NOUS_ERROR("Failed to create Vulkan Logical Device. Shutting the Application.");
         ret = false;
@@ -86,13 +87,26 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Vulkan Logical Device created successfully!");
     }
 
+    // Swap Chain
+    NOUS_DEBUG("Creating Vulkan Swap Chain...");
+    if (!CreateSwapChain(vkContext))
+    {
+        NOUS_ERROR("Failed to create Vulkan Swap Chain. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Vulkan Swap Chain created successfully!");
+    }
+
 	return ret;
 }
 
 void VulkanBackend::Shutdown()
 {
-    NOUS_DEBUG("Destroying Vulkan Logical Device...");
-    vkDestroyDevice(vkContext->device.logicalDevice, vkContext->allocator);
+    DestroySwapChain(vkContext);
+
+    DestroyLogicalDevice(vkContext);
 
     if (enableValidationLayers) 
     {
@@ -193,98 +207,6 @@ bool VulkanBackend::SetupDebugMessenger()
 bool VulkanBackend::CreateSurface()
 {
     return SDL_Vulkan_CreateSurface(GetSDLWindowData(), vkContext->instance, &vkContext->surface);
-}
-
-bool VulkanBackend::PickPhysicalDevice()
-{
-    bool ret = true;
-    
-    uint32 deviceCount = 0;
-    VK_CHECK(vkEnumeratePhysicalDevices(vkContext->instance, &deviceCount, nullptr));
-
-    if (deviceCount == 0) 
-    {
-        NOUS_WARN("Failed to find GPUs with Vulkan support!");
-        ret = false;
-    }
-
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    VK_CHECK(vkEnumeratePhysicalDevices(vkContext->instance, &deviceCount, devices.data()));
-
-    for (int i = 0; i < devices.size(); ++i) 
-    {
-        if (IsPhysicalDeviceSuitable(devices[i], vkContext)) 
-        {
-            LogInfoAboutDevice(vkContext);
-            break;
-        }
-    }
-
-    if (vkContext->device.physicalDevice == VK_NULL_HANDLE) 
-    {
-        ret = false;
-    }
-
-    return ret;
-}
-
-bool VulkanBackend::CreateLogicalDevice()
-{
-    bool ret = true;
-
-    VkPhysicalDeviceQueueFamilyIndices indices = FindQueueFamilies(vkContext->device.physicalDevice, vkContext);
-
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-
-    std::unordered_set<uint32> uniqueQueueFamilies = 
-      { indices.graphicsFamilyIndex.value(), indices.computeFamilyIndex.value(),
-        indices.transferFamilyIndex.value(), indices.presentFamilyIndex.value() };
-
-    float queuePriority = 1.0f;
-
-    for (uint32 queueFamily : uniqueQueueFamilies) 
-    {
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-
-        queueCreateInfo.queueFamilyIndex = queueFamily;
-        queueCreateInfo.queueCount = 1;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
-
-        queueCreateInfos.push_back(queueCreateInfo);
-    }
-
-    // Specifying used device features
-
-    VkPhysicalDeviceFeatures deviceFeatures{};
-    deviceFeatures.samplerAnisotropy = VK_TRUE;
-    deviceFeatures.sampleRateShading = VK_TRUE; // Enable sample shading feature for the device.
-    // [...]
-
-    VkDeviceCreateInfo deviceCreateInfo{};
-    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
-    deviceCreateInfo.queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size());
-    deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-
-    deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-
-    deviceCreateInfo.enabledExtensionCount = static_cast<uint32>(deviceExtensions.size());
-    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
-
-    deviceCreateInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32>(validationLayers.size()) : 0;
-    deviceCreateInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
-
-    VK_CHECK_MSG(vkCreateDevice(vkContext->device.physicalDevice, &deviceCreateInfo, vkContext->allocator, &vkContext->device.logicalDevice), "Failed vkCreateDevice!");
-
-    vkGetDeviceQueue(vkContext->device.logicalDevice, indices.graphicsFamilyIndex.value(), 0, &vkContext->device.graphicsQueue);
-    vkGetDeviceQueue(vkContext->device.logicalDevice, indices.presentFamilyIndex.value(), 0, &vkContext->device.presentQueue);
-    vkGetDeviceQueue(vkContext->device.logicalDevice, indices.computeFamilyIndex.value(), 0, &vkContext->device.computeQueue);
-    vkGetDeviceQueue(vkContext->device.logicalDevice, indices.transferFamilyIndex.value(), 0, &vkContext->device.transferQueue);
-
-    NOUS_DEBUG("Logical Device Queues Obtained");
-
-    return ret;
 }
 
 // ------------------------------------ Vulkan Helper Functions ------------------------------------ \\

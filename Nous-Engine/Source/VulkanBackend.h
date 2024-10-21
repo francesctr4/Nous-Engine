@@ -50,9 +50,6 @@ public:
 	bool SetupDebugMessenger();
 	bool CreateSurface();
 
-	bool PickPhysicalDevice();
-	bool CreateLogicalDevice();
-
 	// ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
 	
 	// --------------- Validation Layers --------------- \\

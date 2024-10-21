@@ -4,6 +4,7 @@
 
 #include "Vulkan.h"
 #include "SDL2.h"
+
 #include "DynamicArray.h"
 
 /**
@@ -22,7 +23,18 @@
 	NOUS_ASSERT_MSG(expr == VK_SUCCESS, message);	\
 }	
 
-struct VkSwapChainSupportDetails 
+const int MAX_FRAMES_IN_FLIGHT = 2;
+
+struct VulkanSwapChain
+{
+    VkSwapchainKHR swapChainHandle;
+    std::vector<VkImage> swapChainImages;
+    VkFormat swapChainImageFormat;
+    VkExtent2D swapChainExtent;
+    std::vector<VkImageView> swapChainImageViews;
+};
+
+struct VkSwapChainSupportDetails
 {
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
@@ -67,4 +79,6 @@ struct VulkanContext
 	VkDebugUtilsMessengerEXT debugMessenger;
 
 	VulkanDevice device;
+
+    VulkanSwapChain swapChain;
 };
