@@ -27,6 +27,16 @@ struct VkPhysicalDeviceRequirements
 	bool queueFamilies;
 	bool extensionsSupported;
 	bool swapChainAdequate;
+
+	bool RequirementsMet() 
+	{
+		return discreteGPU &&
+			geometryShader &&
+			samplerAnisotropy &&
+			queueFamilies &&
+			extensionsSupported &&
+			swapChainAdequate;
+	}
 };
 
 bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);

@@ -22,25 +22,24 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* v
     VkSampleCountFlagBits msaaSamples = GetMaxUsableSampleCount(deviceProperties);
 
     VkPhysicalDeviceQueueFamilyIndices deviceIndices = FindQueueFamilies(physicalDevice, vkContext);
+    requirements.queueFamilies = deviceIndices.IsComplete();
 
-    bool extensionsSupported = CheckDeviceExtensionSupport(physicalDevice, vkContext);
-
-    bool swapChainAdequate = false;
+    requirements.extensionsSupported = CheckDeviceExtensionSupport(physicalDevice, vkContext);
 
     VkSwapChainSupportDetails swapChainSupport;
 
-    if (extensionsSupported) 
+    if (requirements.extensionsSupported) 
     {
         swapChainSupport = QuerySwapChainSupport(physicalDevice, vkContext);
-        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        requirements.swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
     
     ret = deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
         deviceFeatures.geometryShader &&
         deviceFeatures.samplerAnisotropy &&
         deviceIndices.IsComplete() &&
-        extensionsSupported &&
-        swapChainAdequate;
+        requirements.extensionsSupported &&
+        requirements.swapChainAdequate;
 
     if (ret) 
     {
