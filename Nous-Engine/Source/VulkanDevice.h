@@ -1,3 +1,14 @@
+/********************************************************************************************
+ *																							*
+ *  Project Name: [ Nous Engine: a multithreaded game engine built with Vulkan in C++ ]		*
+ *  File Name:    [ VulkanDevice.h ]														*
+ *  Description:  [ TODO ]																	*
+ *																							*
+ *  Author:       [ Francesc Teruel Rodríguez ]												*
+ *  GitHub:       [ https://github.com/francesctr4 ]										*
+ *																							*
+ ********************************************************************************************/
+
 #pragma once
 
 #include "Globals.h"
@@ -28,7 +39,7 @@ struct VkPhysicalDeviceRequirements
 	bool extensionsSupported;
 	bool swapChainAdequate;
 
-	bool RequirementsMet() 
+	bool Completed() 
 	{
 		return discreteGPU &&
 			geometryShader &&
@@ -50,4 +61,8 @@ VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice
 // --------------- Multisampling --------------- //
 VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties);
 
+/**
+ * @brief Logs detailed information about the selected Vulkan physical device.
+ * @param vkContext: The Vulkan context containing information about the selected device.
+ */
 void LogInfoAboutDevice(VulkanContext* vkContext);

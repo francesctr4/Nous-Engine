@@ -7,42 +7,56 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* v
 {
     bool ret = false;
 
-    VkPhysicalDeviceRequirements requirements = {};
+    // Initialize a structure to track all our requirements, starting with everything set to false.
+    // These will all need to be true for the device to be considered suitable.
+    VkPhysicalDeviceRequirements requirements = {false};
 
+    // Retrieve properties of the physical device, such as the type of device (integrated, discrete, etc.).
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) 
+    {
+        requirements.discreteGPU = true;
+    }
+
+    // Retrieve the available features supported by the device.
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
+    requirements.geometryShader = deviceFeatures.geometryShader;
+    requirements.samplerAnisotropy = deviceFeatures.samplerAnisotropy;
+
+    // Retrieve the memory properties of the device (total memory, memory types, etc.).
     VkPhysicalDeviceMemoryProperties deviceMemory;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemory);
 
     // --------------- Multisampling --------------- //
+    // Query the maximum usable sample count (MSAA level) supported by the device for anti-aliasing.
     VkSampleCountFlagBits msaaSamples = GetMaxUsableSampleCount(deviceProperties);
 
+    // Check if the device has the necessary queue families (e.g., for graphics, compute, transfer operations).
     VkPhysicalDeviceQueueFamilyIndices deviceIndices = FindQueueFamilies(physicalDevice, vkContext);
     requirements.queueFamilies = deviceIndices.IsComplete();
 
+    // Check if the required device extensions (like for swap chains) are supported by the device.
     requirements.extensionsSupported = CheckDeviceExtensionSupport(physicalDevice, vkContext);
 
+    // If extensions are supported, check if swap chain support is adequate (i.e., available formats and present modes).
     VkSwapChainSupportDetails swapChainSupport;
-
     if (requirements.extensionsSupported) 
     {
         swapChainSupport = QuerySwapChainSupport(physicalDevice, vkContext);
         requirements.swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
-    
-    ret = deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-        deviceFeatures.geometryShader &&
-        deviceFeatures.samplerAnisotropy &&
-        deviceIndices.IsComplete() &&
-        requirements.extensionsSupported &&
-        requirements.swapChainAdequate;
+
+    // Check if all requirements are met by calling the Completed() method
+    ret = requirements.Completed();
 
     if (ret) 
     {
+        // If the device is suitable, store relevant device information in vkContext for future use.
+
         vkContext->device.physicalDevice = physicalDevice;
 
         vkContext->device.swapChainSupport = swapChainSupport;
