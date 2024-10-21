@@ -200,7 +200,6 @@ bool VulkanBackend::PickPhysicalDevice()
     bool ret = true;
     
     uint32 deviceCount = 0;
-
     VK_CHECK(vkEnumeratePhysicalDevices(vkContext->instance, &deviceCount, nullptr));
 
     if (deviceCount == 0) 
@@ -210,19 +209,13 @@ bool VulkanBackend::PickPhysicalDevice()
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-
     VK_CHECK(vkEnumeratePhysicalDevices(vkContext->instance, &deviceCount, devices.data()));
 
     for (int i = 0; i < devices.size(); ++i) 
     {
         if (IsPhysicalDeviceSuitable(devices[i], vkContext)) 
         {
-            vkContext->device.physicalDevice = devices[i];
-
             LogInfoAboutDevice(vkContext);
-            // TODO: Multisampling
-            //msaaSamples = GetMaxUsableSampleCount();
-
             break;
         }
     }

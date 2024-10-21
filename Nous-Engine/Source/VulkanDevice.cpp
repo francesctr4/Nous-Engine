@@ -3,7 +3,7 @@
 #include "Logger.h"
 #include "MemoryManager.h"
 
-bool IsPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice, VulkanContext* vkContext)
+bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
 {
     bool ret = false;
 
@@ -13,17 +13,24 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice, VulkanContext* vk
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
-    VkQueueFamilyIndices deviceIndices = FindQueueFamilies(physicalDevice, vkContext);
+    VkPhysicalDeviceMemoryProperties deviceMemory;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemory);
+
+    // TODO: Multisampling
+    //msaaSamples = GetMaxUsableSampleCount();
+
+    VkPhysicalDeviceQueueFamilyIndices deviceIndices = FindQueueFamilies(physicalDevice, vkContext);
 
     bool extensionsSupported = CheckDeviceExtensionSupport(physicalDevice, vkContext);
 
     bool swapChainAdequate = false;
 
-    if (extensionsSupported) {
+    VkSwapChainSupportDetails swapChainSupport;
 
-        VkSwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(physicalDevice, vkContext);
-        swapChainAdequate = !swapChainSupport.formats.IsEmpty() && !swapChainSupport.presentModes.IsEmpty();
-
+    if (extensionsSupported) 
+    {
+        swapChainSupport = QuerySwapChainSupport(physicalDevice, vkContext);
+        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
     ret = deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
@@ -35,32 +42,49 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice, VulkanContext* vk
 
     if (ret) 
     {
-        std::cout << "Using GPU: ";
-        std::cout << deviceProperties.deviceName << std::endl;
+        vkContext->device.properties = deviceProperties;
+        vkContext->device.features = deviceFeatures;
+        vkContext->device.memory = deviceMemory;
+
+        vkContext->device.graphicsQueueIndex = deviceIndices.graphicsFamilyIndex.value();
+        vkContext->device.presentQueueIndex = deviceIndices.presentFamilyIndex.value();
+        vkContext->device.computeQueueIndex = deviceIndices.computeFamilyIndex.value();
+        vkContext->device.transferQueueIndex = deviceIndices.transferFamilyIndex.value();
+        
+        vkContext->device.swapChainSupport = swapChainSupport;
+        vkContext->device.physicalDevice = physicalDevice;
     }
 
     return ret;
 }
 
-VkQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VulkanContext* vkContext)
+VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
 {
-    VkQueueFamilyIndices indices;
+    VkPhysicalDeviceQueueFamilyIndices indices;
 
     // Assign index to queue families that could be found
 
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
-    DynamicArray<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.GetElements());
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
 
-    queueFamilies.SetLength(queueFamilyCount);
-
-    for (int i = 0; i < queueFamilies.GetLength(); ++i) 
+    for (int i = 0; i < queueFamilies.size(); ++i) 
     {
         if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) 
         {
-            indices.graphicsFamily = i;
+            indices.graphicsFamilyIndex = i;
+        }
+
+        if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
+        {
+            indices.computeFamilyIndex = i;
+        }
+
+        if (queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT)
+        {
+            indices.transferFamilyIndex = i;
         }
 
         VkBool32 presentSupport = false;
@@ -68,21 +92,20 @@ VkQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VulkanCo
 
         if (presentSupport) {
 
-            indices.presentFamily = i;
+            indices.presentFamilyIndex = i;
 
         }
 
-        if (indices.IsComplete()) {
-
+        if (indices.IsComplete()) 
+        {
             break;
-
         }
     }
 
     return indices;
 }
 
-bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice, VulkanContext* vkContext)
+bool CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
 {
     uint32 extensionCount;
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
@@ -100,7 +123,7 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice, VulkanContext*
     return requiredExtensions.empty();
 }
 
-VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice, VulkanContext* vkContext)
+VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
 {
     VkSwapChainSupportDetails details;
 
@@ -109,11 +132,10 @@ VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice,
     uint32 formatCount;
     VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vkContext->surface, &formatCount, nullptr));
 
-    if (formatCount != 0) {
-
-        details.formats.SetCapacity(formatCount);
-        VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vkContext->surface, &formatCount, details.formats.GetElements()));
-        details.formats.SetLength(formatCount);
+    if (formatCount != 0) 
+    {
+        details.formats.resize(formatCount);
+        VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vkContext->surface, &formatCount, details.formats.data()));
     }
 
     // Device Present Modes
@@ -121,11 +143,10 @@ VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice,
     uint32 presentModeCount;
     VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vkContext->surface, &presentModeCount, nullptr));
 
-    if (presentModeCount != 0) {
-
-        details.presentModes.SetCapacity(presentModeCount);
-        VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vkContext->surface, &presentModeCount, details.presentModes.GetElements()));
-        details.presentModes.SetLength(presentModeCount);
+    if (presentModeCount != 0) 
+    {
+        details.presentModes.resize(presentModeCount);
+        VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vkContext->surface, &presentModeCount, details.presentModes.data()));
     }
 
     // Device Capabilities
@@ -137,18 +158,77 @@ VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice,
 
 void LogInfoAboutDevice(VulkanContext* vkContext)
 {
-    std::cout << "Using GPU: ";
-    std::cout << vkContext->device.properties.deviceName << std::endl;
+    NOUS_INFO("Selected device: '%s'.", vkContext->device.properties.deviceName);
+
+    switch (vkContext->device.properties.deviceType) 
+    {
+        default:
+        case VK_PHYSICAL_DEVICE_TYPE_OTHER: 
+        {
+            NOUS_INFO("GPU type is Unknown.");
+            break;
+        }
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: 
+        {
+            NOUS_INFO("GPU type is Integrated.");
+            break;
+        }
+        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: 
+        {
+            NOUS_INFO("GPU type is Descrete.");
+            break;
+        }
+        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+        {
+            NOUS_INFO("GPU type is Virtual.");
+            break;
+        }
+        case VK_PHYSICAL_DEVICE_TYPE_CPU: 
+        {
+            NOUS_INFO("GPU type is CPU.");
+            break;
+        }
+    }
 
     NOUS_INFO(
         "GPU Driver version: %d.%d.%d",
         VK_VERSION_MAJOR(vkContext->device.properties.driverVersion),
         VK_VERSION_MINOR(vkContext->device.properties.driverVersion),
         VK_VERSION_PATCH(vkContext->device.properties.driverVersion));
-    // Vulkan API version.
+
     NOUS_INFO(
         "Vulkan API version: %d.%d.%d",
         VK_VERSION_MAJOR(vkContext->device.properties.apiVersion),
         VK_VERSION_MINOR(vkContext->device.properties.apiVersion),
         VK_VERSION_PATCH(vkContext->device.properties.apiVersion));
+
+    // Memory information
+    for (uint32 i = 0; i < vkContext->device.memory.memoryHeapCount; ++i) 
+    {
+        float32 memorySizeGib = (((float32)vkContext->device.memory.memoryHeaps[i].size) / (1024.0f * 1024.0f * 1024.0f));
+
+        if (vkContext->device.memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        {
+            NOUS_INFO("Local GPU memory: %.2f GiB", memorySizeGib);
+        }
+        else 
+        {
+            NOUS_INFO("Shared System memory: %.2f GiB", memorySizeGib);
+        }
+    }
+
+    NOUS_INFO("Graphics | Present | Compute | Transfer | Name");
+    // Print out some info about the device
+    NOUS_INFO("       %d |       %d |       %d |        %d | %s",
+        vkContext->device.graphicsQueueIndex != -1,
+        vkContext->device.presentQueueIndex != -1,
+        vkContext->device.computeQueueIndex != -1,
+        vkContext->device.transferQueueIndex != -1,
+        vkContext->device.properties.deviceName);
+
+    NOUS_INFO("Device meets queue requirements.");
+    NOUS_INFO("Graphics Family Index: %i", vkContext->device.graphicsQueueIndex);
+    NOUS_INFO("Present Family Index:  %i", vkContext->device.presentQueueIndex);
+    NOUS_INFO("Compute Family Index:  %i", vkContext->device.computeQueueIndex);
+    NOUS_INFO("Transfer Family Index: %i", vkContext->device.transferQueueIndex);
 }

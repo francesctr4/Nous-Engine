@@ -24,8 +24,8 @@
 
 struct VkSwapChainSupportDetails 
 {
-    DynamicArray<VkSurfaceFormatKHR> formats;
-    DynamicArray<VkPresentModeKHR> presentModes;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
     VkSurfaceCapabilitiesKHR capabilities;
 };
 
@@ -40,6 +40,7 @@ struct VulkanDevice
 
     int32 graphicsQueueIndex;
     int32 presentQueueIndex;
+    int32 computeQueueIndex;
     int32 transferQueueIndex;
 
     VkPhysicalDeviceProperties properties;
