@@ -36,7 +36,9 @@ struct VulkanDevice
 {
 	VkPhysicalDevice physicalDevice;
 	VkDevice logicalDevice;
+    
     VkSwapChainSupportDetails swapChainSupport;
+    VkSampleCountFlagBits msaaSamples;
 
     int32 graphicsQueueIndex;
     int32 presentQueueIndex;

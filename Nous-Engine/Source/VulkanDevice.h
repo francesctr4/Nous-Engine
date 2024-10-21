@@ -19,6 +19,16 @@ struct VkPhysicalDeviceQueueFamilyIndices
 	}
 };
 
+struct VkPhysicalDeviceRequirements
+{
+	bool discreteGPU;
+	bool geometryShader;
+	bool samplerAnisotropy;
+	bool queueFamilies;
+	bool extensionsSupported;
+	bool swapChainAdequate;
+};
+
 bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
 VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
@@ -26,5 +36,8 @@ VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice& physicalD
 bool CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
 VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+
+// --------------- Multisampling --------------- //
+VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties);
 
 void LogInfoAboutDevice(VulkanContext* vkContext);

@@ -7,6 +7,8 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* v
 {
     bool ret = false;
 
+    VkPhysicalDeviceRequirements requirements = {};
+
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 
@@ -16,8 +18,8 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* v
     VkPhysicalDeviceMemoryProperties deviceMemory;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemory);
 
-    // TODO: Multisampling
-    //msaaSamples = GetMaxUsableSampleCount();
+    // --------------- Multisampling --------------- //
+    VkSampleCountFlagBits msaaSamples = GetMaxUsableSampleCount(deviceProperties);
 
     VkPhysicalDeviceQueueFamilyIndices deviceIndices = FindQueueFamilies(physicalDevice, vkContext);
 
@@ -32,7 +34,7 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* v
         swapChainSupport = QuerySwapChainSupport(physicalDevice, vkContext);
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
-
+    
     ret = deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
         deviceFeatures.geometryShader &&
         deviceFeatures.samplerAnisotropy &&
@@ -42,17 +44,19 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* v
 
     if (ret) 
     {
-        vkContext->device.properties = deviceProperties;
-        vkContext->device.features = deviceFeatures;
-        vkContext->device.memory = deviceMemory;
+        vkContext->device.physicalDevice = physicalDevice;
+
+        vkContext->device.swapChainSupport = swapChainSupport;
+        vkContext->device.msaaSamples = msaaSamples;
 
         vkContext->device.graphicsQueueIndex = deviceIndices.graphicsFamilyIndex.value();
         vkContext->device.presentQueueIndex = deviceIndices.presentFamilyIndex.value();
         vkContext->device.computeQueueIndex = deviceIndices.computeFamilyIndex.value();
         vkContext->device.transferQueueIndex = deviceIndices.transferFamilyIndex.value();
-        
-        vkContext->device.swapChainSupport = swapChainSupport;
-        vkContext->device.physicalDevice = physicalDevice;
+
+        vkContext->device.properties = deviceProperties;
+        vkContext->device.features = deviceFeatures;
+        vkContext->device.memory = deviceMemory;
     }
 
     return ret;
@@ -88,12 +92,11 @@ VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice& physicalD
         }
 
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, vkContext->surface, &presentSupport);
+        VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, vkContext->surface, &presentSupport));
 
-        if (presentSupport) {
-
+        if (presentSupport) 
+        {
             indices.presentFamilyIndex = i;
-
         }
 
         if (indices.IsComplete()) 
@@ -108,10 +111,10 @@ VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice& physicalD
 bool CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
 {
     uint32 extensionCount;
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+    VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr));
 
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+    VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data()));
 
     std::unordered_set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
@@ -156,6 +159,46 @@ VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice
     return details;
 }
 
+// --------------- Multisampling --------------- //
+VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties)
+{
+    VkSampleCountFlags counts = properties.limits.framebufferColorSampleCounts &
+        properties.limits.framebufferDepthSampleCounts;
+
+    if (counts & VK_SAMPLE_COUNT_64_BIT) {
+
+        return VK_SAMPLE_COUNT_64_BIT;
+
+    }
+    else if (counts & VK_SAMPLE_COUNT_32_BIT) {
+
+        return VK_SAMPLE_COUNT_32_BIT;
+
+    }
+    else if (counts & VK_SAMPLE_COUNT_16_BIT) {
+
+        return VK_SAMPLE_COUNT_16_BIT;
+
+    }
+    else if (counts & VK_SAMPLE_COUNT_8_BIT) {
+
+        return VK_SAMPLE_COUNT_8_BIT;
+
+    }
+    else if (counts & VK_SAMPLE_COUNT_4_BIT) {
+
+        return VK_SAMPLE_COUNT_4_BIT;
+
+    }
+    else if (counts & VK_SAMPLE_COUNT_2_BIT) {
+
+        return VK_SAMPLE_COUNT_2_BIT;
+
+    }
+
+    return VK_SAMPLE_COUNT_1_BIT;
+}
+
 void LogInfoAboutDevice(VulkanContext* vkContext)
 {
     NOUS_INFO("Selected device: '%s'.", vkContext->device.properties.deviceName);
@@ -175,7 +218,7 @@ void LogInfoAboutDevice(VulkanContext* vkContext)
         }
         case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: 
         {
-            NOUS_INFO("GPU type is Descrete.");
+            NOUS_INFO("GPU type is Discrete.");
             break;
         }
         case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
@@ -205,7 +248,7 @@ void LogInfoAboutDevice(VulkanContext* vkContext)
     // Memory information
     for (uint32 i = 0; i < vkContext->device.memory.memoryHeapCount; ++i) 
     {
-        float32 memorySizeGib = (((float32)vkContext->device.memory.memoryHeaps[i].size) / (1024.0f * 1024.0f * 1024.0f));
+        float32 memorySizeGib = ((static_cast<float32>(vkContext->device.memory.memoryHeaps[i].size)) / (1024.0f * 1024.0f * 1024.0f));
 
         if (vkContext->device.memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
         {
@@ -227,8 +270,10 @@ void LogInfoAboutDevice(VulkanContext* vkContext)
         vkContext->device.properties.deviceName);
 
     NOUS_INFO("Device meets queue requirements.");
-    NOUS_INFO("Graphics Family Index: %i", vkContext->device.graphicsQueueIndex);
-    NOUS_INFO("Present Family Index:  %i", vkContext->device.presentQueueIndex);
-    NOUS_INFO("Compute Family Index:  %i", vkContext->device.computeQueueIndex);
-    NOUS_INFO("Transfer Family Index: %i", vkContext->device.transferQueueIndex);
+    NOUS_INFO("Graphics Family Index: %d", vkContext->device.graphicsQueueIndex);
+    NOUS_INFO("Present Family Index:  %d", vkContext->device.presentQueueIndex);
+    NOUS_INFO("Compute Family Index:  %d", vkContext->device.computeQueueIndex);
+    NOUS_INFO("Transfer Family Index: %d", vkContext->device.transferQueueIndex);
+
+    NOUS_INFO("MSAA: %d", static_cast<uint8>(vkContext->device.msaaSamples));
 }
