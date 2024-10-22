@@ -30,19 +30,17 @@ bool CreateSwapChain(VulkanContext* vkContext)
 
     uint32_t queueFamilyIndices[] = { vkContext->device.graphicsQueueIndex, vkContext->device.presentQueueIndex };
 
-    if (vkContext->device.graphicsQueueIndex != vkContext->device.presentQueueIndex) {
-
+    if (vkContext->device.graphicsQueueIndex != vkContext->device.presentQueueIndex) 
+    {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
-
     }
-    else {
-
+    else 
+    {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         createInfo.queueFamilyIndexCount = 0;
         createInfo.pQueueFamilyIndices = nullptr;
-
     }
 
     createInfo.preTransform = vkContext->device.swapChainSupport.capabilities.currentTransform;
@@ -53,26 +51,22 @@ bool CreateSwapChain(VulkanContext* vkContext)
 
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    if (vkCreateSwapchainKHR(vkContext->device.logicalDevice, &createInfo, vkContext->allocator, &vkContext->swapChain.swapChainHandle) != VK_SUCCESS) {
+    VK_CHECK_MSG(vkCreateSwapchainKHR(vkContext->device.logicalDevice, &createInfo, vkContext->allocator, &vkContext->swapChain.swapChainHandle), "vkCreateSwapchainKHR failed!");
 
-        std::cout << "Failed to create Swap Chain!" << std::endl;
-
-    }
-    else {
-
-        std::cout << "Swap Chain created successfully!" << std::endl;
-
-    }
-
-    vkGetSwapchainImagesKHR(vkContext->device.logicalDevice, vkContext->swapChain.swapChainHandle, &imageCount, nullptr);
+    VK_CHECK(vkGetSwapchainImagesKHR(vkContext->device.logicalDevice, vkContext->swapChain.swapChainHandle, &imageCount, nullptr));
     vkContext->swapChain.swapChainImages.resize(imageCount);
 
-    vkGetSwapchainImagesKHR(vkContext->device.logicalDevice, vkContext->swapChain.swapChainHandle, &imageCount, vkContext->swapChain.swapChainImages.data());
+    VK_CHECK(vkGetSwapchainImagesKHR(vkContext->device.logicalDevice, vkContext->swapChain.swapChainHandle, &imageCount, vkContext->swapChain.swapChainImages.data()));
 
     vkContext->swapChain.swapChainImageFormat = surfaceFormat.format;
     vkContext->swapChain.swapChainExtent = extent;
 
     return ret;
+}
+
+void RecreateSwapChain(VulkanContext* vkContext)
+{
+
 }
 
 void DestroySwapChain(VulkanContext* vkContext)

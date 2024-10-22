@@ -4,7 +4,7 @@
 #include "VulkanTypes.inl"
 
 bool CreateSwapChain(VulkanContext* vkContext);
-//void RecreateSwapChain();
+void RecreateSwapChain(VulkanContext* vkContext);
 void DestroySwapChain(VulkanContext* vkContext);
 
 VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
