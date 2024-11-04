@@ -60,6 +60,8 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext
 
 VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
+int32 FindMemoryType(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties);
+
 VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties); // Multisampling
 
 /**

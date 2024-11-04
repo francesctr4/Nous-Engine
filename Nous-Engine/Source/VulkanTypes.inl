@@ -25,13 +25,27 @@
 
 const uint8 MAX_FRAMES_IN_FLIGHT = 2;
 
+struct VulkanImage
+{
+    VkImage handle;
+    VkDeviceMemory memory;
+    VkImageView view;
+
+    uint32 width;
+    uint32 height;
+};
+
 struct VulkanSwapChain
 {
-    VkSwapchainKHR swapChainHandle;
-    std::vector<VkImage> swapChainImages;
+    VkSwapchainKHR handle;
+    
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
+
+    std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
+
+    VulkanImage depthAttachment;
 };
 
 struct VkSwapChainSupportDetails
@@ -84,4 +98,15 @@ struct VulkanContext
 	VulkanDevice device;
 
     VulkanSwapChain swapChain;
+
+    uint32 imageIndex;
+    uint32 currentFrame;
+    bool recreatingSwapchain;
+
+    int32 FindMemoryIndex(uint32 typeFilter, uint32 propertyFlags);
 };
+
+int32 VulkanContext::FindMemoryIndex(uint32 typeFilter, uint32 propertyFlags)
+{
+    return int32();
+}

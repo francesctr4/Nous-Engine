@@ -209,6 +209,24 @@ VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice
     return details;
 }
 
+int32 FindMemoryType(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties)
+{
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) 
+    {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) 
+        {
+            return i;
+        }
+
+    }
+
+    NOUS_WARN("Unable to find a suitable Memory Type!");
+    return -1;
+}
+
 VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties) // Multisampling
 {
     VkSampleCountFlags counts = properties.limits.framebufferColorSampleCounts &
