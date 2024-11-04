@@ -23,7 +23,7 @@
 	NOUS_ASSERT_MSG(expr == VK_SUCCESS, message);	\
 }	
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
+const uint8 MAX_FRAMES_IN_FLIGHT = 2;
 
 struct VulkanSwapChain
 {
@@ -72,6 +72,9 @@ struct VulkanDevice
  */
 struct VulkanContext 
 {
+    uint32 framebufferWidth;
+    uint32 framebufferHeight;
+
 	VkInstance instance;
 	VkAllocationCallbacks* allocator;
 	VkSurfaceKHR surface;
