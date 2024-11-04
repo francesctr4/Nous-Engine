@@ -89,7 +89,7 @@ bool VulkanBackend::Initialize()
 
     // Swap Chain
     NOUS_DEBUG("Creating Vulkan Swap Chain...");
-    if (!CreateSwapChain(vkContext))
+    if (!CreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, &vkContext->swapChain))
     {
         NOUS_ERROR("Failed to create Vulkan Swap Chain. Shutting the Application.");
         ret = false;
@@ -104,7 +104,7 @@ bool VulkanBackend::Initialize()
 
 void VulkanBackend::Shutdown()
 {
-    DestroySwapChain(vkContext);
+    DestroySwapChain(vkContext, &vkContext->swapChain);
 
     DestroyLogicalDevice(vkContext);
 

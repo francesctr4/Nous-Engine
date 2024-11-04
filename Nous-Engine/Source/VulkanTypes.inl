@@ -65,6 +65,7 @@ struct VulkanDevice
     
     VkSwapChainSupportDetails swapChainSupport;
     VkSampleCountFlagBits msaaSamples;
+    VkFormat depthFormat;
 
     int32 graphicsQueueIndex;
     int32 presentQueueIndex;
@@ -102,11 +103,4 @@ struct VulkanContext
     uint32 imageIndex;
     uint32 currentFrame;
     bool recreatingSwapchain;
-
-    int32 FindMemoryIndex(uint32 typeFilter, uint32 propertyFlags);
 };
-
-int32 VulkanContext::FindMemoryIndex(uint32 typeFilter, uint32 propertyFlags)
-{
-    return int32();
-}

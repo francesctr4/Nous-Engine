@@ -62,6 +62,9 @@ VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice
 
 int32 FindMemoryType(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties);
 
+VkFormat FindDepthFormat(VkPhysicalDevice& physicalDevice);
+VkFormat FindSupportedFormat(VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+
 VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties); // Multisampling
 
 /**
