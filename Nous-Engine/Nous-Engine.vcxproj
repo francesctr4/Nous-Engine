@@ -214,6 +214,7 @@
     <ClCompile Include="Source\VulkanBackend.cpp" />
     <ClCompile Include="Source\VulkanDevice.cpp" />
     <ClCompile Include="Source\VulkanImage.cpp" />
+    <ClCompile Include="Source\VulkanRenderpass.cpp" />
     <ClCompile Include="Source\VulkanSwapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -323,6 +324,7 @@
     <ClInclude Include="Source\VulkanDevice.h" />
     <ClInclude Include="Source\VulkanImage.h" />
     <ClInclude Include="Source\VulkanPlatform.h" />
+    <ClInclude Include="Source\VulkanRenderpass.h" />
     <ClInclude Include="Source\VulkanSwapchain.h" />
   </ItemGroup>
   <ItemGroup>
