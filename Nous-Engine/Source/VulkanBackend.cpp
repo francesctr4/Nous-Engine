@@ -2,6 +2,7 @@
 #include "VulkanPlatform.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapchain.h"
+#include "VulkanRenderpass.h"
 
 #include "MemoryManager.h"
 #include "Logger.h"
@@ -99,11 +100,29 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Vulkan Swap Chain created successfully!");
     }
 
+    // Render Pass
+    NOUS_DEBUG("Creating Vulkan Render Pass...");
+    if (!CreateRenderpass(vkContext, &vkContext->mainRenderpass,
+        0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight,
+        0.0f, 0.0f, 0.2f, 1.0f,
+        1.0f,
+        0))
+    {
+        NOUS_ERROR("Failed to create Vulkan Render Pass. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Vulkan Render Pass created successfully!");
+    }
+
 	return ret;
 }
 
 void VulkanBackend::Shutdown()
 {
+    DestroyRenderpass(vkContext, &vkContext->mainRenderpass);
+
     DestroySwapChain(vkContext, &vkContext->swapChain);
 
     DestroyLogicalDevice(vkContext);

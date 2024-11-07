@@ -35,6 +35,29 @@ struct VulkanImage
     uint32 height;
 };
 
+enum class VulkanRenderPassState 
+{
+    READY,
+    RECORDING,
+    IN_RENDER_PASS,
+    RECORDING_ENDED,
+    SUBMITTED,
+    NOT_ALLOCATED
+};
+
+struct VulkanRenderpass 
+{
+    VkRenderPass handle;
+
+    float32 x, y, w, h;
+    float32 r, g, b, a;
+
+    float32 depth;
+    uint32 stencil;
+
+    VulkanRenderPassState state;
+};
+
 struct VulkanSwapChain
 {
     VkSwapchainKHR handle;
@@ -53,6 +76,24 @@ struct VkSwapChainSupportDetails
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
     VkSurfaceCapabilitiesKHR capabilities;
+};
+
+enum class VulkanCommandBufferState
+{
+    COMMAND_BUFFER_STATE_READY,
+    COMMAND_BUFFER_STATE_RECORDING,
+    COMMAND_BUFFER_STATE_IN_RENDER_PASS,
+    COMMAND_BUFFER_STATE_RECORDING_ENDED,
+    COMMAND_BUFFER_STATE_SUBMITTED,
+    COMMAND_BUFFER_STATE_NOT_ALLOCATED
+};
+
+struct VulkanCommandBuffer 
+{
+    VkCommandBuffer handle;
+
+    // Command buffer state.
+    VulkanCommandBufferState state;
 };
 
 /**
@@ -99,6 +140,7 @@ struct VulkanContext
 	VulkanDevice device;
 
     VulkanSwapChain swapChain;
+    VulkanRenderpass mainRenderpass;
 
     uint32 imageIndex;
     uint32 currentFrame;
