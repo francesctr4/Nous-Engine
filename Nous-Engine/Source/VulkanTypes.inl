@@ -58,6 +58,13 @@ struct VulkanRenderpass
     VulkanRenderPassState state;
 };
 
+struct VulkanFramebuffer 
+{
+    VkFramebuffer handle;
+    std::vector<VkImageView> attachments;
+    VulkanRenderpass renderpass;
+};
+
 struct VulkanSwapChain
 {
     VkSwapchainKHR handle;
@@ -69,6 +76,8 @@ struct VulkanSwapChain
     std::vector<VkImageView> swapChainImageViews;
 
     VulkanImage depthAttachment;
+
+    std::vector<VulkanFramebuffer> swapChainFramebuffers;
 };
 
 struct VkSwapChainSupportDetails
@@ -125,13 +134,19 @@ struct VulkanDevice
     VkPhysicalDeviceMemoryProperties memory;
 };
 
+struct VulkanFence 
+{
+    VkFence handle;
+    bool isSignaled;
+};
+
 /**
  * @brief Stores all the Vulkan Context variables
  */
 struct VulkanContext 
 {
-    uint32 framebufferWidth;
-    uint32 framebufferHeight;
+    int32 framebufferWidth;
+    int32 framebufferHeight;
 
 	VkInstance instance;
 	VkAllocationCallbacks* allocator;
@@ -145,6 +160,12 @@ struct VulkanContext
     VulkanRenderpass mainRenderpass;
 
     std::vector<VulkanCommandBuffer> graphicsCommandBuffers;
+
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> queueCompleteSemaphores;
+
+    std::vector<VkFence> inFlightFences;
+    std::vector<VkFence>* imagesInFlight;
 
     uint32 imageIndex;
     uint32 currentFrame;

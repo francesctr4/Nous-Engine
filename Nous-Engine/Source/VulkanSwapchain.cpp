@@ -177,6 +177,9 @@ void SwapChainPresent(VulkanContext* vkContext, VulkanSwapChain* swapchain, VkQu
     {
         NOUS_FATAL("Failed to present swap chain image!");
     }
+
+    // Increment (and loop) the index.
+    vkContext->currentFrame = (vkContext->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
@@ -212,17 +215,16 @@ VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avai
 
 VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) 
+    {
         return capabilities.currentExtent;
-
     }
-    else {
+    else 
+    {
+        int32 width, height;
+        GetFramebufferSize(&width, &height);
 
-        int width, height;
-        SDL_Vulkan_GetDrawableSize(GetSDLWindowData(), &width, &height);
-
-        VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+        VkExtent2D actualExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
 
         actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
         actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);

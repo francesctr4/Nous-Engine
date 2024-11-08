@@ -214,9 +214,11 @@
     <ClCompile Include="Source\VulkanBackend.cpp" />
     <ClCompile Include="Source\VulkanCommandBuffer.cpp" />
     <ClCompile Include="Source\VulkanDevice.cpp" />
+    <ClCompile Include="Source\VulkanFramebuffer.cpp" />
     <ClCompile Include="Source\VulkanImage.cpp" />
     <ClCompile Include="Source\VulkanRenderpass.cpp" />
     <ClCompile Include="Source\VulkanSwapchain.cpp" />
+    <ClCompile Include="Source\VulkanSyncObjects.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
@@ -324,10 +326,12 @@
     <ClInclude Include="Source\VulkanBackend.h" />
     <ClInclude Include="Source\VulkanCommandBuffer.h" />
     <ClInclude Include="Source\VulkanDevice.h" />
+    <ClInclude Include="Source\VulkanFramebuffer.h" />
     <ClInclude Include="Source\VulkanImage.h" />
     <ClInclude Include="Source\VulkanPlatform.h" />
     <ClInclude Include="Source\VulkanRenderpass.h" />
     <ClInclude Include="Source\VulkanSwapchain.h" />
+    <ClInclude Include="Source\VulkanSyncObjects.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\OpenGLTypes.inl" />

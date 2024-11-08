@@ -72,3 +72,8 @@ SDL_Window* GetSDLWindowData()
 {
     return External->window->window;
 }
+
+void GetFramebufferSize(int32* width, int32* height)
+{
+    SDL_Vulkan_GetDrawableSize(GetSDLWindowData(), width, height);
+}

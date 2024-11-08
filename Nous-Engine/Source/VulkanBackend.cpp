@@ -29,6 +29,9 @@ bool VulkanBackend::Initialize()
     // TODO: Custom allocator
     vkContext->allocator = 0;
 
+    // Get Framebuffer Size
+    GetFramebufferSize(&vkContext->framebufferWidth, &vkContext->framebufferHeight);
+
     // Instance
     NOUS_DEBUG("Creating Vulkan instance...");
     if (!CreateInstance()) 
