@@ -111,6 +111,9 @@
     <ClCompile Include="Source\VulkanRenderpass.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanCommandBuffer.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -435,6 +438,9 @@
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanRenderpass.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanCommandBuffer.h">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>

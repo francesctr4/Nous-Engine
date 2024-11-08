@@ -212,6 +212,7 @@
     <ClCompile Include="Source\RingQueue.cpp" />
     <ClCompile Include="Source\Timer.cpp" />
     <ClCompile Include="Source\VulkanBackend.cpp" />
+    <ClCompile Include="Source\VulkanCommandBuffer.cpp" />
     <ClCompile Include="Source\VulkanDevice.cpp" />
     <ClCompile Include="Source\VulkanImage.cpp" />
     <ClCompile Include="Source\VulkanRenderpass.cpp" />
@@ -321,6 +322,7 @@
     <ClInclude Include="Source\RingQueue.h" />
     <ClInclude Include="Source\Vulkan.h" />
     <ClInclude Include="Source\VulkanBackend.h" />
+    <ClInclude Include="Source\VulkanCommandBuffer.h" />
     <ClInclude Include="Source\VulkanDevice.h" />
     <ClInclude Include="Source\VulkanImage.h" />
     <ClInclude Include="Source\VulkanPlatform.h" />

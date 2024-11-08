@@ -49,6 +49,7 @@ public:
 	bool CreateInstance();
 	bool SetupDebugMessenger();
 	bool CreateSurface();
+	bool CreateCommandBuffers();
 
 	// ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
 	

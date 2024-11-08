@@ -113,6 +113,8 @@ struct VulkanDevice
     int32 computeQueueIndex;
     int32 transferQueueIndex;
 
+    VkCommandPool graphicsCommandPool;
+
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     VkQueue computeQueue;
@@ -141,6 +143,8 @@ struct VulkanContext
 
     VulkanSwapChain swapChain;
     VulkanRenderpass mainRenderpass;
+
+    std::vector<VulkanCommandBuffer> graphicsCommandBuffers;
 
     uint32 imageIndex;
     uint32 currentFrame;
