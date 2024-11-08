@@ -436,8 +436,15 @@ bool CreateLogicalDevice(VulkanContext* vkContext)
 
     NOUS_DEBUG("Logical Device Queues Obtained");
 
+    CreateCommandPool(vkContext);
+
+    return ret;
+}
+
+void CreateCommandPool(VulkanContext* vkContext)
+{
     // Create Command Pool
-    VkCommandPoolCreateInfo commandPoolCreateInfo;
+    VkCommandPoolCreateInfo commandPoolCreateInfo{};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 
     commandPoolCreateInfo.queueFamilyIndex = vkContext->device.graphicsQueueIndex;
@@ -447,8 +454,6 @@ bool CreateLogicalDevice(VulkanContext* vkContext)
         vkContext->allocator, &vkContext->device.graphicsCommandPool));
 
     NOUS_DEBUG("Graphics Command Pool Created");
-
-    return ret;
 }
 
 void DestroyLogicalDevice(VulkanContext* vkContext)

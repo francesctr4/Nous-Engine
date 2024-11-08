@@ -4,7 +4,7 @@
 
 namespace NOUS_VulkanCommandBuffer 
 {
-    void CreateCommandBuffers(VulkanContext* vkContext);
+    bool CreateCommandBuffers(VulkanContext* vkContext);
 
     void DestroyCommandBuffers(VulkanContext* vkContext);
 
@@ -13,7 +13,7 @@ namespace NOUS_VulkanCommandBuffer
     void CommandBufferAllocate(VulkanContext* vkContext, VkCommandPool commandPool,
         bool isPrimary, VulkanCommandBuffer* outCommandBuffer);
 
-    void CommandBufferFree(VulkanContext* vkContext, VkCommandPool pool, VulkanCommandBuffer* commandBuffer);
+    void CommandBufferFree(VulkanContext* vkContext, VkCommandPool commandPool, VulkanCommandBuffer* commandBuffer);
 
     void CommandBufferBegin(VulkanCommandBuffer* commandBuffer, bool isSingleUse,
         bool isRenderpassContinue, bool isSimultaneousUse);
@@ -25,8 +25,8 @@ namespace NOUS_VulkanCommandBuffer
     void CommandBufferReset(VulkanCommandBuffer* commandBuffer);
 
     void CommandBufferAllocateAndBeginSingleTime(VulkanContext* vkContext,
-        VkCommandPool pool, VulkanCommandBuffer* outCommandBuffer);
+        VkCommandPool commandPool, VulkanCommandBuffer* outCommandBuffer);
 
-    void CommandBufferEndAndFreeSingleTime(VulkanContext* vkContext, VkCommandPool pool,
+    void CommandBufferEndAndFreeSingleTime(VulkanContext* vkContext, VkCommandPool commandPool,
         VulkanCommandBuffer* commandBuffer, VkQueue queue);
 }

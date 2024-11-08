@@ -125,6 +125,8 @@ bool CreateRenderpass(VulkanContext* vkContext, VulkanRenderpass* outRenderpass,
 
 void DestroyRenderpass(VulkanContext* vkContext, VulkanRenderpass* renderpass)
 {
+    NOUS_DEBUG("Destroying Render Pass...");
+
     if (renderpass && renderpass->handle) 
     {
         vkDestroyRenderPass(vkContext->device.logicalDevice, renderpass->handle, vkContext->allocator);

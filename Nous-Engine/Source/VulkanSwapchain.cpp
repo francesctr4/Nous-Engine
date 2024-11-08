@@ -116,6 +116,8 @@ void RecreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, Vu
 
 void DestroySwapChain(VulkanContext* vkContext, VulkanSwapChain* swapChain)
 {
+    NOUS_DEBUG("Destroying Swap Chain...");
+
     DestroyVulkanImage(vkContext, &swapChain->depthAttachment);
 
     // Only destroy the views, not the images, since those are owned by the swapchain and are thus destroyed when it is.

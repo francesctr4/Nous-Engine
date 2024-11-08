@@ -3,6 +3,7 @@
 #include "VulkanDevice.h"
 #include "VulkanSwapchain.h"
 #include "VulkanRenderpass.h"
+#include "VulkanCommandBuffer.h"
 
 #include "MemoryManager.h"
 #include "Logger.h"
@@ -118,7 +119,7 @@ bool VulkanBackend::Initialize()
 
     // Create Command Buffers
     NOUS_DEBUG("Creating Vulkan Command Buffers...");
-    if (!CreateCommandBuffers())
+    if (!NOUS_VulkanCommandBuffer::CreateCommandBuffers(vkContext))
     {
         NOUS_ERROR("Failed to create Vulkan Command Buffers. Shutting the Application.");
         ret = false;
@@ -133,6 +134,8 @@ bool VulkanBackend::Initialize()
 
 void VulkanBackend::Shutdown()
 {
+    NOUS_VulkanCommandBuffer::DestroyCommandBuffers(vkContext);
+
     DestroyRenderpass(vkContext, &vkContext->mainRenderpass);
 
     DestroySwapChain(vkContext, &vkContext->swapChain);
@@ -238,35 +241,6 @@ bool VulkanBackend::SetupDebugMessenger()
 bool VulkanBackend::CreateSurface()
 {
     return SDL_Vulkan_CreateSurface(GetSDLWindowData(), vkContext->instance, &vkContext->surface);
-}
-
-bool VulkanBackend::CreateCommandBuffers()
-{
-    bool ret = true;
-
-    if (!context.graphics_command_buffers) {
-        context.graphics_command_buffers = darray_reserve(vulkan_command_buffer, context.swapchain.image_count);
-        for (u32 i = 0; i < context.swapchain.image_count; ++i) {
-            kzero_memory(&context.graphics_command_buffers[i], sizeof(vulkan_command_buffer));
-        }
-    }
-    for (u32 i = 0; i < context.swapchain.image_count; ++i) {
-        if (context.graphics_command_buffers[i].handle) {
-            vulkan_command_buffer_free(
-                &context,
-                context.device.graphics_command_pool,
-                &context.graphics_command_buffers[i]);
-        }
-        kzero_memory(&context.graphics_command_buffers[i], sizeof(vulkan_command_buffer));
-        vulkan_command_buffer_allocate(
-            &context,
-            context.device.graphics_command_pool,
-            TRUE,
-            &context.graphics_command_buffers[i]);
-    }
-    KDEBUG("Vulkan command buffers created.");
-
-    return ret;
 }
 
 // ------------------------------------ Vulkan Helper Functions ------------------------------------ \\

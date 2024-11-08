@@ -79,4 +79,6 @@ void LogInfoAboutDevice(VulkanContext* vkContext);
 
 bool CreateLogicalDevice(VulkanContext* vkContext);
 
+void CreateCommandPool(VulkanContext* vkContext);
+
 void DestroyLogicalDevice(VulkanContext* vkContext);
