@@ -4,6 +4,8 @@
 #include "VulkanSwapchain.h"
 #include "VulkanRenderpass.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanFramebuffer.h"
+#include "VulkanSyncObjects.h"
 
 #include "MemoryManager.h"
 #include "Logger.h"
@@ -120,6 +122,18 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Vulkan Render Pass created successfully!");
     }
 
+    // Swapchain Framebuffers
+    NOUS_DEBUG("Creating Vulkan Swapchain Framebuffers...");
+    if (!NOUS_VulkanFramebuffer::CreateFramebuffers(vkContext))
+    {
+        NOUS_ERROR("Failed to create Vulkan Swapchain Framebuffers. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Vulkan Swapchain Framebuffers created successfully!");
+    }
+
     // Create Command Buffers
     NOUS_DEBUG("Creating Vulkan Command Buffers...");
     if (!NOUS_VulkanCommandBuffer::CreateCommandBuffers(vkContext))
@@ -132,12 +146,30 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Vulkan Command Buffers created successfully!");
     }
 
+    // Create Sync Objects
+    NOUS_DEBUG("Creating Vulkan Sync Objects...");
+    if (!NOUS_VulkanSyncObjects::CreateSyncObjects(vkContext))
+    {
+        NOUS_ERROR("Failed to create Vulkan Sync Objects. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Vulkan Sync Objects created successfully!");
+    }
+
 	return ret;
 }
 
 void VulkanBackend::Shutdown()
 {
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
+    NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
+
     NOUS_VulkanCommandBuffer::DestroyCommandBuffers(vkContext);
+
+    NOUS_VulkanFramebuffer::DestroyFramebuffers(vkContext);
 
     DestroyRenderpass(vkContext, &vkContext->mainRenderpass);
 

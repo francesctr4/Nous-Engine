@@ -86,24 +86,9 @@ bool CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, Vulk
         swapChain->swapChainImageViews[i] = tempImage.view;
     }
 
-    // Depth resources
-    vkContext->device.depthFormat = FindDepthFormat(vkContext->device.physicalDevice);
+    CreateColorResources(vkContext, swapChain);
 
-    // Create depth image and its view.
-    CreateVulkanImage(
-        vkContext,
-        VK_IMAGE_TYPE_2D,
-        extent.width,
-        extent.height,
-        1,
-        vkContext->device.msaaSamples,
-        vkContext->device.depthFormat,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        true,
-        VK_IMAGE_ASPECT_DEPTH_BIT,
-        &swapChain->depthAttachment);
+    CreateDepthResources(vkContext, swapChain);
 
     return ret;
 }
@@ -117,6 +102,8 @@ void RecreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, Vu
 void DestroySwapChain(VulkanContext* vkContext, VulkanSwapChain* swapChain)
 {
     NOUS_DEBUG("Destroying Swap Chain...");
+
+    DestroyVulkanImage(vkContext, &swapChain->colorAttachment);
 
     DestroyVulkanImage(vkContext, &swapChain->depthAttachment);
 
@@ -231,4 +218,49 @@ VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 
         return actualExtent;
     }
+}
+
+void CreateColorResources(VulkanContext* vkContext, VulkanSwapChain* swapchain)
+{
+    // Color resources
+    vkContext->device.colorFormat = swapchain->swapChainImageFormat;
+
+    // Create color image and its view.
+    CreateVulkanImage(
+        vkContext,
+        VK_IMAGE_TYPE_2D,
+        swapchain->swapChainExtent.width,
+        swapchain->swapChainExtent.height,
+        1,
+        vkContext->device.msaaSamples,
+        vkContext->device.colorFormat,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        true,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        &swapchain->colorAttachment);
+}
+
+void CreateDepthResources(VulkanContext* vkContext, VulkanSwapChain* swapchain)
+{
+    // Depth resources
+    vkContext->device.depthFormat = FindDepthFormat(vkContext->device.physicalDevice);
+
+    // Create depth image and its view.
+    CreateVulkanImage(
+        vkContext,
+        VK_IMAGE_TYPE_2D,
+        swapchain->swapChainExtent.width,
+        swapchain->swapChainExtent.height,
+        1,
+        vkContext->device.msaaSamples,
+        vkContext->device.depthFormat,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        true,
+        VK_IMAGE_ASPECT_DEPTH_BIT,
+        &swapchain->depthAttachment);
 }

@@ -62,7 +62,7 @@ struct VulkanFramebuffer
 {
     VkFramebuffer handle;
     std::vector<VkImageView> attachments;
-    VulkanRenderpass renderpass;
+    VulkanRenderpass* renderpass;
 };
 
 struct VulkanSwapChain
@@ -75,6 +75,7 @@ struct VulkanSwapChain
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
 
+    VulkanImage colorAttachment;
     VulkanImage depthAttachment;
 
     std::vector<VulkanFramebuffer> swapChainFramebuffers;
@@ -115,6 +116,8 @@ struct VulkanDevice
     
     VkSwapChainSupportDetails swapChainSupport;
     VkSampleCountFlagBits msaaSamples;
+
+    VkFormat colorFormat;
     VkFormat depthFormat;
 
     int32 graphicsQueueIndex;
@@ -164,8 +167,10 @@ struct VulkanContext
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> queueCompleteSemaphores;
 
-    std::vector<VkFence> inFlightFences;
-    std::vector<VkFence>* imagesInFlight;
+    std::vector<VulkanFence> inFlightFences;
+
+    // Holds pointers to fences which exist and are owned elsewhere.
+    std::vector<VulkanFence*> imagesInFlight;
 
     uint32 imageIndex;
     uint32 currentFrame;

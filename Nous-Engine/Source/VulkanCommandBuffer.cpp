@@ -8,7 +8,8 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
 
     if (vkContext->graphicsCommandBuffers.empty()) 
     {
-        vkContext->graphicsCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        // Careful here, maybe we should use MAX_FRAMES_IN_FLIGHT
+        vkContext->graphicsCommandBuffers.resize(vkContext->swapChain.swapChainImages.size());
         MemoryManager::ZeroMemory(vkContext->graphicsCommandBuffers.data(), vkContext->graphicsCommandBuffers.size() * sizeof(VulkanCommandBuffer));
     }
 

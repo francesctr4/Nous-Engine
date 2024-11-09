@@ -26,3 +26,7 @@ void SwapChainPresent(
 VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
+void CreateColorResources(VulkanContext* vkContext, VulkanSwapChain* swapchain);
+
+void CreateDepthResources(VulkanContext* vkContext, VulkanSwapChain* swapchain);

@@ -2,15 +2,16 @@
 
 #include "VulkanTypes.inl"
 
-void vulkan_framebuffer_create(
-    vulkan_context* context,
-    vulkan_renderpass* renderpass,
-    u32 width,
-    u32 height,
-    u32 attachment_count,
-    VkImageView* attachments,
-    vulkan_framebuffer* out_framebuffer);
+namespace NOUS_VulkanFramebuffer 
+{
+	bool CreateFramebuffers(VulkanContext* vkContext);
 
-void vulkan_framebuffer_destroy(vulkan_context* context, vulkan_framebuffer* framebuffer);
+	void DestroyFramebuffers(VulkanContext* vkContext);
 
-void regenerate_framebuffers();
+	// ------------------------------------------------------------------------------------------------------------ //
+
+	void CreateVulkanFramebuffer(VulkanContext* vkContext, VulkanRenderpass* renderpass, uint32 width, uint32 height,
+		uint32 attachmentCount, VkImageView* attachments, VulkanFramebuffer* outFramebuffer);
+
+	void DestroyVulkanFramebuffer(VulkanContext* vkContext, VulkanFramebuffer* framebuffer);
+}
