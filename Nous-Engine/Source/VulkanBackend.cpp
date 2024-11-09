@@ -6,6 +6,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanFramebuffer.h"
 #include "VulkanSyncObjects.h"
+#include "VulkanUtils.h"
 
 #include "MemoryManager.h"
 #include "Logger.h"
@@ -110,7 +111,7 @@ bool VulkanBackend::Initialize()
     NOUS_DEBUG("Creating Vulkan Render Pass...");
     if (!CreateRenderpass(vkContext, &vkContext->mainRenderpass,
         0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight,
-        0.0f, 0.0f, 0.2f, 1.0f,
+        1.0f, 0.4f, 0.8f, 1.0f,
         1.0f,
         0))
     {
@@ -192,16 +193,181 @@ void VulkanBackend::Shutdown()
 
 void VulkanBackend::Resized(uint16 width, uint16 height)
 {
+    // Update the "framebuffer size generation", a counter which indicates when the
+    // framebuffer size has been updated.
+
+    cachedFramebufferWidth = width;
+    cachedFramebufferHeight = height;
+
+    vkContext->framebufferSizeGeneration++;
+
+    NOUS_INFO("Vulkan Renderer Backend --> Resized: W / H / GEN: %i / %i / %llu", width, height, vkContext->framebufferSizeGeneration);
 }
 
 bool VulkanBackend::BeginFrame(float32 dt)
 {
-	return false;
+    VulkanDevice* device = &vkContext->device;
+
+    if (vkContext->recreatingSwapchain) // Check if recreating swap chain and boot out.
+    {
+        VkResult result = vkDeviceWaitIdle(device->logicalDevice);
+
+        if (!VkResultIsSuccess(result)) 
+        {
+            NOUS_ERROR("VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (1) failed: '%s'", VkResultMessage(result, true));
+            return false;
+        }
+
+        NOUS_INFO("Recreating Vulkan Swapchain, booting.");
+        return false;
+    }
+
+    // Check if the Framebuffer has been resized. If so, a new swapchain must be created.
+
+    if (vkContext->framebufferSizeGeneration != vkContext->framebufferSizeLastGeneration)
+    {
+        VkResult result = vkDeviceWaitIdle(device->logicalDevice);
+
+        if (!VkResultIsSuccess(result))
+        {
+            NOUS_ERROR("VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (2) failed: '%s'", VkResultMessage(result, true));
+            return false;
+        }
+
+        // If the swapchain recreation failed (because, for example, the window was minimized),
+        // boot out before unsetting the flag.
+        if (!RecreateResources()) 
+        {
+            return false;
+        }
+
+        NOUS_INFO("Resized, booting.");
+        return false;
+    }
+
+    // Wait for the execution of the current frame to complete. The fence being free will allow this one to move on.
+    if (!NOUS_VulkanSyncObjects::WaitOnVulkanFence(vkContext, &vkContext->inFlightFences[vkContext->currentFrame], UINT64_MAX))
+    {
+        NOUS_WARN("In-flight fence wait failure!");
+        return false;
+    }
+
+    // Acquire the next image from the swap chain. Pass along the semaphore that should signaled when this completes.
+    // This same semaphore will later be waited on by the queue submission to ensure this image is available.
+    if (!SwapChainAcquireNextImageIndex(vkContext, &vkContext->swapChain, UINT64_MAX,
+        vkContext->imageAvailableSemaphores[vkContext->currentFrame], 0, &vkContext->imageIndex))
+    {
+        return false;
+    }
+
+    // Begin recording commands.
+    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+
+    NOUS_VulkanCommandBuffer::CommandBufferReset(commandBuffer);
+    NOUS_VulkanCommandBuffer::CommandBufferBegin(commandBuffer, false, false, false);
+
+    // Dynamic state
+    VkViewport viewport;
+
+    viewport.x = 0.0f;
+    viewport.y = (float32)vkContext->framebufferHeight;
+
+    viewport.width = (float32)vkContext->framebufferWidth;
+    viewport.height = -(float32)vkContext->framebufferHeight;
+
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    vkCmdSetViewport(commandBuffer->handle, 0, 1, &viewport);
+
+    // Scissor
+    VkRect2D scissor;
+
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+
+    scissor.extent.width = vkContext->framebufferWidth;
+    scissor.extent.height = vkContext->framebufferHeight;
+    
+    vkCmdSetScissor(commandBuffer->handle, 0, 1, &scissor);
+
+    vkContext->mainRenderpass.w = vkContext->framebufferWidth;
+    vkContext->mainRenderpass.h = vkContext->framebufferHeight;
+
+    // Begin the render pass
+    BeginRenderpass(commandBuffer, &vkContext->mainRenderpass,
+        vkContext->swapChain.swapChainFramebuffers[vkContext->imageIndex].handle);
+
+    return true;
 }
 
 bool VulkanBackend::EndFrame(float32 dt)
 {
-	return false;
+    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+
+    // End renderpass
+    EndRenderpass(commandBuffer, &vkContext->mainRenderpass);
+    NOUS_VulkanCommandBuffer::CommandBufferEnd(commandBuffer);
+
+    // Make sure the previous frame is not using this image (i.e. its fence is being waited on)
+    if (vkContext->imagesInFlight[vkContext->imageIndex] != VK_NULL_HANDLE) // was frame
+    {  
+        NOUS_VulkanSyncObjects::WaitOnVulkanFence(vkContext, vkContext->imagesInFlight[vkContext->imageIndex], UINT64_MAX);
+    }
+
+    // Mark the image fence as in-use by this frame.
+    vkContext->imagesInFlight[vkContext->imageIndex] = &vkContext->inFlightFences[vkContext->currentFrame];
+
+    // Reset the fence for use on the next frame
+    NOUS_VulkanSyncObjects::ResetVulkanFence(vkContext, &vkContext->inFlightFences[vkContext->currentFrame]);
+
+    // Submit the queue and wait for the operation to complete.
+    // Begin queue submission
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    // Command buffer(s) to be executed.
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer->handle;
+
+    // The semaphore(s) to be signaled when the queue is complete.
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = &vkContext->queueCompleteSemaphores[vkContext->currentFrame];
+
+    // Wait semaphore ensures that the operation cannot begin until the image is available.
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &vkContext->imageAvailableSemaphores[vkContext->currentFrame];
+
+    // Each semaphore waits on the corresponding pipeline stage to complete. 1:1 ratio.
+    
+    // VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT prevents subsequent colour attachment
+    // writes from executing until the semaphore signals (i.e. one frame is presented at a time)
+    VkPipelineStageFlags flags[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.pWaitDstStageMask = flags;
+
+    VkResult result = vkQueueSubmit(vkContext->device.graphicsQueue, 1, &submitInfo, 
+        vkContext->inFlightFences[vkContext->currentFrame].handle);
+
+    if (result != VK_SUCCESS) 
+    {
+        NOUS_ERROR("vkQueueSubmit failed with result: '%s'", VkResultMessage(result, true));
+        return false;
+    }
+
+    NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(commandBuffer);
+
+    // End queue submission
+    // Give the image back to the swapchain.
+    SwapChainPresent(vkContext, &vkContext->swapChain, vkContext->device.graphicsQueue,
+        vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
+        vkContext->imageIndex);
+
+	return true;
+}
+
+bool VulkanBackend::RecreateResources()
+{
+    return false;
 }
 
 // ------------------------------------ Vulkan Pipeline Functions ------------------------------------ \\

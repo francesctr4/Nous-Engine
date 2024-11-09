@@ -219,6 +219,7 @@
     <ClCompile Include="Source\VulkanRenderpass.cpp" />
     <ClCompile Include="Source\VulkanSwapchain.cpp" />
     <ClCompile Include="Source\VulkanSyncObjects.cpp" />
+    <ClCompile Include="Source\VulkanUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
@@ -332,6 +333,7 @@
     <ClInclude Include="Source\VulkanRenderpass.h" />
     <ClInclude Include="Source\VulkanSwapchain.h" />
     <ClInclude Include="Source\VulkanSyncObjects.h" />
+    <ClInclude Include="Source\VulkanUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\OpenGLTypes.inl" />

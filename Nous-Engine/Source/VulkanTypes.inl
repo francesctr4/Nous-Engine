@@ -25,6 +25,9 @@
 
 const uint8 MAX_FRAMES_IN_FLIGHT = 2;
 
+static uint16 cachedFramebufferWidth = WINDOW_WIDTH;
+static uint16 cachedFramebufferHeight = WINDOW_HEIGHT;
+
 struct VulkanImage
 {
     VkImage handle;
@@ -150,6 +153,13 @@ struct VulkanContext
 {
     int32 framebufferWidth;
     int32 framebufferHeight;
+
+    // Current generation of framebuffer size. If it does not match framebuffer_size_last_generation,
+    // a new one should be generated.
+    uint64 framebufferSizeGeneration;
+    // The generation of the framebuffer when it was last created. Set to framebuffer_size_generation
+    // when updated.
+    uint64 framebufferSizeLastGeneration;
 
 	VkInstance instance;
 	VkAllocationCallbacks* allocator;

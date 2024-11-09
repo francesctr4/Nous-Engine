@@ -10,6 +10,21 @@ bool CreateRenderpass(VulkanContext* vkContext, VulkanRenderpass* outRenderpass,
 {
     bool ret = false;
 
+    // Transfer values to our Renderpass structure
+
+    outRenderpass->x = x;
+    outRenderpass->y = y;
+    outRenderpass->w = w;
+    outRenderpass->h = h;
+
+    outRenderpass->r = r;
+    outRenderpass->g = g;
+    outRenderpass->b = b;
+    outRenderpass->a = a;
+
+    outRenderpass->depth = depth;
+    outRenderpass->stencil = stencil;
+
     // Color 
 
     VkAttachmentDescription colorAttachment{};

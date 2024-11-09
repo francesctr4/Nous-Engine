@@ -184,15 +184,16 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 				{
 					case SDL_WINDOWEVENT_RESIZED:
 					{
-						//int width = e.window.data1;
-						//int height = e.window.data2;
+						int width = e.window.data1;
+						int height = e.window.data2;
+
+						App->BroadcastEvent(Event(EventType::WINDOW_RESIZED, { .int64 = { width, height } }));
 
 						break;
 					}
-					case SDL_WINDOWEVENT_MAXIMIZED:
+					case SDL_WINDOWEVENT_MINIMIZED:
 					{
-						//int width = e.window.data1;
-						//int height = e.window.data2;
+						App->BroadcastEvent(Event(EventType::WINDOW_MINIMIZED));
 
 						break;
 					}

@@ -44,6 +44,8 @@ public:
 	bool BeginFrame(float32 dt) override;
 	bool EndFrame(float32 dt) override;
 
+	bool RecreateResources();
+
 	// ------------------------------------ Vulkan Pipeline Functions ------------------------------------ \\
 
 	bool CreateInstance();

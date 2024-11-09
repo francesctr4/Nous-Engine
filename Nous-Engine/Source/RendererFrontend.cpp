@@ -40,7 +40,14 @@ void RendererFrontend::Shutdown()
 
 void RendererFrontend::OnResized(uint16 width, uint16 height)
 {
-	backend->Resized(width, height);
+	if (backend) 
+	{
+		backend->Resized(width, height);
+	}
+	else 
+	{
+		NOUS_WARN("Renderer Backend does not exist yet to accept resizing: %i %i", width, height);
+	}
 }
 
 bool RendererFrontend::BeginFrame(float32 dt)

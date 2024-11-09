@@ -120,6 +120,9 @@
     <ClCompile Include="Source\VulkanSyncObjects.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanUtils.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -453,6 +456,9 @@
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanSyncObjects.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanUtils.h">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>

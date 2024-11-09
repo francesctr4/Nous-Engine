@@ -5,7 +5,9 @@
 enum class EventType
 {
 	TEST,
-	KEY_PRESSED
+	KEY_PRESSED,
+	WINDOW_RESIZED,
+	WINDOW_MINIMIZED
 
 };
 

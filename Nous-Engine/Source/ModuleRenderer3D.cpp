@@ -92,11 +92,32 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 
 	case EventType::KEY_PRESSED:
 	{
-		if (event.context.int64[0] == 11 && event.context.int64[1] == 1)
+		/*if (event.context.int64[0] == 11 && event.context.int64[1] == 1)
 		{
 			NOUS_ERROR("ModuleInput Listened");
 			NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
-		}
+		}*/
+
+		break;
+	}
+
+	case EventType::WINDOW_RESIZED:
+	{
+		NOUS_ERROR("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
+		NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
+
+		rendererFrontend->OnResized(event.context.int64[0], event.context.int64[1]);
+	
+		break;
+	}
+	
+	case EventType::WINDOW_MINIMIZED:
+	{
+		//if (event.context.int64[0] == 11 && event.context.int64[1] == 1)
+		//{
+		//	NOUS_ERROR("ModuleInput Listened");
+		//	NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
+		//}
 
 		break;
 	}
