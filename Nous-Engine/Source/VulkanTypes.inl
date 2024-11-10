@@ -25,9 +25,6 @@
 
 const uint8 MAX_FRAMES_IN_FLIGHT = 2;
 
-static uint16 cachedFramebufferWidth = WINDOW_WIDTH;
-static uint16 cachedFramebufferHeight = WINDOW_HEIGHT;
-
 struct VulkanImage
 {
     VkImage handle;

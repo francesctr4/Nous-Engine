@@ -187,8 +187,14 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 						int width = e.window.data1;
 						int height = e.window.data2;
 
-						App->BroadcastEvent(Event(EventType::WINDOW_RESIZED, { .int64 = { width, height } }));
+						if (width != cachedFramebufferWidth || height != cachedFramebufferHeight)
+						{
+							cachedFramebufferWidth = width;
+							cachedFramebufferHeight = height;
 
+							App->BroadcastEvent(Event(EventType::WINDOW_RESIZED, { .int64 = { cachedFramebufferWidth, cachedFramebufferHeight } }));
+						}
+						
 						break;
 					}
 					case SDL_WINDOWEVENT_MINIMIZED:

@@ -33,7 +33,13 @@ bool VulkanBackend::Initialize()
     vkContext->allocator = 0;
 
     // Get Framebuffer Size
-    GetFramebufferSize(&vkContext->framebufferWidth, &vkContext->framebufferHeight);
+    GetFramebufferSize(&cachedFramebufferWidth, &cachedFramebufferHeight);
+
+    vkContext->framebufferWidth = (cachedFramebufferWidth != 0) ? cachedFramebufferWidth : WINDOW_WIDTH;
+    vkContext->framebufferHeight = (cachedFramebufferHeight != 0) ? cachedFramebufferHeight : WINDOW_HEIGHT;
+
+    cachedFramebufferWidth = 0;
+    cachedFramebufferWidth = 0;
 
     // Instance
     NOUS_DEBUG("Creating Vulkan instance...");
@@ -367,7 +373,77 @@ bool VulkanBackend::EndFrame(float32 dt)
 
 bool VulkanBackend::RecreateResources()
 {
-    return false;
+    // If already being recreated, do not try again.
+    if (vkContext->recreatingSwapchain) 
+    {
+        NOUS_DEBUG("Recreate Swapchain called when already recreating. Booting.");
+        return false;
+    }
+
+    // Detect if the window is too small to be drawn to.
+    if (vkContext->framebufferWidth == 0 || vkContext->framebufferHeight == 0) 
+    {
+        NOUS_DEBUG("Recreate Swapchain called when window is < 1 in a dimension. Booting.");
+        return false;
+    }
+
+    // Mark as recreating if the dimensions are valid.
+    vkContext->recreatingSwapchain = true;
+
+    // Wait for any operations to complete.
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
+    // Clear these out just in case.
+    for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
+    {
+        vkContext->imagesInFlight[i] = 0;
+    }
+
+    // Requery support and depth format
+    vkContext->device.swapChainSupport = QuerySwapChainSupport(vkContext->device.physicalDevice, vkContext);
+    vkContext->device.depthFormat = FindDepthFormat(vkContext->device.physicalDevice);
+
+    RecreateSwapChain(vkContext, cachedFramebufferWidth, cachedFramebufferHeight, &vkContext->swapChain);
+
+    // Sync the framebuffer size with the cached sizes.
+    vkContext->framebufferWidth = cachedFramebufferWidth;
+    vkContext->framebufferHeight = cachedFramebufferHeight;
+
+    vkContext->mainRenderpass.w = vkContext->framebufferWidth;
+    vkContext->mainRenderpass.h = vkContext->framebufferHeight;
+
+    cachedFramebufferWidth = 0;
+    cachedFramebufferHeight = 0;
+
+    // Update framebuffer size generation.
+    vkContext->framebufferSizeLastGeneration = vkContext->framebufferSizeGeneration;
+
+    // CleanUp swapchain.
+    for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i) 
+    {
+        NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
+    }
+
+    // Framebuffers.
+    for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
+    {
+        NOUS_VulkanFramebuffer::DestroyVulkanFramebuffer(vkContext, &vkContext->swapChain.swapChainFramebuffers[i]);
+    }
+
+    vkContext->mainRenderpass.x = 0;
+    vkContext->mainRenderpass.y = 0;
+
+    vkContext->mainRenderpass.w = vkContext->framebufferWidth;
+    vkContext->mainRenderpass.h = vkContext->framebufferHeight;
+
+    NOUS_VulkanFramebuffer::CreateFramebuffers(vkContext);
+
+    NOUS_VulkanCommandBuffer::CreateCommandBuffers(vkContext);
+
+    // Clear the recreating flag.
+    vkContext->recreatingSwapchain = false;
+
+    return true;
 }
 
 // ------------------------------------ Vulkan Pipeline Functions ------------------------------------ \\
