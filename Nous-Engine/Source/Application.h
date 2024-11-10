@@ -38,6 +38,8 @@ public:
 	ModuleInput* input;
 	ModuleCamera3D* camera;
 	ModuleRenderer3D* renderer;
+
+	bool isMinimized;
 	
 private:
 

@@ -199,8 +199,12 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 					}
 					case SDL_WINDOWEVENT_MINIMIZED:
 					{
-						App->BroadcastEvent(Event(EventType::WINDOW_MINIMIZED));
-
+						App->isMinimized = true;
+						break;
+					}
+					case SDL_WINDOWEVENT_RESTORED:
+					{
+						App->isMinimized = false;
 						break;
 					}
 				}

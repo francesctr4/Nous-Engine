@@ -6,9 +6,7 @@ enum class EventType
 {
 	TEST,
 	KEY_PRESSED,
-	WINDOW_RESIZED,
-	WINDOW_MINIMIZED
-
+	WINDOW_RESIZED
 };
 
 union EventContext

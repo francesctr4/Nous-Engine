@@ -20,6 +20,8 @@ Application::Application()
 {
 	External = this;
 
+    isMinimized = false;
+
     targetFPS = 144.0f;
     dt = 0.0f;
 

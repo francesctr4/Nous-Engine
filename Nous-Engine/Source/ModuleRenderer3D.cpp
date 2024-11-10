@@ -65,7 +65,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	RenderPacket packet;
 	packet.deltaTime = dt;
 
-	rendererFrontend->DrawFrame(&packet);
+	if (!App->isMinimized)
+	{
+		rendererFrontend->DrawFrame(&packet);
+	}
 
 	return UPDATE_CONTINUE;
 }
@@ -85,44 +88,34 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 {
 	switch (event.type)
 	{
-	case EventType::TEST:
-		/*NOUS_ERROR("ModuleRenderer3D LISTENED TEST");
-		NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);*/
-		break;
-
-	case EventType::KEY_PRESSED:
-	{
-		/*if (event.context.int64[0] == 11 && event.context.int64[1] == 1)
+		case EventType::WINDOW_RESIZED:
 		{
-			NOUS_ERROR("ModuleInput Listened");
-			NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
-		}*/
+			NOUS_DEBUG("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
+			NOUS_DEBUG("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
 
-		break;
-	}
+			rendererFrontend->OnResized(event.context.int64[0], event.context.int64[1]);
 
-	case EventType::WINDOW_RESIZED:
-	{
-		NOUS_ERROR("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
-		NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
+			break;
+		}
+		case EventType::TEST: 
+		{
+			/*NOUS_ERROR("ModuleRenderer3D LISTENED TEST");
+			NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);*/
+			break;
+		}
+		case EventType::KEY_PRESSED:
+		{
+			/*if (event.context.int64[0] == 11 && event.context.int64[1] == 1)
+			{
+				NOUS_ERROR("ModuleInput Listened");
+				NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
+			}*/
 
-		rendererFrontend->OnResized(event.context.int64[0], event.context.int64[1]);
-	
-		break;
-	}
-	
-	case EventType::WINDOW_MINIMIZED:
-	{
-		//if (event.context.int64[0] == 11 && event.context.int64[1] == 1)
-		//{
-		//	NOUS_ERROR("ModuleInput Listened");
-		//	NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
-		//}
-
-		break;
-	}
-
-	default:
-		break;
+			break;
+		}
+		default: 
+		{
+			break;
+		}
 	}
 }
