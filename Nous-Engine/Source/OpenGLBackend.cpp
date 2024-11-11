@@ -33,12 +33,12 @@ void OpenGLBackend::Resized(uint16 width, uint16 height)
 {
 }
 
-bool OpenGLBackend::BeginFrame(float32 dt)
+bool OpenGLBackend::BeginFrame(float dt)
 {
 	return false;
 }
 
-bool OpenGLBackend::EndFrame(float32 dt)
+bool OpenGLBackend::EndFrame(float dt)
 {
 	return false;
 }

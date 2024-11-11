@@ -13,8 +13,8 @@ struct IRendererBackend
     virtual void Shutdown() = 0;
 
     virtual void Resized(uint16 width, uint16 height) = 0;
-    virtual bool BeginFrame(float32 dt) = 0;
-    virtual bool EndFrame(float32 dt) = 0;
+    virtual bool BeginFrame(float dt) = 0;
+    virtual bool EndFrame(float dt) = 0;
 };
 
 enum class RendererBackendType 
@@ -26,5 +26,5 @@ enum class RendererBackendType
 
 struct RenderPacket 
 {
-	float32 deltaTime;
+	float deltaTime;
 };

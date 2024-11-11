@@ -26,11 +26,11 @@ public:
 	void BroadcastEvent(const Event& event);
 
 	void SetTargetFPS(float FPS);
-	float32 GetTargetFPS();
+	float GetTargetFPS();
 
-	float32 GetFPS();
-	float32 GetDT();
-	float32 GetMS();
+	float GetFPS();
+	float GetDT();
+	float GetMS();
 
 	// ---------------------------------------- \\
 
@@ -51,8 +51,8 @@ private:
 	Module* list_modules[NUM_MODULES];
 
 	Timer msTimer;
-	float32	dt;
-	float32 targetFPS;
+	float dt;
+	float targetFPS;
 
 };
 

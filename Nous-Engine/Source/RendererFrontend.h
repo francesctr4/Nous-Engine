@@ -20,8 +20,8 @@ public:
 
 private:
 
-	bool BeginFrame(float32 dt);
-	bool EndFrame(float32 dt);
+	bool BeginFrame(float dt);
+	bool EndFrame(float dt);
 
 	static RendererBackend* backend;
 

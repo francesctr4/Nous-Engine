@@ -41,8 +41,8 @@ public:
 
 	void Resized(uint16 width, uint16 height) override;
 
-	bool BeginFrame(float32 dt) override;
-	bool EndFrame(float32 dt) override;
+	bool BeginFrame(float dt) override;
+	bool EndFrame(float dt) override;
 
 	bool RecreateResources();
 

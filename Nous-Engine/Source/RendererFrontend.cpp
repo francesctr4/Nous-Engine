@@ -43,12 +43,12 @@ void RendererFrontend::OnResized(uint16 width, uint16 height)
 	backend->Resized(width, height);
 }
 
-bool RendererFrontend::BeginFrame(float32 dt)
+bool RendererFrontend::BeginFrame(float dt)
 {
 	return backend->BeginFrame(dt);
 }
 
-bool RendererFrontend::EndFrame(float32 dt)
+bool RendererFrontend::EndFrame(float dt)
 {
 	bool result = backend->EndFrame(dt);
 	backend->frameNumber++;

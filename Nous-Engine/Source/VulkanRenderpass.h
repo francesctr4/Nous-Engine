@@ -5,9 +5,9 @@
 bool CreateRenderpass(
     VulkanContext* vkContext,
     VulkanRenderpass* outRenderpass,
-    float32 x, float32 y, float32 w, float32 h,
-    float32 r, float32 g, float32 b, float32 a,
-    float32 depth, uint32 stencil);
+    float x, float y, float w, float h,
+    float r, float g, float b, float a,
+    float depth, uint32 stencil);
 
 void DestroyRenderpass(VulkanContext* vkContext, VulkanRenderpass* renderpass);
 

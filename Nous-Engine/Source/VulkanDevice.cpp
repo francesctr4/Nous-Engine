@@ -345,7 +345,7 @@ void LogInfoAboutDevice(VulkanContext* vkContext)
     // Memory information
     for (uint32 i = 0; i < vkContext->device.memory.memoryHeapCount; ++i) 
     {
-        float32 memorySizeGib = ((static_cast<float32>(vkContext->device.memory.memoryHeaps[i].size)) / (1024.0f * 1024.0f * 1024.0f));
+        float memorySizeGib = ((static_cast<float>(vkContext->device.memory.memoryHeaps[i].size)) / (1024.0f * 1024.0f * 1024.0f));
 
         if (vkContext->device.memory.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
         {

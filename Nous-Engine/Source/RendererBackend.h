@@ -17,8 +17,8 @@ public:
 
 	void Resized(uint16 width, uint16 height);
 
-	bool BeginFrame(float32 dt);
-	bool EndFrame(float32 dt);
+	bool BeginFrame(float dt);
+	bool EndFrame(float dt);
 
 	// -------------------------------------- \\
 

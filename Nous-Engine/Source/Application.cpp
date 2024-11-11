@@ -86,10 +86,10 @@ UpdateStatus Application::PrepareUpdate()
     UpdateStatus ret = UPDATE_CONTINUE;
 
     // Measure the time elapsed since the last frame
-    dt = (float32)msTimer.ReadMS() / 1000.0f;
+    dt = (float)msTimer.ReadMS() / 1000.0f;
     msTimer.Start();
 
-    const float32 targetFrameTime = 1.0f / targetFPS;
+    const float targetFrameTime = 1.0f / targetFPS;
 
     if (dt < targetFrameTime) {
 
@@ -187,22 +187,22 @@ void Application::SetTargetFPS(float FPS)
     targetFPS = FPS;
 }
 
-float32 Application::GetTargetFPS()
+float Application::GetTargetFPS()
 {
     return targetFPS;
 }
 
-float32 Application::GetFPS()
+float Application::GetFPS()
 {
     return 1 / dt;
 }
 
-float32 Application::GetDT()
+float Application::GetDT()
 {
     return dt;
 }
 
-float32 Application::GetMS()
+float Application::GetMS()
 {
     return dt * 1000;
 }

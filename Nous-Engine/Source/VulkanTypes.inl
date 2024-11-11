@@ -49,10 +49,10 @@ struct VulkanRenderpass
 {
     VkRenderPass handle;
 
-    float32 x, y, w, h;
-    float32 r, g, b, a;
+    float x, y, w, h;
+    float r, g, b, a;
 
-    float32 depth;
+    float depth;
     uint32 stencil;
 
     VulkanRenderPassState state;

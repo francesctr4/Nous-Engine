@@ -210,7 +210,7 @@ void VulkanBackend::Resized(uint16 width, uint16 height)
     NOUS_INFO("Vulkan Renderer Backend --> Resized: W / H / GEN: %i / %i / %llu", width, height, vkContext->framebufferSizeGeneration);
 }
 
-bool VulkanBackend::BeginFrame(float32 dt)
+bool VulkanBackend::BeginFrame(float dt)
 {
     VulkanDevice* device = &vkContext->device;
 
@@ -276,10 +276,10 @@ bool VulkanBackend::BeginFrame(float32 dt)
     VkViewport viewport;
 
     viewport.x = 0.0f;
-    viewport.y = (float32)vkContext->framebufferHeight;
+    viewport.y = (float)vkContext->framebufferHeight;
 
-    viewport.width = (float32)vkContext->framebufferWidth;
-    viewport.height = -(float32)vkContext->framebufferHeight;
+    viewport.width = (float)vkContext->framebufferWidth;
+    viewport.height = -(float)vkContext->framebufferHeight;
 
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
@@ -307,7 +307,7 @@ bool VulkanBackend::BeginFrame(float32 dt)
     return true;
 }
 
-bool VulkanBackend::EndFrame(float32 dt)
+bool VulkanBackend::EndFrame(float dt)
 {
     VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
 

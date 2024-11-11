@@ -75,7 +75,7 @@ void RendererBackend::Resized(uint16 width, uint16 height)
     }
 }
 
-bool RendererBackend::BeginFrame(float32 dt)
+bool RendererBackend::BeginFrame(float dt)
 {
     if (backendInterface != nullptr) 
     {
@@ -85,7 +85,7 @@ bool RendererBackend::BeginFrame(float32 dt)
     return false;
 }
 
-bool RendererBackend::EndFrame(float32 dt)
+bool RendererBackend::EndFrame(float dt)
 {
     if (backendInterface != nullptr) 
     {

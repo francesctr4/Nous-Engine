@@ -13,11 +13,11 @@ union EventContext
 {
 	int64 int64[2];
 	uint64 uint64[2];
-	float64 float64[2];
+	double float64[2];
 
 	int32 int32[4];
 	uint32 uint32[4];
-	float32 float32[4];
+	float float32[4];
 
 	int16 int16[8];
 	uint16 uint16[8];

@@ -45,12 +45,12 @@ void MemoryManager::InitializeMemory()
 void MemoryManager::ShutdownMemory()
 {
 	MemoryTag tag = MemoryTag::UNKNOWN;
-	float32 amount = 0.0f;
+	float amount = 0.0f;
 
 	for (uint32 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
 	{
 		tag = static_cast<MemoryTag>(i);
-		amount = static_cast<float32>(stats.taggedAllocations[i]);
+		amount = static_cast<float>(stats.taggedAllocations[i]);
 		
 		NOUS_ASSERT_MSG(amount == 0.0f, "Memory Leaks Detected!");
 	}
@@ -122,28 +122,28 @@ char* MemoryManager::GetMemoryUsageStats()
 	for (uint32 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
 	{
 		char unit[4] = "XiB";
-		float32 amount = 1.0f;
+		float amount = 1.0f;
 
 		if (stats.taggedAllocations[i] >= GiB)
 		{
 			unit[0] = 'G';
-			amount = stats.taggedAllocations[i] / static_cast<float32>(GiB);
+			amount = stats.taggedAllocations[i] / static_cast<float>(GiB);
 		}
 		else if (stats.taggedAllocations[i] >= MiB)
 		{
 			unit[0] = 'M';
-			amount = stats.taggedAllocations[i] / static_cast<float32>(MiB);
+			amount = stats.taggedAllocations[i] / static_cast<float>(MiB);
 		}
 		else if (stats.taggedAllocations[i] >= KiB)
 		{
 			unit[0] = 'K';
-			amount = stats.taggedAllocations[i] / static_cast<float32>(KiB);
+			amount = stats.taggedAllocations[i] / static_cast<float>(KiB);
 		}
 		else 
 		{
 			unit[0] = 'B';
 			unit[1] = 0;
-			amount = static_cast<float32>(stats.taggedAllocations[i]);
+			amount = static_cast<float>(stats.taggedAllocations[i]);
 		}
 
 		int32 length = snprintf(buffer + offset, 8000, "%s: %.2f %s\n", memoryTagStrings[i], amount, unit);
