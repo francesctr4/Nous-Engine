@@ -368,6 +368,15 @@ bool VulkanBackend::EndFrame(float dt)
         vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
         vkContext->imageIndex);
 
+    // Wait at the end of the frame before starting the next one
+    VkResult endFrame = vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
+    if (!VkResultIsSuccess(endFrame))
+    {
+        NOUS_ERROR("VulkanBackend::EndFrame() --> vkDeviceWaitIdle (2) failed: '%s'", VkResultMessage(endFrame, true));
+        return false;
+    }
+
 	return true;
 }
 
