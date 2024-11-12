@@ -242,6 +242,7 @@
     <ClCompile Include="Source\ModuleWindow.cpp" />
     <ClCompile Include="Source\MemoryManager.cpp" />
     <ClCompile Include="Source\OpenGLBackend.cpp" />
+    <ClCompile Include="Source\Random.cpp" />
     <ClCompile Include="Source\RendererBackend.cpp" />
     <ClCompile Include="Source\RendererFrontend.cpp" />
     <ClCompile Include="Source\ThreadPool.cpp" />
@@ -249,6 +250,7 @@
     <ClCompile Include="Source\Timer.cpp" />
     <ClCompile Include="Source\VulkanBackend.cpp" />
     <ClCompile Include="Source\VulkanCommandBuffer.cpp" />
+    <ClCompile Include="Source\VulkanDebugMessenger.cpp" />
     <ClCompile Include="Source\VulkanDevice.cpp" />
     <ClCompile Include="Source\VulkanFramebuffer.cpp" />
     <ClCompile Include="Source\VulkanImage.cpp" />
@@ -404,6 +406,7 @@
     <ClInclude Include="Source\Globals.h" />
     <ClInclude Include="Source\Logger.h" />
     <ClInclude Include="Source\MathGeoLib.h" />
+    <ClInclude Include="Source\MathUtils.h" />
     <ClInclude Include="Source\Module.h" />
     <ClInclude Include="Source\ModuleCamera3D.h" />
     <ClInclude Include="Source\ModuleInput.h" />
@@ -411,6 +414,7 @@
     <ClInclude Include="Source\ModuleWindow.h" />
     <ClInclude Include="Source\MemoryManager.h" />
     <ClInclude Include="Source\OpenGLBackend.h" />
+    <ClInclude Include="Source\Random.h" />
     <ClInclude Include="Source\RendererBackend.h" />
     <ClInclude Include="Source\RendererFrontend.h" />
     <ClInclude Include="Source\SDL2.h" />
@@ -423,6 +427,7 @@
     <ClInclude Include="Source\Vulkan.h" />
     <ClInclude Include="Source\VulkanBackend.h" />
     <ClInclude Include="Source\VulkanCommandBuffer.h" />
+    <ClInclude Include="Source\VulkanDebugMessenger.h" />
     <ClInclude Include="Source\VulkanDevice.h" />
     <ClInclude Include="Source\VulkanFramebuffer.h" />
     <ClInclude Include="Source\VulkanImage.h" />

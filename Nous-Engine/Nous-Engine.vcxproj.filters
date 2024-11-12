@@ -237,6 +237,12 @@
     <ClCompile Include="Source\External\MathGeoLib\include\Math\TransformOps.cpp">
       <Filter>Externals\MathGeoLib\Math</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanDebugMessenger.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Random.cpp">
+      <Filter>Source Code\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -757,6 +763,15 @@
     </ClInclude>
     <ClInclude Include="Source\MathGeoLib.h">
       <Filter>Source Code\Includes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanDebugMessenger.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\MathUtils.h">
+      <Filter>Source Code\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Random.h">
+      <Filter>Source Code\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
