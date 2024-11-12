@@ -4,9 +4,9 @@
 
 #include "VulkanTypes.inl"
 
-// --------------- Vulkan Validation Layers --------------- \\
-
-const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+// --------------- Vulkan Validation Layers --------------- //
+const int8 c_VALIDATION_LAYERS_COUNT = 1;
+const std::array<const char*, c_VALIDATION_LAYERS_COUNT> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 
 #ifdef _DEBUG
 const bool enableValidationLayers = true;
@@ -56,12 +56,12 @@ public:
 	
 	// --------------- Validation Layers --------------- \\
 
-	bool CheckValidationLayerSupport(const std::vector<const char*>& validationLayers);
+	bool CheckValidationLayerSupport(const std::array<const char*, c_VALIDATION_LAYERS_COUNT>& validationLayers);
 
 	// --------------- Extensions --------------- \\
 
 	void ShowSupportedExtensions();
-	DynamicArray<const char*> GetRequiredExtensions();
+	std::vector<const char*> GetRequiredExtensions();
 
 	// --------------- Debug Messenger --------------- \\
 

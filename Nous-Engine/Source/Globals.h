@@ -5,6 +5,7 @@
 #include "STL.h"
 
 #include "Logger.h"
+#include "Asserts.h"
 
 // Threading Library
 #include <thread>

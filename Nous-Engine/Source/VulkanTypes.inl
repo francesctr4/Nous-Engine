@@ -5,8 +5,6 @@
 #include "Vulkan.h"
 #include "SDL2.h"
 
-#include "DynamicArray.h"
-
 /**
  * @brief Checks the given expression's return value against VK_SUCCESS.
  */

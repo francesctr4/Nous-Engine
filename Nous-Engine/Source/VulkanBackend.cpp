@@ -463,7 +463,7 @@ bool VulkanBackend::CreateInstance()
 
     ShowSupportedExtensions();
 
-    DynamicArray<const char*> extensions = GetRequiredExtensions();
+    std::vector<const char*> extensions = GetRequiredExtensions();
 
     VkApplicationInfo appInfo{};
 
@@ -484,8 +484,8 @@ bool VulkanBackend::CreateInstance()
     createInfo.pApplicationInfo = &appInfo;
     createInfo.pNext = nullptr;
 
-    createInfo.enabledExtensionCount = static_cast<uint32>(extensions.GetLength());
-    createInfo.ppEnabledExtensionNames = extensions.GetElements();
+    createInfo.enabledExtensionCount = static_cast<uint32>(extensions.size());
+    createInfo.ppEnabledExtensionNames = extensions.data();
 
     createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32>(validationLayers.size()) : 0;
     createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
@@ -522,17 +522,17 @@ bool VulkanBackend::CreateSurface()
 
 // ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
 
-bool VulkanBackend::CheckValidationLayerSupport(const std::vector<const char*>& validationLayers)
+bool VulkanBackend::CheckValidationLayerSupport(const std::array<const char*, c_VALIDATION_LAYERS_COUNT>& validationLayers)
 {
     bool ret = true;
 
     uint32 layerCount;
     VK_CHECK(vkEnumerateInstanceLayerProperties(&layerCount, nullptr));
 
-    DynamicArray<VkLayerProperties> availableLayers(layerCount);
-    VK_CHECK(vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.GetElements()));
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    VK_CHECK(vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data()));
 
-    availableLayers.SetLength(layerCount);
+    availableLayers.resize(layerCount);
 
     for (int i = 0; i < validationLayers.size(); ++i) 
     {
@@ -542,9 +542,8 @@ bool VulkanBackend::CheckValidationLayerSupport(const std::vector<const char*>& 
 
         bool layerFound = false;
 
-        for (int j = 0; j < availableLayers.GetLength(); ++j) 
+        for (int j = 0; j < availableLayers.size(); ++j) 
         {
-            
             const auto& layerProperties = availableLayers[j];
 
             if (strcmp(layerName, layerProperties.layerName) == 0) 
@@ -571,20 +570,20 @@ void VulkanBackend::ShowSupportedExtensions()
     uint32 extensionCount = 0;
     VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr));
 
-    DynamicArray<VkExtensionProperties> supportedExtensions(extensionCount);
-    VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, supportedExtensions.GetElements()));
+    std::vector<VkExtensionProperties> supportedExtensions(extensionCount);
+    VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, supportedExtensions.data()));
 
     NOUS_DEBUG("Available Vulkan Extensions:\n");
 
-    supportedExtensions.SetLength(extensionCount);
+    supportedExtensions.resize(extensionCount);
 
-    for (int i = 0; i < supportedExtensions.GetLength(); ++i) 
+    for (int i = 0; i < supportedExtensions.size(); ++i) 
     {
         NOUS_DEBUG("\t%s\n", supportedExtensions[i].extensionName);
     }
 }
 
-DynamicArray<const char*> VulkanBackend::GetRequiredExtensions()
+std::vector<const char*> VulkanBackend::GetRequiredExtensions()
 {
     uint32 sdlExtensionCount = 0;
 
@@ -594,26 +593,26 @@ DynamicArray<const char*> VulkanBackend::GetRequiredExtensions()
 
     }
 
-    DynamicArray<const char*> extensions(sdlExtensionCount);
+    std::vector<const char*> extensions(sdlExtensionCount);
 
-    if (!SDL_Vulkan_GetInstanceExtensions(GetSDLWindowData(), &sdlExtensionCount, extensions.GetElements())) 
+    if (!SDL_Vulkan_GetInstanceExtensions(GetSDLWindowData(), &sdlExtensionCount, extensions.data())) 
     {
         NOUS_ERROR("Could not get the name of required instance extensions from SDL.");
 
     }
 
-    extensions.SetLength(sdlExtensionCount);
+    extensions.resize(sdlExtensionCount);
 
-    extensions.Push(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 
     if (enableValidationLayers) 
     {
-        extensions.Push(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
     NOUS_DEBUG("Required Vulkan Extensions:\n");
 
-    for (int i = 0; i < extensions.GetLength(); ++i)
+    for (int i = 0; i < extensions.size(); ++i)
     {
         NOUS_DEBUG("\t%s\n", extensions[i]);
     }
