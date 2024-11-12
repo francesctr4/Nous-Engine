@@ -22,7 +22,7 @@ Application::Application()
 
     isMinimized = false;
 
-    targetFPS = 144.0f;
+    targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
 
     // We allocate the memory for the module first, then we use it with new to call the constructor.
