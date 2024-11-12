@@ -402,7 +402,7 @@ bool CreateLogicalDevice(VulkanContext* vkContext)
         queueCreateInfo.queueCount = 1;
         queueCreateInfo.pQueuePriorities = &queuePriority;
 
-        queueCreateInfos.push_back(queueCreateInfo);
+        queueCreateInfos.emplace_back(queueCreateInfo);
     }
 
     // Specifying used device features
