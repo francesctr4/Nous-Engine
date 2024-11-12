@@ -368,14 +368,14 @@ bool VulkanBackend::EndFrame(float dt)
         vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
         vkContext->imageIndex);
 
-    // Wait at the end of the frame before starting the next one
-    VkResult endFrame = vkDeviceWaitIdle(vkContext->device.logicalDevice);
+    // Wait at the end of the frame before starting the next one (WAIT FENCES SHOULD DO THIS)
+    //VkResult endFrame = vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
-    if (!VkResultIsSuccess(endFrame))
-    {
-        NOUS_ERROR("VulkanBackend::EndFrame() --> vkDeviceWaitIdle (2) failed: '%s'", VkResultMessage(endFrame, true));
-        return false;
-    }
+    //if (!VkResultIsSuccess(endFrame))
+    //{
+    //    NOUS_ERROR("VulkanBackend::EndFrame() --> vkDeviceWaitIdle (2) failed: '%s'", VkResultMessage(endFrame, true));
+    //    return false;
+    //}
 
 	return true;
 }
