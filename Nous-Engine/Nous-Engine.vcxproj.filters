@@ -243,6 +243,9 @@
     <ClCompile Include="Source\Random.cpp">
       <Filter>Source Code\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanInstance.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -772,6 +775,9 @@
     </ClInclude>
     <ClInclude Include="Source\Random.h">
       <Filter>Source Code\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanInstance.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
