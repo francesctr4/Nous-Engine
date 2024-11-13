@@ -431,6 +431,7 @@
     <ClInclude Include="Source\VulkanDebugMessenger.h" />
     <ClInclude Include="Source\VulkanDevice.h" />
     <ClInclude Include="Source\VulkanFramebuffer.h" />
+    <ClInclude Include="Source\VulkanGlobals.h" />
     <ClInclude Include="Source\VulkanImage.h" />
     <ClInclude Include="Source\VulkanInstance.h" />
     <ClInclude Include="Source\VulkanPlatform.h" />

@@ -1,4 +1,6 @@
 #include "VulkanBackend.h"
+#include "VulkanTypes.inl"
+
 #include "VulkanPlatform.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapchain.h"
@@ -8,6 +10,7 @@
 #include "VulkanSyncObjects.h"
 #include "VulkanUtils.h"
 #include "VulkanDebugMessenger.h"
+#include "VulkanInstance.h"
 
 #include "MemoryManager.h"
 #include "Logger.h"
@@ -44,7 +47,7 @@ bool VulkanBackend::Initialize()
 
     // Instance
     NOUS_DEBUG("Creating Vulkan instance...");
-    if (!CreateInstance()) 
+    if (!NOUS_VulkanInstance::CreateInstance(vkContext)) 
     {
         NOUS_ERROR("Failed to create Vulkan Instance. Shutting the Application.");
         ret = false;
@@ -68,7 +71,7 @@ bool VulkanBackend::Initialize()
 
     // Surface
     NOUS_DEBUG("Creating Vulkan surface...");
-    if (!CreateSurface()) 
+    if (!NOUS_VulkanInstance::CreateSurface(vkContext))
     {
         NOUS_ERROR("Failed to create Vulkan Surface. Shutting the Application.");
         ret = false;
@@ -185,17 +188,11 @@ void VulkanBackend::Shutdown()
 
     DestroyLogicalDevice(vkContext);
 
-    if (enableValidationLayers) 
-    {
-        NOUS_DEBUG("Destroying Vulkan Debugger...");
-        NOUS_VulkanDebugMessenger::DestroyDebugUtilsMessengerEXT(vkContext->instance, vkContext->debugMessenger, vkContext->allocator);
-    }
+    NOUS_VulkanInstance::DestroySurface(vkContext);
 
-    NOUS_DEBUG("Destroying Vulkan Surface...");
-    vkDestroySurfaceKHR(vkContext->instance, vkContext->surface, vkContext->allocator);
+    NOUS_VulkanDebugMessenger::DestroyDebugUtilsMessengerEXT(vkContext->instance, vkContext->debugMessenger, vkContext->allocator);
 
-    NOUS_DEBUG("Destroying Vulkan Instance...");
-    vkDestroyInstance(vkContext->instance, vkContext->allocator);
+    NOUS_VulkanInstance::DestroyInstance(vkContext);
 }
 
 void VulkanBackend::Resized(uint16 width, uint16 height)
@@ -445,163 +442,4 @@ bool VulkanBackend::RecreateResources()
     vkContext->recreatingSwapchain = false;
 
     return true;
-}
-
-// ------------------------------------ Vulkan Pipeline Functions ------------------------------------ \\
-
-bool VulkanBackend::CreateInstance()
-{
-    bool ret = true;
-
-    if (enableValidationLayers && !CheckValidationLayerSupport(validationLayers)) 
-    {
-        NOUS_WARN("Vulkan Validation Layers requested, but not available!");
-    }
-    else 
-    {
-        NOUS_DEBUG("Vulkan Validation Layers enabled successfully!");
-    }
-
-    ShowSupportedExtensions();
-
-    std::vector<const char*> extensions = GetRequiredExtensions();
-
-    VkApplicationInfo appInfo{};
-
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.apiVersion = VK_API_VERSION_1_3;
-    appInfo.pNext = nullptr;
-
-    appInfo.pApplicationName = TITLE;
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-
-    appInfo.pEngineName = TITLE;
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-
-    VkInstanceCreateInfo createInfo{};
-
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-    createInfo.pApplicationInfo = &appInfo;
-    createInfo.pNext = nullptr;
-
-    createInfo.enabledExtensionCount = static_cast<uint32>(extensions.size());
-    createInfo.ppEnabledExtensionNames = extensions.data();
-
-    createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32>(validationLayers.size()) : 0;
-    createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
-
-    // Validation Layers Loading Debugger
-    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (enableValidationLayers) NOUS_VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
-    createInfo.pNext = enableValidationLayers ? (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo : nullptr;
-
-    VK_CHECK_MSG(vkCreateInstance(&createInfo, vkContext->allocator, &vkContext->instance), "vkCreateInstance failed!");
-
-    return ret;
-}
-
-bool VulkanBackend::CreateSurface()
-{
-    return SDL_Vulkan_CreateSurface(GetSDLWindowData(), vkContext->instance, &vkContext->surface);
-}
-
-// ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
-
-bool VulkanBackend::CheckValidationLayerSupport(const std::array<const char*, c_VALIDATION_LAYERS_COUNT>& validationLayers)
-{
-    bool ret = true;
-
-    uint32 layerCount;
-    VK_CHECK(vkEnumerateInstanceLayerProperties(&layerCount, nullptr));
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    VK_CHECK(vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data()));
-
-    availableLayers.resize(layerCount);
-
-    for (int i = 0; i < validationLayers.size(); ++i) 
-    {
-        const char* layerName = validationLayers[i];
-
-        NOUS_DEBUG("Searching for Vulkan Validation Layer: %s...", layerName);
-
-        bool layerFound = false;
-
-        for (int j = 0; j < availableLayers.size(); ++j) 
-        {
-            const auto& layerProperties = availableLayers[j];
-
-            if (strcmp(layerName, layerProperties.layerName) == 0) 
-            {
-                NOUS_DEBUG("FOUND Vulkan Validation Layer: %s", layerName);
-                layerFound = true;
-                break;
-            }
-
-        }
-
-        if (!layerFound) 
-        {
-            ret = false;
-        }
-
-    }
-
-    return ret;
-}
-
-void VulkanBackend::ShowSupportedExtensions()
-{
-    uint32 extensionCount = 0;
-    VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr));
-
-    std::vector<VkExtensionProperties> supportedExtensions(extensionCount);
-    VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, supportedExtensions.data()));
-
-    NOUS_DEBUG("Available Vulkan Extensions:\n");
-
-    supportedExtensions.resize(extensionCount);
-
-    for (int i = 0; i < supportedExtensions.size(); ++i) 
-    {
-        NOUS_DEBUG("\t%s\n", supportedExtensions[i].extensionName);
-    }
-}
-
-std::vector<const char*> VulkanBackend::GetRequiredExtensions()
-{
-    uint32 sdlExtensionCount = 0;
-
-    if (!SDL_Vulkan_GetInstanceExtensions(GetSDLWindowData(), &sdlExtensionCount, nullptr)) 
-    {
-        NOUS_ERROR("Could not get the number of required instance extensions from SDL.");
-
-    }
-
-    std::vector<const char*> extensions(sdlExtensionCount);
-
-    if (!SDL_Vulkan_GetInstanceExtensions(GetSDLWindowData(), &sdlExtensionCount, extensions.data())) 
-    {
-        NOUS_ERROR("Could not get the name of required instance extensions from SDL.");
-
-    }
-
-    extensions.resize(sdlExtensionCount);
-
-    extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-
-    if (enableValidationLayers) 
-    {
-        extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
-
-    NOUS_DEBUG("Required Vulkan Extensions:\n");
-
-    for (int i = 0; i < extensions.size(); ++i)
-    {
-        NOUS_DEBUG("\t%s\n", extensions[i]);
-    }
-
-    return extensions;
 }

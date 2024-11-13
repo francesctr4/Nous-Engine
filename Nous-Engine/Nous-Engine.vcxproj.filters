@@ -779,6 +779,9 @@
     <ClInclude Include="Source\VulkanInstance.h">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Source\VulkanGlobals.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">

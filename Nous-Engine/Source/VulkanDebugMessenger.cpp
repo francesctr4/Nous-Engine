@@ -1,5 +1,6 @@
 #include "VulkanDebugMessenger.h"
 #include "VulkanUtils.h"
+#include "VulkanGlobals.h"
 
 VkResult NOUS_VulkanDebugMessenger::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
@@ -18,6 +19,10 @@ VkResult NOUS_VulkanDebugMessenger::CreateDebugUtilsMessengerEXT(VkInstance inst
 
 void NOUS_VulkanDebugMessenger::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
+    if (!enableValidationLayers) return;
+
+    NOUS_DEBUG("Destroying Vulkan Debugger...");
+
     PFN_vkDestroyDebugUtilsMessengerEXT destroyDUMEXT =
         (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 
