@@ -23,6 +23,17 @@
 
 const uint8 MAX_FRAMES_IN_FLIGHT = 2;
 
+// --------------- Vulkan Validation Layers --------------- //
+
+const int8 c_VALIDATION_LAYERS_COUNT = 1;
+const std::array<const char*, c_VALIDATION_LAYERS_COUNT> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+
+#ifdef _DEBUG
+const bool enableValidationLayers = true;
+#else
+const bool enableValidationLayers = false;
+#endif
+
 struct VulkanImage
 {
     VkImage handle;

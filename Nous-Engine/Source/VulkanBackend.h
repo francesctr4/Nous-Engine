@@ -1,29 +1,7 @@
 #pragma once
 
 #include "RendererBackend.h"
-
 #include "VulkanTypes.inl"
-
-// --------------- Vulkan Validation Layers --------------- //
-const int8 c_VALIDATION_LAYERS_COUNT = 1;
-const std::array<const char*, c_VALIDATION_LAYERS_COUNT> validationLayers = { "VK_LAYER_KHRONOS_validation" };
-
-#ifdef _DEBUG
-const bool enableValidationLayers = true;
-#else
-const bool enableValidationLayers = false;
-#endif
-
-// --------------- Debug Messenger ---------------
-
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const
-	VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const
-	VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT*
-	pDebugMessenger);
-
-void DestroyDebugUtilsMessengerEXT(VkInstance instance,
-	VkDebugUtilsMessengerEXT debugMessenger, const
-	VkAllocationCallbacks* pAllocator);
 
 // --------------- Vulkan Renderer Backend --------------- \\
 
@@ -49,7 +27,6 @@ public:
 	// ------------------------------------ Vulkan Pipeline Functions ------------------------------------ \\
 
 	bool CreateInstance();
-	bool SetupDebugMessenger();
 	bool CreateSurface();
 
 	// ------------------------------------ Vulkan Helper Functions ------------------------------------ \\
@@ -62,14 +39,6 @@ public:
 
 	void ShowSupportedExtensions();
 	std::vector<const char*> GetRequiredExtensions();
-
-	// --------------- Debug Messenger --------------- \\
-
-	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData);
-
-	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& debugCreateInfo);
 
 private:
 
