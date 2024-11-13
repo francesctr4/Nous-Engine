@@ -5,21 +5,7 @@
 #include "Vulkan.h"
 #include "SDL2.h"
 
-/**
- * @brief Checks the given expression's return value against VK_SUCCESS.
- */
-#define VK_CHECK(expr)					\
-{										\
-	NOUS_ASSERT(expr == VK_SUCCESS);	\
-}										
-
- /**
-  * @brief Checks the given expression's return value against VK_SUCCESS.
-  */
-#define VK_CHECK_MSG(expr, message)					\
-{													\
-	NOUS_ASSERT_MSG(expr == VK_SUCCESS, message);	\
-}	
+// TODO: MOVE TO OTHER PLACE
 
 const uint8 MAX_FRAMES_IN_FLIGHT = 2;
 

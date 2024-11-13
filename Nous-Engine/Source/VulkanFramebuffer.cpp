@@ -1,4 +1,5 @@
 #include "VulkanFramebuffer.h"
+#include "VulkanUtils.h"
 
 bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 {

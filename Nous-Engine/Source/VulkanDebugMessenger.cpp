@@ -1,4 +1,5 @@
 #include "VulkanDebugMessenger.h"
+#include "VulkanUtils.h"
 
 VkResult NOUS_VulkanDebugMessenger::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {

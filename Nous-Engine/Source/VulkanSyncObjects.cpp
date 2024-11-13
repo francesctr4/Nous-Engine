@@ -1,4 +1,5 @@
 #include "VulkanSyncObjects.h"
+#include "VulkanUtils.h"
 
 bool NOUS_VulkanSyncObjects::CreateSyncObjects(VulkanContext* vkContext)
 {

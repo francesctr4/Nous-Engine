@@ -1,5 +1,6 @@
 #include "VulkanRenderpass.h"
 #include "VulkanDevice.h"
+#include "VulkanUtils.h"
 
 #include "MemoryManager.h"
 

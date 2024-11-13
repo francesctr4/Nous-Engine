@@ -1,4 +1,5 @@
 #include "VulkanCommandBuffer.h"
+#include "VulkanUtils.h"
 
 #include "MemoryManager.h"
 

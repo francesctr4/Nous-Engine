@@ -2,6 +2,7 @@
 #include "VulkanPlatform.h"
 #include "VulkanDevice.h"
 #include "VulkanImage.h"
+#include "VulkanUtils.h"
 
 #include "Logger.h"
 #include "MemoryManager.h"

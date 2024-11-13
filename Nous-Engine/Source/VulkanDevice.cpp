@@ -1,4 +1,5 @@
 #include "VulkanDevice.h"
+#include "VulkanUtils.h"
 
 #include "Logger.h"
 #include "MemoryManager.h"
