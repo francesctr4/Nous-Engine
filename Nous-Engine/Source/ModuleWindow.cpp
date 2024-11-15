@@ -68,6 +68,17 @@ bool ModuleWindow::CleanUp()
 	return true;
 }
 
+void ModuleWindow::SetTitle(const char* title, float dt, int32 frameCount, float fps)
+{
+    char buffer[256];
+
+    sprintf_s(buffer, 
+        "%s | dt: %.3f s | Frame Count: %d | FPS: %.2f",
+        title, dt, frameCount, fps);
+
+    SDL_SetWindowTitle(window, buffer);
+}
+
 SDL_Window* GetSDLWindowData()
 {
     return External->window->window;

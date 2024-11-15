@@ -20,6 +20,8 @@ public:
 
 	// ---------------------------------------- \\
 
+	void SetTitle(const char* title, float dt, int32 frameCount, float fps);
+
 	SDL_Window* window;
 
 };

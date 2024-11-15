@@ -156,7 +156,7 @@ UpdateStatus Application::Update()
 
 void Application::FinishUpdate()
 {
-
+    window->SetTitle(TITLE, dt, TimeManager::frameCount, GetFPS());
 }
 
 bool Application::CleanUp()
