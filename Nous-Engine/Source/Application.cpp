@@ -24,6 +24,7 @@ Application::Application()
 
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
+    updateTitleTimer.Start();
 
     // We allocate the memory for the module first, then we use it with new to call the constructor.
     // The application itself should NOT use custom allocators.
@@ -156,7 +157,23 @@ UpdateStatus Application::Update()
 
 void Application::FinishUpdate()
 {
-    window->SetTitle(TITLE, dt, TimeManager::frameCount, GetFPS());
+    static float cachedDt = 0.0f;
+    static float cachedFPS = 0.0f;
+    static char buffer[256];
+
+    if (updateTitleTimer.ReadMS() >= 100.0f)
+    {
+        cachedDt = GetDT();
+        cachedFPS = GetFPS();
+
+        updateTitleTimer.Start();
+    }
+
+    sprintf_s(buffer,
+        "%s | dt: %.3f s | FPS: %.2f | Graphics Timer: %.3f s | Frame Count: %d",
+        TITLE, cachedDt, cachedFPS, TimeManager::graphicsTimer.ReadSec(), TimeManager::frameCount);
+
+    window->SetTitle(buffer);
 }
 
 bool Application::CleanUp()

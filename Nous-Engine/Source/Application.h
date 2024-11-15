@@ -54,6 +54,7 @@ private:
 	float dt;
 	float targetFPS;
 
+	Timer updateTitleTimer;
 };
 
 extern Application* External;
