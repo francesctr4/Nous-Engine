@@ -24,7 +24,6 @@ Application::Application()
 
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
-    updateTitleTimer.Start();
 
     // We allocate the memory for the module first, then we use it with new to call the constructor.
     // The application itself should NOT use custom allocators.
@@ -79,28 +78,19 @@ bool Application::Awake()
     TimeManager::frameCount = 0;
     TimeManager::graphicsTimer.Start();
 
+    updateTitleTimer.Start();
+
     return ret;
 }
 
 UpdateStatus Application::PrepareUpdate()
 {
+    NOUS_TRACE("%s()", __FUNCTION__);
+
     UpdateStatus ret = UPDATE_CONTINUE;
 
-    // Measure the time elapsed since the last frame
-    dt = (float)msTimer.ReadMS() / 1000.0f;
+    dt = msTimer.ReadSec();
     msTimer.Start();
-
-    const float targetFrameTime = 1.0f / targetFPS;
-
-    if (dt < targetFrameTime) {
-
-        /* If the time elapsed since the last frame is less than the target frame time,
-        introduce a delay to ensure we wait until the target frame time has elapsed. */
-
-        SDL_Delay((targetFrameTime - dt) * 1000); // Convert to milliseconds
-
-        dt = targetFrameTime; // Update dt to match the target frame time.
-    }
 
     TimeManager::deltaTime = dt;
     TimeManager::frameCount++;
@@ -110,12 +100,13 @@ UpdateStatus Application::PrepareUpdate()
 
 UpdateStatus Application::Update()
 {
+    UpdateStatus ret = UPDATE_CONTINUE;
 
 #ifdef TRACY_ENABLE
     ZoneScoped;
 #endif
-    
-    UpdateStatus ret = UPDATE_CONTINUE;
+   
+    NOUS_INFO("-------------- PrepareUpdate --------------");
 
     ret = PrepareUpdate();
 
@@ -123,7 +114,8 @@ UpdateStatus Application::Update()
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
-        if (list_modules[i] != nullptr) {
+        if (list_modules[i] != nullptr) 
+        {
             ret = list_modules[i]->PreUpdate(dt);
         }
     }
@@ -132,7 +124,8 @@ UpdateStatus Application::Update()
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
-        if (list_modules[i] != nullptr) {
+        if (list_modules[i] != nullptr) 
+        {
             ret = list_modules[i]->Update(dt);
         }
     }
@@ -141,10 +134,13 @@ UpdateStatus Application::Update()
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
-        if (list_modules[i] != nullptr) {
+        if (list_modules[i] != nullptr) 
+        {
             ret = list_modules[i]->PostUpdate(dt);
         }
     }
+
+    NOUS_INFO("-------------- FinishUpdate --------------");
 
     FinishUpdate();
 
@@ -157,6 +153,10 @@ UpdateStatus Application::Update()
 
 void Application::FinishUpdate()
 {
+    NOUS_TRACE("%s()", __FUNCTION__);
+
+    // Set Window Title with Debug Info
+
     static float cachedDt = 0.0f;
     static float cachedFPS = 0.0f;
     static char buffer[256];
@@ -174,6 +174,18 @@ void Application::FinishUpdate()
         TITLE, cachedDt, cachedFPS, TimeManager::graphicsTimer.ReadSec(), TimeManager::frameCount);
 
     window->SetTitle(buffer);
+
+    NOUS_DEBUG("-------------- Frame Finished --------------");
+
+    // Adapt according to target FPS
+
+    const float targetFrameTime = 1.0f / targetFPS;
+    const float elapsedTime = msTimer.ReadSec();
+
+    if (elapsedTime < targetFrameTime)
+    {
+        SDL_Delay((targetFrameTime - elapsedTime) * 1000);
+    }
 }
 
 bool Application::CleanUp()
