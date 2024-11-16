@@ -52,6 +52,8 @@ struct VulkanSwapChain
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
+    uint8 maxFramesInFlight;
+
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
 

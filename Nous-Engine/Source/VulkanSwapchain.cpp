@@ -3,7 +3,6 @@
 #include "VulkanDevice.h"
 #include "VulkanImage.h"
 #include "VulkanUtils.h"
-#include "VulkanGlobals.h"
 
 #include "Logger.h"
 #include "MemoryManager.h"
@@ -25,6 +24,8 @@ bool CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, Vulk
     {
         imageCount = vkContext->device.swapChainSupport.capabilities.maxImageCount;
     }
+
+    swapChain->maxFramesInFlight = imageCount - 1;
 
     VkSwapchainCreateInfoKHR createInfo{};
 
@@ -168,7 +169,7 @@ void SwapChainPresent(VulkanContext* vkContext, VulkanSwapChain* swapchain, VkQu
     }
 
     // Increment (and loop) the index.
-    vkContext->currentFrame = (vkContext->currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    vkContext->currentFrame = (vkContext->currentFrame + 1) % swapchain->maxFramesInFlight;
 }
 
 VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)

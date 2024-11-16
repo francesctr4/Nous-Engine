@@ -1,20 +1,19 @@
 #include "VulkanSyncObjects.h"
 #include "VulkanUtils.h"
-#include "VulkanGlobals.h"
 
 bool NOUS_VulkanSyncObjects::CreateSyncObjects(VulkanContext* vkContext)
 {
     bool ret = true;
 
     // Create sync objects.
-    vkContext->imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    vkContext->queueCompleteSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    vkContext->inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    vkContext->imageAvailableSemaphores.resize(vkContext->swapChain.maxFramesInFlight);
+    vkContext->queueCompleteSemaphores.resize(vkContext->swapChain.maxFramesInFlight);
+    vkContext->inFlightFences.resize(vkContext->swapChain.maxFramesInFlight);
 
     VkSemaphoreCreateInfo semaphoreCreateInfo{};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    for (uint16 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    for (uint16 i = 0; i < vkContext->swapChain.maxFramesInFlight; ++i)
     {
         vkCreateSemaphore(vkContext->device.logicalDevice, &semaphoreCreateInfo, vkContext->allocator, &vkContext->imageAvailableSemaphores[i]);
         vkCreateSemaphore(vkContext->device.logicalDevice, &semaphoreCreateInfo, vkContext->allocator, &vkContext->queueCompleteSemaphores[i]);
@@ -43,7 +42,7 @@ void NOUS_VulkanSyncObjects::DestroySyncObjects(VulkanContext* vkContext)
 {
     NOUS_DEBUG("Destroying Sync Objects...");
 
-    for (uint16 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) 
+    for (uint16 i = 0; i < vkContext->swapChain.maxFramesInFlight; ++i) 
     {
         if (vkContext->imageAvailableSemaphores[i]) 
         {
