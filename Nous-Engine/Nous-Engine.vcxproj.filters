@@ -61,6 +61,9 @@
     <Filter Include="Externals\MathGeoLib\Algorithm\Random">
       <UniqueIdentifier>{452dbac4-6d4d-48fe-b784-bdbebd3c5983}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\Memory">
+      <UniqueIdentifier>{90b980f7-cb77-42c8-941a-c7b656389a06}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -95,9 +98,6 @@
     </ClCompile>
     <ClCompile Include="Source\External\Tracy\TracyClient.cpp">
       <Filter>Externals\Tracy</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\MemoryManager.cpp">
-      <Filter>Source Code\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Source\EventSystem.cpp">
       <Filter>Source Code\Utils</Filter>
@@ -245,6 +245,12 @@
     </ClCompile>
     <ClCompile Include="Source\VulkanInstance.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\MemoryManager.cpp">
+      <Filter>Source Code\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\LinearAllocator.cpp">
+      <Filter>Source Code\Memory</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -524,9 +530,6 @@
     <ClInclude Include="Source\External\Tracy\tracy\Tracy.hpp">
       <Filter>Externals\Tracy</Filter>
     </ClInclude>
-    <ClInclude Include="Source\MemoryManager.h">
-      <Filter>Source Code\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Source\EventSystem.h">
       <Filter>Source Code\Utils</Filter>
     </ClInclude>
@@ -781,6 +784,12 @@
     </ClInclude>
     <ClInclude Include="Source\VulkanGlobals.h">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\MemoryManager.h">
+      <Filter>Source Code\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\LinearAllocator.h">
+      <Filter>Source Code\Memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

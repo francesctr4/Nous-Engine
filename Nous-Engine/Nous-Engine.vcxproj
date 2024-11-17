@@ -233,6 +233,7 @@
     <ClCompile Include="Source\External\MathGeoLib\include\Math\TransformOps.cpp" />
     <ClCompile Include="Source\External\MathGeoLib\include\Time\Clock.cpp" />
     <ClCompile Include="Source\External\Tracy\TracyClient.cpp" />
+    <ClCompile Include="Source\LinearAllocator.cpp" />
     <ClCompile Include="Source\Logger.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Module.cpp" />
@@ -405,6 +406,7 @@
     <ClInclude Include="Source\External\SDL2\include\SDL_vulkan.h" />
     <ClInclude Include="Source\External\Tracy\tracy\Tracy.hpp" />
     <ClInclude Include="Source\Globals.h" />
+    <ClInclude Include="Source\LinearAllocator.h" />
     <ClInclude Include="Source\Logger.h" />
     <ClInclude Include="Source\MathGeoLib.h" />
     <ClInclude Include="Source\MathUtils.h" />

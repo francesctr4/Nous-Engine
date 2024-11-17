@@ -10,6 +10,7 @@
 struct MemoryStats 
 {
 	uint64 totalAllocated;
+	uint64 totalAllocations;
 	uint64 taggedAllocations[static_cast<uint64>(MemoryManager::MemoryTag::MAX)];
 };
 
@@ -32,7 +33,8 @@ static const char* memoryTagStrings[static_cast<uint64>(MemoryManager::MemoryTag
 	"ENTITY			",
 	"ENTITY_NODE		",
 	"SCENE			",
-	"INPUT			"
+	"INPUT			",
+	"LINEAR_ALLOC		"
 };
 
 static struct MemoryStats stats;
@@ -54,6 +56,9 @@ void MemoryManager::ShutdownMemory()
 		
 		NOUS_ASSERT_MSG(amount == 0.0f, "Memory Leaks Detected!");
 	}
+
+	NOUS_ASSERT(stats.totalAllocations == 0);
+	NOUS_ASSERT(stats.totalAllocated == 0);
 }
 
 void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
@@ -64,6 +69,7 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 	}
 
 	stats.totalAllocated += size;
+	stats.totalAllocations++;
 	stats.taggedAllocations[static_cast<uint64>(tag)] += size;
 
 	// TODO: Memory Alignment
@@ -85,6 +91,7 @@ void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UN
 	}
 
 	stats.totalAllocated -= size;
+	stats.totalAllocations--;
 	stats.taggedAllocations[static_cast<uint64>(tag)] -= size;
 
 #ifdef _PROFILING
@@ -119,6 +126,40 @@ char* MemoryManager::GetMemoryUsageStats()
 	char buffer[8000] = "System memory use (tagged):\n";
 	uint64 offset = strlen(buffer);
 
+	// Log total size allocated in appropriate units
+	char totalUnit[4] = "XiB";
+	float totalAmount = 1.0f;
+
+	if (stats.totalAllocated >= GiB)
+	{
+		totalUnit[0] = 'G';
+		totalAmount = stats.totalAllocated / static_cast<float>(GiB);
+	}
+	else if (stats.totalAllocated >= MiB)
+	{
+		totalUnit[0] = 'M';
+		totalAmount = stats.totalAllocated / static_cast<float>(MiB);
+	}
+	else if (stats.totalAllocated >= KiB)
+	{
+		totalUnit[0] = 'K';
+		totalAmount = stats.totalAllocated / static_cast<float>(KiB);
+	}
+	else
+	{
+		totalUnit[0] = 'B';
+		totalUnit[1] = 0;
+		totalAmount = static_cast<float>(stats.totalAllocated);
+	}
+
+	snprintf(buffer + offset, 8000 - offset, "\nTotal size allocated: %.2f %s\n", totalAmount, totalUnit);
+	offset += strlen(buffer + offset);
+
+	// Log total allocations
+	snprintf(buffer + offset, 8000 - offset, "Total allocations: %llu\n\n", stats.totalAllocations);
+	offset += strlen(buffer + offset);
+
+	// Log allocations by tag
 	for (uint32 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
 	{
 		char unit[4] = "XiB";
@@ -151,4 +192,9 @@ char* MemoryManager::GetMemoryUsageStats()
  	}
 
 	return _strdup(buffer);
+}
+
+uint64 MemoryManager::GetMemoryAllocationCount()
+{
+	return stats.totalAllocations;
 }

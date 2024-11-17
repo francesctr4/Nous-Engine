@@ -25,6 +25,7 @@ namespace MemoryManager
 		ENTITY_NODE,
 		SCENE,
 		INPUT,
+		LINEAR_ALLOCATOR,
 
 		MAX
 	};
@@ -44,6 +45,8 @@ namespace MemoryManager
 	void* SetMemory(void* destination, int32 value, uint64 size);
 
 	char* GetMemoryUsageStats();
+
+	uint64 GetMemoryAllocationCount();
 }
 
 // Custom Memory Management Macros to monitorize allocations
