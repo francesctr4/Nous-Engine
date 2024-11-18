@@ -44,10 +44,7 @@ void TestManager::RunTests()
             ++failed;
         }
 
-        char status[20];
-        //std::format(status, failed ? "*** %d FAILED ***" : "SUCCESS", failed);
-
-        NOUS_INFO("Executed %d of %d (skipped %d) %s (%.6f sec / %.6f sec total)", i + 1, count, skipped, status);
+        NOUS_INFO("Executed %d of %d (skipped %d)", i + 1, count, skipped);
     }
 
     NOUS_INFO("Results: %d passed, %d failed, %d skipped.", passed, failed, skipped);

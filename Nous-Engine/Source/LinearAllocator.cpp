@@ -37,7 +37,7 @@ void* LinearAllocator::Allocate(uint64 size)
 {
     if (offset + size > capacity)
     {
-        NOUS_ERROR("linear_allocator_allocate - Tried to allocate %lluB, only %lluB remaining.", size, GetRemainingSize());
+        NOUS_ERROR("LinearAllocator::Allocate - Tried to allocate %lluB, only %lluB remaining.", size, GetRemainingSize());
 
         return nullptr; // Out of memory
     }
