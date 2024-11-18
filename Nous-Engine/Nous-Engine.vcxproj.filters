@@ -252,6 +252,9 @@
     <ClCompile Include="Source\LinearAllocator.cpp">
       <Filter>Source Code\Memory</Filter>
     </ClCompile>
+    <ClCompile Include="Source\ModuleFileSystem.cpp">
+      <Filter>Source Code\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -790,6 +793,9 @@
     </ClInclude>
     <ClInclude Include="Source\LinearAllocator.h">
       <Filter>Source Code\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ModuleFileSystem.h">
+      <Filter>Source Code\Modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
