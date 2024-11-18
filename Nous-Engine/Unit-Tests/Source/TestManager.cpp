@@ -1,5 +1,6 @@
 #include "TestManager.h"
 
+#include "Globals.h"
 #include "Logger.h"
 #include "Timer.h"
 

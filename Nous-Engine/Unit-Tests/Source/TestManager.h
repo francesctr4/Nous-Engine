@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Globals.h"
-
 #include <functional>
 #include <string>
 #include <vector>

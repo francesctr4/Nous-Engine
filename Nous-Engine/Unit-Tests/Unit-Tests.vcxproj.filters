@@ -28,6 +28,9 @@
     <ClCompile Include="Source\LinearAllocator_Test.cpp">
       <Filter>Tests Files\Memory</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\MemoryManager.cpp">
+      <Filter>Reference Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\Logger.h">
@@ -44,6 +47,9 @@
     </ClInclude>
     <ClInclude Include="Source\LinearAllocator_Test.h">
       <Filter>Tests Files\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\MemoryManager.h">
+      <Filter>Reference Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

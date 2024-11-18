@@ -6,8 +6,12 @@ class LinearAllocator
 {
 public:
 
+    LinearAllocator();
+
     LinearAllocator(uint64 capacity, void* preAllocatedMemory = nullptr);
     ~LinearAllocator();
+
+    void Create(uint64 capacity, void* preAllocatedMemory = nullptr);
 
     void* Allocate(uint64 size);
     void FreeAll();

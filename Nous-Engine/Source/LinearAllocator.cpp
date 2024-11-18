@@ -2,20 +2,24 @@
 
 #include "MemoryManager.h"
 
-LinearAllocator::LinearAllocator(uint64 capacity, void* preAllocatedMemory) 
+LinearAllocator::LinearAllocator()
+    : capacity(0), offset(0), memory(nullptr), ownsMemory(true) {}
+
+LinearAllocator::LinearAllocator(uint64 capacity, void* preAllocatedMemory)
     : capacity(capacity), offset(0), memory(preAllocatedMemory), ownsMemory(preAllocatedMemory == nullptr)
 {
     if (memory == nullptr) 
     {
-        memory = std::malloc(capacity);
+        memory = MemoryManager::Allocate(capacity, MemoryManager::MemoryTag::LINEAR_ALLOCATOR);
 
         if (memory == nullptr)
         {
+            NOUS_ERROR("%s() - Allocation Failure", __FUNCTION__);
             throw std::bad_alloc(); // Handle allocation failure
         }
     }
 
-    std::memset(memory, 0, capacity);
+    MemoryManager::ZeroMemory(memory, capacity);
 }
 
 LinearAllocator::~LinearAllocator()
@@ -29,6 +33,26 @@ LinearAllocator::~LinearAllocator()
     capacity = 0;
     memory = nullptr;
     ownsMemory = false;
+}
+
+void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory) 
+{
+    this->capacity = capacity;
+    this->offset = offset;
+    this->memory = preAllocatedMemory;
+    this->ownsMemory = (preAllocatedMemory == nullptr);
+
+    if (memory == nullptr)
+    {
+        memory = MemoryManager::Allocate(capacity, MemoryManager::MemoryTag::LINEAR_ALLOCATOR);
+
+        if (memory == nullptr)
+        {
+            throw std::bad_alloc(); // Handle allocation failure
+        }
+    }
+
+    std::memset(memory, 0, capacity);
 }
 
 // Allocate memory with alignment
@@ -51,7 +75,7 @@ void* LinearAllocator::Allocate(uint64 size)
 
 void LinearAllocator::FreeAll()
 {
-    std::free(memory);
+    MemoryManager::Free(memory, capacity, MemoryManager::MemoryTag::LINEAR_ALLOCATOR);
 
     memory = nullptr;
     offset = 0;
