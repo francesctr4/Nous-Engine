@@ -23,7 +23,7 @@ public:
     LinearAllocator(LinearAllocator&&) = delete;
     LinearAllocator& operator=(LinearAllocator&&) = delete;
 
-private:
+public:
 
     uint64 capacity;
     uint64 offset;

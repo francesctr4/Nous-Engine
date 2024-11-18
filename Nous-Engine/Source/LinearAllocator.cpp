@@ -2,15 +2,20 @@
 
 #include "MemoryManager.h"
 
-LinearAllocator::LinearAllocator(uint64 capacity, void* preAllocatedMemory = nullptr) 
+LinearAllocator::LinearAllocator(uint64 capacity, void* preAllocatedMemory) 
     : capacity(capacity), offset(0), memory(preAllocatedMemory), ownsMemory(preAllocatedMemory == nullptr)
 {
     if (memory == nullptr) 
     {
-        memory = NOUS_NEW_ARRAY<uint8>(capacity, MemoryManager::MemoryTag::LINEAR_ALLOCATOR);
+        memory = std::malloc(capacity);
+
+        if (memory == nullptr)
+        {
+            throw std::bad_alloc(); // Handle allocation failure
+        }
     }
 
-    MemoryManager::ZeroMemory(memory, capacity);
+    std::memset(memory, 0, capacity);
 }
 
 LinearAllocator::~LinearAllocator()
@@ -19,6 +24,11 @@ LinearAllocator::~LinearAllocator()
     {
         FreeAll();
     }
+
+    offset = 0;
+    capacity = 0;
+    memory = nullptr;
+    ownsMemory = false;
 }
 
 // Allocate memory with alignment
@@ -41,7 +51,7 @@ void* LinearAllocator::Allocate(uint64 size)
 
 void LinearAllocator::FreeAll()
 {
-    NOUS_DELETE_ARRAY(memory, capacity, MemoryManager::MemoryTag::LINEAR_ALLOCATOR);
+    std::free(memory);
 
     memory = nullptr;
     offset = 0;
