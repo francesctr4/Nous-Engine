@@ -2,7 +2,7 @@
 
 #include "Module.h"
 
-#include "SDL2.h"
+struct SDL_Window;
 
 class ModuleWindow : public Module 
 {

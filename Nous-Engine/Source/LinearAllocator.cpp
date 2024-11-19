@@ -52,7 +52,7 @@ void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
         }
     }
 
-    std::memset(memory, 0, capacity);
+    MemoryManager::ZeroMemory(memory, capacity);
 }
 
 // Allocate memory with alignment

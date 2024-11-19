@@ -12,6 +12,9 @@
 #include "VulkanDebugMessenger.h"
 #include "VulkanInstance.h"
 
+// Shaders
+#include "VulkanObjectShader.h"
+
 #include "MemoryManager.h"
 #include "Logger.h"
 
@@ -167,6 +170,18 @@ bool VulkanBackend::Initialize()
     else
     {
         NOUS_DEBUG("Vulkan Sync Objects created successfully!");
+    }
+
+    // Create Vulkan Object Shader
+    NOUS_DEBUG("Creating Nous Object Shader...");
+    if (!CreateObjectShader(vkContext, &vkContext->objectShader))
+    {
+        NOUS_ERROR("Failed to create Nous Object Shader. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Nous Object Shader created successfully!");
     }
 
 	return ret;

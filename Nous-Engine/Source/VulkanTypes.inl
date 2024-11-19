@@ -125,6 +125,28 @@ struct VulkanFence
     bool isSignaled;
 };
 
+struct VulkanShaderStage 
+{
+    VkShaderModuleCreateInfo shaderModuleCreateInfo;
+    VkShaderModule handle;
+
+    VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
+};
+
+struct VulkanPipeline
+{
+    VkPipeline handle;
+    VkPipelineLayout pipelineLayout;
+};
+
+constexpr uint16 OBJECT_SHADER_STAGE_COUNT = 2;
+struct VulkanObjectShader 
+{
+    // Vertex and Fragment Stages
+    std::array<VulkanShaderStage, OBJECT_SHADER_STAGE_COUNT> stages;
+    VulkanPipeline pipeline;
+};
+
 /**
  * @brief Stores all the Vulkan Context variables
  */
@@ -164,4 +186,6 @@ struct VulkanContext
     uint32 imageIndex;
     uint32 currentFrame;
     bool recreatingSwapchain;
+
+    VulkanObjectShader objectShader;
 };

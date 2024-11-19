@@ -257,7 +257,9 @@
     <ClCompile Include="Source\VulkanFramebuffer.cpp" />
     <ClCompile Include="Source\VulkanImage.cpp" />
     <ClCompile Include="Source\VulkanInstance.cpp" />
+    <ClCompile Include="Source\VulkanObjectShader.cpp" />
     <ClCompile Include="Source\VulkanRenderpass.cpp" />
+    <ClCompile Include="Source\VulkanShaderUtils.cpp" />
     <ClCompile Include="Source\VulkanSwapchain.cpp" />
     <ClCompile Include="Source\VulkanSyncObjects.cpp" />
     <ClCompile Include="Source\VulkanUtils.cpp" />
@@ -438,13 +440,17 @@
     <ClInclude Include="Source\VulkanGlobals.h" />
     <ClInclude Include="Source\VulkanImage.h" />
     <ClInclude Include="Source\VulkanInstance.h" />
+    <ClInclude Include="Source\VulkanObjectShader.h" />
     <ClInclude Include="Source\VulkanPlatform.h" />
     <ClInclude Include="Source\VulkanRenderpass.h" />
+    <ClInclude Include="Source\VulkanShaderUtils.h" />
     <ClInclude Include="Source\VulkanSwapchain.h" />
     <ClInclude Include="Source\VulkanSyncObjects.h" />
     <ClInclude Include="Source\VulkanUtils.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Engine\Assets\Shaders\Nous.ObjectShader.frag.glsl" />
+    <None Include="Engine\Assets\Shaders\Nous.ObjectShader.vert.glsl" />
     <None Include="Source\External\MathGeoLib\include\Geometry\KDTree.inl" />
     <None Include="Source\External\MathGeoLib\include\Geometry\QuadTree.inl" />
     <None Include="Source\External\MathGeoLib\include\Geometry\TriangleMesh_IntersectRay_AVX.inl" />

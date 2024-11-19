@@ -1,6 +1,8 @@
 #include "ModuleWindow.h"
-#include "Logger.h"
 
+#include "SDL2.h"
+
+#include "Logger.h"
 #include "MemoryManager.h"
 
 ModuleWindow::ModuleWindow(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)

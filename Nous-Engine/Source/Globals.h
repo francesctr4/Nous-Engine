@@ -7,11 +7,6 @@
 #include "Logger.h"
 #include "Asserts.h"
 
-// Threading Library
-#include <thread>
-#include <barrier>
-#include <chrono>
-
 #define TITLE "Nous Engine"
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600

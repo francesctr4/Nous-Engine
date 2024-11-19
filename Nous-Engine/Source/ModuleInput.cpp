@@ -1,4 +1,5 @@
 #include "ModuleInput.h"
+#include "SDL2.h"
 #include "Logger.h"
 #include "MemoryManager.h"
 

@@ -64,6 +64,12 @@
     <Filter Include="Source Code\Memory">
       <UniqueIdentifier>{90b980f7-cb77-42c8-941a-c7b656389a06}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\Core\Renderer\Vulkan\Shaders">
+      <UniqueIdentifier>{e42060bc-3cdb-478a-8ecf-69804c3914b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Externals\GLSL">
+      <UniqueIdentifier>{54e10806-e8e3-4c46-bd27-d8eddf9138cd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -254,6 +260,12 @@
     </ClCompile>
     <ClCompile Include="Source\ModuleFileSystem.cpp">
       <Filter>Source Code\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\VulkanObjectShader.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\VulkanShaderUtils.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -797,6 +809,12 @@
     <ClInclude Include="Source\ModuleFileSystem.h">
       <Filter>Source Code\Modules</Filter>
     </ClInclude>
+    <ClInclude Include="Source\VulkanObjectShader.h">
+      <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanShaderUtils.h">
+      <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">
@@ -825,6 +843,12 @@
     </None>
     <None Include="Source\External\MathGeoLib\include\Math\Matrix.inl">
       <Filter>Externals\MathGeoLib\Math</Filter>
+    </None>
+    <None Include="Engine\Assets\Shaders\Nous.ObjectShader.vert.glsl">
+      <Filter>Externals\GLSL</Filter>
+    </None>
+    <None Include="Engine\Assets\Shaders\Nous.ObjectShader.frag.glsl">
+      <Filter>Externals\GLSL</Filter>
     </None>
   </ItemGroup>
 </Project>

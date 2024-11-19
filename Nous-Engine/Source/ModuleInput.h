@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Module.h"
-#include "SDL2.h"
 #include "Globals.h"
 
 #define MAX_KEYBOARD_KEYS 300

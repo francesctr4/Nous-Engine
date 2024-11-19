@@ -11,6 +11,7 @@
 #include "MemoryManager.h"
 
 #include "Tracy.h"
+#include "SDL2.h"
 
 #include "TimeManager.h"
 

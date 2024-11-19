@@ -13,6 +13,7 @@
 
 #include "Globals.h"
 #include "VulkanTypes.inl"
+#include <optional>
 
 const std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
