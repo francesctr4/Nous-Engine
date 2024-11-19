@@ -1,9 +1,6 @@
 #include "ModuleCamera3D.h"
 #include "Logger.h"
 
-#include <thread>
-#include <chrono>
-
 ModuleCamera3D::ModuleCamera3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);

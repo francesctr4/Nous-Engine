@@ -844,10 +844,10 @@
     <None Include="Source\External\MathGeoLib\include\Math\Matrix.inl">
       <Filter>Externals\MathGeoLib\Math</Filter>
     </None>
-    <None Include="Engine\Assets\Shaders\Nous.ObjectShader.vert.glsl">
+    <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.vert.glsl">
       <Filter>Externals\GLSL</Filter>
     </None>
-    <None Include="Engine\Assets\Shaders\Nous.ObjectShader.frag.glsl">
+    <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.frag.glsl">
       <Filter>Externals\GLSL</Filter>
     </None>
   </ItemGroup>

@@ -449,8 +449,8 @@
     <ClInclude Include="Source\VulkanUtils.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Engine\Assets\Shaders\Nous.ObjectShader.frag.glsl" />
-    <None Include="Engine\Assets\Shaders\Nous.ObjectShader.vert.glsl" />
+    <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.frag.glsl" />
+    <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.vert.glsl" />
     <None Include="Source\External\MathGeoLib\include\Geometry\KDTree.inl" />
     <None Include="Source\External\MathGeoLib\include\Geometry\QuadTree.inl" />
     <None Include="Source\External\MathGeoLib\include\Geometry\TriangleMesh_IntersectRay_AVX.inl" />

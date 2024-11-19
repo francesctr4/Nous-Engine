@@ -3,6 +3,7 @@
 
 #include "ModuleWindow.h"
 #include "ModuleInput.h"
+#include "ModuleFileSystem.h"
 #include "ModuleCamera3D.h"
 #include "ModuleRenderer3D.h"
 
@@ -31,22 +32,24 @@ Application::Application()
 
     window = new ModuleWindow(this, "ModuleWindow");
     input = new ModuleInput(this, "ModuleInput");
+    fileSystem = new ModuleFileSystem(this, "ModuleFileSystem");
     camera = new ModuleCamera3D(this, "ModuleCamera3D");
     renderer = new ModuleRenderer3D(this, "ModuleRenderer3D");
 
-	list_modules[0] = window;
-	list_modules[1] = input;
-    list_modules[2] = camera;
-    list_modules[3] = renderer;
+	listModules[0] = window;
+    listModules[1] = input;
+    listModules[2] = fileSystem;
+    listModules[3] = camera;
+    listModules[4] = renderer;
 }
 
 Application::~Application()
 {
     for (int i = 0; i < NUM_MODULES; ++i)
     {
-        if (list_modules[i] != nullptr) {
-            delete list_modules[i];
-            list_modules[i] = nullptr;
+        if (listModules[i] != nullptr) {
+            delete listModules[i];
+            listModules[i] = nullptr;
         }
     }
 }
@@ -58,8 +61,8 @@ bool Application::Awake()
     // Call Awake() in all modules
     for (int i = 0; i < NUM_MODULES && ret; ++i)
     {
-        if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->Awake();
+        if (listModules[i] != nullptr) {
+            ret = listModules[i]->Awake();
         }
     }
 
@@ -67,8 +70,8 @@ bool Application::Awake()
     NOUS_INFO("-------------- Application Start --------------");
     for (int i = 0; i < NUM_MODULES && ret; ++i)
     {
-        if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->Start();
+        if (listModules[i] != nullptr) {
+            ret = listModules[i]->Start();
         }
     }
 
@@ -115,9 +118,9 @@ UpdateStatus Application::Update()
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
-        if (list_modules[i] != nullptr) 
+        if (listModules[i] != nullptr) 
         {
-            ret = list_modules[i]->PreUpdate(dt);
+            ret = listModules[i]->PreUpdate(dt);
         }
     }
 
@@ -125,9 +128,9 @@ UpdateStatus Application::Update()
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
-        if (list_modules[i] != nullptr) 
+        if (listModules[i] != nullptr) 
         {
-            ret = list_modules[i]->Update(dt);
+            ret = listModules[i]->Update(dt);
         }
     }
 
@@ -135,9 +138,9 @@ UpdateStatus Application::Update()
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
-        if (list_modules[i] != nullptr) 
+        if (listModules[i] != nullptr) 
         {
-            ret = list_modules[i]->PostUpdate(dt);
+            ret = listModules[i]->PostUpdate(dt);
         }
     }
 
@@ -194,8 +197,8 @@ bool Application::CleanUp()
     bool ret = true;
     for (int i = (NUM_MODULES - 1); i >= 0 && ret; --i)
     {
-        if (list_modules[i] != nullptr) {
-            ret = list_modules[i]->CleanUp();
+        if (listModules[i] != nullptr) {
+            ret = listModules[i]->CleanUp();
         }
     }
     return ret;
@@ -205,9 +208,9 @@ void Application::BroadcastEvent(const Event& event)
 {
     for (int i = 0; i < NUM_MODULES; ++i)
     {
-        if (list_modules[i] != nullptr) 
+        if (listModules[i] != nullptr) 
         {
-            list_modules[i]->ReceiveEvent(event);
+            listModules[i]->ReceiveEvent(event);
         }
     }
 }

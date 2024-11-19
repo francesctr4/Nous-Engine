@@ -4,11 +4,12 @@
 #include "EventSystem.h"
 #include "Timer.h"
 
-#define NUM_MODULES 4
+constexpr uint16 NUM_MODULES = 5;
 
 class Module;
 class ModuleWindow;
 class ModuleInput;
+class ModuleFileSystem;
 class ModuleCamera3D;
 class ModuleRenderer3D;
 
@@ -36,6 +37,7 @@ public:
 
 	ModuleWindow* window;
 	ModuleInput* input;
+	ModuleFileSystem* fileSystem;
 	ModuleCamera3D* camera;
 	ModuleRenderer3D* renderer;
 
@@ -48,7 +50,7 @@ private:
 
 	// ---------------------------------------- \\
 
-	Module* list_modules[NUM_MODULES];
+	Module* listModules[NUM_MODULES];
 
 	Timer msTimer;
 	float dt;
