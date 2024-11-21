@@ -16,16 +16,4 @@ public:
 	bool Start() override;
 	bool CleanUp() override;
 
-	// -------------------------------------------------------------------------------- //
-
-	std::string GetAbsolutePath(const std::string& path) const;
-
-    bool Exists(const std::string& path) const;
-
-    bool IsDirectory(const std::string& path) const;
-
-    std::string GetFilename(const std::string& path) const;
-
-    std::string GetExtension(const std::string& path) const;
-
 };
