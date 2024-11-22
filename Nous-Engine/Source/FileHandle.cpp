@@ -2,7 +2,7 @@
 
 #include "MemoryManager.h"
 
-FileHandle::FileHandle() : fileStream(nullptr)
+FileHandle::FileHandle() : fileStream(nullptr), mode(FileMode::UNKNOWN)
 {
 
 }
@@ -17,14 +17,14 @@ FileHandle::~FileHandle()
 
 bool FileHandle::Open(const std::string& filePath, FileMode mode, bool isBinary)
 {
-    bool ret = false;
-
     if (IsOpen())
     {
         Close();
     }
 
     SetPath(filePath);
+
+    this->mode = mode;
 
     std::ios::openmode openMode = isBinary ? std::ios::binary : std::ios::openmode(0);
 
@@ -48,21 +48,20 @@ bool FileHandle::Open(const std::string& filePath, FileMode mode, bool isBinary)
         default: 
         {
             NOUS_ERROR("Invalid mode passed while trying to open file: '%s'", filePath.c_str());
-            return ret;
+            return false;
         }
     }
 
     // Attempt to open the file
     fileStream = std::make_unique<std::fstream>(filePath, openMode);
 
-    ret = fileStream->is_open();
-
-    if (!ret)
+    if (!fileStream->is_open())
     {
         NOUS_ERROR("Failed to open file: '%s'. Please check the file path and permissions.", filePath.c_str());
+        return false;
     }
 
-    return ret;
+    return true;
 }
 
 void FileHandle::Close()
@@ -77,27 +76,32 @@ void FileHandle::Close()
 
 bool FileHandle::ReadBytes(uint64 dataSize, char* outReadData, uint64* outBytesRead)
 {
-    bool ret = false;
-
     // Check if the file is open and valid
     if (!IsOpen())
     {
         NOUS_ERROR("Attempted to read bytes from a closed or invalid file.");
-        return ret;
+        return false;
+    }
+
+    // Ensure the file is open in read mode
+    if (mode != FileMode::READ && mode != FileMode::READ_AND_WRITE)
+    {
+        NOUS_ERROR("File is not opened in read mode.");
+        return false;
     }
 
     // Check if the output buffer is valid
     if (!outReadData || !outBytesRead)
     {
         NOUS_ERROR("Invalid output buffer or bytes read pointer.");
-        return ret;
+        return false;
     }
 
     // Ensure the stream is in a good state
     if (!fileStream->good())
     {
         NOUS_ERROR("File stream is not in a good state for reading.");
-        return ret;
+        return false;
     }
 
     // Attempt to read the specified number of bytes
@@ -113,27 +117,30 @@ bool FileHandle::ReadBytes(uint64 dataSize, char* outReadData, uint64* outBytesR
     }
 
     // Return true if at least some bytes were successfully read
-    ret = *outBytesRead > 0;
-
-    return ret;
+    return (*outBytesRead > 0);
 }
 
 bool FileHandle::ReadAllBytes(char** outBytes, uint64* outBytesRead)
 {
-    bool ret = false;
-
     // Check if the file is open and valid
     if (!IsOpen())
     {
         NOUS_ERROR("Attempted to read all bytes from a closed or invalid file.");
-        return ret;
+        return false;
+    }
+
+    // Ensure the file is open in read mode
+    if (mode != FileMode::READ && mode != FileMode::READ_AND_WRITE)
+    {
+        NOUS_ERROR("File is not opened in read mode.");
+        return false;
     }
 
     // Check if the output pointers are valid
     if (!outBytes || !outBytesRead)
     {
         NOUS_ERROR("Invalid output pointers provided.");
-        return ret;
+        return false;
     }
 
     // Move to the end of the file to determine its size
@@ -143,7 +150,7 @@ bool FileHandle::ReadAllBytes(char** outBytes, uint64* outBytesRead)
     if (fileSize <= 0)
     {
         NOUS_ERROR("Failed to determine the file size or the file is empty.");
-        return ret;
+        return false;
     }
 
     // Allocate memory for the file content
@@ -152,7 +159,7 @@ bool FileHandle::ReadAllBytes(char** outBytes, uint64* outBytesRead)
     if (!(*outBytes))
     {
         NOUS_ERROR("Failed to allocate memory for reading file contents.");
-        return ret;
+        return false;
     }
 
     // Read the file content
@@ -169,9 +176,120 @@ bool FileHandle::ReadAllBytes(char** outBytes, uint64* outBytesRead)
     }
 
     // Return true if at least some bytes were successfully read
-    ret = *outBytesRead > 0;
+    return (*outBytesRead > 0);
+}
 
-    return ret;
+bool FileHandle::ReadLine(std::string& outLine)
+{
+    // Check if the file is open and valid
+    if (!IsOpen())
+    {
+        NOUS_ERROR("Attempted to read a line from a closed or invalid file.");
+        return false;
+    }
+
+    // Ensure the file is open in read mode
+    if (mode != FileMode::READ && mode != FileMode::READ_AND_WRITE)
+    {
+        NOUS_ERROR("File is not opened in read mode.");
+        return false;
+    }
+
+    // Ensure the stream is in a good state
+    if (!fileStream->good())
+    {
+        NOUS_ERROR("File stream is not in a good state for reading a line.");
+        return false;
+    }
+
+    // Attempt to read a line
+    if (std::getline(*fileStream, outLine))
+    {
+        return true;
+    }
+
+    // If reading a line fails, log the error and return false
+    NOUS_WARN("Failed to read a line from the file.");
+
+    return false;
+}
+
+bool FileHandle::WriteLine(std::string line)
+{
+    // Check if the file is open and valid
+    if (!IsOpen())
+    {
+        NOUS_ERROR("Attempted to write a line to a closed or invalid file.");
+        return false;
+    }
+
+    // Ensure the file is open in write mode
+    if (mode != FileMode::WRITE && mode != FileMode::READ_AND_WRITE)
+    {
+        NOUS_ERROR("File is not opened in write mode.");
+        return false;
+    }
+
+    // Ensure the stream is in a good state
+    if (!fileStream->good())
+    {
+        NOUS_ERROR("File stream is not in a good state for writing a line.");
+        return false;
+    }
+
+    // Write the line and append a newline
+    *fileStream << line << '\n';
+
+    // Check for write failures
+    if (fileStream->fail())
+    {
+        NOUS_ERROR("Failed to write a line to the file.");
+        return false;
+    }
+
+    return true;
+}
+
+bool FileHandle::Write(uint64 dataSize, const void* data, uint64* outBytesWritten)
+{
+    // Check if the file is open and valid
+    if (!IsOpen())
+    {
+        NOUS_ERROR("Attempted to write data to a closed or invalid file.");
+        return false;
+    }
+
+    // Ensure the file is open in write mode
+    if (mode != FileMode::WRITE && mode != FileMode::READ_AND_WRITE)
+    {
+        NOUS_ERROR("File is not opened in write mode.");
+        return false;
+    }
+
+    // Ensure the stream is in a good state
+    if (!fileStream->good())
+    {
+        NOUS_ERROR("File stream is not in a good state for writing data.");
+        return false;
+    }
+
+    // Write the data to the file
+    fileStream->write(static_cast<const char*>(data), dataSize);
+
+    // Check how many bytes were actually written
+    if (outBytesWritten)
+    {
+        *outBytesWritten = static_cast<uint64>(fileStream->tellp());
+    }
+
+    // Check for write failures
+    if (fileStream->fail())
+    {
+        NOUS_ERROR("Failed to write data to the file.");
+        return false;
+    }
+
+    return true;
 }
 
 // --------------------------------------------------------------------------------------------------------------- //

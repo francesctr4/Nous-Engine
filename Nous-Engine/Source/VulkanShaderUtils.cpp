@@ -7,8 +7,6 @@
 
 bool CreateShaderModule(VulkanContext* vkContext, std::string name, std::string typeStr, VkShaderStageFlagBits shaderStageFlag, uint32 stageIndex, VulkanShaderStage* shaderStages)
 {
-    bool ret = true;
-
     // Build filename.
     std::string filename = std::format("Library/Shaders/{}.{}.spv", name, typeStr);
 
@@ -21,7 +19,7 @@ bool CreateShaderModule(VulkanContext* vkContext, std::string name, std::string 
     if (!handle.Open(filename, FileMode::READ, true)) 
     {
         NOUS_ERROR("Unable to read shader module: %s.", filename.c_str());
-        ret = false;
+        return false;
     }
 
     // Read the entire file as binary.
@@ -33,7 +31,7 @@ bool CreateShaderModule(VulkanContext* vkContext, std::string name, std::string 
         NOUS_ERROR("Unable to binary read shader module: %s.", filename.c_str());
         handle.Close();
 
-        ret = false;
+        return false;
     }
 
     shaderStages[stageIndex].shaderModuleCreateInfo.codeSize = size;
@@ -58,5 +56,5 @@ bool CreateShaderModule(VulkanContext* vkContext, std::string name, std::string 
         NOUS_DELETE_ARRAY(fileBuffer, size, MemoryManager::MemoryTag::FILE);
     }
 
-    return ret;
+    return true;
 }
