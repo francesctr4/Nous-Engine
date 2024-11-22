@@ -23,6 +23,8 @@ int main(int argc, char** argv) {
 
 	MemoryManager::InitializeMemory();
 
+	InitializeLogging();
+
 	NOUS_INFO("Starting engine '%s'....", TITLE);
 
 	int mainReturn = EXIT_FAILURE;
@@ -102,6 +104,8 @@ int main(int argc, char** argv) {
 	NOUS_INFO("Exiting engine '%s'...\n", TITLE);
 
 	NOUS_INFO(MemoryManager::GetMemoryUsageStats());
+
+	ShutdownLogging();
 
 	MemoryManager::ShutdownMemory();
 

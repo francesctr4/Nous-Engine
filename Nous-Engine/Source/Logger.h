@@ -32,6 +32,8 @@ typedef enum LogLevel {
 bool InitializeLogging();
 void ShutdownLogging();
 
+void AppendToLogFile(const char* message);
+
 void LogOutput(LogLevel level, const char* message, ...);
 
 #ifndef NOUS_FATAL

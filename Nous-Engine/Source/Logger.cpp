@@ -1,10 +1,13 @@
 #include "Logger.h"
 #include "Asserts.h"
+#include "FileHandle.h"
 
 #include <windows.h>
 #include <stdio.h>
 #include <vector>
 #include <string>
+
+static FileHandle logFile;
 
 void ReportAssertionFailure(const char* expression, const char* message, const char* file, int32_t line) 
 {
@@ -34,12 +37,32 @@ void PrintToConsoleColor(const char* message, WORD color) {
 
 bool InitializeLogging()
 {
-	return false;
+    // Create new/wipe existing log file, then open it.
+    if (!logFile.Open("console.log", FileMode::WRITE, false))
+    {
+        NOUS_ERROR("Unable to open console.log for writing.");
+        return false;
+    }
+
+	return true;
 }
 
 void ShutdownLogging()
 {
+    logFile.Close();
+}
 
+void AppendToLogFile(const char* message)
+{
+    if (logFile.IsOpen())
+    {
+        uint64 length = static_cast<uint64>(std::strlen(message));
+        uint64 written = 0;
+        if (!logFile.Write(length, message, &written)) 
+        {
+            NOUS_ERROR("Error writing to console.log.");
+        }
+    }
 }
 
 void LogOutput(LogLevel level, const char* message, ...)
@@ -76,6 +99,9 @@ void LogOutput(LogLevel level, const char* message, ...)
 
     // Print the final message
     PrintToConsoleColor(out_message2, levelColor[level]);
+
+    // Queue a copy to be written to the log file.
+    AppendToLogFile(out_message2);
 
     // Free allocated memory
     free(out_message);
