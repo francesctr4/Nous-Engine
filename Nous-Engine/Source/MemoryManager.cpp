@@ -34,7 +34,8 @@ static const char* memoryTagStrings[static_cast<uint64>(MemoryManager::MemoryTag
 	"ENTITY_NODE		",
 	"SCENE			",
 	"INPUT			",
-	"LINEAR_ALLOC		"
+	"LINEAR_ALLOC		",
+	"FILE			"
 };
 
 static struct MemoryStats stats;

@@ -26,6 +26,7 @@ namespace MemoryManager
 		SCENE,
 		INPUT,
 		LINEAR_ALLOCATOR,
+		FILE, 
 
 		MAX
 	};

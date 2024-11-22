@@ -70,7 +70,7 @@
     <Filter Include="Externals\GLSL">
       <UniqueIdentifier>{54e10806-e8e3-4c46-bd27-d8eddf9138cd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\FileSystem">
+    <Filter Include="Source Code\File System">
       <UniqueIdentifier>{ff81d40c-a9ac-403a-98b9-985b1512de20}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -271,10 +271,10 @@
       <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="Source\FileHandle.cpp">
-      <Filter>Source Code\FileSystem</Filter>
+      <Filter>Source Code\File System</Filter>
     </ClCompile>
     <ClCompile Include="Source\FileManager.cpp">
-      <Filter>Source Code\FileSystem</Filter>
+      <Filter>Source Code\File System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -825,10 +825,10 @@
       <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="Source\FileHandle.h">
-      <Filter>Source Code\FileSystem</Filter>
+      <Filter>Source Code\File System</Filter>
     </ClInclude>
     <ClInclude Include="Source\FileManager.h">
-      <Filter>Source Code\FileSystem</Filter>
+      <Filter>Source Code\File System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
