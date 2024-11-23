@@ -261,6 +261,7 @@
     <ClCompile Include="Source\VulkanInstance.cpp" />
     <ClCompile Include="Source\VulkanObjectShader.cpp" />
     <ClCompile Include="Source\VulkanGraphicsPipeline.cpp" />
+    <ClCompile Include="Source\VulkanPlatform.cpp" />
     <ClCompile Include="Source\VulkanRenderpass.cpp" />
     <ClCompile Include="Source\VulkanShaderUtils.cpp" />
     <ClCompile Include="Source\VulkanSwapchain.cpp" />

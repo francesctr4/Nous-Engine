@@ -279,6 +279,9 @@
     <ClCompile Include="Source\VulkanGraphicsPipeline.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanPlatform.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">

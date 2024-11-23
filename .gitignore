@@ -5,6 +5,7 @@
 
 # Delete Library Folder
 Library/
+Build/
 
 # User-specific files
 *.rsuser

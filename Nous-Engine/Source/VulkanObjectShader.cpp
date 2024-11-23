@@ -1,6 +1,7 @@
 #include "VulkanObjectShader.h"
 #include "VulkanShaderUtils.h"
 #include "VulkanGraphicsPipeline.h"
+#include "VulkanPlatform.h"
 
 #include "Logger.h"
 #include "MemoryManager.h"
@@ -9,6 +10,10 @@ constexpr const char* BUILTIN_OBJECT_SHADER_NAME = "BuiltIn.ObjectShader";
 
 bool CreateObjectShader(VulkanContext* vkContext, VulkanObjectShader* outShader)
 {
+#ifdef _DEBUG
+    ExecuteBatchFile("compile-shaders.bat");
+#endif // _DEBUG
+
     bool ret = true;
 
     // Shader module init per stage.
