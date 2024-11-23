@@ -191,6 +191,8 @@ void VulkanBackend::Shutdown()
 {
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
+    DestroyObjectShader(vkContext, &vkContext->objectShader);
+
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
     NOUS_VulkanCommandBuffer::DestroyCommandBuffers(vkContext);

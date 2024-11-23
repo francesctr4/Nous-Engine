@@ -58,6 +58,7 @@ void AppendToLogFile(const char* message)
     {
         uint64 length = static_cast<uint64>(std::strlen(message));
         uint64 written = 0;
+
         if (!logFile.Write(length, message, &written)) 
         {
             NOUS_ERROR("Error writing to console.log.");
@@ -67,9 +68,13 @@ void AppendToLogFile(const char* message)
 
 void LogOutput(LogLevel level, const char* message, ...)
 {
+    // TODO: These string operations are all pretty slow. This needs to be
+    // moved to another thread eventually, along with the file writes, to
+    // avoid slowing things down while the engine is trying to run.
+
     const char* levelStrings[6] = { "[FATAL]: ", "[ERROR]: ", "[WARN]: ", "[INFO]: ", "[DEBUG]: ", "[TRACE]: " };
     uint8_t levelColor[6] = { 64, 4, 6, 2, 1, 8 };
-    
+
     // Calculate the size needed for the formatted message
     va_list arg_ptr;
     va_start(arg_ptr, message);

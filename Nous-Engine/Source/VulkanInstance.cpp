@@ -4,6 +4,8 @@
 #include "VulkanPlatform.h"
 #include "VulkanGlobals.h"
 
+#include "SDL2.h"
+
 bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 {
     bool ret = true;
@@ -24,7 +26,7 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
     VkApplicationInfo appInfo{};
 
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.apiVersion = VK_API_VERSION_1_3;
+    appInfo.apiVersion = VK_API_VERSION_1_2;
     appInfo.pNext = nullptr;
 
     appInfo.pApplicationName = TITLE;

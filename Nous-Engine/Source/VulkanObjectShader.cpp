@@ -1,7 +1,9 @@
 #include "VulkanObjectShader.h"
 #include "VulkanShaderUtils.h"
+#include "VulkanGraphicsPipeline.h"
 
 #include "Logger.h"
+#include "MemoryManager.h"
 
 constexpr const char* BUILTIN_OBJECT_SHADER_NAME = "BuiltIn.ObjectShader";
 
@@ -22,14 +24,64 @@ bool CreateObjectShader(VulkanContext* vkContext, VulkanObjectShader* outShader)
         }
     }
 
-    // Descriptors
+    // TODO: Descriptors
+
+    // Pipeline creation
+    VkViewport viewport;
+    viewport.x = 0.0f;
+    viewport.y = (float)vkContext->framebufferHeight;
+    viewport.width = (float)vkContext->framebufferWidth;
+    viewport.height = -(float)vkContext->framebufferHeight;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    // Scissor
+    VkRect2D scissor;
+    scissor.offset.x = scissor.offset.y = 0;
+    scissor.extent.width = vkContext->framebufferWidth;
+    scissor.extent.height = vkContext->framebufferHeight;
+
+    // Attributes
+    VkVertexInputBindingDescription bindingDescription = Vertex::GetBindingDescription();
+    std::array<VkVertexInputAttributeDescription, Vertex::ATTRIBUTE_COUNT> attributeDescriptions = Vertex::GetAttributeDescriptions();
+
+    // TODO: Desciptor set layouts.
+    
+    // Stages
+    // NOTE: Should match the number of shader->stages.
+    std::array<VkPipelineShaderStageCreateInfo, OBJECT_SHADER_STAGE_COUNT> shaderStageCreateInfos;
+    MemoryManager::ZeroMemory(shaderStageCreateInfos.data(), sizeof(shaderStageCreateInfos));
+
+    for (u32 i = 0; i < OBJECT_SHADER_STAGE_COUNT; ++i) 
+    {
+        shaderStageCreateInfos[i].sType = outShader->stages[i].shaderStageCreateInfo.sType;
+        shaderStageCreateInfos[i] = outShader->stages[i].shaderStageCreateInfo;
+    }
+
+    if (!CreateGraphicsPipeline(vkContext, &vkContext->mainRenderpass, bindingDescription, 
+        static_cast<uint32>(attributeDescriptions.size()), attributeDescriptions.data(),
+        0, 0, OBJECT_SHADER_STAGE_COUNT, shaderStageCreateInfos.data(), viewport, scissor, 
+        false, &outShader->pipeline))
+    {
+        NOUS_ERROR("Failed to load graphics pipeline for object shader.");
+
+        ret = false;
+    }
 
     return ret;
 }
 
 void DestroyObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)
 {
+    DestroyGraphicsPipeline(vkContext, &shader->pipeline);
 
+    NOUS_DEBUG("Destroying Shader Modules...");
+    // Destroy shader modules.
+    for (uint32 i = 0; i < OBJECT_SHADER_STAGE_COUNT; ++i) 
+    {
+        vkDestroyShaderModule(vkContext->device.logicalDevice, shader->stages[i].handle, vkContext->allocator);
+        shader->stages[i].handle = 0;
+    }
 }
 
 void UseObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)

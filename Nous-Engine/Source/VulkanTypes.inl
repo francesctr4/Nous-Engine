@@ -1,9 +1,7 @@
 #pragma once
 
 #include "Globals.h"
-
 #include "Vulkan.h"
-#include "SDL2.h"
 
 struct VulkanImage
 {
