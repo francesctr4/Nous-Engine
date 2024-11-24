@@ -35,13 +35,5 @@ echo Creating zip file: %ZIP_FILE%...
 powershell -Command ^
     "Compress-Archive -Path '%VERSIONED_FOLDER%' -DestinationPath '%ZIP_FILE%' -Force"
 
-REM Create a symbolic link to Nous-Engine.exe in Build
-if exist %VERSIONED_FOLDER%\Nous-Engine.exe (
-    echo Creating symbolic link for Nous-Engine.exe in Build...
-    mklink Build\Nous-Engine.exe %VERSIONED_FOLDER%\Nous-Engine.exe
-) else (
-    echo Nous-Engine.exe not found, cannot create symbolic link.
-)
-
 echo Build process complete!
 pause
