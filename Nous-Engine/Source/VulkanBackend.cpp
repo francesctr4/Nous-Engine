@@ -12,6 +12,7 @@
 #include "VulkanDebugMessenger.h"
 #include "VulkanInstance.h"
 #include "VulkanBuffer.h"
+#include "VulkanShaderUtils.h"
 
 // Shaders
 #include "VulkanObjectShader.h"
@@ -197,6 +198,45 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Vulkan Buffers created successfully!");
     }
 
+#pragma region TEMPORAL DRAW CODE
+
+    // TODO: Temporary Test Code //
+
+    const uint32 nVertices = 4;
+    std::vector<Vertex> vertices(nVertices);
+    MemoryManager::ZeroMemory(vertices.data(), sizeof(Vertex) * nVertices);
+
+    // Bottom-left
+    vertices[0].position = { -0.5f, -0.5f, 0.0f };
+    vertices[0].color = { 1.0f, 0.0f, 0.0f }; // Red
+
+    // Top-left
+    vertices[1].position = { -0.5f, 0.5f, 0.0f };
+    vertices[1].color = { 0.0f, 1.0f, 0.0f }; // Green
+
+    // Top-right
+    vertices[2].position = { 0.5f, 0.5f, 0.0f };
+    vertices[2].color = { 0.0f, 0.0f, 1.0f }; // Blue
+
+    // Bottom-right
+    vertices[3].position = { 0.5f, -0.5f, 0.0f };
+    vertices[3].color = { 1.0f, 1.0f, 0.0f }; // Yellow
+
+    const uint32 nIndices = 6;
+    std::vector<uint32> indices = { 0, 2, 1, 0, 3, 2 };
+
+    NOUS_VulkanBuffer::UploadDataToBuffer(vkContext, vkContext->device.graphicsCommandPool, 0, 
+        vkContext->device.graphicsQueue, &vkContext->objectVertexBuffer, 0,
+        sizeof(Vertex) * nVertices, vertices.data());
+
+    NOUS_VulkanBuffer::UploadDataToBuffer(vkContext, vkContext->device.graphicsCommandPool, 0,
+        vkContext->device.graphicsQueue, &vkContext->objectIndexBuffer, 0,
+        sizeof(uint32) * nIndices, indices.data());
+
+    // TODO: End Temp Test Code //
+
+#pragma endregion
+
 	return ret;
 }
 
@@ -333,6 +373,28 @@ bool VulkanBackend::BeginFrame(float dt)
     // Begin the render pass
     BeginRenderpass(commandBuffer, &vkContext->mainRenderpass,
         vkContext->swapChain.swapChainFramebuffers[vkContext->imageIndex].handle);
+
+#pragma region TEMPORAL DRAW CODE
+
+    // TODO: temporary test code
+
+    UseObjectShader(vkContext, &vkContext->objectShader);
+
+    // Bind vertex buffer at offset.
+    VulkanBuffer vertexBuffers[] = { vkContext->objectVertexBuffer };
+    VkDeviceSize offsets[] = { 0 };
+
+    vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1, &vertexBuffers->handle, offsets);
+
+    // Bind index buffer at offset.
+    vkCmdBindIndexBuffer(commandBuffer->handle, vkContext->objectIndexBuffer.handle, 0, VK_INDEX_TYPE_UINT32);
+
+    // Issue the draw.
+    vkCmdDrawIndexed(commandBuffer->handle, 6, 1, 0, 0, 0);
+
+    // TODO: end temporary test code
+
+#pragma endregion
 
     return true;
 }

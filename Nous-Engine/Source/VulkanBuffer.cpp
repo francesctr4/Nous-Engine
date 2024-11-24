@@ -224,3 +224,24 @@ void NOUS_VulkanBuffer::BindBuffer(VulkanContext* vkContext, VulkanBuffer* buffe
 {
     VK_CHECK(vkBindBufferMemory(vkContext->device.logicalDevice, buffer->handle, buffer->memory, memoryOffset));
 }
+
+// -------------------------------------------------------------------------------------------------------- //
+
+void NOUS_VulkanBuffer::UploadDataToBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, uint64 offset, uint64 size, void* data)
+{
+    // Create a host-visible staging buffer to upload to. Mark it as the source of the transfer.
+    VkBufferUsageFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    // Create the staging buffer
+    VulkanBuffer stagingBuffer;
+    CreateBuffer(vkContext, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, flags, true, &stagingBuffer);
+
+    // Load the data into the staging buffer.
+    LoadBuffer(vkContext, &stagingBuffer, 0, size, 0, data);
+
+    // Perform the copy from staging to the device local buffer.
+    CopyBuffer(vkContext, pool, fence, queue, stagingBuffer.handle, 0, buffer->handle, offset, size);
+
+    // Clean up the staging buffer.
+    DestroyBuffer(vkContext, &stagingBuffer);
+}

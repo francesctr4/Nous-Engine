@@ -91,5 +91,6 @@ void DestroyObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)
 
 void UseObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)
 {
-
+    BindGraphicsPipeline(&vkContext->graphicsCommandBuffers[vkContext->imageIndex],
+        VK_PIPELINE_BIND_POINT_GRAPHICS, &shader->pipeline);
 }

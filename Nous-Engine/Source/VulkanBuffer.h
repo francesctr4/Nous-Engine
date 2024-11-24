@@ -24,4 +24,9 @@ namespace NOUS_VulkanBuffer
 		uint64 offset, uint64 size, uint32 flags, const void* data);
 
 	void BindBuffer(VulkanContext* vkContext, VulkanBuffer* buffer, VkDeviceSize memoryOffset);
+
+	// -------------------------------------------------------------------------------------------------------- //
+
+	void UploadDataToBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue,
+		VulkanBuffer* buffer, uint64 offset, uint64 size, void* data);
 }
