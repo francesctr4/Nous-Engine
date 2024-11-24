@@ -36,6 +36,19 @@ struct VulkanRenderpass
     VulkanRenderPassState state;
 };
 
+struct VulkanBuffer 
+{
+    VkBuffer handle;
+    VkBufferUsageFlagBits usage;
+
+    VkDeviceMemory memory;
+    int32 memoryIndex;
+    uint32 memoryPropertyFlags;
+
+    uint64 totalSize;
+    bool isLocked;
+};
+
 struct VulkanFramebuffer 
 {
     VkFramebuffer handle;
@@ -170,6 +183,12 @@ struct VulkanContext
 
     VulkanSwapChain swapChain;
     VulkanRenderpass mainRenderpass;
+
+    VulkanBuffer objectVertexBuffer;
+    uint64 geometryVertexOffset;
+
+    VulkanBuffer objectIndexBuffer;
+    uint64 geometryIndexOffset;
 
     std::vector<VulkanCommandBuffer> graphicsCommandBuffers;
 

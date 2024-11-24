@@ -210,7 +210,7 @@ VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice
     return details;
 }
 
-int32 FindMemoryType(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties)
+int32 FindMemoryIndex(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties)
 {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -224,7 +224,7 @@ int32 FindMemoryType(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemo
 
     }
 
-    NOUS_WARN("Unable to find a suitable Memory Type!");
+    NOUS_WARN("Unable to find a suitable Memory Index!");
     return -1;
 }
 

@@ -282,6 +282,9 @@
     <ClCompile Include="Source\VulkanPlatform.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanBuffer.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -837,6 +840,9 @@
       <Filter>Source Code\File System</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanGraphicsPipeline.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanBuffer.h">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>

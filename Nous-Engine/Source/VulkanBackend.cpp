@@ -11,6 +11,7 @@
 #include "VulkanUtils.h"
 #include "VulkanDebugMessenger.h"
 #include "VulkanInstance.h"
+#include "VulkanBuffer.h"
 
 // Shaders
 #include "VulkanObjectShader.h"
@@ -184,12 +185,26 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Nous Object Shader created successfully!");
     }
 
+    // Create Vulkan Buffers
+    NOUS_DEBUG("Creating Vulkan Buffers...");
+    if (!NOUS_VulkanBuffer::CreateBuffers(vkContext))
+    {
+        NOUS_ERROR("Failed to create Vulkan Buffers. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Vulkan Buffers created successfully!");
+    }
+
 	return ret;
 }
 
 void VulkanBackend::Shutdown()
 {
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
+    NOUS_VulkanBuffer::DestroyBuffers(vkContext);
 
     DestroyObjectShader(vkContext, &vkContext->objectShader);
 

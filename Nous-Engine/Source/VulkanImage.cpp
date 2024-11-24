@@ -37,7 +37,7 @@ void CreateVulkanImage(VulkanContext* context, VkImageType imageType, uint32 wid
     VkMemoryRequirements memoryRequirements;
     vkGetImageMemoryRequirements(context->device.logicalDevice, outImage->handle, &memoryRequirements);
 
-    int32 memoryType = FindMemoryType(context->device.physicalDevice, memoryRequirements.memoryTypeBits, memoryFlags);
+    int32 memoryType = FindMemoryIndex(context->device.physicalDevice, memoryRequirements.memoryTypeBits, memoryFlags);
     if (memoryType == -1) 
     {
         NOUS_ERROR("Required memory type not found. Image not valid.");
