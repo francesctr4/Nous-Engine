@@ -73,6 +73,9 @@
     <Filter Include="Source Code\File System">
       <UniqueIdentifier>{ff81d40c-a9ac-403a-98b9-985b1512de20}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\Importers">
+      <UniqueIdentifier>{9e8975b9-a62c-49b1-9d6e-31c6df4059dd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -284,6 +287,12 @@
     </ClCompile>
     <ClCompile Include="Source\VulkanBuffer.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ImporterMesh.cpp">
+      <Filter>Source Code\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ImporterTexture.cpp">
+      <Filter>Source Code\Importers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -844,6 +853,12 @@
     </ClInclude>
     <ClInclude Include="Source\VulkanBuffer.h">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ImporterMesh.h">
+      <Filter>Source Code\Importers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ImporterTexture.h">
+      <Filter>Source Code\Importers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
