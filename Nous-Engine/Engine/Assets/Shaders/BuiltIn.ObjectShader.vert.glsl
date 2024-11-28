@@ -13,8 +13,14 @@ layout(set = 0, binding = 0) uniform globalUniformObject
 	mat4 view;
 } globalUBO;
 
+layout(push_constant) uniform pushConstantObject
+{
+	// Only guaranteed a total of 128 bytes.
+	mat4 model; // 64 bytes
+} pushConstant;
+
 void main() 
 {
-    gl_Position = globalUBO.projection * globalUBO.view * vec4(inPosition, 1.0);
+    gl_Position = globalUBO.projection * globalUBO.view * pushConstant.model * vec4(inPosition, 1.0);
     outColor = inColor;
 }

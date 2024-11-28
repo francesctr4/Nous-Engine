@@ -47,3 +47,8 @@ void OpenGLBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3
 {
 
 }
+
+void OpenGLBackend::UpdateObject(float4x4 model)
+{
+
+}

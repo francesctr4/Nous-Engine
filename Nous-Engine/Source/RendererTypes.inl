@@ -28,6 +28,7 @@ struct IRendererBackend
     virtual bool EndFrame(float dt) = 0;
 
     virtual void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) = 0;
+    virtual void UpdateObject(float4x4 model) = 0;
 };
 
 // -------------------------------------------------------------------- //

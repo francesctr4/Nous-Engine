@@ -102,3 +102,11 @@ void RendererBackend::UpdateGlobalState(float4x4 projection, float4x4 view, floa
         return backendInterface->UpdateGlobalState(projection, view, viewPosition, ambientColor, mode);
     }
 }
+
+void RendererBackend::UpdateObject(float4x4 model)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->UpdateObject(model);
+    }
+}

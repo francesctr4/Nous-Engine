@@ -61,6 +61,11 @@ void RendererFrontend::UpdateGlobalState(float4x4 projection, float4x4 view, flo
 	backend->UpdateGlobalState(projection, view, viewPosition, ambientColor, mode);
 }
 
+void RendererFrontend::UpdateObject(float4x4 model)
+{
+	backend->UpdateObject(model);
+}
+
 bool RendererFrontend::DrawFrame(RenderPacket* packet)
 {
 	bool ret = true;
@@ -70,6 +75,19 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 	{
 		// Use Camera Attributes, passed along with renderpacket.
 		UpdateGlobalState(packet->camera.GetProjectionMatrix(), packet->camera.GetViewMatrix(), packet->camera.GetPos(), float4::one, 0);
+
+		// Angular velocity in radians per second.
+		static constexpr float angularVelocity = 1.0f; // Adjust for desired speed
+
+		// Accumulate the angle based on elapsed time (deltaTime).
+		static float angle = 0.0f;
+		angle += angularVelocity * packet->deltaTime;
+
+		// Create the rotation matrix using the accumulated angle.
+		float4x4 model = Quat(float3::unitZ, angle).ToFloat4x4();
+
+		// Update the object's transform with the new model matrix.
+		UpdateObject(model);
 
 		// End of the frame. If this fails, it is likely unrecoverable.
 		bool result = EndFrame(packet->deltaTime);

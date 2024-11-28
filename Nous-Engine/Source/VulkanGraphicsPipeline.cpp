@@ -128,6 +128,12 @@ bool CreateGraphicsPipeline(VulkanContext* vkContext, VulkanRenderpass* renderpa
     inputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
 
+    // Push constants
+    VkPushConstantRange pushConstant;
+    pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstant.offset = sizeof(float4x4) * 0;
+    pushConstant.size = sizeof(float4x4) * 2;
+
     // Pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -135,8 +141,8 @@ bool CreateGraphicsPipeline(VulkanContext* vkContext, VulkanRenderpass* renderpa
     pipelineLayoutCreateInfo.setLayoutCount = descriptorSetLayoutCount;
     pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts;
 
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+    pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstant;
 
     // Create the pipeline layout.
     VK_CHECK(vkCreatePipelineLayout(vkContext->device.logicalDevice, &pipelineLayoutCreateInfo,

@@ -10,3 +10,5 @@ void DestroyObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);
 void UseObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);
 
 void UpdateGlobalStateObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);
+
+void UpdateObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader, float4x4 model);

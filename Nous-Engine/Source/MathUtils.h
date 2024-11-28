@@ -4,6 +4,7 @@
 #include "MathGeoLib/include/Math/float4x4.h"
 #include "MathGeoLib/include/Math/float4.h"
 #include "MathGeoLib/include/Math/float3.h"
+#include "MathGeoLib/include/Math/Quat.h"
 
 namespace NOUS_MathUtils 
 {

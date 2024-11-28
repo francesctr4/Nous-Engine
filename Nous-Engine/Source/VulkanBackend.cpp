@@ -445,8 +445,6 @@ bool VulkanBackend::EndFrame(float dt)
 
 void VulkanBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
 {
-#pragma region TEMPORAL DRAW CODE
-
     VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
 
     UseObjectShader(vkContext, &vkContext->objectShader);
@@ -454,11 +452,18 @@ void VulkanBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3
     vkContext->objectShader.globalUBO.projection = projection;
     vkContext->objectShader.globalUBO.view = view;
 
-    // TODO: other ubo properties
-
     UpdateGlobalStateObjectShader(vkContext, &vkContext->objectShader);
+}
+
+void VulkanBackend::UpdateObject(float4x4 model)
+{
+    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+
+    UpdateObjectShader(vkContext, &vkContext->objectShader, model);
 
     // TODO: temporary test code
+
+    UseObjectShader(vkContext, &vkContext->objectShader);
 
     // Bind vertex buffer at offset.
     VulkanBuffer vertexBuffers[] = { vkContext->objectVertexBuffer };
@@ -473,8 +478,6 @@ void VulkanBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3
     vkCmdDrawIndexed(commandBuffer->handle, 6, 1, 0, 0, 0);
 
     // TODO: end temporary test code
-
-#pragma endregion
 }
 
 bool VulkanBackend::RecreateResources()
