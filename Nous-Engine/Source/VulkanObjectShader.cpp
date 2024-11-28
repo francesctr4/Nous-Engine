@@ -111,7 +111,7 @@ bool CreateObjectShader(VulkanContext* vkContext, VulkanObjectShader* outShader)
     }
 
     // Create uniform buffer.
-    if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, sizeof(GlobalUniformObject),
+    if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, sizeof(GlobalUniformObject) * 3,
         VkBufferUsageFlagBits(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         true, &outShader->globalUniformBuffer)) 
@@ -178,12 +178,9 @@ void UpdateGlobalStateObjectShader(VulkanContext* vkContext, VulkanObjectShader*
     VkCommandBuffer commandBuffer = vkContext->graphicsCommandBuffers[imageIndex].handle;
     VkDescriptorSet globalDescriptorSet = shader->globalDescriptorSets[imageIndex];
 
-    // Bind the global descriptor set to be updated.
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->pipeline.pipelineLayout, 0, 1, &globalDescriptorSet, 0, 0);
-
     // Configure the descriptors for the given index.
     u32 range = sizeof(GlobalUniformObject);
-    u64 offset = 0;
+    u64 offset = sizeof(GlobalUniformObject) * imageIndex;
 
     // Copy data to buffer
     NOUS_VulkanBuffer::LoadBuffer(vkContext, &shader->globalUniformBuffer, offset, range, 0, &shader->globalUBO);
@@ -207,4 +204,7 @@ void UpdateGlobalStateObjectShader(VulkanContext* vkContext, VulkanObjectShader*
     writeDescriptorSetInfo.pBufferInfo = &descriptorBufferInfo;
 
     vkUpdateDescriptorSets(vkContext->device.logicalDevice, 1, &writeDescriptorSetInfo, 0, 0);
+
+    // Bind the global descriptor set to be updated.
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->pipeline.pipelineLayout, 0, 1, &globalDescriptorSet, 0, 0);
 }
