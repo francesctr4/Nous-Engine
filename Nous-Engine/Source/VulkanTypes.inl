@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Globals.h"
+#include "RendererTypes.inl"
+
 #include "Vulkan.h"
 
 struct VulkanImage
@@ -155,6 +157,19 @@ struct VulkanObjectShader
 {
     // Vertex and Fragment Stages
     std::array<VulkanShaderStage, OBJECT_SHADER_STAGE_COUNT> stages;
+
+    VkDescriptorPool globalDescriptorPool;
+    VkDescriptorSetLayout globalDescriptorSetLayout;
+
+    // One descriptor set per frame - max 3 for triple-buffering.
+    std::array<VkDescriptorSet, 3> globalDescriptorSets;
+
+    // Global uniform object.
+    GlobalUniformObject globalUBO;
+
+    // Global uniform buffer.
+    VulkanBuffer globalUniformBuffer;
+
     VulkanPipeline pipeline;
 };
 

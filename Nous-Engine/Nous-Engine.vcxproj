@@ -199,6 +199,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Application.cpp" />
+    <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\EventSystem.cpp" />
     <ClCompile Include="Source\External\MathGeoLib\include\Algorithm\Random\LCG.cpp" />
     <ClCompile Include="Source\External\MathGeoLib\include\Geometry\AABB.cpp" />
@@ -264,7 +265,7 @@
     <ClCompile Include="Source\VulkanInstance.cpp" />
     <ClCompile Include="Source\VulkanObjectShader.cpp" />
     <ClCompile Include="Source\VulkanGraphicsPipeline.cpp" />
-    <ClCompile Include="Source\VulkanPlatform.cpp" />
+    <ClCompile Include="Source\VulkanExternal.cpp" />
     <ClCompile Include="Source\VulkanRenderpass.cpp" />
     <ClCompile Include="Source\VulkanShaderUtils.cpp" />
     <ClCompile Include="Source\VulkanSwapchain.cpp" />
@@ -274,6 +275,7 @@
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Asserts.h" />
+    <ClInclude Include="Source\Camera.h" />
     <ClInclude Include="Source\DynamicArray.h" />
     <ClInclude Include="Source\EventSystem.h" />
     <ClInclude Include="Source\External\MathGeoLib\include\Algorithm\Random\LCG.h" />
@@ -454,7 +456,7 @@
     <ClInclude Include="Source\VulkanInstance.h" />
     <ClInclude Include="Source\VulkanObjectShader.h" />
     <ClInclude Include="Source\VulkanGraphicsPipeline.h" />
-    <ClInclude Include="Source\VulkanPlatform.h" />
+    <ClInclude Include="Source\VulkanExternal.h" />
     <ClInclude Include="Source\VulkanRenderpass.h" />
     <ClInclude Include="Source\VulkanShaderUtils.h" />
     <ClInclude Include="Source\VulkanSwapchain.h" />

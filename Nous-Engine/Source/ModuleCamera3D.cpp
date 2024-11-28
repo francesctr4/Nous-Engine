@@ -34,6 +34,13 @@ UpdateStatus ModuleCamera3D::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	static float z = 0.0f; // Static Z position of the camera
+	// Move the camera backwards (z+) slightly each frame, scaled by dt for frame rate independence
+	float movementSpeed = 0.01f; // Movement speed in units per second
+	z += movementSpeed * dt; // Update the z position based on delta time
+
+	camera.UpdatePos(float3(0, 0, z));
+
 	return UPDATE_CONTINUE;
 }
 
@@ -48,4 +55,20 @@ bool ModuleCamera3D::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
+}
+
+void ModuleCamera3D::ReceiveEvent(const Event& event)
+{
+	switch (event.type)
+	{
+		case EventType::WINDOW_RESIZED:
+		{
+			NOUS_DEBUG("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
+			NOUS_DEBUG("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
+
+			camera.SetAspectRatio((float)event.context.int64[0] / (float)event.context.int64[1]);
+
+			break;
+		}
+	}
 }

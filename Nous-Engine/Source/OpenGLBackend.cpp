@@ -42,3 +42,8 @@ bool OpenGLBackend::EndFrame(float dt)
 {
 	return false;
 }
+
+void OpenGLBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+{
+
+}

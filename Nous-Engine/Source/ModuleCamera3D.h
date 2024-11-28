@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Module.h"
+#include "Camera.h"
 
 class ModuleCamera3D : public Module
 {
@@ -17,5 +18,11 @@ public:
 	UpdateStatus PostUpdate(float dt) override;
 
 	bool CleanUp() override;
+
+	void ReceiveEvent(const Event& event) override;
+
+public:
+
+	Camera camera;
 
 };

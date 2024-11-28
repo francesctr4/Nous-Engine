@@ -23,6 +23,8 @@ private:
 	bool BeginFrame(float dt);
 	bool EndFrame(float dt);
 
+	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode);
+
 	static RendererBackend* backend;
 
 };

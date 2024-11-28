@@ -21,6 +21,8 @@ public:
 	bool BeginFrame(float dt) override;
 	bool EndFrame(float dt) override;
 
+	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) override;
+
 	// ------------------------------------------------ //
 
 	bool RecreateResources();

@@ -1,5 +1,10 @@
 #pragma once
 
+// Handy MathGeoLib Includes
+#include "MathGeoLib/include/Math/float4x4.h"
+#include "MathGeoLib/include/Math/float4.h"
+#include "MathGeoLib/include/Math/float3.h"
+
 namespace NOUS_MathUtils 
 {
     // Minimum and Maximum functions
@@ -54,7 +59,7 @@ namespace NOUS_MathUtils
     constexpr float CATALAN = 0.91596559417721901505f;
 
     // Useful limits
-    constexpr float INFINITY = 1e30f;
+    constexpr float NOUS_INFINITY = 1e30f;
     constexpr float FLOAT_EPSILON = 1.192092896e-07f;
 
 }

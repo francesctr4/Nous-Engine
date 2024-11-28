@@ -94,3 +94,11 @@ bool RendererBackend::EndFrame(float dt)
 
     return false;
 }
+
+void RendererBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->UpdateGlobalState(projection, view, viewPosition, ambientColor, mode);
+    }
+}

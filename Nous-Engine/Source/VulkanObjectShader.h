@@ -8,3 +8,5 @@ bool CreateObjectShader(VulkanContext* vkContext, VulkanObjectShader* outShader)
 void DestroyObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);
 
 void UseObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);
+
+void UpdateGlobalStateObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);

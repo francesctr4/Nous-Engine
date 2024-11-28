@@ -2,9 +2,7 @@
 
 #include "VulkanTypes.inl"
 
-#include "MathGeoLib/include/Math/float4x4.h"
-#include "MathGeoLib/include/Math/float3.h"
-#include "MathGeoLib/include/Math/float2.h"
+#include "MathUtils.h"
 
 // --------------- Uniform Buffer Object Struct (UBO) --------------- //
 

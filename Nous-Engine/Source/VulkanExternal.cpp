@@ -1,4 +1,4 @@
-#include "VulkanPlatform.h"
+#include "VulkanExternal.h"
 #include "Logger.h"
 
 void ExecuteBatchFile(const char* batchFilePath)

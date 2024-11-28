@@ -7,10 +7,10 @@
 #include "Logger.h"
 #include "Asserts.h"
 
-#define TITLE "Nous Engine"
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
-#define DEFAULT_TARGET_FPS 144.00f;
+constexpr const char* TITLE = "Nous Engine";
+constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_HEIGHT = 600;
+constexpr float DEFAULT_TARGET_FPS = 144.00f;
 
 // ---------- Type Definitions ---------- \\
 

@@ -1,5 +1,5 @@
 #include "VulkanSwapchain.h"
-#include "VulkanPlatform.h"
+#include "VulkanExternal.h"
 #include "VulkanDevice.h"
 #include "VulkanImage.h"
 #include "VulkanUtils.h"

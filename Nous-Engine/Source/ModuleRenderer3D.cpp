@@ -1,4 +1,5 @@
 #include "ModuleRenderer3D.h"
+#include "ModuleCamera3D.h"
 
 #include "Logger.h"
 #include "MemoryManager.h";
@@ -63,7 +64,9 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 	// TODO: Refactor packet creation
 	RenderPacket packet;
+
 	packet.deltaTime = dt;
+	packet.camera = App->camera->camera;
 
 	if (!App->isMinimized)
 	{

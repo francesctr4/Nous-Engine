@@ -1,7 +1,7 @@
 #include "VulkanInstance.h"
 #include "VulkanUtils.h"
 #include "VulkanDebugMessenger.h"
-#include "VulkanPlatform.h"
+#include "VulkanExternal.h"
 #include "VulkanGlobals.h"
 
 #include "SDL2.h"

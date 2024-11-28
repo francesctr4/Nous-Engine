@@ -7,8 +7,14 @@ layout(location = 1) in vec3 inColor;
 
 layout(location = 0) out vec3 outColor;
 
+layout(set = 0, binding = 0) uniform globalUniformObject 
+{
+    mat4 projection;
+	mat4 view;
+} globalUBO;
+
 void main() 
 {
-    gl_Position = vec4(inPosition, 1.0);
+    gl_Position = globalUBO.projection * globalUBO.view * vec4(inPosition, 1.0);
     outColor = inColor;
 }

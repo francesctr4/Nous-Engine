@@ -56,6 +56,11 @@ bool RendererFrontend::EndFrame(float dt)
 	return result;
 }
 
+void RendererFrontend::UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+{
+	backend->UpdateGlobalState(projection, view, viewPosition, ambientColor, mode);
+}
+
 bool RendererFrontend::DrawFrame(RenderPacket* packet)
 {
 	bool ret = true;
@@ -63,6 +68,9 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 	// If the begin frame returned successfully, mid-frame operations may continue.
 	if (BeginFrame(packet->deltaTime)) 
 	{
+		// Use Camera Attributes, passed along with renderpacket.
+		UpdateGlobalState(packet->camera.GetProjectionMatrix(), packet->camera.GetViewMatrix(), packet->camera.GetPos(), float4::one, 0);
+
 		// End of the frame. If this fails, it is likely unrecoverable.
 		bool result = EndFrame(packet->deltaTime);
 
