@@ -2,6 +2,7 @@
 
 #include "Module.h"
 #include "Globals.h"
+#include "SDL2.h"
 
 #define MAX_KEYBOARD_KEYS 300
 #define MAX_MOUSE_BUTTONS 5

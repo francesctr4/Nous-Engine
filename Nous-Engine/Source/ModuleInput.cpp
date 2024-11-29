@@ -1,5 +1,4 @@
 #include "ModuleInput.h"
-#include "SDL2.h"
 #include "Logger.h"
 #include "MemoryManager.h"
 
@@ -166,17 +165,16 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			}
 			case SDL_MOUSEWHEEL:
 			{
-				//int32 mouse_z = e.wheel.y;
-				//NOUS_ERROR(" ");
+				mouseZ = e.wheel.y;
 				break;
 			}
 			case SDL_MOUSEMOTION:
 			{
-				//int mouse_x = e.motion.x;
-				//int mouse_y = e.motion.y;
+				mouseX = e.motion.x;
+				mouseX = e.motion.y;
 
-				//int mouse_x_motion = e.motion.xrel;
-				//int mouse_y_motion = e.motion.yrel;
+				mouseXMotion = e.motion.xrel;
+				mouseYMotion = e.motion.yrel;
 				break;
 			}
 			case SDL_WINDOWEVENT:

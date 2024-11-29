@@ -21,7 +21,17 @@ Camera::~Camera()
 
 }
 
-void Camera::UpdatePos(float3 newPos)
+void Camera::SetPos(float3 xyz)
+{
+	frustum.pos = xyz;
+}
+
+void Camera::SetPos(float x, float y, float z)
+{
+	frustum.pos = float3(x, y, z);
+}
+
+void Camera::UpdatePos(const float3& newPos)
 {
 	frustum.pos += newPos;
 }
@@ -29,6 +39,36 @@ void Camera::UpdatePos(float3 newPos)
 float3 Camera::GetPos() const
 {
 	return frustum.pos;
+}
+
+void Camera::SetNearPlane(float distance)
+{
+	frustum.nearPlaneDistance = distance;
+}
+
+float Camera::GetNearPlane()
+{
+	return frustum.nearPlaneDistance;
+}
+
+void Camera::SetFarPlane(float distance)
+{
+	frustum.farPlaneDistance = distance;
+}
+
+float Camera::GetFarPlane()
+{
+	return frustum.farPlaneDistance;
+}
+
+void Camera::SetFront(float3 front)
+{
+	frustum.front = front;
+}
+
+void Camera::SetUp(float3 up)
+{
+	frustum.up = up;
 }
 
 float3 Camera::GetFront() const
@@ -44,6 +84,32 @@ float3 Camera::GetUp() const
 float3 Camera::GetRight() const
 {
 	return frustum.WorldRight();
+}
+
+float Camera::GetHorizontalFOV() const
+{
+	return frustum.horizontalFov * NOUS_MathUtils::RADTODEG;
+}
+
+float Camera::GetVerticalFOV() const
+{
+	return frustum.verticalFov * NOUS_MathUtils::RADTODEG;
+}
+
+void Camera::SetHorizontalFOV(float hfov)
+{
+	frustum.horizontalFov = hfov * NOUS_MathUtils::DEGTORAD;
+}
+
+void Camera::SetVerticalFOV(float vfov)
+{
+	frustum.verticalFov = vfov * NOUS_MathUtils::DEGTORAD;
+}
+
+void Camera::SetBothFOV(float fov)
+{
+	frustum.horizontalFov = fov * NOUS_MathUtils::DEGTORAD;
+	frustum.verticalFov = fov * NOUS_MathUtils::DEGTORAD;
 }
 
 float Camera::GetAspectRatio() const

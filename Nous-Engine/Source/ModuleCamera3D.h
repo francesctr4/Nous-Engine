@@ -21,7 +21,17 @@ public:
 
 	void ReceiveEvent(const Event& event) override;
 
-public:
+	const Camera& GetCamera() const;
+
+private:
+
+	void HandleCameraMovement(float3& newPos, const float& speed);
+	void HandleCameraRotation(const float& sensitivity, const float& dt);
+	void HandleCameraZoom(float3& newPos, const float& speed);
+	void HandleCameraPan(float3& newPos, const float& speed, const float& sensitivity, const float& dt);
+	void HandleCameraOrbit(float3& newPos, const float& sensitivity, const float& dt, const float3& lookAt);
+
+private:
 
 	Camera camera;
 
