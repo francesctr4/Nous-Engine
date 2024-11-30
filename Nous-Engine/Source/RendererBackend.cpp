@@ -110,3 +110,19 @@ void RendererBackend::UpdateObject(float4x4 model)
         return backendInterface->UpdateObject(model);
     }
 }
+
+void RendererBackend::CreateTexture(const char* path, bool autoRelease, int32 width, int32 height, int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->CreateTexture(path, autoRelease, width, height, channelCount, pixels, hasTransparency, outTexture);
+    }
+}
+
+void RendererBackend::DestroyTexture(Texture* texture)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->DestroyTexture(texture);
+    }
+}

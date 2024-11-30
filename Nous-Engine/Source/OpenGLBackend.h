@@ -20,7 +20,12 @@ public:
 	bool EndFrame(float dt) override;
 
 	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) override;
-	void UpdateObject(float4x4 model);
+	void UpdateObject(float4x4 model) override;
+
+	void CreateTexture(const char* path, bool autoRelease, int32 width, int32 height,
+		int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture) override;
+
+	void DestroyTexture(Texture* texture) override;
 
 	// ------------- OpenGL Specific Functions ------------- \\
 

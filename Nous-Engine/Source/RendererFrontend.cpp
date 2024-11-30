@@ -66,6 +66,17 @@ void RendererFrontend::UpdateObject(float4x4 model)
 	backend->UpdateObject(model);
 }
 
+void RendererFrontend::CreateTexture(const char* path, bool autoRelease, int32 width, int32 height, 
+	int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
+{
+	backend->CreateTexture(path, autoRelease, width, height, channelCount, pixels, hasTransparency, outTexture);
+}
+
+void RendererFrontend::DestroyTexture(Texture* texture)
+{
+	backend->DestroyTexture(texture);
+}
+
 bool RendererFrontend::DrawFrame(RenderPacket* packet)
 {
 	bool ret = true;
