@@ -26,7 +26,7 @@ public:
 	bool RecreateResources();
 
 	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) override;
-	void UpdateObject(float4x4 model) override;
+	void UpdateObject(GeometryRenderData renderData) override;
 
 	// ----------------------------------------------------------------------------------------------- //
 	// TEMPORAL //

@@ -19,10 +19,10 @@ bool CreateObjectShader(VulkanContext* vkContext, VulkanObjectShader* outShader)
     bool ret = true;
 
     // Shader module init per stage.
-    std::array<std::string, OBJECT_SHADER_STAGE_COUNT> stageTypeStrings = { "vert", "frag" };
-    std::array<VkShaderStageFlagBits, OBJECT_SHADER_STAGE_COUNT> stageTypes = { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT };
+    std::array<std::string, VULKAN_OBJECT_SHADER_STAGE_COUNT> stageTypeStrings = { "vert", "frag" };
+    std::array<VkShaderStageFlagBits, VULKAN_OBJECT_SHADER_STAGE_COUNT> stageTypes = { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT };
 
-    for (uint32 i = 0; i < OBJECT_SHADER_STAGE_COUNT; ++i) 
+    for (uint32 i = 0; i < VULKAN_OBJECT_SHADER_STAGE_COUNT; ++i)
     {
         if (!CreateShaderModule(vkContext, BUILTIN_OBJECT_SHADER_NAME, stageTypeStrings[i], stageTypes[i], i, outShader->stages.data()))
         {
@@ -90,10 +90,10 @@ bool CreateObjectShader(VulkanContext* vkContext, VulkanObjectShader* outShader)
     
     // Stages
     // NOTE: Should match the number of shader->stages.
-    std::array<VkPipelineShaderStageCreateInfo, OBJECT_SHADER_STAGE_COUNT> shaderStageCreateInfos;
+    std::array<VkPipelineShaderStageCreateInfo, VULKAN_OBJECT_SHADER_STAGE_COUNT> shaderStageCreateInfos;
     MemoryManager::ZeroMemory(shaderStageCreateInfos.data(), sizeof(shaderStageCreateInfos));
 
-    for (u32 i = 0; i < OBJECT_SHADER_STAGE_COUNT; ++i) 
+    for (u32 i = 0; i < VULKAN_OBJECT_SHADER_STAGE_COUNT; ++i)
     {
         shaderStageCreateInfos[i].sType = outShader->stages[i].shaderStageCreateInfo.sType;
         shaderStageCreateInfos[i] = outShader->stages[i].shaderStageCreateInfo;
@@ -102,7 +102,7 @@ bool CreateObjectShader(VulkanContext* vkContext, VulkanObjectShader* outShader)
     if (!CreateGraphicsPipeline(vkContext, &vkContext->mainRenderpass, bindingDescription, 
         static_cast<uint32>(attributeDescriptions.size()), attributeDescriptions.data(),
         static_cast<uint32>(descriptorSetlayouts.size()), descriptorSetlayouts.data(), 
-        OBJECT_SHADER_STAGE_COUNT, shaderStageCreateInfos.data(), viewport, scissor,
+        VULKAN_OBJECT_SHADER_STAGE_COUNT, shaderStageCreateInfos.data(), viewport, scissor,
         false, &outShader->pipeline))
     {
         NOUS_ERROR("Failed to load graphics pipeline for object shader.");
@@ -159,7 +159,7 @@ void DestroyObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)
 
     NOUS_DEBUG("Destroying Shader Modules...");
     // Destroy shader modules.
-    for (uint32 i = 0; i < OBJECT_SHADER_STAGE_COUNT; ++i) 
+    for (uint32 i = 0; i < VULKAN_OBJECT_SHADER_STAGE_COUNT; ++i)
     {
         vkDestroyShaderModule(logicalDevice, shader->stages[i].handle, vkContext->allocator);
         shader->stages[i].handle = 0;
@@ -172,7 +172,7 @@ void UseObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)
         VK_PIPELINE_BIND_POINT_GRAPHICS, &shader->pipeline);
 }
 
-void UpdateGlobalStateObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)
+void UpdateObjectShaderGlobalState(VulkanContext* vkContext, VulkanObjectShader* shader, float deltaTime)
 {
     u32 imageIndex = vkContext->imageIndex;
     VkCommandBuffer commandBuffer = vkContext->graphicsCommandBuffers[imageIndex].handle;
@@ -209,11 +209,21 @@ void UpdateGlobalStateObjectShader(VulkanContext* vkContext, VulkanObjectShader*
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->pipeline.pipelineLayout, 0, 1, &globalDescriptorSet, 0, 0);
 }
 
-void UpdateObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader, float4x4 model)
+void UpdateObjectShaderLocalState(VulkanContext* vkContext, VulkanObjectShader* shader, GeometryRenderData renderData)
 {
     uint32 imageIndex = vkContext->imageIndex;
 
     VkCommandBuffer commandBuffer = vkContext->graphicsCommandBuffers[imageIndex].handle;
 
-    vkCmdPushConstants(commandBuffer, shader->pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float4x4), &model);
+    vkCmdPushConstants(commandBuffer, shader->pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float4x4), &renderData.model);
+}
+
+bool AcquireObjectShaderResources(VulkanContext* vkContext, VulkanObjectShader* shader, uint32* outObjectID)
+{
+    return true;
+}
+
+void ReleaseObjectShaderResources(VulkanContext* vkContext, VulkanObjectShader* shader, uint32 objectID)
+{
+
 }

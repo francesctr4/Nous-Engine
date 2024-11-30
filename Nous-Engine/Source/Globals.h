@@ -40,3 +40,9 @@ typedef enum UpdateStatus
 	UPDATE_ERROR = 3
 
 } UpdateStatus;
+
+/**
+ * @brief Any id set to this should be considered invalid,
+ * and not actually pointing to a real object.
+ */
+constexpr unsigned int INVALID_ID = 4294967295U;

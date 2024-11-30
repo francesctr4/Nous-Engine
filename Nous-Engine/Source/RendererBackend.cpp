@@ -103,11 +103,11 @@ void RendererBackend::UpdateGlobalState(float4x4 projection, float4x4 view, floa
     }
 }
 
-void RendererBackend::UpdateObject(float4x4 model)
+void RendererBackend::UpdateObject(GeometryRenderData renderData)
 {
     if (backendInterface != nullptr)
     {
-        return backendInterface->UpdateObject(model);
+        return backendInterface->UpdateObject(renderData);
     }
 }
 

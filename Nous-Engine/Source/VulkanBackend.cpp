@@ -212,18 +212,22 @@ bool VulkanBackend::Initialize()
     // Bottom-left
     vertices[0].position = float3({ -0.5f, -0.5f, 0.0f }) * factor;
     vertices[0].color = { 1.0f, 0.0f, 0.0f }; // Red
+    vertices[0].texCoord = { 0.0f, 0.0f };
 
     // Top-Right
     vertices[1].position = float3({ 0.5f, 0.5f, 0.0f }) * factor;
     vertices[1].color = { 0.0f, 1.0f, 0.0f }; // Green
+    vertices[1].texCoord = { 1.0f, 1.0f };
 
     // Top-Left
     vertices[2].position = float3({ -0.5f, 0.5f, 0.0f }) * factor;
     vertices[2].color = { 0.0f, 0.0f, 1.0f }; // Blue
+    vertices[2].texCoord = { 0.0f, 1.0f };
 
     // Bottom-right
     vertices[3].position = float3({ 0.5f, -0.5f, 0.0f }) * factor;
     vertices[3].color = { 1.0f, 1.0f, 0.0f }; // Yellow
+    vertices[3].texCoord = { 1.0f, 0.0f };
 
     const uint32 nIndices = 6;
     std::vector<uint32> indices = { 0, 1, 2, 0, 3, 1 };
@@ -235,6 +239,13 @@ bool VulkanBackend::Initialize()
     NOUS_VulkanBuffer::UploadDataToBuffer(vkContext, vkContext->device.graphicsCommandPool, 0,
         vkContext->device.graphicsQueue, &vkContext->objectIndexBuffer, 0,
         sizeof(uint32) * nIndices, indices.data());
+
+    uint32 objectID = 0;
+    if (!AcquireObjectShaderResources(vkContext, &vkContext->objectShader, &objectID)) 
+    {
+        NOUS_ERROR("Failed to Acquire Shader Resources.");
+        ret = false;
+    }
 
     // TODO: End Temp Test Code //
 
@@ -285,6 +296,8 @@ void VulkanBackend::Resized(uint16 width, uint16 height)
 
 bool VulkanBackend::BeginFrame(float dt)
 {
+    vkContext->frameDeltaTime = dt;
+
     VulkanDevice* device = &vkContext->device;
 
     if (vkContext->recreatingSwapchain) // Check if recreating swap chain and boot out.
@@ -528,14 +541,14 @@ void VulkanBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3
     vkContext->objectShader.globalUBO.projection = projection;
     vkContext->objectShader.globalUBO.view = view;
 
-    UpdateGlobalStateObjectShader(vkContext, &vkContext->objectShader);
+    UpdateObjectShaderGlobalState(vkContext, &vkContext->objectShader, vkContext->frameDeltaTime);
 }
 
-void VulkanBackend::UpdateObject(float4x4 model)
+void VulkanBackend::UpdateObject(GeometryRenderData renderData)
 {
     VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
 
-    UpdateObjectShader(vkContext, &vkContext->objectShader, model);
+    UpdateObjectShaderLocalState(vkContext, &vkContext->objectShader, renderData);
 
     // TODO: temporary test code
 
@@ -565,7 +578,7 @@ void VulkanBackend::CreateTexture(const char* path, bool autoRelease, int32 widt
     outTexture->width = width;
     outTexture->height = height;
     outTexture->channelCount = channelCount;
-    outTexture->generation = 0;
+    outTexture->generation = INVALID_ID;
 
     // Internal data creation.
     // TODO: Use an allocator for this.
@@ -582,9 +595,9 @@ void VulkanBackend::CreateTexture(const char* path, bool autoRelease, int32 widt
     VkBufferUsageFlagBits usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    VulkanBuffer staging;
-    NOUS_VulkanBuffer::CreateBuffer(vkContext, imageSize, usage, memoryPropertyFlags, true, &staging);
-    NOUS_VulkanBuffer::LoadBuffer(vkContext, &staging, 0, imageSize, 0, pixels);
+    VulkanBuffer stagingBuffer;
+    NOUS_VulkanBuffer::CreateBuffer(vkContext, imageSize, usage, memoryPropertyFlags, true, &stagingBuffer);
+    NOUS_VulkanBuffer::LoadBuffer(vkContext, &stagingBuffer, 0, imageSize, 0, pixels);
 
     // NOTE: Lots of assumptions here, different texture types will require
     // different options here.
@@ -607,13 +620,15 @@ void VulkanBackend::CreateTexture(const char* path, bool autoRelease, int32 widt
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     // Copy the data from the buffer.
-    CopyBufferToVulkanImage(vkContext, &textureData->image, staging.handle, &tempCommandBuffer);
+    CopyBufferToVulkanImage(vkContext, &textureData->image, stagingBuffer.handle, &tempCommandBuffer);
 
     // Transition from optimal for data reciept to shader-read-only optimal layout.
     TransitionVulkanImageLayout(vkContext, &tempCommandBuffer, &textureData->image, imageFormat,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(vkContext, pool, &tempCommandBuffer, queue);
+
+    NOUS_VulkanBuffer::DestroyBuffer(vkContext, &stagingBuffer);
 
     // Create a sampler for the texture
     VkSamplerCreateInfo samplerCreateInfo{};
@@ -656,6 +671,8 @@ void VulkanBackend::CreateTexture(const char* path, bool autoRelease, int32 widt
 
 void VulkanBackend::DestroyTexture(Texture* texture)
 {
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
     VulkanTextureData* textureData = reinterpret_cast<VulkanTextureData*>(texture->internalData);
 
     DestroyVulkanImage(vkContext, &textureData->image);

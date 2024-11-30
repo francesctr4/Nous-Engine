@@ -9,6 +9,10 @@ void DestroyObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);
 
 void UseObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);
 
-void UpdateGlobalStateObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);
+void UpdateObjectShaderGlobalState(VulkanContext* vkContext, VulkanObjectShader* shader, float deltaTime);
 
-void UpdateObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader, float4x4 model);
+void UpdateObjectShaderLocalState(VulkanContext* vkContext, VulkanObjectShader* shader, GeometryRenderData renderData);
+
+bool AcquireObjectShaderResources(VulkanContext* vkContext, VulkanObjectShader* shader, uint32* outObjectID);
+
+void ReleaseObjectShaderResources(VulkanContext* vkContext, VulkanObjectShader* shader, uint32 objectID);

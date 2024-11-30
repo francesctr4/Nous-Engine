@@ -30,11 +30,15 @@ bool RendererFrontend::Initialize()
 		ret = false;
 	}
 
+	CreateDefaultTexture();
+
 	return ret;
 }
 
 void RendererFrontend::Shutdown()
 {
+	DestroyTexture(&defaultTexture);
+
 	backend->Shutdown();
 }
 
@@ -61,9 +65,9 @@ void RendererFrontend::UpdateGlobalState(float4x4 projection, float4x4 view, flo
 	backend->UpdateGlobalState(projection, view, viewPosition, ambientColor, mode);
 }
 
-void RendererFrontend::UpdateObject(float4x4 model)
+void RendererFrontend::UpdateObject(GeometryRenderData renderData)
 {
-	backend->UpdateObject(model);
+	backend->UpdateObject(renderData);
 }
 
 void RendererFrontend::CreateTexture(const char* path, bool autoRelease, int32 width, int32 height, 
@@ -97,8 +101,13 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 		// Create the rotation matrix using the accumulated angle.
 		float4x4 model = Quat(float3::unitZ, angle).ToFloat4x4();
 
+		GeometryRenderData renderData{};
+		renderData.objectID = 0;
+		renderData.model = model;
+		renderData.textures[0] = &defaultTexture;
+
 		// Update the object's transform with the new model matrix.
-		UpdateObject(model);
+		UpdateObject(renderData);
 
 		// End of the frame. If this fails, it is likely unrecoverable.
 		bool result = EndFrame(packet->deltaTime);
@@ -111,4 +120,37 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 	}
 
 	return ret;
+}
+
+void RendererFrontend::CreateDefaultTexture()
+{
+	// NOTE: Create default texture, a 256x256 blue/white checkerboard pattern.
+	// This is done in code to eliminate asset dependencies.
+
+	NOUS_TRACE("Creating default texture...");
+
+	const uint32 texDimension = 256;
+	const uint32 channels = 4;
+	const uint32 pixelCount = texDimension * texDimension;
+
+	std::array<uint8, (pixelCount * channels)> pixels;
+	MemoryManager::SetMemory(pixels.data(), 255, sizeof(uint8) * pixelCount * channels);
+
+	// Each pixel.
+	for (uint64 row = 0; row < texDimension; ++row) 
+	{
+		for (uint64 col = 0; col < texDimension; ++col)
+		{
+			uint64 index = (row * texDimension) + col;
+			uint64 indexBpp = index * channels;
+
+			if (row % 2 == col % 2) 
+			{
+				pixels[indexBpp + 0] = 0;
+				pixels[indexBpp + 1] = 0;
+			}
+		}
+	}
+
+	CreateTexture("DefaultTexture", false, texDimension, texDimension, 4, pixels.data(), false, &defaultTexture);
 }

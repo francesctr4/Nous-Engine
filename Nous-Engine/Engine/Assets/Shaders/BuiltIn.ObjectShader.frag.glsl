@@ -2,10 +2,24 @@
 
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec3 inColor;
-layout(location = 0) out vec4 outColour;
+// Data Transfer Object
+layout(location = 1) in struct DataTransferObject
+{
+	vec3 outColor;
+	vec2 texCoord;
+} inDTO;
+
+layout(location = 0) out vec4 fragColor;
+
+layout(set = 1, binding = 0) uniform localUniformObject 
+{
+    vec4 diffuseColor;
+} localUBO;
+
+// Samplers
+layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
 
 void main() 
 {
-    outColour = vec4(inColor, 1.0);
+    fragColor = localUBO.diffuseColor * texture(diffuseSampler, inDTO.texCoord);
 }

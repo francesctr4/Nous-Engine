@@ -152,11 +152,29 @@ struct VulkanPipeline
     VkPipelineLayout pipelineLayout;
 };
 
-constexpr uint16 OBJECT_SHADER_STAGE_COUNT = 2;
+struct VulkanDescriptorState
+{
+    // One per frame
+    uint32 generations[3];
+};
+
+constexpr uint32 VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT = 2;
+struct VulkanObjectShaderLocalState 
+{
+    // Per frame
+    VkDescriptorSet descriptorSets[3];
+    // Per descriptor
+    std::array<VulkanDescriptorState, VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT> descriptorStates;
+};
+
+// Max number of objects
+constexpr uint32 VULKAN_OBJECT_SHADER_MAX_OBJECT_COUNT = 1024;
+
+constexpr uint32 VULKAN_OBJECT_SHADER_STAGE_COUNT = 2;
 struct VulkanObjectShader 
 {
     // Vertex and Fragment Stages
-    std::array<VulkanShaderStage, OBJECT_SHADER_STAGE_COUNT> stages;
+    std::array<VulkanShaderStage, VULKAN_OBJECT_SHADER_STAGE_COUNT> stages;
 
     VkDescriptorPool globalDescriptorPool;
     VkDescriptorSetLayout globalDescriptorSetLayout;
@@ -170,6 +188,16 @@ struct VulkanObjectShader
     // Global uniform buffer.
     VulkanBuffer globalUniformBuffer;
 
+    VkDescriptorPool localDescriptorPool;
+    VkDescriptorSetLayout localDescriptorSetLayout;
+
+    // Local uniform buffers.
+    VulkanBuffer localUniformBuffer;
+    // TODO: manage a free list of some kind here instead.
+    uint32 localUniformBufferIndex;
+    // TODO: make dynamic
+    std::array<VulkanObjectShaderLocalState, VULKAN_OBJECT_SHADER_MAX_OBJECT_COUNT> localObjectStates;
+
     VulkanPipeline pipeline;
 };
 
@@ -178,6 +206,8 @@ struct VulkanObjectShader
  */
 struct VulkanContext 
 {
+    float frameDeltaTime;
+
     int32 framebufferWidth;
     int32 framebufferHeight;
 

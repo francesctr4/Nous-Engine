@@ -4,8 +4,16 @@
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
+layout(location = 2) in vec2 inTexCoord;
 
-layout(location = 0) out vec3 outColor;
+layout(location = 0) out int outMode;
+
+// Data Transfer Object
+layout(location = 1) out struct DataTransferObject
+{
+	vec3 outColor;
+	vec2 texCoord;
+} outDTO;
 
 layout(set = 0, binding = 0) uniform globalUniformObject 
 {
@@ -21,6 +29,8 @@ layout(push_constant) uniform pushConstantObject
 
 void main() 
 {
+	outDTO.outColor = inColor;
+	outDTO.texCoord = inTexCoord;
+
     gl_Position = globalUBO.projection * globalUBO.view * pushConstant.model * vec4(inPosition, 1.0);
-    outColor = inColor;
 }

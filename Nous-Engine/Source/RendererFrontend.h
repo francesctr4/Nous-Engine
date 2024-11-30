@@ -24,7 +24,7 @@ private:
 	bool EndFrame(float dt);
 
 	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode);
-	void UpdateObject(float4x4 model);
+	void UpdateObject(GeometryRenderData renderData);
 
 	void CreateTexture(const char* path, bool autoRelease, int32 width, int32 height,
 		int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture);
@@ -32,6 +32,12 @@ private:
 
 private:
 
+	void CreateDefaultTexture();
+
+private:
+
 	static RendererBackend* backend;
+
+	Texture defaultTexture;
 
 };

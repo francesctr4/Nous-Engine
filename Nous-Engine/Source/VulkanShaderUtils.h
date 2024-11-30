@@ -4,22 +4,13 @@
 
 #include "MathUtils.h"
 
-// --------------- Uniform Buffer Object Struct (UBO) --------------- //
-
-struct UniformBufferObject
-{
-    alignas(16) float4x4 model;
-    alignas(16) float4x4 view;
-    alignas(16) float4x4 projection;
-};
-
 // --------------- Vertex Struct --------------- //
 
 struct Vertex
 {
     float3 position;
     float3 color;
-    //float2 texCoord;
+    float2 texCoord;
 
     static VkVertexInputBindingDescription GetBindingDescription()
     {
@@ -32,7 +23,7 @@ struct Vertex
         return bindingDescription;
     }
 
-    static const uint16 ATTRIBUTE_COUNT = 2;
+    static const uint16 ATTRIBUTE_COUNT = 3;
     static std::array<VkVertexInputAttributeDescription, ATTRIBUTE_COUNT> GetAttributeDescriptions()
     {
         std::array<VkVertexInputAttributeDescription, ATTRIBUTE_COUNT> attributeDescriptions{};
@@ -51,19 +42,19 @@ struct Vertex
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[1].offset = offsetof(Vertex, color);
 
-        //// Texture Coordinates
+        // Texture Coordinates
 
-        //attributeDescriptions[2].binding = 0;
-        //attributeDescriptions[2].location = 2;
-        //attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        //attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
         return attributeDescriptions;
     }
 
     bool operator==(const Vertex& other) const
     {
-        return (position.Equals(other.position) && color.Equals(other.color) /* && texCoord.Equals(other.texCoord) */ );
+        return (position.Equals(other.position) && color.Equals(other.color) && texCoord.Equals(other.texCoord));
     }
 
 };
