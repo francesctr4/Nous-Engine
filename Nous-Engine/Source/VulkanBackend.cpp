@@ -12,6 +12,7 @@
 #include "VulkanDebugMessenger.h"
 #include "VulkanInstance.h"
 #include "VulkanBuffer.h"
+#include "VulkanImage.h"
 #include "VulkanShaderUtils.h"
 
 // Shaders
@@ -443,54 +444,17 @@ bool VulkanBackend::EndFrame(float dt)
 	return true;
 }
 
-void VulkanBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
-{
-    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
-
-    UseObjectShader(vkContext, &vkContext->objectShader);
-
-    vkContext->objectShader.globalUBO.projection = projection;
-    vkContext->objectShader.globalUBO.view = view;
-
-    UpdateGlobalStateObjectShader(vkContext, &vkContext->objectShader);
-}
-
-void VulkanBackend::UpdateObject(float4x4 model)
-{
-    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
-
-    UpdateObjectShader(vkContext, &vkContext->objectShader, model);
-
-    // TODO: temporary test code
-
-    UseObjectShader(vkContext, &vkContext->objectShader);
-
-    // Bind vertex buffer at offset.
-    VulkanBuffer vertexBuffers[] = { vkContext->objectVertexBuffer };
-    VkDeviceSize offsets[] = { 0 };
-
-    vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1, &vertexBuffers->handle, offsets);
-
-    // Bind index buffer at offset.
-    vkCmdBindIndexBuffer(commandBuffer->handle, vkContext->objectIndexBuffer.handle, 0, VK_INDEX_TYPE_UINT32);
-
-    // Issue the draw.
-    vkCmdDrawIndexed(commandBuffer->handle, 6, 1, 0, 0, 0);
-
-    // TODO: end temporary test code
-}
-
 bool VulkanBackend::RecreateResources()
 {
     // If already being recreated, do not try again.
-    if (vkContext->recreatingSwapchain) 
+    if (vkContext->recreatingSwapchain)
     {
         NOUS_DEBUG("Recreate Swapchain called when already recreating. Booting.");
         return false;
     }
 
     // Detect if the window is too small to be drawn to.
-    if (vkContext->framebufferWidth == 0 || vkContext->framebufferHeight == 0) 
+    if (vkContext->framebufferWidth == 0 || vkContext->framebufferHeight == 0)
     {
         NOUS_DEBUG("Recreate Swapchain called when window is < 1 in a dimension. Booting.");
         return false;
@@ -528,7 +492,7 @@ bool VulkanBackend::RecreateResources()
     vkContext->framebufferSizeLastGeneration = vkContext->framebufferSizeGeneration;
 
     // CleanUp swapchain.
-    for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i) 
+    for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
         NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
     }
@@ -553,4 +517,153 @@ bool VulkanBackend::RecreateResources()
     vkContext->recreatingSwapchain = false;
 
     return true;
+}
+
+void VulkanBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+{
+    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+
+    UseObjectShader(vkContext, &vkContext->objectShader);
+
+    vkContext->objectShader.globalUBO.projection = projection;
+    vkContext->objectShader.globalUBO.view = view;
+
+    UpdateGlobalStateObjectShader(vkContext, &vkContext->objectShader);
+}
+
+void VulkanBackend::UpdateObject(float4x4 model)
+{
+    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+
+    UpdateObjectShader(vkContext, &vkContext->objectShader, model);
+
+    // TODO: temporary test code
+
+    UseObjectShader(vkContext, &vkContext->objectShader);
+
+    // Bind vertex buffer at offset.
+    VulkanBuffer vertexBuffers[] = { vkContext->objectVertexBuffer };
+    VkDeviceSize offsets[] = { 0 };
+
+    vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1, &vertexBuffers->handle, offsets);
+
+    // Bind index buffer at offset.
+    vkCmdBindIndexBuffer(commandBuffer->handle, vkContext->objectIndexBuffer.handle, 0, VK_INDEX_TYPE_UINT32);
+
+    // Issue the draw.
+    vkCmdDrawIndexed(commandBuffer->handle, 6, 1, 0, 0, 0);
+
+    // TODO: end temporary test code
+}
+
+// ----------------------------------------------------------------------------------------------- //
+// TEMPORAL //
+
+void VulkanBackend::CreateTexture(const char* path, bool autoRelease, int32 width, int32 height, 
+    int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
+{
+    outTexture->width = width;
+    outTexture->height = height;
+    outTexture->channelCount = channelCount;
+    outTexture->generation = 0;
+
+    // Internal data creation.
+    // TODO: Use an allocator for this.
+    outTexture->internalData = reinterpret_cast<VulkanTextureData*>(
+        MemoryManager::Allocate(sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE));
+
+    VulkanTextureData* textureData = (VulkanTextureData*)outTexture->internalData;
+    VkDeviceSize imageSize = width * height * channelCount;
+
+    // NOTE: Assumes 8 bits per channel.
+    VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM; // RGBA
+
+    // Create a staging buffer and load data into it.
+    VkBufferUsageFlagBits usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    VulkanBuffer staging;
+    NOUS_VulkanBuffer::CreateBuffer(vkContext, imageSize, usage, memoryPropertyFlags, true, &staging);
+    NOUS_VulkanBuffer::LoadBuffer(vkContext, &staging, 0, imageSize, 0, pixels);
+
+    // NOTE: Lots of assumptions here, different texture types will require
+    // different options here.
+    CreateVulkanImage(vkContext, VK_IMAGE_TYPE_2D, width, height, 1, vkContext->device.msaaSamples, imageFormat,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        true,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        &textureData->image);
+
+    VulkanCommandBuffer tempCommandBuffer;
+    VkCommandPool pool = vkContext->device.graphicsCommandPool;
+    VkQueue queue = vkContext->device.graphicsQueue;
+
+    NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(vkContext, pool, &tempCommandBuffer);
+
+    // Transition the layout from whatever it is currently to optimal for recieving data.
+    TransitionVulkanImageLayout(vkContext, &tempCommandBuffer, &textureData->image, imageFormat,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    // Copy the data from the buffer.
+    CopyBufferToVulkanImage(vkContext, &textureData->image, staging.handle, &tempCommandBuffer);
+
+    // Transition from optimal for data reciept to shader-read-only optimal layout.
+    TransitionVulkanImageLayout(vkContext, &tempCommandBuffer, &textureData->image, imageFormat,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(vkContext, pool, &tempCommandBuffer, queue);
+
+    // Create a sampler for the texture
+    VkSamplerCreateInfo samplerCreateInfo{};
+    samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+    // TODO: These filters should be configurable.
+    samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+    samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+
+    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+    samplerCreateInfo.anisotropyEnable = VK_TRUE;
+    samplerCreateInfo.maxAnisotropy = 16;
+
+    samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+    samplerCreateInfo.compareEnable = VK_FALSE;
+    samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+    samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerCreateInfo.mipLodBias = 0.0f;
+
+    samplerCreateInfo.minLod = 0.0f;
+    samplerCreateInfo.maxLod = 0.0f;
+
+    VkResult result = vkCreateSampler(vkContext->device.logicalDevice, &samplerCreateInfo, vkContext->allocator, &textureData->sampler);
+    
+    if (!VkResultIsSuccess(result)) 
+    {
+        NOUS_ERROR("Error creating texture sampler: %s", VkResultMessage(result, true));
+        return;
+    }
+
+    outTexture->hasTransparency = hasTransparency;
+    outTexture->generation++;
+}
+
+void VulkanBackend::DestroyTexture(Texture* texture)
+{
+    VulkanTextureData* textureData = reinterpret_cast<VulkanTextureData*>(texture->internalData);
+
+    DestroyVulkanImage(vkContext, &textureData->image);
+    MemoryManager::ZeroMemory(&textureData->image, sizeof(VulkanImage));
+
+    vkDestroySampler(vkContext->device.logicalDevice, textureData->sampler, vkContext->allocator);
+    textureData->sampler = 0;
+
+    MemoryManager::Free(textureData, sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE);
+    MemoryManager::ZeroMemory(texture, sizeof(Texture));
 }

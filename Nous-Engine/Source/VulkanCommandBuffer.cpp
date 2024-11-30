@@ -57,11 +57,11 @@ void NOUS_VulkanCommandBuffer::CommandBufferAllocate(VulkanContext* vkContext, V
     commandBufferAllocateInfo.commandBufferCount = 1;
     commandBufferAllocateInfo.pNext = 0;
 
-    outCommandBuffer->state = VulkanCommandBufferState::COMMAND_BUFFER_STATE_NOT_ALLOCATED;
+    outCommandBuffer->state = VulkanCommandBufferState::NOT_ALLOCATED;
 
     VK_CHECK(vkAllocateCommandBuffers(vkContext->device.logicalDevice, &commandBufferAllocateInfo, &outCommandBuffer->handle));
 
-    outCommandBuffer->state = VulkanCommandBufferState::COMMAND_BUFFER_STATE_READY;
+    outCommandBuffer->state = VulkanCommandBufferState::READY;
 }
 
 void NOUS_VulkanCommandBuffer::CommandBufferFree(VulkanContext* vkContext, VkCommandPool commandPool,
@@ -70,7 +70,7 @@ void NOUS_VulkanCommandBuffer::CommandBufferFree(VulkanContext* vkContext, VkCom
     vkFreeCommandBuffers(vkContext->device.logicalDevice, commandPool, 1, &commandBuffer->handle);
     commandBuffer->handle = 0;
 
-    commandBuffer->state = VulkanCommandBufferState::COMMAND_BUFFER_STATE_NOT_ALLOCATED;
+    commandBuffer->state = VulkanCommandBufferState::NOT_ALLOCATED;
 }
 
 void NOUS_VulkanCommandBuffer::CommandBufferBegin(VulkanCommandBuffer* commandBuffer, bool isSingleUse, 
@@ -97,23 +97,23 @@ void NOUS_VulkanCommandBuffer::CommandBufferBegin(VulkanCommandBuffer* commandBu
     }
 
     VK_CHECK(vkBeginCommandBuffer(commandBuffer->handle, &commandBufferBeginInfo));
-    commandBuffer->state = VulkanCommandBufferState::COMMAND_BUFFER_STATE_RECORDING;
+    commandBuffer->state = VulkanCommandBufferState::RECORDING;
 }
 
 void NOUS_VulkanCommandBuffer::CommandBufferEnd(VulkanCommandBuffer* commandBuffer)
 {
     VK_CHECK(vkEndCommandBuffer(commandBuffer->handle));
-    commandBuffer->state = VulkanCommandBufferState::COMMAND_BUFFER_STATE_RECORDING_ENDED;
+    commandBuffer->state = VulkanCommandBufferState::RECORDING_ENDED;
 }
 
 void NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(VulkanCommandBuffer* commandBuffer)
 {
-    commandBuffer->state = VulkanCommandBufferState::COMMAND_BUFFER_STATE_SUBMITTED;
+    commandBuffer->state = VulkanCommandBufferState::SUBMITTED;
 }
 
 void NOUS_VulkanCommandBuffer::CommandBufferReset(VulkanCommandBuffer* commandBuffer)
 {
-    commandBuffer->state = VulkanCommandBufferState::COMMAND_BUFFER_STATE_READY;
+    commandBuffer->state = VulkanCommandBufferState::READY;
 }
 
 void NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(VulkanContext* vkContext, 

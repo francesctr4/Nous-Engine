@@ -2,6 +2,8 @@
 
 #include "RendererBackend.h"
 
+#include "ResourceTypes.inl"
+
 // --------------- Vulkan Renderer Backend --------------- \\
 
 struct VulkanContext;
@@ -21,12 +23,18 @@ public:
 	bool BeginFrame(float dt) override;
 	bool EndFrame(float dt) override;
 
+	bool RecreateResources();
+
 	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) override;
 	void UpdateObject(float4x4 model);
 
-	// ------------------------------------------------ //
+	// ----------------------------------------------------------------------------------------------- //
+	// TEMPORAL //
 
-	bool RecreateResources();
+	void CreateTexture(const char* path, bool autoRelease, int32 width, int32 height, 
+		int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture);
+
+	void DestroyTexture(Texture* texture);
 
 private:
 

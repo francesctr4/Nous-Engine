@@ -170,11 +170,11 @@ void BeginRenderpass(VulkanCommandBuffer* commandBuffer, VulkanRenderpass* rende
     renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffer->handle, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    commandBuffer->state = VulkanCommandBufferState::COMMAND_BUFFER_STATE_IN_RENDER_PASS;
+    commandBuffer->state = VulkanCommandBufferState::IN_RENDER_PASS;
 }
 
 void EndRenderpass(VulkanCommandBuffer* commandBuffer, VulkanRenderpass* renderpass)
 {
     vkCmdEndRenderPass(commandBuffer->handle);
-    commandBuffer->state = VulkanCommandBufferState::COMMAND_BUFFER_STATE_RECORDING;
+    commandBuffer->state = VulkanCommandBufferState::RECORDING;
 }

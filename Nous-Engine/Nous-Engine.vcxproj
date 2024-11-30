@@ -416,6 +416,7 @@
     <ClInclude Include="Source\External\SDL2\include\SDL_version.h" />
     <ClInclude Include="Source\External\SDL2\include\SDL_video.h" />
     <ClInclude Include="Source\External\SDL2\include\SDL_vulkan.h" />
+    <ClInclude Include="Source\External\stb_image\stb_image.h" />
     <ClInclude Include="Source\External\Tracy\tracy\Tracy.hpp" />
     <ClInclude Include="Source\FileHandle.h" />
     <ClInclude Include="Source\FileManager.h" />
@@ -474,6 +475,7 @@
     <None Include="Source\External\MathGeoLib\include\Math\Matrix.inl" />
     <None Include="Source\OpenGLTypes.inl" />
     <None Include="Source\RendererTypes.inl" />
+    <None Include="Source\ResourceTypes.inl" />
     <None Include="Source\VulkanTypes.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

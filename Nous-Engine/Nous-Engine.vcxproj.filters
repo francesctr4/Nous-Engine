@@ -67,9 +67,6 @@
     <Filter Include="Source Code\Core\Renderer\Vulkan\Shaders">
       <UniqueIdentifier>{e42060bc-3cdb-478a-8ecf-69804c3914b0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Externals\GLSL">
-      <UniqueIdentifier>{54e10806-e8e3-4c46-bd27-d8eddf9138cd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Code\File System">
       <UniqueIdentifier>{ff81d40c-a9ac-403a-98b9-985b1512de20}</UniqueIdentifier>
     </Filter>
@@ -78,6 +75,15 @@
     </Filter>
     <Filter Include="Source Code\Core\Camera">
       <UniqueIdentifier>{5fbe1815-501c-4e9c-8e21-a4cbd664aa50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Core\Renderer\GLSL">
+      <UniqueIdentifier>{54e10806-e8e3-4c46-bd27-d8eddf9138cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Externals\stb_image">
+      <UniqueIdentifier>{eda1c102-79d6-4228-bc17-f97d72a5e4f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Resource Management">
+      <UniqueIdentifier>{567c033a-37ae-422d-9317-e6961b50ac4b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -869,6 +875,9 @@
     <ClInclude Include="Source\Camera.h">
       <Filter>Source Code\Core\Camera</Filter>
     </ClInclude>
+    <ClInclude Include="Source\External\stb_image\stb_image.h">
+      <Filter>Externals\stb_image</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">
@@ -899,10 +908,13 @@
       <Filter>Externals\MathGeoLib\Math</Filter>
     </None>
     <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.vert.glsl">
-      <Filter>Externals\GLSL</Filter>
+      <Filter>Source Code\Core\Renderer\GLSL</Filter>
     </None>
     <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.frag.glsl">
-      <Filter>Externals\GLSL</Filter>
+      <Filter>Source Code\Core\Renderer\GLSL</Filter>
+    </None>
+    <None Include="Source\ResourceTypes.inl">
+      <Filter>Source Code\Resource Management</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -5,7 +5,7 @@
 #include "Logger.h"
 #include "MemoryManager.h"
 
-void CreateVulkanImage(VulkanContext* context, VkImageType imageType, uint32 width, uint32 height, 
+void CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32 width, uint32 height,
     uint32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, 
     VkImageUsageFlags usage, VkMemoryPropertyFlags memoryFlags, bool createView, 
     VkImageAspectFlags viewAspectFlags, VulkanImage* outImage)
@@ -32,12 +32,12 @@ void CreateVulkanImage(VulkanContext* context, VkImageType imageType, uint32 wid
     imageCreateInfo.samples = numSamples;                       // TODO: Configurable sample count.
     imageCreateInfo.flags = 0;
 
-    VK_CHECK(vkCreateImage(context->device.logicalDevice, &imageCreateInfo, context->allocator, &outImage->handle));
+    VK_CHECK(vkCreateImage(vkContext->device.logicalDevice, &imageCreateInfo, vkContext->allocator, &outImage->handle));
 
     VkMemoryRequirements memoryRequirements;
-    vkGetImageMemoryRequirements(context->device.logicalDevice, outImage->handle, &memoryRequirements);
+    vkGetImageMemoryRequirements(vkContext->device.logicalDevice, outImage->handle, &memoryRequirements);
 
-    int32 memoryType = FindMemoryIndex(context->device.physicalDevice, memoryRequirements.memoryTypeBits, memoryFlags);
+    int32 memoryType = FindMemoryIndex(vkContext->device.physicalDevice, memoryRequirements.memoryTypeBits, memoryFlags);
     if (memoryType == -1) 
     {
         NOUS_ERROR("Required memory type not found. Image not valid.");
@@ -49,18 +49,18 @@ void CreateVulkanImage(VulkanContext* context, VkImageType imageType, uint32 wid
     memoryAllocateInfo.allocationSize = memoryRequirements.size;
     memoryAllocateInfo.memoryTypeIndex = memoryType;
 
-    VK_CHECK(vkAllocateMemory(context->device.logicalDevice, &memoryAllocateInfo, context->allocator, &outImage->memory));
+    VK_CHECK(vkAllocateMemory(vkContext->device.logicalDevice, &memoryAllocateInfo, vkContext->allocator, &outImage->memory));
 
-    VK_CHECK(vkBindImageMemory(context->device.logicalDevice, outImage->handle, outImage->memory, 0));  // TODO: configurable memory offset.
+    VK_CHECK(vkBindImageMemory(vkContext->device.logicalDevice, outImage->handle, outImage->memory, 0));  // TODO: configurable memory offset.
 
     if (createView) 
     {
         outImage->view = 0;
-        CreateVulkanImageView(context, format, outImage, viewAspectFlags, mipLevels);
+        CreateVulkanImageView(vkContext, format, outImage, viewAspectFlags, mipLevels);
     }
 }
 
-void CreateVulkanImageView(VulkanContext* context, VkFormat format, 
+void CreateVulkanImageView(VulkanContext* vkContext, VkFormat format,
 	VulkanImage* image, VkImageAspectFlags aspectFlags, uint32 mipLevels)
 {
     VkImageViewCreateInfo imageViewCreateInfo{}; 
@@ -77,26 +77,111 @@ void CreateVulkanImageView(VulkanContext* context, VkFormat format,
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount = 1;
 
-    VK_CHECK(vkCreateImageView(context->device.logicalDevice, &imageViewCreateInfo, context->allocator, &image->view));
-};
+    VK_CHECK(vkCreateImageView(vkContext->device.logicalDevice, &imageViewCreateInfo, vkContext->allocator, &image->view));
+}
 
-void DestroyVulkanImage(VulkanContext* context, VulkanImage* image)
+void TransitionVulkanImageLayout(VulkanContext* vkContext, VulkanCommandBuffer* commandBuffer, 
+    VulkanImage* image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+    VkImageMemoryBarrier imageMemoryBarrier{};
+    imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+
+    imageMemoryBarrier.oldLayout = oldLayout;
+    imageMemoryBarrier.newLayout = newLayout;
+
+    imageMemoryBarrier.srcQueueFamilyIndex = vkContext->device.graphicsQueueIndex;
+    imageMemoryBarrier.dstQueueFamilyIndex = vkContext->device.graphicsQueueIndex;
+
+    imageMemoryBarrier.image = image->handle;
+
+    imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
+    imageMemoryBarrier.subresourceRange.levelCount = 1;
+    imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
+    imageMemoryBarrier.subresourceRange.layerCount = 1;
+
+    VkPipelineStageFlags sourceStage;
+    VkPipelineStageFlags destinationStage;
+
+    // Don't care about the old layout - transition to optimal layout (for the underlying implementation).
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && 
+        newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) 
+    {
+        imageMemoryBarrier.srcAccessMask = 0;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        // Don't care what stage the pipeline is in at the start.
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        // Used for copying
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && 
+             newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) 
+    {
+        // Transitioning from a transfer destination layout to a shader-readonly layout.
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        // From a copying stage to...
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        // The fragment stage.
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+    else 
+    {
+        NOUS_FATAL("Unsupported Layout Transition!");
+        return;
+    }
+
+    vkCmdPipelineBarrier(commandBuffer->handle,
+        sourceStage, destinationStage,
+        0,
+        0, 0,
+        0, 0,
+        1, &imageMemoryBarrier);
+}
+
+void CopyBufferToVulkanImage(VulkanContext* vkContext, VulkanImage* image, 
+    VkBuffer buffer, VulkanCommandBuffer* commandBuffer)
+{
+    // Region to copy
+    VkBufferImageCopy bufferImageCopyRegion;
+    MemoryManager::ZeroMemory(&bufferImageCopyRegion, sizeof(VkBufferImageCopy));
+
+    bufferImageCopyRegion.bufferOffset = 0;
+    bufferImageCopyRegion.bufferRowLength = 0;
+    bufferImageCopyRegion.bufferImageHeight = 0;
+
+    bufferImageCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    bufferImageCopyRegion.imageSubresource.mipLevel = 0;
+    bufferImageCopyRegion.imageSubresource.baseArrayLayer = 0;
+    bufferImageCopyRegion.imageSubresource.layerCount = 1;
+
+    bufferImageCopyRegion.imageExtent.width = image->width;
+    bufferImageCopyRegion.imageExtent.height = image->height;
+    bufferImageCopyRegion.imageExtent.depth = 1;
+
+    vkCmdCopyBufferToImage(commandBuffer->handle, buffer, image->handle,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopyRegion);
+}
+
+void DestroyVulkanImage(VulkanContext* vkContext, VulkanImage* image)
 {
     if (image->view) 
     {
-        vkDestroyImageView(context->device.logicalDevice, image->view, context->allocator);
+        vkDestroyImageView(vkContext->device.logicalDevice, image->view, vkContext->allocator);
         image->view = 0;
     }
 
     if (image->memory) 
     {
-        vkFreeMemory(context->device.logicalDevice, image->memory, context->allocator);
+        vkFreeMemory(vkContext->device.logicalDevice, image->memory, vkContext->allocator);
         image->memory = 0;
     }
 
     if (image->handle) 
     {
-        vkDestroyImage(context->device.logicalDevice, image->handle, context->allocator);
+        vkDestroyImage(vkContext->device.logicalDevice, image->handle, vkContext->allocator);
         image->handle = 0;
     }
 }
