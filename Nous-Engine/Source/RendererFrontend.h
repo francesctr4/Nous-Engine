@@ -18,6 +18,7 @@ public:
 
 	bool DrawFrame(RenderPacket* packet);
 
+	void InitTexture(Texture* texture);
 	void CreateTexture(const char* path, bool autoRelease, int32 width, int32 height,
 		int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture);
 	void DestroyTexture(Texture* texture);

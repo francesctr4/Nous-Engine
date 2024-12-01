@@ -31,6 +31,9 @@ public:
 
 	uint64 frameNumber;
 
+	// Pointers to default textures.
+	Texture* defaultDiffuse;
+
 private:
 	
 	IRendererBackend* backendInterface;

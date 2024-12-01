@@ -20,6 +20,8 @@ bool RendererFrontend::Initialize()
 {
 	bool ret = true;
 
+	backend->defaultDiffuse = &defaultTexture;
+
 	// TODO: Make this configurable
 	backend->Create(RendererBackendType::VULKAN);
 	backend->frameNumber = 0;
@@ -33,8 +35,7 @@ bool RendererFrontend::Initialize()
 	CreateDefaultTexture();
 
 	// TODO: load other textures
-	MemoryManager::ZeroMemory(&testDiffuse, sizeof(Texture));
-	testDiffuse.generation = INVALID_ID;
+	InitTexture(&testDiffuse);
 
 	return ret;
 }
@@ -75,7 +76,13 @@ void RendererFrontend::UpdateObject(GeometryRenderData renderData)
 	backend->UpdateObject(renderData);
 }
 
-void RendererFrontend::CreateTexture(const char* path, bool autoRelease, int32 width, int32 height, 
+void RendererFrontend::InitTexture(Texture* texture)
+{
+	MemoryManager::ZeroMemory(texture, sizeof(Texture));
+	texture->generation = INVALID_ID;
+}
+
+void RendererFrontend::CreateTexture(const char* path, bool autoRelease, int32 width, int32 height,
 	int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
 {
 	backend->CreateTexture(path, autoRelease, width, height, channelCount, pixels, hasTransparency, outTexture);
@@ -166,7 +173,7 @@ void RendererFrontend::CreateDefaultTexture()
 				// Blue color.
 				pixels[indexBpp + 0] = 0;   // Red
 				pixels[indexBpp + 1] = 0;   // Green
-				pixels[indexBpp + 2] = 0; // Blue
+				pixels[indexBpp + 2] = 255; // Blue
 				pixels[indexBpp + 3] = 255; // Alpha
 			}
 		}

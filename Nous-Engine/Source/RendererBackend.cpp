@@ -41,6 +41,8 @@ bool RendererBackend::Create(RendererBackendType bType)
         }
     }
 
+    backendInterface->defaultDiffuse = defaultDiffuse;
+
 	return ret;
 }
 
