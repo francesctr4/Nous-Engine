@@ -9,6 +9,8 @@
 #include "RendererFrontend.h"
 #include "ImporterTexture.h"
 
+RendererFrontend* ModuleRenderer3D::rendererFrontend = nullptr;
+
 ModuleRenderer3D::ModuleRenderer3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -101,17 +103,24 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 
 			break;
 		}
-		case EventType::SWAP_TEXTURE: 
+		//case EventType::SWAP_TEXTURE: 
+		//{
+		//	const char* names[3] = { "cobblestone", "paving", "paving2" };
+		//	static int8 choice = 2;
+		//	choice++;
+		//	choice %= 3;
+
+		//	std::string path = std::format("Assets/Textures/{}.{}", names[choice], "png");
+
+		//	// Load up the new texture.
+		//	ImporterTexture::Import(path.c_str(), &rendererFrontend->testDiffuse);
+
+		//	break;
+		//}
+		case EventType::DROP_FILE:
 		{
-			const char* names[3] = { "cobblestone", "paving", "paving2" };
-			static int8 choice = 2;
-			choice++;
-			choice %= 3;
-
-			std::string path = std::format("Assets/Textures/{}.{}", names[choice], "png");
-
 			// Load up the new texture.
-			ImporterTexture::Import(path.c_str(), &testDiffuse);
+			ImporterTexture::Import(event.context.c, &rendererFrontend->testDiffuse);
 
 			break;
 		}

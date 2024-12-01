@@ -120,6 +120,8 @@ struct VulkanDevice
     int32 computeQueueIndex;
     int32 transferQueueIndex;
 
+    bool supportsDeviceLocalHostVisible;
+
     VkCommandPool graphicsCommandPool;
 
     VkQueue graphicsQueue;

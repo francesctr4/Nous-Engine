@@ -166,9 +166,11 @@ bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, Vulka
     }
 
     // Create uniform buffer.
+    uint32 deviceLocalBits = vkContext->device.supportsDeviceLocalHostVisible ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0;
+
     if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, sizeof(GlobalUniformObject) * 3,
         VkBufferUsageFlagBits(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | deviceLocalBits,
         true, &outShader->globalUniformBuffer)) 
     {
         NOUS_ERROR("Vulkan Buffer Creation failed for object shader.");
@@ -196,7 +198,7 @@ bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, Vulka
     // Create the object uniform buffer.
     if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, sizeof(LocalUniformObject),  //* MAX_MATERIAL_INSTANCE_COUNT,
         (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         true, &outShader->localUniformBuffer)) 
     {
         NOUS_ERROR("Material instance buffer creation failed for shader.");

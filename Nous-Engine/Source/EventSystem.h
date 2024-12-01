@@ -7,7 +7,8 @@ enum class EventType
 	TEST,
 	KEY_PRESSED,
 	WINDOW_RESIZED,
-	SWAP_TEXTURE
+	SWAP_TEXTURE,
+	DROP_FILE
 };
 
 union EventContext
@@ -26,7 +27,7 @@ union EventContext
 	int8 int8[16];
 	uint8 uint8[16];
 
-	char c[16];
+	const char* c;
 };
 
 struct Event 

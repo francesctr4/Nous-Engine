@@ -211,11 +211,9 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			}
 			case SDL_DROPFILE:
 			{ 
-				// Broadcast Event (example)
-				
-				//const char* droppedFileDirectory = e.drop.file;
-				//App->BroadcastEvent(Event(EventType::DROPFILE, { .c = *e.drop.file }));
-				//SDL_free(&droppedFileDirectory);
+				const char* droppedFileDirectory = e.drop.file;
+				App->BroadcastEvent(Event(EventType::DROP_FILE, { .c = e.drop.file }));
+				SDL_free(&droppedFileDirectory);
 
 				break;
 			}

@@ -32,13 +32,6 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 UpdateStatus ModuleScene::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
-	if (App->input->GetKey(SDL_SCANCODE_T) == KeyState::DOWN) 
-	{
-		NOUS_DEBUG("Swapping texture!");
-		App->BroadcastEvent(Event(EventType::SWAP_TEXTURE));
-	}
-
 	return UPDATE_CONTINUE;
 }
 

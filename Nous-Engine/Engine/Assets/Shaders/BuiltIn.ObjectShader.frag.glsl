@@ -23,5 +23,5 @@ layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
 
 void main() 
 {
-    fragColor = vec4(inDTO.outColor, 1.0f) * localUBO.diffuseColor * texture(diffuseSampler, inDTO.texCoord);
+    fragColor = /* vec4(inDTO.outColor, 1.0f) * */ localUBO.diffuseColor * texture(diffuseSampler, inDTO.texCoord);
 }

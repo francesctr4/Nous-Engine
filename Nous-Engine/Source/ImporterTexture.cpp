@@ -1,6 +1,8 @@
 #include "ImporterTexture.h"
 #include "RendererFrontend.h"
 
+#include "ModuleRenderer3D.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "External/stb_image/stb_image.h"
 
@@ -45,8 +47,9 @@ bool ImporterTexture::Import(const char* path, Texture* texture)
         }
 
         // Acquire internal texture resources and upload to GPU.
-        CreateTexture(textureName, true, temp_texture.width, temp_texture.height, 
-            temp_texture.channel_count, data, has_transparency, &temp_texture);
+        External->renderer->rendererFrontend->CreateTexture(path, true, 
+            tempTexture.width, tempTexture.height, tempTexture.channelCount,
+            data, hasTransparency, &tempTexture);
 
         // Take a copy of the old texture.
         Texture old = *texture;
@@ -55,7 +58,7 @@ bool ImporterTexture::Import(const char* path, Texture* texture)
         *texture = tempTexture;
 
         // Destroy the old texture.
-        DestroyTexture(&old);
+        External->renderer->rendererFrontend->DestroyTexture(&old);
 
         if (currentGeneration == INVALID_ID) 
         {

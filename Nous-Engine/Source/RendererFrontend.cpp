@@ -20,9 +20,6 @@ bool RendererFrontend::Initialize()
 {
 	bool ret = true;
 
-	// Take a pointer to default textures for use in the backend.
-	backend->diffuseTexture = &defaultTexture;
-
 	// TODO: Make this configurable
 	backend->Create(RendererBackendType::VULKAN);
 	backend->frameNumber = 0;

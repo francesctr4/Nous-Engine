@@ -31,8 +31,6 @@ public:
 
 	uint64 frameNumber;
 
-	Texture* diffuseTexture;
-
 private:
 	
 	IRendererBackend* backendInterface;

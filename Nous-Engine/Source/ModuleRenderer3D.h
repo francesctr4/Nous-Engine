@@ -22,12 +22,8 @@ public:
 
 	void ReceiveEvent(const Event& event) override;
 
-private:
+public:
 
-	RendererFrontend* rendererFrontend;
-
-	// TODO: temporary
-	Texture testDiffuse;
-	// TODO: end temporary
+	static RendererFrontend* rendererFrontend;
 
 };

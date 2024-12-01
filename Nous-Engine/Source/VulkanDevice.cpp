@@ -69,6 +69,20 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* v
     VkPhysicalDeviceMemoryProperties deviceMemory;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemory);
 
+    // Check if device supports local/host visible combo
+    bool supportsDeviceLocalHostVisible = false;
+
+    for (uint32 i = 0; i < deviceMemory.memoryTypeCount; ++i)
+    {
+        // Check each memory type to see if its bit is set to 1.
+        if (((deviceMemory.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0) &&
+            ((deviceMemory.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0))
+        {
+            supportsDeviceLocalHostVisible = true;
+            break;
+        }
+    }
+
     // --------------- Multisampling --------------- //
     // Query the maximum usable sample count (MSAA level) supported by the device for anti-aliasing.
     VkSampleCountFlagBits msaaSamples = GetMaxUsableSampleCount(deviceProperties);
@@ -108,6 +122,7 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* v
         vkContext->device.properties = deviceProperties;
         vkContext->device.features = deviceFeatures;
         vkContext->device.memory = deviceMemory;
+        vkContext->device.supportsDeviceLocalHostVisible = supportsDeviceLocalHostVisible;
     }
 
     return ret;
