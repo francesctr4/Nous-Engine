@@ -601,7 +601,7 @@ void VulkanBackend::CreateTexture(const char* path, bool autoRelease, int32 widt
 
     // NOTE: Lots of assumptions here, different texture types will require
     // different options here.
-    CreateVulkanImage(vkContext, VK_IMAGE_TYPE_2D, width, height, 1, vkContext->device.msaaSamples, imageFormat,
+    CreateVulkanImage(vkContext, VK_IMAGE_TYPE_2D, width, height, 1, VK_SAMPLE_COUNT_1_BIT, imageFormat,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,

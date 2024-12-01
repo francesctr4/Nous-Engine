@@ -132,22 +132,37 @@ void RendererFrontend::CreateDefaultTexture()
 	const uint32 texDimension = 256;
 	const uint32 channels = 4;
 	const uint32 pixelCount = texDimension * texDimension;
+	const uint32 squareSize = 16; // Size of each checkerboard square in pixels.
 
-	std::array<uint8, (pixelCount * channels)> pixels;
+	std::array<uint8, (pixelCount* channels)> pixels;
 	MemoryManager::SetMemory(pixels.data(), 255, sizeof(uint8) * pixelCount * channels);
 
-	// Each pixel.
-	for (uint64 row = 0; row < texDimension; ++row) 
+	// Create the checkerboard pattern with larger squares.
+	for (uint64 row = 0; row < texDimension; ++row)
 	{
 		for (uint64 col = 0; col < texDimension; ++col)
 		{
 			uint64 index = (row * texDimension) + col;
 			uint64 indexBpp = index * channels;
 
-			if (row % 2 == col % 2) 
+			// Determine which square we are in.
+			bool isWhiteSquare = ((row / squareSize) % 2 == (col / squareSize) % 2);
+
+			if (isWhiteSquare)
 			{
-				pixels[indexBpp + 0] = 0;
-				pixels[indexBpp + 1] = 0;
+				// White color.
+				pixels[indexBpp + 0] = 255; // Red
+				pixels[indexBpp + 1] = 255; // Green
+				pixels[indexBpp + 2] = 255; // Blue
+				pixels[indexBpp + 3] = 255; // Alpha
+			}
+			else
+			{
+				// Blue color.
+				pixels[indexBpp + 0] = 0;   // Red
+				pixels[indexBpp + 1] = 0;   // Green
+				pixels[indexBpp + 2] = 0; // Blue
+				pixels[indexBpp + 3] = 255; // Alpha
 			}
 		}
 	}

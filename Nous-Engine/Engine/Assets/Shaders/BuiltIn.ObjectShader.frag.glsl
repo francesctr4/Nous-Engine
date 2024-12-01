@@ -2,6 +2,8 @@
 
 #extension GL_ARB_separate_shader_objects : enable
 
+layout(location = 0) in flat int outMode;
+
 // Data Transfer Object
 layout(location = 1) in struct DataTransferObject
 {
@@ -21,5 +23,5 @@ layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
 
 void main() 
 {
-    fragColor = localUBO.diffuseColor * texture(diffuseSampler, inDTO.texCoord);
+    fragColor = vec4(inDTO.outColor, 1.0f) * localUBO.diffuseColor * texture(diffuseSampler, inDTO.texCoord);
 }

@@ -162,7 +162,7 @@ constexpr uint32 VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT = 2;
 struct VulkanObjectShaderLocalState 
 {
     // Per frame
-    VkDescriptorSet descriptorSets[3];
+    std::array<VkDescriptorSet, 3> descriptorSets;
     // Per descriptor
     std::array<VulkanDescriptorState, VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT> descriptorStates;
 };
