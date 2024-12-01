@@ -20,6 +20,9 @@ bool RendererFrontend::Initialize()
 {
 	bool ret = true;
 
+	// Take a pointer to default textures for use in the backend.
+	backend->diffuseTexture = &defaultTexture;
+
 	// TODO: Make this configurable
 	backend->Create(RendererBackendType::VULKAN);
 	backend->frameNumber = 0;
@@ -32,12 +35,17 @@ bool RendererFrontend::Initialize()
 
 	CreateDefaultTexture();
 
+	// TODO: load other textures
+	MemoryManager::ZeroMemory(&testDiffuse, sizeof(Texture));
+	testDiffuse.generation = INVALID_ID;
+
 	return ret;
 }
 
 void RendererFrontend::Shutdown()
 {
 	DestroyTexture(&defaultTexture);
+	DestroyTexture(&testDiffuse);
 
 	backend->Shutdown();
 }
@@ -104,7 +112,7 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 		GeometryRenderData renderData{};
 		renderData.objectID = 0;
 		renderData.model = model;
-		renderData.textures[0] = &defaultTexture;
+		renderData.textures[0] = &testDiffuse;
 
 		// Update the object's transform with the new model matrix.
 		UpdateObject(renderData);
@@ -168,4 +176,7 @@ void RendererFrontend::CreateDefaultTexture()
 	}
 
 	CreateTexture("DefaultTexture", false, texDimension, texDimension, 4, pixels.data(), false, &defaultTexture);
+
+	// Manually set the texture generation to invalid since this is a default texture.
+	defaultTexture.generation = INVALID_ID;
 }

@@ -5,6 +5,7 @@
 #include "ModuleInput.h"
 #include "ModuleFileSystem.h"
 #include "ModuleCamera3D.h"
+#include "ModuleScene.h"
 #include "ModuleRenderer3D.h"
 
 #include "Logger.h"
@@ -34,13 +35,15 @@ Application::Application()
     input = new ModuleInput(this, "ModuleInput");
     fileSystem = new ModuleFileSystem(this, "ModuleFileSystem");
     camera = new ModuleCamera3D(this, "ModuleCamera3D");
+    scene = new ModuleScene(this, "ModuleScene");
     renderer = new ModuleRenderer3D(this, "ModuleRenderer3D");
 
 	listModules[0] = window;
     listModules[1] = input;
     listModules[2] = fileSystem;
     listModules[3] = camera;
-    listModules[4] = renderer;
+    listModules[4] = scene;
+    listModules[5] = renderer;
 }
 
 Application::~Application()

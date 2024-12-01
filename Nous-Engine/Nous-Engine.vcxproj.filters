@@ -306,6 +306,9 @@
     <ClCompile Include="Source\Camera.cpp">
       <Filter>Source Code\Core\Camera</Filter>
     </ClCompile>
+    <ClCompile Include="Source\ModuleScene.cpp">
+      <Filter>Source Code\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -877,6 +880,9 @@
     </ClInclude>
     <ClInclude Include="Source\External\stb_image\stb_image.h">
       <Filter>Externals\stb_image</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ModuleScene.h">
+      <Filter>Source Code\Modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

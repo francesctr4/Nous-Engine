@@ -7,6 +7,7 @@
 #include "Tracy.h"
 
 #include "RendererFrontend.h"
+#include "ImporterTexture.h"
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
@@ -100,10 +101,18 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 
 			break;
 		}
-		case EventType::TEST: 
+		case EventType::SWAP_TEXTURE: 
 		{
-			/*NOUS_ERROR("ModuleRenderer3D LISTENED TEST");
-			NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);*/
+			const char* names[3] = { "cobblestone", "paving", "paving2" };
+			static int8 choice = 2;
+			choice++;
+			choice %= 3;
+
+			std::string path = std::format("Assets/Textures/{}.{}", names[choice], "png");
+
+			// Load up the new texture.
+			ImporterTexture::Import(path.c_str(), &testDiffuse);
+
 			break;
 		}
 		case EventType::KEY_PRESSED:

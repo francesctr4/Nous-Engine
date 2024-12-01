@@ -246,6 +246,7 @@
     <ClCompile Include="Source\ModuleFileSystem.cpp" />
     <ClCompile Include="Source\ModuleInput.cpp" />
     <ClCompile Include="Source\ModuleRenderer3D.cpp" />
+    <ClCompile Include="Source\ModuleScene.cpp" />
     <ClCompile Include="Source\ModuleWindow.cpp" />
     <ClCompile Include="Source\MemoryManager.cpp" />
     <ClCompile Include="Source\OpenGLBackend.cpp" />
@@ -432,6 +433,7 @@
     <ClInclude Include="Source\ModuleFileSystem.h" />
     <ClInclude Include="Source\ModuleInput.h" />
     <ClInclude Include="Source\ModuleRenderer3D.h" />
+    <ClInclude Include="Source\ModuleScene.h" />
     <ClInclude Include="Source\ModuleWindow.h" />
     <ClInclude Include="Source\MemoryManager.h" />
     <ClInclude Include="Source\OpenGLBackend.h" />

@@ -4,13 +4,14 @@
 #include "EventSystem.h"
 #include "Timer.h"
 
-constexpr uint16 NUM_MODULES = 5;
+constexpr uint16 NUM_MODULES = 6;
 
 class Module;
 class ModuleWindow;
 class ModuleInput;
 class ModuleFileSystem;
 class ModuleCamera3D;
+class ModuleScene;
 class ModuleRenderer3D;
 
 class Application
@@ -39,6 +40,7 @@ public:
 	ModuleInput* input;
 	ModuleFileSystem* fileSystem;
 	ModuleCamera3D* camera;
+	ModuleScene* scene;
 	ModuleRenderer3D* renderer;
 
 	bool isMinimized;

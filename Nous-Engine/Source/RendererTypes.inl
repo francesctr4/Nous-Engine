@@ -65,4 +65,9 @@ struct IRendererBackend
     virtual void CreateTexture(const char* path, bool autoRelease, int32 width, int32 height,
         int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture) = 0;
     virtual void DestroyTexture(Texture* texture) = 0;
+
+    // ---------------------------------------------------------------------------------------------------- //
+    
+    // Pointers to default textures.
+    Texture* defaultDiffuse;
 };

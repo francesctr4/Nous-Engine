@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cstdint>
+#include <format>
 #include "STL.h"
 
 #include "Logger.h"

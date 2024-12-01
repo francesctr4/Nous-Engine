@@ -3,7 +3,7 @@
 #include "RendererTypes.inl"
 #include "VulkanTypes.inl"
 
-bool CreateObjectShader(VulkanContext* vkContext, VulkanObjectShader* outShader);
+bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, VulkanObjectShader* outShader);
 
 void DestroyObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader);
 

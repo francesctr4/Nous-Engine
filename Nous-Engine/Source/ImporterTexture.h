@@ -6,7 +6,7 @@ struct Texture;
 
 namespace ImporterTexture 
 {
-	void Import(const char* path, Texture* texture);
+	bool Import(const char* path, Texture* texture);
 
 	//void Save();
 	//void Load();

@@ -177,7 +177,7 @@ bool VulkanBackend::Initialize()
 
     // Create Vulkan Object Shader
     NOUS_DEBUG("Creating Nous Object Shader...");
-    if (!CreateObjectShader(vkContext, &vkContext->objectShader))
+    if (!CreateObjectShader(vkContext, defaultDiffuse, &vkContext->objectShader))
     {
         NOUS_ERROR("Failed to create Nous Object Shader. Shutting the Application.");
         ret = false;
@@ -675,12 +675,16 @@ void VulkanBackend::DestroyTexture(Texture* texture)
 
     VulkanTextureData* textureData = reinterpret_cast<VulkanTextureData*>(texture->internalData);
 
-    DestroyVulkanImage(vkContext, &textureData->image);
-    MemoryManager::ZeroMemory(&textureData->image, sizeof(VulkanImage));
+    if (textureData) 
+    {
+        DestroyVulkanImage(vkContext, &textureData->image);
+        MemoryManager::ZeroMemory(&textureData->image, sizeof(VulkanImage));
 
-    vkDestroySampler(vkContext->device.logicalDevice, textureData->sampler, vkContext->allocator);
-    textureData->sampler = 0;
+        vkDestroySampler(vkContext->device.logicalDevice, textureData->sampler, vkContext->allocator);
+        textureData->sampler = 0;
 
-    MemoryManager::Free(textureData, sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE);
+        MemoryManager::Free(textureData, sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE);
+    }
+    
     MemoryManager::ZeroMemory(texture, sizeof(Texture));
 }

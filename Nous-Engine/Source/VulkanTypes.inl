@@ -198,6 +198,9 @@ struct VulkanObjectShader
     // TODO: make dynamic
     std::array<VulkanObjectShaderLocalState, VULKAN_OBJECT_SHADER_MAX_OBJECT_COUNT> localObjectStates;
 
+    // Pointers to default textures.
+    Texture* defaultDiffuse;
+
     VulkanPipeline pipeline;
 };
 

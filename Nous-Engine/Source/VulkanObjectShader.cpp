@@ -10,13 +10,15 @@
 
 constexpr const char* BUILTIN_OBJECT_SHADER_NAME = "BuiltIn.ObjectShader";
 
-bool CreateObjectShader(VulkanContext* vkContext, VulkanObjectShader* outShader)
+bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, VulkanObjectShader* outShader)
 {
 #ifdef _DEBUG
     ExecuteBatchFile("compile-shaders.bat");
 #endif // _DEBUG
 
     bool ret = true;
+
+    outShader->defaultDiffuse = defaultDiffuse;
 
     // Shader module init per stage.
     std::array<std::string, VULKAN_OBJECT_SHADER_STAGE_COUNT> stageTypeStrings = { "vert", "frag" };
@@ -343,6 +345,16 @@ void UpdateObjectShaderLocalState(VulkanContext* vkContext, VulkanObjectShader* 
         Texture* texture = renderData.textures[samplerIndex];
 
         uint32* descriptorGeneration = &objectState->descriptorStates[descriptorIndex].generations[imageIndex];
+        
+        // If the texture hasn't been loaded yet, use the default.
+        // TODO: Determine which use the texture has and pull appropriate default based on that.
+        if (texture->generation == INVALID_ID) 
+        {
+            texture = shader->defaultDiffuse;
+
+            // Reset the descriptor generation if using the default texture.
+            *descriptorGeneration = INVALID_ID;
+        }
 
         // Check if the descriptor needs updating first.
         if (texture && (*descriptorGeneration != texture->generation || *descriptorGeneration == INVALID_ID)) 

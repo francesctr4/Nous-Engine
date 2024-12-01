@@ -2,14 +2,15 @@
 
 #include "Module.h"
 
-class RendererFrontend;
-
-class ModuleRenderer3D : public Module
+class ModuleScene : public Module
 {
 public:
 
-	ModuleRenderer3D(Application* app, std::string name, bool start_enabled = true);
-	virtual ~ModuleRenderer3D();
+	// Constructor
+	ModuleScene(Application* app, std::string name, bool start_enabled = true);
+
+	// Destructor
+	virtual ~ModuleScene();
 
 	bool Awake() override;
 	bool Start() override;
@@ -21,13 +22,5 @@ public:
 	bool CleanUp() override;
 
 	void ReceiveEvent(const Event& event) override;
-
-private:
-
-	RendererFrontend* rendererFrontend;
-
-	// TODO: temporary
-	Texture testDiffuse;
-	// TODO: end temporary
 
 };
