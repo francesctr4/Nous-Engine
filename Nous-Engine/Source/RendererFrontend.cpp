@@ -4,8 +4,6 @@
 #include "MemoryManager.h"
 #include "Logger.h"
 
-RendererBackend* RendererFrontend::backend = nullptr;
-
 RendererFrontend::RendererFrontend()
 {
 	backend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);

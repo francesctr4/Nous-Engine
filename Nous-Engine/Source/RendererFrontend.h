@@ -43,7 +43,7 @@ private:
 
 private:
 
-	static RendererBackend* backend;
+	RendererBackend* backend;
 
 	Texture defaultTexture;
 
