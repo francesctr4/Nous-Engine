@@ -454,6 +454,9 @@ bool VulkanBackend::EndFrame(float dt)
         vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
         vkContext->imageIndex);
 
+    //// TODO: Fix problem on class
+    //vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
 	return true;
 }
 
