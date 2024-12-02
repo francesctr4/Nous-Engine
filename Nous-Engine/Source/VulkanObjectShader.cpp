@@ -332,6 +332,8 @@ void UpdateObjectShaderLocalState(VulkanContext* vkContext, VulkanObjectShader* 
         descriptorWrites[descriptorCount] = writeDescriptorSet;
         descriptorCount++;
 
+        vkUpdateDescriptorSets(vkContext->device.logicalDevice, descriptorCount, descriptorWrites.data(), 0, 0);
+
         // Update the frame generation. In this case it is only needed once since this is a buffer.
         objectState->descriptorStates[descriptorIndex].generations[imageIndex] = 1;
     }
