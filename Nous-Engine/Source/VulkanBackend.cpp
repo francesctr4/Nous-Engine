@@ -127,7 +127,7 @@ bool VulkanBackend::Initialize()
     NOUS_DEBUG("Creating Vulkan Render Pass...");
     if (!CreateRenderpass(vkContext, &vkContext->mainRenderpass,
         0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight,
-        1.0f, 0.4f, 0.8f, 1.0f,
+        0.1f, 0.0f, 0.0f, 1.0f,
         1.0f,
         0))
     {
