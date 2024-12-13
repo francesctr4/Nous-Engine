@@ -109,7 +109,7 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 		angle += angularVelocity * packet->deltaTime;
 
 		// Create the rotation matrix using the accumulated angle.
-		float4x4 model = Quat(float3::unitZ, angle).ToFloat4x4();
+		float4x4 model = Quat(float3::unitY, angle).ToFloat4x4();
 
 		GeometryRenderData renderData{};
 		renderData.objectID = 0;

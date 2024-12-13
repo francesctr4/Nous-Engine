@@ -12,7 +12,7 @@ Camera::Camera()
     frustum.farPlaneDistance = 1000.0f;
 
     // Default vertical FOV and aspect ratio
-    frustum.verticalFov = 45.0f * NOUS_MathUtils::DEGTORAD; // 45 degrees in radians
+    frustum.verticalFov = 60.0f * NOUS_MathUtils::DEGTORAD; // 60 degrees in radians
     frustum.horizontalFov = 2.0f * atanf(tanf(frustum.verticalFov * 0.5f) * ((float)WINDOW_WIDTH / (float)WINDOW_HEIGHT));
 }
 

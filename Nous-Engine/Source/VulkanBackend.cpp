@@ -18,6 +18,11 @@
 // Shaders
 #include "VulkanObjectShader.h"
 
+// Temp
+#include "ImporterMesh.h"
+Mesh* myMesh;
+// Temp
+
 #include "MemoryManager.h"
 #include "Logger.h"
 
@@ -232,13 +237,16 @@ bool VulkanBackend::Initialize()
     const uint32 nIndices = 6;
     std::vector<uint32> indices = { 0, 1, 2, 0, 3, 1 };
 
+    myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
+    ImporterMesh::Import("Assets/Models/Viking_Room.fbx", myMesh);
+
     NOUS_VulkanBuffer::UploadDataToBuffer(vkContext, vkContext->device.graphicsCommandPool, 0, 
         vkContext->device.graphicsQueue, &vkContext->objectVertexBuffer, 0,
-        sizeof(Vertex) * nVertices, vertices.data());
+        sizeof(Vertex) * myMesh->vertices.size(), myMesh->vertices.data());
 
     NOUS_VulkanBuffer::UploadDataToBuffer(vkContext, vkContext->device.graphicsCommandPool, 0,
         vkContext->device.graphicsQueue, &vkContext->objectIndexBuffer, 0,
-        sizeof(uint32) * nIndices, indices.data());
+        sizeof(uint32) * myMesh->indices.size(), myMesh->indices.data());
 
     uint32 objectID = 0;
     if (!AcquireObjectShaderResources(vkContext, &vkContext->objectShader, &objectID)) 
@@ -256,6 +264,12 @@ bool VulkanBackend::Initialize()
 
 void VulkanBackend::Shutdown()
 {
+    // Temp
+    myMesh->vertices.clear();
+    myMesh->indices.clear();
+    NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
+    // Temp
+
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
     NOUS_VulkanBuffer::DestroyBuffers(vkContext);
@@ -567,7 +581,7 @@ void VulkanBackend::UpdateObject(GeometryRenderData renderData)
     vkCmdBindIndexBuffer(commandBuffer->handle, vkContext->objectIndexBuffer.handle, 0, VK_INDEX_TYPE_UINT32);
 
     // Issue the draw.
-    vkCmdDrawIndexed(commandBuffer->handle, 6, 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer->handle, myMesh->indices.size(), 1, 0, 0, 0);
 
     // TODO: end temporary test code
 }

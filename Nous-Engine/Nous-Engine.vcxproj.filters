@@ -85,6 +85,9 @@
     <Filter Include="Source Code\Resource Management">
       <UniqueIdentifier>{567c033a-37ae-422d-9317-e6961b50ac4b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Externals\Assimp">
+      <UniqueIdentifier>{3f772028-1c06-49e7-b6cc-d97092c6ff3d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -884,6 +887,108 @@
     <ClInclude Include="Source\ModuleScene.h">
       <Filter>Source Code\Modules</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Assimp.h">
+      <Filter>Source Code\Includes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\ai_assert.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\anim.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\camera.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\cexport.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\cfileio.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\cimport.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\color4.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\config.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\DefaultLogger.hpp">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\defs.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\Exporter.hpp">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\Importer.hpp">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\importerdesc.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\IOStream.hpp">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\IOSystem.hpp">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\light.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\Logger.hpp">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\LogStream.hpp">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\material.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\matrix3x3.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\matrix4x4.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\mesh.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\metadata.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\NullLogger.hpp">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\postprocess.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\ProgressHandler.hpp">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\quaternion.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\scene.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\texture.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\types.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\vector2.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\vector3.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Assimp\include\version.h">
+      <Filter>Externals\Assimp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">
@@ -921,6 +1026,27 @@
     </None>
     <None Include="Source\ResourceTypes.inl">
       <Filter>Source Code\Resource Management</Filter>
+    </None>
+    <None Include="Source\External\Assimp\include\color4.inl">
+      <Filter>Externals\Assimp</Filter>
+    </None>
+    <None Include="Source\External\Assimp\include\material.inl">
+      <Filter>Externals\Assimp</Filter>
+    </None>
+    <None Include="Source\External\Assimp\include\matrix3x3.inl">
+      <Filter>Externals\Assimp</Filter>
+    </None>
+    <None Include="Source\External\Assimp\include\matrix4x4.inl">
+      <Filter>Externals\Assimp</Filter>
+    </None>
+    <None Include="Source\External\Assimp\include\quaternion.inl">
+      <Filter>Externals\Assimp</Filter>
+    </None>
+    <None Include="Source\External\Assimp\include\vector2.inl">
+      <Filter>Externals\Assimp</Filter>
+    </None>
+    <None Include="Source\External\Assimp\include\vector3.inl">
+      <Filter>Externals\Assimp</Filter>
     </None>
   </ItemGroup>
 </Project>
