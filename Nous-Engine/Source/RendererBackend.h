@@ -23,16 +23,13 @@ public:
 	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode);
 	void UpdateObject(GeometryRenderData renderData);
 
-	void CreateTexture(const char* path, bool autoRelease, int32 width, int32 height,
+	void CreateTexture(const char* path, int32 width, int32 height,
 		int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture);
 	void DestroyTexture(Texture* texture);
 
 	// -------------------------------------- \\
 
 	uint64 frameNumber;
-
-	// Pointers to default textures.
-	Texture* defaultDiffuse;
 
 private:
 	

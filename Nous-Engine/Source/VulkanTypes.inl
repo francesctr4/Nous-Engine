@@ -158,22 +158,23 @@ struct VulkanDescriptorState
 {
     // One per frame
     uint32 generations[3];
+    uint32 ids[3];
 };
 
-constexpr uint32 VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT = 2;
+constexpr uint32 VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT = 2;
 struct VulkanObjectShaderLocalState 
 {
     // Per frame
     std::array<VkDescriptorSet, 3> descriptorSets;
     // Per descriptor
-    std::array<VulkanDescriptorState, VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT> descriptorStates;
+    std::array<VulkanDescriptorState, VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT> descriptorStates;
 };
 
 // Max number of objects
 constexpr uint32 VULKAN_OBJECT_SHADER_MAX_OBJECT_COUNT = 1024;
 
 constexpr uint32 VULKAN_OBJECT_SHADER_STAGE_COUNT = 2;
-struct VulkanObjectShader 
+struct VulkanMaterialShader 
 {
     // Vertex and Fragment Stages
     std::array<VulkanShaderStage, VULKAN_OBJECT_SHADER_STAGE_COUNT> stages;
@@ -254,7 +255,7 @@ struct VulkanContext
     uint32 currentFrame;
     bool recreatingSwapchain;
 
-    VulkanObjectShader objectShader;
+    VulkanMaterialShader materialShader;
 };
 
 struct VulkanTextureData 

@@ -300,7 +300,7 @@
     <ClCompile Include="Source\ModuleFileSystem.cpp">
       <Filter>Source Code\Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Source\VulkanObjectShader.cpp">
+    <ClCompile Include="Source\VulkanMaterialShader.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanShaderUtils.cpp">
@@ -338,6 +338,9 @@
     </ClCompile>
     <ClCompile Include="Source\EventSystem.cpp">
       <Filter>Source Code\Systems\Event System</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\TextureSystem.cpp">
+      <Filter>Source Code\Systems\Texture System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -878,7 +881,7 @@
     <ClInclude Include="Source\ModuleFileSystem.h">
       <Filter>Source Code\Modules</Filter>
     </ClInclude>
-    <ClInclude Include="Source\VulkanObjectShader.h">
+    <ClInclude Include="Source\VulkanMaterialShader.h">
       <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanShaderUtils.h">
@@ -1018,6 +1021,9 @@
     </ClInclude>
     <ClInclude Include="Source\EventSystem.h">
       <Filter>Source Code\Systems\Event System</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TextureSystem.h">
+      <Filter>Source Code\Systems\Texture System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

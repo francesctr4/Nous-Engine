@@ -254,6 +254,7 @@
     <ClCompile Include="Source\Random.cpp" />
     <ClCompile Include="Source\RendererBackend.cpp" />
     <ClCompile Include="Source\RendererFrontend.cpp" />
+    <ClCompile Include="Source\TextureSystem.cpp" />
     <ClCompile Include="Source\ThreadPool.cpp" />
     <ClCompile Include="Source\RingQueue.cpp" />
     <ClCompile Include="Source\Timer.cpp" />
@@ -265,7 +266,7 @@
     <ClCompile Include="Source\VulkanFramebuffer.cpp" />
     <ClCompile Include="Source\VulkanImage.cpp" />
     <ClCompile Include="Source\VulkanInstance.cpp" />
-    <ClCompile Include="Source\VulkanObjectShader.cpp" />
+    <ClCompile Include="Source\VulkanMaterialShader.cpp" />
     <ClCompile Include="Source\VulkanGraphicsPipeline.cpp" />
     <ClCompile Include="Source\VulkanExternal.cpp" />
     <ClCompile Include="Source\VulkanRenderpass.cpp" />
@@ -478,6 +479,7 @@
     <ClInclude Include="Source\RendererFrontend.h" />
     <ClInclude Include="Source\SDL2.h" />
     <ClInclude Include="Source\STL.h" />
+    <ClInclude Include="Source\TextureSystem.h" />
     <ClInclude Include="Source\ThreadPool.h" />
     <ClInclude Include="Source\TimeManager.h" />
     <ClInclude Include="Source\Timer.h" />
@@ -493,7 +495,7 @@
     <ClInclude Include="Source\VulkanGlobals.h" />
     <ClInclude Include="Source\VulkanImage.h" />
     <ClInclude Include="Source\VulkanInstance.h" />
-    <ClInclude Include="Source\VulkanObjectShader.h" />
+    <ClInclude Include="Source\VulkanMaterialShader.h" />
     <ClInclude Include="Source\VulkanGraphicsPipeline.h" />
     <ClInclude Include="Source\VulkanExternal.h" />
     <ClInclude Include="Source\VulkanRenderpass.h" />

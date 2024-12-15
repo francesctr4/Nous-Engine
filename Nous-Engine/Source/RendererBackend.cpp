@@ -41,8 +41,6 @@ bool RendererBackend::Create(RendererBackendType bType)
         }
     }
 
-    backendInterface->defaultDiffuse = defaultDiffuse;
-
 	return ret;
 }
 
@@ -113,11 +111,11 @@ void RendererBackend::UpdateObject(GeometryRenderData renderData)
     }
 }
 
-void RendererBackend::CreateTexture(const char* path, bool autoRelease, int32 width, int32 height, int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
+void RendererBackend::CreateTexture(const char* path, int32 width, int32 height, int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
 {
     if (backendInterface != nullptr)
     {
-        return backendInterface->CreateTexture(path, autoRelease, width, height, channelCount, pixels, hasTransparency, outTexture);
+        return backendInterface->CreateTexture(path, width, height, channelCount, pixels, hasTransparency, outTexture);
     }
 }
 

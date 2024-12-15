@@ -55,7 +55,18 @@ bool NOUS_FileManager::CopyFile(const std::string& source, const std::string& de
 {
 	try
 	{
-		return std::filesystem::copy_file(source, destination, std::filesystem::copy_options::overwrite_existing);
+		// Check if the destination is a directory
+		std::filesystem::path destinationPath(destination);
+
+		if (std::filesystem::is_directory(destinationPath))
+		{
+			// Append the source file name to the destination directory path
+			std::filesystem::path sourcePath(source);
+			destinationPath /= sourcePath.filename();
+		}
+
+		// Perform the file copy operation
+		return std::filesystem::copy_file(source, destinationPath, std::filesystem::copy_options::overwrite_existing);
 	}
 	catch (const std::filesystem::filesystem_error& e)
 	{

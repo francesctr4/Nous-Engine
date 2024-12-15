@@ -120,7 +120,7 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 		case EventType::DROP_FILE:
 		{
 			// Load up the new texture.
-			ImporterTexture::Import(event.context.c, &rendererFrontend->testDiffuse);
+			ImporterTexture::Import(event.context.c, rendererFrontend->testDiffuse);
 
 			break;
 		}

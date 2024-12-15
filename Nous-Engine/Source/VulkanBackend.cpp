@@ -16,7 +16,7 @@
 #include "VulkanShaderUtils.h"
 
 // Shaders
-#include "VulkanObjectShader.h"
+#include "VulkanMaterialShader.h"
 
 // Temp
 #include "ImporterMesh.h"
@@ -180,16 +180,16 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Vulkan Sync Objects created successfully!");
     }
 
-    // Create Vulkan Object Shader
-    NOUS_DEBUG("Creating Nous Object Shader...");
-    if (!CreateObjectShader(vkContext, defaultDiffuse, &vkContext->objectShader))
+    // Create Vulkan Material Shader
+    NOUS_DEBUG("Creating Nous Material Shader...");
+    if (!CreateMaterialShader(vkContext, &vkContext->materialShader))
     {
-        NOUS_ERROR("Failed to create Nous Object Shader. Shutting the Application.");
+        NOUS_ERROR("Failed to create Nous Material Shader. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Nous Object Shader created successfully!");
+        NOUS_DEBUG("Nous Material Shader created successfully!");
     }
 
     // Create Vulkan Buffers
@@ -256,7 +256,7 @@ bool VulkanBackend::Initialize()
         sizeof(uint32) * myMesh->indices.size(), myMesh->indices.data());
 
     uint32 objectID = 0;
-    if (!AcquireObjectShaderResources(vkContext, &vkContext->objectShader, &objectID)) 
+    if (!AcquireMaterialShaderResources(vkContext, &vkContext->materialShader, &objectID)) 
     {
         NOUS_ERROR("Failed to Acquire Shader Resources.");
         ret = false;
@@ -281,7 +281,7 @@ void VulkanBackend::Shutdown()
 
     NOUS_VulkanBuffer::DestroyBuffers(vkContext);
 
-    DestroyObjectShader(vkContext, &vkContext->objectShader);
+    DestroyMaterialShader(vkContext, &vkContext->materialShader);
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
@@ -560,23 +560,23 @@ void VulkanBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3
 {
     VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
 
-    UseObjectShader(vkContext, &vkContext->objectShader);
+    UseMaterialShader(vkContext, &vkContext->materialShader);
 
-    vkContext->objectShader.globalUBO.projection = projection;
-    vkContext->objectShader.globalUBO.view = view;
+    vkContext->materialShader.globalUBO.projection = projection;
+    vkContext->materialShader.globalUBO.view = view;
 
-    UpdateObjectShaderGlobalState(vkContext, &vkContext->objectShader, vkContext->frameDeltaTime);
+    UpdateMaterialShaderGlobalState(vkContext, &vkContext->materialShader, vkContext->frameDeltaTime);
 }
 
 void VulkanBackend::UpdateObject(GeometryRenderData renderData)
 {
     VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
 
-    UpdateObjectShaderLocalState(vkContext, &vkContext->objectShader, renderData);
+    UpdateMaterialShaderLocalState(vkContext, &vkContext->materialShader, renderData);
 
     // TODO: temporary test code
 
-    UseObjectShader(vkContext, &vkContext->objectShader);
+    UseMaterialShader(vkContext, &vkContext->materialShader);
 
     // Bind vertex buffer at offset.
     VulkanBuffer vertexBuffers[] = { vkContext->objectVertexBuffer };
@@ -596,7 +596,7 @@ void VulkanBackend::UpdateObject(GeometryRenderData renderData)
 // ----------------------------------------------------------------------------------------------- //
 // TEMPORAL //
 
-void VulkanBackend::CreateTexture(const char* path, bool autoRelease, int32 width, int32 height, 
+void VulkanBackend::CreateTexture(const char* path, int32 width, int32 height, 
     int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
 {
     outTexture->width = width;

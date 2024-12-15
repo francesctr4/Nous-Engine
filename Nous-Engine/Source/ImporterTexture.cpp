@@ -1,6 +1,7 @@
 #include "ImporterTexture.h"
 #include "RendererFrontend.h"
 #include "FileHandle.h"
+#include "FileManager.h"
 
 #include "ModuleRenderer3D.h"
 
@@ -48,7 +49,7 @@ bool ImporterTexture::Import(const char* path, Texture* texture)
         }
 
         // Acquire internal texture resources and upload to GPU.
-        External->renderer->rendererFrontend->CreateTexture(path, true, 
+        External->renderer->rendererFrontend->CreateTexture(path, 
             tempTexture.width, tempTexture.height, tempTexture.channelCount,
             data, hasTransparency, &tempTexture);
 
@@ -72,6 +73,10 @@ bool ImporterTexture::Import(const char* path, Texture* texture)
 
         // Clean up data.
         stbi_image_free(data);
+
+        // Save a copy of the texture in both Assets and Library
+        //NOUS_FileManager::CopyFile(path, "Assets/Textures/");
+        //NOUS_FileManager::CopyFile(path, "Library/Textures/");
 
         return true;
     }

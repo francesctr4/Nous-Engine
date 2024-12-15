@@ -1,4 +1,4 @@
-#include "VulkanObjectShader.h"
+#include "VulkanMaterialShader.h"
 #include "VulkanShaderUtils.h"
 #include "VulkanGraphicsPipeline.h"
 #include "VulkanExternal.h"
@@ -8,9 +8,11 @@
 #include "Logger.h"
 #include "MemoryManager.h"
 
-constexpr const char* BUILTIN_OBJECT_SHADER_NAME = "BuiltIn.ObjectShader";
+#include "TextureSystem.h"
 
-bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, VulkanObjectShader* outShader)
+constexpr const char* BUILTIN_MATERIAL_SHADER_NAME = "BuiltIn.MaterialShader";
+
+bool CreateMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* outShader)
 {
 #ifdef _DEBUG
     ExecuteBatchFile("compile-shaders.bat");
@@ -18,17 +20,15 @@ bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, Vulka
 
     bool ret = true;
 
-    outShader->defaultDiffuse = defaultDiffuse;
-
     // Shader module init per stage.
     std::array<std::string, VULKAN_OBJECT_SHADER_STAGE_COUNT> stageTypeStrings = { "vert", "frag" };
     std::array<VkShaderStageFlagBits, VULKAN_OBJECT_SHADER_STAGE_COUNT> stageTypes = { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT };
 
     for (uint32 i = 0; i < VULKAN_OBJECT_SHADER_STAGE_COUNT; ++i)
     {
-        if (!CreateShaderModule(vkContext, BUILTIN_OBJECT_SHADER_NAME, stageTypeStrings[i], stageTypes[i], i, outShader->stages.data()))
+        if (!CreateShaderModule(vkContext, BUILTIN_MATERIAL_SHADER_NAME, stageTypeStrings[i], stageTypes[i], i, outShader->stages.data()))
         {
-            NOUS_ERROR("Unable to create %s shader module for '%s'.", stageTypeStrings[i].c_str(), BUILTIN_OBJECT_SHADER_NAME);
+            NOUS_ERROR("Unable to create %s shader module for '%s'.", stageTypeStrings[i].c_str(), BUILTIN_MATERIAL_SHADER_NAME);
             ret = false;
         }
     }
@@ -70,16 +70,16 @@ bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, Vulka
     // Local/Object Descriptors
     const uint32 LOCAL_SAMPLER_COUNT = 1;
 
-    std::array<VkDescriptorType, VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT> descriptorTypes =
+    std::array<VkDescriptorType, VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT> descriptorTypes =
     {
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,          // Binding 0 - uniform buffer
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  // Binding 1 - Diffuse sampler layout.
     };
 
-    std::array<VkDescriptorSetLayoutBinding, VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT> bindings;
-    MemoryManager::ZeroMemory(&bindings, sizeof(VkDescriptorSetLayoutBinding) * VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT);
+    std::array<VkDescriptorSetLayoutBinding, VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT> bindings;
+    MemoryManager::ZeroMemory(&bindings, sizeof(VkDescriptorSetLayoutBinding) * VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT);
 
-    for (uint32 i = 0; i < VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT; ++i) 
+    for (uint32 i = 0; i < VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT; ++i) 
     {
         bindings[i].binding = i;
         bindings[i].descriptorCount = 1;
@@ -96,7 +96,7 @@ bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, Vulka
     VK_CHECK(vkCreateDescriptorSetLayout(vkContext->device.logicalDevice, &localDescriptorSetLayoutCreateInfo, vkContext->allocator, &outShader->localDescriptorSetLayout));
 
     // Local/Object descriptor pool: Used for object-specific items like diffuse colour
-    std::array<VkDescriptorPoolSize, VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT> localDescriptorPoolSizes;
+    std::array<VkDescriptorPoolSize, VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT> localDescriptorPoolSizes;
 
     // The first section will be used for uniform buffers
     localDescriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -208,7 +208,7 @@ bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, Vulka
     return ret;
 }
 
-void DestroyObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)
+void DestroyMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* shader)
 {
     VkDevice logicalDevice = vkContext->device.logicalDevice;
 
@@ -236,13 +236,13 @@ void DestroyObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)
     }
 }
 
-void UseObjectShader(VulkanContext* vkContext, VulkanObjectShader* shader)
+void UseMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* shader)
 {
     BindGraphicsPipeline(&vkContext->graphicsCommandBuffers[vkContext->imageIndex],
         VK_PIPELINE_BIND_POINT_GRAPHICS, &shader->pipeline);
 }
 
-void UpdateObjectShaderGlobalState(VulkanContext* vkContext, VulkanObjectShader* shader, float deltaTime)
+void UpdateMaterialShaderGlobalState(VulkanContext* vkContext, VulkanMaterialShader* shader, float deltaTime)
 {
     u32 imageIndex = vkContext->imageIndex;
     VkCommandBuffer commandBuffer = vkContext->graphicsCommandBuffers[imageIndex].handle;
@@ -279,7 +279,7 @@ void UpdateObjectShaderGlobalState(VulkanContext* vkContext, VulkanObjectShader*
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->pipeline.pipelineLayout, 0, 1, &globalDescriptorSet, 0, 0);
 }
 
-void UpdateObjectShaderLocalState(VulkanContext* vkContext, VulkanObjectShader* shader, GeometryRenderData renderData)
+void UpdateMaterialShaderLocalState(VulkanContext* vkContext, VulkanMaterialShader* shader, GeometryRenderData renderData)
 {
     uint32 imageIndex = vkContext->imageIndex;
 
@@ -292,7 +292,7 @@ void UpdateObjectShaderLocalState(VulkanContext* vkContext, VulkanObjectShader* 
     VkDescriptorSet objectDescriptorSet = objectState->descriptorSets[imageIndex];
 
     // TODO: if needs update
-    std::array<VkWriteDescriptorSet, VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT> descriptorWrites;
+    std::array<VkWriteDescriptorSet, VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT> descriptorWrites;
     MemoryManager::ZeroMemory(descriptorWrites.data(), sizeof(VkWriteDescriptorSet) * static_cast<uint32>(descriptorWrites.size()));
     uint32 descriptorCount = 0;
     uint32 descriptorIndex = 0;
@@ -349,19 +349,20 @@ void UpdateObjectShaderLocalState(VulkanContext* vkContext, VulkanObjectShader* 
         Texture* texture = renderData.textures[samplerIndex];
 
         uint32* descriptorGeneration = &objectState->descriptorStates[descriptorIndex].generations[imageIndex];
-        
+        uint32* descriptorID = &objectState->descriptorStates[descriptorIndex].ids[imageIndex];
+
         // If the texture hasn't been loaded yet, use the default.
         // TODO: Determine which use the texture has and pull appropriate default based on that.
         if (texture->generation == INVALID_ID) 
         {
-            texture = shader->defaultDiffuse;
+            texture = NOUS_TextureSystem::GetDefaultTexture();
 
             // Reset the descriptor generation if using the default texture.
             *descriptorGeneration = INVALID_ID;
         }
 
         // Check if the descriptor needs updating first.
-        if (texture && (*descriptorGeneration != texture->generation || *descriptorGeneration == INVALID_ID)) 
+        if (texture && (*descriptorID != texture->ID || *descriptorGeneration != texture->generation || *descriptorGeneration == INVALID_ID))
         {
             VulkanTextureData* textureData = (VulkanTextureData*)texture->internalData;
 
@@ -388,6 +389,7 @@ void UpdateObjectShaderLocalState(VulkanContext* vkContext, VulkanObjectShader* 
             if (texture->generation != INVALID_ID) 
             {
                 *descriptorGeneration = texture->generation;
+                *descriptorID = texture->ID;
             }
 
             descriptorIndex++;
@@ -405,7 +407,7 @@ void UpdateObjectShaderLocalState(VulkanContext* vkContext, VulkanObjectShader* 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->pipeline.pipelineLayout, 1, 1, &objectDescriptorSet, 0, 0);
 }
 
-bool AcquireObjectShaderResources(VulkanContext* vkContext, VulkanObjectShader* shader, uint32* outObjectID)
+bool AcquireMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, uint32* outObjectID)
 {
     // TODO: free list
     *outObjectID = shader->localUniformBufferIndex;
@@ -416,11 +418,12 @@ bool AcquireObjectShaderResources(VulkanContext* vkContext, VulkanObjectShader* 
     VulkanObjectShaderLocalState* objectState = &shader->localObjectStates[objectID];
     uint32 descriptorSetCount = static_cast<uint32>(objectState->descriptorSets.size());
 
-    for (uint32 i = 0; i < VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT; ++i)
+    for (uint32 i = 0; i < VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT; ++i)
     {
         for (u32 j = 0; j < descriptorSetCount; ++j)
         {
             objectState->descriptorStates[i].generations[j] = INVALID_ID;
+            objectState->descriptorStates[i].ids[j] = INVALID_ID;
         }
     }
 
@@ -444,7 +447,7 @@ bool AcquireObjectShaderResources(VulkanContext* vkContext, VulkanObjectShader* 
     return true;
 }
 
-void ReleaseObjectShaderResources(VulkanContext* vkContext, VulkanObjectShader* shader, uint32 objectID)
+void ReleaseMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, uint32 objectID)
 {
     VulkanObjectShaderLocalState* objectState = &shader->localObjectStates[objectID];
 
@@ -453,11 +456,12 @@ void ReleaseObjectShaderResources(VulkanContext* vkContext, VulkanObjectShader* 
     // Release object descriptor sets.
     VK_CHECK(vkFreeDescriptorSets(vkContext->device.logicalDevice, shader->localDescriptorPool, descriptorSetCount, objectState->descriptorSets.data()));
 
-    for (uint32 i = 0; i < VULKAN_OBJECT_SHADER_DESCRIPTOR_COUNT; ++i) 
+    for (uint32 i = 0; i < VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT; ++i) 
     {
         for (u32 j = 0; j < descriptorSetCount; ++j)
         {
             objectState->descriptorStates[i].generations[j] = INVALID_ID;
+            objectState->descriptorStates[i].ids[j] = INVALID_ID;
         }
     }
 

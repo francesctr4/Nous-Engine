@@ -62,12 +62,9 @@ struct IRendererBackend
     virtual void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) = 0;
     virtual void UpdateObject(GeometryRenderData renderData) = 0;
 
-    virtual void CreateTexture(const char* path, bool autoRelease, int32 width, int32 height,
+    // ---------------------------------------------------------------------------------------------------- //
+
+    virtual void CreateTexture(const char* path, int32 width, int32 height,
         int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture) = 0;
     virtual void DestroyTexture(Texture* texture) = 0;
-
-    // ---------------------------------------------------------------------------------------------------- //
-    
-    // Pointers to default textures.
-    Texture* defaultDiffuse;
 };
