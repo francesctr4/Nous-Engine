@@ -88,6 +88,9 @@
     <Filter Include="Externals\Assimp">
       <UniqueIdentifier>{3f772028-1c06-49e7-b6cc-d97092c6ff3d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Externals\Parson">
+      <UniqueIdentifier>{526cb4d9-d6e1-4ff1-9a38-d5c41d2ee181}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -311,6 +314,9 @@
     </ClCompile>
     <ClCompile Include="Source\ModuleScene.cpp">
       <Filter>Source Code\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\External\Parson\parson.cpp">
+      <Filter>Externals\Parson</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -988,6 +994,9 @@
     </ClInclude>
     <ClInclude Include="Source\External\Assimp\include\version.h">
       <Filter>Externals\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\External\Parson\parson.h">
+      <Filter>Externals\Parson</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
