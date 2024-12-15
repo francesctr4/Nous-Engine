@@ -64,9 +64,6 @@
     <Filter Include="Source Code\Core\Renderer\Vulkan\Shaders">
       <UniqueIdentifier>{e42060bc-3cdb-478a-8ecf-69804c3914b0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\Importers">
-      <UniqueIdentifier>{9e8975b9-a62c-49b1-9d6e-31c6df4059dd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Code\Core\Camera">
       <UniqueIdentifier>{5fbe1815-501c-4e9c-8e21-a4cbd664aa50}</UniqueIdentifier>
     </Filter>
@@ -111,6 +108,9 @@
     </Filter>
     <Filter Include="Source Code\Systems\Time System\Time Management">
       <UniqueIdentifier>{01d6b9c2-add3-4cd7-95af-8172d197a115}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Resource System\Importers">
+      <UniqueIdentifier>{9e8975b9-a62c-49b1-9d6e-31c6df4059dd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -322,10 +322,10 @@
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterMesh.cpp">
-      <Filter>Source Code\Importers</Filter>
+      <Filter>Source Code\Systems\Resource System\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterTexture.cpp">
-      <Filter>Source Code\Importers</Filter>
+      <Filter>Source Code\Systems\Resource System\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\Camera.cpp">
       <Filter>Source Code\Core\Camera</Filter>
@@ -897,10 +897,10 @@
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterMesh.h">
-      <Filter>Source Code\Importers</Filter>
+      <Filter>Source Code\Systems\Resource System\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterTexture.h">
-      <Filter>Source Code\Importers</Filter>
+      <Filter>Source Code\Systems\Resource System\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\Camera.h">
       <Filter>Source Code\Core\Camera</Filter>
