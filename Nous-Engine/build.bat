@@ -12,6 +12,10 @@ if not exist %VERSIONED_FOLDER% (
     echo Versioned folder already exists.
 )
 
+REM Copy the entire Assets directory
+echo Copying Assets directory to %VERSIONED_FOLDER%...
+xcopy Engine\Assets %VERSIONED_FOLDER%\Assets /E /I /Y
+
 REM Copy the entire Library directory
 echo Copying Library directory to %VERSIONED_FOLDER%...
 xcopy Engine\Library %VERSIONED_FOLDER%\Library /E /I /Y

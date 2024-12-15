@@ -238,7 +238,14 @@ bool VulkanBackend::Initialize()
     std::vector<uint32> indices = { 0, 1, 2, 0, 3, 1 };
 
     myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
-    ImporterMesh::Import("Assets/Models/Viking_Room.fbx", myMesh);
+
+    ImporterMesh::Import("Assets/Models/Cypher_S0_Skelmesh.fbx", myMesh);
+    ImporterMesh::Save("Library/Models/Cypher_S0_Skelmesh.nmesh", *myMesh);
+    
+    NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
+    myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
+
+    ImporterMesh::Load("Library/Models/Cypher_S0_Skelmesh.nmesh", myMesh);
 
     NOUS_VulkanBuffer::UploadDataToBuffer(vkContext, vkContext->device.graphicsCommandPool, 0, 
         vkContext->device.graphicsQueue, &vkContext->objectVertexBuffer, 0,

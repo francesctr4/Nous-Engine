@@ -132,8 +132,8 @@ bool CreateObjectShader(VulkanContext* vkContext, Texture* defaultDiffuse, Vulka
     scissor.extent.height = vkContext->framebufferHeight;
 
     // Attributes
-    VkVertexInputBindingDescription bindingDescription = Vertex::GetBindingDescription();
-    std::array<VkVertexInputAttributeDescription, Vertex::ATTRIBUTE_COUNT> attributeDescriptions = Vertex::GetAttributeDescriptions();
+    VkVertexInputBindingDescription bindingDescription = GetVertexBindingDescription();
+    std::array<VkVertexInputAttributeDescription, Vertex::ATTRIBUTE_COUNT> attributeDescriptions = GetVertexAttributeDescriptions();
 
     // Desciptor set layouts
     const int32 DESCRIPTOR_SET_LAYOUT_COUNT = 2;

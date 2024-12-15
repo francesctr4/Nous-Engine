@@ -2,12 +2,9 @@
 
 #include "RendererTypes.inl" // For Texture Class
 
-struct Texture;
-
 namespace ImporterTexture 
 {
 	bool Import(const char* path, Texture* texture);
-
-	//void Save();
-	//void Load();
+	//bool Save(const char* path, const Texture& texture);
+	//bool Load(const char* path, Texture* texture);
 }

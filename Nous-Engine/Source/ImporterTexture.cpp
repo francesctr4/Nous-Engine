@@ -1,5 +1,6 @@
 #include "ImporterTexture.h"
 #include "RendererFrontend.h"
+#include "FileHandle.h"
 
 #include "ModuleRenderer3D.h"
 
@@ -84,3 +85,17 @@ bool ImporterTexture::Import(const char* path, Texture* texture)
         return false;
     }
 }
+
+//bool ImporterTexture::Save(const char* path, const Texture& texture)
+//{
+//    bool ret = true;
+//
+//    return ret;
+//}
+//
+//bool ImporterTexture::Load(const char* path, Texture* texture)
+//{
+//    bool ret = true;
+//
+//    return ret;
+//}

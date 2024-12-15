@@ -521,6 +521,7 @@
     <None Include="Source\OpenGLTypes.inl" />
     <None Include="Source\RendererTypes.inl" />
     <None Include="Source\ResourceTypes.inl" />
+    <None Include="Source\Vertex.inl" />
     <None Include="Source\VulkanTypes.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,5 +1,7 @@
 #include "ModuleFileSystem.h"
 
+#include "FileManager.h"
+
 ModuleFileSystem::ModuleFileSystem(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -13,12 +15,16 @@ ModuleFileSystem::~ModuleFileSystem()
 bool ModuleFileSystem::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	NOUS_FileManager::CreateDirectory("Library/Models");
+
 	return true;
 }
 
 bool ModuleFileSystem::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
 	return true;
 }
 

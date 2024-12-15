@@ -28,9 +28,6 @@
     <Filter Include="Externals\Tracy">
       <UniqueIdentifier>{46a3a962-8f52-4514-9b74-6c75c4f759f5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\Time Management">
-      <UniqueIdentifier>{01d6b9c2-add3-4cd7-95af-8172d197a115}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Code\Core\Renderer">
       <UniqueIdentifier>{723ab429-44d4-4e44-a10b-220eb3958936}</UniqueIdentifier>
     </Filter>
@@ -67,9 +64,6 @@
     <Filter Include="Source Code\Core\Renderer\Vulkan\Shaders">
       <UniqueIdentifier>{e42060bc-3cdb-478a-8ecf-69804c3914b0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\File System">
-      <UniqueIdentifier>{ff81d40c-a9ac-403a-98b9-985b1512de20}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Code\Importers">
       <UniqueIdentifier>{9e8975b9-a62c-49b1-9d6e-31c6df4059dd}</UniqueIdentifier>
     </Filter>
@@ -82,14 +76,41 @@
     <Filter Include="Externals\stb_image">
       <UniqueIdentifier>{eda1c102-79d6-4228-bc17-f97d72a5e4f4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\Resource Management">
-      <UniqueIdentifier>{567c033a-37ae-422d-9317-e6961b50ac4b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Externals\Assimp">
       <UniqueIdentifier>{3f772028-1c06-49e7-b6cc-d97092c6ff3d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\Parson">
       <UniqueIdentifier>{526cb4d9-d6e1-4ff1-9a38-d5c41d2ee181}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems">
+      <UniqueIdentifier>{17ba76a3-a4ac-475d-b511-3a4a4efdaf87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Texture System">
+      <UniqueIdentifier>{54f19093-9a9f-4d7e-9917-98a9dc2780de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Material System">
+      <UniqueIdentifier>{30805b1e-243d-40c8-a447-2c53c5a63e6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Geometry System">
+      <UniqueIdentifier>{558a9edd-cc83-4a5c-83f4-8729f187c9bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Resource System">
+      <UniqueIdentifier>{620b6683-76cb-47ea-a78a-589380290082}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Time System">
+      <UniqueIdentifier>{ec51bf85-4a11-47e1-aee8-07b4e831a541}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Event System">
+      <UniqueIdentifier>{7379e384-3579-4f19-ba7c-9337a21dd3b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\File System">
+      <UniqueIdentifier>{ff81d40c-a9ac-403a-98b9-985b1512de20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Resource System\Resource Management">
+      <UniqueIdentifier>{567c033a-37ae-422d-9317-e6961b50ac4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Time System\Time Management">
+      <UniqueIdentifier>{01d6b9c2-add3-4cd7-95af-8172d197a115}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -126,11 +147,8 @@
     <ClCompile Include="Source\External\Tracy\TracyClient.cpp">
       <Filter>Externals\Tracy</Filter>
     </ClCompile>
-    <ClCompile Include="Source\EventSystem.cpp">
-      <Filter>Source Code\Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Timer.cpp">
-      <Filter>Source Code\Time Management</Filter>
+      <Filter>Source Code\Systems\Time System\Time Management</Filter>
     </ClCompile>
     <ClCompile Include="Source\RendererBackend.cpp">
       <Filter>Source Code\Core\Renderer</Filter>
@@ -289,10 +307,10 @@
       <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="Source\FileHandle.cpp">
-      <Filter>Source Code\File System</Filter>
+      <Filter>Source Code\Systems\File System</Filter>
     </ClCompile>
     <ClCompile Include="Source\FileManager.cpp">
-      <Filter>Source Code\File System</Filter>
+      <Filter>Source Code\Systems\File System</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanGraphicsPipeline.cpp">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
@@ -317,6 +335,9 @@
     </ClCompile>
     <ClCompile Include="Source\External\Parson\parson.cpp">
       <Filter>Externals\Parson</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\EventSystem.cpp">
+      <Filter>Source Code\Systems\Event System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -596,17 +617,14 @@
     <ClInclude Include="Source\External\Tracy\tracy\Tracy.hpp">
       <Filter>Externals\Tracy</Filter>
     </ClInclude>
-    <ClInclude Include="Source\EventSystem.h">
-      <Filter>Source Code\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Source\DynamicArray.h">
       <Filter>Source Code\Data Structures</Filter>
     </ClInclude>
     <ClInclude Include="Source\TimeManager.h">
-      <Filter>Source Code\Time Management</Filter>
+      <Filter>Source Code\Systems\Time System\Time Management</Filter>
     </ClInclude>
     <ClInclude Include="Source\Timer.h">
-      <Filter>Source Code\Time Management</Filter>
+      <Filter>Source Code\Systems\Time System\Time Management</Filter>
     </ClInclude>
     <ClInclude Include="Source\RendererFrontend.h">
       <Filter>Source Code\Core\Renderer</Filter>
@@ -867,10 +885,10 @@
       <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="Source\FileHandle.h">
-      <Filter>Source Code\File System</Filter>
+      <Filter>Source Code\Systems\File System</Filter>
     </ClInclude>
     <ClInclude Include="Source\FileManager.h">
-      <Filter>Source Code\File System</Filter>
+      <Filter>Source Code\Systems\File System</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanGraphicsPipeline.h">
       <Filter>Source Code\Core\Renderer\Vulkan</Filter>
@@ -998,6 +1016,9 @@
     <ClInclude Include="Source\External\Parson\parson.h">
       <Filter>Externals\Parson</Filter>
     </ClInclude>
+    <ClInclude Include="Source\EventSystem.h">
+      <Filter>Source Code\Systems\Event System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">
@@ -1034,7 +1055,7 @@
       <Filter>Source Code\Core\Renderer\GLSL</Filter>
     </None>
     <None Include="Source\ResourceTypes.inl">
-      <Filter>Source Code\Resource Management</Filter>
+      <Filter>Source Code\Systems\Resource System\Resource Management</Filter>
     </None>
     <None Include="Source\External\Assimp\include\color4.inl">
       <Filter>Externals\Assimp</Filter>
@@ -1056,6 +1077,9 @@
     </None>
     <None Include="Source\External\Assimp\include\vector3.inl">
       <Filter>Externals\Assimp</Filter>
+    </None>
+    <None Include="Source\Vertex.inl">
+      <Filter>Source Code\Systems\Geometry System</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Globals.h"
+#include "Vertex.inl"
 
 struct Texture 
 {
@@ -11,4 +12,10 @@ struct Texture
     bool hasTransparency;
     uint32 generation;
     void* internalData;
+};
+
+struct Mesh
+{
+    std::vector<Vertex> vertices;
+    std::vector<uint32> indices;
 };
