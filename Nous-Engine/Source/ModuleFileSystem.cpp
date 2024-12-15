@@ -17,6 +17,7 @@ bool ModuleFileSystem::Awake()
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	NOUS_FileManager::CreateDirectory("Library/Models");
+	NOUS_FileManager::CreateDirectory("Library/Textures");
 
 	return true;
 }
