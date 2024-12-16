@@ -342,6 +342,9 @@
     <ClCompile Include="Source\TextureSystem.cpp">
       <Filter>Source Code\Systems\Texture System</Filter>
     </ClCompile>
+    <ClCompile Include="Source\JsonFile.cpp">
+      <Filter>Source Code\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1024,6 +1027,9 @@
     </ClInclude>
     <ClInclude Include="Source\TextureSystem.h">
       <Filter>Source Code\Systems\Texture System</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\JsonFile.h">
+      <Filter>Source Code\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

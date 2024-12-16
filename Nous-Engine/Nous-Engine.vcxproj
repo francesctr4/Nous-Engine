@@ -239,6 +239,7 @@
     <ClCompile Include="Source\FileManager.cpp" />
     <ClCompile Include="Source\ImporterMesh.cpp" />
     <ClCompile Include="Source\ImporterTexture.cpp" />
+    <ClCompile Include="Source\JsonFile.cpp" />
     <ClCompile Include="Source\LinearAllocator.cpp" />
     <ClCompile Include="Source\Logger.cpp" />
     <ClCompile Include="Source\Main.cpp" />
@@ -461,6 +462,7 @@
     <ClInclude Include="Source\Globals.h" />
     <ClInclude Include="Source\ImporterMesh.h" />
     <ClInclude Include="Source\ImporterTexture.h" />
+    <ClInclude Include="Source\JsonFile.h" />
     <ClInclude Include="Source\LinearAllocator.h" />
     <ClInclude Include="Source\Logger.h" />
     <ClInclude Include="Source\MathGeoLib.h" />

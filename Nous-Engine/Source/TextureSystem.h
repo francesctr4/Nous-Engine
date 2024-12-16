@@ -12,14 +12,28 @@ namespace NOUS_TextureSystem
 
 	// ------------------------------------------------------------------------------------------------------ //
 
-	bool CreateDefaultTexture();
+	bool CreateDefaultTextures();
 	Texture* GetDefaultTexture();
-	void DestroyDefaultTexture();
+	void DestroyDefaultTextures();
 
 	// ------------------------------------------------------------------------------------------------------ //
 
-	static Texture defaultTexture;
+	struct TextureSystemConfig 
+	{
+		const char* DEFAULT_TEXTURE_NAME = "DefaultTexture";
+		const uint32 MAX_TEXTURE_COUNT = 65536;
+	};
 
-	constexpr const char* DEFAULT_TEXTURE_NAME = "DefaultTexture";
-	constexpr uint32 MAX_TEXTURE_COUNT = 65536;
+	struct TextureSystemState 
+	{
+		TextureSystemConfig config;
+		Texture defaultTexture;
+		// Array of registered textures.
+		Texture* registeredTextures;
+		// Hashtable for texture lookups.
+		//hashtable registered_texture_table;
+	};
+
+	static TextureSystemState texSystemState;
+
 }

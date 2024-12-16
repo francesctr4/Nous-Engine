@@ -8,14 +8,14 @@
 
 bool NOUS_TextureSystem::Initialize()
 {
-	CreateDefaultTexture();
+	CreateDefaultTextures();
 
 	return true;
 }
 
 void NOUS_TextureSystem::Shutdown()
 {
-	DestroyDefaultTexture();
+	DestroyDefaultTextures();
 }
 
 Texture* NOUS_TextureSystem::AcquireTexture(const char* name, bool autoRelease)
@@ -28,7 +28,7 @@ void NOUS_TextureSystem::ReleaseTexture(const char* name)
 
 }
 
-bool NOUS_TextureSystem::CreateDefaultTexture()
+bool NOUS_TextureSystem::CreateDefaultTextures()
 {
 	// NOTE: Create default texture, a 256x256 blue/white checkerboard pattern.
 	// This is done in code to eliminate asset dependencies.
@@ -73,20 +73,20 @@ bool NOUS_TextureSystem::CreateDefaultTexture()
 		}
 	}
 
-	External->renderer->rendererFrontend->CreateTexture(DEFAULT_TEXTURE_NAME, texDimension, texDimension, 4, pixels.data(), false, &defaultTexture);
+	External->renderer->rendererFrontend->CreateTexture(texSystemState.config.DEFAULT_TEXTURE_NAME, texDimension, texDimension, 4, pixels.data(), false, &texSystemState.defaultTexture);
 
 	// Manually set the texture generation to invalid since this is a default texture.
-	defaultTexture.generation = INVALID_ID;
+	texSystemState.defaultTexture.generation = INVALID_ID;
 
 	return true;
 }
 
 Texture* NOUS_TextureSystem::GetDefaultTexture()
 {
-	return &defaultTexture;
+	return &texSystemState.defaultTexture;
 }
 
-void NOUS_TextureSystem::DestroyDefaultTexture()
+void NOUS_TextureSystem::DestroyDefaultTextures()
 {
-	External->renderer->rendererFrontend->DestroyTexture(&defaultTexture);
+	External->renderer->rendererFrontend->DestroyTexture(&texSystemState.defaultTexture);
 }
