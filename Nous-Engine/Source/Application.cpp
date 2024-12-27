@@ -7,6 +7,7 @@
 #include "ModuleCamera3D.h"
 #include "ModuleScene.h"
 #include "ModuleRenderer3D.h"
+#include "ModuleEditor.h"
 
 #include "Logger.h"
 #include "ThreadPool.h"
@@ -37,6 +38,7 @@ Application::Application()
     camera = new ModuleCamera3D(this, "ModuleCamera3D");
     scene = new ModuleScene(this, "ModuleScene");
     renderer = new ModuleRenderer3D(this, "ModuleRenderer3D");
+    editor = new ModuleEditor(this, "ModuleEditor");
 
 	listModules[0] = window;
     listModules[1] = input;
@@ -44,6 +46,7 @@ Application::Application()
     listModules[3] = camera;
     listModules[4] = scene;
     listModules[5] = renderer;
+    listModules[6] = editor;
 }
 
 Application::~Application()

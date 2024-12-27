@@ -1,4 +1,6 @@
 #include "ModuleInput.h"
+#include "ModuleEditor.h"
+
 #include "Logger.h"
 #include "MemoryManager.h"
 
@@ -125,6 +127,8 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
 	{
+		App->editor->ProcessImGuiEvent(&e);
+
 		switch (e.type)
 		{
 			case SDL_KEYDOWN:

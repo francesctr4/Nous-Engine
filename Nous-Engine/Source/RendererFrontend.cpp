@@ -6,6 +6,8 @@
 
 #include "TextureSystem.h"
 
+#include "ModuleEditor.h"
+
 RendererFrontend::RendererFrontend()
 {
 	backend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
@@ -116,6 +118,8 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 
 		// Update the object's transform with the new model matrix.
 		UpdateObject(renderData);
+
+		ModuleEditor::DrawEditor();
 
 		// End of the frame. If this fails, it is likely unrecoverable.
 		bool result = EndFrame(packet->deltaTime);

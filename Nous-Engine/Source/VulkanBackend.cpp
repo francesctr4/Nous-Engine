@@ -475,8 +475,8 @@ bool VulkanBackend::EndFrame(float dt)
         vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
         vkContext->imageIndex);
 
-    //// TODO: Fix problem on class
-    //vkDeviceWaitIdle(vkContext->device.logicalDevice);
+    // TODO: Fix problem on class and ImGui
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
 	return true;
 }
@@ -711,4 +711,9 @@ void VulkanBackend::DestroyTexture(Texture* texture)
     }
     
     MemoryManager::ZeroMemory(texture, sizeof(Texture));
+}
+
+VulkanContext* VulkanBackend::GetVulkanContext()
+{
+    return vkContext;
 }

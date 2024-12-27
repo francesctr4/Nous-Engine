@@ -36,6 +36,8 @@ public:
 
 	void DestroyTexture(Texture* texture) override;
 
+	static VulkanContext* GetVulkanContext();
+
 private:
 
 	static VulkanContext* vkContext;

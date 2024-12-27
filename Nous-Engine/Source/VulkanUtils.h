@@ -3,22 +3,6 @@
 #include "VulkanTypes.inl"
 
 /**
- * @brief Checks the given expression's return value against VK_SUCCESS.
- */
-#define VK_CHECK(expr)					\
-{										\
-	NOUS_ASSERT(expr == VK_SUCCESS);	\
-}										
-
- /**
-  * @brief Checks the given expression's return value against VK_SUCCESS.
-  */
-#define VK_CHECK_MSG(expr, message)					\
-{													\
-	NOUS_ASSERT_MSG(expr == VK_SUCCESS, message);	\
-}	
-
-/**
  * Returns the string representation of result.
  * @param result The result to get the string for.
  * @param extended Indicates whether to also return an extended result.
@@ -31,3 +15,32 @@ std::string VkResultMessage(VkResult result, bool extended);
  * @returns True if success; otherwise false. Defaults to true for unknown result types.
  */
 bool VkResultIsSuccess(VkResult result);
+
+/**
+ * @brief Checks the given expression's return value against VK_SUCCESS.
+ */
+#define VK_CHECK(expr)					\
+{										\
+	NOUS_ASSERT(expr == VK_SUCCESS);	\
+}	
+
+ /**
+  * @brief Checks the given expression's return value against VK_SUCCESS.
+  */
+static void VK_CHECK_IMGUI(VkResult expr)
+{
+	if (expr != VK_SUCCESS) 
+	{
+		NOUS_FATAL(VkResultMessage(expr, true).c_str());
+	}
+
+	NOUS_ASSERT(expr == VK_SUCCESS);
+}
+
+ /**
+  * @brief Checks the given expression's return value against VK_SUCCESS.
+  */
+#define VK_CHECK_MSG(expr, message)					\
+{													\
+	NOUS_ASSERT_MSG(expr == VK_SUCCESS, message);	\
+}	
