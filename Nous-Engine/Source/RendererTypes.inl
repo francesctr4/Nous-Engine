@@ -39,6 +39,8 @@ struct GeometryRenderData
 
 enum class RendererBackendType
 {
+    UNKNOWN = -1,
+
     VULKAN,
     OPENGL,
     DIRECTX

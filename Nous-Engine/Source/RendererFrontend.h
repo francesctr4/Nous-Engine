@@ -11,7 +11,7 @@ public:
 	RendererFrontend();
 	virtual ~RendererFrontend();
 
-	bool Initialize();
+	bool Initialize(RendererBackendType backendType);
 	void Shutdown();
 
 	void OnResized(uint16 width, uint16 height);
@@ -35,6 +35,7 @@ public:
 	// TODO: temporary
 	Texture* testDiffuse;
 	// TODO: end temporary
+	RendererBackendType backendType;
 
 private:
 

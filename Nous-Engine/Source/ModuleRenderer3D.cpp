@@ -31,7 +31,9 @@ bool ModuleRenderer3D::Awake()
 
 	bool ret = true;
 
-	if (!rendererFrontend->Initialize()) 
+	rendererFrontend->backendType = RendererBackendType::VULKAN;
+
+	if (!rendererFrontend->Initialize(rendererFrontend->backendType))
 	{
 		NOUS_FATAL("Failed to initialize renderer. Aborting application.");
 		ret = false;

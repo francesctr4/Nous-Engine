@@ -4,6 +4,7 @@
 #include "External/ImGui/imgui.h"
 #include "External/ImGui/backends/imgui_impl_sdl2.h"
 #include "External/ImGui/backends/imgui_impl_vulkan.h"
+#include "RendererTypes.inl"
 
 union SDL_Event;
 struct VulkanContext;
@@ -19,21 +20,20 @@ public:
 	virtual ~ModuleEditor();
 
 	bool Awake() override;
-	bool Start() override;
-
-	UpdateStatus PreUpdate(float dt) override;
-	UpdateStatus Update(float dt) override;
-	UpdateStatus PostUpdate(float dt) override;
-
 	bool CleanUp() override;
 
-	void ReceiveEvent(const Event& event) override;
+	void ProcessInputEvent(const SDL_Event* event);
+	void DrawEditor();
 
-	void ProcessImGuiEvent(const SDL_Event* event);
-	void ImGuiNewFrame();
+private:
 
-	static void InitFrame();
-	static void DrawEditor();
+	RendererBackendType currentBackendType;
+
+	void InitFrame(RendererBackendType backendType);
+	void InternalDrawEditor();
+	void EndFrame(RendererBackendType backendType);
+
+	// Vulkan Specific
 	static VulkanContext* GetVulkanContext();
-	static void EndFrame(VkCommandBuffer commandBuffer);
+
 };

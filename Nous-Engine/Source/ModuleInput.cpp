@@ -127,7 +127,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
 	{
-		App->editor->ProcessImGuiEvent(&e);
+		App->editor->ProcessInputEvent(&e);
 
 		switch (e.type)
 		{

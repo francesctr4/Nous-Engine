@@ -10,6 +10,7 @@
 
 RendererFrontend::RendererFrontend()
 {
+	backendType = RendererBackendType::UNKNOWN;
 	backend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
 
 	testDiffuse = nullptr;
@@ -20,12 +21,14 @@ RendererFrontend::~RendererFrontend()
 	NOUS_DELETE(backend, MemoryManager::MemoryTag::RENDERER);
 }
 
-bool RendererFrontend::Initialize()
+bool RendererFrontend::Initialize(RendererBackendType backendType)
 {
 	bool ret = true;
 
+	this->backendType = backendType;
+
 	// TODO: Make this configurable
-	backend->Create(RendererBackendType::VULKAN);
+	backend->Create(backendType);
 	backend->frameNumber = 0;
 
 	if (!backend->Initalize()) 
@@ -119,7 +122,7 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 		// Update the object's transform with the new model matrix.
 		UpdateObject(renderData);
 
-		ModuleEditor::DrawEditor();
+		External->editor->DrawEditor();
 
 		// End of the frame. If this fails, it is likely unrecoverable.
 		bool result = EndFrame(packet->deltaTime);
