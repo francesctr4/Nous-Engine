@@ -34,6 +34,14 @@ if exist x64\Release\Nous-Engine.exe (
     echo Nous-Engine.exe not found, skipping...
 )
 
+REM Copy imgui.ini if it exists
+if exist Engine\imgui.ini (
+    echo Copying imgui.ini to %VERSIONED_FOLDER%...
+    copy Engine\imgui.ini %VERSIONED_FOLDER%\
+) else (
+    echo imgui.ini not found, skipping...
+)
+
 REM Create a zip file of the Nous-Engine-v0.1 folder
 echo Creating zip file: %ZIP_FILE%...
 powershell -Command ^
