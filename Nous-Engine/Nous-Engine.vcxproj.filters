@@ -118,6 +118,9 @@
     <Filter Include="Externals\ImGui\backends">
       <UniqueIdentifier>{8c755ed2-a15e-4199-ab6e-2ebe2aa78d29}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\Editor">
+      <UniqueIdentifier>{3d0e3cb1-c11f-4b51-818a-1bf8d910c256}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -380,6 +383,12 @@
     </ClCompile>
     <ClCompile Include="Source\External\ImGui\backends\imgui_impl_win32.cpp">
       <Filter>Externals\ImGui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Properties.cpp">
+      <Filter>Source Code\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Assets.cpp">
+      <Filter>Source Code\Editor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1103,6 +1112,12 @@
     <ClInclude Include="Source\ImGui.h">
       <Filter>Source Code\Includes</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Properties.h">
+      <Filter>Source Code\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Assets.h">
+      <Filter>Source Code\Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">
@@ -1164,6 +1179,9 @@
     </None>
     <None Include="Source\Vertex.inl">
       <Filter>Source Code\Systems\Geometry System</Filter>
+    </None>
+    <None Include="Source\IEditorWindow.inl">
+      <Filter>Source Code\Editor</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -7,13 +7,23 @@
 #include "VulkanExternal.h"
 #include "VulkanUtils.h"
 
-#include "ImGui.h"
+#include "IEditorWindow.inl"
+
+#pragma region EDITOR WINDOWS
+
+#include "Properties.h"
+#include "Assets.h"
+
+#pragma endregion
 
 ModuleEditor::ModuleEditor(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	currentBackendType = RendererBackendType::UNKNOWN;
+
+	AddEditorWindow(std::make_unique<Properties>());
+	AddEditorWindow(std::make_unique<Assets>());
 }
 
 ModuleEditor::~ModuleEditor()
@@ -43,6 +53,7 @@ bool ModuleEditor::Awake()
 
 			// Setup Platform/Renderer backends
 			ImGui_ImplSDL2_InitForVulkan(GetSDLWindowData());
+
 			ImGui_ImplVulkan_InitInfo imGuiVulkanInitInfo{};
 
 			imGuiVulkanInitInfo.Allocator = vkContext->allocator;
@@ -63,7 +74,6 @@ bool ModuleEditor::Awake()
 
 			break;
 		}
-
 		case RendererBackendType::OPENGL:
 		{
 
@@ -167,6 +177,11 @@ void ModuleEditor::InitFrame(RendererBackendType backendType)
 void ModuleEditor::InternalDrawEditor()
 {
 	ImGui::ShowDemoWindow();
+
+	for (auto& w : editorWindows) 
+	{
+		w->Draw();
+	}
 }
 
 void ModuleEditor::EndFrame(RendererBackendType backendType)
@@ -204,4 +219,9 @@ void ModuleEditor::EndFrame(RendererBackendType backendType)
 VulkanContext* ModuleEditor::GetVulkanContext()
 {
 	return VulkanBackend::GetVulkanContext();
+}
+
+void ModuleEditor::AddEditorWindow(std::unique_ptr<IEditorWindow> editorWindow)
+{
+	editorWindows.emplace_back(std::move(editorWindow));
 }

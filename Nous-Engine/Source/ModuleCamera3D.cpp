@@ -16,6 +16,9 @@ ModuleCamera3D::~ModuleCamera3D()
 bool ModuleCamera3D::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	camera.SetPos(-100, 100, 300);
+
 	return true;
 }
 

@@ -5,6 +5,7 @@
 union SDL_Event;
 struct VulkanContext;
 enum class RendererBackendType;
+struct IEditorWindow;
 
 class ModuleEditor : public Module
 {
@@ -31,8 +32,12 @@ private:
 	// Vulkan Specific
 	static VulkanContext* GetVulkanContext();
 
+	void AddEditorWindow(std::unique_ptr<IEditorWindow> editorWindow);
+
 private:
 
 	RendererBackendType currentBackendType;
+
+	std::vector<std::unique_ptr<IEditorWindow>> editorWindows;
 
 };

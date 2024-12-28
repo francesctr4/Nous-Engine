@@ -199,6 +199,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Application.cpp" />
+    <ClCompile Include="Source\Assets.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\EventSystem.cpp" />
     <ClCompile Include="Source\External\ImGui\backends\imgui_impl_sdl2.cpp" />
@@ -262,6 +263,7 @@
     <ClCompile Include="Source\ModuleWindow.cpp" />
     <ClCompile Include="Source\MemoryManager.cpp" />
     <ClCompile Include="Source\OpenGLBackend.cpp" />
+    <ClCompile Include="Source\Properties.cpp" />
     <ClCompile Include="Source\Random.cpp" />
     <ClCompile Include="Source\RendererBackend.cpp" />
     <ClCompile Include="Source\RendererFrontend.cpp" />
@@ -289,9 +291,11 @@
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Asserts.h" />
+    <ClInclude Include="Source\Assets.h" />
     <ClInclude Include="Source\Assimp.h" />
     <ClInclude Include="Source\Camera.h" />
     <ClInclude Include="Source\DynamicArray.h" />
+    <ClInclude Include="Source\Properties.h" />
     <ClInclude Include="Source\EventSystem.h" />
     <ClInclude Include="Source\External\Assimp\include\ai_assert.h" />
     <ClInclude Include="Source\External\Assimp\include\anim.h" />
@@ -531,6 +535,7 @@
   <ItemGroup>
     <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.frag.glsl" />
     <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.vert.glsl" />
+    <None Include="Source\IEditorWindow.inl" />
     <None Include="Source\External\Assimp\include\color4.inl" />
     <None Include="Source\External\Assimp\include\material.inl" />
     <None Include="Source\External\Assimp\include\matrix3x3.inl" />

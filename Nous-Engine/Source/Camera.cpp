@@ -3,7 +3,7 @@
 Camera::Camera()
 {
 	frustum.type = FrustumType::PerspectiveFrustum;
-	frustum.pos = float3(0,0,20);
+	frustum.pos = float3(0,0,0);
 	frustum.front = -float3::unitZ;
 	frustum.up = float3::unitY;
 
