@@ -1,10 +1,13 @@
 #include "ModuleEditor.h"
+
 #include "ModuleRenderer3D.h"
 #include "RendererFrontend.h"
 
 #include "VulkanBackend.h"
 #include "VulkanExternal.h"
 #include "VulkanUtils.h"
+
+#include "ImGui.h"
 
 ModuleEditor::ModuleEditor(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {

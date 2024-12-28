@@ -1,13 +1,10 @@
 #pragma once
 
 #include "Module.h"
-#include "External/ImGui/imgui.h"
-#include "External/ImGui/backends/imgui_impl_sdl2.h"
-#include "External/ImGui/backends/imgui_impl_vulkan.h"
-#include "RendererTypes.inl"
 
 union SDL_Event;
 struct VulkanContext;
+enum class RendererBackendType;
 
 class ModuleEditor : public Module
 {
@@ -27,13 +24,15 @@ public:
 
 private:
 
-	RendererBackendType currentBackendType;
-
 	void InitFrame(RendererBackendType backendType);
 	void InternalDrawEditor();
 	void EndFrame(RendererBackendType backendType);
 
 	// Vulkan Specific
 	static VulkanContext* GetVulkanContext();
+
+private:
+
+	RendererBackendType currentBackendType;
 
 };

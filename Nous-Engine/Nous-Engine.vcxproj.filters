@@ -1100,6 +1100,9 @@
     <ClInclude Include="Source\External\ImGui\backends\imgui_impl_win32.h">
       <Filter>Externals\ImGui\backends</Filter>
     </ClInclude>
+    <ClInclude Include="Source\ImGui.h">
+      <Filter>Source Code\Includes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">

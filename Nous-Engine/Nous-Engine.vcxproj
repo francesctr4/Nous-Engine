@@ -480,6 +480,7 @@
     <ClInclude Include="Source\FileHandle.h" />
     <ClInclude Include="Source\FileManager.h" />
     <ClInclude Include="Source\Globals.h" />
+    <ClInclude Include="Source\ImGui.h" />
     <ClInclude Include="Source\ImporterMesh.h" />
     <ClInclude Include="Source\ImporterTexture.h" />
     <ClInclude Include="Source\JsonFile.h" />
