@@ -121,6 +121,12 @@
     <Filter Include="Source Code\Editor">
       <UniqueIdentifier>{3d0e3cb1-c11f-4b51-818a-1bf8d910c256}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\Editor\ImGuiConfig">
+      <UniqueIdentifier>{7a26ecf6-20ec-4b23-b8a2-10e465ff468e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Editor\Windows">
+      <UniqueIdentifier>{7048ff98-1141-4095-816b-aa89af94dd3c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -384,11 +390,20 @@
     <ClCompile Include="Source\External\ImGui\backends\imgui_impl_win32.cpp">
       <Filter>Externals\ImGui\backends</Filter>
     </ClCompile>
+    <ClCompile Include="Source\ImGuiCustom.cpp">
+      <Filter>Source Code\Editor\ImGuiConfig</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Properties.cpp">
-      <Filter>Source Code\Editor</Filter>
+      <Filter>Source Code\Editor\Windows</Filter>
     </ClCompile>
     <ClCompile Include="Source\Assets.cpp">
-      <Filter>Source Code\Editor</Filter>
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AssetsBrowser.cpp">
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\MainMenuBar.cpp">
+      <Filter>Source Code\Editor\Windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1112,11 +1127,20 @@
     <ClInclude Include="Source\ImGui.h">
       <Filter>Source Code\Includes</Filter>
     </ClInclude>
+    <ClInclude Include="Source\ImGuiCustom.h">
+      <Filter>Source Code\Editor\ImGuiConfig</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Properties.h">
-      <Filter>Source Code\Editor</Filter>
+      <Filter>Source Code\Editor\Windows</Filter>
     </ClInclude>
     <ClInclude Include="Source\Assets.h">
-      <Filter>Source Code\Editor</Filter>
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\AssetsBrowser.h">
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\MainMenuBar.h">
+      <Filter>Source Code\Editor\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

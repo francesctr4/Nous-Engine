@@ -102,9 +102,9 @@ void ModuleCamera3D::ReceiveEvent(const Event& event)
 	}
 }
 
-const Camera& ModuleCamera3D::GetCamera() const
+Camera* ModuleCamera3D::GetCamera()
 {
-	return camera;
+	return &camera;
 }
 
 void ModuleCamera3D::HandleCameraMovement(float3& newPos, const float& speed)

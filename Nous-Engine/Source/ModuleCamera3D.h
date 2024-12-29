@@ -21,7 +21,7 @@ public:
 
 	void ReceiveEvent(const Event& event) override;
 
-	const Camera& GetCamera() const;
+	Camera* GetCamera();
 
 private:
 

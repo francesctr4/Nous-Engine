@@ -200,6 +200,7 @@
   <ItemGroup>
     <ClCompile Include="Source\Application.cpp" />
     <ClCompile Include="Source\Assets.cpp" />
+    <ClCompile Include="Source\AssetsBrowser.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\EventSystem.cpp" />
     <ClCompile Include="Source\External\ImGui\backends\imgui_impl_sdl2.cpp" />
@@ -247,12 +248,14 @@
     <ClCompile Include="Source\External\Tracy\TracyClient.cpp" />
     <ClCompile Include="Source\FileHandle.cpp" />
     <ClCompile Include="Source\FileManager.cpp" />
+    <ClCompile Include="Source\ImGuiCustom.cpp" />
     <ClCompile Include="Source\ImporterMesh.cpp" />
     <ClCompile Include="Source\ImporterTexture.cpp" />
     <ClCompile Include="Source\JsonFile.cpp" />
     <ClCompile Include="Source\LinearAllocator.cpp" />
     <ClCompile Include="Source\Logger.cpp" />
     <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\MainMenuBar.cpp" />
     <ClCompile Include="Source\Module.cpp" />
     <ClCompile Include="Source\ModuleCamera3D.cpp" />
     <ClCompile Include="Source\ModuleEditor.cpp" />
@@ -292,9 +295,12 @@
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Asserts.h" />
     <ClInclude Include="Source\Assets.h" />
+    <ClInclude Include="Source\AssetsBrowser.h" />
     <ClInclude Include="Source\Assimp.h" />
     <ClInclude Include="Source\Camera.h" />
     <ClInclude Include="Source\DynamicArray.h" />
+    <ClInclude Include="Source\ImGuiCustom.h" />
+    <ClInclude Include="Source\MainMenuBar.h" />
     <ClInclude Include="Source\Properties.h" />
     <ClInclude Include="Source\EventSystem.h" />
     <ClInclude Include="Source\External\Assimp\include\ai_assert.h" />

@@ -1,9 +1,16 @@
 #include "Properties.h"
 
+Properties::Properties(const char* title, bool start_open) 
+    : IEditorWindow(title, nullptr, start_open) {}
+
 void Properties::Draw()
 {
-    ImGui::Begin("Properties");
-    ImGui::Text("Here are the properties.");
-    // Add more UI elements as needed
-    ImGui::End();
+    if (*p_open) 
+    { 
+        if (ImGui::Begin(title, p_open)) 
+        {
+            ImGui::Text("Properties content here...");
+        }
+        ImGui::End();
+    }
 }

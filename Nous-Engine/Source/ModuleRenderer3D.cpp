@@ -71,7 +71,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	RenderPacket packet;
 
 	packet.deltaTime = dt;
-	packet.camera = App->camera->GetCamera();
+	packet.camera = *App->camera->GetCamera();
 
 	if (!App->isMinimized)
 	{
