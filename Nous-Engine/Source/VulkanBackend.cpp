@@ -255,13 +255,6 @@ bool VulkanBackend::Initialize()
         vkContext->device.graphicsQueue, &vkContext->objectIndexBuffer, 0,
         sizeof(uint32) * myMesh->indices.size(), myMesh->indices.data());
 
-    uint32 objectID = 0;
-    if (!AcquireMaterialShaderResources(vkContext, &vkContext->materialShader, &objectID)) 
-    {
-        NOUS_ERROR("Failed to Acquire Shader Resources.");
-        ret = false;
-    }
-
     // TODO: End Temp Test Code //
 
 #pragma endregion
@@ -568,11 +561,11 @@ void VulkanBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3
     UpdateMaterialShaderGlobalState(vkContext, &vkContext->materialShader, vkContext->frameDeltaTime);
 }
 
-void VulkanBackend::UpdateObject(GeometryRenderData renderData)
+void VulkanBackend::DrawGeometry(GeometryRenderData renderData)
 {
     VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
 
-    UpdateMaterialShaderLocalState(vkContext, &vkContext->materialShader, renderData);
+    UpdateMaterialShaderObjectState(vkContext, &vkContext->materialShader, renderData);
 
     // TODO: temporary test code
 
@@ -596,21 +589,15 @@ void VulkanBackend::UpdateObject(GeometryRenderData renderData)
 // ----------------------------------------------------------------------------------------------- //
 // TEMPORAL //
 
-void VulkanBackend::CreateTexture(const char* path, int32 width, int32 height, 
-    int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
+void VulkanBackend::CreateTexture(const uint8* pixels, Texture* texture)
 {
-    outTexture->width = width;
-    outTexture->height = height;
-    outTexture->channelCount = channelCount;
-    outTexture->generation = INVALID_ID;
-
     // Internal data creation.
     // TODO: Use an allocator for this.
-    outTexture->internalData = reinterpret_cast<VulkanTextureData*>(
+    texture->internalData = reinterpret_cast<VulkanTextureData*>(
         MemoryManager::Allocate(sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE));
 
-    VulkanTextureData* textureData = (VulkanTextureData*)outTexture->internalData;
-    VkDeviceSize imageSize = width * height * channelCount;
+    VulkanTextureData* textureData = (VulkanTextureData*)texture->internalData;
+    VkDeviceSize imageSize = texture->width * texture->height * texture->channelCount;
 
     // NOTE: Assumes 8 bits per channel.
     VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM; // RGBA
@@ -625,7 +612,7 @@ void VulkanBackend::CreateTexture(const char* path, int32 width, int32 height,
 
     // NOTE: Lots of assumptions here, different texture types will require
     // different options here.
-    CreateVulkanImage(vkContext, VK_IMAGE_TYPE_2D, width, height, 1, VK_SAMPLE_COUNT_1_BIT, imageFormat,
+    CreateVulkanImage(vkContext, VK_IMAGE_TYPE_2D, texture->width, texture->height, 1, VK_SAMPLE_COUNT_1_BIT, imageFormat,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -689,8 +676,7 @@ void VulkanBackend::CreateTexture(const char* path, int32 width, int32 height,
         return;
     }
 
-    outTexture->hasTransparency = hasTransparency;
-    outTexture->generation++;
+    texture->generation++;
 }
 
 void VulkanBackend::DestroyTexture(Texture* texture)
@@ -711,6 +697,53 @@ void VulkanBackend::DestroyTexture(Texture* texture)
     }
     
     MemoryManager::ZeroMemory(texture, sizeof(Texture));
+}
+
+bool VulkanBackend::CreateMaterial(Material* material)
+{
+    if (material) 
+    {
+        if (!AcquireMaterialShaderResources(vkContext, &vkContext->materialShader, material))
+        {
+            NOUS_ERROR("VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
+            return false;
+        }
+
+        NOUS_TRACE("Renderer: Material created.");
+        return true;
+    }
+
+    NOUS_ERROR("VulkanBackend::CreateMaterial() called with nullptr. Creation failed.");
+    return false;
+}
+
+void VulkanBackend::DestroyMaterial(Material* material)
+{
+    if (material) 
+    {
+        if (material->internalID != INVALID_ID) 
+        {
+            ReleaseMaterialShaderResources(vkContext, &vkContext->materialShader, material);
+        }
+        else 
+        {
+            NOUS_WARN("VulkanBackend::DestroyMaterial() called with internal_id = INVALID_ID. Nothing was done.");
+        }
+    }
+    else 
+    {
+        NOUS_WARN("VulkanBackend::DestroyMaterial() called with nullptr. Nothing was done.");
+    }
+}
+
+bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* geometry)
+{
+    return false;
+}
+
+void VulkanBackend::DestroyGeometry(Geometry* geometry)
+{
+
 }
 
 VulkanContext* VulkanBackend::GetVulkanContext()

@@ -28,14 +28,14 @@ bool ModuleFileSystem::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	JsonFile jsonFile;
+	//JsonFile jsonFile;
 
-	jsonFile.AppendValue("version", 0.1f);
-	jsonFile.AppendValue("name", "test_material");
-	jsonFile.AppendValue("diffuse_color", float4(1.54f,1.0f,1.0f,1.0f));
-	jsonFile.AppendValue("diffuse_map_name", "paving");
+	//jsonFile.AppendValue("version", "0.1");
+	//jsonFile.AppendValue("name", "test_material");
+	//jsonFile.AppendValue("diffuse_color", float4(1.54f,1.0f,1.0f,1.0f));
+	//jsonFile.AppendValue("diffuse_map_name", "paving");
 
-	jsonFile.SaveToFile("Library/test.json");
+	//jsonFile.SaveToFile("Library/test.json");
 
 	return true;
 }

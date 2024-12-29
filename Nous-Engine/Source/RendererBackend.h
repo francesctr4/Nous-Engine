@@ -21,11 +21,16 @@ public:
 	bool EndFrame(float dt);
 
 	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode);
-	void UpdateObject(GeometryRenderData renderData);
+	void DrawGeometry(GeometryRenderData renderData);
 
-	void CreateTexture(const char* path, int32 width, int32 height,
-		int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture);
+	void CreateTexture(const uint8* pixels, Texture* outTexture);
 	void DestroyTexture(Texture* texture);
+
+	bool CreateMaterial(Material* material);
+	void DestroyMaterial(Material* material);
+
+	bool CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* outGeometry);
+	void DestroyGeometry(Geometry* geometry);
 
 	// -------------------------------------- \\
 

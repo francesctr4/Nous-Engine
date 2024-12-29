@@ -34,6 +34,6 @@ namespace NOUS_TextureSystem
 		//hashtable registered_texture_table;
 	};
 
-	static TextureSystemState texSystemState;
+	static TextureSystemState state;
 
 }

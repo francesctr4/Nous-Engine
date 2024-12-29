@@ -29,7 +29,7 @@ bool RendererBackend::Create(RendererBackendType bType)
         } 
         case RendererBackendType::OPENGL: 
         {
-            backendInterface = NOUS_NEW<OpenGLBackend>(MemoryManager::MemoryTag::RENDERER);
+            //backendInterface = NOUS_NEW<OpenGLBackend>(MemoryManager::MemoryTag::RENDERER);
             ret = true;
             break;
         }
@@ -103,19 +103,19 @@ void RendererBackend::UpdateGlobalState(float4x4 projection, float4x4 view, floa
     }
 }
 
-void RendererBackend::UpdateObject(GeometryRenderData renderData)
+void RendererBackend::DrawGeometry(GeometryRenderData renderData)
 {
     if (backendInterface != nullptr)
     {
-        return backendInterface->UpdateObject(renderData);
+        return backendInterface->DrawGeometry(renderData);
     }
 }
 
-void RendererBackend::CreateTexture(const char* path, int32 width, int32 height, int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
+void RendererBackend::CreateTexture(const uint8* pixels, Texture* outTexture)
 {
     if (backendInterface != nullptr)
     {
-        return backendInterface->CreateTexture(path, width, height, channelCount, pixels, hasTransparency, outTexture);
+        return backendInterface->CreateTexture(pixels, outTexture);
     }
 }
 
@@ -124,5 +124,37 @@ void RendererBackend::DestroyTexture(Texture* texture)
     if (backendInterface != nullptr)
     {
         return backendInterface->DestroyTexture(texture);
+    }
+}
+
+bool RendererBackend::CreateMaterial(Material* material)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->CreateMaterial(material);
+    }
+}
+
+void RendererBackend::DestroyMaterial(Material* material)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->DestroyMaterial(material);
+    }
+}
+
+bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* outGeometry)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
+    }
+}
+
+void RendererBackend::DestroyGeometry(Geometry* geometry)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->DestroyGeometry(geometry);
     }
 }

@@ -49,9 +49,7 @@ bool ImporterTexture::Import(const char* path, Texture* texture)
         }
 
         // Acquire internal texture resources and upload to GPU.
-        External->renderer->rendererFrontend->CreateTexture(path, 
-            tempTexture.width, tempTexture.height, tempTexture.channelCount,
-            data, hasTransparency, &tempTexture);
+        External->renderer->rendererFrontend->CreateTexture(data, &tempTexture);
 
         // Take a copy of the old texture.
         Texture old = *texture;

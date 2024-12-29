@@ -73,20 +73,25 @@ bool NOUS_TextureSystem::CreateDefaultTextures()
 		}
 	}
 
-	External->renderer->rendererFrontend->CreateTexture(texSystemState.config.DEFAULT_TEXTURE_NAME, texDimension, texDimension, 4, pixels.data(), false, &texSystemState.defaultTexture);
+	state.defaultTexture.name = state.config.DEFAULT_TEXTURE_NAME;
+	state.defaultTexture.width = texDimension;
+	state.defaultTexture.height = texDimension;
+	state.defaultTexture.channelCount = 4;
+
+	External->renderer->rendererFrontend->CreateTexture(pixels.data(), &state.defaultTexture);
 
 	// Manually set the texture generation to invalid since this is a default texture.
-	texSystemState.defaultTexture.generation = INVALID_ID;
+	state.defaultTexture.generation = INVALID_ID;
 
 	return true;
 }
 
 Texture* NOUS_TextureSystem::GetDefaultTexture()
 {
-	return &texSystemState.defaultTexture;
+	return &state.defaultTexture;
 }
 
 void NOUS_TextureSystem::DestroyDefaultTextures()
 {
-	External->renderer->rendererFrontend->DestroyTexture(&texSystemState.defaultTexture);
+	External->renderer->rendererFrontend->DestroyTexture(&state.defaultTexture);
 }

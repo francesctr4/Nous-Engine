@@ -162,7 +162,9 @@ struct VulkanDescriptorState
 };
 
 constexpr uint32 VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT = 2;
-struct VulkanObjectShaderLocalState 
+constexpr uint32 VULKAN_MATERIAL_SHADER_SAMPLER_COUNT = 1;
+
+struct VulkanMaterialShaderInstanceState 
 {
     // Per frame
     std::array<VkDescriptorSet, 3> descriptorSets;
@@ -170,14 +172,35 @@ struct VulkanObjectShaderLocalState
     std::array<VulkanDescriptorState, VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT> descriptorStates;
 };
 
-// Max number of objects
-constexpr uint32 VULKAN_OBJECT_SHADER_MAX_OBJECT_COUNT = 1024;
+// Max number of material instances
+// TODO: make configurable
+constexpr uint32 VULKAN_MAX_MATERIAL_COUNT = 1024;
 
-constexpr uint32 VULKAN_OBJECT_SHADER_STAGE_COUNT = 2;
+// Max number of simultaneously uploaded geometries
+// TODO: make configurable
+constexpr uint32 VULKAN_MAX_GEOMETRY_COUNT = 4096;
+/**
+ * @brief Internal buffer data for geometry.
+ */
+struct VulkanGeometryData 
+{
+    uint32 ID;
+    uint32 generation;
+
+    uint32 vertexCount;
+    uint32 vertexSize;
+    uint32 vertexBufferOffset;
+
+    uint32 indexCount;
+    uint32 indexSize;
+    uint32 indexBufferOffset;
+};
+
+constexpr uint32 VULKAN_MATERIAL_SHADER_STAGE_COUNT = 2;
 struct VulkanMaterialShader 
 {
     // Vertex and Fragment Stages
-    std::array<VulkanShaderStage, VULKAN_OBJECT_SHADER_STAGE_COUNT> stages;
+    std::array<VulkanShaderStage, VULKAN_MATERIAL_SHADER_STAGE_COUNT> stages;
 
     VkDescriptorPool globalDescriptorPool;
     VkDescriptorSetLayout globalDescriptorSetLayout;
@@ -198,11 +221,11 @@ struct VulkanMaterialShader
     VulkanBuffer localUniformBuffer;
     // TODO: manage a free list of some kind here instead.
     uint32 localUniformBufferIndex;
-    // TODO: make dynamic
-    std::array<VulkanObjectShaderLocalState, VULKAN_OBJECT_SHADER_MAX_OBJECT_COUNT> localObjectStates;
 
-    // Pointers to default textures.
-    Texture* defaultDiffuse;
+    std::array<TextureMapType, VULKAN_MATERIAL_SHADER_SAMPLER_COUNT> samplerUsage;
+
+    // TODO: make dynamic
+    std::array<VulkanMaterialShaderInstanceState, VULKAN_MAX_MATERIAL_COUNT> instanceStates;
 
     VulkanPipeline pipeline;
 };
@@ -276,6 +299,9 @@ struct VulkanContext
     bool recreatingSwapchain;
 
     VulkanMaterialShader materialShader;
+
+    // TODO: make dynamic
+    std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
 
     VulkanImGuiResources imGuiResources;
 };

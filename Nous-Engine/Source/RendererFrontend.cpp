@@ -5,6 +5,7 @@
 #include "Logger.h"
 
 #include "TextureSystem.h"
+#include "MaterialSystem.h"
 
 #include "ModuleEditor.h"
 
@@ -13,7 +14,7 @@ RendererFrontend::RendererFrontend()
 	backendType = RendererBackendType::UNKNOWN;
 	backend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
 
-	testDiffuse = nullptr;
+	testMaterial = nullptr;
 }
 
 RendererFrontend::~RendererFrontend()
@@ -38,12 +39,14 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 	}
 
 	NOUS_TextureSystem::Initialize();
+	NOUS_MaterialSystem::Initialize();
 
 	return ret;
 }
 
 void RendererFrontend::Shutdown()
 {
+	NOUS_MaterialSystem::Shutdown();
 	NOUS_TextureSystem::Shutdown();
 
 	backend->Shutdown();
@@ -72,20 +75,39 @@ void RendererFrontend::UpdateGlobalState(float4x4 projection, float4x4 view, flo
 	backend->UpdateGlobalState(projection, view, viewPosition, ambientColor, mode);
 }
 
-void RendererFrontend::UpdateObject(GeometryRenderData renderData)
+void RendererFrontend::DrawGeometry(GeometryRenderData renderData)
 {
-	backend->UpdateObject(renderData);
+	backend->DrawGeometry(renderData);
 }
 
-void RendererFrontend::CreateTexture(const char* path, int32 width, int32 height,
-	int32 channelCount, const uint8* pixels, bool hasTransparency, Texture* outTexture)
+void RendererFrontend::CreateTexture(const uint8* pixels, Texture* outTexture)
 {
-	backend->CreateTexture(path, width, height, channelCount, pixels, hasTransparency, outTexture);
+	backend->CreateTexture(pixels, outTexture);
 }
 
 void RendererFrontend::DestroyTexture(Texture* texture)
 {
 	backend->DestroyTexture(texture);
+}
+
+bool RendererFrontend::CreateMaterial(Material* material)
+{
+	return backend->CreateMaterial(material);
+}
+
+void RendererFrontend::DestroyMaterial(Material* material)
+{
+	backend->DestroyMaterial(material);
+}
+
+bool RendererFrontend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* outGeometry)
+{
+	return backend->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
+}
+
+void RendererFrontend::DestroyGeometry(Geometry* geometry)
+{
+	backend->DestroyGeometry(geometry);
 }
 
 bool RendererFrontend::DrawFrame(RenderPacket* packet)
@@ -109,20 +131,34 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 		float4x4 model = Quat(float3::unitY, angle).ToFloat4x4();
 
 		GeometryRenderData renderData{};
-		renderData.objectID = 0;
 		renderData.model = model;
 
-		if (!testDiffuse) 
+		if (!testMaterial) 
 		{
-			testDiffuse = NOUS_TextureSystem::GetDefaultTexture();
+			testMaterial = NOUS_MaterialSystem::AcquireMaterial("Assets/Materials/test_material.nmat");
+
+			if (!testMaterial)
+			{
+				NOUS_WARN("Automatic material load failed, falling back to manual default material.");
+
+				MaterialConfig config;
+
+				config.name = "DefaultMaterial";
+				config.autoRelease = false;
+				config.diffuseColor = float4::one; // white
+				config.diffuseMapName = NOUS_TextureSystem::state.config.DEFAULT_TEXTURE_NAME;
+
+				testMaterial = NOUS_MaterialSystem::AcquireMaterialFromConfig(config);
+				//testMaterial = NOUS_MaterialSystem::GetDefaultMaterial();
+			}
 		}
 
-		renderData.textures[0] = testDiffuse;
+		renderData.material = testMaterial;
 
 		// Update the object's transform with the new model matrix.
-		UpdateObject(renderData);
+		DrawGeometry(renderData);
 
-		External->editor->DrawEditor();
+		//External->editor->DrawEditor();
 
 		// End of the frame. If this fails, it is likely unrecoverable.
 		bool result = EndFrame(packet->deltaTime);

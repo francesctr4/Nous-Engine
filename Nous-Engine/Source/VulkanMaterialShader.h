@@ -11,8 +11,8 @@ void UseMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* shader);
 
 void UpdateMaterialShaderGlobalState(VulkanContext* vkContext, VulkanMaterialShader* shader, float deltaTime);
 
-void UpdateMaterialShaderLocalState(VulkanContext* vkContext, VulkanMaterialShader* shader, GeometryRenderData renderData);
+void UpdateMaterialShaderObjectState(VulkanContext* vkContext, VulkanMaterialShader* shader, GeometryRenderData renderData);
 
-bool AcquireMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, uint32* outObjectID);
+bool AcquireMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, Material* material);
 
-void ReleaseMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, uint32 objectID);
+void ReleaseMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, Material* material);

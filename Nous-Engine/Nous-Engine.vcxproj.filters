@@ -28,18 +28,6 @@
     <Filter Include="Externals\Tracy">
       <UniqueIdentifier>{46a3a962-8f52-4514-9b74-6c75c4f759f5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\Core\Renderer">
-      <UniqueIdentifier>{723ab429-44d4-4e44-a10b-220eb3958936}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Code\Core\Renderer\Vulkan">
-      <UniqueIdentifier>{767c6614-5cfa-4da8-b636-893fa22b4853}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Code\Core\Renderer\OpenGL">
-      <UniqueIdentifier>{3fd35134-218f-40fd-bbf5-1a9fc81ffe30}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Code\Core\Renderer\DirectX">
-      <UniqueIdentifier>{3179d930-04df-4630-a054-c63c1d2d172e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Externals\MathGeoLib">
       <UniqueIdentifier>{3972d015-46ac-4a64-9f0c-b992478e2baf}</UniqueIdentifier>
     </Filter>
@@ -60,15 +48,6 @@
     </Filter>
     <Filter Include="Source Code\Memory">
       <UniqueIdentifier>{90b980f7-cb77-42c8-941a-c7b656389a06}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Code\Core\Renderer\Vulkan\Shaders">
-      <UniqueIdentifier>{e42060bc-3cdb-478a-8ecf-69804c3914b0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Code\Core\Camera">
-      <UniqueIdentifier>{5fbe1815-501c-4e9c-8e21-a4cbd664aa50}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Code\Core\Renderer\GLSL">
-      <UniqueIdentifier>{54e10806-e8e3-4c46-bd27-d8eddf9138cd}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\stb_image">
       <UniqueIdentifier>{eda1c102-79d6-4228-bc17-f97d72a5e4f4}</UniqueIdentifier>
@@ -127,6 +106,27 @@
     <Filter Include="Source Code\Editor\Windows">
       <UniqueIdentifier>{7048ff98-1141-4095-816b-aa89af94dd3c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\Systems\Camera System">
+      <UniqueIdentifier>{5fbe1815-501c-4e9c-8e21-a4cbd664aa50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Renderer">
+      <UniqueIdentifier>{723ab429-44d4-4e44-a10b-220eb3958936}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Renderer\Vulkan">
+      <UniqueIdentifier>{767c6614-5cfa-4da8-b636-893fa22b4853}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Renderer\Vulkan\Shaders">
+      <UniqueIdentifier>{e42060bc-3cdb-478a-8ecf-69804c3914b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Renderer\OpenGL">
+      <UniqueIdentifier>{3fd35134-218f-40fd-bbf5-1a9fc81ffe30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Renderer\DirectX">
+      <UniqueIdentifier>{3179d930-04df-4630-a054-c63c1d2d172e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Renderer\GLSL">
+      <UniqueIdentifier>{54e10806-e8e3-4c46-bd27-d8eddf9138cd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -166,40 +166,40 @@
       <Filter>Source Code\Systems\Time System\Time Management</Filter>
     </ClCompile>
     <ClCompile Include="Source\RendererBackend.cpp">
-      <Filter>Source Code\Core\Renderer</Filter>
+      <Filter>Source Code\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Source\RendererFrontend.cpp">
-      <Filter>Source Code\Core\Renderer</Filter>
+      <Filter>Source Code\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanBackend.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\OpenGLBackend.cpp">
-      <Filter>Source Code\Core\Renderer\OpenGL</Filter>
+      <Filter>Source Code\Renderer\OpenGL</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanDevice.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanSwapchain.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanImage.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanRenderpass.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanCommandBuffer.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanFramebuffer.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanSyncObjects.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanUtils.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\External\MathGeoLib\include\Algorithm\Random\LCG.cpp">
       <Filter>Externals\MathGeoLib\Algorithm\Random</Filter>
@@ -298,13 +298,13 @@
       <Filter>Externals\MathGeoLib\Math</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanDebugMessenger.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\Random.cpp">
       <Filter>Source Code\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanInstance.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\MemoryManager.cpp">
       <Filter>Source Code\Memory</Filter>
@@ -316,10 +316,10 @@
       <Filter>Source Code\Modules</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanMaterialShader.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
+      <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanShaderUtils.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
+      <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="Source\FileHandle.cpp">
       <Filter>Source Code\Systems\File System</Filter>
@@ -328,13 +328,13 @@
       <Filter>Source Code\Systems\File System</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanGraphicsPipeline.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanExternal.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanBuffer.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterMesh.cpp">
       <Filter>Source Code\Systems\Resource System\Importers</Filter>
@@ -343,7 +343,7 @@
       <Filter>Source Code\Systems\Resource System\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\Camera.cpp">
-      <Filter>Source Code\Core\Camera</Filter>
+      <Filter>Source Code\Systems\Camera System</Filter>
     </ClCompile>
     <ClCompile Include="Source\ModuleScene.cpp">
       <Filter>Source Code\Modules</Filter>
@@ -406,7 +406,13 @@
       <Filter>Source Code\Editor\Windows</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanImGuiResources.cpp">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GeometrySystem.cpp">
+      <Filter>Source Code\Systems\Geometry System</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\MaterialSystem.cpp">
+      <Filter>Source Code\Systems\Material System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -696,49 +702,49 @@
       <Filter>Source Code\Systems\Time System\Time Management</Filter>
     </ClInclude>
     <ClInclude Include="Source\RendererFrontend.h">
-      <Filter>Source Code\Core\Renderer</Filter>
+      <Filter>Source Code\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Source\RendererBackend.h">
-      <Filter>Source Code\Core\Renderer</Filter>
+      <Filter>Source Code\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanBackend.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\Vulkan.h">
       <Filter>Source Code\Includes</Filter>
     </ClInclude>
     <ClInclude Include="Source\OpenGLBackend.h">
-      <Filter>Source Code\Core\Renderer\OpenGL</Filter>
+      <Filter>Source Code\Renderer\OpenGL</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanExternal.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanDevice.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\STL.h">
       <Filter>Source Code\Includes</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanSwapchain.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanImage.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanRenderpass.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanCommandBuffer.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanFramebuffer.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanSyncObjects.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanUtils.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\External\MathGeoLib\include\Algorithm\Random\LCG.h">
       <Filter>Externals\MathGeoLib\Algorithm\Random</Filter>
@@ -924,7 +930,7 @@
       <Filter>Source Code\Includes</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanDebugMessenger.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\MathUtils.h">
       <Filter>Source Code\Utils</Filter>
@@ -933,10 +939,10 @@
       <Filter>Source Code\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanInstance.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanGlobals.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\MemoryManager.h">
       <Filter>Source Code\Memory</Filter>
@@ -948,10 +954,10 @@
       <Filter>Source Code\Modules</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanMaterialShader.h">
-      <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
+      <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanShaderUtils.h">
-      <Filter>Source Code\Core\Renderer\Vulkan\Shaders</Filter>
+      <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="Source\FileHandle.h">
       <Filter>Source Code\Systems\File System</Filter>
@@ -960,10 +966,10 @@
       <Filter>Source Code\Systems\File System</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanGraphicsPipeline.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanBuffer.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterMesh.h">
       <Filter>Source Code\Systems\Resource System\Importers</Filter>
@@ -972,7 +978,7 @@
       <Filter>Source Code\Systems\Resource System\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\Camera.h">
-      <Filter>Source Code\Core\Camera</Filter>
+      <Filter>Source Code\Systems\Camera System</Filter>
     </ClInclude>
     <ClInclude Include="Source\External\stb_image\stb_image.h">
       <Filter>Externals\stb_image</Filter>
@@ -1146,18 +1152,24 @@
       <Filter>Source Code\Editor\Windows</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanImGuiResources.h">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GeometrySystem.h">
+      <Filter>Source Code\Systems\Geometry System</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\MaterialSystem.h">
+      <Filter>Source Code\Systems\Material System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">
-      <Filter>Source Code\Core\Renderer</Filter>
+      <Filter>Source Code\Renderer</Filter>
     </None>
     <None Include="Source\VulkanTypes.inl">
-      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+      <Filter>Source Code\Renderer\Vulkan</Filter>
     </None>
     <None Include="Source\OpenGLTypes.inl">
-      <Filter>Source Code\Core\Renderer\OpenGL</Filter>
+      <Filter>Source Code\Renderer\OpenGL</Filter>
     </None>
     <None Include="Source\External\MathGeoLib\include\Geometry\KDTree.inl">
       <Filter>Externals\MathGeoLib\Geometry</Filter>
@@ -1178,10 +1190,10 @@
       <Filter>Externals\MathGeoLib\Math</Filter>
     </None>
     <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.vert.glsl">
-      <Filter>Source Code\Core\Renderer\GLSL</Filter>
+      <Filter>Source Code\Renderer\GLSL</Filter>
     </None>
     <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.frag.glsl">
-      <Filter>Source Code\Core\Renderer\GLSL</Filter>
+      <Filter>Source Code\Renderer\GLSL</Filter>
     </None>
     <None Include="Source\ResourceTypes.inl">
       <Filter>Source Code\Systems\Resource System\Resource Management</Filter>

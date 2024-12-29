@@ -248,6 +248,7 @@
     <ClCompile Include="Source\External\Tracy\TracyClient.cpp" />
     <ClCompile Include="Source\FileHandle.cpp" />
     <ClCompile Include="Source\FileManager.cpp" />
+    <ClCompile Include="Source\GeometrySystem.cpp" />
     <ClCompile Include="Source\ImGuiCustom.cpp" />
     <ClCompile Include="Source\ImporterMesh.cpp" />
     <ClCompile Include="Source\ImporterTexture.cpp" />
@@ -256,6 +257,7 @@
     <ClCompile Include="Source\Logger.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\MainMenuBar.cpp" />
+    <ClCompile Include="Source\MaterialSystem.cpp" />
     <ClCompile Include="Source\Module.cpp" />
     <ClCompile Include="Source\ModuleCamera3D.cpp" />
     <ClCompile Include="Source\ModuleEditor.cpp" />
@@ -300,8 +302,10 @@
     <ClInclude Include="Source\Assimp.h" />
     <ClInclude Include="Source\Camera.h" />
     <ClInclude Include="Source\DynamicArray.h" />
+    <ClInclude Include="Source\GeometrySystem.h" />
     <ClInclude Include="Source\ImGuiCustom.h" />
     <ClInclude Include="Source\MainMenuBar.h" />
+    <ClInclude Include="Source\MaterialSystem.h" />
     <ClInclude Include="Source\Properties.h" />
     <ClInclude Include="Source\EventSystem.h" />
     <ClInclude Include="Source\External\Assimp\include\ai_assert.h" />

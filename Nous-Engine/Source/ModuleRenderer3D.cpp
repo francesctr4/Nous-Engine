@@ -7,7 +7,7 @@
 #include "Tracy.h"
 
 #include "RendererFrontend.h"
-#include "ImporterTexture.h"
+#include "TextureSystem.h"
 
 RendererFrontend* ModuleRenderer3D::rendererFrontend = nullptr;
 
@@ -122,7 +122,15 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 		case EventType::DROP_FILE:
 		{
 			// Load up the new texture.
-			ImporterTexture::Import(event.context.c, rendererFrontend->testDiffuse);
+			//ImporterTexture::Import(event.context.c, rendererFrontend->testDiffuse);
+
+			rendererFrontend->testMaterial->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(event.context.c, true);
+
+			if (!rendererFrontend->testMaterial->diffuseMap.texture)
+			{
+				NOUS_WARN("event_on_debug_event no texture! using default");
+				rendererFrontend->testMaterial->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
+			}
 
 			break;
 		}

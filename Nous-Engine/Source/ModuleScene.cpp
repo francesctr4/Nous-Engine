@@ -49,4 +49,5 @@ bool ModuleScene::CleanUp()
 
 void ModuleScene::ReceiveEvent(const Event& event)
 {
+
 }
