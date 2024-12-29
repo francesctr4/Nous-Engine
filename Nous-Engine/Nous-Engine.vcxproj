@@ -281,6 +281,7 @@
     <ClCompile Include="Source\VulkanDevice.cpp" />
     <ClCompile Include="Source\VulkanFramebuffer.cpp" />
     <ClCompile Include="Source\VulkanImage.cpp" />
+    <ClCompile Include="Source\VulkanImGuiResources.cpp" />
     <ClCompile Include="Source\VulkanInstance.cpp" />
     <ClCompile Include="Source\VulkanMaterialShader.cpp" />
     <ClCompile Include="Source\VulkanGraphicsPipeline.cpp" />
@@ -528,6 +529,7 @@
     <ClInclude Include="Source\VulkanFramebuffer.h" />
     <ClInclude Include="Source\VulkanGlobals.h" />
     <ClInclude Include="Source\VulkanImage.h" />
+    <ClInclude Include="Source\VulkanImGuiResources.h" />
     <ClInclude Include="Source\VulkanInstance.h" />
     <ClInclude Include="Source\VulkanMaterialShader.h" />
     <ClInclude Include="Source\VulkanGraphicsPipeline.h" />

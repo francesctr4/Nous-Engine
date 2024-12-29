@@ -7,6 +7,7 @@
 #include "VulkanBackend.h"
 #include "VulkanExternal.h"
 #include "VulkanUtils.h"
+#include "VulkanImGuiResources.h"
 
 #include "IEditorWindow.inl"
 #include "ImGuiCustom.h"
@@ -37,8 +38,6 @@ ModuleEditor::~ModuleEditor()
 	NOUS_TRACE("%s()", __FUNCTION__);
 }
 
-VkSampler sampler;
-
 bool ModuleEditor::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -61,7 +60,9 @@ bool ModuleEditor::Awake()
 	{
 		case RendererBackendType::VULKAN:
 		{
-			VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+			VulkanContext* vkContext = GetVulkanContext();
+
+			NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(vkContext);
 
 			// Setup Platform/Renderer backends
 			ImGui_ImplSDL2_InitForVulkan(GetSDLWindowData());
@@ -70,7 +71,7 @@ bool ModuleEditor::Awake()
 
 			imGuiVulkanInitInfo.Allocator = vkContext->allocator;
 			imGuiVulkanInitInfo.CheckVkResultFn = VK_CHECK_IMGUI;
-			imGuiVulkanInitInfo.DescriptorPoolSize = 10000;
+			imGuiVulkanInitInfo.DescriptorPool = vkContext->imGuiResources.descriptorPool;
 			imGuiVulkanInitInfo.Device = vkContext->device.logicalDevice;
 			imGuiVulkanInitInfo.ImageCount = vkContext->swapChain.swapChainImages.size();
 			imGuiVulkanInitInfo.Instance = vkContext->instance;
@@ -83,35 +84,6 @@ bool ModuleEditor::Awake()
 			imGuiVulkanInitInfo.MinImageCount = 2;
 
 			NOUS_ASSERT(ImGui_ImplVulkan_Init(&imGuiVulkanInitInfo));
-
-			// Create a sampler for the texture
-			VkSamplerCreateInfo samplerCreateInfo{};
-			samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-
-			// TODO: These filters should be configurable.
-			samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-			samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-
-			samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-			samplerCreateInfo.anisotropyEnable = VK_TRUE;
-			samplerCreateInfo.maxAnisotropy = 16;
-
-			samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-			samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
-
-			samplerCreateInfo.compareEnable = VK_FALSE;
-			samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-			samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-			samplerCreateInfo.mipLodBias = 0.0f;
-
-			samplerCreateInfo.minLod = 0.0f;
-			samplerCreateInfo.maxLod = 0.0f;
-
-			vkCreateSampler(GetVulkanContext()->device.logicalDevice, &samplerCreateInfo, GetVulkanContext()->allocator, &sampler);
 
 			break;
 		}
@@ -153,6 +125,7 @@ bool ModuleEditor::CleanUp()
 		case RendererBackendType::VULKAN:
 		{
 			ImGui_ImplVulkan_Shutdown();
+			NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(GetVulkanContext());
 			break;
 		}
 
@@ -272,37 +245,37 @@ void ModuleEditor::InternalDrawEditor()
 		window->Draw();
 	}
 
-	//ImGui::Begin("Viewport");
+	ImGui::Begin("Viewport");
 
-	//// Get the viewport panel size
-	//ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+	// Get the viewport panel size
+	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 
-	//// Texture dimensions (replace with your actual texture dimensions)
-	//float textureWidth = 1920.0f; // Example width
-	//float textureHeight = 1080.0f; // Example height
+	// Texture dimensions (replace with your actual texture dimensions)
+	float textureWidth = 1920.0f; // Example width
+	float textureHeight = 1080.0f; // Example height
 
-	//// Calculate aspect ratios
-	//float textureAspect = textureWidth / textureHeight;
-	//float viewportAspect = viewportPanelSize.x / viewportPanelSize.y;
+	// Calculate aspect ratios
+	float textureAspect = textureWidth / textureHeight;
+	float viewportAspect = viewportPanelSize.x / viewportPanelSize.y;
 
-	//// UV coordinates for cropping
-	//ImVec2 uvMin(0.0f, 0.0f); // Top-left corner of the texture
-	//ImVec2 uvMax(1.0f, 1.0f); // Bottom-right corner of the texture
+	// UV coordinates for cropping
+	ImVec2 uvMin(0.0f, 0.0f); // Top-left corner of the texture
+	ImVec2 uvMax(1.0f, 1.0f); // Bottom-right corner of the texture
 
-	//if (viewportAspect < textureAspect) {
-	//	// Viewport is narrower: crop left and right
-	//	float cropFactor = textureAspect / viewportAspect;
-	//	uvMin.x = 0.5f - 0.5f / cropFactor;
-	//	uvMax.x = 0.5f + 0.5f / cropFactor;
-	//}
-	//else if (viewportAspect > textureAspect) {
-	//	// Viewport is wider: crop top and bottom
-	//	float cropFactor = viewportAspect / textureAspect;
-	//	uvMin.y = 0.5f - 0.5f / cropFactor;
-	//	uvMax.y = 0.5f + 0.5f / cropFactor;
-	//}
+	if (viewportAspect < textureAspect) {
+		// Viewport is narrower: crop left and right
+		float cropFactor = textureAspect / viewportAspect;
+		uvMin.x = 0.5f - 0.5f / cropFactor;
+		uvMax.x = 0.5f + 0.5f / cropFactor;
+	}
+	else if (viewportAspect > textureAspect) {
+		// Viewport is wider: crop top and bottom
+		float cropFactor = viewportAspect / textureAspect;
+		uvMin.y = 0.5f - 0.5f / cropFactor;
+		uvMax.y = 0.5f + 0.5f / cropFactor;
+	}
 
-	//// Render the image with cropped UVs
+	// Render the image with cropped UVs
 	//ImGui::Image(
 	//	(ImTextureID)ImGui_ImplVulkan_AddTexture(
 	//		sampler,
@@ -314,7 +287,7 @@ void ModuleEditor::InternalDrawEditor()
 	//	uvMax
 	//);
 
-	//ImGui::End();
+	ImGui::End();
 }
 
 void ModuleEditor::EndFrame(RendererBackendType backendType)
@@ -325,8 +298,10 @@ void ModuleEditor::EndFrame(RendererBackendType backendType)
 	{
 		case RendererBackendType::VULKAN:
 		{
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), 
-				GetVulkanContext()->graphicsCommandBuffers[GetVulkanContext()->imageIndex].handle);
+			//NOUS_ImGuiVulkanResources::RenderImGuiDrawData(GetVulkanContext(),
+			//	&GetVulkanContext()->graphicsCommandBuffers[GetVulkanContext()->imageIndex], 
+			//	&GetVulkanContext()->imGuiResources.viewportRenderPass);
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), GetVulkanContext()->graphicsCommandBuffers[GetVulkanContext()->imageIndex].handle);
 
 			break;
 		}

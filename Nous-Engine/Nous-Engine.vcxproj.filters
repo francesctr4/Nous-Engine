@@ -405,6 +405,9 @@
     <ClCompile Include="Source\MainMenuBar.cpp">
       <Filter>Source Code\Editor\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanImGuiResources.cpp">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1141,6 +1144,9 @@
     </ClInclude>
     <ClInclude Include="Source\MainMenuBar.h">
       <Filter>Source Code\Editor\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanImGuiResources.h">
+      <Filter>Source Code\Core\Renderer\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

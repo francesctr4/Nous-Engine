@@ -207,6 +207,26 @@ struct VulkanMaterialShader
     VulkanPipeline pipeline;
 };
 
+struct VulkanImGuiResources
+{
+    VkDescriptorPool descriptorPool;
+
+    std::vector<VulkanImage> viewportImages;
+
+    VulkanRenderpass viewportRenderPass;
+    VulkanPipeline viewportPipeline;
+
+    std::vector<VulkanFramebuffer> viewportFramebuffers;
+
+    VkCommandPool viewportCommandPool;
+    std::vector<VulkanCommandBuffer> viewportCommandBuffers;
+
+    // -------------------- //
+
+    VkSampler textureSampler;
+    std::vector<VkDescriptorSet> descriptorSets;
+};
+
 /**
  * @brief Stores all the Vulkan Context variables
  */
@@ -256,6 +276,8 @@ struct VulkanContext
     bool recreatingSwapchain;
 
     VulkanMaterialShader materialShader;
+
+    VulkanImGuiResources imGuiResources;
 };
 
 struct VulkanTextureData 
