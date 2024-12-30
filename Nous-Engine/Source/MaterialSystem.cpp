@@ -6,6 +6,8 @@
 #include "TextureSystem.h"
 #include "RendererFrontend.h"
 
+#include "JsonFile.h"
+
 bool NOUS_MaterialSystem::Initialize()
 {
     CreateDefaultMaterials();
@@ -71,7 +73,36 @@ void NOUS_MaterialSystem::DestroyDefaultMaterials()
 
 Material* NOUS_MaterialSystem::AcquireMaterial(const char* path)
 {
+    //// Load the JSON file
+    //JsonFile jsonFile;
+    //if (!jsonFile.LoadFromFile(path)) {
+    //    // Handle error: Unable to load the file
+    //    return nullptr;
+    //}
 
+    //// Create a new Material object
+    //Material* material = new Material();
+
+    //if (!jsonFile.GetValue("name", material->name)) {
+    //    // Handle missing or invalid "name" field
+    //    delete material;
+    //    return nullptr;
+    //}
+
+    //if (!jsonFile.GetValue("diffuse_color", material->diffuseColor)) {
+    //    // Handle missing or invalid "diffuse_color" field
+    //    delete material;
+    //    return nullptr;
+    //}
+
+    //if (!jsonFile.GetValue("diffuse_map_name", material->diffuseMap.texture->name)) {
+    //    // Handle missing or invalid "diffuse_map_name" field
+    //    delete material;
+    //    return nullptr;
+    //}
+
+    // Return the populated material
+    //return material;
     return nullptr;
 }
 
