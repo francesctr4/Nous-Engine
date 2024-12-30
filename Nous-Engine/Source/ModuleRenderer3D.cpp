@@ -8,8 +8,15 @@
 
 #include "RendererFrontend.h"
 #include "TextureSystem.h"
+#include "GeometrySystem.h"
+#include "ImporterMesh.h"
 
 RendererFrontend* ModuleRenderer3D::rendererFrontend = nullptr;
+
+// Temp
+Geometry* testGeometry;
+Geometry* testGeometry2;
+// End Temp
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
@@ -46,6 +53,27 @@ bool ModuleRenderer3D::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	Mesh* myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
+
+	ImporterMesh::Import("Assets/Models/Cypher_S0_Skelmesh.fbx", myMesh);
+	ImporterMesh::Save("Library/Models/Cypher_S0_Skelmesh.nmesh", *myMesh);
+
+	NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
+	myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
+
+	ImporterMesh::Load("Library/Models/Cypher_S0_Skelmesh.nmesh", myMesh);
+
+	/*GeometryConfig gConfig = NOUS_GeometrySystem::GeneratePlaneConfig(10.0f, 5.0f, 5, 5, 5.0f, 2.0f, "test_geometry", "test_material");*/
+	GeometryConfig gConfig;
+	gConfig.name = "Cypher";
+	gConfig.materialPath = "Assets/Materials/cypher_material.nmat";
+	gConfig.vertices = myMesh->vertices;
+	gConfig.indices = myMesh->indices;
+
+	testGeometry = NOUS_GeometrySystem::AcquireFromConfig(gConfig, true);
+
+	NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
+
 	return true;
 }
 
@@ -72,6 +100,25 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 	packet.deltaTime = dt;
 	packet.camera = *App->camera->GetCamera();
+
+	// TODO: temp
+	GeometryRenderData testRender;
+	testRender.geometry = testGeometry;
+
+	// Angular velocity in radians per second.
+	static constexpr float angularVelocity = 1.0f; // Adjust for desired speed
+
+	// Accumulate the angle based on elapsed time (deltaTime).
+	static float angle = 0.0f;
+	angle += angularVelocity * packet.deltaTime;
+
+	// Create the rotation matrix using the accumulated angle.
+	float4x4 model = Quat(float3::unitY, angle).ToFloat4x4();
+
+	testRender.model = model;
+
+	packet.geometries.push_back(testRender);
+	// TODO: end temp
 
 	if (!App->isMinimized)
 	{
@@ -124,12 +171,24 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 			// Load up the new texture.
 			//ImporterTexture::Import(event.context.c, rendererFrontend->testDiffuse);
 
-			rendererFrontend->testMaterial->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(event.context.c, true);
+			//rendererFrontend->testMaterial->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(event.context.c, true);
 
-			if (!rendererFrontend->testMaterial->diffuseMap.texture)
+			//if (!rendererFrontend->testMaterial->diffuseMap.texture)
+			//{
+			//	NOUS_WARN("event_on_debug_event no texture! using default");
+			//	rendererFrontend->testMaterial->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
+			//}
+
+			// Acquire the new texture.
+			if (testGeometry) 
 			{
-				NOUS_WARN("event_on_debug_event no texture! using default");
-				rendererFrontend->testMaterial->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
+				testGeometry->material->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(event.context.c, true);
+
+				if (!testGeometry->material->diffuseMap.texture) 
+				{
+					NOUS_WARN("event_on_debug_event no texture! using default");
+					testGeometry->material->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
+				}
 			}
 
 			break;

@@ -9,8 +9,6 @@
 struct GeometryRenderData
 {
     Geometry* geometry;
-    Material* material;
-
     float4x4 model;
 };
 

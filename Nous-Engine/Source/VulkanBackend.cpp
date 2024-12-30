@@ -14,17 +14,9 @@
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
 #include "VulkanShaderUtils.h"
-
-// Shaders
 #include "VulkanMaterialShader.h"
 
-// Temp
-#include "ImporterMesh.h"
-Mesh* myMesh;
-// Temp
-
 #include "MaterialSystem.h"
-#include "GeometrySystem.h"
 
 #include "MemoryManager.h"
 #include "Logger.h"
@@ -208,77 +200,16 @@ bool VulkanBackend::Initialize()
     }
 
     // Mark all geometries as invalid
-    for (uint32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i) 
+    for (uint32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i)
     {
         vkContext->geometries[i].ID = INVALID_ID;
     }
-
-#pragma region TEMPORAL DRAW CODE
-
-    // TODO: Temporary Test Code //
-
-    const uint32 nVertices = 4;
-    std::vector<Vertex> vertices(nVertices);
-    MemoryManager::ZeroMemory(vertices.data(), sizeof(Vertex) * nVertices);
-
-    const float factor = 10.0f;
-
-    // Bottom-left
-    vertices[0].position = float3({ -0.5f, -0.5f, 0.0f }) * factor;
-    vertices[0].color = { 1.0f, 0.0f, 0.0f }; // Red
-    vertices[0].texCoord = { 0.0f, 0.0f };
-
-    // Top-Right
-    vertices[1].position = float3({ 0.5f, 0.5f, 0.0f }) * factor;
-    vertices[1].color = { 0.0f, 1.0f, 0.0f }; // Green
-    vertices[1].texCoord = { 1.0f, 1.0f };
-
-    // Top-Left
-    vertices[2].position = float3({ -0.5f, 0.5f, 0.0f }) * factor;
-    vertices[2].color = { 0.0f, 0.0f, 1.0f }; // Blue
-    vertices[2].texCoord = { 0.0f, 1.0f };
-
-    // Bottom-right
-    vertices[3].position = float3({ 0.5f, -0.5f, 0.0f }) * factor;
-    vertices[3].color = { 1.0f, 1.0f, 0.0f }; // Yellow
-    vertices[3].texCoord = { 1.0f, 0.0f };
-
-    const uint32 nIndices = 6;
-    std::vector<uint32> indices = { 0, 1, 2, 0, 3, 1 };
-
-    myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
-
-    ImporterMesh::Import("Assets/Models/Cypher_S0_Skelmesh.fbx", myMesh);
-    ImporterMesh::Save("Library/Models/Cypher_S0_Skelmesh.nmesh", *myMesh);
-    
-    NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
-    myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
-
-    ImporterMesh::Load("Library/Models/Cypher_S0_Skelmesh.nmesh", myMesh);
-
-    NOUS_VulkanBuffer::UploadDataRange(vkContext, vkContext->device.graphicsCommandPool, 0, 
-        vkContext->device.graphicsQueue, &vkContext->objectVertexBuffer, 0,
-        sizeof(Vertex) * myMesh->vertices.size(), myMesh->vertices.data());
-
-    NOUS_VulkanBuffer::UploadDataRange(vkContext, vkContext->device.graphicsCommandPool, 0,
-        vkContext->device.graphicsQueue, &vkContext->objectIndexBuffer, 0,
-        sizeof(uint32) * myMesh->indices.size(), myMesh->indices.data());
-
-    // TODO: End Temp Test Code //
-
-#pragma endregion
 
 	return ret;
 }
 
 void VulkanBackend::Shutdown()
 {
-    // Temp
-    myMesh->vertices.clear();
-    myMesh->indices.clear();
-    NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
-    // Temp
-
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
     NOUS_VulkanBuffer::DestroyBuffers(vkContext);
@@ -775,67 +706,97 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, u
         return false;
     }
 
-    //// Check if this is a re-upload. If it is, need to free old data afterward.
-    //b8 is_reupload = geometry->internal_id != INVALID_ID;
-    //vulkan_geometry_data old_range;
-    //vulkan_geometry_data* internal_data = 0;
-    //if (is_reupload) {
-    //    internal_data = &context.geometries[geometry->internal_id];
-    //    // Take a copy of the old range.
-    //    old_range.index_buffer_offset = internal_data->index_buffer_offset;
-    //    old_range.index_count = internal_data->index_count;
-    //    old_range.index_size = internal_data->index_size;
-    //    old_range.vertex_buffer_offset = internal_data->vertex_buffer_offset;
-    //    old_range.vertex_count = internal_data->vertex_count;
-    //    old_range.vertex_size = internal_data->vertex_size;
-    //}
-    //else {
-    //    for (u32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i) {
-    //        if (context.geometries[i].id == INVALID_ID) {
-    //            // Found a free index.
-    //            geometry->internal_id = i;
-    //            context.geometries[i].id = i;
-    //            internal_data = &context.geometries[i];
-    //            break;
-    //        }
-    //    }
-    //}
-    //if (!internal_data) {
-    //    KFATAL("vulkan_renderer_create_geometry failed to find a free index for a new geometry upload. Adjust config to allow for more.");
-    //    return false;
-    //}
-    //VkCommandPool pool = context.device.graphics_command_pool;
-    //VkQueue queue = context.device.graphics_queue;
-    //// Vertex data.
-    //internal_data->vertex_buffer_offset = context.geometry_vertex_offset;
-    //internal_data->vertex_count = vertex_count;
-    //internal_data->vertex_size = sizeof(vertex_3d) * vertex_count;
-    //upload_data_range(&context, pool, 0, queue, &context.object_vertex_buffer, internal_data->vertex_buffer_offset, internal_data->vertex_size, vertices);
-    //// TODO: should maintain a free list instead of this.
-    //context.geometry_vertex_offset += internal_data->vertex_size;
-    //// Index data, if applicable
-    //if (index_count && indices) {
-    //    internal_data->index_buffer_offset = context.geometry_index_offset;
-    //    internal_data->index_count = index_count;
-    //    internal_data->index_size = sizeof(u32) * index_count;
-    //    upload_data_range(&context, pool, 0, queue, &context.object_index_buffer, internal_data->index_buffer_offset, internal_data->index_size, indices);
-    //    // TODO: should maintain a free list instead of this.
-    //    context.geometry_index_offset += internal_data->index_size;
-    //}
-    //if (internal_data->generation == INVALID_ID) {
-    //    internal_data->generation = 0;
-    //}
-    //else {
-    //    internal_data->generation++;
-    //}
-    //if (is_reupload) {
-    //    // Free vertex data
-    //    free_data_range(&context.object_vertex_buffer, old_range.vertex_buffer_offset, old_range.vertex_size);
-    //    // Free index data, if applicable
-    //    if (old_range.index_size > 0) {
-    //        free_data_range(&context.object_index_buffer, old_range.index_buffer_offset, old_range.index_size);
-    //    }
-    //}
+    // Check if this is a re-upload. If it is, need to free old data afterward.
+    bool isReupload = geometry->internalID != INVALID_ID;
+
+    VulkanGeometryData oldRange;
+    VulkanGeometryData* internalData = nullptr;
+
+    if (isReupload) 
+    {
+        internalData = &vkContext->geometries[geometry->internalID];
+
+        // Take a copy of the old range.
+        oldRange.indexBufferOffset = internalData->indexBufferOffset;
+        oldRange.indexCount = internalData->indexCount;
+        oldRange.indexSize = internalData->indexSize;
+
+        oldRange.vertexBufferOffset = internalData->vertexBufferOffset;
+        oldRange.vertexCount = internalData->vertexCount;
+        oldRange.vertexSize = internalData->vertexSize;
+    }
+    else 
+    {
+        for (u32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i) 
+        {
+            if (vkContext->geometries[i].ID == INVALID_ID) 
+            {
+                // Found a free index.
+                geometry->internalID = i;
+                vkContext->geometries[i].ID = i;
+                internalData = &vkContext->geometries[i];
+                break;
+            }
+        }
+    }
+
+    if (!internalData) 
+    {
+        NOUS_FATAL("VulkanBackend::CreateGeometry() failed to find a free index for a new geometry upload. Adjust config to allow for more.");
+        return false;
+    }
+
+    VkCommandPool pool = vkContext->device.graphicsCommandPool;
+    VkQueue queue = vkContext->device.graphicsQueue;
+
+    // Vertex data.
+    internalData->vertexBufferOffset = vkContext->geometryVertexOffset;
+    internalData->vertexCount = vertexCount;
+    internalData->vertexSize = sizeof(Vertex) * vertexCount;
+
+    NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectVertexBuffer, 
+        internalData->vertexBufferOffset, internalData->vertexSize, vertices);
+
+    // TODO: should maintain a free list instead of this.
+    vkContext->geometryVertexOffset += internalData->vertexSize;
+
+    // Index data, if applicable
+    if (indexCount && indices) 
+    {
+        internalData->indexBufferOffset = vkContext->geometryIndexOffset;
+        internalData->indexCount = indexCount;
+        internalData->indexSize = sizeof(uint32) * indexCount;
+
+        NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectIndexBuffer, 
+            internalData->indexBufferOffset, internalData->indexSize, indices);
+
+        // TODO: should maintain a free list instead of this.
+        vkContext->geometryIndexOffset += internalData->indexSize;
+    }
+
+    if (internalData->generation == INVALID_ID) 
+    {
+        internalData->generation = 0;
+    }
+    else 
+    {
+        internalData->generation++;
+    }
+
+    if (isReupload) 
+    {
+        // Free vertex data
+        NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectVertexBuffer, 
+            oldRange.vertexBufferOffset, oldRange.vertexSize);
+
+        // Free index data, if applicable
+        if (oldRange.indexSize > 0) 
+        {
+            NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectIndexBuffer, 
+                oldRange.indexBufferOffset, oldRange.indexSize);
+        }
+    }
+
     return true;
 }
 

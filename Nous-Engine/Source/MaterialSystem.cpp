@@ -71,6 +71,7 @@ void NOUS_MaterialSystem::DestroyDefaultMaterials()
 
 Material* NOUS_MaterialSystem::AcquireMaterial(const char* path)
 {
+
     return nullptr;
 }
 

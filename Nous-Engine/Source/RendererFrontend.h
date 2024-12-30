@@ -37,10 +37,6 @@ private:
 
 public:
 
-	// TODO: temp
-	Material* testMaterial;
-	// TODO: end temp
-
 	RendererBackendType backendType;
 
 private:

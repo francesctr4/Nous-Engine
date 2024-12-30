@@ -6,6 +6,7 @@
 
 #include "TextureSystem.h"
 #include "MaterialSystem.h"
+#include "GeometrySystem.h"
 
 #include "ModuleEditor.h"
 
@@ -13,8 +14,6 @@ RendererFrontend::RendererFrontend()
 {
 	backendType = RendererBackendType::UNKNOWN;
 	backend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
-
-	testMaterial = nullptr;
 }
 
 RendererFrontend::~RendererFrontend()
@@ -40,12 +39,14 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 
 	NOUS_TextureSystem::Initialize();
 	NOUS_MaterialSystem::Initialize();
+	NOUS_GeometrySystem::Initialize();
 
 	return ret;
 }
 
 void RendererFrontend::Shutdown()
 {
+	NOUS_GeometrySystem::Shutdown();
 	NOUS_MaterialSystem::Shutdown();
 	NOUS_TextureSystem::Shutdown();
 
@@ -120,44 +121,12 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 		// Use Camera Attributes, passed along with renderpacket.
 		UpdateGlobalState(packet->camera.GetProjectionMatrix(), packet->camera.GetViewMatrix(), packet->camera.GetPos(), float4::one, 0);
 
-		// Angular velocity in radians per second.
-		static constexpr float angularVelocity = 1.0f; // Adjust for desired speed
-
-		// Accumulate the angle based on elapsed time (deltaTime).
-		static float angle = 0.0f;
-		angle += angularVelocity * packet->deltaTime;
-
-		// Create the rotation matrix using the accumulated angle.
-		float4x4 model = Quat(float3::unitY, angle).ToFloat4x4();
-
-		GeometryRenderData renderData{};
-		renderData.model = model;
-
-		if (!testMaterial) 
+		for (auto& geometry : packet->geometries)
 		{
-			testMaterial = NOUS_MaterialSystem::AcquireMaterial("Assets/Materials/test_material.nmat");
-
-			if (!testMaterial)
-			{
-				NOUS_WARN("Automatic material load failed, falling back to manual default material.");
-
-				MaterialConfig config;
-
-				config.name = "DefaultMaterial";
-				config.autoRelease = false;
-				config.diffuseColor = float4::one; // white
-				config.diffuseMapName = NOUS_TextureSystem::state.config.DEFAULT_TEXTURE_NAME;
-
-				testMaterial = NOUS_MaterialSystem::AcquireMaterialFromConfig(config);
-				//testMaterial = NOUS_MaterialSystem::GetDefaultMaterial();
-			}
+			DrawGeometry(geometry);
 		}
 
-		renderData.material = testMaterial;
-
-		// Update the object's transform with the new model matrix.
-		DrawGeometry(renderData);
-
+		// TODO: This shouldn't be here. The editor should have its own resources.
 		//External->editor->DrawEditor();
 
 		// End of the frame. If this fails, it is likely unrecoverable.
