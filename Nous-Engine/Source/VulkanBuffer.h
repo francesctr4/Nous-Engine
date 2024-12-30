@@ -20,13 +20,15 @@ namespace NOUS_VulkanBuffer
 	void CopyBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue,
 		VkBuffer source, uint64 sourceOffset, VkBuffer dest, uint64 destOffset, uint64 size);
 	
-	void LoadBuffer(VulkanContext* vkContext, VulkanBuffer* buffer,
+	void LoadData(VulkanContext* vkContext, VulkanBuffer* buffer,
 		uint64 offset, uint64 size, uint32 flags, const void* data);
 
 	void BindBuffer(VulkanContext* vkContext, VulkanBuffer* buffer, VkDeviceSize memoryOffset);
 
 	// -------------------------------------------------------------------------------------------------------- //
 
-	void UploadDataToBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue,
-		VulkanBuffer* buffer, uint64 offset, uint64 size, void* data);
+	void UploadDataRange(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue,
+		VulkanBuffer* buffer, uint64 offset, uint64 size, const void* data);
+
+	void FreeDataRange(VulkanContext* vkContext, VulkanBuffer* buffer, uint64 offset, uint64 size);
 }

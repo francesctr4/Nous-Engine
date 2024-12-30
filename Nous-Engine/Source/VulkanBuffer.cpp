@@ -211,7 +211,7 @@ void NOUS_VulkanBuffer::CopyBuffer(VulkanContext* vkContext, VkCommandPool pool,
     NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(vkContext, pool, &tempCommandBuffer, queue);
 }
 
-void NOUS_VulkanBuffer::LoadBuffer(VulkanContext* vkContext, VulkanBuffer* buffer,
+void NOUS_VulkanBuffer::LoadData(VulkanContext* vkContext, VulkanBuffer* buffer,
 	uint64 offset, uint64 size, uint32 flags, const void* data)
 {
     void* dataPtr;
@@ -227,7 +227,7 @@ void NOUS_VulkanBuffer::BindBuffer(VulkanContext* vkContext, VulkanBuffer* buffe
 
 // -------------------------------------------------------------------------------------------------------- //
 
-void NOUS_VulkanBuffer::UploadDataToBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, uint64 offset, uint64 size, void* data)
+void NOUS_VulkanBuffer::UploadDataRange(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, uint64 offset, uint64 size, const void* data)
 {
     // Create a host-visible staging buffer to upload to. Mark it as the source of the transfer.
     VkBufferUsageFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -237,11 +237,17 @@ void NOUS_VulkanBuffer::UploadDataToBuffer(VulkanContext* vkContext, VkCommandPo
     CreateBuffer(vkContext, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, flags, true, &stagingBuffer);
 
     // Load the data into the staging buffer.
-    LoadBuffer(vkContext, &stagingBuffer, 0, size, 0, data);
+    LoadData(vkContext, &stagingBuffer, 0, size, 0, data);
 
     // Perform the copy from staging to the device local buffer.
     CopyBuffer(vkContext, pool, fence, queue, stagingBuffer.handle, 0, buffer->handle, offset, size);
 
     // Clean up the staging buffer.
     DestroyBuffer(vkContext, &stagingBuffer);
+}
+
+void NOUS_VulkanBuffer::FreeDataRange(VulkanContext* vkContext, VulkanBuffer* buffer, uint64 offset, uint64 size)
+{
+    // TODO: Free this in the buffer.
+    // TODO: update free list with this range being free.
 }
