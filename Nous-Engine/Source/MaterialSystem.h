@@ -19,12 +19,19 @@ namespace NOUS_MaterialSystem
 		float4 diffuseColor;
 	};
 
+	struct MaterialReference 
+	{
+		uint64 referenceCount;
+		Material material;
+		bool autoRelease;
+	};
+
 	struct MaterialSystemState
 	{
 		MaterialSystemConfig config;
 		Material defaultMaterial;
 		// Array of registered textures.
-		Material* registeredMaterials;
+		MaterialReference* registeredMaterials;
 		// Hashtable for texture lookups.
 		//hashtable registered_texture_table;
 	};
@@ -40,5 +47,5 @@ namespace NOUS_MaterialSystem
 
 	Material* AcquireMaterial(const char* path);
 	Material* AcquireMaterialFromConfig(MaterialConfig mConfig);
-	void ReleaseMaterial(const char* name);
+	void ReleaseMaterial(Material* name);
 }

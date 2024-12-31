@@ -8,7 +8,7 @@ namespace NOUS_TextureSystem
 	void Shutdown();
 
 	Texture* AcquireTexture(const char* name, bool autoRelease);
-	void ReleaseTexture(const char* name);
+	void ReleaseTexture(Texture* texture);
 
 	// ------------------------------------------------------------------------------------------------------ //
 
@@ -22,6 +22,13 @@ namespace NOUS_TextureSystem
 	{
 		const char* DEFAULT_TEXTURE_NAME = "DefaultTexture";
 		const uint32 MAX_TEXTURE_COUNT = 65536;
+	};
+
+	struct TextureReference 
+	{
+		uint64 referenceCount;
+		Texture texture;
+		bool autoRelease;
 	};
 
 	struct TextureSystemState 

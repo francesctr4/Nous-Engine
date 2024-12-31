@@ -15,7 +15,6 @@ RendererFrontend* ModuleRenderer3D::rendererFrontend = nullptr;
 
 // Temp
 Geometry* testGeometry;
-Geometry* testGeometry2;
 // End Temp
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
@@ -133,6 +132,8 @@ bool ModuleRenderer3D::CleanUp()
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	bool ret = true;
+
+	NOUS_GeometrySystem::ReleaseGeometry(testGeometry);
 
 	rendererFrontend->Shutdown();
 

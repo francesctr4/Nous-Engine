@@ -20,12 +20,66 @@ void NOUS_TextureSystem::Shutdown()
 
 Texture* NOUS_TextureSystem::AcquireTexture(const char* name, bool autoRelease)
 {
-	return nullptr;
+	// Return default texture, but warn about it since this should be returned via get_default_texture();
+	//if (strings_equali(name, DEFAULT_TEXTURE_NAME)) {
+	//	KWARN("texture_system_acquire called for default texture. Use texture_system_get_default_texture for texture 'default'.");
+	//	return &state_ptr->default_texture;
+	//}
+	//texture_reference ref;
+	//if (state_ptr && hashtable_get(&state_ptr->registered_texture_table, name, &ref)) {
+	//	// This can only be changed the first time a texture is loaded.
+	//	if (ref.reference_count == 0) {
+	//		ref.auto_release = auto_release;
+	//	}
+	//	ref.reference_count++;
+	//	if (ref.handle == INVALID_ID) {
+	//		// This means no texture exists here. Find a free index first.
+	//		u32 count = state_ptr->config.max_texture_count;
+	//		texture* t = 0;
+	//		for (u32 i = 0; i < count; ++i) {
+	//			if (state_ptr->registered_textures[i].id == INVALID_ID) {
+	//				// A free slot has been found. Use its index as the handle.
+	//				ref.handle = i;
+	//				t = &state_ptr->registered_textures[i];
+	//				break;
+	//			}
+	//		}
+	//		// Make sure an empty slot was actually found.
+	//		if (!t || ref.handle == INVALID_ID) {
+	//			KFATAL("texture_system_acquire - Texture system cannot hold anymore textures. Adjust configuration to allow more.");
+	//			return 0;
+	//		}
+	//		// Create new texture.
+	//		if (!load_texture(name, t)) {
+	//			KERROR("Failed to load texture '%s'.", name);
+	//			return 0;
+	//		}
+	//		// Also use the handle as the texture id.
+	//		t->id = ref.handle;
+	//		KTRACE("Texture '%s' does not yet exist. Created, and ref_count is now %i.", name, ref.reference_count);
+	//	}
+	//	else {
+	//		KTRACE("Texture '%s' already exists, ref_count increased to %i.", name, ref.reference_count);
+	//	}
+	//	// Update the entry.
+	//	hashtable_set(&state_ptr->registered_texture_table, name, &ref);
+	//	return &state_ptr->registered_textures[ref.handle];
+	//}
+	//// NOTE: This would only happen in the event something went wrong with the state.
+	//KERROR("texture_system_acquire failed to acquire texture '%s'. Null pointer will be returned.", name);
+	return 0;
 }
 
-void NOUS_TextureSystem::ReleaseTexture(const char* name)
+void NOUS_TextureSystem::ReleaseTexture(Texture* texture)
 {
+	External->renderer->rendererFrontend->DestroyTexture(texture);
 
+	// Clean up backend resources.
+	texture->name.clear();
+	MemoryManager::ZeroMemory(texture, sizeof(Texture));
+
+	texture->ID = INVALID_ID;
+	texture->generation = INVALID_ID;
 }
 
 bool NOUS_TextureSystem::CreateDefaultTextures()

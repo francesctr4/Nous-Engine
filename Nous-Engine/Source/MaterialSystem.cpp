@@ -8,14 +8,37 @@
 
 #include "JsonFile.h"
 
+#include "ImporterTexture.h"
+
 bool NOUS_MaterialSystem::Initialize()
 {
-    CreateDefaultMaterials();
+    // Invalidate all geometries in the array.
+    uint32 count = state.config.MAX_MATERIAL_COUNT;
+
+    state.registeredMaterials = NOUS_NEW_ARRAY<MaterialReference>(count, MemoryManager::MemoryTag::ARRAY);
+
+    for (uint32 i = 0; i < count; ++i)
+    {
+        state.registeredMaterials[i].material.ID = INVALID_ID;
+        state.registeredMaterials[i].material.internalID = INVALID_ID;
+        state.registeredMaterials[i].material.generation = INVALID_ID;
+    }
+
+    if (!CreateDefaultMaterials())
+    {
+        NOUS_FATAL("Failed to create default materials. Application cannot continue.");
+        return false;
+    }
+
     return true;
 }
 
 void NOUS_MaterialSystem::Shutdown()
 {
+    NOUS_DELETE_ARRAY(state.registeredMaterials,
+        state.config.MAX_MATERIAL_COUNT,
+        MemoryManager::MemoryTag::ARRAY);
+
     DestroyDefaultMaterials();
 }
 
@@ -51,7 +74,7 @@ void DestroyMaterial(Material* material)
     // Release texture references.
     if (material->diffuseMap.texture)
     {
-        //NOUS_TextureSystem::ReleaseTexture(material->diffuseMap.texture->name.c_str());
+        NOUS_TextureSystem::ReleaseTexture(material->diffuseMap.texture);
     }
 
     // Release renderer resources.
@@ -73,37 +96,48 @@ void NOUS_MaterialSystem::DestroyDefaultMaterials()
 
 Material* NOUS_MaterialSystem::AcquireMaterial(const char* path)
 {
-    //// Load the JSON file
-    //JsonFile jsonFile;
-    //if (!jsonFile.LoadFromFile(path)) {
-    //    // Handle error: Unable to load the file
-    //    return nullptr;
-    //}
+    // Load the JSON file
+    JsonFile jsonFile;
+    if (!jsonFile.LoadFromFile(path)) {
+        // Handle error: Unable to load the file
+        return nullptr;
+    }
 
-    //// Create a new Material object
-    //Material* material = new Material();
+    // Create a new Material object
+    Material* material = NOUS_NEW<Material>(MemoryManager::MemoryTag::MATERIAL_INSTANCE);
 
-    //if (!jsonFile.GetValue("name", material->name)) {
-    //    // Handle missing or invalid "name" field
-    //    delete material;
-    //    return nullptr;
-    //}
+    if (!jsonFile.GetValue("name", material->name)) {
+        // Handle missing or invalid "name" field
+        delete material;
+        return nullptr;
+    }
 
-    //if (!jsonFile.GetValue("diffuse_color", material->diffuseColor)) {
-    //    // Handle missing or invalid "diffuse_color" field
-    //    delete material;
-    //    return nullptr;
-    //}
+    if (!jsonFile.GetValue("diffuse_color", material->diffuseColor)) {
+        // Handle missing or invalid "diffuse_color" field
+        delete material;
+        return nullptr;
+    }
 
-    //if (!jsonFile.GetValue("diffuse_map_name", material->diffuseMap.texture->name)) {
-    //    // Handle missing or invalid "diffuse_map_name" field
-    //    delete material;
-    //    return nullptr;
-    //}
+    std::string texPath;
+    if (!jsonFile.GetValue("diffuse_map_name", texPath)) {
+        // Handle missing or invalid "diffuse_map_name" field
+        delete material;
+        return nullptr;
+    }
+
+    material->diffuseMap.texture = NOUS_NEW<Texture>(MemoryManager::MemoryTag::TEXTURE);
+
+    ImporterTexture::Import(texPath.c_str(), material->diffuseMap.texture);
+
+    //material->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
+    // Create a new Material object
+    //material->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(texPath.c_str(), true);
+
+    state.registeredMaterials[0].material.ID = 0;
+    state.registeredMaterials[0].autoRelease = true;
 
     // Return the populated material
-    //return material;
-    return nullptr;
+    return material;
 }
 
 Material* NOUS_MaterialSystem::AcquireMaterialFromConfig(MaterialConfig mConfig)
@@ -164,7 +198,36 @@ Material* NOUS_MaterialSystem::AcquireMaterialFromConfig(MaterialConfig mConfig)
     //return 0;
 }
 
-void NOUS_MaterialSystem::ReleaseMaterial(const char* name)
+void NOUS_MaterialSystem::ReleaseMaterial(Material* material)
 {
+    if (material && material->ID != INVALID_ID)
+    {
+        MaterialReference* ref = &state.registeredMaterials[material->ID];
+        uint32 ID = material->ID;
 
+        if (ref->material.ID == ID)
+        {
+            if (ref->referenceCount > 0)
+            {
+                ref->referenceCount--;
+            }
+
+            // Also blanks out the geometry ID.
+            if (ref->referenceCount < 1 && ref->autoRelease)
+            {
+                DestroyMaterial(&ref->material);
+
+                ref->referenceCount = 0;
+                ref->autoRelease = false;
+            }
+        }
+        else
+        {
+            NOUS_FATAL("Material ID mismatch. Check registration logic, as this should never occur.");
+        }
+
+        return;
+    }
+
+    NOUS_WARN("NOUS_GeometrySystem::ReleaseMaterial() cannot release invalid material id. Nothing was done.");
 }
