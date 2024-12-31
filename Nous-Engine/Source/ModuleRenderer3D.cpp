@@ -184,6 +184,7 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 			if (testGeometry) 
 			{
 				testGeometry->material->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(event.context.c, true);
+				//ImporterTexture::Import(event.context.c, testGeometry->material->diffuseMap.texture);
 
 				if (!testGeometry->material->diffuseMap.texture) 
 				{
