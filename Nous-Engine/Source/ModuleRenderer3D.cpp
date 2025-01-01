@@ -65,7 +65,7 @@ bool ModuleRenderer3D::Start()
 	/*GeometryConfig gConfig = NOUS_GeometrySystem::GeneratePlaneConfig(10.0f, 5.0f, 5, 5, 5.0f, 2.0f, "test_geometry", "test_material");*/
 	GeometryConfig gConfig;
 	gConfig.name = "Cypher";
-	gConfig.materialPath = "Assets/Materials/cypher_material.nmat";
+	gConfig.materialPath = "DefaultMaterial";
 	gConfig.vertices = myMesh->vertices;
 	gConfig.indices = myMesh->indices;
 
