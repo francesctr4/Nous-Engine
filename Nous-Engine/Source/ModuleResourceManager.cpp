@@ -23,18 +23,14 @@ bool ModuleResourceManager::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	Resource myresourcen;
+	Resource* myresourcen = new Resource();
 
-	UID hola = 278847;
+	myresourcen->name = "holadfgrdg";
+	myresourcen->type = ResourceType::MATERIAL;
+	myresourcen->referenceCount = 3;
+	myresourcen->UID = 278847;
 
-	myresourcen.name = "hola";
-	myresourcen.type = ResourceType::MESH;
-	myresourcen.referenceCount = 3;
-	myresourcen.UID = hola;
-
-	resources[myresourcen.UID] = &myresourcen;
-
-	NOUS_FATAL("%s", resources[hola]->name.c_str());
+	resources[myresourcen->UID] = myresourcen;
 
 	return true;
 }

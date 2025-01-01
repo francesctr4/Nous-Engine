@@ -60,22 +60,22 @@ void Resources::Draw()
                     ImGui::Text("%s", header);
                 }
 
-                //for (const auto& [UID, Resource] : External->resourceManager->GetResourcesMap())
-                //{
-                //    ImGui::TableNextRow();
+                for (const auto& [UID, Resource] : External->resourceManager->GetResourcesMap())
+                {
+                    ImGui::TableNextRow();
 
-                //    ImGui::TableSetColumnIndex(0);
-                //    ImGui::Text("%s", Resource->GetName().c_str());
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("%s", Resource->GetName().c_str());
 
-                //    ImGui::TableSetColumnIndex(1);
-                //    ImGui::Text("%d", Resource->GetUID());
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("%d", Resource->GetUID());
 
-                //    ImGui::TableSetColumnIndex(2);
-                //    ImGui::Text("%s", Resource::GetStringFromType(Resource->GetType()).c_str());
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Text("%s", Resource::GetStringFromType(Resource->GetType()).c_str());
 
-                //    ImGui::TableSetColumnIndex(3);
-                //    ImGui::Text("%d", Resource->GetReferenceCount());
-                //}
+                    ImGui::TableSetColumnIndex(3);
+                    ImGui::Text("%d", Resource->GetReferenceCount());
+                }
 
                 ImGui::EndTable();
             }
