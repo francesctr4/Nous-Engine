@@ -250,6 +250,7 @@
     <ClCompile Include="Source\FileManager.cpp" />
     <ClCompile Include="Source\GeometrySystem.cpp" />
     <ClCompile Include="Source\ImGuiCustom.cpp" />
+    <ClCompile Include="Source\ImporterMaterial.cpp" />
     <ClCompile Include="Source\ImporterMesh.cpp" />
     <ClCompile Include="Source\ImporterTexture.cpp" />
     <ClCompile Include="Source\JsonFile.cpp" />
@@ -304,6 +305,7 @@
     <ClInclude Include="Source\DynamicArray.h" />
     <ClInclude Include="Source\GeometrySystem.h" />
     <ClInclude Include="Source\ImGuiCustom.h" />
+    <ClInclude Include="Source\ImporterMaterial.h" />
     <ClInclude Include="Source\MainMenuBar.h" />
     <ClInclude Include="Source\MaterialSystem.h" />
     <ClInclude Include="Source\Properties.h" />

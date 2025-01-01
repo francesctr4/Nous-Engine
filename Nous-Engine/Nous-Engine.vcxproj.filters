@@ -414,6 +414,9 @@
     <ClCompile Include="Source\MaterialSystem.cpp">
       <Filter>Source Code\Systems\Material System</Filter>
     </ClCompile>
+    <ClCompile Include="Source\ImporterMaterial.cpp">
+      <Filter>Source Code\Systems\Resource System\Importers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1159,6 +1162,9 @@
     </ClInclude>
     <ClInclude Include="Source\MaterialSystem.h">
       <Filter>Source Code\Systems\Material System</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ImporterMaterial.h">
+      <Filter>Source Code\Systems\Resource System\Importers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
