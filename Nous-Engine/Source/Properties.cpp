@@ -1,7 +1,15 @@
 #include "Properties.h"
 
 Properties::Properties(const char* title, bool start_open) 
-    : IEditorWindow(title, nullptr, start_open) {}
+    : IEditorWindow(title, nullptr, start_open) 
+{
+    Init();
+}
+
+void Properties::Init()
+{
+
+}
 
 void Properties::Draw()
 {

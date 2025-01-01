@@ -127,6 +127,9 @@
     <Filter Include="Source Code\Renderer\GLSL">
       <UniqueIdentifier>{54e10806-e8e3-4c46-bd27-d8eddf9138cd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\!NousResource">
+      <UniqueIdentifier>{c83a4b7f-9899-4e6d-8973-6c2d055aecc9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -416,6 +419,15 @@
     </ClCompile>
     <ClCompile Include="Source\ImporterMaterial.cpp">
       <Filter>Source Code\Systems\Resource System\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ModuleResourceManager.cpp">
+      <Filter>Source Code\!NousResource</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ResourcesWindow.cpp">
+      <Filter>Source Code\!NousResource</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Resource.cpp">
+      <Filter>Source Code\!NousResource</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1165,6 +1177,15 @@
     </ClInclude>
     <ClInclude Include="Source\ImporterMaterial.h">
       <Filter>Source Code\Systems\Resource System\Importers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ModuleResourceManager.h">
+      <Filter>Source Code\!NousResource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ResourcesWindow.h">
+      <Filter>Source Code\!NousResource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Resource.h">
+      <Filter>Source Code\!NousResource</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

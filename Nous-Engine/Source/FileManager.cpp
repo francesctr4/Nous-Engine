@@ -18,6 +18,24 @@ std::string NOUS_FileManager::GetAbsolutePath(const std::string& path)
 	}
 }
 
+std::string NOUS_FileManager::GetRelativePath(const std::string& path)
+{
+	try
+	{
+		return std::filesystem::relative(path).string();
+	}
+	catch (const std::filesystem::filesystem_error& e)
+	{
+		NOUS_ERROR("File system error getting relative path: %s", e.what());
+		return {};
+	}
+}
+
+std::string NOUS_FileManager::GetDirectory(const std::string& path)
+{
+	return std::filesystem::relative(path).parent_path().string() + "\\";
+}
+
 bool NOUS_FileManager::Exists(const std::string& path)
 {
 	return std::filesystem::exists(path);
@@ -30,7 +48,7 @@ bool NOUS_FileManager::IsDirectory(const std::string& path)
 
 std::string NOUS_FileManager::GetFilename(const std::string& path)
 {
-	return std::filesystem::path(path).filename().string();
+	return std::filesystem::path(path).stem().string();
 }
 
 std::string NOUS_FileManager::GetExtension(const std::string& path)

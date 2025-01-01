@@ -127,7 +127,7 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 		}
 
 		// TODO: This shouldn't be here. The editor should have its own resources.
-		//External->editor->DrawEditor();
+		External->editor->DrawEditor();
 
 		// End of the frame. If this fails, it is likely unrecoverable.
 		bool result = EndFrame(packet->deltaTime);

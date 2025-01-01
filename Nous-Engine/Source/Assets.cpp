@@ -1,7 +1,15 @@
 #include "Assets.h"
 
 Assets::Assets(const char* title, bool start_open)
-    : IEditorWindow(title, nullptr, start_open) {}
+    : IEditorWindow(title, nullptr, start_open) 
+{
+    Init();
+}
+
+void Assets::Init()
+{
+
+}
 
 void Assets::Draw()
 {

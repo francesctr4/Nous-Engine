@@ -15,6 +15,11 @@ static void HelpMarker(const char* desc)
 AssetsBrowser::AssetsBrowser(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
 {
+    Init();
+}
+
+void AssetsBrowser::Init()
+{
     AddItems(10000);
 }
 

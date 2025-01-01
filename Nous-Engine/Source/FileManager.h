@@ -5,9 +5,13 @@
 namespace NOUS_FileManager 
 {
 	// Path utilities
-	std::string GetAbsolutePath(const std::string& path);
+	
 	bool Exists(const std::string& path);
 	bool IsDirectory(const std::string& path);
+
+	std::string GetAbsolutePath(const std::string& path);
+	std::string GetRelativePath(const std::string& path);
+	std::string GetDirectory(const std::string& path);
 	std::string GetFilename(const std::string& path);
 	std::string GetExtension(const std::string& path);
 

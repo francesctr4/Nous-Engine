@@ -1,7 +1,15 @@
 #include "MainMenuBar.h"
 
 MainMenuBar::MainMenuBar(const char* title, bool start_open)
-    : IEditorWindow(title, nullptr, start_open) {}
+    : IEditorWindow(title, nullptr, start_open) 
+{
+	Init();
+}
+
+void MainMenuBar::Init()
+{
+
+}
 
 void MainMenuBar::Draw()
 {

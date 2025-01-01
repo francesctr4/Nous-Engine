@@ -137,6 +137,7 @@ public:
     int             LayoutLineCount = 0;
 
     explicit AssetsBrowser(const char* title, bool start_open = true);
+    void Init() override;
     void Draw() override;
 
     void AddItems(int count);

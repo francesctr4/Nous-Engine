@@ -15,6 +15,7 @@ public:
 
     virtual ~IEditorWindow() = default;
 
+    virtual void Init() = 0;
     virtual void Draw() = 0;
 
     bool IsOpen() const { return *p_open; }

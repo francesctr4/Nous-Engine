@@ -153,20 +153,6 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 
 			break;
 		}
-		//case EventType::SWAP_TEXTURE: 
-		//{
-		//	const char* names[3] = { "cobblestone", "paving", "paving2" };
-		//	static int8 choice = 2;
-		//	choice++;
-		//	choice %= 3;
-
-		//	std::string path = std::format("Assets/Textures/{}.{}", names[choice], "png");
-
-		//	// Load up the new texture.
-		//	ImporterTexture::Import(path.c_str(), &rendererFrontend->testDiffuse);
-
-		//	break;
-		//}
 		case EventType::DROP_FILE:
 		{
 			// Load up the new texture.
@@ -192,16 +178,6 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 					testGeometry->material->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
 				}
 			}
-
-			break;
-		}
-		case EventType::KEY_PRESSED:
-		{
-			/*if (event.context.int64[0] == 11 && event.context.int64[1] == 1)
-			{
-				NOUS_ERROR("ModuleInput Listened");
-				NOUS_ERROR("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
-			}*/
 
 			break;
 		}

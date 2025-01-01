@@ -8,5 +8,6 @@ public:
 
     explicit Properties(const char* title, bool start_open = true);
 
+    void Init() override;
     void Draw() override;
 };

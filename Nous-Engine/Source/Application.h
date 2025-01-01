@@ -4,13 +4,14 @@
 #include "EventSystem.h"
 #include "Timer.h"
 
-constexpr uint16 NUM_MODULES = 7;
+constexpr uint16 NUM_MODULES = 8;
 
 class Module;
 class ModuleWindow;
 class ModuleInput;
 class ModuleFileSystem;
 class ModuleCamera3D;
+class ModuleResourceManager;
 class ModuleScene;
 class ModuleRenderer3D;
 class ModuleEditor;
@@ -41,6 +42,7 @@ public:
 	ModuleInput* input;
 	ModuleFileSystem* fileSystem;
 	ModuleCamera3D* camera;
+	ModuleResourceManager* resourceManager;
 	ModuleScene* scene;
 	ModuleRenderer3D* renderer;
 	ModuleEditor* editor;
