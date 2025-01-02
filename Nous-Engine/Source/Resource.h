@@ -19,6 +19,10 @@ class Resource
 {
 public:
 
+	Resource();
+	Resource(UID uID, ResourceType type);
+	virtual ~Resource();
+
 	void SetName(const std::string& name);
 	void SetUID(const UID& uid);
 	void SetType(const ResourceType& rType);
@@ -38,8 +42,10 @@ public:
 	void DecreaseReferenceCount();
 
 	bool IsLoadedOnMemory() const;
+	virtual bool LoadInMemory() = 0;
+	virtual bool UnloadFromMemory() = 0;
 
-	static std::string GetStringFromType(ResourceType type);
+	static std::string GetLibraryExtensionFromType(ResourceType type);
 	static ResourceType GetTypeFromExtension(const std::string& extension);
 	static std::string GetAssetsDirectoryFromType(ResourceType type);
 	static std::string GetLibraryDirectoryFromType(ResourceType type);

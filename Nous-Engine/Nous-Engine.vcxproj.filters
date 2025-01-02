@@ -130,6 +130,9 @@
     <Filter Include="Source Code\!NousResource">
       <UniqueIdentifier>{c83a4b7f-9899-4e6d-8973-6c2d055aecc9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\!NousResource\Resource Types">
+      <UniqueIdentifier>{70bf0e05-daba-4cdd-8d61-8fcf1e0fdb70}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -427,7 +430,16 @@
       <Filter>Source Code\!NousResource</Filter>
     </ClCompile>
     <ClCompile Include="Source\Resource.cpp">
-      <Filter>Source Code\!NousResource</Filter>
+      <Filter>Source Code\!NousResource\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ResourceMaterial.cpp">
+      <Filter>Source Code\!NousResource\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ResourceMesh.cpp">
+      <Filter>Source Code\!NousResource\Resource Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ResourceTexture.cpp">
+      <Filter>Source Code\!NousResource\Resource Types</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1185,7 +1197,16 @@
       <Filter>Source Code\!NousResource</Filter>
     </ClInclude>
     <ClInclude Include="Source\Resource.h">
-      <Filter>Source Code\!NousResource</Filter>
+      <Filter>Source Code\!NousResource\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ResourceMaterial.h">
+      <Filter>Source Code\!NousResource\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ResourceMesh.h">
+      <Filter>Source Code\!NousResource\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ResourceTexture.h">
+      <Filter>Source Code\!NousResource\Resource Types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

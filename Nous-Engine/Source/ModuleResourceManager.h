@@ -35,6 +35,13 @@ private:
 
 	std::string GetLibraryDirectory(const std::string& assetsDirectory) const;
 
+	bool CreateMetaFile(const std::string& metaFilePath, const std::string& name, const UID& uid, 
+		const ResourceType& resourceType, const std::string& assetsFilePath, const std::string& libraryFilePath);
+
+	bool ReadMetaFile(const std::string& metaFilePath, Resource* resource);
+
+	void InstantiateResource(Resource*& resource, const ResourceType& type);
+
 private:
 
 	std::unordered_map<UID, Resource*> resources;

@@ -2,11 +2,22 @@
 
 #pragma region UTILITY MAPS
 
-std::map<ResourceType, std::string> resourceTypeToString
+std::map<ResourceType, std::string> resourceTypeToLibraryExtension
 {
 	{ResourceType::MESH, "nmesh"},
 	{ResourceType::MATERIAL, "nmat"},
 	{ResourceType::TEXTURE, "png"}
+};
+
+std::map<std::string, ResourceType> extensionToResourceType
+{
+	{"fbx", ResourceType::MESH},
+	{"obj", ResourceType::MESH},
+	{"nmesh", ResourceType::MESH},
+
+	{"nmat", ResourceType::MATERIAL},
+
+	{"png", ResourceType::TEXTURE}
 };
 
 std::map<ResourceType, std::string> resourceTypeToAssetsFolder
@@ -24,6 +35,35 @@ std::map<ResourceType, std::string> resourceTypeToLibraryFolder
 };
 
 #pragma endregion
+
+Resource::Resource()
+{
+	this->type = ResourceType::UNKNOWN;
+	this->uID = 0;
+	this->referenceCount = 0;
+	this->isLoaded = false;
+}
+
+Resource::Resource(UID uID, ResourceType type)
+{
+	this->type = type;
+	this->uID = uID;
+	this->referenceCount = 0;
+	this->isLoaded = false;
+}
+
+Resource::~Resource()
+{
+	this->name.clear();
+	this->uID = 0;
+	this->type = ResourceType::UNKNOWN;
+	this->referenceCount = 0;
+
+	this->assetsFilePath.clear();
+	this->libraryFilePath.clear();
+
+	this->isLoaded = false;
+}
 
 void Resource::SetName(const std::string& name)
 {
@@ -95,9 +135,9 @@ bool Resource::IsLoadedOnMemory() const
 	return isLoaded;
 }
 
-std::string Resource::GetStringFromType(ResourceType type)
+std::string Resource::GetLibraryExtensionFromType(ResourceType type)
 {
-	return resourceTypeToString.at(type);
+	return resourceTypeToLibraryExtension.at(type);
 }
 
 ResourceType Resource::GetTypeFromExtension(const std::string& extension)
@@ -112,11 +152,11 @@ ResourceType Resource::GetTypeFromExtension(const std::string& extension)
 		normalizedExtension = extension.substr(1);
 	}
 
-	for (const auto& pair : resourceTypeToString)
+	for (const auto& pair : extensionToResourceType)
 	{
-		if (pair.second == normalizedExtension)
+		if (pair.first == normalizedExtension)
 		{
-			tmpType = pair.first;
+			tmpType = pair.second;
 			break;
 		}
 	}

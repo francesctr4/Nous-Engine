@@ -35,7 +35,10 @@ static const char* memoryTagStrings[static_cast<uint64>(MemoryManager::MemoryTag
 	"SCENE			",
 	"INPUT			",
 	"LINEAR_ALLOC		",
-	"FILE			"
+	"FILE			",
+	"RESOURCE_MESH		",
+	"RESOURCE_TEXTURE	",
+	"RESOURCE_MATERIAL	"
 };
 
 static struct MemoryStats stats;

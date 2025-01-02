@@ -134,12 +134,12 @@ void Resources::DisplayResource(const Resource* resource, const ImVec4& textColo
 
     ImGui::TableSetColumnIndex(1);
     ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-    ImGui::Text("%d", resource->GetUID());
+    ImGui::Text("%u", resource->GetUID());
     ImGui::PopStyleColor();
 
     ImGui::TableSetColumnIndex(2);
     ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-    ImGui::Text("%s", Resource::GetStringFromType(resource->GetType()).c_str());
+    ImGui::Text("%s", Resource::GetLibraryExtensionFromType(resource->GetType()).c_str());
     ImGui::PopStyleColor();
 
     ImGui::TableSetColumnIndex(3);

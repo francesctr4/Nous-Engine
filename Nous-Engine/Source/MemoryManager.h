@@ -26,7 +26,10 @@ namespace MemoryManager
 		SCENE,
 		INPUT,
 		LINEAR_ALLOCATOR,
-		FILE, 
+		FILE,
+		RESOURCE_MESH,
+		RESOURCE_TEXTURE,
+		RESOURCE_MATERIAL,
 
 		MAX
 	};
