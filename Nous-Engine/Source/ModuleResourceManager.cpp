@@ -1,7 +1,10 @@
 #include "ModuleResourceManager.h"
 #include "Resource.h"
 
+#include "ModuleInput.h"
 #include "FileManager.h"
+
+#include "MemoryManager.h"
 
 ModuleResourceManager::ModuleResourceManager(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
@@ -22,22 +25,51 @@ bool ModuleResourceManager::Awake()
 bool ModuleResourceManager::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
-	Resource* myresourcen = new Resource();
-
-	myresourcen->name = "holadfgrdg";
-	myresourcen->type = ResourceType::MATERIAL;
-	myresourcen->referenceCount = 3;
-	myresourcen->UID = 278847;
-
-	resources[myresourcen->UID] = myresourcen;
-
 	return true;
 }
+
+static int sdggsgr = 0;
 
 UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN) {
+		Resource* myresourcen = new Resource();
+
+		myresourcen->SetName("holadfgrdg");
+		myresourcen->SetType(ResourceType::TEXTURE);
+		myresourcen->IncreaseReferenceCount();
+		myresourcen->SetUID(sdggsgr);
+		sdggsgr++;
+
+		resources[myresourcen->GetUID()] = myresourcen;
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_J) == KeyState::DOWN) {
+		Resource* myresourcen = new Resource();
+
+		myresourcen->SetName("holadfgrdg");
+		myresourcen->SetType(ResourceType::MESH);
+		myresourcen->IncreaseReferenceCount();
+		myresourcen->SetUID(sdggsgr);
+		sdggsgr++;
+
+		resources[myresourcen->GetUID()] = myresourcen;
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_K) == KeyState::DOWN) {
+		Resource* myresourcen = new Resource();
+
+		myresourcen->SetName("holadfgrdg");
+		myresourcen->SetType(ResourceType::MATERIAL);
+		myresourcen->IncreaseReferenceCount();
+		myresourcen->SetUID(sdggsgr);
+		sdggsgr++;
+
+		resources[myresourcen->GetUID()] = myresourcen;
+	}
+
 	return UPDATE_CONTINUE;
 }
 
@@ -78,14 +110,79 @@ void ModuleResourceManager::ReceiveEvent(const Event& event)
 	}
 }
 
-void ModuleResourceManager::ImportFile(const std::string& path)
+bool ModuleResourceManager::ImportFile(const std::string& path)
 {
-	std::string assetsPath = NOUS_FileManager::GetRelativePath(path);
-	std::string assetsDirectory = NOUS_FileManager::GetDirectory(path);
+	std::string relativePath = NOUS_FileManager::GetRelativePath(path);
+	std::string fileDirectory = NOUS_FileManager::GetDirectory(path);
 	std::string fileName = NOUS_FileManager::GetFilename(path);
 	std::string extension = NOUS_FileManager::GetExtension(path);
 
-	std::string libraryDirectory = GetLibraryDirectory(assetsDirectory);
+	ResourceType resourceType = Resource::GetTypeFromExtension(extension);
+
+	if (fileDirectory.rfind("Assets\\", 0) == 0)
+	{
+		// CASE 1,2,3: The file is in "Assets\\"
+		
+	}
+	else if (fileDirectory.rfind("Library\\", 0) == 0)
+	{
+		// CASE 4: The file is in "Library\\"
+
+		//Resource* resource = NOUS_NEW<Resource>(MemoryManager::MemoryTag::ENTITY);
+
+		//resource->SetUID(static_cast<UID>(std::stoul(fileName)));
+		//resource->SetType(resourceType);
+		//resource->SetLibraryPath(path);
+
+		switch (resourceType)
+		{
+			case ResourceType::MESH: 
+			{
+
+
+				break;
+			}	
+			case ResourceType::MATERIAL: 
+			{
+				break;
+			}
+			case ResourceType::TEXTURE: 
+			{
+				break;
+			}
+			case ResourceType::UNKNOWN:
+			{
+				break;
+			}
+		}
+	}
+	else 
+	{
+		// CASE 0: The file is not in "Assets\\" nor "Library\\"
+		// Copy to "Assets\\"
+
+		if (resourceType != ResourceType::UNKNOWN)
+		{
+			std::string newPath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension;
+
+			if (NOUS_FileManager::CopyFile(path, newPath))
+			{
+				ImportFile(newPath);
+			}
+			else
+			{
+				NOUS_ERROR("Import File ERROR: CASE 0 --> Error while copying the file to Assets\\ directory.");
+				return false;
+			}
+		}
+		else 
+		{
+			NOUS_ERROR("Import File ERROR: CASE 0 --> Unknown file extension: %s", extension.c_str());
+			return false;
+		}
+	}
+
+	return true;
 }
 
 std::unordered_map<UID, Resource*> ModuleResourceManager::GetResourcesMap() const
@@ -95,6 +192,6 @@ std::unordered_map<UID, Resource*> ModuleResourceManager::GetResourcesMap() cons
 
 std::string ModuleResourceManager::GetLibraryDirectory(const std::string& assetsDirectory) const
 {
-	// Temporary
+	// TODO
 	return std::string();
 }

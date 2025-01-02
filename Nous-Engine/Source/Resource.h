@@ -6,29 +6,48 @@ using UID = uint32;
 
 enum class ResourceType 
 {
+	UNKNOWN = -1,
+
 	MESH,
 	MATERIAL,
-	TEXTURE
+	TEXTURE,
+
+	ALL_TYPES
 };
 
 class Resource 
 {
 public:
 
+	void SetName(const std::string& name);
+	void SetUID(const UID& uid);
+	void SetType(const ResourceType& rType);
+
+	void SetAssetsPath(const std::string& assetsFilePath);
+	void SetLibraryPath(const std::string& libraryFilePath);
+
 	std::string GetName() const;
 	UID GetUID() const;
 	ResourceType GetType() const;
-	uint32 GetReferenceCount() const;
 
 	std::string GetAssetsPath() const;
 	std::string GetLibraryPath() const;
 
-	static std::string GetStringFromType(ResourceType type);
+	uint32 GetReferenceCount() const;
+	void IncreaseReferenceCount();
+	void DecreaseReferenceCount();
 
-public:
+	bool IsLoadedOnMemory() const;
+
+	static std::string GetStringFromType(ResourceType type);
+	static ResourceType GetTypeFromExtension(const std::string& extension);
+	static std::string GetAssetsDirectoryFromType(ResourceType type);
+	static std::string GetLibraryDirectoryFromType(ResourceType type);
+
+private:
 
 	std::string name;
-	UID UID;
+	UID uID;
 	ResourceType type;
 	uint32 referenceCount;
 

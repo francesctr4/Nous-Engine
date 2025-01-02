@@ -2,6 +2,9 @@
 
 #include "IEditorWindow.inl"
 
+enum class ResourceType;
+class Resource;
+
 class Resources : public IEditorWindow
 {
 public:
@@ -10,4 +13,11 @@ public:
 
     void Init() override;
     void Draw() override;
+
+private:
+
+    void AlignHeadersToCenter();
+
+    void ChooseTextColor(const ResourceType& type, ImVec4& color);
+    void DisplayResource(const Resource* resource, const ImVec4& textColor);
 };

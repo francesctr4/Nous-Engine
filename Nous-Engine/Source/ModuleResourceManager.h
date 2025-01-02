@@ -28,7 +28,7 @@ public:
 
 	// ------------------------------------------------------------------------ //
 
-	void ImportFile(const std::string& path);
+	bool ImportFile(const std::string& path);
 	std::unordered_map<UID, Resource*> GetResourcesMap() const;
 
 private:

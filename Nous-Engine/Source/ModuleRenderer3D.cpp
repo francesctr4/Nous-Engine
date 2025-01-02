@@ -54,13 +54,13 @@ bool ModuleRenderer3D::Start()
 
 	Mesh* myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
 
-	ImporterMesh::Import("Assets/Models/Cypher_S0_Skelmesh.fbx", myMesh);
-	ImporterMesh::Save("Library/Models/Cypher_S0_Skelmesh.nmesh", *myMesh);
+	ImporterMesh::Import("Assets/Meshes/Cypher_S0_Skelmesh.fbx", myMesh);
+	ImporterMesh::Save("Library/Meshes/Cypher_S0_Skelmesh.nmesh", *myMesh);
 
 	NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
 	myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
 
-	ImporterMesh::Load("Library/Models/Cypher_S0_Skelmesh.nmesh", myMesh);
+	ImporterMesh::Load("Library/Meshes/Cypher_S0_Skelmesh.nmesh", myMesh);
 
 	/*GeometryConfig gConfig = NOUS_GeometrySystem::GeneratePlaneConfig(10.0f, 5.0f, 5, 5, 5.0f, 2.0f, "test_geometry", "test_material");*/
 	GeometryConfig gConfig;
