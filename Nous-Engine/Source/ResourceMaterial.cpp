@@ -14,11 +14,7 @@ ResourceMaterial::~ResourceMaterial()
 
 bool ResourceMaterial::LoadInMemory()
 {
-	//ImporterMaterial::Load();
-
-	IncreaseReferenceCount();
-
-	return false;
+	return ImporterMaterial::Load(this->GetLibraryPath().c_str(), this);
 }
 
 bool ResourceMaterial::UnloadFromMemory()

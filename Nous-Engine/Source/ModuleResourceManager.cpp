@@ -12,6 +12,7 @@
 
 #include "Random.h"
 #include "JsonFile.h"
+#include "MetaFileData.inl"
 
 ModuleResourceManager::ModuleResourceManager(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
@@ -93,6 +94,14 @@ UpdateStatus ModuleResourceManager::PostUpdate(float dt)
 bool ModuleResourceManager::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	for (auto& [UID, Resource] : resources)
+	{
+		DeleteResource(Resource);
+	}
+
+	resources.clear();
+
 	return true;
 }
 
@@ -140,123 +149,127 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 			std::string libraryPath = Resource::GetLibraryDirectoryFromType(resourceType) +
 									  std::to_string(resourceUID) + "." + libraryExtension;
 
-			if (!CreateMetaFile(metaFilePath, fileName, resourceUID, resourceType, relativePath, libraryPath)) 
+			MetaFileData metaFileData;
+
+			metaFileData.name = fileName;
+			metaFileData.uid = resourceUID;
+			metaFileData.resourceType = resourceType;
+			metaFileData.assetsPath = relativePath;
+			metaFileData.libraryPath = libraryPath;
+
+			if (!CreateMetaFile(metaFilePath, metaFileData)) 
 			{
 				NOUS_ERROR("Import File ERROR: CASE 1 --> Error creating meta file: %s", metaFilePath.c_str());
 				return false;
 			}
 
-			Resource* resource = NOUS_NEW<ResourceMesh>(MemoryManager::MemoryTag::ENTITY, 5);
+			//Resource* resource = NOUS_NEW<ResourceMesh>(MemoryManager::MemoryTag::ENTITY, 5);
 
-			resource->SetName(fileName);
-			resource->SetUID(resourceUID);
-			resource->SetType(resourceType);
-			resource->SetAssetsPath(relativePath);
-			resource->SetLibraryPath(libraryPath);
+			//resource->SetName(fileName);
+			//resource->SetUID(resourceUID);
+			//resource->SetType(resourceType);
+			//resource->SetAssetsPath(relativePath);
+			//resource->SetLibraryPath(libraryPath);
 
-			NOUS_DELETE(resource, MemoryManager::MemoryTag::ENTITY);
-
-			/*switch (resourceType)
-			{
-				case ResourceType::MESH: 
-				{
-
-					break;
-				}
-				case ResourceType::MATERIAL: 
-				{
-
-					break;
-				}
-				case ResourceType::TEXTURE: 
-				{
-
-					break;
-				}
-				case ResourceType::UNKNOWN:
-				{
-
-					break;
-				}
-			}*/
+			//NOUS_DELETE(resource, MemoryManager::MemoryTag::ENTITY);
 		}
 		else 
 		{
 			// CASE 2,3: The file is in "Assets\\" and HAS Meta File
 			// Retrieve data from Meta File
 
-			Resource* resource = nullptr;
-			InstantiateResource(resource, resourceType);
+			MetaFileData metaFileData;
 
-			if (resource != nullptr) 
+			if (!ReadMetaFile(metaFilePath, metaFileData))
 			{
-				if (!ReadMetaFile(metaFilePath.c_str(), resource))
-				{
-					NOUS_ERROR("Import File ERROR: CASE 2,3 --> Error reading meta file: %s", metaFilePath.c_str());
-					return false;
-				}
+				NOUS_ERROR("Import File ERROR: CASE 2,3 --> Error reading meta file: %s", metaFilePath.c_str());
+				return false;
+			}
 
-				if (!NOUS_FileManager::Exists(resource->GetLibraryPath()))
-				{
-					// CASE 2: The file is in "Assets\\" and HAS Meta File but NO Library File
-					// Reimport to create library file with the same UID and data from meta file
+			if (!ResourceExists(metaFileData.uid))
+			{
+				// Create a new resource
+				Resource* resource = InstantiateResource(metaFileData.resourceType);
 
+				if (resource != nullptr)
+				{
+					resource->SetName(metaFileData.name);
+					resource->SetUID(metaFileData.uid);
+					resource->SetType(metaFileData.resourceType);
+					resource->SetAssetsPath(metaFileData.assetsPath);
+					resource->SetLibraryPath(metaFileData.libraryPath);
+
+					if (!NOUS_FileManager::Exists(resource->GetLibraryPath()))
+					{
+						// CASE 2: The file is in "Assets\\" and HAS Meta File but NO Library File
+						// Reimport to create library file with the same UID and data from meta file
+
+					}
+					else
+					{
+						// DONE
+						// CASE 3: The file is in "Assets\\" and HAS Meta File AND Library File
+						// Load the Library File
+
+						resource->LoadInMemory();
+						resource->IncreaseReferenceCount();
+
+						resources[resource->GetUID()] = resource;
+					}
 				}
 				else
 				{
-					// CASE 3: The file is in "Assets\\" and HAS Meta File AND Library File
-					// Load the Library File
-
-					resource->LoadInMemory();
-
-					resources[resource->GetUID()] = resource;
+					NOUS_ERROR("Import File ERROR: CASE 2,3 --> Failed to Instantiate Resource. Returned nullptr.");
+					return false;
 				}
 			}
 			else 
 			{
-				NOUS_ERROR("Import File ERROR: CASE 2,3 --> Failed to Instantiate Resource. Returned nullptr.");
-				return false;
+				// Get existing resource
+				NOUS_WARN("Import File WARNING: CASE 2,3 --> Attempted to import an existing resource.");
+				resources[metaFileData.uid]->IncreaseReferenceCount();
 			}
 		}
 	}
 	else if (fileDirectory.rfind("Library\\", 0) == 0)
 	{
-		// TODO
+		// DONE
 		// CASE 4: The file is in "Library\\"
+		// Load the Library File
 
-		//Resource* resource = NOUS_NEW<Resource>(MemoryManager::MemoryTag::ENTITY);
+		UID resourceUID = static_cast<UID>(std::stoul(fileName));
 
-		//resource->SetUID(static_cast<UID>(std::stoul(fileName)));
-		//resource->SetType(resourceType);
-		//resource->SetLibraryPath(path);
+		if (!ResourceExists(resourceUID)) 
+		{
+			// Create a new resource
+			Resource* resource = InstantiateResource(resourceType);
 
-		//switch (resourceType)
-		//{
-		//	case ResourceType::MESH: 
-		//	{
+			if (resource != nullptr)
+			{
+				resource->SetUID(resourceUID);
+				resource->SetType(resourceType);
+				resource->SetLibraryPath(path);
 
+				resource->LoadInMemory(); // Retrieve name and assetspath inside, from libraryFile
+				//resource->SetName(fileName);
+				//resource->SetAssetsPath(path);
 
-		//		break;
-		//	}	
-		//	case ResourceType::MATERIAL: 
-		//	{
+				resource->IncreaseReferenceCount();
 
-
-		//		break;
-		//	}
-		//	case ResourceType::TEXTURE: 
-		//	{
-
-
-		//		break;
-		//	}
-		//	case ResourceType::UNKNOWN:
-		//	{
-		//		NOUS_ERROR("Import File ERROR: CASE 4 --> Unsupported file extension: %s", extension.c_str());
-		//		return false;
-		//		break;
-		//	}
-		//}
+				resources[resource->GetUID()] = resource;
+			}
+			else
+			{
+				NOUS_ERROR("Import File ERROR: CASE 4 --> Failed to Instantiate Resource. Returned nullptr.");
+				return false;
+			}
+		}
+		else 
+		{
+			// Get existing resource
+			NOUS_WARN("Import File WARNING: CASE 4 --> Attempted to import an existing resource.");
+			resources[resourceUID]->IncreaseReferenceCount();
+		}
 	}
 	else 
 	{
@@ -293,56 +306,58 @@ std::unordered_map<UID, Resource*> ModuleResourceManager::GetResourcesMap() cons
 	return resources;
 }
 
-std::string ModuleResourceManager::GetLibraryDirectory(const std::string& assetsDirectory) const
-{
-	// TODO
-	return std::string();
-}
-
-bool ModuleResourceManager::CreateMetaFile(const std::string& metaFilePath, const std::string& name, const UID& uid, 
-	const ResourceType& resourceType, const std::string& assetsFilePath, const std::string& libraryFilePath)
+bool ModuleResourceManager::CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData)
 {
 	JsonFile metaFile;
 
-	metaFile.AppendValue("Name", name);
-	metaFile.AppendValue("UID", static_cast<double>(uid));
-	metaFile.AppendValue("Resource Type", static_cast<int>(resourceType));
-	metaFile.AppendValue("Assets Path", assetsFilePath);
-	metaFile.AppendValue("Library Path", libraryFilePath);
+	metaFile.AppendValue("Name", inFileData.name);
+	metaFile.AppendValue("UID", static_cast<double>(inFileData.uid));
+	metaFile.AppendValue("Resource Type", static_cast<int>(inFileData.resourceType));
+	metaFile.AppendValue("Assets Path", inFileData.assetsPath);
+	metaFile.AppendValue("Library Path", inFileData.libraryPath);
 
 	return metaFile.SaveToFile(metaFilePath.c_str());
 }
 
-bool ModuleResourceManager::ReadMetaFile(const std::string& metaFilePath, Resource* resource)
+bool ModuleResourceManager::ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData)
 {
 	JsonFile metaFile;
 
-	if (!metaFile.LoadFromFile(metaFilePath.c_str())) 
+	// Load the JSON file
+	if (!metaFile.LoadFromFile(metaFilePath.c_str()))
 	{
 		return false;
 	}
 
-	std::string fileName, assetsPath, libraryPath;
-	double resourceUID;
-	int resourceType;
+	// Variables to hold the intermediate values
+	std::string r_fileName, r_assetsPath, r_libraryPath;
+	int r_resourceType;
+	double r_resourceUID;
 
-	metaFile.GetValue("Name", fileName);
-	metaFile.GetValue("UID", resourceUID);
-	metaFile.GetValue("Resource Type", resourceType);
-	metaFile.GetValue("Assets Path", assetsPath);
-	metaFile.GetValue("Library Path", libraryPath);
+	// Retrieve values using GetValue
+	if (!metaFile.GetValue("Name", r_fileName) ||
+		!metaFile.GetValue("UID", r_resourceUID) ||
+		!metaFile.GetValue("Resource Type", r_resourceType) ||
+		!metaFile.GetValue("Assets Path", r_assetsPath) ||
+		!metaFile.GetValue("Library Path", r_libraryPath))
+	{
+		return false; // Return false if any required field is missing or invalid
+	}
 
-	resource->SetName(fileName);
-	resource->SetUID(static_cast<UID>(resourceUID));
-	resource->SetType(static_cast<ResourceType>(resourceType));
-	resource->SetAssetsPath(assetsPath);
-	resource->SetLibraryPath(libraryPath);
+	// Assign values to outFileData, casting where necessary
+	outFileData.name = r_fileName;
+	outFileData.uid = static_cast<UID>(r_resourceUID); // Casting double to UID
+	outFileData.resourceType = static_cast<ResourceType>(r_resourceType); // Casting int to ResourceType
+	outFileData.assetsPath = r_assetsPath;
+	outFileData.libraryPath = r_libraryPath;
 
 	return true;
 }
 
-void ModuleResourceManager::InstantiateResource(Resource*& resource, const ResourceType& type)
+Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
 {
+	Resource* resource = nullptr;
+
 	switch (type)
 	{
 		case ResourceType::MESH:
@@ -360,10 +375,47 @@ void ModuleResourceManager::InstantiateResource(Resource*& resource, const Resou
 			resource = NOUS_NEW<ResourceTexture>(MemoryManager::MemoryTag::RESOURCE_TEXTURE);
 			break;
 		}
-		case ResourceType::UNKNOWN:
+	}
+
+	return resource;
+}
+
+void ModuleResourceManager::DeleteResource(Resource*& resource)
+{
+	switch (resource->GetType())
+	{
+		case ResourceType::MESH:
 		{
-			resource = nullptr;
+			NOUS_DELETE(resource, MemoryManager::MemoryTag::RESOURCE_MESH);
+			break;
+		}
+		case ResourceType::MATERIAL:
+		{
+			NOUS_DELETE(resource, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+			break;
+		}
+		case ResourceType::TEXTURE:
+		{
+			NOUS_DELETE(resource, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
 			break;
 		}
 	}
+}
+
+bool ModuleResourceManager::ResourceExists(const UID& uid)
+{
+	return !(resources.find(uid) == resources.end());
+}
+
+Resource* ModuleResourceManager::RequestResource(const UID& uid)
+{
+	if (!ResourceExists(uid)) 
+	{
+		return nullptr;
+	}
+
+	resources[uid]->LoadInMemory();
+	resources[uid]->IncreaseReferenceCount();
+
+	return resources[uid];
 }

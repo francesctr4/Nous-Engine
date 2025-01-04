@@ -88,9 +88,6 @@
     <Filter Include="Source Code\Systems\Time System\Time Management">
       <UniqueIdentifier>{01d6b9c2-add3-4cd7-95af-8172d197a115}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\Systems\Resource System\Importers">
-      <UniqueIdentifier>{9e8975b9-a62c-49b1-9d6e-31c6df4059dd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Externals\ImGui">
       <UniqueIdentifier>{716b3e2b-e692-453a-b766-bcc506e84eab}</UniqueIdentifier>
     </Filter>
@@ -132,6 +129,9 @@
     </Filter>
     <Filter Include="Source Code\!NousResource\Resource Types">
       <UniqueIdentifier>{70bf0e05-daba-4cdd-8d61-8fcf1e0fdb70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\!NousResource\Importers">
+      <UniqueIdentifier>{9e8975b9-a62c-49b1-9d6e-31c6df4059dd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -343,10 +343,10 @@
       <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterMesh.cpp">
-      <Filter>Source Code\Systems\Resource System\Importers</Filter>
+      <Filter>Source Code\!NousResource\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterTexture.cpp">
-      <Filter>Source Code\Systems\Resource System\Importers</Filter>
+      <Filter>Source Code\!NousResource\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\Camera.cpp">
       <Filter>Source Code\Systems\Camera System</Filter>
@@ -421,7 +421,7 @@
       <Filter>Source Code\Systems\Material System</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterMaterial.cpp">
-      <Filter>Source Code\Systems\Resource System\Importers</Filter>
+      <Filter>Source Code\!NousResource\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\ModuleResourceManager.cpp">
       <Filter>Source Code\!NousResource</Filter>
@@ -999,10 +999,10 @@
       <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterMesh.h">
-      <Filter>Source Code\Systems\Resource System\Importers</Filter>
+      <Filter>Source Code\!NousResource\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterTexture.h">
-      <Filter>Source Code\Systems\Resource System\Importers</Filter>
+      <Filter>Source Code\!NousResource\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\Camera.h">
       <Filter>Source Code\Systems\Camera System</Filter>
@@ -1188,7 +1188,7 @@
       <Filter>Source Code\Systems\Material System</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterMaterial.h">
-      <Filter>Source Code\Systems\Resource System\Importers</Filter>
+      <Filter>Source Code\!NousResource\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\ModuleResourceManager.h">
       <Filter>Source Code\!NousResource</Filter>
@@ -1207,6 +1207,9 @@
     </ClInclude>
     <ClInclude Include="Source\ResourceTexture.h">
       <Filter>Source Code\!NousResource\Resource Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\MetaFileData.inl">
+      <Filter>Source Code\!NousResource</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1272,6 +1275,9 @@
     </None>
     <None Include="Source\IEditorWindow.inl">
       <Filter>Source Code\Editor</Filter>
+    </None>
+    <None Include="Source\Importer.inl">
+      <Filter>Source Code\!NousResource\Importers</Filter>
     </None>
   </ItemGroup>
 </Project>

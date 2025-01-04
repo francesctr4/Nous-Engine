@@ -314,6 +314,7 @@
     <ClInclude Include="Source\ImporterMaterial.h" />
     <ClInclude Include="Source\MainMenuBar.h" />
     <ClInclude Include="Source\MaterialSystem.h" />
+    <ClInclude Include="Source\MetaFileData.inl" />
     <ClInclude Include="Source\ModuleResourceManager.h" />
     <ClInclude Include="Source\Properties.h" />
     <ClInclude Include="Source\EventSystem.h" />
@@ -575,6 +576,7 @@
     <None Include="Source\External\MathGeoLib\include\Geometry\TriangleMesh_IntersectRay_CPP.inl" />
     <None Include="Source\External\MathGeoLib\include\Geometry\TriangleMesh_IntersectRay_SSE.inl" />
     <None Include="Source\External\MathGeoLib\include\Math\Matrix.inl" />
+    <None Include="Source\Importer.inl" />
     <None Include="Source\OpenGLTypes.inl" />
     <None Include="Source\RendererTypes.inl" />
     <None Include="Source\ResourceTypes.inl" />

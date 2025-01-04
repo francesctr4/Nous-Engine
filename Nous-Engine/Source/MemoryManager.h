@@ -99,7 +99,7 @@ CUSTOM_NEW_ARRAY(NOUS_NEW_ARRAY)
 
 #define CUSTOM_DELETE(name) \
 template<typename T> \
-void name(T* ptr, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) \
+void name(T*& ptr, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) \
 { \
     if (ptr != nullptr) \
     { \
@@ -119,7 +119,7 @@ CUSTOM_DELETE(NOUS_DELETE)
 
 #define CUSTOM_DELETE_ARRAY(name) \
 template<typename T> \
-void name(T* ptr, size_t count, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) \
+void name(T*& ptr, size_t count, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) \
 { \
     if (ptr != nullptr) \
     { \

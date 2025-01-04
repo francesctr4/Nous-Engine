@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Module.h"
-
 #include "Resource.h"
+
 using UID = uint32;
+struct MetaFileData;
 
 class ModuleResourceManager : public Module
 {
@@ -33,14 +34,14 @@ public:
 
 private:
 
-	std::string GetLibraryDirectory(const std::string& assetsDirectory) const;
+	bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
+	bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
 
-	bool CreateMetaFile(const std::string& metaFilePath, const std::string& name, const UID& uid, 
-		const ResourceType& resourceType, const std::string& assetsFilePath, const std::string& libraryFilePath);
+	Resource* InstantiateResource(const ResourceType& type);
+	void DeleteResource(Resource*& resource);
 
-	bool ReadMetaFile(const std::string& metaFilePath, Resource* resource);
-
-	void InstantiateResource(Resource*& resource, const ResourceType& type);
+	bool ResourceExists(const UID& uid);
+	Resource* RequestResource(const UID& uid);
 
 private:
 
