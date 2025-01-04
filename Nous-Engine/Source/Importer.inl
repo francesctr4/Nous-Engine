@@ -1,13 +1,15 @@
 #pragma once
 
 #include "Globals.h"
-#include "Resource.h"
+
+class Resource;
+struct MetaFileData;
 
 struct Importer
 {
     virtual ~Importer() = default;
 
-    virtual bool Import(const std::string& assetsPath) = 0;
-    virtual bool Save(const std::string& libraryPath, const Resource* inResource) = 0;
-    virtual bool Load(const std::string& libraryPath, Resource* outResource) = 0;
+    virtual bool Import(const MetaFileData& metaFileData) = 0;
+    virtual bool Save(const MetaFileData& metaFileData, const Resource* inResource) = 0;
+    virtual bool Load(const MetaFileData& metaFileData, Resource* outResource) = 0;
 };

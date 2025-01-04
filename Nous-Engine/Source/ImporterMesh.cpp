@@ -209,14 +209,14 @@ void ProcessMesh(aiMesh* mesh, const aiScene* scene, Mesh* outMesh);
 //
 //}
 
-bool ImporterMesh::Import(const std::string& assetsPath)
+bool ImporterMesh::Import(const MetaFileData& metaFileData)
 {
     // TODO
 
     return true;
 }
 
-bool ImporterMesh::Save(const std::string& libraryPath, const Resource* inResource)
+bool ImporterMesh::Save(const MetaFileData& metaFileData, const Resource* inResource)
 {
     const ResourceMesh* mesh = static_cast<const ResourceMesh*>(inResource);
     if (!mesh) return false;
@@ -226,12 +226,14 @@ bool ImporterMesh::Save(const std::string& libraryPath, const Resource* inResour
     return true;
 }
 
-bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
+bool ImporterMesh::Load(const MetaFileData& metaFileData, Resource* outResource)
 {
     ResourceMesh* mesh = static_cast<ResourceMesh*>(outResource);
     if (!mesh) return false;
 
-    // TODO
+    // TODO: Load
+
+    mesh->IncreaseReferenceCount();
 
     return true;
 }

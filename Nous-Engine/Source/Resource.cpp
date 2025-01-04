@@ -2,14 +2,14 @@
 
 #pragma region UTILITY MAPS
 
-std::map<ResourceType, std::string> resourceTypeToLibraryExtension
+static const std::unordered_map<ResourceType, std::string> resourceTypeToLibraryExtension
 {
 	{ResourceType::MESH, "nmesh"},
 	{ResourceType::MATERIAL, "nmat"},
 	{ResourceType::TEXTURE, "png"}
 };
 
-std::map<std::string, ResourceType> extensionToResourceType
+static const std::unordered_map<std::string_view, ResourceType> extensionToResourceType
 {
 	{"fbx", ResourceType::MESH},
 	{"obj", ResourceType::MESH},
@@ -20,14 +20,14 @@ std::map<std::string, ResourceType> extensionToResourceType
 	{"png", ResourceType::TEXTURE}
 };
 
-std::map<ResourceType, std::string> resourceTypeToAssetsFolder
+static const std::unordered_map<ResourceType, std::string> resourceTypeToAssetsFolder
 {
 	{ResourceType::MESH, "Assets\\Meshes\\"},
 	{ResourceType::MATERIAL, "Assets\\Materials\\"},
 	{ResourceType::TEXTURE, "Assets\\Textures\\"},
 };
 
-std::map<ResourceType, std::string> resourceTypeToLibraryFolder
+static const std::unordered_map<ResourceType, std::string> resourceTypeToLibraryFolder
 {
 	{ResourceType::MESH, "Library\\Meshes\\"},
 	{ResourceType::MATERIAL, "Library\\Materials\\"},
@@ -135,6 +135,11 @@ bool Resource::IsLoadedOnMemory() const
 	return isLoaded;
 }
 
+int16 Resource::GetIndexFromType(const ResourceType& type)
+{
+	return static_cast<int16>(type);
+}
+
 std::string Resource::GetLibraryExtensionFromType(ResourceType type)
 {
 	return resourceTypeToLibraryExtension.at(type);
@@ -142,26 +147,11 @@ std::string Resource::GetLibraryExtensionFromType(ResourceType type)
 
 ResourceType Resource::GetTypeFromExtension(const std::string& extension)
 {
-	ResourceType tmpType = ResourceType::UNKNOWN;
+	std::string_view normalizedExtension = (extension[0] == '.') ? std::string_view(extension).substr(1) : extension;
 
-	// Remove the leading dot, if present.
-	std::string normalizedExtension = extension;
+	auto it = extensionToResourceType.find(normalizedExtension);
 
-	if (!extension.empty() && extension[0] == '.')
-	{
-		normalizedExtension = extension.substr(1);
-	}
-
-	for (const auto& pair : extensionToResourceType)
-	{
-		if (pair.first == normalizedExtension)
-		{
-			tmpType = pair.second;
-			break;
-		}
-	}
-
-	return tmpType;
+	return (it != extensionToResourceType.end()) ? it->second : ResourceType::UNKNOWN;
 }
 
 std::string Resource::GetAssetsDirectoryFromType(ResourceType type)

@@ -4,6 +4,9 @@
 
 #include "ResourceMaterial.h"
 
+#include "MemoryManager.h"
+#include "MetaFileData.inl"
+
 //bool ImporterMaterial::Load(const char* path, ResourceMaterial* material)
 //{
 //    JsonFile jsonFile;
@@ -82,29 +85,62 @@
 //	return true;
 //}
 
-bool ImporterMaterial::Import(const std::string& assetsPath)
+bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 {
-    // TODO
-
-    return true;
-}
-
-bool ImporterMaterial::Save(const std::string& libraryPath, const Resource* inResource)
-{
-    const ResourceMaterial* material = static_cast<const ResourceMaterial*>(inResource);
-    if (!material) return false;
-
     // TODO
     
+    JsonFile jsonFile;
+    
+	if (!jsonFile.LoadFromFile(metaFileData.assetsPath.c_str()))
+	{
+		NOUS_ERROR("Error in ImporterMaterial::Load(). Unable to load the file");
+		return false;
+	}
+
+	//if (!jsonFile.GetValue("name", name))
+	//{
+	//	NOUS_ERROR("Error in ImporterMaterial::Load(). Missing or invalid name field");
+	//	return false;
+	//}
+
+	//if (!jsonFile.GetValue("diffuse_color", materialConfig->diffuseColor))
+	//{
+	//	NOUS_ERROR("Error in ImporterMaterial::Load(). Missing or invalid diffuse_color field");
+	//	return false;
+	//}
+
+	//if (!jsonFile.GetValue("diffuse_map_name", materialConfig->diffuseMapName))
+	//{
+	//	NOUS_ERROR("Error in ImporterMaterial::Load(). Missing or invalid diffuse_map_name field");
+	//	return false;
+	//}
+
+	ResourceMaterial* hola = new ResourceMaterial();
+
+	hola->SetUID(77834);
+
+    return Save(metaFileData, hola);
+}
+
+bool ImporterMaterial::Save(const MetaFileData& metaFileData, const Resource* inResource)
+{
+    // TODO
+	const ResourceMaterial* material = static_cast<const ResourceMaterial*>(inResource);
+	if (!material) return false;
+
+	delete material;
+
     return true;
 }
 
-bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResource)
+bool ImporterMaterial::Load(const MetaFileData& metaFileData, Resource* outResource)
 {
     ResourceMaterial* material = static_cast<ResourceMaterial*>(outResource);
     if (!material) return false;
 
-    // TODO
+    // TODO: Load
+
+    material->IncreaseReferenceCount();
 
     return true;
 }

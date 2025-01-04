@@ -6,23 +6,20 @@ class Resource;
 enum class ResourceType;
 
 struct Importer;
+struct MetaFileData;
+
+constexpr int16 c_NUM_IMPORTERS = 3;
 
 class ImporterManager
 {
 public:
 
-    ImporterManager() = delete; // Prevent instantiation
-    ~ImporterManager() = delete;
-
-    static void Initialize();
-    static void Shutdown();
-
-    static bool Import(ResourceType type, const std::string& assetsPath);
-    static bool Save(ResourceType type, const std::string& libraryPath, const Resource* inResource);
-    static bool Load(ResourceType type, const std::string& libraryPath, Resource* outResource);
+    static bool Import(const ResourceType& type, const MetaFileData& metaFileData);
+    static bool Save(const ResourceType& type, const MetaFileData& metaFileData, const Resource* inResource);
+    static bool Load(const ResourceType& type, const MetaFileData& metaFileData, Resource* outResource);
 
 private:
 
-    static std::unordered_map<ResourceType, std::unique_ptr<Importer>> importers;
+    static const std::array<std::unique_ptr<Importer>, c_NUM_IMPORTERS> importers;
 
 };

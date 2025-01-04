@@ -30,8 +30,6 @@ bool ModuleResourceManager::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	ImporterManager::Initialize();
-
 	return true;
 }
 
@@ -49,37 +47,36 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN) {
-		Resource* myresourcen = new ResourceMesh(sdggsgr);
+		Resource* myresourcen = InstantiateResource(ResourceType::MESH);
 
 		myresourcen->SetName("holadfgrdg");
-		myresourcen->SetType(ResourceType::TEXTURE);
 		myresourcen->IncreaseReferenceCount();
 		myresourcen->SetUID(sdggsgr);
 		sdggsgr++;
 
-		resources[myresourcen->GetUID()] = myresourcen;
+		AddResource(myresourcen->GetUID(), myresourcen);
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_J) == KeyState::DOWN) {
-		Resource* myresourcen = new ResourceMesh(sdggsgr);
+		Resource* myresourcen = InstantiateResource(ResourceType::MATERIAL);
 
 		myresourcen->SetName("holadfgrdg");
-		myresourcen->SetType(ResourceType::MESH);
 		myresourcen->IncreaseReferenceCount();
+		myresourcen->SetUID(sdggsgr);
 		sdggsgr++;
 
-		resources[myresourcen->GetUID()] = myresourcen;
+		AddResource(myresourcen->GetUID(), myresourcen);
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_K) == KeyState::DOWN) {
-		Resource* myresourcen = new ResourceMesh(sdggsgr);
+		Resource* myresourcen = InstantiateResource(ResourceType::TEXTURE);
 
 		myresourcen->SetName("holadfgrdg");
-		myresourcen->SetType(ResourceType::MATERIAL);
 		myresourcen->IncreaseReferenceCount();
+		myresourcen->SetUID(sdggsgr);
 		sdggsgr++;
 
-		resources[myresourcen->GetUID()] = myresourcen;
+		AddResource(myresourcen->GetUID(), myresourcen);
 	}
 
 	return UPDATE_CONTINUE;
@@ -100,8 +97,6 @@ UpdateStatus ModuleResourceManager::PostUpdate(float dt)
 bool ModuleResourceManager::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
-	ImporterManager::Shutdown();
 
 	for (auto& [UID, Resource] : resources)
 	{
@@ -149,6 +144,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 
 		if (!NOUS_FileManager::Exists(metaFilePath))
 		{
+			// DONE
 			// CASE 1: The file is in "Assets\\" and DOES NOT HAVE Meta File
 			// New Resource, Create Meta File
 
@@ -171,15 +167,37 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 				return false;
 			}
 
-			//Resource* resource = NOUS_NEW<ResourceMesh>(MemoryManager::MemoryTag::ENTITY, 5);
+			// Manage inside: Import Resource and Save into Library
+			ImporterManager::Import(metaFileData.resourceType, metaFileData);
 
-			//resource->SetName(fileName);
-			//resource->SetUID(resourceUID);
-			//resource->SetType(resourceType);
-			//resource->SetAssetsPath(relativePath);
-			//resource->SetLibraryPath(libraryPath);
+			// Here we finish importing the file, and we start creating the resource.
 
-			//NOUS_DELETE(resource, MemoryManager::MemoryTag::ENTITY);
+			CreateResource(metaFileData.assetsPath);
+
+			//Resource* resource = InstantiateResource(resourceType);
+
+			//if (resource != nullptr)
+			//{
+			//	resource->SetName(fileName);
+			//	resource->SetUID(resourceUID);
+			//	resource->SetType(resourceType);
+			//	resource->SetAssetsPath(relativePath);
+			//	resource->SetLibraryPath(libraryPath);
+			//}
+			//else
+			//{
+			//	NOUS_ERROR("Import File ERROR: CASE 1 --> Failed to Instantiate Resource. Returned nullptr.");
+			//	return false;
+			//}
+
+			//// Manage inside: Loading in memory & increase reference count. 
+			//// Manage inside: Retrieve resource name and assetspath from libraryfile.
+			//ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource);
+
+			//AddResource(metaFileData.uid, resource);
+
+			//// Push to render packet
+			////External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
 		}
 		else 
 		{
@@ -194,53 +212,98 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 				return false;
 			}
 
-			if (!ResourceExists(metaFileData.uid))
+			if (!NOUS_FileManager::Exists(metaFileData.libraryPath))
 			{
-				// Create a new resource
-				Resource* resource = InstantiateResource(metaFileData.resourceType);
+				// DONE
+				// CASE 2: The file is in "Assets\\" and HAS Meta File but NO Library File
+				// Reimport to create library file with the same UID and data from meta file
 
-				if (resource != nullptr)
-				{
-					resource->SetName(metaFileData.name);
-					resource->SetUID(metaFileData.uid);
-					resource->SetType(metaFileData.resourceType);
-					resource->SetAssetsPath(metaFileData.assetsPath);
-					resource->SetLibraryPath(metaFileData.libraryPath);
+				// Manage inside: Import Resource and Save into Library
+				ImporterManager::Import(metaFileData.resourceType, metaFileData);
 
-					if (!NOUS_FileManager::Exists(resource->GetLibraryPath()))
-					{
-						// CASE 2: The file is in "Assets\\" and HAS Meta File but NO Library File
-						// Reimport to create library file with the same UID and data from meta file
-						ImporterManager::Import(metaFileData.resourceType, metaFileData.assetsPath);
+				// Here we finish importing the file, and we start creating the resource.
 
-						resource->LoadInMemory();
-						resource->IncreaseReferenceCount();
+				CreateResource(metaFileData.assetsPath);
 
-						resources[metaFileData.uid] = resource;
-					}
-					else
-					{
-						// DONE
-						// CASE 3: The file is in "Assets\\" and HAS Meta File AND Library File
-						// Load the Library File
+				//if (!ResourceExists(metaFileData.uid))
+				//{
+				//	// Create New Resource Into Scene
+				//	Resource* resource = InstantiateResource(resourceType);
 
-						resource->LoadInMemory();
-						resource->IncreaseReferenceCount();
+				//	if (resource != nullptr)
+				//	{
+				//		resource->SetName(metaFileData.name);
+				//		resource->SetUID(metaFileData.uid);
+				//		resource->SetType(metaFileData.resourceType);
+				//		resource->SetAssetsPath(metaFileData.assetsPath);
+				//		resource->SetLibraryPath(metaFileData.libraryPath);
+				//	}
+				//	else
+				//	{
+				//		NOUS_ERROR("Import File ERROR: CASE 2 --> Failed to Instantiate Resource. Returned nullptr.");
+				//		return false;
+				//	}
 
-						resources[resource->GetUID()] = resource;
-					}
-				}
-				else
-				{
-					NOUS_ERROR("Import File ERROR: CASE 2,3 --> Failed to Instantiate Resource. Returned nullptr.");
-					return false;
-				}
+				//	// Manage inside: Loading in memory & increase reference count. 
+				//	// Manage inside: Retrieve resource name and assetspath from libraryfile.
+				//	ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource);
+
+				//	AddResource(metaFileData.uid, resource);
+
+				//	// Push to render packet
+				//	//External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
+				//}
+				//else 
+				//{
+				//	// TODO
+				//	// Get Loaded Resource and Increase Reference Count
+				//	resources[metaFileData.uid]->IncreaseReferenceCount();
+				//}
 			}
-			else 
+			else
 			{
-				// Get existing resource
-				NOUS_WARN("Import File WARNING: CASE 2,3 --> Attempted to import an existing resource.");
-				resources[metaFileData.uid]->IncreaseReferenceCount();
+				// DONE
+				// CASE 3: The file is in "Assets\\" and HAS Meta File AND Library File
+				// Load the Library File
+
+				// Here we finish importing the file, and we start creating the resource.
+
+				CreateResource(metaFileData.assetsPath);
+
+				//if (!ResourceExists(metaFileData.uid))
+				//{
+				//	// Create New Resource Into Scene
+				//	Resource* resource = InstantiateResource(resourceType);
+
+				//	if (resource != nullptr)
+				//	{
+				//		resource->SetName(metaFileData.name);
+				//		resource->SetUID(metaFileData.uid);
+				//		resource->SetType(metaFileData.resourceType);
+				//		resource->SetAssetsPath(metaFileData.assetsPath);
+				//		resource->SetLibraryPath(metaFileData.libraryPath);
+				//	}
+				//	else
+				//	{
+				//		NOUS_ERROR("Import File ERROR: CASE 3 --> Failed to Instantiate Resource. Returned nullptr.");
+				//		return false;
+				//	}
+
+				//	// Manage inside: Loading in memory & increase reference count. 
+				//	// Manage inside: Retrieve resource name and assetspath from libraryfile.
+				//	ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource);
+
+				//	AddResource(metaFileData.uid, resource);
+
+				//	// Push to render packet
+				//	//External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
+				//}
+				//else
+				//{
+				//	// TODO
+				//	// Get Loaded Resource and Increase Reference Count
+				//	resources[metaFileData.uid]->IncreaseReferenceCount();
+				//}
 			}
 		}
 	}
@@ -250,39 +313,44 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 		// CASE 4: The file is in "Library\\"
 		// Load the Library File
 
-		UID resourceUID = static_cast<UID>(std::stoul(fileName));
+		// Here we finish importing the file, and we start creating the resource.
 
-		if (!ResourceExists(resourceUID)) 
-		{
-			// Create a new resource
-			Resource* resource = InstantiateResource(resourceType);
+		//UID resourceUID = static_cast<UID>(std::stoul(fileName));
 
-			if (resource != nullptr)
-			{
-				resource->SetUID(resourceUID);
-				resource->SetType(resourceType);
-				resource->SetLibraryPath(path);
+		//if (!ResourceExists(resourceUID))
+		//{
+		//	// Create New Resource Into Scene
+		//	Resource* resource = InstantiateResource(resourceType);
 
-				resource->LoadInMemory(); // Retrieve name and assetspath inside, from libraryFile
-				//resource->SetName(fileName);
-				//resource->SetAssetsPath(path);
+		//	if (resource != nullptr)
+		//	{
+		//		//resource->SetName(metaFileData.name);
+		//		resource->SetUID(resourceUID);
+		//		resource->SetType(resourceType);
+		//		//resource->SetAssetsPath(metaFileData.assetsPath);
+		//		resource->SetLibraryPath(path);
+		//	}
+		//	else
+		//	{
+		//		NOUS_ERROR("Import File ERROR: CASE 4 --> Failed to Instantiate Resource. Returned nullptr.");
+		//		return false;
+		//	}
 
-				resource->IncreaseReferenceCount();
+		//	// Manage inside: Loading in memory & increase reference count. 
+		//	// Manage inside: Retrieve resource name and assetspath from libraryfile.
+		//	ImporterManager::Load(resource->GetType(), resource->GetLibraryPath(), resource);
 
-				resources[resource->GetUID()] = resource;
-			}
-			else
-			{
-				NOUS_ERROR("Import File ERROR: CASE 4 --> Failed to Instantiate Resource. Returned nullptr.");
-				return false;
-			}
-		}
-		else 
-		{
-			// Get existing resource
-			NOUS_WARN("Import File WARNING: CASE 4 --> Attempted to import an existing resource.");
-			resources[resourceUID]->IncreaseReferenceCount();
-		}
+		//	AddResource(resource->GetUID(), resource);
+
+		//	// Push to render packet
+		//	//External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
+		//}
+		//else
+		//{
+		//	// TODO
+		//	// Get Loaded Resource and Increase Reference Count
+		//	resources[resourceUID]->IncreaseReferenceCount();
+		//}
 	}
 	else 
 	{
@@ -420,15 +488,83 @@ bool ModuleResourceManager::ResourceExists(const UID& uid)
 	return !(resources.find(uid) == resources.end());
 }
 
-Resource* ModuleResourceManager::RequestResource(const UID& uid)
+Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 {
-	if (!ResourceExists(uid)) 
+	// TODO: Needs to be reworked
+	std::string metaFilePath = assetsPath + ".meta";
+
+	MetaFileData metaFileData;
+	if (!ReadMetaFile(metaFilePath, metaFileData))
 	{
+		NOUS_ERROR("Create Resource ERROR: Error reading meta file: %s", metaFilePath.c_str());
 		return nullptr;
 	}
 
-	resources[uid]->LoadInMemory();
-	resources[uid]->IncreaseReferenceCount();
+	if (!ResourceExists(metaFileData.uid))
+	{
+		// Create New Resource Into Scene
+		Resource* resource = InstantiateResource(metaFileData.resourceType);
 
-	return resources[uid];
+		if (resource != nullptr)
+		{
+			resource->SetName(metaFileData.name);
+			resource->SetUID(metaFileData.uid);
+			resource->SetType(metaFileData.resourceType);
+			resource->SetAssetsPath(metaFileData.assetsPath);
+			resource->SetLibraryPath(metaFileData.libraryPath);
+		}
+		else
+		{
+			NOUS_ERROR("Create Resource ERROR: CASE New Resource --> Failed to Instantiate Resource. Returned nullptr.");
+			return nullptr;
+		}
+
+		// Manage inside: Loading in memory & increase reference count. 
+		// Manage inside: Retrieve resource name and assetspath from libraryfile.
+		ImporterManager::Load(metaFileData.resourceType, metaFileData, resource);
+
+		AddResource(metaFileData.uid, resource);
+
+		return resource;
+	}
+	else
+	{
+		return RequestResource(metaFileData.uid);
+	}
 }
+
+Resource* ModuleResourceManager::RequestResource(const UID& uid)
+{
+	Resource* resource = resources[uid];
+
+	resource->IncreaseReferenceCount();
+
+	return resource;
+}
+
+void ModuleResourceManager::AddResource(const UID& uid, Resource*& resource)
+{
+	std::lock_guard<std::mutex> lock(resourcesMutex);  // Multi-threading
+	resources[uid] = resource;
+}
+
+//std::string ModuleResourceManager::GetLibraryPath(const std::string& assetsPath)
+//{
+//	JsonFile metaFile;
+//
+//	// Load the JSON file
+//	if (!metaFile.LoadFromFile((assetsPath + ".meta").c_str()))
+//	{
+//		return "";
+//	}
+//
+//	std::string libraryPath;
+//
+//	// Retrieve the value
+//	if (!metaFile.GetValue("Library Path", libraryPath))
+//	{
+//		return "";
+//	}
+//
+//	return libraryPath;
+//}

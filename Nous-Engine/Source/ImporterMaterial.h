@@ -4,7 +4,7 @@
 
 struct ImporterMaterial : Importer
 {
-    bool Import(const std::string& assetsPath) override;
-    bool Save(const std::string& libraryPath, const Resource* inResource) override;
-    bool Load(const std::string& libraryPath, Resource* outResource) override;
+    bool Import(const MetaFileData& metaFileData) override;
+    bool Save(const MetaFileData& metaFileData, const Resource* inResource) override;
+    bool Load(const MetaFileData& metaFileData, Resource* outResource) override;
 };

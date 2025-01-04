@@ -7,50 +7,25 @@
 #include "ImporterTexture.h"
 #include "Importermesh.h"
 
-// Define the static member
-std::unordered_map<ResourceType, std::unique_ptr<Importer>> ImporterManager::importers;
-
-void ImporterManager::Initialize()
+// Make sure to match the array index with the resource type enum index
+const std::array<std::unique_ptr<Importer>, c_NUM_IMPORTERS> ImporterManager::importers =
 {
-    if (importers.empty())
-    {
-        importers[ResourceType::MESH] = std::make_unique<ImporterMesh>();
-        importers[ResourceType::MATERIAL] = std::make_unique<ImporterMaterial>();
-        importers[ResourceType::TEXTURE] = std::make_unique<ImporterTexture>();
-    }
+    std::make_unique<ImporterMesh>(),
+    std::make_unique<ImporterMaterial>(),
+    std::make_unique<ImporterTexture>()
+};
+
+bool ImporterManager::Import(const ResourceType& type, const MetaFileData& metaFileData)
+{
+    return importers[Resource::GetIndexFromType(type)]->Import(metaFileData);
 }
 
-void ImporterManager::Shutdown()
+bool ImporterManager::Save(const ResourceType& type, const MetaFileData& metaFileData, const Resource* inResource)
 {
-    importers.clear();
+    return importers[Resource::GetIndexFromType(type)]->Save(metaFileData, inResource);
 }
 
-bool ImporterManager::Import(ResourceType type, const std::string& assetsPath)
+bool ImporterManager::Load(const ResourceType& type, const MetaFileData& metaFileData, Resource* outResource)
 {
-    auto it = importers.find(type);
-    if (it != importers.end())
-    {
-        return it->second->Import(assetsPath);
-    }
-    return false; // Importer not found
-}
-
-bool ImporterManager::Save(ResourceType type, const std::string& libraryPath, const Resource* inResource)
-{
-    auto it = importers.find(type);
-    if (it != importers.end())
-    {
-        return it->second->Save(libraryPath, inResource);
-    }
-    return false; // Importer not found
-}
-
-bool ImporterManager::Load(ResourceType type, const std::string& libraryPath, Resource* outResource)
-{
-    auto it = importers.find(type);
-    if (it != importers.end())
-    {
-        return it->second->Load(libraryPath, outResource);
-    }
-    return false; // Importer not found
+    return importers[Resource::GetIndexFromType(type)]->Load(metaFileData, outResource);
 }

@@ -45,6 +45,7 @@ public:
 	virtual bool LoadInMemory() = 0;
 	virtual bool UnloadFromMemory() = 0;
 
+	static int16 GetIndexFromType(const ResourceType& type);
 	static std::string GetLibraryExtensionFromType(ResourceType type);
 	static ResourceType GetTypeFromExtension(const std::string& extension);
 	static std::string GetAssetsDirectoryFromType(ResourceType type);

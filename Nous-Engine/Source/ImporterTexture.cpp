@@ -91,14 +91,14 @@
 //    }
 //}
 
-bool ImporterTexture::Import(const std::string& assetsPath)
+bool ImporterTexture::Import(const MetaFileData& metaFileData)
 {
     // TODO
 
     return true;
 }
 
-bool ImporterTexture::Save(const std::string& libraryPath, const Resource* inResource)
+bool ImporterTexture::Save(const MetaFileData& metaFileData, const Resource* inResource)
 {
     const ResourceTexture* texture = static_cast<const ResourceTexture*>(inResource);
     if (!texture) return false;
@@ -108,12 +108,14 @@ bool ImporterTexture::Save(const std::string& libraryPath, const Resource* inRes
     return true;
 }
 
-bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource)
+bool ImporterTexture::Load(const MetaFileData& metaFileData, Resource* outResource)
 {
     ResourceTexture* texture = static_cast<ResourceTexture*>(outResource);
     if (!texture) return false;
 
-    // TODO
+    // TODO: Load
+
+    texture->IncreaseReferenceCount();
 
     return true;
 }
