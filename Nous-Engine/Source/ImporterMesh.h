@@ -1,10 +1,10 @@
 #pragma once
 
-#include "RendererTypes.inl" // For Mesh Class
+#include "Importer.inl"
 
-namespace ImporterMesh 
+struct ImporterMesh : Importer
 {
-	bool Import(const char* path, Mesh* mesh);
-	bool Save(const char* path, const Mesh& mesh);
-	bool Load(const char* path, Mesh* mesh);
-}
+    bool Import(const std::string& assetsPath) override;
+    bool Save(const std::string& libraryPath, const Resource* inResource) override;
+    bool Load(const std::string& libraryPath, Resource* outResource) override;
+};

@@ -14,6 +14,8 @@
 #include "JsonFile.h"
 #include "MetaFileData.inl"
 
+#include "ImporterManager.h"
+
 ModuleResourceManager::ModuleResourceManager(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -27,12 +29,16 @@ ModuleResourceManager::~ModuleResourceManager()
 bool ModuleResourceManager::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	ImporterManager::Initialize();
+
 	return true;
 }
 
 bool ModuleResourceManager::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
 	return true;
 }
 
@@ -94,6 +100,8 @@ UpdateStatus ModuleResourceManager::PostUpdate(float dt)
 bool ModuleResourceManager::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	ImporterManager::Shutdown();
 
 	for (auto& [UID, Resource] : resources)
 	{
@@ -203,7 +211,12 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 					{
 						// CASE 2: The file is in "Assets\\" and HAS Meta File but NO Library File
 						// Reimport to create library file with the same UID and data from meta file
+						ImporterManager::Import(metaFileData.resourceType, metaFileData.assetsPath);
 
+						resource->LoadInMemory();
+						resource->IncreaseReferenceCount();
+
+						resources[metaFileData.uid] = resource;
 					}
 					else
 					{

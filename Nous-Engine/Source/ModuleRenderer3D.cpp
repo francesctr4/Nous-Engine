@@ -52,26 +52,26 @@ bool ModuleRenderer3D::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	Mesh* myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
+	//Mesh* myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
 
-	ImporterMesh::Import("Assets/Meshes/Cypher_S0_Skelmesh.fbx", myMesh);
-	ImporterMesh::Save("Library/Meshes/Cypher_S0_Skelmesh.nmesh", *myMesh);
+	//ImporterMesh::Import("Assets/Meshes/Cypher_S0_Skelmesh.fbx", myMesh);
+	//ImporterMesh::Save("Library/Meshes/Cypher_S0_Skelmesh.nmesh", *myMesh);
 
-	NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
-	myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
+	//NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
+	//myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
 
-	ImporterMesh::Load("Library/Meshes/Cypher_S0_Skelmesh.nmesh", myMesh);
+	//ImporterMesh::Load("Library/Meshes/Cypher_S0_Skelmesh.nmesh", myMesh);
 
-	/*GeometryConfig gConfig = NOUS_GeometrySystem::GeneratePlaneConfig(10.0f, 5.0f, 5, 5, 5.0f, 2.0f, "test_geometry", "test_material");*/
-	GeometryConfig gConfig;
-	gConfig.name = "Cypher";
-	gConfig.materialPath = "DefaultMaterial";
-	gConfig.vertices = myMesh->vertices;
-	gConfig.indices = myMesh->indices;
+	///*GeometryConfig gConfig = NOUS_GeometrySystem::GeneratePlaneConfig(10.0f, 5.0f, 5, 5, 5.0f, 2.0f, "test_geometry", "test_material");*/
+	//GeometryConfig gConfig;
+	//gConfig.name = "Cypher";
+	//gConfig.materialPath = "DefaultMaterial";
+	//gConfig.vertices = myMesh->vertices;
+	//gConfig.indices = myMesh->indices;
 
-	testGeometry = NOUS_GeometrySystem::AcquireFromConfig(gConfig, true);
+	//testGeometry = NOUS_GeometrySystem::AcquireFromConfig(gConfig, true);
 
-	NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
+	//NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
 
 	return true;
 }

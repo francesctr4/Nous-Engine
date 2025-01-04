@@ -1,13 +1,10 @@
 #pragma once
 
-#include "RendererTypes.inl" // For Mesh Class
-#include "MaterialSystem.h"
+#include "Importer.inl"
 
-#include "ResourceMaterial.h"
-
-namespace ImporterMaterial
+struct ImporterMaterial : Importer
 {
-	bool Load(const char* path, ResourceMaterial* material);
-	bool Load(const char* path, NOUS_MaterialSystem::MaterialConfig* materialConfig);
-	bool Save(const char* path, const Material& material);
-}
+    bool Import(const std::string& assetsPath) override;
+    bool Save(const std::string& libraryPath, const Resource* inResource) override;
+    bool Load(const std::string& libraryPath, Resource* outResource) override;
+};

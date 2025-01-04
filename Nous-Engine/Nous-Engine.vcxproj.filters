@@ -441,6 +441,9 @@
     <ClCompile Include="Source\ResourceTexture.cpp">
       <Filter>Source Code\!NousResource\Resource Types</Filter>
     </ClCompile>
+    <ClCompile Include="Source\ImporterManager.cpp">
+      <Filter>Source Code\!NousResource\Importers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1210,6 +1213,9 @@
     </ClInclude>
     <ClInclude Include="Source\MetaFileData.inl">
       <Filter>Source Code\!NousResource</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ImporterManager.h">
+      <Filter>Source Code\!NousResource\Importers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

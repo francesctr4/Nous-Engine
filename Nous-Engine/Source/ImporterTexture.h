@@ -1,10 +1,10 @@
 #pragma once
 
-#include "RendererTypes.inl" // For Texture Class
+#include "Importer.inl"
 
-namespace ImporterTexture 
+struct ImporterTexture : Importer
 {
-	bool Import(const char* path, Texture* texture);
-	//bool Save(const char* path, const Texture& texture);
-	//bool Load(const char* path, Texture* texture);
-}
+    bool Import(const std::string& assetsPath) override;
+    bool Save(const std::string& libraryPath, const Resource* inResource) override;
+    bool Load(const std::string& libraryPath, Resource* outResource) override;
+};

@@ -127,7 +127,7 @@ Material* NOUS_MaterialSystem::AcquireMaterial(const char* path)
 
     material->diffuseMap.texture = NOUS_NEW<Texture>(MemoryManager::MemoryTag::TEXTURE);
 
-    ImporterTexture::Import(texPath.c_str(), material->diffuseMap.texture);
+    //ImporterTexture::Import(texPath.c_str(), material->diffuseMap.texture);
 
     //material->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
     // Create a new Material object

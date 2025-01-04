@@ -43,6 +43,8 @@ private:
 	bool ResourceExists(const UID& uid);
 	Resource* RequestResource(const UID& uid);
 
+	bool GetLibraryPath(const std::string& assetsPath, std::string& outLibraryPath);
+
 private:
 
 	std::unordered_map<UID, Resource*> resources;
