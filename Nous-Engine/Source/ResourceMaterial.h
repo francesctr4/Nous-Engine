@@ -12,7 +12,7 @@ public:
 	// Constructor & Destructor
 
 	ResourceMaterial(UID uid = 0);
-	virtual ~ResourceMaterial();
+	~ResourceMaterial() override;
 
 	// Inherited Functions
 

@@ -14,7 +14,7 @@ public:
 	// Constructor & Destructor
 
 	ResourceMesh(UID uid = 0);
-	virtual ~ResourceMesh();
+	~ResourceMesh() override;
 
 	// Inherited Functions
 

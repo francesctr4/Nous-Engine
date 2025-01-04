@@ -12,7 +12,7 @@ public:
 	// Constructor & Destructor
 
 	ResourceTexture(UID uid = 0);
-	virtual ~ResourceTexture();
+	~ResourceTexture() override;
 
 	// Inherited Functions
 
