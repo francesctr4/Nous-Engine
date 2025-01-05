@@ -467,17 +467,21 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 	{
 		case ResourceType::MESH:
 		{
-			NOUS_DELETE(resource, MemoryManager::MemoryTag::RESOURCE_MESH);
+			ResourceMesh* r = static_cast<ResourceMesh*>(resource);
+			NOUS_DELETE<ResourceMesh>(r, MemoryManager::MemoryTag::RESOURCE_MESH);
+
 			break;
 		}
 		case ResourceType::MATERIAL:
 		{
-			NOUS_DELETE(resource, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+			ResourceMaterial* r = static_cast<ResourceMaterial*>(resource);
+			NOUS_DELETE<ResourceMaterial>(r, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
 			break;
 		}
 		case ResourceType::TEXTURE:
 		{
-			NOUS_DELETE(resource, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+			ResourceTexture* r = static_cast<ResourceTexture*>(resource);
+			NOUS_DELETE<ResourceTexture>(r, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
 			break;
 		}
 	}
