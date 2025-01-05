@@ -18,10 +18,11 @@ bool ModuleFileSystem::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	NOUS_FileManager::CreateDirectory("Library/Models");
-	NOUS_FileManager::CreateDirectory("Library/Textures");
+	bool ret = true;
+	
+	ret = CreateLibraryFolder();
 
-	return true;
+	return ret;
 }
 
 bool ModuleFileSystem::Start()
@@ -44,4 +45,13 @@ bool ModuleFileSystem::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
+}
+
+bool ModuleFileSystem::CreateLibraryFolder()
+{
+	return NOUS_FileManager::CreateDirectory("Library") &&
+		   NOUS_FileManager::CreateDirectory("Library/Shaders") &&
+		   NOUS_FileManager::CreateDirectory("Library/Meshes") &&
+	       NOUS_FileManager::CreateDirectory("Library/Materials") &&
+	       NOUS_FileManager::CreateDirectory("Library/Textures");
 }

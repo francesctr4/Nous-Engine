@@ -98,7 +98,7 @@ bool ImporterTexture::Import(const MetaFileData& metaFileData)
     return true;
 }
 
-bool ImporterTexture::Save(const MetaFileData& metaFileData, const Resource* inResource)
+bool ImporterTexture::Save(const MetaFileData& metaFileData, Resource*& inResource)
 {
     const ResourceTexture* texture = static_cast<const ResourceTexture*>(inResource);
     if (!texture) return false;
@@ -115,7 +115,15 @@ bool ImporterTexture::Load(const MetaFileData& metaFileData, Resource* outResour
 
     // TODO: Load
 
-    texture->IncreaseReferenceCount();
+    return true;
+}
+
+bool ImporterTexture::Unload(Resource*& inResource)
+{
+    ResourceTexture* texture = static_cast<ResourceTexture*>(inResource);
+    if (!texture) return false;
+
+    // TODO: Unload
 
     return true;
 }

@@ -58,15 +58,20 @@ std::string NOUS_FileManager::GetExtension(const std::string& path)
 
 bool NOUS_FileManager::CreateDirectory(const std::string& path)
 {
-	try
+	if (!Exists(path)) 
 	{
-		return std::filesystem::create_directories(path);
+		try
+		{
+			return std::filesystem::create_directories(path);
+		}
+		catch (const std::filesystem::filesystem_error& e)
+		{
+			NOUS_ERROR("File system error creating directory: %s", e.what());
+			return false;
+		}
 	}
-	catch (const std::filesystem::filesystem_error& e)
-	{
-		NOUS_ERROR("File system error creating directory: %s", e.what());
-		return false;
-	}
+
+	return true;
 }
 
 bool NOUS_FileManager::CopyFile(const std::string& source, const std::string& destination)

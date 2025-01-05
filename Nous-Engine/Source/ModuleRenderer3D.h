@@ -2,6 +2,8 @@
 
 #include "Module.h"
 
+#include "RendererTypes.inl"
+
 class RendererFrontend;
 
 class ModuleRenderer3D : public Module

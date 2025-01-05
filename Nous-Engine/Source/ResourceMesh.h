@@ -16,11 +16,6 @@ public:
 	ResourceMesh(UID uid = 0);
 	~ResourceMesh() override;
 
-	// Inherited Functions
-
-	bool LoadInMemory() override;
-	bool UnloadFromMemory() override;
-
 public:
 
 	std::vector<Vertex> vertices;

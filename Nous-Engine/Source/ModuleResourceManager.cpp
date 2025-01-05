@@ -30,6 +30,8 @@ bool ModuleResourceManager::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	// Import all files to library
+
 	return true;
 }
 
@@ -40,43 +42,33 @@ bool ModuleResourceManager::Start()
 	return true;
 }
 
-static int sdggsgr = 0;
-
 UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN) {
-		Resource* myresourcen = InstantiateResource(ResourceType::MESH);
-
-		myresourcen->SetName("holadfgrdg");
-		myresourcen->IncreaseReferenceCount();
-		myresourcen->SetUID(sdggsgr);
-		sdggsgr++;
-
-		AddResource(myresourcen->GetUID(), myresourcen);
+	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN) 
+	{
+		CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx");
 	}
 
-	if (App->input->GetKey(SDL_SCANCODE_J) == KeyState::DOWN) {
-		Resource* myresourcen = InstantiateResource(ResourceType::MATERIAL);
-
-		myresourcen->SetName("holadfgrdg");
-		myresourcen->IncreaseReferenceCount();
-		myresourcen->SetUID(sdggsgr);
-		sdggsgr++;
-
-		AddResource(myresourcen->GetUID(), myresourcen);
+	if (App->input->GetKey(SDL_SCANCODE_Y) == KeyState::DOWN)
+	{
+		CreateResource("Assets/Meshes/Queen_Xenomorph.fbx");
 	}
 
-	if (App->input->GetKey(SDL_SCANCODE_K) == KeyState::DOWN) {
-		Resource* myresourcen = InstantiateResource(ResourceType::TEXTURE);
+	if (App->input->GetKey(SDL_SCANCODE_N) == KeyState::DOWN)
+	{
+		CreateResource("Assets/Meshes/Viking_Room.fbx");
+	}
 
-		myresourcen->SetName("holadfgrdg");
-		myresourcen->IncreaseReferenceCount();
-		myresourcen->SetUID(sdggsgr);
-		sdggsgr++;
+	if (App->input->GetKey(SDL_SCANCODE_J) == KeyState::DOWN)
+	{
+		UnloadResource(3841219433);
+	}
 
-		AddResource(myresourcen->GetUID(), myresourcen);
+	if (App->input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN) 
+	{
+		CleanUp();
 	}
 
 	return UPDATE_CONTINUE;
@@ -100,7 +92,29 @@ bool ModuleResourceManager::CleanUp()
 
 	for (auto& [UID, Resource] : resources)
 	{
-		DeleteResource(Resource);
+		ImporterManager::Unload(Resource->GetType(), Resource);
+
+		switch (Resource->GetType())
+		{
+			case ResourceType::MESH:
+			{
+				ResourceMesh* r = static_cast<ResourceMesh*>(Resource);
+				NOUS_DELETE<ResourceMesh>(r, MemoryManager::MemoryTag::RESOURCE_MESH);
+				break;
+			}
+			case ResourceType::MATERIAL:
+			{
+				ResourceMaterial* r = static_cast<ResourceMaterial*>(Resource);
+				NOUS_DELETE<ResourceMaterial>(r, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+				break;
+			}
+			case ResourceType::TEXTURE:
+			{
+				ResourceTexture* r = static_cast<ResourceTexture*>(Resource);
+				NOUS_DELETE<ResourceTexture>(r, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+				break;
+			}
+		}
 	}
 
 	resources.clear();
@@ -129,6 +143,12 @@ void ModuleResourceManager::ReceiveEvent(const Event& event)
 
 bool ModuleResourceManager::ImportFile(const std::string& path)
 {
+	if (!NOUS_FileManager::Exists(path))
+	{
+		NOUS_ERROR("Import File ERROR: General --> Couldn't find file: %s", path.c_str());
+		return false;
+	}
+
 	std::string relativePath = NOUS_FileManager::GetRelativePath(path);
 	std::string fileDirectory = NOUS_FileManager::GetDirectory(path);
 	std::string fileName = NOUS_FileManager::GetFilename(path);
@@ -172,7 +192,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 
 			// Here we finish importing the file, and we start creating the resource.
 
-			CreateResource(metaFileData.assetsPath);
+			//CreateResource(metaFileData.assetsPath);
 
 			//Resource* resource = InstantiateResource(resourceType);
 
@@ -223,7 +243,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 
 				// Here we finish importing the file, and we start creating the resource.
 
-				CreateResource(metaFileData.assetsPath);
+				//CreateResource(metaFileData.assetsPath);
 
 				//if (!ResourceExists(metaFileData.uid))
 				//{
@@ -268,7 +288,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 
 				// Here we finish importing the file, and we start creating the resource.
 
-				CreateResource(metaFileData.assetsPath);
+				//CreateResource(metaFileData.assetsPath);
 
 				//if (!ResourceExists(metaFileData.uid))
 				//{
@@ -382,7 +402,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 	return true;
 }
 
-std::unordered_map<UID, Resource*> ModuleResourceManager::GetResourcesMap() const
+const std::unordered_map<UID, Resource*>& ModuleResourceManager::GetResourcesMap() const
 {
 	return resources;
 }
@@ -463,13 +483,16 @@ Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
 
 void ModuleResourceManager::DeleteResource(Resource*& resource)
 {
+	UID uid = resource->GetUID();
+
+	ImporterManager::Unload(resource->GetType(), resource);
+
 	switch (resource->GetType())
 	{
 		case ResourceType::MESH:
 		{
 			ResourceMesh* r = static_cast<ResourceMesh*>(resource);
 			NOUS_DELETE<ResourceMesh>(r, MemoryManager::MemoryTag::RESOURCE_MESH);
-
 			break;
 		}
 		case ResourceType::MATERIAL:
@@ -485,6 +508,8 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 			break;
 		}
 	}
+
+	resources.erase(uid);
 }
 
 bool ModuleResourceManager::ResourceExists(const UID& uid)
@@ -525,9 +550,15 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 
 		// Manage inside: Loading in memory & increase reference count. 
 		// Manage inside: Retrieve resource name and assetspath from libraryfile.
-		ImporterManager::Load(metaFileData.resourceType, metaFileData, resource);
+		if (!ImporterManager::Load(metaFileData.resourceType, metaFileData, resource))
+		{
+			NOUS_ERROR("Create Resource ERROR: CASE New Resource --> Failed to Load Resource From Library. Returned nullptr.");
+			return nullptr;
+		}
 
 		AddResource(metaFileData.uid, resource);
+
+		resource->IncreaseReferenceCount();
 
 		return resource;
 	}
@@ -535,6 +566,25 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 	{
 		return RequestResource(metaFileData.uid);
 	}
+}
+
+bool ModuleResourceManager::UnloadResource(const UID& UID)
+{
+	if (!ResourceExists(UID))
+	{
+		return false;
+	}
+
+	Resource*& tmpResource = resources[UID];
+
+	tmpResource->DecreaseReferenceCount();
+
+	if (tmpResource->GetReferenceCount() == 0)
+	{
+		DeleteResource(tmpResource);
+	}
+
+	return true;
 }
 
 Resource* ModuleResourceManager::RequestResource(const UID& uid)

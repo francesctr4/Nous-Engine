@@ -41,10 +41,6 @@ public:
 	void IncreaseReferenceCount();
 	void DecreaseReferenceCount();
 
-	bool IsLoadedOnMemory() const;
-	virtual bool LoadInMemory() = 0;
-	virtual bool UnloadFromMemory() = 0;
-
 	static int16 GetIndexFromType(const ResourceType& type);
 	static std::string GetLibraryExtensionFromType(ResourceType type);
 	static ResourceType GetTypeFromExtension(const std::string& extension);
@@ -60,7 +56,4 @@ private:
 
 	std::string assetsFilePath;
 	std::string libraryFilePath;
-
-	bool isLoaded;
-
 };

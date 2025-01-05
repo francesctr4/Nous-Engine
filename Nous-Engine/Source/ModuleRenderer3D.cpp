@@ -11,6 +11,8 @@
 #include "GeometrySystem.h"
 #include "ImporterMesh.h"
 
+#include "ModuleResourceManager.h"
+
 RendererFrontend* ModuleRenderer3D::rendererFrontend = nullptr;
 
 // Temp
@@ -48,30 +50,34 @@ bool ModuleRenderer3D::Awake()
 	return ret;
 }
 
+#include "ResourceMesh.h"
+
 bool ModuleRenderer3D::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	//Mesh* myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
+	std::string path = "Assets/Meshes/Cypher_S0_Skelmesh.fbx";
 
-	//ImporterMesh::Import("Assets/Meshes/Cypher_S0_Skelmesh.fbx", myMesh);
-	//ImporterMesh::Save("Library/Meshes/Cypher_S0_Skelmesh.nmesh", *myMesh);
+	if (App->resourceManager->ImportFile(path))
+	{
+		ResourceMesh* r = static_cast<ResourceMesh*>(App->resourceManager->CreateResource(path));
+		ResourceMesh* r2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource(path));
+		ResourceMesh* r3 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource(path));
 
-	//NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
-	//myMesh = NOUS_NEW<Mesh>(MemoryManager::MemoryTag::GAME);
+		//GeometryConfig gConfig;
+		//gConfig.name = "Cypher";
+		//gConfig.materialPath = "DefaultMaterial";
+		//gConfig.vertices = r->vertices;
+		//gConfig.indices = r->indices;
 
-	//ImporterMesh::Load("Library/Meshes/Cypher_S0_Skelmesh.nmesh", myMesh);
+		//testGeometry = NOUS_GeometrySystem::AcquireFromConfig(gConfig, true);
 
-	///*GeometryConfig gConfig = NOUS_GeometrySystem::GeneratePlaneConfig(10.0f, 5.0f, 5, 5, 5.0f, 2.0f, "test_geometry", "test_material");*/
-	//GeometryConfig gConfig;
-	//gConfig.name = "Cypher";
-	//gConfig.materialPath = "DefaultMaterial";
-	//gConfig.vertices = myMesh->vertices;
-	//gConfig.indices = myMesh->indices;
+		UID hola = r->GetUID();
 
-	//testGeometry = NOUS_GeometrySystem::AcquireFromConfig(gConfig, true);
-
-	//NOUS_DELETE(myMesh, MemoryManager::MemoryTag::GAME);
+		App->resourceManager->UnloadResource(hola);
+		App->resourceManager->UnloadResource(hola);
+		App->resourceManager->UnloadResource(hola);
+	}
 
 	return true;
 }
@@ -94,9 +100,9 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	// TODO: Refactor packet creation
 	RenderPacket packet;
 
+	// TODO: Refactor packet creation
 	packet.deltaTime = dt;
 	packet.camera = *App->camera->GetCamera();
 

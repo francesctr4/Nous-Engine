@@ -14,11 +14,6 @@ public:
 	ResourceMaterial(UID uid = 0);
 	~ResourceMaterial() override;
 
-	// Inherited Functions
-
-	bool LoadInMemory() override;
-	bool UnloadFromMemory() override;
-
 public:
 
 

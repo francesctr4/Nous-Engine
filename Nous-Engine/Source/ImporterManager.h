@@ -15,8 +15,9 @@ class ImporterManager
 public:
 
     static bool Import(const ResourceType& type, const MetaFileData& metaFileData);
-    static bool Save(const ResourceType& type, const MetaFileData& metaFileData, const Resource* inResource);
+    static bool Save(const ResourceType& type, const MetaFileData& metaFileData, Resource*& inResource);
     static bool Load(const ResourceType& type, const MetaFileData& metaFileData, Resource* outResource);
+    static bool Unload(const ResourceType& type, Resource*& inResource);
 
 private:
 

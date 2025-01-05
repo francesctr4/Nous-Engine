@@ -41,7 +41,6 @@ Resource::Resource()
 	this->type = ResourceType::UNKNOWN;
 	this->uID = 0;
 	this->referenceCount = 0;
-	this->isLoaded = false;
 }
 
 Resource::Resource(UID uID, ResourceType type)
@@ -49,7 +48,6 @@ Resource::Resource(UID uID, ResourceType type)
 	this->type = type;
 	this->uID = uID;
 	this->referenceCount = 0;
-	this->isLoaded = false;
 }
 
 Resource::~Resource()
@@ -61,8 +59,6 @@ Resource::~Resource()
 
 	this->assetsFilePath.clear();
 	this->libraryFilePath.clear();
-
-	this->isLoaded = false;
 }
 
 void Resource::SetName(const std::string& name)
@@ -128,11 +124,6 @@ std::string Resource::GetAssetsPath() const
 std::string Resource::GetLibraryPath() const
 {
 	return libraryFilePath;
-}
-
-bool Resource::IsLoadedOnMemory() const
-{
-	return isLoaded;
 }
 
 int16 Resource::GetIndexFromType(const ResourceType& type)

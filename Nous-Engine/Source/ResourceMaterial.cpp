@@ -11,14 +11,3 @@ ResourceMaterial::~ResourceMaterial()
 {
 
 }
-
-bool ResourceMaterial::LoadInMemory()
-{
-	//return ImporterMaterial::Load(this->GetLibraryPath().c_str(), this);
-	return true;
-}
-
-bool ResourceMaterial::UnloadFromMemory()
-{
-	return false;
-}

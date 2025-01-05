@@ -115,14 +115,14 @@ bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 	//	return false;
 	//}
 
-	ResourceMaterial* hola = new ResourceMaterial();
+	Resource* hola = new ResourceMaterial();
 
 	hola->SetUID(77834);
 
     return Save(metaFileData, hola);
 }
 
-bool ImporterMaterial::Save(const MetaFileData& metaFileData, const Resource* inResource)
+bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResource)
 {
     // TODO
 	const ResourceMaterial* material = static_cast<const ResourceMaterial*>(inResource);
@@ -140,7 +140,15 @@ bool ImporterMaterial::Load(const MetaFileData& metaFileData, Resource* outResou
 
     // TODO: Load
 
-    material->IncreaseReferenceCount();
-
     return true;
+}
+
+bool ImporterMaterial::Unload(Resource*& inResource)
+{
+	ResourceMaterial* material = static_cast<ResourceMaterial*>(inResource);
+	if (!material) return false;
+
+	// TODO: Unload
+
+	return true;
 }

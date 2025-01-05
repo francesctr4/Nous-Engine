@@ -14,11 +14,6 @@ public:
 	ResourceTexture(UID uid = 0);
 	~ResourceTexture() override;
 
-	// Inherited Functions
-
-	bool LoadInMemory() override;
-	bool UnloadFromMemory() override;
-
 public:
 
 

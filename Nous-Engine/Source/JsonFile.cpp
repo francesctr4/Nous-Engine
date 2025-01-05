@@ -2,6 +2,8 @@
 
 #include "External/Parson/parson.h"
 
+#include "FileManager.h"
+
 JsonFile::JsonFile()
 {
 	rootValue = json_value_init_object();
@@ -138,12 +140,16 @@ bool JsonFile::SaveToFile(const char* path)
 // Load JSON from file
 bool JsonFile::LoadFromFile(const char* path)
 {
-    JSON_Value* newValue = json_parse_file(path);
-    if (newValue) {
-        json_value_free(rootValue); // Free the old JSON value
-        rootValue = newValue;
-        rootObject = json_value_get_object(rootValue);
-        return true;
+    if (NOUS_FileManager::Exists(path)) 
+    {
+        JSON_Value* newValue = json_parse_file(path);
+        if (newValue) {
+            json_value_free(rootValue); // Free the old JSON value
+            rootValue = newValue;
+            rootObject = json_value_get_object(rootValue);
+            return true;
+        }
     }
+    
     return false;
 }

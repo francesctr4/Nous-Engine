@@ -30,7 +30,11 @@ public:
 	// ------------------------------------------------------------------------ //
 
 	bool ImportFile(const std::string& path);
-	std::unordered_map<UID, Resource*> GetResourcesMap() const;
+
+	Resource* CreateResource(const std::string& assetsPath);
+	bool UnloadResource(const UID& UID);
+
+	const std::unordered_map<UID, Resource*>& GetResourcesMap() const;
 
 private:
 
@@ -41,8 +45,9 @@ private:
 	void DeleteResource(Resource*& resource);
 
 	bool ResourceExists(const UID& uid);
-	Resource* CreateResource(const std::string& assetsPath);
+
 	Resource* RequestResource(const UID& uid);
+
 	void AddResource(const UID& uid, Resource*& resource);
 
 	//std::string GetLibraryPath(const std::string& assetsPath);
