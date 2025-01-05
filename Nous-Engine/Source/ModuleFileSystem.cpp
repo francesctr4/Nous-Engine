@@ -1,8 +1,12 @@
 #include "ModuleFileSystem.h"
+#include "ModuleResourceManager.h"
 
 #include "FileManager.h"
 #include "JsonFile.h"
+
 #include "MathUtils.h"
+
+#include <filesystem>
 
 ModuleFileSystem::ModuleFileSystem(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
@@ -20,7 +24,11 @@ bool ModuleFileSystem::Awake()
 
 	bool ret = true;
 	
-	ret = CreateLibraryFolder();
+	if (!NOUS_FileManager::Exists("Library"))
+	{
+		CreateLibraryFolder();
+		ImportDirectory("Assets");
+	}
 
 	return ret;
 }
@@ -28,15 +36,6 @@ bool ModuleFileSystem::Awake()
 bool ModuleFileSystem::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
-	//JsonFile jsonFile;
-
-	//jsonFile.AppendValue("version", "0.1");
-	//jsonFile.AppendValue("name", "test_material");
-	//jsonFile.AppendValue("diffuse_color", float4(1.54f,1.0f,1.0f,1.0f));
-	//jsonFile.AppendValue("diffuse_map_name", "paving");
-
-	//jsonFile.SaveToFile("Library/test.json");
 
 	return true;
 }
@@ -54,4 +53,23 @@ bool ModuleFileSystem::CreateLibraryFolder()
 		   NOUS_FileManager::CreateDirectory("Library/Meshes") &&
 	       NOUS_FileManager::CreateDirectory("Library/Materials") &&
 	       NOUS_FileManager::CreateDirectory("Library/Textures");
+}
+
+bool ModuleFileSystem::ImportDirectory(const std::string& directory)
+{
+	if (!NOUS_FileManager::Exists(directory))
+	{
+		NOUS_ERROR("Import Directory ERROR: Directory does not exist: %s", directory.c_str());
+		return false;
+	}
+
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+	{
+		if (std::filesystem::is_regular_file(entry))
+		{
+			App->resourceManager->ImportFile(entry.path().string());
+		}
+	}
+
+	return true;
 }

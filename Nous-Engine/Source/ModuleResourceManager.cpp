@@ -30,8 +30,6 @@ bool ModuleResourceManager::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	// Import all files to library
-
 	return true;
 }
 
@@ -68,7 +66,7 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 
 	if (App->input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN) 
 	{
-		CleanUp();
+		ClearResources();
 	}
 
 	return UPDATE_CONTINUE;
@@ -90,34 +88,7 @@ bool ModuleResourceManager::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	for (auto& [UID, Resource] : resources)
-	{
-		ImporterManager::Unload(Resource->GetType(), Resource);
-
-		switch (Resource->GetType())
-		{
-			case ResourceType::MESH:
-			{
-				ResourceMesh* r = static_cast<ResourceMesh*>(Resource);
-				NOUS_DELETE<ResourceMesh>(r, MemoryManager::MemoryTag::RESOURCE_MESH);
-				break;
-			}
-			case ResourceType::MATERIAL:
-			{
-				ResourceMaterial* r = static_cast<ResourceMaterial*>(Resource);
-				NOUS_DELETE<ResourceMaterial>(r, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
-				break;
-			}
-			case ResourceType::TEXTURE:
-			{
-				ResourceTexture* r = static_cast<ResourceTexture*>(Resource);
-				NOUS_DELETE<ResourceTexture>(r, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
-				break;
-			}
-		}
-	}
-
-	resources.clear();
+	ClearResources();
 
 	return true;
 }
@@ -155,6 +126,12 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 	std::string extension = NOUS_FileManager::GetExtension(path);
 
 	ResourceType resourceType = Resource::GetTypeFromExtension(extension);
+
+	if (resourceType == ResourceType::UNKNOWN) 
+	{
+		// NOUS_ERROR("Import File ERROR: General --> Unsupported file extension: %s", extension.c_str());
+		return false;
+	}
 
 	if (fileDirectory.rfind("Assets\\", 0) == 0)
 	{
@@ -600,6 +577,38 @@ void ModuleResourceManager::AddResource(const UID& uid, Resource*& resource)
 {
 	std::lock_guard<std::mutex> lock(resourcesMutex);  // Multi-threading
 	resources[uid] = resource;
+}
+
+void ModuleResourceManager::ClearResources()
+{
+	for (auto& [UID, Resource] : resources)
+	{
+		ImporterManager::Unload(Resource->GetType(), Resource);
+
+		switch (Resource->GetType())
+		{
+			case ResourceType::MESH:
+			{
+				ResourceMesh* r = static_cast<ResourceMesh*>(Resource);
+				NOUS_DELETE<ResourceMesh>(r, MemoryManager::MemoryTag::RESOURCE_MESH);
+				break;
+			}
+			case ResourceType::MATERIAL:
+			{
+				ResourceMaterial* r = static_cast<ResourceMaterial*>(Resource);
+				NOUS_DELETE<ResourceMaterial>(r, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+				break;
+			}
+			case ResourceType::TEXTURE:
+			{
+				ResourceTexture* r = static_cast<ResourceTexture*>(Resource);
+				NOUS_DELETE<ResourceTexture>(r, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+				break;
+			}
+		}
+	}
+
+	resources.clear();
 }
 
 //std::string ModuleResourceManager::GetLibraryPath(const std::string& assetsPath)

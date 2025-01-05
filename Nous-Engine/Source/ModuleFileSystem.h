@@ -19,5 +19,6 @@ public:
 private:
 
 	bool CreateLibraryFolder();
+	bool ImportDirectory(const std::string& directory);
 
 };

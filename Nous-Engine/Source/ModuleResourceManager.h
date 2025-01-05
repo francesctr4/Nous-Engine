@@ -45,15 +45,15 @@ private:
 	void DeleteResource(Resource*& resource);
 
 	bool ResourceExists(const UID& uid);
-
 	Resource* RequestResource(const UID& uid);
-
 	void AddResource(const UID& uid, Resource*& resource);
+
+	void ClearResources();
 
 	//std::string GetLibraryPath(const std::string& assetsPath);
 
 private:
 
-	std::unordered_map<UID, Resource*> resources;
 	std::mutex resourcesMutex;  // Mutex to protect resources map from race conditions
+	std::unordered_map<UID, Resource*> resources;
 };
