@@ -111,7 +111,7 @@ void RendererBackend::DrawGeometry(GeometryRenderData renderData)
     }
 }
 
-void RendererBackend::CreateTexture(const uint8* pixels, Texture* outTexture)
+void RendererBackend::CreateTexture(const uint8* pixels, ResourceTexture* outTexture)
 {
     if (backendInterface != nullptr)
     {
@@ -119,7 +119,7 @@ void RendererBackend::CreateTexture(const uint8* pixels, Texture* outTexture)
     }
 }
 
-void RendererBackend::DestroyTexture(Texture* texture)
+void RendererBackend::DestroyTexture(ResourceTexture* texture)
 {
     if (backendInterface != nullptr)
     {
@@ -127,7 +127,7 @@ void RendererBackend::DestroyTexture(Texture* texture)
     }
 }
 
-bool RendererBackend::CreateMaterial(Material* material)
+bool RendererBackend::CreateMaterial(ResourceMaterial* material)
 {
     if (backendInterface != nullptr)
     {
@@ -135,7 +135,7 @@ bool RendererBackend::CreateMaterial(Material* material)
     }
 }
 
-void RendererBackend::DestroyMaterial(Material* material)
+void RendererBackend::DestroyMaterial(ResourceMaterial* material)
 {
     if (backendInterface != nullptr)
     {
@@ -143,7 +143,7 @@ void RendererBackend::DestroyMaterial(Material* material)
     }
 }
 
-bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* outGeometry)
+bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry)
 {
     if (backendInterface != nullptr)
     {
@@ -151,7 +151,7 @@ bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices,
     }
 }
 
-void RendererBackend::DestroyGeometry(Geometry* geometry)
+void RendererBackend::DestroyGeometry(ResourceMesh* geometry)
 {
     if (backendInterface != nullptr)
     {

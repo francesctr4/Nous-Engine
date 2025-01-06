@@ -4,6 +4,10 @@
 
 #include "ResourceTypes.inl"
 
+class ResourceMesh;
+class ResourceMaterial;
+class ResourceTexture;
+
 // --------------- Vulkan Renderer Backend --------------- \\
 
 struct VulkanContext;
@@ -31,14 +35,14 @@ public:
 	// ----------------------------------------------------------------------------------------------- //
 	// TEMPORAL //
 
-	void CreateTexture(const uint8* pixels, Texture* outTexture) override;
-	void DestroyTexture(Texture* texture) override;
+	void CreateTexture(const uint8* pixels, ResourceTexture* outTexture) override;
+	void DestroyTexture(ResourceTexture* texture) override;
 
-	bool CreateMaterial(Material* material) override;
-	void DestroyMaterial(Material* material) override;
+	bool CreateMaterial(ResourceMaterial* material) override;
+	void DestroyMaterial(ResourceMaterial* material) override;
 
-	bool CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* geometry) override;
-	void DestroyGeometry(Geometry* geometry) override;
+	bool CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry) override;
+	void DestroyGeometry(ResourceMesh* geometry) override;
 
 	static VulkanContext* GetVulkanContext();
 

@@ -2,18 +2,20 @@
 
 #include "RendererTypes.inl"
 
+#include "ResourceTexture.h"
+
 namespace NOUS_TextureSystem 
 {
 	bool Initialize();
 	void Shutdown();
 
-	Texture* AcquireTexture(const char* name, bool autoRelease);
-	void ReleaseTexture(Texture* texture);
+	ResourceTexture* AcquireTexture(const char* name, bool autoRelease);
+	void ReleaseTexture(ResourceTexture* texture);
 
 	// ------------------------------------------------------------------------------------------------------ //
 
 	bool CreateDefaultTextures();
-	Texture* GetDefaultTexture();
+	ResourceTexture* GetDefaultTexture();
 	void DestroyDefaultTextures();
 
 	// ------------------------------------------------------------------------------------------------------ //
@@ -27,16 +29,16 @@ namespace NOUS_TextureSystem
 	struct TextureReference 
 	{
 		uint64 referenceCount;
-		Texture texture;
+		ResourceTexture texture;
 		bool autoRelease;
 	};
 
 	struct TextureSystemState 
 	{
 		TextureSystemConfig config;
-		Texture defaultTexture;
+		ResourceTexture defaultTexture;
 		// Array of registered textures.
-		Texture* registeredTextures;
+		ResourceTexture* registeredTextures;
 		// Hashtable for texture lookups.
 		//hashtable registered_texture_table;
 	};

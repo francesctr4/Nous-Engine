@@ -18,7 +18,7 @@ void NOUS_TextureSystem::Shutdown()
 	DestroyDefaultTextures();
 }
 
-Texture* NOUS_TextureSystem::AcquireTexture(const char* name, bool autoRelease)
+ResourceTexture* NOUS_TextureSystem::AcquireTexture(const char* name, bool autoRelease)
 {
 	// Return default texture, but warn about it since this should be returned via get_default_texture();
 	//if (strings_equali(name, DEFAULT_TEXTURE_NAME)) {
@@ -70,13 +70,13 @@ Texture* NOUS_TextureSystem::AcquireTexture(const char* name, bool autoRelease)
 	return 0;
 }
 
-void NOUS_TextureSystem::ReleaseTexture(Texture* texture)
+void NOUS_TextureSystem::ReleaseTexture(ResourceTexture* texture)
 {
 	External->renderer->rendererFrontend->DestroyTexture(texture);
 
 	// Clean up backend resources.
-	texture->name.clear();
-	MemoryManager::ZeroMemory(texture, sizeof(Texture));
+	//texture->name.clear();
+	MemoryManager::ZeroMemory(texture, sizeof(ResourceTexture));
 
 	texture->ID = INVALID_ID;
 	texture->generation = INVALID_ID;
@@ -127,7 +127,7 @@ bool NOUS_TextureSystem::CreateDefaultTextures()
 		}
 	}
 
-	state.defaultTexture.name = state.config.DEFAULT_TEXTURE_NAME;
+	state.defaultTexture.SetName(state.config.DEFAULT_TEXTURE_NAME);
 	state.defaultTexture.width = texDimension;
 	state.defaultTexture.height = texDimension;
 	state.defaultTexture.channelCount = 4;
@@ -140,7 +140,7 @@ bool NOUS_TextureSystem::CreateDefaultTextures()
 	return true;
 }
 
-Texture* NOUS_TextureSystem::GetDefaultTexture()
+ResourceTexture* NOUS_TextureSystem::GetDefaultTexture()
 {
 	return &state.defaultTexture;
 }

@@ -14,11 +14,12 @@
 #include "ModuleResourceManager.h"
 #include "ResourceMaterial.h"
 #include "ResourceTexture.h"
+#include "ResourceMesh.h"
 
 RendererFrontend* ModuleRenderer3D::rendererFrontend = nullptr;
 
 // Temp
-Geometry* testGeometry;
+ResourceMesh* testGeometry = nullptr;
 // End Temp
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
@@ -31,6 +32,8 @@ ModuleRenderer3D::ModuleRenderer3D(Application* app, std::string name, bool star
 ModuleRenderer3D::~ModuleRenderer3D()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	rendererFrontend->Shutdown();
 
 	NOUS_DELETE(rendererFrontend, MemoryManager::MemoryTag::RENDERER);
 }
@@ -52,21 +55,19 @@ bool ModuleRenderer3D::Awake()
 	return ret;
 }
 
-#include "ResourceMesh.h"
-
 bool ModuleRenderer3D::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
-	ResourceMesh* r = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
 	
-	GeometryConfig gConfig;
-	gConfig.name = "Cypher";
-	gConfig.materialPath = "DefaultMaterial";
-	gConfig.vertices = r->vertices;
-	gConfig.indices = r->indices;
+	//GeometryConfig gConfig;
+	//gConfig.name = "Cypher";
+	//gConfig.materialPath = "DefaultMaterial";
+	//gConfig.vertices = r->vertices;
+	//gConfig.indices = r->indices;
 
-	testGeometry = NOUS_GeometrySystem::AcquireFromConfig(gConfig, true);
+	//testGeometry = NOUS_GeometrySystem::AcquireFromConfig(gConfig, true);
+
+	App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx");
 
 	return true;
 }
@@ -95,23 +96,29 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	packet.deltaTime = dt;
 	packet.camera = *App->camera->GetCamera();
 
-	// TODO: temp
-	GeometryRenderData testRender;
-	testRender.geometry = testGeometry;
+	for (const auto& [UID, Resource] : App->resourceManager->GetResourcesMap()) 
+	{
+		if (Resource->GetType() == ResourceType::MESH) 
+		{
+			GeometryRenderData testRender;
+			testRender.geometry = static_cast<ResourceMesh*>(Resource);
 
-	// Angular velocity in radians per second.
-	static constexpr float angularVelocity = 1.0f; // Adjust for desired speed
+			// Angular velocity in radians per second.
+			static constexpr float angularVelocity = 1.0f; // Adjust for desired speed
 
-	// Accumulate the angle based on elapsed time (deltaTime).
-	static float angle = 0.0f;
-	angle += angularVelocity * packet.deltaTime;
+			// Accumulate the angle based on elapsed time (deltaTime).
+			static float angle = 0.0f;
+			angle += angularVelocity * packet.deltaTime;
 
-	// Create the rotation matrix using the accumulated angle.
-	float4x4 model = Quat(float3::unitY, angle).ToFloat4x4();
+			// Create the rotation matrix using the accumulated angle.
+			float4x4 model = Quat(float3::unitY, angle).ToFloat4x4();
 
-	testRender.model = model;
+			testRender.model = model;
 
-	packet.geometries.push_back(testRender);
+			packet.geometries.push_back(testRender);
+		}
+	}
+
 	// TODO: end temp
 
 	if (!App->isMinimized)
@@ -128,9 +135,7 @@ bool ModuleRenderer3D::CleanUp()
 
 	bool ret = true;
 
-	NOUS_GeometrySystem::ReleaseGeometry(testGeometry);
-
-	rendererFrontend->Shutdown();
+	//NOUS_GeometrySystem::ReleaseGeometry(testGeometry);
 
 	return ret;
 }
@@ -162,17 +167,17 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 			//}
 
 			// Acquire the new texture.
-			if (testGeometry) 
-			{
-				testGeometry->material->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(event.context.c, true);
-				//ImporterTexture::Import(event.context.c, testGeometry->material->diffuseMap.texture);
+			//if (testGeometry) 
+			//{
+			//	testGeometry->material->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(event.context.c, true);
+			//	//ImporterTexture::Import(event.context.c, testGeometry->material->diffuseMap.texture);
 
-				if (!testGeometry->material->diffuseMap.texture) 
-				{
-					NOUS_WARN("event_on_debug_event no texture! using default");
-					testGeometry->material->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
-				}
-			}
+			//	if (!testGeometry->material->diffuseMap.texture) 
+			//	{
+			//		NOUS_WARN("event_on_debug_event no texture! using default");
+			//		testGeometry->material->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
+			//	}
+			//}
 
 			break;
 		}

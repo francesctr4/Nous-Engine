@@ -81,32 +81,32 @@ void RendererFrontend::DrawGeometry(GeometryRenderData renderData)
 	backend->DrawGeometry(renderData);
 }
 
-void RendererFrontend::CreateTexture(const uint8* pixels, Texture* outTexture)
+void RendererFrontend::CreateTexture(const uint8* pixels, ResourceTexture* outTexture)
 {
 	backend->CreateTexture(pixels, outTexture);
 }
 
-void RendererFrontend::DestroyTexture(Texture* texture)
+void RendererFrontend::DestroyTexture(ResourceTexture* texture)
 {
 	backend->DestroyTexture(texture);
 }
 
-bool RendererFrontend::CreateMaterial(Material* material)
+bool RendererFrontend::CreateMaterial(ResourceMaterial* material)
 {
 	return backend->CreateMaterial(material);
 }
 
-void RendererFrontend::DestroyMaterial(Material* material)
+void RendererFrontend::DestroyMaterial(ResourceMaterial* material)
 {
 	backend->DestroyMaterial(material);
 }
 
-bool RendererFrontend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* outGeometry)
+bool RendererFrontend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry)
 {
 	return backend->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
 }
 
-void RendererFrontend::DestroyGeometry(Geometry* geometry)
+void RendererFrontend::DestroyGeometry(ResourceMesh* geometry)
 {
 	backend->DestroyGeometry(geometry);
 }

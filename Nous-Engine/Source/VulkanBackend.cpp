@@ -21,6 +21,10 @@
 #include "MemoryManager.h"
 #include "Logger.h"
 
+#include "ResourceMesh.h"
+#include "ResourceTexture.h"
+#include "ResourceMaterial.h"
+
 VulkanContext* VulkanBackend::vkContext = nullptr;
 
 VulkanBackend::VulkanBackend()
@@ -203,6 +207,7 @@ bool VulkanBackend::Initialize()
     for (uint32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i)
     {
         vkContext->geometries[i].ID = INVALID_ID;
+        vkContext->geometries[i].generation = INVALID_ID;
     }
 
 	return ret;
@@ -516,7 +521,7 @@ void VulkanBackend::DrawGeometry(GeometryRenderData renderData)
 
     MaterialShaderSetModel(vkContext, &vkContext->materialShader, renderData.model);
 
-    Material* material = nullptr;
+    ResourceMaterial* material = nullptr;
 
     if (renderData.geometry->material) 
     {
@@ -551,7 +556,7 @@ void VulkanBackend::DrawGeometry(GeometryRenderData renderData)
 // ----------------------------------------------------------------------------------------------- //
 // TEMPORAL //
 
-void VulkanBackend::CreateTexture(const uint8* pixels, Texture* texture)
+void VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
 {
     // Internal data creation.
     // TODO: Use an allocator for this.
@@ -641,7 +646,7 @@ void VulkanBackend::CreateTexture(const uint8* pixels, Texture* texture)
     texture->generation++;
 }
 
-void VulkanBackend::DestroyTexture(Texture* texture)
+void VulkanBackend::DestroyTexture(ResourceTexture* texture)
 {
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
@@ -658,10 +663,10 @@ void VulkanBackend::DestroyTexture(Texture* texture)
         MemoryManager::Free(textureData, sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE);
     }
     
-    MemoryManager::ZeroMemory(texture, sizeof(Texture));
+    MemoryManager::ZeroMemory(texture, sizeof(ResourceTexture));
 }
 
-bool VulkanBackend::CreateMaterial(Material* material)
+bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
 {
     if (material) 
     {
@@ -679,7 +684,7 @@ bool VulkanBackend::CreateMaterial(Material* material)
     return false;
 }
 
-void VulkanBackend::DestroyMaterial(Material* material)
+void VulkanBackend::DestroyMaterial(ResourceMaterial* material)
 {
     if (material) 
     {
@@ -698,7 +703,7 @@ void VulkanBackend::DestroyMaterial(Material* material)
     }
 }
 
-bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* geometry)
+bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry)
 {
     if (!vertexCount || !vertices) 
     {
@@ -800,7 +805,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, u
     return true;
 }
 
-void VulkanBackend::DestroyGeometry(Geometry* geometry)
+void VulkanBackend::DestroyGeometry(ResourceMesh* geometry)
 {
     if (geometry && geometry->internalID != INVALID_ID) 
     {

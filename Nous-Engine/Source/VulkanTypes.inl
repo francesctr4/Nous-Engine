@@ -3,6 +3,10 @@
 #include "Globals.h"
 #include "RendererTypes.inl"
 
+#include "ResourceMaterial.h"
+#include "ResourceMesh.h"
+#include "ResourceTexture.h"
+
 #include "Vulkan.h"
 
 struct VulkanImage

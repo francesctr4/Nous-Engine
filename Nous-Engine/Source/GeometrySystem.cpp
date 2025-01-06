@@ -6,6 +6,7 @@
 #include "MaterialSystem.h"
 
 #include "MemoryManager.h"
+#include "ResourceMesh.h"
 
 bool NOUS_GeometrySystem::Initialize()
 {
@@ -37,7 +38,7 @@ void NOUS_GeometrySystem::Shutdown()
         MemoryManager::MemoryTag::ARRAY);
 }
 
-Geometry* NOUS_GeometrySystem::AcquireByID(uint32 ID)
+ResourceMesh* NOUS_GeometrySystem::AcquireByID(uint32 ID)
 {
     if (ID != INVALID_ID && geometrySystemState.registeredGeometries[ID].geometry.ID != INVALID_ID)
     {
@@ -52,9 +53,9 @@ Geometry* NOUS_GeometrySystem::AcquireByID(uint32 ID)
     return nullptr;
 }
 
-Geometry* NOUS_GeometrySystem::AcquireFromConfig(GeometryConfig config, bool autoRelease)
+ResourceMesh* NOUS_GeometrySystem::AcquireFromConfig(GeometryConfig config, bool autoRelease)
 {
-    Geometry* geometry = nullptr;
+    ResourceMesh* geometry = nullptr;
 
     for (uint32 i = 0; i < geometrySystemState.config.maxGeometryCount; ++i) 
     {
@@ -86,7 +87,7 @@ Geometry* NOUS_GeometrySystem::AcquireFromConfig(GeometryConfig config, bool aut
     return geometry;
 }
 
-void NOUS_GeometrySystem::ReleaseGeometry(Geometry* geometry)
+void NOUS_GeometrySystem::ReleaseGeometry(ResourceMesh* geometry)
 {
     if (geometry && geometry->ID != INVALID_ID) 
     {
@@ -120,59 +121,60 @@ void NOUS_GeometrySystem::ReleaseGeometry(Geometry* geometry)
     NOUS_WARN("NOUS_GeometrySystem::ReleaseGeometry() cannot release invalid geometry id. Nothing was done.");
 }
 
-Geometry* NOUS_GeometrySystem::GetDefaultGeometry()
+ResourceMesh* NOUS_GeometrySystem::GetDefaultGeometry()
 {
     return &geometrySystemState.defaultGeometry;
 }
 
-bool NOUS_GeometrySystem::CreateGeometry(GeometrySystemState* state, GeometryConfig config, Geometry* geometry)
+bool NOUS_GeometrySystem::CreateGeometry(GeometrySystemState* state, GeometryConfig config, ResourceMesh* geometry)
 {
-    // Send the geometry off to the renderer to be uploaded to the GPU.
-    if (!External->renderer->rendererFrontend->CreateGeometry(
-        config.vertices.size(), config.vertices.data(), 
-        config.indices.size(), config.indices.data(), 
-        geometry))
-    {
-        // Invalidate the entry.
-        state->registeredGeometries[geometry->ID].referenceCount = 0;
-        state->registeredGeometries[geometry->ID].autoRelease = false;
+    //// Send the geometry off to the renderer to be uploaded to the GPU.
+    //if (!External->renderer->rendererFrontend->CreateGeometry(
+    //    config.vertices.size(), config.vertices.data(), 
+    //    config.indices.size(), config.indices.data(), 
+    //    geometry))
+    //{
+    //    // Invalidate the entry.
+    //    state->registeredGeometries[geometry->ID].referenceCount = 0;
+    //    state->registeredGeometries[geometry->ID].autoRelease = false;
 
-        geometry->ID = INVALID_ID;
-        geometry->generation = INVALID_ID;
-        geometry->internalID = INVALID_ID;
+    //    geometry->ID = INVALID_ID;
+    //    geometry->generation = INVALID_ID;
+    //    geometry->internalID = INVALID_ID;
 
-        return false;
-    }
+    //    return false;
+    //}
 
-    // Acquire the material
-    if (!config.materialPath.empty())
-    {
-        geometry->material = NOUS_MaterialSystem::AcquireMaterial(config.materialPath.c_str());
+    //// Acquire the material
+    //if (!config.materialPath.empty())
+    //{
+    //    geometry->material = NOUS_MaterialSystem::AcquireMaterial(config.materialPath.c_str());
 
-        if (!geometry->material)
-        {
-            geometry->material = NOUS_MaterialSystem::GetDefaultMaterial();
-        }
-    }
+    //    if (!geometry->material)
+    //    {
+    //        geometry->material = NOUS_MaterialSystem::GetDefaultMaterial();
+    //    }
+    //}
 
     return true;
 }
 
-void NOUS_GeometrySystem::DestroyGeometry(Geometry* geometry)
+void NOUS_GeometrySystem::DestroyGeometry(ResourceMesh* geometry)
 {
-    External->renderer->rendererFrontend->DestroyGeometry(geometry);
+    //External->renderer->rendererFrontend->DestroyGeometry(geometry);
 
-    geometry->internalID = INVALID_ID;
-    geometry->generation = INVALID_ID;
-    geometry->ID = INVALID_ID;
-    geometry->name.clear();
+    //geometry->internalID = INVALID_ID;
+    //geometry->generation = INVALID_ID;
+    //geometry->ID = INVALID_ID;
+    //
+    //geometry->name.clear();
 
-    // Release the material.
-    if (geometry->material && !geometry->material->name.empty())
-    {
-        NOUS_MaterialSystem::ReleaseMaterial(geometry->material);
-        geometry->material = nullptr;
-    }
+    //// Release the material.
+    //if (geometry->material && !geometry->material->name.empty())
+    //{
+    //    NOUS_MaterialSystem::ReleaseMaterial(geometry->material);
+    //    geometry->material = nullptr;
+    //}
 }
 
 bool NOUS_GeometrySystem::CreateDefaultGeometry(GeometrySystemState* state)
@@ -209,11 +211,11 @@ bool NOUS_GeometrySystem::CreateDefaultGeometry(GeometrySystemState* state)
     std::array<uint32, 6> indices = { 0, 1, 2, 0, 3, 1 };
 
     // Send the geometry off to the renderer to be uploaded to the GPU.
-    if (!External->renderer->rendererFrontend->CreateGeometry(vertices.size(), vertices.data(), indices.size(), indices.data(), &state->defaultGeometry))
-    {
-        NOUS_FATAL("Failed to create default geometry. Application cannot continue.");
-        return false;
-    }
+    //if (!External->renderer->rendererFrontend->CreateGeometry(vertices.size(), vertices.data(), indices.size(), indices.data(), &state->defaultGeometry))
+    //{
+    //    NOUS_FATAL("Failed to create default geometry. Application cannot continue.");
+    //    return false;
+    //}
 
     // Acquire the default material.
     state->defaultGeometry.material = NOUS_MaterialSystem::GetDefaultMaterial();

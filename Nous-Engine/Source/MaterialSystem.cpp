@@ -44,11 +44,11 @@ void NOUS_MaterialSystem::Shutdown()
 
 bool NOUS_MaterialSystem::CreateDefaultMaterials()
 {
-    MemoryManager::ZeroMemory(&state.defaultMaterial, sizeof(Material));
+    MemoryManager::ZeroMemory(&state.defaultMaterial, sizeof(ResourceMaterial));
 
     state.defaultMaterial.ID = INVALID_ID;
     state.defaultMaterial.generation = INVALID_ID;
-    state.defaultMaterial.name = state.config.DEFAULT_MATERIAL_NAME;
+    state.defaultMaterial.SetName(state.config.DEFAULT_MATERIAL_NAME);
     state.defaultMaterial.diffuseColor = float4::one;  // white
     state.defaultMaterial.diffuseMap.type = TextureMapType::DIFFUSE;
     state.defaultMaterial.diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
@@ -62,14 +62,14 @@ bool NOUS_MaterialSystem::CreateDefaultMaterials()
     return true;
 }
 
-Material* NOUS_MaterialSystem::GetDefaultMaterial()
+ResourceMaterial* NOUS_MaterialSystem::GetDefaultMaterial()
 {
     return &state.defaultMaterial;
 }
 
-void DestroyMaterial(Material* material)
+void DestroyMaterial(ResourceMaterial* material)
 {
-    NOUS_TRACE("Destroying material '%s'...", material->name);
+    NOUS_TRACE("Destroying material '%s'...", material->GetName().c_str());
 
     // Release texture references.
     if (material->diffuseMap.texture)
@@ -94,53 +94,54 @@ void NOUS_MaterialSystem::DestroyDefaultMaterials()
     DestroyMaterial(&state.defaultMaterial);
 }
 
-Material* NOUS_MaterialSystem::AcquireMaterial(const char* path)
+ResourceMaterial* NOUS_MaterialSystem::AcquireMaterial(const char* path)
 {
-    // Load the JSON file
-    JsonFile jsonFile;
-    if (!jsonFile.LoadFromFile(path)) {
-        // Handle error: Unable to load the file
-        return nullptr;
-    }
+    //// Load the JSON file
+    //JsonFile jsonFile;
+    //if (!jsonFile.LoadFromFile(path)) {
+    //    // Handle error: Unable to load the file
+    //    return nullptr;
+    //}
 
-    // Create a new Material object
-    Material* material = NOUS_NEW<Material>(MemoryManager::MemoryTag::MATERIAL_INSTANCE);
+    //// Create a new Material object
+    //ResourceMaterial* material = NOUS_NEW<ResourceMaterial>(MemoryManager::MemoryTag::MATERIAL_INSTANCE);
 
-    if (!jsonFile.GetValue("name", material->name)) {
-        // Handle missing or invalid "name" field
-        delete material;
-        return nullptr;
-    }
+    //if (!jsonFile.GetValue("name", material->name)) {
+    //    // Handle missing or invalid "name" field
+    //    delete material;
+    //    return nullptr;
+    //}
 
-    if (!jsonFile.GetValue("diffuse_color", material->diffuseColor)) {
-        // Handle missing or invalid "diffuse_color" field
-        delete material;
-        return nullptr;
-    }
+    //if (!jsonFile.GetValue("diffuse_color", material->diffuseColor)) {
+    //    // Handle missing or invalid "diffuse_color" field
+    //    delete material;
+    //    return nullptr;
+    //}
 
-    std::string texPath;
-    if (!jsonFile.GetValue("diffuse_map_name", texPath)) {
-        // Handle missing or invalid "diffuse_map_name" field
-        delete material;
-        return nullptr;
-    }
+    //std::string texPath;
+    //if (!jsonFile.GetValue("diffuse_map_name", texPath)) {
+    //    // Handle missing or invalid "diffuse_map_name" field
+    //    delete material;
+    //    return nullptr;
+    //}
 
-    material->diffuseMap.texture = NOUS_NEW<Texture>(MemoryManager::MemoryTag::TEXTURE);
+    //material->diffuseMap.texture = NOUS_NEW<Texture>(MemoryManager::MemoryTag::TEXTURE);
 
-    //ImporterTexture::Import(texPath.c_str(), material->diffuseMap.texture);
+    ////ImporterTexture::Import(texPath.c_str(), material->diffuseMap.texture);
 
-    //material->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
-    // Create a new Material object
-    //material->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(texPath.c_str(), true);
+    ////material->diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
+    //// Create a new Material object
+    ////material->diffuseMap.texture = NOUS_TextureSystem::AcquireTexture(texPath.c_str(), true);
 
-    state.registeredMaterials[0].material.ID = 0;
-    state.registeredMaterials[0].autoRelease = true;
+    //state.registeredMaterials[0].material.ID = 0;
+    //state.registeredMaterials[0].autoRelease = true;
 
     // Return the populated material
-    return material;
+    //return material;
+    return nullptr;
 }
 
-Material* NOUS_MaterialSystem::AcquireMaterialFromConfig(MaterialConfig mConfig)
+ResourceMaterial* NOUS_MaterialSystem::AcquireMaterialFromConfig(MaterialConfig mConfig)
 {
     // Return default material.
     if (mConfig.name == state.config.DEFAULT_MATERIAL_NAME) 
@@ -198,7 +199,7 @@ Material* NOUS_MaterialSystem::AcquireMaterialFromConfig(MaterialConfig mConfig)
     //return 0;
 }
 
-void NOUS_MaterialSystem::ReleaseMaterial(Material* material)
+void NOUS_MaterialSystem::ReleaseMaterial(ResourceMaterial* material)
 {
     if (material && material->ID != INVALID_ID)
     {

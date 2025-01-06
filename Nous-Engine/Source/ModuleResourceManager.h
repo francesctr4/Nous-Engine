@@ -31,6 +31,7 @@ public:
 
 	bool ImportFile(const std::string& path);
 
+	bool ResourceExists(const UID& uid);
 	Resource* CreateResource(const std::string& assetsPath);
 	bool UnloadResource(const UID& UID);
 
@@ -44,7 +45,6 @@ private:
 	Resource* InstantiateResource(const ResourceType& type);
 	void DeleteResource(Resource*& resource);
 
-	bool ResourceExists(const UID& uid);
 	Resource* RequestResource(const UID& uid);
 	void AddResource(const UID& uid, Resource*& resource);
 

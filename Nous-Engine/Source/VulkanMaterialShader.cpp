@@ -9,6 +9,8 @@
 #include "MemoryManager.h"
 
 #include "TextureSystem.h"
+#include "ResourceMaterial.h"
+#include "ResourceTexture.h"
 
 constexpr const char* BUILTIN_MATERIAL_SHADER_NAME = "BuiltIn.MaterialShader";
 
@@ -291,7 +293,7 @@ void MaterialShaderSetModel(VulkanContext* vkContext, VulkanMaterialShader* shad
     }
 }
 
-void MaterialShaderApplyMaterial(VulkanContext* vkContext, VulkanMaterialShader* shader, Material* material)
+void MaterialShaderApplyMaterial(VulkanContext* vkContext, VulkanMaterialShader* shader, ResourceMaterial* material)
 {
     if (vkContext && shader) 
     {
@@ -360,7 +362,7 @@ void MaterialShaderApplyMaterial(VulkanContext* vkContext, VulkanMaterialShader*
 
         for (uint32 samplerIndex = 0; samplerIndex < SAMPLER_COUNT; ++samplerIndex)
         {
-            Texture* texture = nullptr;
+            ResourceTexture* texture = nullptr;
 
             TextureMapType usage = shader->samplerUsage[samplerIndex];
 
@@ -437,7 +439,7 @@ void MaterialShaderApplyMaterial(VulkanContext* vkContext, VulkanMaterialShader*
     }
 }
 
-bool AcquireMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, Material* material)
+bool AcquireMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, ResourceMaterial* material)
 {
     // TODO: free list
     material->internalID = shader->localUniformBufferIndex;
@@ -475,7 +477,7 @@ bool AcquireMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShad
     return true;
 }
 
-void ReleaseMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, Material* material)
+void ReleaseMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, ResourceMaterial* material)
 {
     VulkanMaterialShaderInstanceState* instanceState = &shader->instanceStates[material->internalID];
 

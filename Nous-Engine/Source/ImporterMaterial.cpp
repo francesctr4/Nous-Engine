@@ -56,7 +56,7 @@ bool ImporterMaterial::Load(const MetaFileData& metaFileData, Resource* outResou
 
     // Diffuse Texture
     ResourceTexture* diffuseTexture = static_cast<ResourceTexture*>(External->resourceManager->CreateResource(diffuseMapPath));
-    material->diffuseMap.type = TextureMapType2::DIFFUSE;
+    material->diffuseMap.type = TextureMapType::DIFFUSE;
     material->diffuseMap.texture = diffuseTexture;
 
     return true;

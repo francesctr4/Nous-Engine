@@ -2,6 +2,10 @@
 
 #include "RendererTypes.inl"
 
+class ResourceMesh;
+class ResourceMaterial;
+class ResourceTexture;
+
 class RendererBackend
 {
 public:
@@ -23,14 +27,14 @@ public:
 	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode);
 	void DrawGeometry(GeometryRenderData renderData);
 
-	void CreateTexture(const uint8* pixels, Texture* outTexture);
-	void DestroyTexture(Texture* texture);
+	void CreateTexture(const uint8* pixels, ResourceTexture* outTexture);
+	void DestroyTexture(ResourceTexture* texture);
 
-	bool CreateMaterial(Material* material);
-	void DestroyMaterial(Material* material);
+	bool CreateMaterial(ResourceMaterial* material);
+	void DestroyMaterial(ResourceMaterial* material);
 
-	bool CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* outGeometry);
-	void DestroyGeometry(Geometry* geometry);
+	bool CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry);
+	void DestroyGeometry(ResourceMesh* geometry);
 
 	// -------------------------------------- \\
 

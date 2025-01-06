@@ -6,15 +6,15 @@
 
 class ResourceTexture;
 
-enum class TextureMapType2
+enum class TextureMapType
 {
     UNKNOWN = -1,
     DIFFUSE
 };
 
-struct TextureMap2
+struct TextureMap
 {
-    TextureMapType2 type;
+    TextureMapType type;
     ResourceTexture* texture;
 };
 
@@ -36,7 +36,7 @@ public:
     uint32 internalID;
     uint32 generation;
 
-    TextureMap2 diffuseMap;
+    TextureMap diffuseMap;
     float4 diffuseColor;
 
 };

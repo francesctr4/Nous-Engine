@@ -2,6 +2,8 @@
 
 #include "RendererTypes.inl"
 
+#include "ResourceMaterial.h"
+
 namespace NOUS_MaterialSystem
 {
 	struct MaterialSystemConfig
@@ -22,14 +24,14 @@ namespace NOUS_MaterialSystem
 	struct MaterialReference 
 	{
 		uint64 referenceCount;
-		Material material;
+		ResourceMaterial material;
 		bool autoRelease;
 	};
 
 	struct MaterialSystemState
 	{
 		MaterialSystemConfig config;
-		Material defaultMaterial;
+		ResourceMaterial defaultMaterial;
 		// Array of registered textures.
 		MaterialReference* registeredMaterials;
 		// Hashtable for texture lookups.
@@ -42,10 +44,10 @@ namespace NOUS_MaterialSystem
 	void Shutdown();
 
 	bool CreateDefaultMaterials();
-	Material* GetDefaultMaterial();
+	ResourceMaterial* GetDefaultMaterial();
 	void DestroyDefaultMaterials();
 
-	Material* AcquireMaterial(const char* path);
-	Material* AcquireMaterialFromConfig(MaterialConfig mConfig);
-	void ReleaseMaterial(Material* name);
+	ResourceMaterial* AcquireMaterial(const char* path);
+	ResourceMaterial* AcquireMaterialFromConfig(MaterialConfig mConfig);
+	void ReleaseMaterial(ResourceMaterial* name);
 }

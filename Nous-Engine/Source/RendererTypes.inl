@@ -6,9 +6,13 @@
 #include "MathUtils.h"
 #include "ResourceTypes.inl"
 
+class ResourceMesh;
+class ResourceMaterial;
+class ResourceTexture;
+
 struct GeometryRenderData
 {
-    Geometry* geometry;
+    ResourceMesh* geometry;
     float4x4 model;
 };
 
@@ -67,16 +71,16 @@ struct IRendererBackend
 
     // ---------------------------------------------------------------------------------------------------- //
 
-    virtual void CreateTexture(const uint8* pixels, Texture* outTexture) = 0;
-    virtual void DestroyTexture(Texture* texture) = 0;
+    virtual void CreateTexture(const uint8* pixels, ResourceTexture* outTexture) = 0;
+    virtual void DestroyTexture(ResourceTexture* texture) = 0;
 
     // ---------------------------------------------------------------------------------------------------- //
 
-    virtual bool CreateMaterial(Material* material) = 0;
-    virtual void DestroyMaterial(Material* material) = 0;
+    virtual bool CreateMaterial(ResourceMaterial* material) = 0;
+    virtual void DestroyMaterial(ResourceMaterial* material) = 0;
 
     // ---------------------------------------------------------------------------------------------------- //
 
-    virtual bool CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, Geometry* outGeometry) = 0;
-    virtual void DestroyGeometry(Geometry* geometry) = 0;
+    virtual bool CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry) = 0;
+    virtual void DestroyGeometry(ResourceMesh* geometry) = 0;
 };

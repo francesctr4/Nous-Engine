@@ -6,6 +6,9 @@
 
 #include "MemoryManager.h"
 
+#include "ModuleRenderer3D.h"
+#include "RendererFrontend.h"
+
 #include "Assimp.h"
 #define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace)
 
@@ -140,6 +143,9 @@ bool ImporterMesh::Load(const MetaFileData& metaFileData, Resource* outResource)
 
     fileHandle.Close();
 
+    ret = External->renderer->rendererFrontend->CreateGeometry(mesh->vertices.size(), mesh->vertices.data(),
+        mesh->indices.size(), mesh->indices.data(), mesh);
+
     return ret;
 }
 
@@ -148,7 +154,11 @@ bool ImporterMesh::Unload(Resource*& inResource)
     ResourceMesh* mesh = static_cast<ResourceMesh*>(inResource);
     if (!mesh) return false;
 
-    // TODO: Unload
+    External->renderer->rendererFrontend->DestroyGeometry(mesh);
+
+    mesh->ID = INVALID_ID;
+    mesh->internalID = INVALID_ID;
+    mesh->generation = INVALID_ID;
 
     mesh->vertices.clear();
     mesh->indices.clear();
