@@ -5,7 +5,7 @@
 
 #include "RendererTypes.inl"
 
-//class ResourceMaterial;
+class ResourceMaterial;
 
 class ResourceMesh : public Resource
 {
@@ -18,8 +18,12 @@ public:
 
 public:
 
+	uint32 ID;
+	uint32 internalID;
+	uint32 generation;
+
 	std::vector<Vertex> vertices;
 	std::vector<uint32> indices;
 
-	//ResourceMaterial* material;
+	ResourceMaterial* material;
 };

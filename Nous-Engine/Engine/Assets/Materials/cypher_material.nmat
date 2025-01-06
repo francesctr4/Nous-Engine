@@ -1,11 +1,9 @@
 {
-  "version": "0.1",
-  "name": "cypher_material",
   "diffuse_color": [
     1,
     1,
     1,
     1
   ],
-  "diffuse_map_name": "Assets/Textures/cypher_tex.png"
+  "diffuse_map_path": "Assets/Textures/cypher_tex.png"
 }

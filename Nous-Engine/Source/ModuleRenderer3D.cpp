@@ -12,6 +12,8 @@
 #include "ImporterMesh.h"
 
 #include "ModuleResourceManager.h"
+#include "ResourceMaterial.h"
+#include "ResourceTexture.h"
 
 RendererFrontend* ModuleRenderer3D::rendererFrontend = nullptr;
 
@@ -56,28 +58,15 @@ bool ModuleRenderer3D::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	std::string path = "Assets/Meshes/Cypher_S0_Skelmesh.fbx";
+	ResourceMesh* r = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
+	
+	GeometryConfig gConfig;
+	gConfig.name = "Cypher";
+	gConfig.materialPath = "DefaultMaterial";
+	gConfig.vertices = r->vertices;
+	gConfig.indices = r->indices;
 
-	if (App->resourceManager->ImportFile(path))
-	{
-		ResourceMesh* r = static_cast<ResourceMesh*>(App->resourceManager->CreateResource(path));
-		ResourceMesh* r2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource(path));
-		ResourceMesh* r3 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource(path));
-
-		//GeometryConfig gConfig;
-		//gConfig.name = "Cypher";
-		//gConfig.materialPath = "DefaultMaterial";
-		//gConfig.vertices = r->vertices;
-		//gConfig.indices = r->indices;
-
-		//testGeometry = NOUS_GeometrySystem::AcquireFromConfig(gConfig, true);
-
-		UID hola = r->GetUID();
-
-		App->resourceManager->UnloadResource(hola);
-		App->resourceManager->UnloadResource(hola);
-		App->resourceManager->UnloadResource(hola);
-	}
+	testGeometry = NOUS_GeometrySystem::AcquireFromConfig(gConfig, true);
 
 	return true;
 }

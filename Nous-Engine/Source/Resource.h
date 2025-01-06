@@ -38,8 +38,8 @@ public:
 	std::string GetLibraryPath() const;
 
 	uint32 GetReferenceCount() const;
-	void IncreaseReferenceCount();
-	void DecreaseReferenceCount();
+	virtual void IncreaseReferenceCount();
+	virtual void DecreaseReferenceCount();
 
 	static int16 GetIndexFromType(const ResourceType& type);
 	static std::string GetLibraryExtensionFromType(ResourceType type);
