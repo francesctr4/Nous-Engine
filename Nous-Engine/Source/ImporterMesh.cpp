@@ -8,6 +8,9 @@
 
 #include "ModuleRenderer3D.h"
 #include "RendererFrontend.h"
+#include "ModuleResourceManager.h"
+#include "ResourceMaterial.h"
+#include "ResourceTexture.h"
 
 #include "Assimp.h"
 #define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace)
@@ -90,7 +93,7 @@ bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
     return ret;
 }
 
-bool ImporterMesh::Load(const MetaFileData& metaFileData, Resource* outResource)
+bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
 {
     ResourceMesh* mesh = static_cast<ResourceMesh*>(outResource);
     if (!mesh) return false;
@@ -98,7 +101,7 @@ bool ImporterMesh::Load(const MetaFileData& metaFileData, Resource* outResource)
     bool ret = true;
 
     FileHandle fileHandle;
-    if (!fileHandle.Open(metaFileData.libraryPath, FileMode::READ, true))
+    if (!fileHandle.Open(libraryPath, FileMode::READ, true))
     {
         return false;
     }
@@ -149,10 +152,21 @@ bool ImporterMesh::Load(const MetaFileData& metaFileData, Resource* outResource)
     return ret;
 }
 
-bool ImporterMesh::Unload(Resource*& inResource)
+bool ImporterMesh::Unload(Resource* inResource)
 {
     ResourceMesh* mesh = static_cast<ResourceMesh*>(inResource);
     if (!mesh) return false;
+
+    if (mesh->material != nullptr) 
+    {
+        if (mesh->material->diffuseMap.texture != nullptr)
+        {
+            External->resourceManager->UnloadResource(mesh->material->diffuseMap.texture->GetUID());
+            mesh->material->diffuseMap.texture = nullptr;
+        }
+
+        External->resourceManager->UnloadResource(mesh->material->GetUID());
+    }
 
     External->renderer->rendererFrontend->DestroyGeometry(mesh);
 

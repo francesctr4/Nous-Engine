@@ -642,8 +642,6 @@ void VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
         NOUS_ERROR("Error creating texture sampler: %s", VkResultMessage(result, true));
         return;
     }
-
-    texture->generation++;
 }
 
 void VulkanBackend::DestroyTexture(ResourceTexture* texture)
@@ -662,8 +660,6 @@ void VulkanBackend::DestroyTexture(ResourceTexture* texture)
 
         MemoryManager::Free(textureData, sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE);
     }
-    
-    MemoryManager::ZeroMemory(texture, sizeof(ResourceTexture));
 }
 
 bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
@@ -712,7 +708,8 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, u
     }
 
     // Check if this is a re-upload. If it is, need to free old data afterward.
-    bool isReupload = geometry->internalID != INVALID_ID;
+    //bool isReupload = geometry->internalID != INVALID_ID;
+    bool isReupload = false;
 
     VulkanGeometryData oldRange;
     VulkanGeometryData* internalData = nullptr;

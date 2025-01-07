@@ -29,7 +29,7 @@ bool ImporterTexture::Save(const MetaFileData& metaFileData, Resource*& inResour
     return ret;
 }
 
-bool ImporterTexture::Load(const MetaFileData& metaFileData, Resource* outResource)
+bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource)
 {
     ResourceTexture* texture = static_cast<ResourceTexture*>(outResource);
     if (!texture) return false;
@@ -38,7 +38,7 @@ bool ImporterTexture::Load(const MetaFileData& metaFileData, Resource* outResour
 
     stbi_set_flip_vertically_on_load(true);
 
-    uint8* data = stbi_load(metaFileData.libraryPath.c_str(), (int32*)&texture->width, (int32*)&texture->height,
+    uint8* data = stbi_load(libraryPath.c_str(), (int32*)&texture->width, (int32*)&texture->height,
         (int32*)&texture->channelCount, requiredChannelCount);
 
     texture->channelCount = requiredChannelCount;
@@ -65,21 +65,21 @@ bool ImporterTexture::Load(const MetaFileData& metaFileData, Resource* outResour
 
         if (stbi_failure_reason())
         {
-            NOUS_WARN("ImporterTexture::Load() failed to load file '%s': %s", metaFileData.libraryPath, stbi_failure_reason());
+            NOUS_WARN("ImporterTexture::Load() failed to load file '%s': %s", libraryPath, stbi_failure_reason());
+        }
+
+        // IDK what to do with this
+        if (currentGeneration == INVALID_ID)
+        {
+            texture->generation = 0;
+        }
+        else
+        {
+            texture->generation = currentGeneration;
         }
 
         // Acquire internal texture resources and upload to GPU.
-        //External->renderer->rendererFrontend->CreateTexture(data, &texture);
-
-        // IDK what to do with this
-		if (currentGeneration == INVALID_ID)
-		{
-			texture->generation = 0;
-		}
-		else
-		{
-			texture->generation = currentGeneration + 1;
-		}
+        External->renderer->rendererFrontend->CreateTexture(data, texture);
 
         // Clean up data.
         stbi_image_free(data);
@@ -90,19 +90,19 @@ bool ImporterTexture::Load(const MetaFileData& metaFileData, Resource* outResour
     {
         if (stbi_failure_reason())
         {
-            NOUS_WARN("ImporterTexture::Load() failed to load file '%s': %s", metaFileData.libraryPath, stbi_failure_reason());
+            NOUS_WARN("ImporterTexture::Load() failed to load file '%s': %s", libraryPath, stbi_failure_reason());
         }
 
         return false;
     }
 }
 
-bool ImporterTexture::Unload(Resource*& inResource)
+bool ImporterTexture::Unload(Resource* inResource)
 {
     ResourceTexture* texture = static_cast<ResourceTexture*>(inResource);
     if (!texture) return false;
 
-    //External->renderer->rendererFrontend->DestroyTexture(&texture);
+    External->renderer->rendererFrontend->DestroyTexture(texture);
 
     return true;
 }

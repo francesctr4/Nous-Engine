@@ -25,12 +25,12 @@ bool ImporterManager::Save(const ResourceType& type, const MetaFileData& metaFil
     return importers[Resource::GetIndexFromType(type)]->Save(metaFileData, inResource);
 }
 
-bool ImporterManager::Load(const ResourceType& type, const MetaFileData& metaFileData, Resource* outResource)
+bool ImporterManager::Load(const ResourceType& type, const std::string& libraryPath, Resource* outResource)
 {
-    return importers[Resource::GetIndexFromType(type)]->Load(metaFileData, outResource);
+    return importers[Resource::GetIndexFromType(type)]->Load(libraryPath, outResource);
 }
 
-bool ImporterManager::Unload(const ResourceType& type, Resource*& inResource)
+bool ImporterManager::Unload(const ResourceType& type, Resource* inResource)
 {
     return importers[Resource::GetIndexFromType(type)]->Unload(inResource);
 }

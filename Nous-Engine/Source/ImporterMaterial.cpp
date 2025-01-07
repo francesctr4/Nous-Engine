@@ -11,6 +11,9 @@
 
 #include "MemoryManager.h"
 
+#include "ModuleRenderer3D.h"
+#include "RendererFrontend.h"
+
 bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 {
     Resource* tempMaterial = NOUS_NEW<ResourceMaterial>(MemoryManager::MemoryTag::RESOURCE_MATERIAL);
@@ -28,14 +31,14 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
     return ret;
 }
 
-bool ImporterMaterial::Load(const MetaFileData& metaFileData, Resource* outResource)
+bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResource)
 {
     ResourceMaterial* material = static_cast<ResourceMaterial*>(outResource);
     if (!material) return false;
 
     JsonFile jsonFile;
 
-    if (!jsonFile.LoadFromFile(metaFileData.libraryPath.c_str()))
+    if (!jsonFile.LoadFromFile(libraryPath.c_str()))
     {
         NOUS_ERROR("Error in ImporterMaterial::Load(). Unable to load the file");
         return false;
@@ -54,20 +57,30 @@ bool ImporterMaterial::Load(const MetaFileData& metaFileData, Resource* outResou
         return false;
     }
 
+    bool ret = true;
+
     // Diffuse Texture
     ResourceTexture* diffuseTexture = static_cast<ResourceTexture*>(External->resourceManager->CreateResource(diffuseMapPath));
     material->diffuseMap.type = TextureMapType::DIFFUSE;
     material->diffuseMap.texture = diffuseTexture;
 
-    return true;
+    ret = External->renderer->rendererFrontend->CreateMaterial(material);
+
+    return ret;
 }
 
-bool ImporterMaterial::Unload(Resource*& inResource)
+bool ImporterMaterial::Unload(Resource* inResource)
 {
 	ResourceMaterial* material = static_cast<ResourceMaterial*>(inResource);
 	if (!material) return false;
 
-    External->resourceManager->UnloadResource(material->diffuseMap.texture->GetUID());
+    if (material->diffuseMap.texture != nullptr)
+    {
+        External->resourceManager->UnloadResource(material->diffuseMap.texture->GetUID());
+        material->diffuseMap.texture = nullptr;
+    }
+
+    External->renderer->rendererFrontend->DestroyMaterial(material);
 
 	return true;
 }

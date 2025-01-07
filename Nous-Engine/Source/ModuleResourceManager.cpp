@@ -44,12 +44,12 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN) 
+	if (App->input->GetKey(SDL_SCANCODE_Y) == KeyState::DOWN) 
 	{
 		CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx");
 	}
 
-	if (App->input->GetKey(SDL_SCANCODE_Y) == KeyState::DOWN)
+	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN)
 	{
 		CreateResource("Assets/Materials/cypher_material.nmat");
 	}
@@ -59,9 +59,19 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 		CreateResource("Assets/Textures/cypher_tex.png");
 	}
 
+	if (App->input->GetKey(SDL_SCANCODE_U) == KeyState::DOWN)
+	{
+		UnloadResource(3841219433);
+	}
+
 	if (App->input->GetKey(SDL_SCANCODE_J) == KeyState::DOWN)
 	{
 		UnloadResource(3801599100);
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
+	{
+		UnloadResource(1043038790);
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN) 
@@ -462,8 +472,6 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 {
 	UID uid = resource->GetUID();
 
-	ImporterManager::Unload(resource->GetType(), resource);
-
 	switch (resource->GetType())
 	{
 		case ResourceType::MESH:
@@ -527,7 +535,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 
 		// Manage inside: Loading in memory & increase reference count. 
 		// Manage inside: Retrieve resource name and assetspath from libraryfile.
-		if (!ImporterManager::Load(metaFileData.resourceType, metaFileData, resource))
+		if (!ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource))
 		{
 			NOUS_ERROR("Create Resource ERROR: CASE New Resource --> Failed to Load Resource From Library. Returned nullptr.");
 			return nullptr;
@@ -552,7 +560,9 @@ bool ModuleResourceManager::UnloadResource(const UID& UID)
 		return false;
 	}
 
-	Resource*& tmpResource = resources[UID];
+	Resource* tmpResource = resources[UID];
+
+	ImporterManager::Unload(tmpResource->GetType(), tmpResource);
 
 	tmpResource->DecreaseReferenceCount();
 
@@ -560,13 +570,15 @@ bool ModuleResourceManager::UnloadResource(const UID& UID)
 	{
 		DeleteResource(tmpResource);
 	}
-
+	
 	return true;
 }
 
 Resource* ModuleResourceManager::RequestResource(const UID& uid)
 {
 	Resource* resource = resources[uid];
+
+	ImporterManager::Load(resource->GetType(), resource->GetLibraryPath(), resource);
 
 	resource->IncreaseReferenceCount();
 
