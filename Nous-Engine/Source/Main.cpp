@@ -4,6 +4,8 @@
 #include "Asserts.h"
 #include "MemoryManager.h"
 
+#include "NOUS_Multithreading.h"
+
 typedef enum MainState
 {
 	MAIN_CREATION,
@@ -19,9 +21,13 @@ void DumpMemoryLeaks()
 	_CrtDumpMemoryLeaks();
 }
 
-int main(int argc, char** argv) {
-
+int main(int argc, char** argv) 
+{
 	MemoryManager::InitializeMemory();
+
+	NOUS_Multithreading::RegisterMainThread();
+
+	NOUS_Multithreading::Initialize();
 
 	InitializeLogging();
 
@@ -102,6 +108,8 @@ int main(int argc, char** argv) {
 	NOUS_DELETE(App, MemoryManager::MemoryTag::APPLICATION);
 
 	NOUS_INFO("Exiting engine '%s'...\n", TITLE);
+
+	NOUS_Multithreading::Shutdown();
 
 	NOUS_INFO(MemoryManager::GetMemoryUsageStats());
 

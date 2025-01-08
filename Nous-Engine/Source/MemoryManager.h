@@ -8,6 +8,7 @@ namespace MemoryManager
 	{
 		UNKNOWN = 0,
 
+		THREAD,
 		ARRAY,
 		DARRAY,
 		DICT,

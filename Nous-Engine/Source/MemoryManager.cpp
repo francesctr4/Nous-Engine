@@ -17,6 +17,7 @@ struct MemoryStats
 static const char* memoryTagStrings[static_cast<uint64>(MemoryManager::MemoryTag::MAX)] = 
 {
 	"UNKNOWN			",
+	"THREAD			",
 	"ARRAY			",
 	"DARRAY			",
 	"DICT			",

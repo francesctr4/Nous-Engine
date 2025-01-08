@@ -133,6 +133,9 @@
     <Filter Include="Source Code\!NousResource\Importers">
       <UniqueIdentifier>{9e8975b9-a62c-49b1-9d6e-31c6df4059dd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Code\!!NousMultithreading">
+      <UniqueIdentifier>{734a49f4-035b-4947-a4f4-76343e7f08f9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -158,9 +161,6 @@
     </ClCompile>
     <ClCompile Include="Source\ModuleCamera3D.cpp">
       <Filter>Source Code\Modules</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\ThreadPool.cpp">
-      <Filter>Source Code\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Source\RingQueue.cpp">
       <Filter>Source Code\Data Structures</Filter>
@@ -444,6 +444,15 @@
     <ClCompile Include="Source\ImporterManager.cpp">
       <Filter>Source Code\!NousResource\Importers</Filter>
     </ClCompile>
+    <ClCompile Include="Source\NOUS_Multithreading.cpp">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThreadPool.cpp">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThreadsWindow.cpp">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -709,9 +718,6 @@
     </ClInclude>
     <ClInclude Include="Source\ModuleCamera3D.h">
       <Filter>Source Code\Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\ThreadPool.h">
-      <Filter>Source Code\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Source\RingQueue.h">
       <Filter>Source Code\Data Structures</Filter>
@@ -1216,6 +1222,15 @@
     </ClInclude>
     <ClInclude Include="Source\ImporterManager.h">
       <Filter>Source Code\!NousResource\Importers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\NOUS_Multithreading.h">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThreadPool.h">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThreadsWindow.h">
+      <Filter>Source Code\!!NousMultithreading</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

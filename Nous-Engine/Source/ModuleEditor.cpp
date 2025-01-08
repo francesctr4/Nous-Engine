@@ -19,6 +19,7 @@
 #include "Assets.h"
 #include "AssetsBrowser.h"
 #include "ResourcesWindow.h"
+#include "ThreadsWindow.h"
 
 #pragma endregion
 
@@ -33,6 +34,7 @@ ModuleEditor::ModuleEditor(Application* app, std::string name, bool start_enable
 	AddEditorWindow(std::make_unique<Assets>("Assets"));
 	AddEditorWindow(std::make_unique<AssetsBrowser>("AssetsBrowser"));
 	AddEditorWindow(std::make_unique<Resources>("Resources"));
+	AddEditorWindow(std::make_unique<Threads>("Threads"));
 }
 
 ModuleEditor::~ModuleEditor()
