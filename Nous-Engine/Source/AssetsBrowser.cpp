@@ -35,10 +35,10 @@ void AssetsBrowser::AddItems(int count)
         
     Items.reserve(Items.Size + count);
 
-    for (int n = 0; n < count; n++, NextItemId++) 
-    {
-        Items.push_back(ExampleAsset(NextItemId, (NextItemId % 20) < 15 ? 0 : (NextItemId % 20) < 18 ? 1 : 2));
-    }
+    //for (int n = 0; n < count; n++, NextItemId++) 
+    //{
+    //    Items.push_back(ExampleAsset(NextItemId, (NextItemId % 20) < 15 ? 0 : (NextItemId % 20) < 18 ? 1 : 2));
+    //}
         
     RequestSort = true;
 }
@@ -69,6 +69,68 @@ void AssetsBrowser::UpdateLayoutSizes(float avail_width)
     LayoutSelectableSpacing = NOUS_MathUtils::MAX(floorf(LayoutItemSpacing) - IconHitSpacing, 0.0f);
     LayoutOuterPadding = floorf(LayoutItemSpacing * 0.5f);
 }
+#include <filesystem>
+
+int DetermineTypeFromDirectory(const std::string& directory_name) {
+    if (directory_name == "Textures") {
+        return 0; // Textures
+    }
+    else if (directory_name == "Meshes") {
+        return 1; // Models
+    }
+    else if (directory_name == "Materials") {
+        return 2; // Audio
+    }
+    else {
+        return 3; // Other
+    }
+}
+
+void AssetsBrowser::AddItemsFromDirectory(const std::string& directory_path) 
+{
+    std::string base_directory = "Assets";
+
+    if (Items.Size == 0) {
+        NextItemId = 0;
+    }
+
+    Items.clear();
+
+    for (const auto& entry : std::filesystem::directory_iterator(base_directory)) {
+        if (entry.is_directory()) {
+            const std::string& directory_name = entry.path().filename().string();
+            int type = DetermineTypeFromDirectory(directory_name);
+
+            for (const auto& file_entry : std::filesystem::directory_iterator(entry)) {
+                if (file_entry.is_regular_file()) {
+                    std::string file_extension = file_entry.path().extension().string();
+
+                    // Ignore .meta files
+                    if (file_extension == ".meta") {
+                        continue;
+                    }
+
+                    std::string file_name = file_entry.path().filename().string();
+                    Items.push_back(ExampleAsset(NextItemId++, file_name, type));
+                }
+            }
+        }
+    }
+
+    RequestSort = true;
+}
+
+int AssetsBrowser::DetermineFileType(const std::string& extension) {
+    if (extension == ".png" || extension == ".jpg" || extension == ".jpeg") {
+        return 0; // Image
+    }
+    else if (extension == ".fbx" || extension == ".nmat") {
+        return 1; // Text
+    }
+    else {
+        return 2; // Other
+    }
+}
 
 void AssetsBrowser::Draw()
 {
@@ -79,6 +141,11 @@ void AssetsBrowser::Draw()
         {
             ImGui::End();
             return;
+        }
+
+        if (ImGui::MenuItem("Load Assets")) 
+        {
+            AddItemsFromDirectory("Assets"); // Replace with your assets directory path.
         }
 
         // Menu bar
@@ -266,24 +333,28 @@ void AssetsBrowser::Draw()
 
                         // Render icon (a real app would likely display an image/thumbnail here)
                         // Because we use ImGuiMultiSelectFlags_BoxSelect2d, clipping vertical may occasionally be larger, so we coarse-clip our rendering as well.
-                        if (item_is_visible)
-                        {
+                        if (item_is_visible) {
                             ImVec2 box_min(pos.x - 1, pos.y - 1);
-                            ImVec2 box_max(box_min.x + LayoutItemSize.x + 2, box_min.y + LayoutItemSize.y + 2); // Dubious
-                            draw_list->AddRectFilled(box_min, box_max, icon_bg_color); // Background color
+                            ImVec2 box_max(box_min.x + LayoutItemSize.x + 2, box_min.y + LayoutItemSize.y + 2);
+                            draw_list->AddRectFilled(box_min, box_max, icon_bg_color);
 
-                            if (ShowTypeOverlay && item_data->Type != 0)
-                            {
+                            if (ShowTypeOverlay && item_data->Type != 0) {
                                 ImU32 type_col = icon_type_overlay_colors[item_data->Type % IM_ARRAYSIZE(icon_type_overlay_colors)];
-                                draw_list->AddRectFilled(ImVec2(box_max.x - 2 - icon_type_overlay_size.x, box_min.y + 2), ImVec2(box_max.x - 2, box_min.y + 2 + icon_type_overlay_size.y), type_col);
+                                draw_list->AddRectFilled(
+                                    ImVec2(box_max.x - 2 - icon_type_overlay_size.x, box_min.y + 2),
+                                    ImVec2(box_max.x - 2, box_min.y + 2 + icon_type_overlay_size.y),
+                                    type_col
+                                );
                             }
 
-                            if (display_label)
-                            {
+                            // Display the asset's title (file name) below the icon
+                            if (display_label) {
                                 ImU32 label_col = ImGui::GetColorU32(item_is_selected ? ImGuiCol_Text : ImGuiCol_TextDisabled);
-                                char label[32];
-                                sprintf_s(label, "%d", item_data->ID);
-                                draw_list->AddText(ImVec2(box_min.x, box_max.y - ImGui::GetFontSize()), label_col, label);
+                                draw_list->AddText(
+                                    ImVec2(box_min.x, box_max.y - ImGui::GetFontSize()),
+                                    label_col,
+                                    item_data->Title.c_str()
+                                );
                             }
                         }
 

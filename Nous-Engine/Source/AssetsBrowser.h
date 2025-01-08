@@ -70,9 +70,11 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
 struct ExampleAsset
 {
     ImGuiID ID;
-    int     Type;
+    std::string Title; // Asset's title (file name)
+    int Type;
 
-    ExampleAsset(ImGuiID id, int type) { ID = id; Type = type; }
+    ExampleAsset(ImGuiID id, std::string title, int type)
+        : ID(id), Title(title), Type(type) {}
 
     static const ImGuiTableSortSpecs* s_current_sort_specs;
 
@@ -114,7 +116,7 @@ public:
     bool            AllowSorting = true;
     bool            AllowDragUnselected = false;
     bool            AllowBoxSelect = true;
-    float           IconSize = 32.0f;
+    float           IconSize = 100.0f;
     int             IconSpacing = 10;
     int             IconHitSpacing = 4;         // Increase hit-spacing if you want to make it possible to clear or box-select from gaps. Some spacing is required to able to amend with Shift+box-select. Value is small in Explorer.
     bool            StretchSpacing = true;
@@ -146,4 +148,7 @@ public:
     // Logic would be written in the main code BeginChild() and outputing to local variables.
     // We extracted it into a function so we can call it easily from multiple places.
     void UpdateLayoutSizes(float avail_width);
+
+    void AddItemsFromDirectory(const std::string& directory_path);
+    int DetermineFileType(const std::string& extension);
 };
