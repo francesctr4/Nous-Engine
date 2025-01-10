@@ -42,6 +42,9 @@ ModuleEditor::~ModuleEditor()
 	NOUS_TRACE("%s()", __FUNCTION__);
 }
 
+// Array to store ImFont pointers
+std::vector<ImFont*> ModuleEditor::fonts;
+
 bool ModuleEditor::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -58,7 +61,10 @@ bool ModuleEditor::Awake()
 
 	ImGuiCustom::ImGuiTheme_RedGrey();
 
-	io.Fonts->AddFontFromFileTTF("Assets/Fonts/tahoma.ttf", 15.0f);
+	fonts.push_back(io.Fonts->AddFontFromFileTTF("Assets/Fonts/tahoma.ttf", 15.0f));
+
+	// Optionally, load more fonts as needed
+	fonts.push_back(io.Fonts->AddFontFromFileTTF("Assets/Fonts/tahoma.ttf", 12.0f));
 
 	switch (currentBackendType)
 	{

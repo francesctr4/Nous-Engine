@@ -1,4 +1,5 @@
 #include "AssetsBrowser.h"
+#include "ModuleEditor.h"
 
 static void HelpMarker(const char* desc)
 {
@@ -20,7 +21,7 @@ AssetsBrowser::AssetsBrowser(const char* title, bool start_open)
 
 void AssetsBrowser::Init()
 {
-    AddItems(10000);
+    AddItemsFromDirectory("Assets");
 }
 
 // Logic would be written in the main code BeginChild() and outputing to local variables.
@@ -28,12 +29,12 @@ void AssetsBrowser::Init()
 
 void AssetsBrowser::AddItems(int count)
 {
-    if (Items.Size == 0) 
-    {
-        NextItemId = 0;
-    }
-        
-    Items.reserve(Items.Size + count);
+    //if (Items.Size == 0) 
+    //{
+    //    NextItemId = 0;
+    //}
+    //    
+    //Items.reserve(Items.Size + count);
 
     //for (int n = 0; n < count; n++, NextItemId++) 
     //{
@@ -59,7 +60,7 @@ void AssetsBrowser::UpdateLayoutSizes(float avail_width)
     // Layout: calculate number of icon per line and number of lines
     LayoutItemSize = ImVec2(floorf(IconSize), floorf(IconSize));
     LayoutColumnCount = NOUS_MathUtils::MAX((int)(avail_width / (LayoutItemSize.x + LayoutItemSpacing)), 1);
-    LayoutLineCount = (Items.Size + LayoutColumnCount - 1) / LayoutColumnCount;
+    LayoutLineCount = (Items.size() + LayoutColumnCount - 1) / LayoutColumnCount;
 
     // Layout: when stretching: allocate remaining space to more spacing. Round before division, so item_spacing may be non-integer.
     if (StretchSpacing && LayoutColumnCount > 1)
@@ -72,17 +73,21 @@ void AssetsBrowser::UpdateLayoutSizes(float avail_width)
 #include <filesystem>
 
 int DetermineTypeFromDirectory(const std::string& directory_name) {
-    if (directory_name == "Textures") {
-        return 0; // Textures
+    if (directory_name == "Textures") 
+    {
+        return 1; // Textures
     }
-    else if (directory_name == "Meshes") {
-        return 1; // Models
+    else if (directory_name == "Meshes") 
+    {
+        return 3; // Models
     }
-    else if (directory_name == "Materials") {
+    else if (directory_name == "Materials") 
+    {
         return 2; // Audio
     }
-    else {
-        return 3; // Other
+    else 
+    {
+        return 0; // Other
     }
 }
 
@@ -90,7 +95,7 @@ void AssetsBrowser::AddItemsFromDirectory(const std::string& directory_path)
 {
     std::string base_directory = "Assets";
 
-    if (Items.Size == 0) {
+    if (Items.size() == 0) {
         NextItemId = 0;
     }
 
@@ -111,7 +116,7 @@ void AssetsBrowser::AddItemsFromDirectory(const std::string& directory_path)
                     }
 
                     std::string file_name = file_entry.path().filename().string();
-                    Items.push_back(ExampleAsset(NextItemId++, file_name, type));
+                    Items.push_back(ExampleAsset(NextItemId++, file_name.c_str(), type));
                 }
             }
         }
@@ -141,11 +146,6 @@ void AssetsBrowser::Draw()
         {
             ImGui::End();
             return;
-        }
-
-        if (ImGui::MenuItem("Load Assets")) 
-        {
-            AddItemsFromDirectory("Assets"); // Replace with your assets directory path.
         }
 
         // Menu bar
@@ -205,7 +205,7 @@ void AssetsBrowser::Draw()
                 if (ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs())
                     if (sort_specs->SpecsDirty || RequestSort)
                     {
-                        ExampleAsset::SortWithSortSpecs(sort_specs, Items.Data, Items.Size);
+                        ExampleAsset::SortWithSortSpecs(sort_specs, Items.data(), Items.size());
                         sort_specs->SpecsDirty = RequestSort = false;
                     }
                 ImGui::EndTable();
@@ -244,7 +244,7 @@ void AssetsBrowser::Draw()
             // When we finish implementing a more general API for this, we will obsolete this flag in favor of the new system)
             ms_flags |= ImGuiMultiSelectFlags_NavWrapX;
 
-            ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(ms_flags, Selection.Size, Items.Size);
+            ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(ms_flags, Selection.Size, Items.size());
 
             // Use custom selection adapter: store ID in selection (recommended)
             Selection.UserData = this;
@@ -252,7 +252,7 @@ void AssetsBrowser::Draw()
             Selection.ApplyRequests(ms_io);
 
             const bool want_delete = (ImGui::Shortcut(ImGuiKey_Delete, ImGuiInputFlags_Repeat) && (Selection.Size > 0)) || RequestDelete;
-            const int item_curr_idx_to_focus = want_delete ? Selection.ApplyDeletionPreLoop(ms_io, Items.Size) : -1;
+            const int item_curr_idx_to_focus = want_delete ? Selection.ApplyDeletionPreLoop(ms_io, Items.size()) : -1;
             RequestDelete = false;
 
             // Push LayoutSelectableSpacing (which is LayoutItemSpacing minus hit-spacing, if we decide to have hit gaps between items)
@@ -263,7 +263,14 @@ void AssetsBrowser::Draw()
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(LayoutSelectableSpacing, LayoutSelectableSpacing));
 
             // Rendering parameters
-            const ImU32 icon_type_overlay_colors[3] = { 0, IM_COL32(200, 70, 70, 255), IM_COL32(70, 170, 70, 255) };
+			const ImU32 icon_type_overlay_colors[4] = 
+            {
+                IM_COL32(204, 204, 204, 255), // Default: RGB(0.8f, 0.8f, 0.8f) -> IM_COL32(204, 204, 204, 255)
+	            
+	            IM_COL32(127, 204, 0, 255), // TEXTURE: RGB(0.5f, 0.8f, 0.0f) -> IM_COL32(127, 204, 0, 255)
+	            IM_COL32(204, 127, 0, 255), // MATERIAL: RGB(0.8f, 0.5f, 0.0f) -> IM_COL32(204, 127, 0, 255)
+                IM_COL32(0, 204, 127, 255) // MESH: RGB(0.0f, 0.8f, 0.5f) -> IM_COL32(0, 204, 127, 255)
+			};
             const ImU32 icon_bg_color = ImGui::GetColorU32(IM_COL32(35, 35, 35, 220));
             const ImVec2 icon_type_overlay_size = ImVec2(4.0f, 4.0f);
             const bool display_label = (LayoutItemSize.x >= ImGui::CalcTextSize("999").x);
@@ -280,7 +287,7 @@ void AssetsBrowser::Draw()
                 for (int line_idx = clipper.DisplayStart; line_idx < clipper.DisplayEnd; line_idx++)
                 {
                     const int item_min_idx_for_current_line = line_idx * column_count;
-                    const int item_max_idx_for_current_line = NOUS_MathUtils::MIN((line_idx + 1) * column_count, Items.Size);
+                    const int item_max_idx_for_current_line = NOUS_MathUtils::MIN((line_idx + 1) * column_count, (int)Items.size());
                     for (int item_idx = item_min_idx_for_current_line; item_idx < item_max_idx_for_current_line; ++item_idx)
                     {
                         ExampleAsset* item_data = &Items[item_idx];
@@ -326,7 +333,8 @@ void AssetsBrowser::Draw()
                             // (we could read from selection, but it is more correct and reusable to read from payload)
                             const ImGuiPayload* payload = ImGui::GetDragDropPayload();
                             const int payload_count = (int)payload->DataSize / (int)sizeof(ImGuiID);
-                            ImGui::Text("%d assets", payload_count);
+                            //ImGui::Text("%d assets", payload_count);
+                            ImGui::Text("%s", item_data->Title.c_str());
 
                             ImGui::EndDragDropSource();
                         }
@@ -340,21 +348,64 @@ void AssetsBrowser::Draw()
 
                             if (ShowTypeOverlay && item_data->Type != 0) {
                                 ImU32 type_col = icon_type_overlay_colors[item_data->Type % IM_ARRAYSIZE(icon_type_overlay_colors)];
+                                // Increase the size of the overlay
+                                float overlay_width = icon_type_overlay_size.x * 1.5f;  // Increase width by 1.5 times
+                                float overlay_height = icon_type_overlay_size.y * 1.5f; // Increase height by 1.5 times
+
                                 draw_list->AddRectFilled(
-                                    ImVec2(box_max.x - 2 - icon_type_overlay_size.x, box_min.y + 2),
-                                    ImVec2(box_max.x - 2, box_min.y + 2 + icon_type_overlay_size.y),
+                                    ImVec2(box_max.x - 2 - overlay_width, box_min.y + 2),
+                                    ImVec2(box_max.x - 2, box_min.y + 2 + overlay_height),
                                     type_col
                                 );
                             }
 
-                            // Display the asset's title (file name) below the icon
+                            // Render title outside of the box (below the icon)
                             if (display_label) {
+
+                                // Calculate the available width for the title (excluding the icon size and padding)
+                                float available_width = LayoutItemSize.x + 14; // The width of the item box
+
+                                // Get the text size for the full title
+                                ImVec2 text_size = ImGui::CalcTextSize(item_data->Title.c_str());
+
+                                // If the text is too wide, calculate how much we need to truncate
+                                std::string title = item_data->Title;
+                                if (text_size.x > available_width)
+                                {
+                                    // Start with the full string length
+                                    int new_length = item_data->Title.length();
+
+                                    // Loop to find the maximum length that fits in the available width
+                                    while (new_length > 0)
+                                    {
+                                        // Get the current substring
+                                        std::string truncated_title = item_data->Title.substr(0, new_length);
+
+                                        // Calculate the size of the truncated string
+                                        ImVec2 truncated_text_size = ImGui::CalcTextSize(truncated_title.c_str());
+
+                                        // Check if the truncated string fits in the available width
+                                        if (truncated_text_size.x <= available_width)
+                                        {
+                                            // Once we find a fitting size, break and append ellipsis
+                                            title = truncated_title + "...";
+                                            break;
+                                        }
+
+                                        // Decrease the string length by 1 and try again
+                                        new_length--;
+                                    }
+                                }
+
                                 ImU32 label_col = ImGui::GetColorU32(item_is_selected ? ImGuiCol_Text : ImGuiCol_TextDisabled);
-                                draw_list->AddText(
-                                    ImVec2(box_min.x, box_max.y - ImGui::GetFontSize()),
-                                    label_col,
-                                    item_data->Title.c_str()
-                                );
+
+                                // Calculate the position for the label (below the icon box)
+                                ImVec2 label_pos = ImVec2(pos.x, pos.y + LayoutItemSize.y + 4);  // Adjust vertical position
+
+                                // Render text with a smaller font
+                                ImGui::PushFont(ModuleEditor::fonts[1]); // Use smaller font for title
+                                draw_list->AddText(label_pos, label_col, title.c_str());
+                                ImGui::PopFont();
                             }
                         }
 
@@ -413,7 +464,7 @@ void AssetsBrowser::Draw()
         }
         ImGui::EndChild();
 
-        ImGui::Text("Selected: %d/%d items", Selection.Size, Items.Size);
+        ImGui::Text("Selected: %d/%d items", Selection.Size, Items.size());
         ImGui::End();
     }
 }

@@ -6,6 +6,8 @@ union SDL_Event;
 struct VulkanContext;
 enum class RendererBackendType;
 struct IEditorWindow;
+struct ImGuiIO;
+struct ImFont;
 
 class ModuleEditor : public Module
 {
@@ -23,6 +25,9 @@ public:
 	void ProcessInputEvent(const SDL_Event* event);
 	void DrawEditor();
 
+	// Array to store ImFont pointers
+	static std::vector<ImFont*> fonts;
+
 private:
 
 	void InitFrame(RendererBackendType backendType);
@@ -39,5 +44,6 @@ private:
 	RendererBackendType currentBackendType;
 
 	std::vector<std::unique_ptr<IEditorWindow>> editorWindows;
+
 
 };

@@ -44,20 +44,22 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
     // - Call after EndMultiSelect()
     // - We cannot provide this logic in core Dear ImGui because we don't have access to your items, nor to selection data.
     template<typename ITEM_TYPE>
-    void ApplyDeletionPostLoop(ImGuiMultiSelectIO* ms_io, ImVector<ITEM_TYPE>& items, int item_curr_idx_to_select)
+    void ApplyDeletionPostLoop(ImGuiMultiSelectIO* ms_io, std::vector<ITEM_TYPE>& items, int item_curr_idx_to_select)
     {
         // Rewrite item list (delete items) + convert old selection index (before deletion) to new selection index (after selection).
-        // If NavId was not part of selection, we will stay on same item.
-        ImVector<ITEM_TYPE> new_items;
-        new_items.reserve(items.Size - Size);
+        // If NavId was not part of selection, we will stay on the same item.
+        std::vector<ITEM_TYPE> new_items;
+        new_items.reserve(items.size() - Size);
         int item_next_idx_to_select = -1;
-        for (int idx = 0; idx < items.Size; idx++)
+
+        for (size_t idx = 0; idx < items.size(); ++idx)
         {
             if (!Contains(GetStorageIdFromIndex(idx)))
-                new_items.push_back(items[idx]);
-            if (item_curr_idx_to_select == idx)
-                item_next_idx_to_select = new_items.Size - 1;
+                new_items.push_back(std::move(items[idx])); // Use std::move for efficiency if ITEM_TYPE is movable
+            if (item_curr_idx_to_select == static_cast<int>(idx))
+                item_next_idx_to_select = static_cast<int>(new_items.size() - 1);
         }
+
         items.swap(new_items);
 
         // Update selection
@@ -114,15 +116,15 @@ public:
     // Options
     bool            ShowTypeOverlay = true;
     bool            AllowSorting = true;
-    bool            AllowDragUnselected = false;
+    bool            AllowDragUnselected = true;
     bool            AllowBoxSelect = true;
     float           IconSize = 100.0f;
-    int             IconSpacing = 10;
-    int             IconHitSpacing = 4;         // Increase hit-spacing if you want to make it possible to clear or box-select from gaps. Some spacing is required to able to amend with Shift+box-select. Value is small in Explorer.
+    int             IconSpacing = 20;
+    int             IconHitSpacing = 14;         // Increase hit-spacing if you want to make it possible to clear or box-select from gaps. Some spacing is required to able to amend with Shift+box-select. Value is small in Explorer.
     bool            StretchSpacing = true;
 
     // State
-    ImVector<ExampleAsset> Items;               // Our items
+    std::vector<ExampleAsset> Items;               // Our items
     ExampleSelectionWithDeletion Selection;     // Our selection (ImGuiSelectionBasicStorage + helper funcs to handle deletion)
     ImGuiID         NextItemId = 0;             // Unique identifier when creating new items
     bool            RequestDelete = false;      // Deferred deletion request

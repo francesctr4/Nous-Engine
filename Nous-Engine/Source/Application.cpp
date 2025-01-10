@@ -31,36 +31,69 @@ Application::Application()
     dt = 0.0f;
 
     // We allocate the memory for the module first, then we use it with new to call the constructor.
-    // The application itself should NOT use custom allocators.
+    // The application itself should NOT use custom allocators. Shush.
 
-    window = new ModuleWindow(this, "ModuleWindow");
-    input = new ModuleInput(this, "ModuleInput");
-    fileSystem = new ModuleFileSystem(this, "ModuleFileSystem");
-    camera = new ModuleCamera3D(this, "ModuleCamera3D");
-    resourceManager = new ModuleResourceManager(this, "ModuleResourceManager");
-    scene = new ModuleScene(this, "ModuleScene");
-    renderer = new ModuleRenderer3D(this, "ModuleRenderer3D");
-    editor = new ModuleEditor(this, "ModuleEditor");
+    //window = new ModuleWindow(this, "ModuleWindow");
+    //input = new ModuleInput(this, "ModuleInput");
+    //fileSystem = new ModuleFileSystem(this, "ModuleFileSystem");
+    //camera = new ModuleCamera3D(this, "ModuleCamera3D");
+    //resourceManager = new ModuleResourceManager(this, "ModuleResourceManager");
+    //scene = new ModuleScene(this, "ModuleScene");
+    //renderer = new ModuleRenderer3D(this, "ModuleRenderer3D");
+    //editor = new ModuleEditor(this, "ModuleEditor");
 
-	listModules[0] = window;
-    listModules[1] = input;
-    listModules[2] = fileSystem;
-    listModules[3] = camera;
-    listModules[4] = resourceManager;
-    listModules[5] = scene;
-    listModules[6] = renderer;
-    listModules[7] = editor;
+    //listModules[0] = window;
+    //listModules[1] = input;
+    //listModules[2] = fileSystem;
+    //listModules[3] = camera;
+    //listModules[4] = resourceManager;
+    //listModules[5] = scene;
+    //listModules[6] = renderer;
+    //listModules[7] = editor;
+
+    listModules[0] = window = NOUS_NEW<ModuleWindow>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleWindow");
+    listModules[1] = input = NOUS_NEW<ModuleInput>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleInput");
+    listModules[2] = fileSystem = NOUS_NEW<ModuleFileSystem>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleFileSystem");
+    listModules[3] = camera = NOUS_NEW<ModuleCamera3D>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleCamera3D");
+    listModules[4] = resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleResourceManager");
+    listModules[5] = scene = NOUS_NEW<ModuleScene>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleScene");
+    listModules[6] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleRenderer3D");
+    listModules[7] = editor = NOUS_NEW<ModuleEditor>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleEditor");
 }
 
 Application::~Application()
 {
-    for (int i = 0; i < NUM_MODULES; ++i)
-    {
-        if (listModules[i] != nullptr) {
-            delete listModules[i];
-            listModules[i] = nullptr;
-        }
-    }
+    //for (int i = 0; i < NUM_MODULES; ++i)
+    //{
+    //    if (listModules[i] != nullptr) {
+    //        delete listModules[i];
+    //        listModules[i] = nullptr;
+    //    }
+    //}
+
+    ModuleEditor* editor = static_cast<ModuleEditor*>(listModules[7]);
+    NOUS_DELETE<ModuleEditor>(editor, MemoryManager::MemoryTag::APPLICATION);
+
+    ModuleRenderer3D* renderer = static_cast<ModuleRenderer3D*>(listModules[6]);
+    NOUS_DELETE<ModuleRenderer3D>(renderer, MemoryManager::MemoryTag::APPLICATION);
+
+    ModuleScene* scene = static_cast<ModuleScene*>(listModules[5]);
+    NOUS_DELETE<ModuleScene>(scene, MemoryManager::MemoryTag::APPLICATION);
+
+    ModuleResourceManager* resourceManager = static_cast<ModuleResourceManager*>(listModules[4]);
+    NOUS_DELETE<ModuleResourceManager>(resourceManager, MemoryManager::MemoryTag::APPLICATION);
+
+    ModuleCamera3D* camera = static_cast<ModuleCamera3D*>(listModules[3]);
+    NOUS_DELETE<ModuleCamera3D>(camera, MemoryManager::MemoryTag::APPLICATION);
+
+    ModuleFileSystem* fileSystem = static_cast<ModuleFileSystem*>(listModules[2]);
+    NOUS_DELETE<ModuleFileSystem>(fileSystem, MemoryManager::MemoryTag::APPLICATION);
+
+    ModuleInput* input = static_cast<ModuleInput*>(listModules[1]);
+    NOUS_DELETE<ModuleInput>(input, MemoryManager::MemoryTag::APPLICATION);
+
+    ModuleWindow* window = static_cast<ModuleWindow*>(listModules[0]);
+    NOUS_DELETE<ModuleWindow>(window, MemoryManager::MemoryTag::APPLICATION);
 }
 
 bool Application::Awake()
