@@ -16,8 +16,6 @@ public:
 	bool Start() override;
 	bool CleanUp() override;
 
-private:
-
 	bool CreateLibraryFolder();
 	bool ImportDirectory(const std::string& directory);
 

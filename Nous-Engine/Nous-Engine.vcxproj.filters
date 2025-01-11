@@ -453,6 +453,9 @@
     <ClCompile Include="Source\ThreadsWindow.cpp">
       <Filter>Source Code\!!NousMultithreading</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SceneViewport.cpp">
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1231,6 +1234,9 @@
     </ClInclude>
     <ClInclude Include="Source\ThreadsWindow.h">
       <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SceneViewport.h">
+      <Filter>Source Code\Editor\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

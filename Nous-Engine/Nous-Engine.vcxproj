@@ -281,6 +281,7 @@
     <ClCompile Include="Source\ResourceMesh.cpp" />
     <ClCompile Include="Source\ResourcesWindow.cpp" />
     <ClCompile Include="Source\ResourceTexture.cpp" />
+    <ClCompile Include="Source\SceneViewport.cpp" />
     <ClCompile Include="Source\TextureSystem.cpp" />
     <ClCompile Include="Source\ThreadPool.cpp" />
     <ClCompile Include="Source\RingQueue.cpp" />
@@ -536,6 +537,7 @@
     <ClInclude Include="Source\ResourceMesh.h" />
     <ClInclude Include="Source\ResourcesWindow.h" />
     <ClInclude Include="Source\ResourceTexture.h" />
+    <ClInclude Include="Source\SceneViewport.h" />
     <ClInclude Include="Source\SDL2.h" />
     <ClInclude Include="Source\STL.h" />
     <ClInclude Include="Source\TextureSystem.h" />

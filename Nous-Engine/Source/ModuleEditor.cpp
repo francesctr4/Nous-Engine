@@ -20,6 +20,7 @@
 #include "AssetsBrowser.h"
 #include "ResourcesWindow.h"
 #include "ThreadsWindow.h"
+#include "SceneViewport.h"
 
 #pragma endregion
 
@@ -35,6 +36,7 @@ ModuleEditor::ModuleEditor(Application* app, std::string name, bool start_enable
 	AddEditorWindow(std::make_unique<AssetsBrowser>("AssetsBrowser"));
 	AddEditorWindow(std::make_unique<Resources>("Resources"));
 	AddEditorWindow(std::make_unique<Threads>("Threads"));
+	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
 }
 
 ModuleEditor::~ModuleEditor()
@@ -244,9 +246,9 @@ void ModuleEditor::InternalDrawEditor()
 		{
 			ToggleWindowState(editorWindows, "Assets");
 		}
-	}
 
-	ImGui::End();
+		ImGui::End();
+	}
 
 	ImGui::ShowDemoWindow();
 
@@ -254,50 +256,6 @@ void ModuleEditor::InternalDrawEditor()
 	{
 		window->Draw();
 	}
-
-	ImGui::Begin("Viewport");
-
-	// Get the viewport panel size
-	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-
-	// Texture dimensions (replace with your actual texture dimensions)
-	float textureWidth = 1920.0f; // Example width
-	float textureHeight = 1080.0f; // Example height
-
-	// Calculate aspect ratios
-	float textureAspect = textureWidth / textureHeight;
-	float viewportAspect = viewportPanelSize.x / viewportPanelSize.y;
-
-	// UV coordinates for cropping
-	ImVec2 uvMin(0.0f, 0.0f); // Top-left corner of the texture
-	ImVec2 uvMax(1.0f, 1.0f); // Bottom-right corner of the texture
-
-	if (viewportAspect < textureAspect) {
-		// Viewport is narrower: crop left and right
-		float cropFactor = textureAspect / viewportAspect;
-		uvMin.x = 0.5f - 0.5f / cropFactor;
-		uvMax.x = 0.5f + 0.5f / cropFactor;
-	}
-	else if (viewportAspect > textureAspect) {
-		// Viewport is wider: crop top and bottom
-		float cropFactor = viewportAspect / textureAspect;
-		uvMin.y = 0.5f - 0.5f / cropFactor;
-		uvMax.y = 0.5f + 0.5f / cropFactor;
-	}
-
-	// Render the image with cropped UVs
-	//ImGui::Image(
-	//	(ImTextureID)ImGui_ImplVulkan_AddTexture(
-	//		sampler,
-	//		GetVulkanContext()->swapChain.swapChainImageViews[GetVulkanContext()->imageIndex],
-	//		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-	//	),
-	//	ImVec2{ viewportPanelSize.x, viewportPanelSize.y },
-	//	uvMin,
-	//	uvMax
-	//);
-
-	ImGui::End();
 }
 
 void ModuleEditor::EndFrame(RendererBackendType backendType)

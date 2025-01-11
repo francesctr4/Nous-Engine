@@ -17,6 +17,7 @@ namespace NOUS_FileManager
 
 	// Directory operations
 	bool CreateDirectory(const std::string& path);
+	bool DeleteDirectory(const std::string& path);
 
 	// File operations
 	bool CopyFile(const std::string& source, const std::string& destination);

@@ -74,6 +74,41 @@ bool NOUS_FileManager::CreateDirectory(const std::string& path)
 	return true;
 }
 
+bool NOUS_FileManager::DeleteDirectory(const std::string& path)
+{
+	if (Exists(path))
+	{
+		// Try to remove the directory
+		try
+		{
+			// Iterate over the directory and remove its contents
+			for (const auto& entry : std::filesystem::directory_iterator(path))
+			{
+				if (std::filesystem::is_directory(entry))
+				{
+					// Recursively remove subdirectories
+					DeleteDirectory(entry.path().string());
+				}
+				else
+				{
+					// Remove files
+					std::filesystem::remove(entry);
+				}
+			}
+
+			// Remove the empty directory after cleaning it up
+			std::filesystem::remove(path);
+		}
+		catch (const std::exception& e)
+		{
+			// Handle any errors that occur during the process
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool NOUS_FileManager::CopyFile(const std::string& source, const std::string& destination)
 {
 	try

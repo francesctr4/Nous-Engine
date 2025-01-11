@@ -2,7 +2,6 @@
 
 #include "IEditorWindow.inl"
 #include "MathUtils.h"
-#include <algorithm>
 
 // Extra functions to add deletion support to ImGuiSelectionBasicStorage
 struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
@@ -69,16 +68,83 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
     }
 };
 
+enum class FileType 
+{
+    UNKNOWN = -1,
+
+    FOLDER,
+    META,
+    MODEL,
+    TEXTURE,
+    MATERIAL,
+    SHADER,
+    FONT,
+    SCENE,
+
+    ALL_TYPES
+};
+
+const std::unordered_map<std::string, FileType> extensionToFileType =
+{
+    // Model file extensions
+    {".fbx", FileType::MODEL},
+    {".obj", FileType::MODEL},
+    {".dae", FileType::MODEL},
+
+    // Texture file extensions
+    {".png", FileType::TEXTURE},
+    {".jpg", FileType::TEXTURE},
+    {".jpeg", FileType::TEXTURE},
+    {".tga", FileType::TEXTURE},
+    {".dds", FileType::TEXTURE},
+
+    // Material file extensions
+    {".nmat", FileType::MATERIAL},
+
+    // Shader file extensions
+    {".glsl", FileType::SHADER},
+    {".spv", FileType::SHADER},
+
+    // Font file extensions
+    {".ttf", FileType::FONT}, 
+
+    // Scene file extensions
+    {".nous", FileType::SCENE},
+
+    // Meta file extensions
+    {".meta", FileType::META},
+};
+
+// Rendering parameters
+const std::unordered_map<FileType, uint32> icon_type_overlay_colors =
+{
+    {FileType::UNKNOWN, IM_COL32(204, 204, 204, 255)}, // Gray for unknown files
+
+    {FileType::TEXTURE, IM_COL32(127, 204, 0, 255)},   // Green for textures
+    {FileType::MATERIAL, IM_COL32(204, 127, 0, 255)},  // Orange for materials
+    {FileType::MODEL, IM_COL32(0, 204, 127, 255)},     // Teal for models
+
+    {FileType::META, IM_COL32(255, 255, 255, 255)},    // White for meta
+    {FileType::FONT, IM_COL32(127, 0, 255, 255)},      // Purple for fonts
+    {FileType::SCENE, IM_COL32(255, 0, 0, 255)},       // Red for scenes
+    {FileType::SHADER, IM_COL32(255, 127, 255, 255)},  // Pink for shaders
+
+    {FileType::FOLDER, IM_COL32(255, 204, 0, 255)}     // Yellow for folders
+};
+
 struct ExampleAsset
 {
     ImGuiID ID;
-    std::string Title; // Asset's title (file name)
-    int Type;
+    std::string name; // Asset's title (file name)
+    std::string path;
+    FileType fileType;
 
-    ExampleAsset(ImGuiID id, std::string title, int type)
-        : ID(id), Title(title), Type(type) {}
+    ExampleAsset(ImGuiID ID, std::string path, std::string name, FileType fileType = FileType::UNKNOWN)
+        : ID(ID), path(path), name(name), fileType(fileType) {}
 
     static const ImGuiTableSortSpecs* s_current_sort_specs;
+
+#pragma region ASSET SORTING
 
     static void SortWithSortSpecs(ImGuiTableSortSpecs* sort_specs, ExampleAsset* items, int items_count)
     {
@@ -100,7 +166,7 @@ struct ExampleAsset
             if (sort_spec->ColumnIndex == 0)
                 delta = ((int)a->ID - (int)b->ID);
             else if (sort_spec->ColumnIndex == 1)
-                delta = (a->Type - b->Type);
+                delta = (static_cast<int>(a->fileType) - static_cast<int>(b->fileType));
             if (delta > 0)
                 return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? +1 : -1;
             if (delta < 0)
@@ -108,6 +174,9 @@ struct ExampleAsset
         }
         return ((int)a->ID - (int)b->ID);
     }
+
+#pragma endregion
+
 };
 
 class AssetsBrowser : public IEditorWindow
@@ -151,6 +220,9 @@ public:
     // We extracted it into a function so we can call it easily from multiple places.
     void UpdateLayoutSizes(float avail_width);
 
-    void AddItemsFromDirectory(const std::string& directory_path);
-    int DetermineFileType(const std::string& extension);
+    void AddItemsFromDirectory(const std::string& directoryPath);
+    FileType DetermineFileType(const std::string& extension);
+
+    std::string current_directory = "Assets";
+    std::stack<std::string> directory_stack;
 };
