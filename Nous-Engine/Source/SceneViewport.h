@@ -10,4 +10,9 @@ public:
 
     void Init() override;
     void Draw() override;
+
+private:
+
+    bool IsValidASCII(const std::string& str);
+
 };

@@ -222,6 +222,7 @@ public:
 
     void AddItemsFromDirectory(const std::string& directoryPath);
     FileType DetermineFileType(const std::string& extension);
+    ExampleAsset* GetItemByID(ImGuiID ID);
 
     std::string current_directory = "Assets";
     std::stack<std::string> directory_stack;

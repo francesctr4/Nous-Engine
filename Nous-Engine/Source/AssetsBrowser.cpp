@@ -94,7 +94,7 @@ int DetermineTypeFromDirectory(const std::string& directory_name) {
     }
 }
 
-void AssetsBrowser::AddItemsFromDirectory(const std::string& directoryPath) 
+void AssetsBrowser::AddItemsFromDirectory(const std::string& directoryPath)
 {
     Items.clear();
 
@@ -102,14 +102,19 @@ void AssetsBrowser::AddItemsFromDirectory(const std::string& directoryPath)
     {
         std::string path = entry.path().string();
 
-        if (entry.is_directory()) 
+        // Ignore .meta files
+        if (entry.is_regular_file() && entry.path().extension() == ".meta")
+        {
+            continue; // Skip this file
+        }
+
+        if (entry.is_directory())
         {
             const std::string& directoryName = entry.path().filename().string();
             Items.push_back(ExampleAsset(NextItemId++, path, directoryName, FileType::FOLDER)); // Type 3 for directories
         }
-        else if (entry.is_regular_file()) 
+        else if (entry.is_regular_file())
         {
-            std::string path = entry.path().string();
             std::string file_extension = entry.path().extension().string();
             std::string file_name = entry.path().filename().string();
             FileType type = DetermineFileType(file_extension);
@@ -134,6 +139,19 @@ FileType AssetsBrowser::DetermineFileType(const std::string& extension)
     }
 
     return FileType::UNKNOWN; // Return UNKNOWN if the extension is not found.
+}
+
+ExampleAsset* AssetsBrowser::GetItemByID(ImGuiID ID)
+{
+    // Iterate over the vector of ExampleAsset items
+    for (auto& item : Items)
+    {
+        if (item.ID == ID) // Check if the ID matches
+        {
+            return &item; // Return the pointer to the item if the ID matches
+        }
+    }
+    return nullptr; // Return nullptr if the ID is not found
 }
 
 void AssetsBrowser::Draw()
@@ -408,6 +426,12 @@ void AssetsBrowser::Draw()
                         // Drag and drop
                         if (ImGui::BeginDragDropSource())
                         {
+                            //ImGui::SetDragDropPayload("ASSETS_BROWSER_ITEMS", item_data->path.data(), sizeof(item_data->path));
+
+                            //ImGui::Text("Create Resource: %s", item_data->name.c_str());
+
+                            //ImGui::EndDragDropSource();
+
                             // Create payload with full selection OR single unselected item.
                             // (the later is only possible when using ImGuiMultiSelectFlags_SelectOnClickRelease)
                             //if (ImGui::GetDragDropPayload() == NULL)
@@ -423,25 +447,75 @@ void AssetsBrowser::Draw()
                             //    ImGui::SetDragDropPayload("ASSETS_BROWSER_ITEMS", payload_items.Data, (size_t)payload_items.size_in_bytes());
                             //}
 
-                            ImGui::SetDragDropPayload("ASSETS_BROWSER_ITEMS", item_data->path.data(), sizeof(item_data->path));
-
-                            ImGui::Text("Create Resource: %s", item_data->name.c_str());
-
-                            ImGui::EndDragDropSource();
-
-                            //if (ImGui::BeginDragDropSource())
-                            //{
-                            //    
-                            //}
-
                             // Display payload content in tooltip, by extracting it from the payload data
                             // (we could read from selection, but it is more correct and reusable to read from payload)
                             //const ImGuiPayload* payload = ImGui::GetDragDropPayload();
-                            //const int payload_count = (int)payload->DataSize / (int)sizeof(ImGuiID);
+                            //const int payload_count = (int)payload->DataSize / (int)sizeof(std::string);
                             ////ImGui::Text("%d assets", payload_count);
                             //ImGui::Text("%s", item_data->name.c_str());
 
                             //ImGui::EndDragDropSource();
+
+                            std::vector<std::string> payload_items;
+
+                            // Check if the item being dragged is selected
+                            if (!item_is_selected)
+                            {
+                                // If the item is not selected, add only this item's path to the payload
+                                payload_items.push_back(item_data->path);
+                            }
+                            else
+                            {
+                                // If the item is selected, add all selected items to the payload
+                                void* it = NULL;
+                                ImGuiID id = 0;
+                                while (Selection.GetNextSelectedItem(&it, &id))
+                                {
+                                    ExampleAsset* selected_item = GetItemByID(id); // Retrieve the actual item data
+                                    if (selected_item) // Ensure the item data is valid
+                                    {
+                                        payload_items.push_back(selected_item->path);
+                                    }
+                                }
+                            }
+
+                            // Calculate the total size for the payload, including null terminators for each string
+                            size_t payload_size = 0;
+                            for (const auto& path : payload_items)
+                            {
+                                payload_size += path.size() + 1; // Each string has a null terminator
+                            }
+
+                            // Allocate memory for the payload data
+                            char* payload_data = new char[payload_size];
+                            char* write_ptr = payload_data;
+
+                            // Write the strings into the payload data, ensuring null-termination for each string
+                            for (const auto& path : payload_items)
+                            {
+                                memcpy(write_ptr, path.c_str(), path.size()); // Copy the string
+                                write_ptr[path.size()] = '\0'; // Null terminate
+                                write_ptr += path.size() + 1; // Move pointer to the next free location
+                            }
+
+                            // Send the payload
+                            ImGui::SetDragDropPayload("ASSETS_BROWSER_ITEMS", payload_data, payload_size);
+
+                            // Display a tooltip with the number of items being dragged and their paths
+                            
+
+                            ImGui::BeginTooltip();
+                            ImGui::Text("%zu assets selected", payload_items.size());
+                            for (const auto& path : payload_items) {
+                                ImGui::Text("%s", path.c_str()); // Print each item's path
+                            }
+                            ImGui::EndTooltip();
+
+                            // Cleanup temporary memory
+                            delete[] payload_data;
+
+                            ImGui::EndDragDropSource();
+                            
                         }
 
                         // Render icon (a real app would likely display an image/thumbnail here)
