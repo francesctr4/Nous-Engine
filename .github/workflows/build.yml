@@ -19,7 +19,7 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1   # Sets up MSBuild environment for Visual Studio
 
       - name: Build solution
-        run: msbuild Nous-Engine.sln /p:Configuration=Release  # Builds the solution
+        run: msbuild Nous-Engine/Nous-Engine.sln /p:Configuration=Release  # Builds the solution
 
       - name: Run tests (optional)
         run: |
