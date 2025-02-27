@@ -3,6 +3,8 @@
 
 #include "Logger.h"
 
+#include <algorithm>  // Required for std::clamp
+
 ModuleCamera3D::ModuleCamera3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);

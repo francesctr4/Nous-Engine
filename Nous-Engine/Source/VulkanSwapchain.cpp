@@ -7,6 +7,8 @@
 #include "Logger.h"
 #include "MemoryManager.h"
 
+#include <algorithm>  // Required for std::clamp
+
 bool CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain)
 {
     bool ret = true;
