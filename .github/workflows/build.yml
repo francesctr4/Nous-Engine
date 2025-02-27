@@ -1,0 +1,27 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main    # You can also specify other branches like 'develop'
+  pull_request:
+    branches:
+      - main    # For pull requests targeting the 'main' branch
+
+jobs:
+  build:
+    runs-on: windows-latest  # This specifies the environment for the build (Windows)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2   # Checks out the latest commit
+
+      - name: Set up Visual Studio Build Tools
+        uses: microsoft/setup-msbuild@v1.1   # Sets up MSBuild environment for Visual Studio
+
+      - name: Build solution
+        run: msbuild Nous-Engine.sln /p:Configuration=Release  # Builds the solution
+
+      - name: Run tests (optional)
+        run: |
+          # Run your unit tests if you have any
+          echo "Running tests..."
