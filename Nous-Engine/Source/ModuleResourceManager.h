@@ -2,6 +2,7 @@
 
 #include "Module.h"
 #include "Resource.h"
+#include <mutex>
 
 using UID = uint32;
 struct MetaFileData;
