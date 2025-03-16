@@ -38,7 +38,10 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
     VkInstanceCreateInfo createInfo{};
 
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+
+    // BUG FIX: "RenderDoc does not support requested instance extension: VK_KHR_portability_enumeration"
+    //createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+
     createInfo.pApplicationInfo = &appInfo;
     createInfo.pNext = nullptr;
 
@@ -158,7 +161,8 @@ std::vector<const char*> NOUS_VulkanInstance::GetRequiredExtensions()
 
     extensions.resize(sdlExtensionCount);
 
-    extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    // BUG FIX: "RenderDoc does not support requested instance extension: VK_KHR_portability_enumeration"
+    //extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 
     if (enableValidationLayers)
     {
