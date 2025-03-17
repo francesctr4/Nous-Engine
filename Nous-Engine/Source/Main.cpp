@@ -25,8 +25,6 @@ int main(int argc, char** argv)
 {
 	MemoryManager::InitializeMemory();
 
-	NOUS_Multithreading::RegisterMainThread();
-
 	NOUS_Multithreading::Initialize();
 
 	InitializeLogging();

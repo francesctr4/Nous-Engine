@@ -6,12 +6,14 @@
 #include <functional>
 #include <atomic>
 #include <sstream>
+#include <mutex>
 
 #include "Timer.h"
 
 namespace NOUS_Multithreading 
 {
 	const uint32 c_MAX_HARDWARE_THREADS = std::thread::hardware_concurrency();
+	static std::mutex sThreadsMutex;
 
 	enum class ThreadState 
 	{
@@ -38,6 +40,7 @@ namespace NOUS_Multithreading
 	uint32 GetCurrentThreadID();
 
 	NOUS_Thread* CreateThread(const std::string& name, ThreadState initialState);
+	void StartThread(NOUS_Thread* thread, std::function<void()> task);
 
 	void RegisterMainThread();
 	void Initialize();

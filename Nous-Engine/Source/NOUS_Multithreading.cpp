@@ -64,6 +64,11 @@ NOUS_Multithreading::NOUS_Thread* NOUS_Multithreading::CreateThread(const std::s
     return newThread;
 }
 
+void NOUS_Multithreading::StartThread(NOUS_Thread* thread, std::function<void()> task)
+{
+
+}
+
 void NOUS_Multithreading::RegisterMainThread()
 {
     NOUS_Thread* mainThread = NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD);
@@ -85,6 +90,8 @@ uint32 NOUS_Multithreading::GetThreadID(std::thread::id id)
 
 void NOUS_Multithreading::Initialize()
 {
+    RegisterMainThread();
+
     // Create Thread Pool
 }
 
