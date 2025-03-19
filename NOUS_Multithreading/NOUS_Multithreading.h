@@ -60,7 +60,7 @@ namespace NOUS_Multithreading
 
 	NOUS_Thread* CreateThread(const std::string& name, ThreadState initialState);
 	void StartThread(NOUS_Thread* thread, std::function<void()> task);
-	void DestroyThread(NOUS_Thread* thread);
+	void DestroyThread(NOUS_Thread*& thread);
 
 	void RegisterMainThread();
 	void Initialize();

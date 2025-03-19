@@ -104,9 +104,14 @@ void NOUS_Multithreading::StartThread(NOUS_Thread* thread, std::function<void()>
     });
 }
 
-void NOUS_Multithreading::DestroyThread(NOUS_Thread* thread)
+void NOUS_Multithreading::DestroyThread(NOUS_Thread*& thread)
 {
-    NOUS_DELETE<NOUS_Thread>(thread, MemoryManager::MemoryTag::THREAD);
+    if (thread)
+    {
+        UnregisterThread(thread->ID);  // Remove from registry
+        NOUS_DELETE<NOUS_Thread>(thread, MemoryManager::MemoryTag::THREAD); // Delete
+        thread = nullptr; // Invalidate pointer
+    }
 }
 
 void NOUS_Multithreading::RegisterMainThread()

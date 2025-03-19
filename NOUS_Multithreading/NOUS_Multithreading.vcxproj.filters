@@ -54,5 +54,8 @@
     <ClInclude Include="ThreadPool.h">
       <Filter>Source Code\Multithreading</Filter>
     </ClInclude>
+    <ClInclude Include="UnitTests.h">
+      <Filter>Source Code\Multithreading</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -144,6 +144,7 @@
     <ClInclude Include="NOUS_Multithreading.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Timer.h" />
+    <ClInclude Include="UnitTests.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,12 +1,4 @@
-#include "NOUS_Multithreading.h"
-
-#include <iostream>
-
-void WorkerTask() 
-{
-	std::lock_guard<std::mutex> lock(NOUS_Multithreading::sThreadsMutex);
-	std::cout << NOUS_Multithreading::GetCurrentThreadID() << std::endl;
-}
+#include "UnitTests.h"
 
 void Foo() 
 {
@@ -31,32 +23,35 @@ void Foo()
 	NOUS_Multithreading::Shutdown();
 }
 
-int main() 
+void Foo2()
 {
 	// Main Thread
-	Foo();
-	//std::cout << "Main Thread" << std::endl;
-	//std::cout << NOUS_Multithreading::GetCurrentThreadID() << std::endl;
+	std::cout << "Main Thread" << std::endl;
+	std::cout << NOUS_Multithreading::GetCurrentThreadID() << std::endl;
 
-	//std::cout << "Worker Threads" << std::endl;
+	std::cout << "Worker Threads" << std::endl;
 
-	//std::cout << "MAX_HARDWARE_THREADS: " << NOUS_Multithreading::c_MAX_HARDWARE_THREADS << std::endl;
+	std::cout << "MAX_HARDWARE_THREADS: " << NOUS_Multithreading::c_MAX_HARDWARE_THREADS << std::endl;
 
-	//// Create Worker Thread
-	//for (int i = 0; i < NOUS_Multithreading::c_MAX_HARDWARE_THREADS; ++i) 
-	//{
-	//	NOUS_Multithreading::NOUS_Thread* worker = NOUS_Multithreading::CreateThread(std::format("Worker Thread {}" , i + 1), NOUS_Multithreading::ThreadState::READY);
-	//}
+	// Create Worker Thread
+	for (int i = 0; i < NOUS_Multithreading::c_MAX_HARDWARE_THREADS; ++i) 
+	{
+		NOUS_Multithreading::NOUS_Thread* worker = NOUS_Multithreading::CreateThread(std::format("Worker Thread {}" , i + 1), NOUS_Multithreading::ThreadState::READY);
+	}
 
-	//for (auto& [ID, thread] : NOUS_Multithreading::registeredThreads)
-	//{
-	//	NOUS_Multithreading::StartThread(thread, WorkerTask);
-	//}
+	for (auto& [ID, thread] : NOUS_Multithreading::registeredThreads)
+	{
+		NOUS_Multithreading::StartThread(thread, WorkerTask);
+	}
 
-	//for (auto& [ID, thread] : NOUS_Multithreading::registeredThreads)
-	//{
-	//	NOUS_Multithreading::DestroyThread(thread);
-	//}
+	for (auto& [ID, thread] : NOUS_Multithreading::registeredThreads)
+	{
+		NOUS_Multithreading::DestroyThread(thread);
+	}
+}
 
-	return 0;
+int main(int argc, char** argv)
+{
+	::testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
 }
