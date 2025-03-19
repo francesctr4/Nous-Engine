@@ -1,14 +1,7 @@
 #pragma once
 
 #include "NOUS_Multithreading.h"
-
 #include "gtest/gtest.h"
-
-#ifdef _DEBUG
-#pragma comment (lib, "gtest/libx64/Debug/gtestd.lib")
-#else
-#pragma comment (lib, "gtest/libx64/Release/gtest.lib")
-#endif
 
 void WorkerTask()
 {
@@ -23,7 +16,7 @@ void SampleTask() {
 }
 
 // Test Initialization
-TEST(NOUS_MultithreadingTest, InitializeAndShutdown) 
+TEST(NOUS_MultithreadingTest, InitializeAndShutdown)
 {
     NOUS_Multithreading::Initialize();
 
@@ -156,7 +149,7 @@ TEST(NOUS_MultithreadingTest, DoubleDestroy) {
 }
 
 // Test 1: Destroy null pointer (should do nothing)
-TEST(NOUS_MultithreadingTest, DestroyNull) 
+TEST(NOUS_MultithreadingTest, DestroyNull)
 {
     NOUS_Multithreading::Initialize();
 
@@ -263,7 +256,7 @@ TEST(NOUS_MultithreadingTest, MainThreadProperties) {
 }
 
 // Test 4: DestroyBeforeStart (Expected Failure)
-TEST(NOUS_MultithreadingTest, DestroyBeforeStart) 
+TEST(NOUS_MultithreadingTest, DestroyBeforeStart)
 {
     NOUS_Multithreading::Initialize();
 
@@ -280,7 +273,7 @@ TEST(NOUS_MultithreadingTest, DestroyBeforeStart)
 }
 
 // Test 5: Concurrent Thread Creation (Stress Test)
-TEST(NOUS_MultithreadingTest, ConcurrentCreation2) 
+TEST(NOUS_MultithreadingTest, ConcurrentCreation2)
 {
     NOUS_Multithreading::Initialize();
     constexpr int NUM_THREADS = 50;
