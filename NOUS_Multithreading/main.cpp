@@ -39,12 +39,12 @@ void Foo2()
 		NOUS_Multithreading::NOUS_Thread* worker = NOUS_Multithreading::CreateThread(std::format("Worker Thread {}" , i + 1), NOUS_Multithreading::ThreadState::READY);
 	}
 
-	for (auto& [ID, thread] : NOUS_Multithreading::registeredThreads)
+	for (auto& thread : NOUS_Multithreading::registeredThreads)
 	{
 		NOUS_Multithreading::StartThread(thread, WorkerTask);
 	}
 
-	for (auto& [ID, thread] : NOUS_Multithreading::registeredThreads)
+	for (auto& thread : NOUS_Multithreading::registeredThreads)
 	{
 		NOUS_Multithreading::DestroyThread(thread);
 	}

@@ -10,7 +10,7 @@ const std::unordered_map<NOUS_Multithreading::ThreadState, std::string> stateToS
 };
 
 // Definition of the static variable
-std::unordered_map<uint32, NOUS_Multithreading::NOUS_Thread*> NOUS_Multithreading::registeredThreads;
+std::vector<NOUS_Multithreading::NOUS_Thread*> NOUS_Multithreading::registeredThreads;
 
 // Implementation of GetCurrentThreadID
 uint32_t NOUS_Multithreading::GetCurrentThreadID() 
@@ -53,13 +53,23 @@ void NOUS_Multithreading::ChangeState(NOUS_Thread* thread, const ThreadState& st
 void NOUS_Multithreading::RegisterThread(NOUS_Thread* thread)
 {
     std::lock_guard<std::mutex> lock(sThreadsMutex);
-    registeredThreads[thread->ID] = thread;
+    registeredThreads.emplace_back(thread);
 }
 
 void NOUS_Multithreading::UnregisterThread(uint32 threadID)
 {
     std::lock_guard<std::mutex> lock(sThreadsMutex);
-    registeredThreads.erase(threadID);
+
+    // Find the thread with the matching threadID
+    auto it = std::find_if(registeredThreads.begin(), registeredThreads.end(),
+        [threadID](NOUS_Thread* thread) {
+            return thread->ID == threadID; // Assuming NOUS_Thread has a GetID() function
+        });
+
+    // If found, erase it from the vector
+    if (it != registeredThreads.end()) {
+        registeredThreads.erase(it);
+    }
 }
 
 NOUS_Multithreading::NOUS_Thread* NOUS_Multithreading::CreateThread(const std::string& name, ThreadState initialState)
@@ -98,7 +108,7 @@ void NOUS_Multithreading::StartThread(NOUS_Thread* thread, std::function<void()>
             thread->task();
         }
             
-        ChangeState(thread, ThreadState::WAITING);
+        ChangeState(thread, ThreadState::READY);
 
         thread->executionTime.Stop();
     });
@@ -147,7 +157,7 @@ void NOUS_Multithreading::Initialize()
 
 void NOUS_Multithreading::Shutdown()
 {
-    for (auto& [ID, thread] : registeredThreads)
+    for (auto& thread : registeredThreads)
     {
         NOUS_DELETE(thread, MemoryManager::MemoryTag::THREAD);
     }

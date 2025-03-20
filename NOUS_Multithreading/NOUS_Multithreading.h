@@ -10,7 +10,7 @@
 
 #include "Timer.h"
 
-namespace NOUS_Multithreading 
+namespace NOUS_Multithreading
 {
 	const uint32 c_MAX_HARDWARE_THREADS = std::thread::hardware_concurrency();
 	static std::mutex sThreadsMutex;
@@ -51,7 +51,7 @@ namespace NOUS_Multithreading
 		}
 	};
 
-	extern std::unordered_map<uint32,NOUS_Thread*> registeredThreads;
+	extern std::vector<NOUS_Thread*> registeredThreads;
 
 	uint32 GetCurrentThreadID();
 	uint32 GetThreadID(std::thread::id id);
@@ -70,4 +70,20 @@ namespace NOUS_Multithreading
 
 	void RegisterThread(NOUS_Thread* thread);
 	void UnregisterThread(uint32 threadID);
+}
+
+namespace NOUS_Multithreading 
+{
+	struct NOUS_ThreadPool 
+	{
+
+	};
+}
+
+namespace NOUS_Multithreading
+{
+	struct NOUS_JobSystem
+	{
+
+	};
 }

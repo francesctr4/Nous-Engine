@@ -56,7 +56,7 @@ TEST(NOUS_MultithreadingTest, StartThread) {
         thread->handle.join(); // Ensure thread finishes execution
     }
 
-    EXPECT_EQ(thread->state, NOUS_Multithreading::ThreadState::WAITING);
+    EXPECT_EQ(thread->state, NOUS_Multithreading::ThreadState::READY);
     EXPECT_TRUE(taskExecuted);
 
     NOUS_Multithreading::DestroyThread(thread);
@@ -73,8 +73,8 @@ TEST(NOUS_MultithreadingTest, ChangeState) {
     NOUS_Multithreading::ChangeState(thread, NOUS_Multithreading::ThreadState::RUNNING);
     EXPECT_EQ(thread->state, NOUS_Multithreading::ThreadState::RUNNING);
 
-    NOUS_Multithreading::ChangeState(thread, NOUS_Multithreading::ThreadState::WAITING);
-    EXPECT_EQ(thread->state, NOUS_Multithreading::ThreadState::WAITING);
+    NOUS_Multithreading::ChangeState(thread, NOUS_Multithreading::ThreadState::READY);
+    EXPECT_EQ(thread->state, NOUS_Multithreading::ThreadState::READY);
 
     NOUS_Multithreading::DestroyThread(thread);
     NOUS_Multithreading::Shutdown();
@@ -200,7 +200,7 @@ TEST(NOUS_MultithreadingTest, SingleThreadLifecycle) {
     }
 
     // Verify final state
-    EXPECT_EQ(retrievedThread->state, NOUS_Multithreading::ThreadState::WAITING);
+    EXPECT_EQ(retrievedThread->state, NOUS_Multithreading::ThreadState::READY);
 
     // Cleanup
     NOUS_Multithreading::UnregisterThread(thread->ID);
@@ -234,7 +234,7 @@ TEST(NOUS_MultithreadingTest, MaxHardwareThreads) {
         if (worker->handle.joinable()) {
             worker->handle.join();
         }
-        EXPECT_EQ(worker->state, NOUS_Multithreading::ThreadState::WAITING);
+        EXPECT_EQ(worker->state, NOUS_Multithreading::ThreadState::READY);
         NOUS_Multithreading::DestroyThread(worker);
     }
 
@@ -298,4 +298,62 @@ TEST(NOUS_MultithreadingTest, ConcurrentCreation2)
 
     // Verify cleanup
     EXPECT_TRUE(NOUS_Multithreading::registeredThreads.empty());
+}
+
+TEST(NOUS_MultithreadingTest, ThreadReuseAndIDConsistency) {
+    NOUS_Multithreading::Initialize();
+
+    // Create a thread in READY state
+    auto* thread = NOUS_Multithreading::CreateThread("ReusableThread",
+        NOUS_Multithreading::ThreadState::READY);
+    ASSERT_NE(thread, nullptr);
+
+    // Store the initial thread ID
+    uint32_t initialThreadID = thread->ID;
+
+    // First task
+    NOUS_Multithreading::StartThread(thread,
+        []()
+        {
+            std::cout << "First task executing on thread ID: "
+                << NOUS_Multithreading::GetCurrentThreadID() << std::endl;
+        });
+
+    // Wait for the first task to complete
+    if (thread->handle.joinable()) {
+        thread->handle.join(); // Ensure the thread finishes execution
+    }
+
+    // Verify thread state after first task
+    EXPECT_EQ(thread->state.load(), NOUS_Multithreading::ThreadState::READY);
+
+    // Transition back to READY state
+    NOUS_Multithreading::ChangeState(thread, NOUS_Multithreading::ThreadState::READY);
+    EXPECT_EQ(thread->state.load(), NOUS_Multithreading::ThreadState::READY);
+
+    // Verify thread ID consistency
+    EXPECT_EQ(thread->ID, initialThreadID);
+
+    // Second task
+    NOUS_Multithreading::StartThread(thread,
+        []()
+        {
+            std::cout << "Second task executing on thread ID: "
+                << NOUS_Multithreading::GetCurrentThreadID() << std::endl;
+        });
+
+    // Wait for the second task to complete
+    if (thread->handle.joinable()) {
+        thread->handle.join(); // Ensure the thread finishes execution
+    }
+
+    // Verify thread state after second task
+    EXPECT_EQ(thread->state.load(), NOUS_Multithreading::ThreadState::READY);
+
+    // Verify thread ID consistency
+    EXPECT_EQ(thread->ID, initialThreadID);
+
+    // Clean up
+    NOUS_Multithreading::DestroyThread(thread);
+    NOUS_Multithreading::Shutdown();
 }
