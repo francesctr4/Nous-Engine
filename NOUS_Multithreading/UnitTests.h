@@ -5,15 +5,18 @@
 
 class JobSystemTest : public ::testing::Test {
 protected:
-    void SetUp() override {
-        jobSystem = std::make_unique<NOUS_Multithreading::NOUS_JobSystem>();
+    void SetUp() override 
+    {
+        jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryManager::MemoryTag::THREAD);
     }
 
-    void TearDown() override {
+    void TearDown() override 
+    {
         jobSystem->WaitForAll();
+        NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
     }
 
-    std::unique_ptr<NOUS_Multithreading::NOUS_JobSystem> jobSystem;
+    NOUS_Multithreading::NOUS_JobSystem* jobSystem;
     const int numStressJobs = 10000;
 };
 

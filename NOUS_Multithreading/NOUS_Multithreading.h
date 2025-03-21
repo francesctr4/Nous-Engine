@@ -127,30 +127,30 @@ namespace NOUS_Multithreading
 	};
 }
 
-namespace NOUS_Multithreading 
+namespace NOUS_Multithreading
 {
-	class NOUS_ThreadPool 
+	class NOUS_ThreadPool
 	{
 	public:
 
-		explicit NOUS_ThreadPool(size_t numThreads) : mShutdown(false) 
+		explicit NOUS_ThreadPool(size_t numThreads) : mShutdown(false)
 		{
-			mThreads.reserve(numThreads);  // Reserve without initializing
+			mThreads.reserve(numThreads);
 			for (size_t i = 0; i < numThreads; ++i) {
-				mThreads.emplace_back(std::make_unique<NOUS_Thread>());
-				mThreads.back()->Start([this, i]() {
+				mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
+				mThreads[i]->Start([this, i]() {
 					mThreads[i]->SetName("WorkerThread_" + std::to_string(i));
-					WorkerLoop(mThreads[i].get());
+					WorkerLoop(mThreads[i]);
 					});
 			}
 		}
 
-		~NOUS_ThreadPool() 
+		~NOUS_ThreadPool()
 		{
 			Shutdown();
 		}
 
-		void SubmitJob(std::function<void()> job) 
+		void SubmitJob(std::function<void()> job)
 		{
 			{
 				std::lock_guard<std::mutex> lock(mMutex);
@@ -159,16 +159,30 @@ namespace NOUS_Multithreading
 			mCondition.notify_one();
 		}
 
-		void Shutdown() 
+		void Shutdown()
 		{
-			mShutdown = true;
+			// Atomically set shutdown flag and check previous value
+			if (mShutdown.exchange(true)) {
+				return;
+			}
+
 			mCondition.notify_all();
-			for (auto& thread : mThreads) {
+
+			// Join all threads first
+			for (auto* thread : mThreads) 
+			{
 				thread->Join();
 			}
+
+			// Delete all thread objects
+			for (auto* thread : mThreads) 
+			{
+				NOUS_DELETE<NOUS_Thread>(thread, MemoryManager::MemoryTag::THREAD);
+			}
+			mThreads.clear();
 		}
 
-		const std::vector<std::unique_ptr<NOUS_Thread>>& GetThreads() const { return mThreads; }
+		const std::vector<NOUS_Thread*>& GetThreads() const { return mThreads; }
 
 	private:
 
@@ -214,7 +228,7 @@ namespace NOUS_Multithreading
 			thread->SetThreadState(ThreadState::READY);
 		}
 
-		std::vector<std::unique_ptr<NOUS_Thread>> mThreads; // Changed to unique_ptr
+		std::vector<NOUS_Thread*> mThreads; // Changed to raw pointers
 		std::queue<std::function<void()>> mJobQueue;
 		std::mutex mMutex;
 		std::condition_variable mCondition;
