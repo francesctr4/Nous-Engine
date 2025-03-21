@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Globals.h"
+#include <chrono>
 
 enum class TimerState
 {
@@ -33,8 +33,8 @@ private:
 
 	TimerState currentState; 
 
-	float started_at;
-	float stopped_at;
+	std::chrono::steady_clock::time_point started_at;
+	std::chrono::steady_clock::time_point stopped_at;
 
 	float timeScale;
 

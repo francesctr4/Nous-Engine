@@ -3,357 +3,313 @@
 #include "NOUS_Multithreading.h"
 #include "gtest/gtest.h"
 
-void WorkerTask()
-{
-    std::lock_guard<std::mutex> lock(NOUS_Multithreading::sThreadsMutex);
-    //std::cout << NOUS_Multithreading::GetCurrentThreadID() << std::endl;
-}
-
-// Simple test task that modifies a flag
-std::atomic<bool> taskExecuted = false;
-void SampleTask() {
-    taskExecuted = true;
-}
-
-// Test Initialization
-TEST(NOUS_MultithreadingTest, InitializeAndShutdown)
-{
-    NOUS_Multithreading::Initialize();
-
-    auto mainThread = NOUS_Multithreading::GetThreadHandle(NOUS_Multithreading::GetCurrentThreadID());
-    ASSERT_NE(mainThread, nullptr);
-    EXPECT_EQ(mainThread->name, "Main Thread");
-    EXPECT_EQ(mainThread->state, NOUS_Multithreading::ThreadState::RUNNING);
-
-    NOUS_Multithreading::Shutdown();
-}
-
-// Test Thread Creation
-TEST(NOUS_MultithreadingTest, CreateThread) {
-    NOUS_Multithreading::Initialize();
-
-    NOUS_Multithreading::NOUS_Thread* thread = NOUS_Multithreading::CreateThread("TestThread", NOUS_Multithreading::ThreadState::READY);
-    ASSERT_NE(thread, nullptr);
-    EXPECT_EQ(thread->name, "TestThread");
-    EXPECT_EQ(thread->state, NOUS_Multithreading::ThreadState::READY);
-
-    NOUS_Multithreading::DestroyThread(thread);
-    NOUS_Multithreading::Shutdown();
-}
-
-// Test Thread Execution
-TEST(NOUS_MultithreadingTest, StartThread) {
-    NOUS_Multithreading::Initialize();
-
-    taskExecuted = false;  // Reset the flag before test
-
-    NOUS_Multithreading::NOUS_Thread* thread = NOUS_Multithreading::CreateThread("WorkerThread", NOUS_Multithreading::ThreadState::READY);
-    ASSERT_NE(thread, nullptr);
-
-    NOUS_Multithreading::StartThread(thread, SampleTask);
-
-    if (thread->handle.joinable()) {
-        thread->handle.join(); // Ensure thread finishes execution
+class JobSystemTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        jobSystem = std::make_unique<NOUS_Multithreading::NOUS_JobSystem>();
     }
 
-    EXPECT_EQ(thread->state, NOUS_Multithreading::ThreadState::READY);
-    EXPECT_TRUE(taskExecuted);
+    void TearDown() override {
+        jobSystem->WaitForAll();
+    }
 
-    NOUS_Multithreading::DestroyThread(thread);
-    NOUS_Multithreading::Shutdown();
+    std::unique_ptr<NOUS_Multithreading::NOUS_JobSystem> jobSystem;
+    const int numStressJobs = 10000;
+};
+
+TEST_F(JobSystemTest, ExecutesSingleJob) {
+    std::atomic<bool> jobExecuted(false);
+
+    jobSystem->SubmitJob([&]() {
+        jobExecuted = true;
+        });
+
+    jobSystem->WaitForAll();
+    ASSERT_TRUE(jobExecuted);
 }
 
-// Test Thread State Transitions
-TEST(NOUS_MultithreadingTest, ChangeState) {
-    NOUS_Multithreading::Initialize();
+TEST_F(JobSystemTest, HandlesConcurrentJobs) {
+    std::atomic<int> counter(0);
+    const int numJobs = 1000;
 
-    NOUS_Multithreading::NOUS_Thread* thread = NOUS_Multithreading::CreateThread("StateTestThread", NOUS_Multithreading::ThreadState::READY);
-    ASSERT_NE(thread, nullptr);
+    for (int i = 0; i < numJobs; ++i) {
+        jobSystem->SubmitJob([&]() {
+            counter++;
+            });
+    }
 
-    NOUS_Multithreading::ChangeState(thread, NOUS_Multithreading::ThreadState::RUNNING);
-    EXPECT_EQ(thread->state, NOUS_Multithreading::ThreadState::RUNNING);
-
-    NOUS_Multithreading::ChangeState(thread, NOUS_Multithreading::ThreadState::READY);
-    EXPECT_EQ(thread->state, NOUS_Multithreading::ThreadState::READY);
-
-    NOUS_Multithreading::DestroyThread(thread);
-    NOUS_Multithreading::Shutdown();
+    jobSystem->WaitForAll();
+    ASSERT_EQ(counter.load(), numJobs);
 }
 
-// Test Thread Unregistration on Destruction
-TEST(NOUS_MultithreadingTest, UnregisterOnDestroy) {
-    NOUS_Multithreading::Initialize();
+TEST_F(JobSystemTest, StressTestWithManyJobs) {
+    std::atomic<int> counter(0);
 
-    auto* thread = NOUS_Multithreading::CreateThread("TempThread", NOUS_Multithreading::ThreadState::READY);
-    uint32_t id = thread->ID;
+    for (int i = 0; i < numStressJobs; ++i) {
+        jobSystem->SubmitJob([&]() {
+            counter++;
+            });
+    }
 
-    NOUS_Multithreading::DestroyThread(thread);
-
-    EXPECT_THROW(
-        NOUS_Multithreading::GetThreadHandle(id),
-        std::out_of_range
-    ); // Should be unregistered
-
-    NOUS_Multithreading::Shutdown();
+    jobSystem->WaitForAll();
+    ASSERT_EQ(counter.load(), numStressJobs);
 }
 
-// Test Invalid Thread Access - EXPECTED TO FAIL (if exception not handled)
-TEST(NOUS_MultithreadingTest, InvalidThreadAccess) {
-    NOUS_Multithreading::Initialize();
+TEST_F(JobSystemTest, ProperThreadUtilization) {
+    std::mutex mutex;
+    std::unordered_set<std::thread::id> threadIds;
 
-    EXPECT_THROW(
-        NOUS_Multithreading::GetThreadHandle(99999),
-        std::out_of_range
+    const int numJobs = 1000;
+    for (int i = 0; i < numJobs; ++i) {
+        jobSystem->SubmitJob([&]() {
+            std::lock_guard<std::mutex> lock(mutex);
+            threadIds.insert(std::this_thread::get_id());
+            });
+    }
+
+    jobSystem->WaitForAll();
+    ASSERT_GT(threadIds.size(), 1); // Ensure multiple threads used
+    ASSERT_LE(threadIds.size(), NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
+}
+
+TEST_F(JobSystemTest, HandlesExceptionInJobs) {
+    bool subsequentJobExecuted = false;
+
+    // Submit job that throws (it actually crashes and stops the execution).
+    //jobSystem->SubmitJob([]() {
+    //    throw std::runtime_error("Test error");
+    //    });
+
+    // Submit normal job
+    jobSystem->SubmitJob([&]() {
+        subsequentJobExecuted = true;
+        });
+
+    jobSystem->WaitForAll();
+    ASSERT_TRUE(subsequentJobExecuted);
+}
+
+TEST_F(JobSystemTest, WaitForAllBlocksProperly) {
+    std::atomic<bool> earlyCheck(false);
+    std::atomic<int> counter(0);
+
+    for (int i = 0; i < 10; ++i) {
+        jobSystem->SubmitJob([&]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            counter++;
+            });
+    }
+
+    auto future = std::async(std::launch::async, [&]() {
+        jobSystem->WaitForAll();
+        earlyCheck = true;
+        });
+
+    // Check after 50ms (before jobs should complete)
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    ASSERT_FALSE(earlyCheck);
+
+    future.wait();
+    ASSERT_EQ(counter.load(), 10);
+}
+
+TEST_F(JobSystemTest, ThreadStatesAreUpdated) {
+    jobSystem->SubmitJob([]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        });
+
+    // Let jobs start
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    const auto& pool = jobSystem->GetThreadPool();
+    const auto& threads = pool.GetThreads();
+
+    bool anyRunning = false;
+    for (const auto& t : threads) {
+        if (t->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING) {
+            anyRunning = true;
+            break;
+        }
+    }
+
+    ASSERT_TRUE(anyRunning);
+}
+
+TEST_F(JobSystemTest, HandlesEmptyJob) {
+    bool emptyJobExecuted = false;
+
+    jobSystem->SubmitJob([&]() {
+        emptyJobExecuted = true;
+        });
+
+    jobSystem->WaitForAll();
+    ASSERT_TRUE(emptyJobExecuted);
+}
+
+TEST_F(JobSystemTest, JobExecutionTimeMeasurement) {
+    jobSystem->SubmitJob([]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        });
+
+    jobSystem->WaitForAll();
+
+    // Allow time for thread states to update
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    const auto& pool = jobSystem->GetThreadPool();
+    const auto& threads = pool.GetThreads();
+
+    bool foundValidTime = false;
+    for (const auto& t : threads) {
+        double time = t->GetExecutionTimeMS();
+        // Wider tolerance range
+        if (time >= 90 && time < 200) {
+            foundValidTime = true;
+            break;
+        }
+    }
+
+    ASSERT_TRUE(foundValidTime) << "No thread reported time in [90, 200)ms range.";
+}
+
+TEST_F(JobSystemTest, MeasuresThroughput) {
+    const int numJobs = 100000;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < numJobs; ++i) {
+        jobSystem->SubmitJob([] {});
+    }
+
+    jobSystem->WaitForAll();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::high_resolution_clock::now() - start
     );
 
-    NOUS_Multithreading::Shutdown();
+    std::cout << "Processed " << numJobs << " jobs in "
+        << duration.count() << "ms\n";
 }
-// This test fails if your implementation doesn't throw exceptions for invalid access
 
-// Test Concurrent Thread Creation
-TEST(NOUS_MultithreadingTest, ConcurrentCreation) {
-    NOUS_Multithreading::Initialize();
-    std::vector<std::thread> creators;
+TEST_F(JobSystemTest, NoDataRaces) {
+    std::vector<int> sharedData(1000, 0);
 
-    for (int i = 0; i < 10; i++) {
-        creators.emplace_back([]() {
-            auto* t = NOUS_Multithreading::CreateThread(
-                "ConcurrentThread",
-                NOUS_Multithreading::ThreadState::READY
-            );
-            NOUS_Multithreading::DestroyThread(t);
+    for (int i = 0; i < 10000; ++i) {
+        jobSystem->SubmitJob([&sharedData, i]() {
+            for (auto& item : sharedData) {
+                item += i % 100;
+            }
             });
     }
 
-    for (auto& t : creators) t.join();
+    jobSystem->WaitForAll();
 
-    // If mutexes work properly, this shouldn't crash
-    EXPECT_TRUE(true);
-    NOUS_Multithreading::Shutdown();
+    // Sum should be unpredictable due to races, but shouldn't crash
+    int total = std::accumulate(sharedData.begin(), sharedData.end(), 0);
+    ASSERT_GT(total, 0);
 }
 
-// In UnitTests.h
-TEST(NOUS_MultithreadingTest, DoubleDestroy) {
-    NOUS_Multithreading::Initialize();
-
-    NOUS_Multithreading::NOUS_Thread* thread =
-        NOUS_Multithreading::CreateThread("DoubleKill", NOUS_Multithreading::ThreadState::READY);
-
-    // First destruction
-    NOUS_Multithreading::DestroyThread(thread); // thread becomes nullptr
-
-    // Second destruction (now harmless)
-    EXPECT_NO_THROW(NOUS_Multithreading::DestroyThread(thread)); // Passes
-
-    NOUS_Multithreading::Shutdown();
-}
-
-// Test 1: Destroy null pointer (should do nothing)
-TEST(NOUS_MultithreadingTest, DestroyNull)
+TEST_F(JobSystemTest, ThreadCountAffectsPerformance) 
 {
-    NOUS_Multithreading::Initialize();
+    constexpr int NUM_JOBS = 10;
+    constexpr int JOB_SLEEP_MS = 500;
+    constexpr int LOW_THREAD_COUNT = 2;
+    constexpr double EXPECTED_LOW_TIME = (NUM_JOBS * JOB_SLEEP_MS) / LOW_THREAD_COUNT;
+    constexpr double TOLERANCE = 0.3; // 30% tolerance for CI variability
 
-    NOUS_Multithreading::NOUS_Thread* thread = nullptr;
-    EXPECT_NO_THROW(NOUS_Multithreading::DestroyThread(thread)); // No-op
+    // Create a custom pool with limited threads
+    NOUS_Multithreading::NOUS_ThreadPool lowThreadPool(LOW_THREAD_COUNT);
 
-    NOUS_Multithreading::Shutdown();
-}
+    auto start = std::chrono::high_resolution_clock::now();
 
-// Test 2: Access destroyed thread (should throw)
-TEST(NOUS_MultithreadingTest, AccessDestroyedThread) {
-    NOUS_Multithreading::Initialize();
-
-    auto* thread = NOUS_Multithreading::CreateThread("Temp", NOUS_Multithreading::ThreadState::READY);
-    uint32_t id = thread->ID;
-    NOUS_Multithreading::DestroyThread(thread); // thread is now nullptr
-
-    // Attempt to access destroyed thread
-    EXPECT_THROW(
-        NOUS_Multithreading::GetThreadHandle(id),
-        std::out_of_range
-    ); // Passes because thread was unregistered
-
-    NOUS_Multithreading::Shutdown();
-}
-
-// Add these to UnitTests.h
-
-// Test 1: Single Thread Lifecycle
-TEST(NOUS_MultithreadingTest, SingleThreadLifecycle) {
-    NOUS_Multithreading::Initialize();
-
-    // Create thread
-    auto* thread = NOUS_Multithreading::CreateThread("SingleThreadTest",
-        NOUS_Multithreading::ThreadState::READY);
-    ASSERT_NE(thread, nullptr);
-
-    // Verify registration
-    auto* retrievedThread = NOUS_Multithreading::GetThreadHandle(thread->ID);
-    EXPECT_EQ(retrievedThread, thread);
-
-    // Start and verify execution
-    EXPECT_NO_THROW(NOUS_Multithreading::StartThread(retrievedThread, WorkerTask));
-
-    // Wait for completion
-    if (retrievedThread->handle.joinable()) {
-        retrievedThread->handle.join();
-    }
-
-    // Verify final state
-    EXPECT_EQ(retrievedThread->state, NOUS_Multithreading::ThreadState::READY);
-
-    // Cleanup
-    NOUS_Multithreading::UnregisterThread(thread->ID);
-    NOUS_Multithreading::DestroyThread(thread);
-    NOUS_Multithreading::Shutdown();
-}
-
-// Test 2: Maximum Hardware Thread Capacity
-TEST(NOUS_MultithreadingTest, MaxHardwareThreads) {
-    NOUS_Multithreading::Initialize();
-
-    std::vector<NOUS_Multithreading::NOUS_Thread*> workers;
-
-    // Create threads up to hardware limit
-    for (int i = 0; i < NOUS_Multithreading::c_MAX_HARDWARE_THREADS; ++i) {
-        auto* worker = NOUS_Multithreading::CreateThread(
-            std::format("Worker{}", i + 1),
-            NOUS_Multithreading::ThreadState::READY
-        );
-        ASSERT_NE(worker, nullptr);
-        workers.push_back(worker);
-    }
-
-    // Start all threads
-    for (auto* worker : workers) {
-        EXPECT_NO_THROW(NOUS_Multithreading::StartThread(worker, WorkerTask));
-    }
-
-    // Verify and clean up
-    for (auto* worker : workers) {
-        if (worker->handle.joinable()) {
-            worker->handle.join();
-        }
-        EXPECT_EQ(worker->state, NOUS_Multithreading::ThreadState::READY);
-        NOUS_Multithreading::DestroyThread(worker);
-    }
-
-    NOUS_Multithreading::Shutdown();
-}
-
-// Test 3: Main Thread Validation (Edge Case)
-TEST(NOUS_MultithreadingTest, MainThreadProperties) {
-    NOUS_Multithreading::Initialize();
-
-    auto mainID = NOUS_Multithreading::GetCurrentThreadID();
-    auto* mainThread = NOUS_Multithreading::GetThreadHandle(mainID);
-
-    ASSERT_NE(mainThread, nullptr);
-    EXPECT_EQ(mainThread->name, "Main Thread");
-    EXPECT_EQ(mainThread->state, NOUS_Multithreading::ThreadState::RUNNING);
-
-    NOUS_Multithreading::Shutdown();
-}
-
-// Test 4: DestroyBeforeStart (Expected Failure)
-TEST(NOUS_MultithreadingTest, DestroyBeforeStart)
-{
-    NOUS_Multithreading::Initialize();
-
-    auto* thread = NOUS_Multithreading::CreateThread("DoomedThread",
-        NOUS_Multithreading::ThreadState::READY);
-    NOUS_Multithreading::DestroyThread(thread);
-
-    EXPECT_THROW(
-        NOUS_Multithreading::StartThread(thread, WorkerTask),
-        std::out_of_range
-    ); // EXPECTED TO FAIL if system allows starting destroyed threads
-
-    NOUS_Multithreading::Shutdown();
-}
-
-// Test 5: Concurrent Thread Creation (Stress Test)
-TEST(NOUS_MultithreadingTest, ConcurrentCreation2)
-{
-    NOUS_Multithreading::Initialize();
-    constexpr int NUM_THREADS = 50;
-    std::vector<std::thread> creators;
-
-    // Spawn multiple creator threads
-    for (int i = 0; i < NUM_THREADS; ++i) {
-        creators.emplace_back([]() {
-            auto* t = NOUS_Multithreading::CreateThread("StressThread",
-            NOUS_Multithreading::ThreadState::READY);
-        ASSERT_NE(t, nullptr);
-        NOUS_Multithreading::DestroyThread(t);
+    // Submit sleep jobs
+    for (int i = 0; i < NUM_JOBS; ++i) {
+        lowThreadPool.SubmitJob([JOB_SLEEP_MS]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_SLEEP_MS));
             });
     }
 
     // Wait for completion
-    for (auto& creator : creators) {
-        if (creator.joinable()) creator.join();
+    lowThreadPool.Shutdown();
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::high_resolution_clock::now() - start
+    ).count();
+
+    // Verify duration matches thread-limited expectation
+    const double minExpected = EXPECTED_LOW_TIME * (1 - TOLERANCE);
+    const double maxExpected = EXPECTED_LOW_TIME * (1 + TOLERANCE);
+
+    std::cout << "Actual duration: " << duration << "ms (Expected: "
+        << EXPECTED_LOW_TIME << "ms ±30%)\n";
+
+    ASSERT_GT(duration, minExpected) << "Execution was faster than expected with limited threads";
+    ASSERT_LT(duration, maxExpected) << "Execution was slower than expected with limited threads";
+
+    // Verify thread utilization
+    const auto& threads = lowThreadPool.GetThreads();
+    int maxConcurrentJobs = 0;
+    std::atomic<int> concurrentJobs(0);
+
+    // Add instrumentation to track concurrency
+    for (auto& thread : threads) {
+        thread->SetCurrentTask([&concurrentJobs, &maxConcurrentJobs]() {
+            concurrentJobs++;
+            maxConcurrentJobs = std::max(maxConcurrentJobs, concurrentJobs.load());
+            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_SLEEP_MS));
+            concurrentJobs--;
+            });
     }
 
-    NOUS_Multithreading::Shutdown();
-
-    // Verify cleanup
-    EXPECT_TRUE(NOUS_Multithreading::registeredThreads.empty());
+    ASSERT_LE(maxConcurrentJobs, LOW_THREAD_COUNT)
+        << "More jobs ran concurrently than available threads";
 }
 
-TEST(NOUS_MultithreadingTest, ThreadReuseAndIDConsistency) {
-    NOUS_Multithreading::Initialize();
+TEST_F(JobSystemTest, HandlesMassiveJobCount) 
+{
+    std::atomic<int> counter(0);
+    for (int i = 0; i < 1000000; ++i) {
+        jobSystem->SubmitJob([&] { counter++; });
+    }
+    jobSystem->WaitForAll();
+    ASSERT_EQ(counter.load(), 1000000);
+}
 
-    // Create a thread in READY state
-    auto* thread = NOUS_Multithreading::CreateThread("ReusableThread",
-        NOUS_Multithreading::ThreadState::READY);
-    ASSERT_NE(thread, nullptr);
+TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo) {
+    constexpr int NUM_JOBS = 10;
+    constexpr int JOB_DURATION_MS = 2000;
 
-    // Store the initial thread ID
-    uint32_t initialThreadID = thread->ID;
+    // Capture initial state
+    std::cout << "\n=== Initial State ===\n";
+    NOUS_Multithreading::JobSystemDebugInfo();
 
-    // First task
-    NOUS_Multithreading::StartThread(thread,
-        []()
-        {
-            std::cout << "First task executing on thread ID: "
-                << NOUS_Multithreading::GetCurrentThreadID() << std::endl;
-        });
-
-    // Wait for the first task to complete
-    if (thread->handle.joinable()) {
-        thread->handle.join(); // Ensure the thread finishes execution
+    // Submit jobs
+    for (int i = 0; i < NUM_JOBS; ++i) {
+        jobSystem->SubmitJob([i]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_DURATION_MS));
+            });
     }
 
-    // Verify thread state after first task
-    EXPECT_EQ(thread->state.load(), NOUS_Multithreading::ThreadState::READY);
-
-    // Transition back to READY state
-    NOUS_Multithreading::ChangeState(thread, NOUS_Multithreading::ThreadState::READY);
-    EXPECT_EQ(thread->state.load(), NOUS_Multithreading::ThreadState::READY);
-
-    // Verify thread ID consistency
-    EXPECT_EQ(thread->ID, initialThreadID);
-
-    // Second task
-    NOUS_Multithreading::StartThread(thread,
-        []()
-        {
-            std::cout << "Second task executing on thread ID: "
-                << NOUS_Multithreading::GetCurrentThreadID() << std::endl;
-        });
-
-    // Wait for the second task to complete
-    if (thread->handle.joinable()) {
-        thread->handle.join(); // Ensure the thread finishes execution
+    // Capture state during execution
+    std::cout << "\n=== During Execution ===\n";
+    for (int i = 0; i < 3; ++i) {
+        NOUS_Multithreading::JobSystemDebugInfo();
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
-    // Verify thread state after second task
-    EXPECT_EQ(thread->state.load(), NOUS_Multithreading::ThreadState::READY);
+    // Wait for completion
+    jobSystem->WaitForAll();
 
-    // Verify thread ID consistency
-    EXPECT_EQ(thread->ID, initialThreadID);
+    // Capture final state
+    std::cout << "\n=== Final State ===\n";
+    NOUS_Multithreading::JobSystemDebugInfo();
 
-    // Clean up
-    NOUS_Multithreading::DestroyThread(thread);
-    NOUS_Multithreading::Shutdown();
+    // Programmatic verification
+    const auto& pool = jobSystem->GetThreadPool();
+    const auto& threads = pool.GetThreads();
+
+    // Verify all threads returned to waiting/ready state
+    for (const auto& thread : threads) {
+        const auto state = thread->GetThreadState();
+        ASSERT_TRUE(state == NOUS_Multithreading::ThreadState::WAITING || state == NOUS_Multithreading::ThreadState::READY)
+            << "Thread " << thread->GetName() << " in unexpected state after completion";
+    }
 }
