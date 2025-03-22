@@ -17,7 +17,7 @@ protected:
         NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
     }
 
-    NOUS_Multithreading::NOUS_JobSystem* jobSystem;
+    NOUS_Multithreading::NOUS_JobSystem* jobSystem = nullptr;
     const int numStressJobs = 10000;
 };
 
@@ -146,37 +146,6 @@ TEST_F(JobSystemTest, ThreadStatesAreUpdated)
     }
     ASSERT_TRUE(anyRunning);
 }
-
-TEST_F(JobSystemTest, ThreadCountAffectsPerformance) {
-    constexpr int NUM_JOBS = 10;
-    constexpr int JOB_SLEEP_MS = 500;
-    constexpr int LOW_THREAD_COUNT = 2;
-    NOUS_Multithreading::NOUS_ThreadPool lowThreadPool(LOW_THREAD_COUNT);
-
-    auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < NUM_JOBS; ++i) {
-        lowThreadPool.SubmitJob([JOB_SLEEP_MS]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_SLEEP_MS));
-            });
-    }
-    lowThreadPool.Shutdown();
-
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::high_resolution_clock::now() - start).count();
-
-    const auto& threads = lowThreadPool.GetThreads();
-    int maxConcurrentJobs = 0;
-    std::atomic<int> concurrentJobs(0);
-    for (auto& thread : threads) {
-        thread->SetCurrentTask([&]() {
-            concurrentJobs++;
-            maxConcurrentJobs = std::max(maxConcurrentJobs, concurrentJobs.load());
-            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_SLEEP_MS));
-            concurrentJobs--;
-            });
-    }
-    ASSERT_LE(maxConcurrentJobs, LOW_THREAD_COUNT);
-}
 #pragma endregion
 
 #pragma region ERROR_HANDLING
@@ -262,10 +231,19 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo)
     std::cout << "\n=== Initial State ===\n";
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
 
-    for (int i = 0; i < NUM_JOBS; ++i) {
+    for (int i = 0; i < NUM_JOBS; ++i) 
+    {
         jobSystem->SubmitJob([]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(JOB_DURATION_MS));
-            });
+            }, "Import Model");
+
+        jobSystem->SubmitJob([]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_DURATION_MS));
+            }, "Import Material");
+
+        jobSystem->SubmitJob([]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_DURATION_MS));
+            }, "Import Texture");
     }
 
     // During execution, check main thread if pool is empty

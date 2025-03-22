@@ -22,6 +22,23 @@ namespace NOUS_Multithreading
 
 namespace NOUS_Multithreading
 {
+	// In NOUS_Multithreading.h, within the NOUS_Multithreading namespace
+	class NOUS_Job {
+	public:
+		NOUS_Job(const std::string& name, std::function<void()> func)
+			: mName(name), mFunction(func) {}
+
+		void Execute() { mFunction(); }
+		const std::string& GetName() const { return mName; }
+
+	private:
+		std::string mName;
+		std::function<void()> mFunction;
+	};
+}
+
+namespace NOUS_Multithreading
+{
 	enum class ThreadState 
 	{
 		READY = 0,
@@ -33,13 +50,13 @@ namespace NOUS_Multithreading
 	{
 	public:
 
-		NOUS_Thread() : mThreadID(0), mIsRunning(false), mThreadState(ThreadState::READY) {}
+		NOUS_Thread() : mThreadID(0), mIsRunning(false), mCurrentJob(nullptr), mThreadState(ThreadState::READY) {}
 		~NOUS_Thread() { if (mIsRunning) Join(); }
 
 		NOUS_Thread(NOUS_Thread&& other) noexcept :
 			mThreadHandle(std::move(other.mThreadHandle)),
 			mIsRunning(other.mIsRunning.load()),
-			mCurrentTask(std::move(other.mCurrentTask)),
+			mCurrentJob(std::move(other.mCurrentJob)),
 			mThreadName(std::move(other.mThreadName)),
 			mThreadID(other.mThreadID),
 			mThreadState(other.mThreadState.load()),
@@ -50,7 +67,7 @@ namespace NOUS_Multithreading
 			if (this != &other) {
 				mThreadHandle = std::move(other.mThreadHandle);
 				mIsRunning.store(other.mIsRunning.load());
-				mCurrentTask = std::move(other.mCurrentTask);
+				mCurrentJob = std::move(other.mCurrentJob);
 				mThreadName = std::move(other.mThreadName);
 				mThreadID = other.mThreadID;
 				mThreadState.store(other.mThreadState.load());
@@ -97,8 +114,8 @@ namespace NOUS_Multithreading
 		void SetThreadState(ThreadState state) { mThreadState.store(state); }
 		ThreadState GetThreadState() const { return mThreadState.load(); }
 
-		void SetCurrentTask(const std::function<void()>& task) { mCurrentTask = task; }
-		const std::function<void()>& GetCurrentTask() const { return mCurrentTask; }
+		void SetCurrentJob(NOUS_Job* job) { mCurrentJob = job; }
+		NOUS_Job* GetCurrentJob() const { return mCurrentJob; }
 
 		void StartExecutionTimer() { mExecutionTime.Start(); }
 		void StopExecutionTimer() { mExecutionTime.Stop(); }
@@ -123,7 +140,7 @@ namespace NOUS_Multithreading
 		std::thread mThreadHandle;
 		std::atomic<bool> mIsRunning;
 
-		std::function<void()> mCurrentTask;
+		NOUS_Job* mCurrentJob;
 		std::string mThreadName;
 		uint32 mThreadID;
 		std::atomic<ThreadState> mThreadState;
@@ -157,7 +174,7 @@ namespace NOUS_Multithreading
 			Shutdown();
 		}
 
-		void SubmitJob(std::function<void()> job)
+		void SubmitJob(NOUS_Job* job)
 		{
 			{
 				std::lock_guard<std::mutex> lock(mMutex);
@@ -171,6 +188,14 @@ namespace NOUS_Multithreading
 			// Atomically set shutdown flag and check previous value
 			if (mShutdown.exchange(true)) {
 				return;
+			}
+
+			// Delete all pending jobs in the queue
+			while (!mJobQueue.empty()) 
+			{
+				NOUS_Job* job = mJobQueue.front();
+				NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
+				mJobQueue.pop();
 			}
 
 			mCondition.notify_all();
@@ -197,7 +222,7 @@ namespace NOUS_Multithreading
 		{
 			while (true)
 			{
-				std::function<void()> job;
+				NOUS_Job* job;
 
 				{
 					std::unique_lock<std::mutex> lock(mMutex);
@@ -215,19 +240,21 @@ namespace NOUS_Multithreading
 				}
 
 				thread->SetThreadState(ThreadState::RUNNING);
-				thread->SetCurrentTask(job);
+				thread->SetCurrentJob(job);
 				thread->StartExecutionTimer();
 
 				try
 				{
-					job();
+					job->Execute();
 				}
 				catch (const std::exception& e)
 				{
 					std::cerr << "Job failed: " << e.what() << '\n';
 				}
 
-				thread->SetCurrentTask(nullptr);
+				NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
+
+				thread->SetCurrentJob(nullptr);
 				thread->SetThreadState(ThreadState::READY);
 				thread->StopExecutionTimer();
 			}
@@ -236,7 +263,7 @@ namespace NOUS_Multithreading
 		}
 
 		std::vector<NOUS_Thread*> mThreads; // Changed to raw pointers
-		std::queue<std::function<void()>> mJobQueue;
+		std::queue<NOUS_Job*> mJobQueue;
 		std::mutex mMutex;
 		std::condition_variable mCondition;
 		std::atomic<bool> mShutdown;
@@ -261,25 +288,25 @@ namespace NOUS_Multithreading
 			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
 		}
 
-		void SubmitJob(std::function<void()> job)
+		void SubmitJob(std::function<void()> userJob, const std::string& jobName = "Unnamed") 
 		{
 			mPendingJobs++;
 
-			if (mThreadPool->GetThreads().empty()) {
-				// Execute immediately on main thread
-				job();
+			auto wrappedJob = [this, userJob]() {
+				userJob();
 				if (mPendingJobs-- == 1) {
 					mWaitCondition.notify_all();
 				}
+				};
+
+			auto job = NOUS_NEW<NOUS_Job>(MemoryManager::MemoryTag::THREAD, jobName, wrappedJob);
+
+			if (mThreadPool->GetThreads().empty()) {
+				job->Execute();
+				NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
 			}
 			else {
-				// Normal async submission
-				mThreadPool->SubmitJob([this, job]() {
-					job();
-					if (mPendingJobs-- == 1) {
-						mWaitCondition.notify_all();
-					}
-					});
+				mThreadPool->SubmitJob(job);
 			}
 		}
 

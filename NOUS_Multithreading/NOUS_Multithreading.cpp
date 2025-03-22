@@ -20,14 +20,15 @@ void NOUS_Multithreading::JobSystemDebugInfo(const NOUS_JobSystem& system)
 		std::cout << "Thread '" << mainThread->GetName() << "' (ID: "
 			<< NOUS_Thread::GetThreadID(std::this_thread::get_id()) << ") - "
 			<< NOUS_Thread::GetStringFromState(mainThread->GetThreadState())
-			<< ", Exec Time: " << mainThread->GetExecutionTimeMS() << "ms\n";
+			<< ", Exec Time: " << mainThread->GetExecutionTimeMS() << "ms" << "\n";
 	}
 
 	for (const auto& thread : threads) 
 	{
-		std::cout << "Thread '" << thread->GetName() << "' (ID: " << thread->GetID() << ") - ";
-		std::cout << thread->GetStringFromState(thread->GetThreadState()).c_str();
-		std::cout << ", Exec Time: " << thread->GetExecutionTimeMS() << "ms\n";
+		std::cout << "Thread '" << thread->GetName() << "' (ID: " << thread->GetID() << ") - "
+			<< thread->GetStringFromState(thread->GetThreadState()).c_str()
+			<< ", Exec Time: " << thread->GetExecutionTimeMS() << "ms"
+			<< ", Job: " << (thread->GetCurrentJob() ? thread->GetCurrentJob()->GetName() : "None") << "\n";
 	}
 
 	if (system.GetThreadPool().GetThreads().empty()) 
