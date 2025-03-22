@@ -140,6 +140,8 @@ namespace NOUS_Multithreading
 
 		explicit NOUS_ThreadPool(size_t numThreads) : mShutdown(false)
 		{
+			numThreads = std::max<size_t>(0, numThreads);
+
 			mThreads.reserve(numThreads);
 			for (size_t i = 0; i < numThreads; ++i) {
 				mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
@@ -259,15 +261,26 @@ namespace NOUS_Multithreading
 			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
 		}
 
-		void SubmitJob(std::function<void()> job) 
+		void SubmitJob(std::function<void()> job)
 		{
 			mPendingJobs++;
-			mThreadPool->SubmitJob([this, job]() {
+
+			if (mThreadPool->GetThreads().empty()) {
+				// Execute immediately on main thread
 				job();
-				if (mPendingJobs-- == 1) { // Atomic decrement
+				if (mPendingJobs-- == 1) {
 					mWaitCondition.notify_all();
 				}
-				});
+			}
+			else {
+				// Normal async submission
+				mThreadPool->SubmitJob([this, job]() {
+					job();
+					if (mPendingJobs-- == 1) {
+						mWaitCondition.notify_all();
+					}
+					});
+			}
 		}
 
 		void WaitForAll() 

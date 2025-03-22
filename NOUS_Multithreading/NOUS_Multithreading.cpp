@@ -29,6 +29,11 @@ void NOUS_Multithreading::JobSystemDebugInfo(const NOUS_JobSystem& system)
 		std::cout << thread->GetStringFromState(thread->GetThreadState()).c_str();
 		std::cout << ", Exec Time: " << thread->GetExecutionTimeMS() << "ms\n";
 	}
+
+	if (system.GetThreadPool().GetThreads().empty()) 
+	{
+		std::cout << "[Sequential Mode] Jobs executed on main thread\n";
+	}
 }
 
 // Add these declarations
