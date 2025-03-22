@@ -316,6 +316,13 @@ namespace NOUS_Multithreading
 			mWaitCondition.wait(lock, [this]() { return mPendingJobs == 0; });
 		}
 
+		void Resize(uint32 newSize) 
+		{
+			WaitForAll(); // Ensure all current jobs finish
+			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
+			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, newSize);
+		}
+
 		const NOUS_ThreadPool& GetThreadPool() const { return *mThreadPool; }
 		int GetPendingJobs() const { return mPendingJobs; }
 

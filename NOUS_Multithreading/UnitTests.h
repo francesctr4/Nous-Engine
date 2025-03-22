@@ -276,3 +276,47 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo)
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
 }
 #pragma endregion
+
+#pragma region DYNAMIC_RESIZE
+TEST_F(JobSystemTest, DynamicThreadPoolResizing) 
+{
+    uint32 initialSize = jobSystem->GetThreadPool().GetThreads().size();
+
+    // Initial state
+    std::cout << "\n=== Initial Pool ===\n";
+    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
+
+    for (int i = 0; i < initialSize; ++i)
+    {
+        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with 20 threads");
+    }
+
+    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
+
+    // Resize to single-threaded
+    uint32 newSize = 0;
+    jobSystem->Resize(newSize);
+    std::cout << "\n=== Resized Thread Pool ===\n";
+    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), newSize);
+
+    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
+
+    // Verify functionality with 0 threads
+    for (int i = 0; i < 2; ++i) {
+        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with main thread");
+    }
+
+    // Resize back to 20 threads
+    jobSystem->Resize(initialSize);
+    std::cout << "\n=== Resized Back to initial threads ===\n";
+
+    for (int i = 0; i < initialSize; ++i)
+    {
+        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with 20 threads");
+    }
+
+    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
+
+    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
+}
+#pragma endregion
