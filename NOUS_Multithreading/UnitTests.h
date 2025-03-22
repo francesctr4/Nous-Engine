@@ -8,7 +8,7 @@ protected:
     void SetUp() override {
         jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(
             MemoryManager::MemoryTag::THREAD, 
-            0 // SIZE (remove if MAX_HARDWARE_THREADS)
+            20 // SIZE (remove if MAX_HARDWARE_THREADS)
         );
     }
 

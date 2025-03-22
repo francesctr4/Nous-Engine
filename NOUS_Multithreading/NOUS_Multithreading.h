@@ -104,7 +104,7 @@ namespace NOUS_Multithreading
 		void StopExecutionTimer() { mExecutionTime.Stop(); }
 		double GetExecutionTimeMS() const { return mExecutionTime.ReadMS(); }
 
-		static const uint32& GetThreadID(std::thread::id id)
+		static uint32 GetThreadID(std::thread::id id)
 		{
 			std::stringstream ss;
 			ss << id;
