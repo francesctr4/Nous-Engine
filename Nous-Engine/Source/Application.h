@@ -48,6 +48,9 @@ public:
 	ModuleEditor* editor;
 
 	bool isMinimized;
+
+	// Here goes the job system
+	//NOUS_Multithreading::NOUS_JobSystem* jobSystem;
 	
 private:
 

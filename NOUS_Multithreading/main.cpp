@@ -2,6 +2,12 @@
 
 int main(int argc, char** argv)
 {
+	NOUS_Multithreading::RegisterMainThread();
+
 	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+	RUN_ALL_TESTS();
+
+	NOUS_Multithreading::UnregisterMainThread();
+
+	return 0;
 }

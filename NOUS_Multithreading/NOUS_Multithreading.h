@@ -17,6 +17,11 @@
 
 namespace NOUS_Multithreading
 {
+	const uint32 c_MAX_HARDWARE_THREADS = std::thread::hardware_concurrency();
+}
+
+namespace NOUS_Multithreading
+{
 	enum class ThreadState 
 	{
 		READY = 0,
@@ -99,14 +104,14 @@ namespace NOUS_Multithreading
 		void StopExecutionTimer() { mExecutionTime.Stop(); }
 		double GetExecutionTimeMS() const { return mExecutionTime.ReadMS(); }
 
-		static uint32 GetThreadID(std::thread::id id)
+		static const uint32& GetThreadID(std::thread::id id)
 		{
 			std::stringstream ss;
 			ss << id;
 			return static_cast<uint32>(std::stoul(ss.str()));
 		}
 
-		const std::string& GetStringFromState(const ThreadState& state) const 
+		static const std::string& GetStringFromState(const ThreadState& state)
 		{
 			return stateToString.at(state);
 		}
@@ -195,7 +200,7 @@ namespace NOUS_Multithreading
 				{
 					std::unique_lock<std::mutex> lock(mMutex);
 
-					thread->SetThreadState(ThreadState::WAITING);
+					thread->SetThreadState(ThreadState::READY);
 
 					mCondition.wait(lock, [this]() {
 						return !mJobQueue.empty() || mShutdown;
@@ -221,7 +226,7 @@ namespace NOUS_Multithreading
 				}
 
 				thread->SetCurrentTask(nullptr);
-				thread->SetThreadState(ThreadState::WAITING);
+				thread->SetThreadState(ThreadState::READY);
 				thread->StopExecutionTimer();
 			}
 
@@ -238,15 +243,13 @@ namespace NOUS_Multithreading
 
 namespace NOUS_Multithreading
 {
-	const uint32 c_MAX_HARDWARE_THREADS = std::thread::hardware_concurrency();
-
 	class NOUS_JobSystem 
 	{
 	public:
 
-		NOUS_JobSystem() 
+		NOUS_JobSystem(const uint32 size = c_MAX_HARDWARE_THREADS)
 		{
-			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, c_MAX_HARDWARE_THREADS);
+			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, size);
 		}
 
 		~NOUS_JobSystem()
@@ -288,7 +291,22 @@ namespace NOUS_Multithreading
 
 namespace NOUS_Multithreading
 {
-	static NOUS_Multithreading::NOUS_JobSystem jobSystem;
+	void JobSystemDebugInfo(const NOUS_JobSystem& system);
+
+	static NOUS_Thread* sMainThread = nullptr;
+
+	// Add these declarations
+	void RegisterMainThread();
+
+	void UnregisterMainThread();
+
+	NOUS_Thread* GetMainThread();
+
+	//void Initialize();
+
+	//void Update();
+
+	//void Shutdown();
 
 	// Remember to query info from Main thread as well, but don't store it because we don't have the hold of it.
 	//void NOUS_Multithreading::RegisterMainThread()
@@ -302,12 +320,4 @@ namespace NOUS_Multithreading
 
 	//	RegisterThread(mainThread);
 	//}
-
-	void JobSystemDebugInfo();
-
-	void Initialize();
-
-	void Update();
-
-	void Shutdown();
 }

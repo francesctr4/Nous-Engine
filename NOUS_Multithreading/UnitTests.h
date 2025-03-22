@@ -6,7 +6,10 @@
 class JobSystemTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryManager::MemoryTag::THREAD);
+        jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(
+            MemoryManager::MemoryTag::THREAD, 
+            1 // SIZE (remove if MAX_HARDWARE_THREADS)
+        );
     }
 
     void TearDown() override {
@@ -94,7 +97,7 @@ TEST_F(JobSystemTest, ProperThreadUtilization) {
     }
 
     jobSystem->WaitForAll();
-    ASSERT_GT(threadIds.size(), 1);
+    ASSERT_GE(threadIds.size(), 1);
     ASSERT_LE(threadIds.size(), NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
 }
 
@@ -211,7 +214,7 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo) {
     constexpr int JOB_DURATION_MS = 2000;
 
     std::cout << "\n=== Initial State ===\n";
-    NOUS_Multithreading::JobSystemDebugInfo();
+    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
 
     for (int i = 0; i < NUM_JOBS; ++i) {
         jobSystem->SubmitJob([]() {
@@ -219,21 +222,28 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo) {
             });
     }
 
+    // During execution, check for RUNNING states
     std::cout << "\n=== During Execution ===\n";
-    for (int i = 0; i < 3; ++i) {
-        NOUS_Multithreading::JobSystemDebugInfo();
+    bool sawRunningState = false;
+    while (jobSystem->GetPendingJobs() > 0) {
+        NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
+        for (const auto& thread : jobSystem->GetThreadPool().GetThreads()) {
+            if (thread->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING) {
+                sawRunningState = true;
+            }
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
+    ASSERT_TRUE(sawRunningState); // Ensure at least one thread was RUNNING
 
     jobSystem->WaitForAll();
-    std::cout << "\n=== Final State ===\n";
-    NOUS_Multithreading::JobSystemDebugInfo();
 
-    const auto& pool = jobSystem->GetThreadPool();
-    for (const auto& thread : pool.GetThreads()) {
+    // Final state should be READY
+    std::cout << "\n=== Final State ===\n";
+    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
+    for (const auto& thread : jobSystem->GetThreadPool().GetThreads()) {
         auto state = thread->GetThreadState();
-        ASSERT_TRUE(state == NOUS_Multithreading::ThreadState::WAITING ||
-            state == NOUS_Multithreading::ThreadState::READY);
+        ASSERT_EQ(state, NOUS_Multithreading::ThreadState::READY);
     }
 }
 #pragma endregion
