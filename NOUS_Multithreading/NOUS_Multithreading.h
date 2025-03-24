@@ -348,23 +348,4 @@ namespace NOUS_Multithreading
 	void UnregisterMainThread();
 
 	NOUS_Thread* GetMainThread();
-
-	//void Initialize();
-
-	//void Update();
-
-	//void Shutdown();
-
-	// Remember to query info from Main thread as well, but don't store it because we don't have the hold of it.
-	//void NOUS_Multithreading::RegisterMainThread()
-	//{
-	//	NOUS_Thread* mainThread = NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD);
-
-	//	mainThread->name = "Main Thread";
-	//	mainThread->ID = GetThreadID(std::this_thread::get_id());
-	//	mainThread->state = ThreadState::RUNNING;
-	//	mainThread->executionTime.Start();
-
-	//	RegisterThread(mainThread);
-	//}
 }
