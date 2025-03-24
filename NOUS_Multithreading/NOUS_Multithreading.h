@@ -323,6 +323,21 @@ namespace NOUS_Multithreading
 			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, newSize);
 		}
 
+		void ForceReset() 
+		{
+			uint32_t currentSize = mThreadPool->GetThreads().size();
+
+			// Force shutdown, delete pending jobs, and join threads
+			mThreadPool->Shutdown();
+
+			// Reset pending jobs counter
+			mPendingJobs = 0;
+
+			// Recreate the thread pool with the previous size
+			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
+			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, currentSize);
+		}
+
 		const NOUS_ThreadPool& GetThreadPool() const { return *mThreadPool; }
 		int GetPendingJobs() const { return mPendingJobs; }
 

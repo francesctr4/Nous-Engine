@@ -319,4 +319,31 @@ TEST_F(JobSystemTest, DynamicThreadPoolResizing)
 
     ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
 }
+
+TEST_F(JobSystemTest, DynamicForceReset)
+{
+    uint32 initialSize = jobSystem->GetThreadPool().GetThreads().size();
+
+    // Initial state
+    std::cout << "\n=== Initial Pool ===\n";
+    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
+
+    for (int i = 0; i < initialSize; ++i)
+    {
+        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with 20 threads");
+    }
+
+    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
+
+    jobSystem->ForceReset();
+
+    for (int i = 0; i < initialSize; ++i)
+    {
+        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with 20 threads");
+    }
+
+    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
+
+    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
+}
 #pragma endregion
