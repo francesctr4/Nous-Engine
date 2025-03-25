@@ -3,6 +3,10 @@
 #include "NOUS_Multithreading.h"
 #include "gtest/gtest.h"
 
+#include <numeric>
+#include <unordered_set>
+#include <future>
+
 class JobSystemTest : public ::testing::Test {
 protected:
     void SetUp() override {

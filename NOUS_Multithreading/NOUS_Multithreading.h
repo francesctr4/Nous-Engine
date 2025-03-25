@@ -1,4 +1,5 @@
-#pragma once
+#ifndef NOUS_MULTITHREADING_H
+#define NOUS_MULTITHREADING_H
 
 #include "Globals.h"
 #include "Timer.h"
@@ -7,32 +8,39 @@
 #include <thread>
 #include <functional>
 #include <atomic>
-#include <sstream>
 #include <mutex>
-#include <future>
-#include <unordered_set>
-#include <numeric>
+#include <condition_variable>
 #include <queue>
+#include <vector>
+#include <iostream>
 
 namespace NOUS_Multithreading
 {
-	const uint32 c_MAX_HARDWARE_THREADS = std::thread::hardware_concurrency();
-}
+	/// @brief Maximum number of hardware threads available for job processing.
+	/// Subtracts 1 for the main thread/system tasks.
+	const uint32 c_MAX_HARDWARE_THREADS = (std::thread::hardware_concurrency() - 1);
 
-namespace NOUS_Multithreading
-{
-	// In NOUS_Multithreading.h, within the NOUS_Multithreading namespace
-	class NOUS_Job {
+	///////////////////////////////////////////////////////////////////////////
+	/// @brief Represents an executable job with a name
+	///////////////////////////////////////////////////////////////////////////
+	class NOUS_Job 
+	{
 	public:
-		NOUS_Job(const std::string& name, std::function<void()> func)
-			: mName(name), mFunction(func) {}
 
+		/// @brief Job's constructor
+		NOUS_Job(const std::string& name, std::function<void()> func) : mName(name), mFunction(func) {}
+
+		/// @brief Executes the job's function
 		void Execute() { mFunction(); }
+
+		/// @return Job's human-readable identifier
 		const std::string& GetName() const { return mName; }
 
 	private:
+
 		std::string mName;
 		std::function<void()> mFunction;
+
 	};
 }
 
@@ -428,3 +436,5 @@ namespace NOUS_Multithreading
 		}
 	}
 }
+
+#endif // NOUS_MULTITHREADING_H
