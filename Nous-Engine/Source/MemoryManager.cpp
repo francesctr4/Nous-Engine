@@ -68,6 +68,8 @@ void MemoryManager::ShutdownMemory()
 
 void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
+	std::lock_guard<std::mutex> lock(memoryMutex);
+
 	if (tag == MemoryTag::UNKNOWN) 
 	{
 		NOUS_WARN("Memory Allocation called using MEMORY_TAG_UNKNOWN.");
@@ -90,6 +92,8 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 
 void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
+	std::lock_guard<std::mutex> lock(memoryMutex);
+
 	if (tag == MemoryTag::UNKNOWN)
 	{
 		NOUS_WARN("Memory Free called using MEMORY_TAG_UNKNOWN.");
