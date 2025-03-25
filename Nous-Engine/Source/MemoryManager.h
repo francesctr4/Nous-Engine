@@ -52,8 +52,6 @@ namespace MemoryManager
 	char* GetMemoryUsageStats();
 
 	uint64 GetMemoryAllocationCount();
-
-	static std::mutex memoryMutex;
 }
 
 // Custom Memory Management Macros to monitorize allocations

@@ -7,6 +7,10 @@
 #include "Tracy.h"
 #endif // _PROFILING
 
+#include <mutex>
+
+static std::mutex memoryMutex;
+
 struct MemoryStats 
 {
 	uint64 totalAllocated;
