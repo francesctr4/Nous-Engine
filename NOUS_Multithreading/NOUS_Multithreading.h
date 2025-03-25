@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Globals.h"
+#include "Timer.h"
+#include "MemoryManager.h"
 
 #include <thread>
 #include <functional>
@@ -10,10 +12,7 @@
 #include <future>
 #include <unordered_set>
 #include <numeric>
-
-#include "Timer.h"
 #include <queue>
-#include "MemoryManager.h"
 
 namespace NOUS_Multithreading
 {
@@ -128,14 +127,30 @@ namespace NOUS_Multithreading
 			return static_cast<uint32>(std::stoul(ss.str()));
 		}
 
-		static const std::string& GetStringFromState(const ThreadState& state)
+		static const std::string GetStringFromState(const ThreadState& state)
 		{
-			return stateToString.at(state);
+			switch (state)
+			{
+				case ThreadState::READY: 
+				{
+					return "READY";
+				}
+				case ThreadState::RUNNING:
+				{
+					return "RUNNING";
+				}
+				case ThreadState::WAITING:
+				{
+					return "WAITING";
+				}
+				default:
+				{
+					return "NULL";
+				}
+			}
 		}
 
 	private:
-
-		static const std::unordered_map<NOUS_Multithreading::ThreadState, std::string> stateToString;
 
 		std::thread mThreadHandle;
 		std::atomic<bool> mIsRunning;
@@ -201,13 +216,13 @@ namespace NOUS_Multithreading
 			mCondition.notify_all();
 
 			// Join all threads first
-			for (auto* thread : mThreads) 
+			for (NOUS_Thread* thread : mThreads) 
 			{
 				thread->Join();
 			}
 
 			// Delete all thread objects
-			for (auto* thread : mThreads) 
+			for (NOUS_Thread* thread : mThreads)
 			{
 				NOUS_DELETE<NOUS_Thread>(thread, MemoryManager::MemoryTag::THREAD);
 			}
@@ -292,14 +307,14 @@ namespace NOUS_Multithreading
 		{
 			mPendingJobs++;
 
-			auto wrappedJob = [this, userJob]() {
+			std::function<void()> wrappedJob = [this, userJob]() {
 				userJob();
 				if (mPendingJobs-- == 1) {
 					mWaitCondition.notify_all();
 				}
 				};
 
-			auto job = NOUS_NEW<NOUS_Job>(MemoryManager::MemoryTag::THREAD, jobName, wrappedJob);
+			NOUS_Job* job = NOUS_NEW<NOUS_Job>(MemoryManager::MemoryTag::THREAD, jobName, wrappedJob);
 
 			if (mThreadPool->GetThreads().empty()) {
 				job->Execute();
@@ -325,7 +340,7 @@ namespace NOUS_Multithreading
 
 		void ForceReset() 
 		{
-			uint32_t currentSize = mThreadPool->GetThreads().size();
+			size_t currentSize = mThreadPool->GetThreads().size();
 
 			// Force shutdown, delete pending jobs, and join threads
 			mThreadPool->Shutdown();
@@ -353,14 +368,63 @@ namespace NOUS_Multithreading
 
 namespace NOUS_Multithreading
 {
-	void JobSystemDebugInfo(const NOUS_JobSystem& system);
-
 	static NOUS_Thread* sMainThread = nullptr;
 
 	// Add these declarations
-	void RegisterMainThread();
+	// Add these declarations
+	static void RegisterMainThread()
+	{
+		if (!sMainThread) {
+			sMainThread = NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD);
+			sMainThread->SetName("Main Thread");
+			sMainThread->SetThreadState(ThreadState::RUNNING);
+			sMainThread->StartExecutionTimer();
+		}
+	}
 
-	void UnregisterMainThread();
+	static void UnregisterMainThread()
+	{
+		if (sMainThread)
+		{
+			NOUS_DELETE<NOUS_Thread>(sMainThread, MemoryManager::MemoryTag::THREAD);
+		}
+	}
 
-	NOUS_Thread* GetMainThread();
+	static NOUS_Thread* GetMainThread()
+	{
+		return sMainThread;
+	}
+
+	static void JobSystemDebugInfo(const NOUS_JobSystem& system)
+	{
+		const NOUS_ThreadPool& threadPool = system.GetThreadPool();
+		const std::vector<NOUS_Thread*>& threads = threadPool.GetThreads();
+
+		std::cout << "===== Job System Debug Info =====\n";
+		std::cout << "Pending Jobs: " << system.GetPendingJobs() << "\n";
+
+		// Add main thread info
+		NOUS_Thread* mainThread = GetMainThread();
+
+		if (mainThread) 
+		{
+			std::cout << "Thread '" << mainThread->GetName() << "' (ID: "
+				<< NOUS_Thread::GetThreadID(std::this_thread::get_id()) << ") - "
+				<< NOUS_Thread::GetStringFromState(mainThread->GetThreadState())
+				<< ", Exec Time: " << mainThread->GetExecutionTimeMS() << "ms" << "\n";
+		}
+
+		for (NOUS_Thread* thread : threads)
+		{
+			std::cout << "Thread '" << thread->GetName() << "' (ID: " << thread->GetID() << ") - "
+				<< thread->GetStringFromState(thread->GetThreadState()).c_str()
+				<< ", Exec Time: " << thread->GetExecutionTimeMS() << "ms"
+				<< ", Job: " << (thread->GetCurrentJob() ? thread->GetCurrentJob()->GetName() : "None") << "\n";
+		}
+
+		if (system.GetThreadPool().GetThreads().empty())
+		{
+			std::cout << "[Sequential Mode] Jobs executed on main thread\n";
+		}
+	}
 }
