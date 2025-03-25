@@ -158,6 +158,11 @@ namespace NOUS_Multithreading
 			}
 		}
 
+		static const void SleepMS(const uint32& ms)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+		}
+
 	private:
 
 		std::thread mThreadHandle;

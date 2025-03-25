@@ -137,8 +137,8 @@ TEST_F(JobSystemTest, ThreadStatesAreUpdated)
         return;
     }
 
-    jobSystem->SubmitJob([]() { std::this_thread::sleep_for(std::chrono::milliseconds(50)); });
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    jobSystem->SubmitJob([]() { NOUS_Multithreading::NOUS_Thread::SleepMS(50); });
+    NOUS_Multithreading::NOUS_Thread::SleepMS(10);
 
     const auto& pool = jobSystem->GetThreadPool();
     bool anyRunning = false;
@@ -175,7 +175,7 @@ TEST_F(JobSystemTest, WaitForAllBlocksProperly)
 
     for (int i = 0; i < 10; ++i) {
         jobSystem->SubmitJob([&]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            NOUS_Multithreading::NOUS_Thread::SleepMS(100);
             counter++;
             });
     }
@@ -185,7 +185,7 @@ TEST_F(JobSystemTest, WaitForAllBlocksProperly)
         earlyCheck = true;
         });
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    NOUS_Multithreading::NOUS_Thread::SleepMS(50);
     ASSERT_FALSE(earlyCheck);
     future.wait();
     ASSERT_EQ(counter.load(), 10);
@@ -201,9 +201,9 @@ TEST_F(JobSystemTest, JobExecutionTimeMeasurement)
         return;
     }
 
-    jobSystem->SubmitJob([]() { std::this_thread::sleep_for(std::chrono::milliseconds(100)); });
+    jobSystem->SubmitJob([]() { NOUS_Multithreading::NOUS_Thread::SleepMS(100); });
     jobSystem->WaitForAll();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    NOUS_Multithreading::NOUS_Thread::SleepMS(10);
 
     const auto& pool = jobSystem->GetThreadPool();
     bool foundValidTime = false;
@@ -238,15 +238,15 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo)
     for (int i = 0; i < NUM_JOBS; ++i) 
     {
         jobSystem->SubmitJob([]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_DURATION_MS));
+            NOUS_Multithreading::NOUS_Thread::SleepMS(JOB_DURATION_MS);
             }, "Import Model");
 
         jobSystem->SubmitJob([]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_DURATION_MS));
+            NOUS_Multithreading::NOUS_Thread::SleepMS(JOB_DURATION_MS);
             }, "Import Material");
 
         jobSystem->SubmitJob([]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(JOB_DURATION_MS));
+            NOUS_Multithreading::NOUS_Thread::SleepMS(JOB_DURATION_MS);
             }, "Import Texture");
     }
 
@@ -268,7 +268,7 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo)
                     sawRunningState = true;
                 }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            NOUS_Multithreading::NOUS_Thread::SleepMS(500);
         }
     }
 
@@ -292,7 +292,7 @@ TEST_F(JobSystemTest, DynamicThreadPoolResizing)
 
     for (int i = 0; i < initialSize; ++i)
     {
-        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with 20 threads");
+        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with 20 threads");
     }
 
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
@@ -307,7 +307,7 @@ TEST_F(JobSystemTest, DynamicThreadPoolResizing)
 
     // Verify functionality with 0 threads
     for (int i = 0; i < 2; ++i) {
-        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with main thread");
+        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with main thread");
     }
 
     // Resize back to 20 threads
@@ -316,7 +316,7 @@ TEST_F(JobSystemTest, DynamicThreadPoolResizing)
 
     for (int i = 0; i < initialSize; ++i)
     {
-        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with 20 threads");
+        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with 20 threads");
     }
 
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
@@ -334,7 +334,7 @@ TEST_F(JobSystemTest, DynamicForceReset)
 
     for (int i = 0; i < initialSize; ++i)
     {
-        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with 20 threads");
+        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with 20 threads");
     }
 
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
@@ -343,7 +343,7 @@ TEST_F(JobSystemTest, DynamicForceReset)
 
     for (int i = 0; i < initialSize; ++i)
     {
-        jobSystem->SubmitJob([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(2000)); }, "Job with 20 threads");
+        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with 20 threads");
     }
 
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
