@@ -31,9 +31,9 @@ ModuleEditor::ModuleEditor(Application* app, std::string name, bool start_enable
 	currentBackendType = RendererBackendType::UNKNOWN;
 
 	AddEditorWindow(std::make_unique<MainMenuBar>("MainMenuBar"));
-	AddEditorWindow(std::make_unique<Properties>("Properties"));
-	AddEditorWindow(std::make_unique<Assets>("Assets"));
-	AddEditorWindow(std::make_unique<AssetsBrowser>("AssetsBrowser"));
+	//AddEditorWindow(std::make_unique<Properties>("Properties"));
+	//AddEditorWindow(std::make_unique<Assets>("Assets"));
+	AddEditorWindow(std::make_unique<AssetsBrowser>("Assets"));
 	AddEditorWindow(std::make_unique<Resources>("Resources"));
 	AddEditorWindow(std::make_unique<Threads>("Threads"));
 	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
@@ -232,23 +232,6 @@ void ModuleEditor::InternalDrawEditor()
 
 	// End DockSpace Window
 	ImGui::End();
-
-	// In your rendering loop
-	if (ImGui::Begin("Main Menu")) 
-	{
-		// Add a button to toggle the window's state
-		if (ImGui::Button("Toggle Properties")) 
-		{
-			ToggleWindowState(editorWindows, "Properties");
-		}
-
-		if (ImGui::Button("Toggle Assets"))
-		{
-			ToggleWindowState(editorWindows, "Assets");
-		}
-
-		ImGui::End();
-	}
 
 	ImGui::ShowDemoWindow();
 
