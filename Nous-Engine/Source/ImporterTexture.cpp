@@ -10,6 +10,7 @@
 #include "MemoryManager.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_THREAD_LOCAL
 #include "External/stb_image/stb_image.h"
 
 bool ImporterTexture::Import(const MetaFileData& metaFileData)
@@ -36,47 +37,63 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
 
     const int32 requiredChannelCount = 4;
 
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load_thread(true);
 
-    uint8* data = stbi_load(libraryPath.c_str(), (int32*)&texture->width, (int32*)&texture->height,
-        (int32*)&texture->channelCount, requiredChannelCount);
+    // Use FileHandle to read the file
+    FileHandle fileHandle;
+    if (!fileHandle.Open(libraryPath, FileMode::READ, true)) // true for binary mode
+    {
+        NOUS_WARN("ImporterTexture::Load() failed to open file '%s'", libraryPath.c_str());
+        return false;
+    }
 
-    texture->channelCount = requiredChannelCount;
+    char* fileBuffer = nullptr;
+    uint64 fileSize = 0;
+
+    // Read all bytes using your class's method
+    if (!fileHandle.ReadAllBytes(&fileBuffer, &fileSize) || !fileBuffer || fileSize == 0)
+    {
+        NOUS_WARN("ImporterTexture::Load() failed to read file '%s'", libraryPath.c_str());
+        fileHandle.Close();
+        return false;
+    }
+
+    // Load from memory buffer
+    int width, height, channels;
+    uint8* data = stbi_load_from_memory(
+        reinterpret_cast<const stbi_uc*>(fileBuffer), // Cast to stbi's expected type
+        static_cast<int>(fileSize),
+        &width,
+        &height,
+        &channels,
+        requiredChannelCount
+    );
+
+    // Clean up file buffer using your memory manager
+    NOUS_DELETE_ARRAY(fileBuffer, static_cast<uint64>(fileSize), MemoryManager::MemoryTag::FILE);
+    fileHandle.Close();
 
     if (data)
     {
-        uint32 currentGeneration = texture->GetReferenceCount() == 0 ? INVALID_ID : texture->GetReferenceCount();
+        texture->width = width;
+        texture->height = height;
+        texture->channelCount = requiredChannelCount;
 
-        uint64 totalSize = texture->width * texture->height * requiredChannelCount;
+        const uint64 totalSize = texture->width * texture->height * requiredChannelCount;
 
         // Check for transparency
         bool hasTransparency = false;
-
         for (uint64 i = 0; i < totalSize; i += requiredChannelCount)
         {
-            uint8 a = data[i + 3];
-
-            if (a < 255)
+            if (data[i + 3] < 255)
             {
                 hasTransparency = true;
                 break;
             }
         }
 
-        if (stbi_failure_reason())
-        {
-            NOUS_WARN("ImporterTexture::Load() failed to load file '%s': %s", libraryPath, stbi_failure_reason());
-        }
-
-        // IDK what to do with this
-        if (currentGeneration == INVALID_ID)
-        {
-            texture->generation = 0;
-        }
-        else
-        {
-            texture->generation = currentGeneration;
-        }
+        uint32 currentGeneration = texture->GetReferenceCount() == 0 ? INVALID_ID : texture->GetReferenceCount();
+        texture->generation = (currentGeneration == INVALID_ID) ? 0 : currentGeneration;
 
         // Acquire internal texture resources and upload to GPU.
         External->renderer->rendererFrontend->CreateTexture(data, texture);
@@ -90,7 +107,8 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
     {
         if (stbi_failure_reason())
         {
-            NOUS_WARN("ImporterTexture::Load() failed to load file '%s': %s", libraryPath, stbi_failure_reason());
+            NOUS_WARN("ImporterTexture::Load() failed to load file '%s': %s", 
+                libraryPath.c_str(), stbi_failure_reason());
         }
 
         return false;
