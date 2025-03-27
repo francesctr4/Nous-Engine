@@ -377,10 +377,9 @@ namespace NOUS_Multithreading
 		{
 			size_t currentSize = mThreadPool->GetThreads().size();
 
-			mThreadPool->Shutdown();	// Force-terminate all worker threads and pending jobs.
-			mPendingJobs = 0;			// Reset job counter.
-
 			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
+
+			mPendingJobs = 0; // Reset job counter.
 
 			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, currentSize);
 		}

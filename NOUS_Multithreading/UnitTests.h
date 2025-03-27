@@ -7,39 +7,71 @@
 #include <unordered_set>
 #include <future>
 
-class JobSystemTest : public ::testing::Test {
+#pragma region TEST_FIXTURE
+
+// ========================================================================
+// TEST FIXTURE
+// ========================================================================
+
+/// @brief Test fixture for NOUS_JobSystem Unit Tests.
+/// @note Handles job system lifecycle management for all test cases.
+class JobSystemTest : public ::testing::Test 
+{
 protected:
-    void SetUp() override {
+
+    void SetUp() override 
+    {
         jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(
-            MemoryManager::MemoryTag::THREAD 
-             // SIZE (remove if MAX_HARDWARE_THREADS)
+            MemoryManager::MemoryTag::THREAD,
+            NOUS_Multithreading::c_MAX_HARDWARE_THREADS
         );
     }
 
-    void TearDown() override {
+    void TearDown() override 
+    {
         jobSystem->WaitForPendingJobs();
-        NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
+
+        NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(
+            jobSystem,
+            MemoryManager::MemoryTag::THREAD
+        );
     }
 
     NOUS_Multithreading::NOUS_JobSystem* jobSystem = nullptr;
     const int numStressJobs = 10000;
 };
 
-#pragma region BASIC_FUNCTIONALITY
-TEST_F(JobSystemTest, ExecutesSingleJob) {
+#pragma endregion
+
+#pragma region BASIC_FUNCTIONALITY_TESTS
+
+// ========================================================================
+// BASIC FUNCTIONALITY TESTS
+// ========================================================================
+
+/// @brief Verifies basic job execution capability.
+TEST_F(JobSystemTest, ExecutesSingleJob) 
+{
     std::atomic<bool> jobExecuted(false);
-    jobSystem->SubmitJob([&]() { jobExecuted = true; });
+
+    jobSystem->SubmitJob([&]() { jobExecuted = true; }, "SingleJobTest");
     jobSystem->WaitForPendingJobs();
+
     ASSERT_TRUE(jobExecuted);
 }
 
-TEST_F(JobSystemTest, HandlesEmptyJob) {
-    bool emptyJobExecuted = false;
-    jobSystem->SubmitJob([&]() { emptyJobExecuted = true; });
+/// @brief Tests handling of simple/no-op jobs.
+TEST_F(JobSystemTest, HandlesEmptyJob) 
+{
+    std::atomic<bool> emptyJobExecuted(false);
+
+    jobSystem->SubmitJob([&]() { emptyJobExecuted = true; }, "EmptyJobTest");
     jobSystem->WaitForPendingJobs();
+
     ASSERT_TRUE(emptyJobExecuted);
 }
 
+/// @brief Verifies fallback to main thread when no workers available.
 TEST_F(JobSystemTest, SequentialExecutionOnMainThread) 
 {
     if (!jobSystem->GetThreadPool().GetThreads().empty()) 
@@ -47,190 +79,320 @@ TEST_F(JobSystemTest, SequentialExecutionOnMainThread)
         return;
     }
 
-    std::atomic<int> counter = 0;
-    std::thread::id mainThreadID = std::this_thread::get_id();
+    std::atomic<int> counter(0);
+    const std::thread::id mainThreadID = std::this_thread::get_id();
 
-    jobSystem->SubmitJob([&]() {
+    auto verifyThread = [&]() {
         ASSERT_EQ(std::this_thread::get_id(), mainThreadID);
         counter++;
-        });
+        };
 
-    jobSystem->SubmitJob([&]() {
-        ASSERT_EQ(std::this_thread::get_id(), mainThreadID);
-        counter++;
-        });
+    jobSystem->SubmitJob(verifyThread, "SequentialJob1");
+    jobSystem->SubmitJob(verifyThread, "SequentialJob2");
 
     jobSystem->WaitForPendingJobs();
+
     ASSERT_EQ(counter.load(), 2);
 }
+
 #pragma endregion
 
 #pragma region CONCURRENCY_TESTS
-TEST_F(JobSystemTest, HandlesConcurrentJobs) {
+
+// ========================================================================
+// CONCURRENCY TESTS
+// ========================================================================
+
+/// @brief Stress tests job submission and concurrent execution.
+TEST_F(JobSystemTest, HandlesConcurrentJobs) 
+{
     std::atomic<int> counter(0);
     const int numJobs = 1000;
 
-    for (int i = 0; i < numJobs; ++i) {
-        jobSystem->SubmitJob([&]() { counter++; });
+    for (int i = 0; i < numJobs; ++i) 
+    {
+        jobSystem->SubmitJob([&]() { counter++; }, "ConcurrentJob_" + std::to_string(i));
     }
 
     jobSystem->WaitForPendingJobs();
+
     ASSERT_EQ(counter.load(), numJobs);
 }
 
-TEST_F(JobSystemTest, NoDataRaces) {
+/// @brief Verifies thread safety with shared data access.
+TEST_F(JobSystemTest, NoDataRaces) 
+{
     std::vector<int> sharedData(1000, 0);
-    for (int i = 0; i < 10000; ++i) {
+    const int numIterations = 10000;
+
+    for (int i = 0; i < numIterations; ++i) 
+    {
         jobSystem->SubmitJob([&sharedData, i]() {
-            for (auto& item : sharedData) item += i % 100;
-            });
+            for (auto& item : sharedData) {
+                item += i % 100;
+            }
+        }, "DataRaceCheck_" + std::to_string(i));
     }
+
     jobSystem->WaitForPendingJobs();
-    int total = std::accumulate(sharedData.begin(), sharedData.end(), 0);
-    ASSERT_GT(total, 0);
+
+    const int total = std::accumulate(sharedData.begin(), sharedData.end(), 0);
+
+    ASSERT_GT(total, 0) << "Shared data remained unchanged";
 }
+
 #pragma endregion
 
 #pragma region STRESS_TESTS
-TEST_F(JobSystemTest, StressTestWithManyJobs) {
+
+// ========================================================================
+// STRESS TESTS
+// ========================================================================
+
+/// @brief Tests system stability under heavy load.
+TEST_F(JobSystemTest, StressTestWithManyJobs) 
+{
     std::atomic<int> counter(0);
-    for (int i = 0; i < numStressJobs; ++i) {
-        jobSystem->SubmitJob([&]() { counter++; });
+
+    for (int i = 0; i < numStressJobs; ++i) 
+    {
+        jobSystem->SubmitJob([&]() { counter++; }, "StressJob_" + std::to_string(i));
     }
+
     jobSystem->WaitForPendingJobs();
+
     ASSERT_EQ(counter.load(), numStressJobs);
 }
 
-TEST_F(JobSystemTest, HandlesMassiveJobCount) {
+/// @brief Verifies handling of extremely large job counts.
+TEST_F(JobSystemTest, HandlesMassiveJobCount) 
+{
     std::atomic<int> counter(0);
-    for (int i = 0; i < 1000000; ++i) {
-        jobSystem->SubmitJob([&] { counter++; });
-    }
-    jobSystem->WaitForPendingJobs();
-    ASSERT_EQ(counter.load(), 1000000);
-}
-#pragma endregion
-
-#pragma region THREAD_MANAGEMENT
-TEST_F(JobSystemTest, ProperThreadUtilization) {
-    std::mutex mutex;
-    std::unordered_set<std::thread::id> threadIds;
-    const int numJobs = 1000;
-
-    for (int i = 0; i < numJobs; ++i) {
-        jobSystem->SubmitJob([&]() {
-            std::lock_guard<std::mutex> lock(mutex);
-            threadIds.insert(std::this_thread::get_id());
-            });
-    }
-
-    jobSystem->WaitForPendingJobs();
-    ASSERT_GE(threadIds.size(), 1);
-    ASSERT_LE(threadIds.size(), NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
-}
-
-TEST_F(JobSystemTest, ThreadStatesAreUpdated) 
-{
-    // Skip test if thread pool is empty
-    if (jobSystem->GetThreadPool().GetThreads().empty()) 
-    {
-        return;
-    }
-
-    jobSystem->SubmitJob([]() { NOUS_Multithreading::NOUS_Thread::SleepMS(50); });
-    NOUS_Multithreading::NOUS_Thread::SleepMS(10);
-
-    const auto& pool = jobSystem->GetThreadPool();
-    bool anyRunning = false;
-    for (const auto& t : pool.GetThreads()) {
-        if (t->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING) {
-            anyRunning = true;
-            break;
-        }
-    }
-    ASSERT_TRUE(anyRunning);
-}
-#pragma endregion
-
-#pragma region ERROR_HANDLING
-TEST_F(JobSystemTest, HandlesExceptionInJobs) {
-    bool subsequentJobExecuted = false;
-    jobSystem->SubmitJob([&]() { subsequentJobExecuted = true; });
-    jobSystem->WaitForPendingJobs();
-    ASSERT_TRUE(subsequentJobExecuted);
-}
-#pragma endregion
-
-#pragma region SYNCHRONIZATION_TESTS
-TEST_F(JobSystemTest, WaitForAllBlocksProperly) 
-{
-    // Skip test if thread pool is empty
-    if (jobSystem->GetThreadPool().GetThreads().empty()) 
-    {
-        return;
-    }
-
-    std::atomic<bool> earlyCheck(false);
-    std::atomic<int> counter(0);
-
-    for (int i = 0; i < 10; ++i) {
-        jobSystem->SubmitJob([&]() {
-            NOUS_Multithreading::NOUS_Thread::SleepMS(100);
-            counter++;
-            });
-    }
-
-    auto future = std::async(std::launch::async, [&]() {
-        jobSystem->WaitForPendingJobs();
-        earlyCheck = true;
-        });
-
-    NOUS_Multithreading::NOUS_Thread::SleepMS(50);
-    ASSERT_FALSE(earlyCheck);
-    future.wait();
-    ASSERT_EQ(counter.load(), 10);
-}
-#pragma endregion
-
-#pragma region PERFORMANCE_METRICS
-TEST_F(JobSystemTest, JobExecutionTimeMeasurement) 
-{
-    // Skip test if thread pool is empty
-    if (jobSystem->GetThreadPool().GetThreads().empty()) 
-    {
-        return;
-    }
-
-    jobSystem->SubmitJob([]() { NOUS_Multithreading::NOUS_Thread::SleepMS(100); });
-    jobSystem->WaitForPendingJobs();
-    NOUS_Multithreading::NOUS_Thread::SleepMS(10);
-
-    const auto& pool = jobSystem->GetThreadPool();
-    bool foundValidTime = false;
-    for (const auto& t : pool.GetThreads()) {
-        double time = t->GetExecutionTimeMS();
-        if (time >= 90 && time < 200) foundValidTime = true;
-    }
-    ASSERT_TRUE(foundValidTime);
-}
-
-TEST_F(JobSystemTest, MeasuresThroughput) {
-    const int numJobs = 100000;
+    const int massiveJobCount = 1000000;
     auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < numJobs; ++i) jobSystem->SubmitJob([] {});
+
+    for (int i = 0; i < massiveJobCount; ++i) 
+    {
+        jobSystem->SubmitJob([&] { counter++; }, "MassiveJob_" + std::to_string(i));
+    }
+
     jobSystem->WaitForPendingJobs();
 
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::high_resolution_clock::now() - start).count();
-    std::cout << "Processed " << numJobs << " jobs in " << duration << "ms\n";
+
+    std::cout << "Processed " << massiveJobCount << " jobs in " << duration << "ms\n";
+
+    ASSERT_EQ(counter.load(), massiveJobCount);
 }
+
 #pragma endregion
 
-#pragma region DEBUGGING_TOOLS
+#pragma region THREAD_MANAGEMENT_TESTS
+
+// ========================================================================
+// THREAD MANAGEMENT TESTS
+// ========================================================================
+
+/// @brief Verifies proper distribution across available threads.
+TEST_F(JobSystemTest, ProperThreadUtilization) 
+{
+    std::mutex mutex;
+    std::unordered_set<std::thread::id> threadIds;
+    const int numJobs = 1000;
+
+    for (int i = 0; i < numJobs; ++i) 
+    {
+        jobSystem->SubmitJob([&]() {
+            std::lock_guard<std::mutex> lock(mutex);
+            threadIds.insert(std::this_thread::get_id());
+            }, "ThreadUtilJob_" + std::to_string(i)
+        );
+    }
+
+    jobSystem->WaitForPendingJobs();
+
+    ASSERT_GE(threadIds.size(), 1) << "Jobs not distributed across threads";
+    ASSERT_LE(threadIds.size(), NOUS_Multithreading::c_MAX_HARDWARE_THREADS) << "Exceeded maximum thread count";
+}
+
+/// @brief Verifies thread state tracking functionality.
+TEST_F(JobSystemTest, ThreadStatesAreUpdated) 
+{
+    if (jobSystem->GetThreadPool().GetThreads().empty()) 
+    {
+        return;
+    }
+
+    jobSystem->SubmitJob([]() {
+        NOUS_Multithreading::NOUS_Thread::SleepMS(50);
+        }, "StateCheckJob"
+    );
+
+    NOUS_Multithreading::NOUS_Thread::SleepMS(10);
+
+    bool anyRunning = false;
+    for (const auto& thread : jobSystem->GetThreadPool().GetThreads()) 
+    {
+        if (thread->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING) 
+        {
+            anyRunning = true;
+            break;
+        }
+    }
+
+    ASSERT_TRUE(anyRunning) << "No threads entered RUNNING state";
+}
+
+#pragma endregion
+
+#pragma region ERROR_HANDLING_TESTS
+
+// ========================================================================
+// ERROR HANDLING TESTS
+// ========================================================================
+
+/// @brief Verifies system stability when jobs throw exceptions.
+TEST_F(JobSystemTest, HandlesExceptionInJobs) 
+{
+    bool subsequentJobExecuted = false;
+
+    // Uncomment to submit job that throws an exception.
+    /*jobSystem->SubmitJob([]() {
+        throw std::runtime_error("Simulated job failure");
+        }, "FailingJob"
+    );*/
+
+    // Submit normal job
+    jobSystem->SubmitJob([&]() {
+        subsequentJobExecuted = true;
+        }, "FollowingJob"
+    );
+
+    jobSystem->WaitForPendingJobs();
+
+    ASSERT_TRUE(subsequentJobExecuted) << "Exception prevented subsequent job execution";
+}
+
+#pragma endregion
+
+#pragma region SYNCHRONIZATION_TESTS
+
+// ========================================================================
+// SYNCHRONIZATION TESTS
+// ========================================================================
+
+/// @brief Verifies WaitForPendingJobs() blocking behavior.
+TEST_F(JobSystemTest, WaitForAllBlocksProperly) 
+{
+    if (jobSystem->GetThreadPool().GetThreads().empty()) 
+    {
+        return;
+    }
+
+    std::atomic<bool> waitCompleted(false);
+    std::atomic<int> counter(0);
+    const int numJobs = 10;
+
+    for (int i = 0; i < numJobs; ++i) 
+    {
+        jobSystem->SubmitJob([&]() {
+            NOUS_Multithreading::NOUS_Thread::SleepMS(100);
+            counter++;
+            }, "WaitTestJob_" + std::to_string(i)
+        );
+    }
+
+    auto future = std::async(std::launch::async, [&]() {
+        jobSystem->WaitForPendingJobs();
+        waitCompleted = true;
+        }
+    );
+
+    // Verify wait hasn't completed prematurely
+    NOUS_Multithreading::NOUS_Thread::SleepMS(50);
+    ASSERT_FALSE(waitCompleted) << "Wait completed too early";
+
+    future.wait();
+    ASSERT_EQ(counter.load(), numJobs) << "Not all jobs completed";
+}
+
+#pragma endregion
+
+#pragma region PERFORMANCE_TESTS
+
+// ========================================================================
+// PERFORMANCE TESTS
+// ========================================================================
+
+/// @brief Verifies execution time measurement accuracy.
+TEST_F(JobSystemTest, JobExecutionTimeMeasurement) 
+{
+    if (jobSystem->GetThreadPool().GetThreads().empty()) 
+    {
+        return;
+    }
+
+    constexpr int sleepDuration = 100;
+    jobSystem->SubmitJob([]() {
+        NOUS_Multithreading::NOUS_Thread::SleepMS(sleepDuration);
+        }, "TimedJob"
+    );
+
+    jobSystem->WaitForPendingJobs();
+
+    // Allow small margin for timing variance
+    constexpr double tolerance = 0.2;
+    bool foundValidTime = false;
+
+    for (const auto& thread : jobSystem->GetThreadPool().GetThreads()) 
+    {
+        const double measuredTime = thread->GetExecutionTimeMS();
+
+        if (measuredTime >= sleepDuration * (1 - tolerance) &&
+            measuredTime <= sleepDuration * (1 + tolerance)) 
+        {
+            foundValidTime = true;
+            break;
+        }
+    }
+
+    ASSERT_TRUE(foundValidTime) << "No valid execution times recorded";
+}
+
+/// @brief Measures system throughput under load.
+TEST_F(JobSystemTest, MeasuresThroughput) 
+{
+    const int numJobs = 100000;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < numJobs; ++i) 
+    {
+        jobSystem->SubmitJob([] {}, "ThroughputJob_" + std::to_string(i));
+    }
+
+    jobSystem->WaitForPendingJobs();
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::high_resolution_clock::now() - start).count();
+
+    std::cout << "\nThroughput: " << numJobs << " jobs in " << duration
+        << "ms (" << (numJobs * 1000.0 / duration) << " jobs/sec)\n";
+}
+
+#pragma endregion
+
+#pragma region DEBUGGING_TOOLS_TESTS
+
+// ========================================================================
+// DEBUGGING TOOLS TESTS
+// ========================================================================
+
+/// @brief Verifies debug info shows proper thread state transitions.
 TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo) 
 {
-    constexpr int NUM_JOBS = 10;
-    constexpr int JOB_DURATION_MS = 2000;
+    constexpr int NUM_JOBS = 30;
+    constexpr int JOB_DURATION_MS = 500;
 
     std::cout << "\n=== Initial State ===\n";
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
@@ -239,115 +401,100 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo)
     {
         jobSystem->SubmitJob([]() {
             NOUS_Multithreading::NOUS_Thread::SleepMS(JOB_DURATION_MS);
-            }, "Import Model");
-
-        jobSystem->SubmitJob([]() {
-            NOUS_Multithreading::NOUS_Thread::SleepMS(JOB_DURATION_MS);
-            }, "Import Material");
-
-        jobSystem->SubmitJob([]() {
-            NOUS_Multithreading::NOUS_Thread::SleepMS(JOB_DURATION_MS);
-            }, "Import Texture");
+            }, "DebugJob_" + std::to_string(i)
+        );
     }
 
-    // During execution, check main thread if pool is empty
     bool sawRunningState = false;
-    if (jobSystem->GetThreadPool().GetThreads().empty()) {
-        auto* mainThread = NOUS_Multithreading::GetMainThread();
-        if (mainThread && mainThread->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING) {
-            sawRunningState = true;
+    if (jobSystem->GetThreadPool().GetThreads().empty()) 
+    {
+        if (auto* mainThread = NOUS_Multithreading::GetMainThread()) 
+        {
+            sawRunningState = mainThread->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING;
         }
     }
-    else {
-        // Original worker thread check
-        std::cout << "\n=== During Execution State ===\n";
-        while (jobSystem->GetPendingJobs() > 0) {
+    else 
+    {
+        std::cout << "\n=== During Execution ===\n";
+        while (jobSystem->GetPendingJobs() > 0) 
+        {
             NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
-            for (const auto& thread : jobSystem->GetThreadPool().GetThreads()) {
-                if (thread->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING) {
+
+            for (const auto& thread : jobSystem->GetThreadPool().GetThreads()) 
+            {
+                if (thread->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING) 
+                {
                     sawRunningState = true;
                 }
             }
-            NOUS_Multithreading::NOUS_Thread::SleepMS(500);
+
+            NOUS_Multithreading::NOUS_Thread::SleepMS(50);
         }
     }
 
-    ASSERT_TRUE(sawRunningState);
-    jobSystem->WaitForPendingJobs();
-
-    // Final state assertions
     std::cout << "\n=== Final State ===\n";
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
+
+    ASSERT_TRUE(sawRunningState) << "No RUNNING state observed";
 }
+
 #pragma endregion
 
 #pragma region DYNAMIC_RESIZE
+
+// ========================================================================
+// DYNAMIC CONFIGURATION TESTS
+// ========================================================================
+
+/// @brief Tests dynamic thread pool resizing.
 TEST_F(JobSystemTest, DynamicThreadPoolResizing) 
 {
-    uint32 initialSize = jobSystem->GetThreadPool().GetThreads().size();
+    const uint32 initialSize = jobSystem->GetThreadPool().GetThreads().size();
 
-    // Initial state
-    std::cout << "\n=== Initial Pool ===\n";
-    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
+    // Reduce to zero threads on the thread pool
+    jobSystem->Resize(0);
+    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), 0);
 
-    for (int i = 0; i < initialSize; ++i)
-    {
-        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with 20 threads");
-    }
+    // Verify sequential operation
+    std::atomic<int> counter(0);
+    jobSystem->SubmitJob([&]() { counter++; }, "PostResizeJob1");
+    jobSystem->SubmitJob([&]() { counter++; }, "PostResizeJob2");
+    jobSystem->WaitForPendingJobs();
+    ASSERT_EQ(counter.load(), 2);
 
-    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
-
-    // Resize to single-threaded
-    uint32 newSize = 0;
-    jobSystem->Resize(newSize);
-    std::cout << "\n=== Resized Thread Pool ===\n";
-    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), newSize);
-
-    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
-
-    // Verify functionality with 0 threads
-    for (int i = 0; i < 2; ++i) {
-        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with main thread");
-    }
-
-    // Resize back to 20 threads
+    // Test restoring to original size
     jobSystem->Resize(initialSize);
-    std::cout << "\n=== Resized Back to initial threads ===\n";
-
-    for (int i = 0; i < initialSize; ++i)
-    {
-        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with 20 threads");
-    }
-
-    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
-
     ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
 }
 
-TEST_F(JobSystemTest, DynamicForceReset)
+/// @brief Tests forced thread pool reset.
+TEST_F(JobSystemTest, DynamicForceReset) 
 {
-    uint32 initialSize = jobSystem->GetThreadPool().GetThreads().size();
+    const uint32 initialSize = jobSystem->GetThreadPool().GetThreads().size();
 
-    // Initial state
-    std::cout << "\n=== Initial Pool ===\n";
-    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
-
-    for (int i = 0; i < initialSize; ++i)
+    // Submit jobs that would take time to complete
+    for (int i = 0; i < initialSize; ++i) 
     {
-        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with 20 threads");
+        jobSystem->SubmitJob([]() {
+            NOUS_Multithreading::NOUS_Thread::SleepMS(2000);
+            }, "PreResetJob_" + std::to_string(i)
+        );
     }
 
-    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
-
+    // Force reset while jobs are running
     jobSystem->ForceReset();
 
-    for (int i = 0; i < initialSize; ++i)
+    // Verify new pool is functional
+    std::atomic<int> counter(0);
+    for (int i = 0; i < initialSize; ++i) 
     {
-        jobSystem->SubmitJob([&]() { NOUS_Multithreading::NOUS_Thread::SleepMS(2000); }, "Job with 20 threads");
+        jobSystem->SubmitJob([&]() { counter++; }, "PostResetJob_" + std::to_string(i));
     }
 
-    NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
+    jobSystem->WaitForPendingJobs();
 
+    ASSERT_EQ(counter.load(), initialSize);
     ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
 }
+
 #pragma endregion
