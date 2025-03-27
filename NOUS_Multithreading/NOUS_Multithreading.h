@@ -251,7 +251,7 @@ namespace NOUS_Multithreading
 					thread->SetThreadState(ThreadState::READY);
 
 					mConditionVar.wait(lock, [this]() {
-						return !mJobQueue.empty() || mShutdown;
+						return !mJobQueue.empty() || mShutdown; // Threads sleep when there's no work.
 					});
 
 					if (mShutdown && mJobQueue.empty()) break;
@@ -307,6 +307,7 @@ namespace NOUS_Multithreading
 		/// @note If size is not specified, c_MAX_HARDWARE_THREADS is used.
 		NOUS_JobSystem(const uint32 size = c_MAX_HARDWARE_THREADS)
 		{
+			mPendingJobs = 0;
 			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, size);
 		}	
 
@@ -351,43 +352,52 @@ namespace NOUS_Multithreading
 			}
 		}
 
+		/// @brief Blocks until all submitted jobs complete.
 		void WaitForPendingJobs() 
 		{
 			std::unique_lock<std::mutex> lock(mWaitMutex);
 			mWaitCondition.wait(lock, [this]() { return mPendingJobs == 0; });
 		}
 
+		/// @brief Resizes the thread pool to the specified number of threads.
+		/// @param newSize: The new number of worker threads in the pool.
+		/// @note If the size passed is 0, the program becomes single-threaded.
+		/// @note Ensures all current jobs finish before resizing.
 		void Resize(uint32 newSize) 
 		{
-			WaitForPendingJobs(); // Ensure all current jobs finish
+			WaitForPendingJobs(); 
+
 			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
 			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, newSize);
 		}
 
+		/// @brief Resets the thread pool while maintaining its current size.
+		/// @note Forces immediate shutdown (discarding pending jobs). Does NOT wait for job completion.
 		void Reset() 
 		{
 			size_t currentSize = mThreadPool->GetThreads().size();
 
-			// Force shutdown, delete pending jobs, and join threads
-			mThreadPool->Shutdown();
+			mThreadPool->Shutdown();	// Force-terminate all worker threads and pending jobs.
+			mPendingJobs = 0;			// Reset job counter.
 
-			// Reset pending jobs counter
-			mPendingJobs = 0;
-
-			// Recreate the thread pool with the previous size
 			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
+
 			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, currentSize);
 		}
 
+		/// @return Reference to the underlying thread pool.
 		const NOUS_ThreadPool& GetThreadPool() const { return *mThreadPool; }
+
+		/// @return Number of pending unprocessed jobs.
 		int GetPendingJobs() const { return mPendingJobs; }
 
 	private:
 
-		NOUS_ThreadPool* mThreadPool;
-		std::atomic<int> mPendingJobs{ 0 };
-		std::mutex mWaitMutex;
-		std::condition_variable mWaitCondition;
+		NOUS_ThreadPool*			mThreadPool;
+		std::atomic<int>			mPendingJobs;
+
+		std::mutex					mWaitMutex;
+		std::condition_variable		mWaitCondition;
 
 	};
 }
