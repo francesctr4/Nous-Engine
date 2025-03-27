@@ -300,6 +300,7 @@
     <ClCompile Include="Source\VulkanGraphicsPipeline.cpp" />
     <ClCompile Include="Source\VulkanExternal.cpp" />
     <ClCompile Include="Source\VulkanRenderpass.cpp" />
+    <ClCompile Include="Source\VulkanRenderTargets.cpp" />
     <ClCompile Include="Source\VulkanShaderUtils.cpp" />
     <ClCompile Include="Source\VulkanSwapchain.cpp" />
     <ClCompile Include="Source\VulkanSyncObjects.cpp" />
@@ -562,6 +563,7 @@
     <ClInclude Include="Source\VulkanGraphicsPipeline.h" />
     <ClInclude Include="Source\VulkanExternal.h" />
     <ClInclude Include="Source\VulkanRenderpass.h" />
+    <ClInclude Include="Source\VulkanRenderTargets.h" />
     <ClInclude Include="Source\VulkanShaderUtils.h" />
     <ClInclude Include="Source\VulkanSwapchain.h" />
     <ClInclude Include="Source\VulkanSyncObjects.h" />
