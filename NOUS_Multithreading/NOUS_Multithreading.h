@@ -16,91 +16,87 @@
 
 namespace NOUS_Multithreading
 {
-	/// @brief Maximum number of hardware threads available for job processing.
-	/// Subtracts 1 for the main thread/system tasks.
+	///////////////////////////////////////////////////////////////////////////
+	/// @brief Maximum hardware threads available, minus one reserved for the main thread.
+	///////////////////////////////////////////////////////////////////////////
 	const uint32 c_MAX_HARDWARE_THREADS = (std::thread::hardware_concurrency() - 1);
 
 	///////////////////////////////////////////////////////////////////////////
-	/// @brief Represents an executable job with a name
+	/// @brief Represents an executable task with a name and function.
 	///////////////////////////////////////////////////////////////////////////
 	class NOUS_Job 
 	{
 	public:
 
-		/// @brief Job's constructor
-		NOUS_Job(const std::string& name, std::function<void()> func) : mName(name), mFunction(func) {}
+		/// @brief NOUS_Job constructor.
+		NOUS_Job(const std::string& name, std::function<void()> func) : 
+			mName(name), mFunction(func) {}
 
-		/// @brief Executes the job's function
+		/// @brief Executes the stored function inside the job.
 		void Execute() { mFunction(); }
 
-		/// @return Job's human-readable identifier
+		/// @return std::string with the NOUS_Job name identifier.
 		const std::string& GetName() const { return mName; }
 
 	private:
 
-		std::string mName;
-		std::function<void()> mFunction;
+		std::string				mName;
+		std::function<void()>	mFunction;
 
 	};
 }
 
 namespace NOUS_Multithreading
 {
+	///////////////////////////////////////////////////////////////////////////
+	/// @brief Available thread states during its lifecycle.
+	///////////////////////////////////////////////////////////////////////////
 	enum class ThreadState 
 	{
-		READY = 0,
-		RUNNING = 1,
-		WAITING = 2
+		READY = 0,		// Idle and waiting for a job.
+		RUNNING = 1		// Actively executing a job.
 	};
 
+	///////////////////////////////////////////////////////////////////////////
+	/// @brief std::thread wrapper with additional metadata (name, state, timer,...)
+	///////////////////////////////////////////////////////////////////////////
 	class NOUS_Thread 
 	{
 	public:
 
-		NOUS_Thread() : mThreadID(0), mIsRunning(false), mCurrentJob(nullptr), mThreadState(ThreadState::READY) {}
+		/// @brief NOUS_Thread constructor.
+		NOUS_Thread() : 
+			mThreadID(0), mIsRunning(false), mCurrentJob(nullptr), mThreadState(ThreadState::READY) {}
+
+		/// @brief NOUS_Thread destructor.
 		~NOUS_Thread() { if (mIsRunning) Join(); }
 
-		NOUS_Thread(NOUS_Thread&& other) noexcept :
-			mThreadHandle(std::move(other.mThreadHandle)),
-			mIsRunning(other.mIsRunning.load()),
-			mCurrentJob(std::move(other.mCurrentJob)),
-			mThreadName(std::move(other.mThreadName)),
-			mThreadID(other.mThreadID),
-			mThreadState(other.mThreadState.load()),
-			mExecutionTime(std::move(other.mExecutionTime))
-		{}
+		/// @brief NOUS_Thread move semantics definition.
+		NOUS_Thread(NOUS_Thread&& other) noexcept = default;
+		NOUS_Thread& operator=(NOUS_Thread&& other) noexcept = default;
 
-		NOUS_Thread& operator=(NOUS_Thread&& other) noexcept {
-			if (this != &other) {
-				mThreadHandle = std::move(other.mThreadHandle);
-				mIsRunning.store(other.mIsRunning.load());
-				mCurrentJob = std::move(other.mCurrentJob);
-				mThreadName = std::move(other.mThreadName);
-				mThreadID = other.mThreadID;
-				mThreadState.store(other.mThreadState.load());
-				mExecutionTime = std::move(other.mExecutionTime);
-			}
-			return *this;
-		}
-
-		// Delete copy operations
+		/// @brief NOUS_Thread delete copy operators.
 		NOUS_Thread(const NOUS_Thread&) = delete;
 		NOUS_Thread& operator=(const NOUS_Thread&) = delete;
 
+		/// @brief Starts the thread with a given function.
+		/// @param func The function to execute in the thread.
 		void Start(std::function<void()> func) 
 		{
 			if (mIsRunning) return;
+
 			mIsRunning = true;
 
 			mThreadHandle = std::thread([this, func]() {
 				func();
 				mIsRunning = false;
-				});
+			});
 
 			mThreadID = GetThreadID(mThreadHandle.get_id());
 			mThreadState.store(ThreadState::READY);
 		}
 
+		/// @brief Joins the thread if joinable.
 		void Join() 
 		{
 			if (mThreadHandle.joinable())
@@ -110,24 +106,23 @@ namespace NOUS_Multithreading
 			}
 		}
 
-		bool IsRunning() const { return mIsRunning; }
-
-		// Thread metadata and state management
+		/// @brief Setters and getters.
 		void SetName(const std::string& name) { mThreadName = name; }
 		const std::string& GetName() const { return mThreadName; }
-
-		uint32_t GetID() const { return mThreadID; }
-
 		void SetThreadState(ThreadState state) { mThreadState.store(state); }
 		ThreadState GetThreadState() const { return mThreadState.load(); }
-
 		void SetCurrentJob(NOUS_Job* job) { mCurrentJob = job; }
 		NOUS_Job* GetCurrentJob() const { return mCurrentJob; }
+		bool IsRunning() const { return mIsRunning; }
+		uint32_t GetID() const { return mThreadID; }
 
+		/// @brief Job execution time tracking.
 		void StartExecutionTimer() { mExecutionTime.Start(); }
 		void StopExecutionTimer() { mExecutionTime.Stop(); }
 		double GetExecutionTimeMS() const { return mExecutionTime.ReadMS(); }
 
+		/// @brief Converts a std::thread::id to a numeric uint32.
+		/// @note Relies on string conversion; platform-dependent.
 		static uint32 GetThreadID(std::thread::id id)
 		{
 			std::stringstream ss;
@@ -135,29 +130,18 @@ namespace NOUS_Multithreading
 			return static_cast<uint32>(std::stoul(ss.str()));
 		}
 
+		/// @return std::string representation of the passed thread state.
 		static const std::string GetStringFromState(const ThreadState& state)
 		{
 			switch (state)
 			{
-				case ThreadState::READY: 
-				{
-					return "READY";
-				}
-				case ThreadState::RUNNING:
-				{
-					return "RUNNING";
-				}
-				case ThreadState::WAITING:
-				{
-					return "WAITING";
-				}
-				default:
-				{
-					return "NULL";
-				}
+				case ThreadState::READY:	return "READY";
+				case ThreadState::RUNNING:	return "RUNNING";
+				default:					return "UNKNOWN";
 			}
 		}
 
+		/// @brief Sleep the current thread for an amount of time (ms).
 		static const void SleepMS(const uint32& ms)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(ms));
@@ -165,60 +149,71 @@ namespace NOUS_Multithreading
 
 	private:
 
-		std::thread mThreadHandle;
-		std::atomic<bool> mIsRunning;
+		std::string					mThreadName;
+		std::thread					mThreadHandle;
+		uint32						mThreadID;
+		std::atomic<ThreadState>	mThreadState;
 
-		NOUS_Job* mCurrentJob;
-		std::string mThreadName;
-		uint32 mThreadID;
-		std::atomic<ThreadState> mThreadState;
-		Timer mExecutionTime;
+		std::atomic<bool>			mIsRunning;
+		NOUS_Job*					mCurrentJob;
+		Timer						mExecutionTime;
 
 	};
 }
 
 namespace NOUS_Multithreading
 {
+	///////////////////////////////////////////////////////////////////////////
+	/// @brief Manages a pool of worker threads and job distribution between them.
+	///////////////////////////////////////////////////////////////////////////
 	class NOUS_ThreadPool
 	{
 	public:
 
-		explicit NOUS_ThreadPool(size_t numThreads) : mShutdown(false)
+		/// @brief NOUS_ThreadPool constructor.
+		/// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
+		explicit NOUS_ThreadPool(size_t numThreads) : 
+			mShutdown(false)
 		{
 			numThreads = std::max<size_t>(0, numThreads);
-
 			mThreads.reserve(numThreads);
-			for (size_t i = 0; i < numThreads; ++i) {
+
+			for (size_t i = 0; i < numThreads; ++i) 
+			{
 				mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
+
 				mThreads[i]->Start([this, i]() {
-					mThreads[i]->SetName("WorkerThread_" + std::to_string(i));
+					mThreads[i]->SetName("Worker Thread " + std::to_string(i));
 					WorkerLoop(mThreads[i]);
-					});
+				});
 			}
 		}
 
+		/// @brief NOUS_ThreadPool destructor.
 		~NOUS_ThreadPool()
 		{
 			Shutdown();
 		}
 
+		/// @brief Adds a job to the queue and notifies a worker.
+		/// @param job The job to be executed.
 		void SubmitJob(NOUS_Job* job)
 		{
 			{
 				std::lock_guard<std::mutex> lock(mMutex);
 				mJobQueue.push(std::move(job));
 			}
-			mCondition.notify_one();
+			mConditionVar.notify_one();
 		}
 
+		/// @brief Deletes pending jobs, joins all threads and cleans up resources afterwards.
 		void Shutdown()
 		{
-			// Atomically set shutdown flag and check previous value
-			if (mShutdown.exchange(true)) {
+			if (mShutdown.exchange(true)) 
+			{
 				return;
 			}
 
-			// Delete all pending jobs in the queue
 			while (!mJobQueue.empty()) 
 			{
 				NOUS_Job* job = mJobQueue.front();
@@ -226,40 +221,38 @@ namespace NOUS_Multithreading
 				mJobQueue.pop();
 			}
 
-			mCondition.notify_all();
+			mConditionVar.notify_all();
 
-			// Join all threads first
 			for (NOUS_Thread* thread : mThreads) 
 			{
 				thread->Join();
-			}
-
-			// Delete all thread objects
-			for (NOUS_Thread* thread : mThreads)
-			{
 				NOUS_DELETE<NOUS_Thread>(thread, MemoryManager::MemoryTag::THREAD);
 			}
+
 			mThreads.clear();
 		}
 
+		/// @return A vector of NOUS_Thread contained inside the thread pool.
 		const std::vector<NOUS_Thread*>& GetThreads() const { return mThreads; }
 
 	private:
 
+		/// @brief Worker loop that each thread executes to process jobs from the queue.
+		/// @param thread The thread executing this loop.
 		void WorkerLoop(NOUS_Thread* thread)
 		{
 			while (true)
 			{
-				NOUS_Job* job;
+				NOUS_Job* job = nullptr;
 
 				{
 					std::unique_lock<std::mutex> lock(mMutex);
 
 					thread->SetThreadState(ThreadState::READY);
 
-					mCondition.wait(lock, [this]() {
+					mConditionVar.wait(lock, [this]() {
 						return !mJobQueue.empty() || mShutdown;
-						});
+					});
 
 					if (mShutdown && mJobQueue.empty()) break;
 
@@ -277,68 +270,88 @@ namespace NOUS_Multithreading
 				}
 				catch (const std::exception& e)
 				{
-					std::cerr << "Job failed: " << e.what() << '\n';
+					std::cerr << "Job '" << job->GetName() << "' failed: " << e.what() << '\n';
 				}
 
 				NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
 
+				thread->StopExecutionTimer();
 				thread->SetCurrentJob(nullptr);
 				thread->SetThreadState(ThreadState::READY);
-				thread->StopExecutionTimer();
 			}
 
 			thread->SetThreadState(ThreadState::READY);
 		}
 
-		std::vector<NOUS_Thread*> mThreads; // Changed to raw pointers
-		std::queue<NOUS_Job*> mJobQueue;
-		std::mutex mMutex;
-		std::condition_variable mCondition;
-		std::atomic<bool> mShutdown;
+		std::queue<NOUS_Job*>		mJobQueue;
+		std::vector<NOUS_Thread*>	mThreads;
+
+		std::mutex					mMutex;
+		std::condition_variable		mConditionVar;
+		std::atomic<bool>			mShutdown;
+
 	};
 }
 
 namespace NOUS_Multithreading
 {
+	///////////////////////////////////////////////////////////////////////////
+	/// @brief High-level interface for job submission and management.
+	///////////////////////////////////////////////////////////////////////////
 	class NOUS_JobSystem 
 	{
 	public:
 
+		/// @brief NOUS_JobSystem constructor.
+		/// @param size: Number of worker threads available inside the thread pool.
+		/// @note If size is not specified, c_MAX_HARDWARE_THREADS is used.
 		NOUS_JobSystem(const uint32 size = c_MAX_HARDWARE_THREADS)
 		{
 			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, size);
-		}
+		}	
 
+		/// @brief NOUS_JobSystem destructor.
+		/// @note Wait until all threads have finished their work and then delete the thread pool.
 		~NOUS_JobSystem()
 		{
-			WaitForAll();
+			WaitForPendingJobs();
 
 			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
 		}
 
+		/// @brief Submits a job to the thread pool, to be executed by a free worker thread.
+		/// @note Job executes immediately if thread pool size is 0 (running on Main Thread).
+		/// @param userJob: The function to execute.
+		/// @param jobName: Optional name identifier.
 		void SubmitJob(std::function<void()> userJob, const std::string& jobName = "Unnamed") 
 		{
 			mPendingJobs++;
 
 			std::function<void()> wrappedJob = [this, userJob]() {
+
 				userJob();
-				if (mPendingJobs-- == 1) {
+
+				if (mPendingJobs-- == 1) 
+				{
 					mWaitCondition.notify_all();
 				}
-				};
+
+			};
 
 			NOUS_Job* job = NOUS_NEW<NOUS_Job>(MemoryManager::MemoryTag::THREAD, jobName, wrappedJob);
 
-			if (mThreadPool->GetThreads().empty()) {
+			if (mThreadPool->GetThreads().empty()) // Running on Main Thread (sequentially)
+			{
 				job->Execute();
 				NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
 			}
-			else {
+			else 
+			{
 				mThreadPool->SubmitJob(job);
 			}
 		}
 
-		void WaitForAll() 
+		void WaitForPendingJobs() 
 		{
 			std::unique_lock<std::mutex> lock(mWaitMutex);
 			mWaitCondition.wait(lock, [this]() { return mPendingJobs == 0; });
@@ -346,12 +359,12 @@ namespace NOUS_Multithreading
 
 		void Resize(uint32 newSize) 
 		{
-			WaitForAll(); // Ensure all current jobs finish
+			WaitForPendingJobs(); // Ensure all current jobs finish
 			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
 			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, newSize);
 		}
 
-		void ForceReset() 
+		void Reset() 
 		{
 			size_t currentSize = mThreadPool->GetThreads().size();
 
@@ -383,8 +396,6 @@ namespace NOUS_Multithreading
 {
 	static NOUS_Thread* sMainThread = nullptr;
 
-	// Add these declarations
-	// Add these declarations
 	static void RegisterMainThread()
 	{
 		if (!sMainThread) {

@@ -17,7 +17,7 @@ protected:
     }
 
     void TearDown() override {
-        jobSystem->WaitForAll();
+        jobSystem->WaitForPendingJobs();
         NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
     }
 
@@ -29,14 +29,14 @@ protected:
 TEST_F(JobSystemTest, ExecutesSingleJob) {
     std::atomic<bool> jobExecuted(false);
     jobSystem->SubmitJob([&]() { jobExecuted = true; });
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     ASSERT_TRUE(jobExecuted);
 }
 
 TEST_F(JobSystemTest, HandlesEmptyJob) {
     bool emptyJobExecuted = false;
     jobSystem->SubmitJob([&]() { emptyJobExecuted = true; });
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     ASSERT_TRUE(emptyJobExecuted);
 }
 
@@ -60,7 +60,7 @@ TEST_F(JobSystemTest, SequentialExecutionOnMainThread)
         counter++;
         });
 
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     ASSERT_EQ(counter.load(), 2);
 }
 #pragma endregion
@@ -74,7 +74,7 @@ TEST_F(JobSystemTest, HandlesConcurrentJobs) {
         jobSystem->SubmitJob([&]() { counter++; });
     }
 
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     ASSERT_EQ(counter.load(), numJobs);
 }
 
@@ -85,7 +85,7 @@ TEST_F(JobSystemTest, NoDataRaces) {
             for (auto& item : sharedData) item += i % 100;
             });
     }
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     int total = std::accumulate(sharedData.begin(), sharedData.end(), 0);
     ASSERT_GT(total, 0);
 }
@@ -97,7 +97,7 @@ TEST_F(JobSystemTest, StressTestWithManyJobs) {
     for (int i = 0; i < numStressJobs; ++i) {
         jobSystem->SubmitJob([&]() { counter++; });
     }
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     ASSERT_EQ(counter.load(), numStressJobs);
 }
 
@@ -106,7 +106,7 @@ TEST_F(JobSystemTest, HandlesMassiveJobCount) {
     for (int i = 0; i < 1000000; ++i) {
         jobSystem->SubmitJob([&] { counter++; });
     }
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     ASSERT_EQ(counter.load(), 1000000);
 }
 #pragma endregion
@@ -124,7 +124,7 @@ TEST_F(JobSystemTest, ProperThreadUtilization) {
             });
     }
 
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     ASSERT_GE(threadIds.size(), 1);
     ASSERT_LE(threadIds.size(), NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
 }
@@ -156,7 +156,7 @@ TEST_F(JobSystemTest, ThreadStatesAreUpdated)
 TEST_F(JobSystemTest, HandlesExceptionInJobs) {
     bool subsequentJobExecuted = false;
     jobSystem->SubmitJob([&]() { subsequentJobExecuted = true; });
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     ASSERT_TRUE(subsequentJobExecuted);
 }
 #pragma endregion
@@ -181,7 +181,7 @@ TEST_F(JobSystemTest, WaitForAllBlocksProperly)
     }
 
     auto future = std::async(std::launch::async, [&]() {
-        jobSystem->WaitForAll();
+        jobSystem->WaitForPendingJobs();
         earlyCheck = true;
         });
 
@@ -202,7 +202,7 @@ TEST_F(JobSystemTest, JobExecutionTimeMeasurement)
     }
 
     jobSystem->SubmitJob([]() { NOUS_Multithreading::NOUS_Thread::SleepMS(100); });
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
     NOUS_Multithreading::NOUS_Thread::SleepMS(10);
 
     const auto& pool = jobSystem->GetThreadPool();
@@ -218,7 +218,7 @@ TEST_F(JobSystemTest, MeasuresThroughput) {
     const int numJobs = 100000;
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < numJobs; ++i) jobSystem->SubmitJob([] {});
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
 
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::high_resolution_clock::now() - start).count();
@@ -273,7 +273,7 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo)
     }
 
     ASSERT_TRUE(sawRunningState);
-    jobSystem->WaitForAll();
+    jobSystem->WaitForPendingJobs();
 
     // Final state assertions
     std::cout << "\n=== Final State ===\n";
@@ -339,7 +339,7 @@ TEST_F(JobSystemTest, DynamicForceReset)
 
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
 
-    jobSystem->ForceReset();
+    jobSystem->Reset();
 
     for (int i = 0; i < initialSize; ++i)
     {

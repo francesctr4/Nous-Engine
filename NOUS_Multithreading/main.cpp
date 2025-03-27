@@ -27,7 +27,7 @@ void ExampleUsage()
 	jobSystem->SubmitJob([]() { /* task 2 */ }, "Task2");
 
 	// Wait for completion
-	jobSystem->WaitForAll();
+	jobSystem->WaitForPendingJobs();
 
 	// Clean up when done
 	NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
