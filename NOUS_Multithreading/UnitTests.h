@@ -339,7 +339,7 @@ TEST_F(JobSystemTest, DynamicForceReset)
 
     NOUS_Multithreading::JobSystemDebugInfo(*jobSystem);
 
-    jobSystem->Reset();
+    jobSystem->ForceReset();
 
     for (int i = 0; i < initialSize; ++i)
     {

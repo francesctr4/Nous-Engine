@@ -373,7 +373,7 @@ namespace NOUS_Multithreading
 
 		/// @brief Resets the thread pool while maintaining its current size.
 		/// @note Forces immediate shutdown (discarding pending jobs). Does NOT wait for job completion.
-		void Reset() 
+		void ForceReset() 
 		{
 			size_t currentSize = mThreadPool->GetThreads().size();
 
@@ -454,8 +454,8 @@ namespace NOUS_Multithreading
 		NOUS_Thread* mainThread = GetMainThread();
 		if (mainThread) 
 		{
-			std::cout << "Thread '" << mainThread->GetName() << "' (ID: "
-					  << NOUS_Thread::GetThreadID(std::this_thread::get_id()) << ") - "
+			std::cout << "Thread '" << mainThread->GetName() 
+				      << "' (ID: " << NOUS_Thread::GetThreadID(std::this_thread::get_id()) << ") - "
 					  << NOUS_Thread::GetStringFromState(mainThread->GetThreadState())
 					  << ", Exec Time: " << mainThread->GetExecutionTimeMS() << "ms" << "\n";
 		}
