@@ -183,7 +183,7 @@ namespace NOUS_Multithreading
 				mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
 
 				mThreads[i]->Start([this, i]() {
-					mThreads[i]->SetName("Worker Thread " + std::to_string(i));
+					mThreads[i]->SetName("Worker Thread " + std::to_string(i + 1));
 					WorkerLoop(mThreads[i]);
 				});
 			}
@@ -369,20 +369,6 @@ namespace NOUS_Multithreading
 
 			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
 			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, newSize);
-		}
-
-		/// @brief Resets the thread pool while maintaining its current size.
-		/// @note Forces immediate shutdown (discarding pending jobs). Does NOT wait for job completion.
-		void ForceReset() 
-		{
-			size_t currentSize = mThreadPool->GetThreads().size();
-
-			mThreadPool->Shutdown();	// Force-terminate all worker threads and pending jobs.
-			mPendingJobs = 0;			// Reset job counter.
-
-			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
-
-			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, currentSize);
 		}
 
 		/// @return Reference to the underlying thread pool.

@@ -401,7 +401,7 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo)
     {
         jobSystem->SubmitJob([]() {
             NOUS_Multithreading::NOUS_Thread::SleepMS(JOB_DURATION_MS);
-            }, "DebugJob_" + std::to_string(i)
+            }, "DebugJob_" + std::to_string(i + 1)
         );
     }
 
@@ -464,36 +464,6 @@ TEST_F(JobSystemTest, DynamicThreadPoolResizing)
 
     // Test restoring to original size
     jobSystem->Resize(initialSize);
-    ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
-}
-
-/// @brief Tests forced thread pool reset.
-TEST_F(JobSystemTest, DynamicForceReset) 
-{
-    const uint32 initialSize = jobSystem->GetThreadPool().GetThreads().size();
-
-    // Submit jobs that would take time to complete
-    for (int i = 0; i < initialSize; ++i) 
-    {
-        jobSystem->SubmitJob([]() {
-            NOUS_Multithreading::NOUS_Thread::SleepMS(2000);
-            }, "PreResetJob_" + std::to_string(i)
-        );
-    }
-
-    // Force reset while jobs are running
-    jobSystem->ForceReset();
-
-    // Verify new pool is functional
-    std::atomic<int> counter(0);
-    for (int i = 0; i < initialSize; ++i) 
-    {
-        jobSystem->SubmitJob([&]() { counter++; }, "PostResetJob_" + std::to_string(i));
-    }
-
-    jobSystem->WaitForPendingJobs();
-
-    ASSERT_EQ(counter.load(), initialSize);
     ASSERT_EQ(jobSystem->GetThreadPool().GetThreads().size(), initialSize);
 }
 
