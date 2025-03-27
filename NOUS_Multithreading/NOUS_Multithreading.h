@@ -404,31 +404,44 @@ namespace NOUS_Multithreading
 
 namespace NOUS_Multithreading
 {
+	/// @brief Global pointer to the main thread instance.
+	/// @note Initialized by RegisterMainThread() and cleaned up by UnregisterMainThread().
 	static NOUS_Thread* sMainThread = nullptr;
 
+	/// @brief Initializes the main thread tracking.
+	/// @note Must be paired with UnregisterMainThread() to prevent memory leaks.
 	static void RegisterMainThread()
 	{
-		if (!sMainThread) {
+		if (!sMainThread) 
+		{
 			sMainThread = NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD);
+
 			sMainThread->SetName("Main Thread");
 			sMainThread->SetThreadState(ThreadState::RUNNING);
 			sMainThread->StartExecutionTimer();
 		}
 	}
 
+	/// @brief Deletes the main thread instance if it exists.
+	/// @note Should be called during application shutdown.
 	static void UnregisterMainThread()
 	{
 		if (sMainThread)
 		{
 			NOUS_DELETE<NOUS_Thread>(sMainThread, MemoryManager::MemoryTag::THREAD);
+			sMainThread = nullptr;
 		}
 	}
 
+	/// @brief Retrieves the main thread instance.
+	/// @return Pointer to the main thread object, or nullptr if not registered.
 	static NOUS_Thread* GetMainThread()
 	{
 		return sMainThread;
 	}
 
+	/// @brief Prints debugging information about the job system state.
+	/// @param system: The job system instance to inspect.
 	static void JobSystemDebugInfo(const NOUS_JobSystem& system)
 	{
 		const NOUS_ThreadPool& threadPool = system.GetThreadPool();
@@ -437,26 +450,28 @@ namespace NOUS_Multithreading
 		std::cout << "===== Job System Debug Info =====\n";
 		std::cout << "Pending Jobs: " << system.GetPendingJobs() << "\n";
 
-		// Add main thread info
+		// Main thread diagnostics
 		NOUS_Thread* mainThread = GetMainThread();
-
 		if (mainThread) 
 		{
 			std::cout << "Thread '" << mainThread->GetName() << "' (ID: "
-				<< NOUS_Thread::GetThreadID(std::this_thread::get_id()) << ") - "
-				<< NOUS_Thread::GetStringFromState(mainThread->GetThreadState())
-				<< ", Exec Time: " << mainThread->GetExecutionTimeMS() << "ms" << "\n";
+					  << NOUS_Thread::GetThreadID(std::this_thread::get_id()) << ") - "
+					  << NOUS_Thread::GetStringFromState(mainThread->GetThreadState())
+					  << ", Exec Time: " << mainThread->GetExecutionTimeMS() << "ms" << "\n";
 		}
 
+		// Worker thread diagnostics
 		for (NOUS_Thread* thread : threads)
 		{
-			std::cout << "Thread '" << thread->GetName() << "' (ID: " << thread->GetID() << ") - "
-				<< thread->GetStringFromState(thread->GetThreadState()).c_str()
-				<< ", Exec Time: " << thread->GetExecutionTimeMS() << "ms"
-				<< ", Job: " << (thread->GetCurrentJob() ? thread->GetCurrentJob()->GetName() : "None") << "\n";
+			std::cout << "Thread '" << thread->GetName() 
+				      << "' (ID: " << thread->GetID() << ") - " 
+					  << thread->GetStringFromState(thread->GetThreadState()).c_str()
+					  << ", Exec Time: " << thread->GetExecutionTimeMS() << "ms"
+					  << ", Job: " << (thread->GetCurrentJob() ? thread->GetCurrentJob()->GetName() : "None") << "\n";
 		}
 
-		if (system.GetThreadPool().GetThreads().empty())
+		// Sequential mode detection
+		if (threads.empty())
 		{
 			std::cout << "[Sequential Mode] Jobs executed on main thread\n";
 		}
