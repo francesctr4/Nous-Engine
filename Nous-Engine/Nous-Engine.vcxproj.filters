@@ -456,9 +456,6 @@
     <ClCompile Include="Source\SceneViewport.cpp">
       <Filter>Source Code\Editor\Windows</Filter>
     </ClCompile>
-    <ClCompile Include="Source\VulkanRenderTargets.cpp">
-      <Filter>Source Code\Renderer\Vulkan</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1240,9 +1237,6 @@
     </ClInclude>
     <ClInclude Include="Source\SceneViewport.h">
       <Filter>Source Code\Editor\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\VulkanRenderTargets.h">
-      <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

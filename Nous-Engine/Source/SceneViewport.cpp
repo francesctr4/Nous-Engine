@@ -2,9 +2,6 @@
 
 #include "ModuleResourceManager.h"
 
-#include "VulkanBackend.h"
-#include "VulkanTypes.inl"
-
 SceneViewport::SceneViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
 {
@@ -22,11 +19,6 @@ void SceneViewport::Draw()
     {
         if (ImGui::Begin(title, p_open))
         {
-            ImGui::Image(
-                (ImTextureID)VulkanBackend::GetVulkanContext()->renderTarget.offscreenDescriptorSet,
-                ImVec2(VulkanBackend::GetVulkanContext()->framebufferWidth, VulkanBackend::GetVulkanContext()->framebufferHeight)
-            );
-
             // Get the size of the window's content area
             ImVec2 contentMin = ImGui::GetWindowContentRegionMin(); // Top-left of content area (relative to window)
             ImVec2 contentMax = ImGui::GetWindowContentRegionMax(); // Bottom-right of content area (relative to window)

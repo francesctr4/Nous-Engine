@@ -237,7 +237,6 @@ struct VulkanMaterialShader
 struct VulkanImGuiResources
 {
     VkDescriptorPool descriptorPool;
-    VkDescriptorSetLayout textureDescriptorLayout;
 
     std::vector<VulkanImage> viewportImages;
 
@@ -253,15 +252,6 @@ struct VulkanImGuiResources
 
     VkSampler textureSampler;
     std::vector<VkDescriptorSet> descriptorSets;
-};
-
-struct VulkanRenderTarget
-{
-    VulkanRenderpass offscreenRenderpass;
-    VulkanFramebuffer offscreenFramebuffer;
-    VulkanImage offscreenImage;
-    VkSampler offscreenSampler;
-    VkDescriptorSet offscreenDescriptorSet;
 };
 
 /**
@@ -317,10 +307,7 @@ struct VulkanContext
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
 
-    // Vulkan Render Targets
     VulkanImGuiResources imGuiResources;
-
-    VulkanRenderTarget renderTarget;
 };
 
 struct VulkanTextureData 
