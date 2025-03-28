@@ -297,9 +297,10 @@ bool VulkanBackend::BeginFrame(float dt)
     }
 
     // Wait for the execution of the current frame to complete. The fence being free will allow this one to move on.
-    if (!NOUS_VulkanSyncObjects::WaitOnVulkanFence(vkContext, &vkContext->inFlightFences[vkContext->currentFrame], UINT64_MAX))
+    VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame], true, UINT64_MAX);
+    if (!VkResultIsSuccess(result))
     {
-        NOUS_WARN("In-flight fence wait failure!");
+        NOUS_ERROR("In-flight fence wait failure! Error: %s", VkResultMessage(result, true));
         return false;
     }
 
@@ -363,14 +364,19 @@ bool VulkanBackend::EndFrame(float dt)
     // Make sure the previous frame is not using this image (i.e. its fence is being waited on)
     if (vkContext->imagesInFlight[vkContext->imageIndex] != VK_NULL_HANDLE) // was frame
     {  
-        NOUS_VulkanSyncObjects::WaitOnVulkanFence(vkContext, vkContext->imagesInFlight[vkContext->imageIndex], UINT64_MAX);
+        VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, vkContext->imagesInFlight[vkContext->imageIndex], true, UINT64_MAX);
+        if (!VkResultIsSuccess(result))
+        {
+            NOUS_FATAL("VkFence wait failure! Error: %s", VkResultMessage(result, true));
+            return false;
+        }
     }
 
     // Mark the image fence as in-use by this frame.
     vkContext->imagesInFlight[vkContext->imageIndex] = &vkContext->inFlightFences[vkContext->currentFrame];
 
     // Reset the fence for use on the next frame
-    NOUS_VulkanSyncObjects::ResetVulkanFence(vkContext, &vkContext->inFlightFences[vkContext->currentFrame]);
+    VK_CHECK(vkResetFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame]));
 
     // Submit the queue and wait for the operation to complete.
     // Begin queue submission
@@ -397,7 +403,7 @@ bool VulkanBackend::EndFrame(float dt)
     submitInfo.pWaitDstStageMask = flags;
 
     VkResult result = vkQueueSubmit(vkContext->device.graphicsQueue, 1, &submitInfo, 
-        vkContext->inFlightFences[vkContext->currentFrame].handle);
+        vkContext->inFlightFences[vkContext->currentFrame]);
 
     if (result != VK_SUCCESS) 
     {

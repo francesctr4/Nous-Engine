@@ -138,12 +138,6 @@ struct VulkanDevice
     VkPhysicalDeviceMemoryProperties memory;
 };
 
-struct VulkanFence 
-{
-    VkFence handle;
-    bool isSignaled;
-};
-
 struct VulkanShaderStage 
 {
     VkShaderModuleCreateInfo shaderModuleCreateInfo;
@@ -293,10 +287,10 @@ struct VulkanContext
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> queueCompleteSemaphores;
 
-    std::vector<VulkanFence> inFlightFences;
+    std::array<VkFence, 2> inFlightFences;
 
     // Holds pointers to fences which exist and are owned elsewhere.
-    std::vector<VulkanFence*> imagesInFlight;
+    std::array<VkFence*, 3> imagesInFlight;
 
     uint32 imageIndex;
     uint32 currentFrame;
