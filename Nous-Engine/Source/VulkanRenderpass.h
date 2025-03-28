@@ -2,15 +2,27 @@
 
 #include "VulkanTypes.inl"
 
-bool CreateRenderpass(
-    VulkanContext* vkContext,
-    VulkanRenderpass* outRenderpass,
-    float x, float y, float w, float h,
-    float r, float g, float b, float a,
-    float depth, uint32 stencil);
+enum RenderpassClearFlag 
+{
+    NO_CLEAR,
 
-void DestroyRenderpass(VulkanContext* vkContext, VulkanRenderpass* renderpass);
+    COLOR_BUFFER,
+    DEPTH_BUFFER,
+    STENCIL_BUFFER
+};
 
-void BeginRenderpass(VulkanCommandBuffer* commandBuffer, VulkanRenderpass* renderpass, VkFramebuffer frameBuffer);
+namespace NOUS_VulkanRenderpass 
+{
+    bool CreateRenderpass(
+        VulkanContext* vkContext,
+        VulkanRenderpass* outRenderpass,
+        float4 renderArea, float4 clearColor,
+        float depth, uint32 stencil, uint8 clearFlags,
+        bool prevPass, bool nextPass);
 
-void EndRenderpass(VulkanCommandBuffer* commandBuffer, VulkanRenderpass* renderpass);
+    void DestroyRenderpass(VulkanContext* vkContext, VulkanRenderpass* renderpass);
+
+    void BeginRenderpass(VulkanCommandBuffer* commandBuffer, VulkanRenderpass* renderpass, VkFramebuffer frameBuffer);
+
+    void EndRenderpass(VulkanCommandBuffer* commandBuffer, VulkanRenderpass* renderpass);
+}

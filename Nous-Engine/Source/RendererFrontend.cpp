@@ -71,14 +71,34 @@ bool RendererFrontend::EndFrame(float dt)
 	return result;
 }
 
-void RendererFrontend::UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+bool RendererFrontend::BeginRenderpass(BuiltInRenderpass renderpassID)
 {
-	backend->UpdateGlobalState(projection, view, viewPosition, ambientColor, mode);
+	return backend->BeginRenderpass(renderpassID);
+}
+
+bool RendererFrontend::EndRenderpass(BuiltInRenderpass renderpassID)
+{
+	return backend->EndRenderpass(renderpassID);
+}
+
+void RendererFrontend::UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+{
+	backend->UpdateGlobalWorldState(projection, view, viewPosition, ambientColor, mode);
+}
+
+void RendererFrontend::UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode)
+{
+	backend->UpdateGlobalUIState(projection, view, mode);
 }
 
 void RendererFrontend::DrawGeometry(GeometryRenderData renderData)
 {
 	backend->DrawGeometry(renderData);
+}
+
+void RendererFrontend::DrawEditor()
+{
+	External->editor->DrawEditor();
 }
 
 void RendererFrontend::CreateTexture(const uint8* pixels, ResourceTexture* outTexture)
@@ -101,7 +121,7 @@ void RendererFrontend::DestroyMaterial(ResourceMaterial* material)
 	backend->DestroyMaterial(material);
 }
 
-bool RendererFrontend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry)
+bool RendererFrontend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry)
 {
 	return backend->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
 }
@@ -118,16 +138,47 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 	// If the begin frame returned successfully, mid-frame operations may continue.
 	if (BeginFrame(packet->deltaTime)) 
 	{
+		// ----------------------------------------------------------------------------------------------------- //
+
+		if (!BeginRenderpass(BuiltInRenderpass::WORLD))
+		{
+			NOUS_ERROR("BeginRenderpass WORLD failed! Application shutting down...");
+			ret = false;
+		}
+
 		// Use Camera Attributes, passed along with renderpacket.
-		UpdateGlobalState(packet->camera.GetProjectionMatrix(), packet->camera.GetViewMatrix(), packet->camera.GetPos(), float4::one, 0);
+		UpdateGlobalWorldState(packet->camera.GetProjectionMatrix(), packet->camera.GetViewMatrix(), packet->camera.GetPos(), float4::one, 0);
 
 		for (auto& geometry : packet->geometries)
 		{
 			DrawGeometry(geometry);
 		}
 
-		// TODO: This shouldn't be here. The editor should have its own resources.
-		External->editor->DrawEditor();
+		if (!EndRenderpass(BuiltInRenderpass::WORLD))
+		{
+			NOUS_ERROR("EndRenderpass WORLD failed! Application shutting down...");
+			ret = false;
+		}
+
+		// ----------------------------------------------------------------------------------------------------- //
+
+		if (!BeginRenderpass(BuiltInRenderpass::UI))
+		{
+			NOUS_ERROR("BeginRenderpass UI failed! Application shutting down...");
+			ret = false;
+		}
+
+		UpdateGlobalUIState(packet->camera.GetProjectionMatrix(), packet->camera.GetViewMatrix(), 0);
+		
+		DrawEditor();
+
+		if (!EndRenderpass(BuiltInRenderpass::UI))
+		{
+			NOUS_ERROR("EndRenderpass UI failed! Application shutting down...");
+			ret = false;
+		}
+
+		// ----------------------------------------------------------------------------------------------------- //
 
 		// End of the frame. If this fails, it is likely unrecoverable.
 		bool result = EndFrame(packet->deltaTime);

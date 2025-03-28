@@ -19,7 +19,7 @@ struct GeometryConfig
     std::string name;
     std::string materialPath;
 
-    std::vector<Vertex> vertices;
+    std::vector<Vertex3D> vertices;
     std::vector<uint32> indices;
 };
 

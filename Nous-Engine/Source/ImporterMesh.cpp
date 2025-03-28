@@ -65,7 +65,7 @@ bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
     }
 
     // Write vertex data
-    if (!fileHandle.Write(vertexCount * sizeof(Vertex), mesh->vertices.data(), &bytesWritten))
+    if (!fileHandle.Write(vertexCount * sizeof(Vertex3D), mesh->vertices.data(), &bytesWritten))
     {
         ret = false;
     }
@@ -121,7 +121,7 @@ bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
     mesh->vertices.resize(vertexCount);
 
     // Read vertex data
-    if (!fileHandle.ReadBytes(vertexCount * sizeof(Vertex), reinterpret_cast<char*>(mesh->vertices.data()), &bytesRead))
+    if (!fileHandle.ReadBytes(vertexCount * sizeof(Vertex3D), reinterpret_cast<char*>(mesh->vertices.data()), &bytesRead))
     {
         ret = false;
     }
@@ -199,7 +199,7 @@ void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh)
     // Vertices
     for (uint32 i = 0; i < mesh->mNumVertices; ++i)
     {
-        Vertex vertex;
+        Vertex3D vertex;
 
         // Position
         vertex.position =

@@ -33,11 +33,15 @@ struct VulkanRenderpass
 {
     VkRenderPass handle;
 
-    float x, y, w, h;
-    float r, g, b, a;
+    float4 renderArea;
+    float4 clearColor;
 
     float depth;
     uint32 stencil;
+
+    uint8 clearFlags;
+    bool prevPass;
+    bool nextPass;
 
     VulkanRenderPassState state;
 };
@@ -55,13 +59,6 @@ struct VulkanBuffer
     bool isLocked;
 };
 
-struct VulkanFramebuffer 
-{
-    VkFramebuffer handle;
-    std::vector<VkImageView> attachments;
-    VulkanRenderpass* renderpass;
-};
-
 struct VulkanSwapChain
 {
     VkSwapchainKHR handle;
@@ -77,7 +74,7 @@ struct VulkanSwapChain
     VulkanImage colorAttachment;
     VulkanImage depthAttachment;
 
-    std::vector<VulkanFramebuffer> swapChainFramebuffers;
+    std::array<VkFramebuffer, 3> swapChainFramebuffers;
 };
 
 struct VkSwapChainSupportDetails
@@ -159,28 +156,14 @@ struct VulkanDescriptorState
     uint32 ids[3];
 };
 
-constexpr uint32 VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT = 2;
-constexpr uint32 VULKAN_MATERIAL_SHADER_SAMPLER_COUNT = 1;
-
-struct VulkanMaterialShaderInstanceState 
-{
-    // Per frame
-    std::array<VkDescriptorSet, 3> descriptorSets;
-    // Per descriptor
-    std::array<VulkanDescriptorState, VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT> descriptorStates;
-};
-
-// Max number of material instances
-// TODO: make configurable
-constexpr uint32 VULKAN_MAX_MATERIAL_COUNT = 1024;
-
 // Max number of simultaneously uploaded geometries
 // TODO: make configurable
 constexpr uint32 VULKAN_MAX_GEOMETRY_COUNT = 4096;
+
 /**
  * @brief Internal buffer data for geometry.
  */
-struct VulkanGeometryData 
+struct VulkanGeometryData
 {
     uint32 ID;
     uint32 generation;
@@ -194,7 +177,42 @@ struct VulkanGeometryData
     uint32 indexBufferOffset;
 };
 
+#pragma region MATERIAL_SHADER
+
 constexpr uint32 VULKAN_MATERIAL_SHADER_STAGE_COUNT = 2;
+constexpr uint32 VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT = 2;
+constexpr uint32 VULKAN_MATERIAL_SHADER_SAMPLER_COUNT = 1;
+
+// Max number of material instances
+// TODO: make configurable
+constexpr uint32 VULKAN_MAX_MATERIAL_COUNT = 1024;
+
+struct VulkanMaterialShaderInstanceState 
+{
+    // Per frame
+    std::array<VkDescriptorSet, 3> descriptorSets;
+    // Per descriptor
+    std::array<VulkanDescriptorState, VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT> descriptorStates;
+};
+
+struct VulkanMaterialShaderGlobalUBO
+{
+    float4x4 projection;   // 64 bytes
+    float4x4 view;         // 64 bytes
+
+    float4x4 m_reserved0;  // 64 bytes, reserved for future use
+    float4x4 m_reserved1;  // 64 bytes, reserved for future use
+};
+
+struct VulkanMaterialShaderInstanceUBO
+{
+    float4 diffuseColor;   // 16 bytes
+
+    float4 v_reserved0;     // 16 bytes, reserved for future use
+    float4 v_reserved1;     // 16 bytes, reserved for future use
+    float4 v_reserved2;     // 16 bytes, reserved for future use
+};
+
 struct VulkanMaterialShader 
 {
     // Vertex and Fragment Stages
@@ -207,7 +225,7 @@ struct VulkanMaterialShader
     std::array<VkDescriptorSet, 3> globalDescriptorSets;
 
     // Global uniform object.
-    GlobalUniformObject globalUBO;
+    VulkanMaterialShaderGlobalUBO globalUBO;
 
     // Global uniform buffer.
     VulkanBuffer globalUniformBuffer;
@@ -228,6 +246,79 @@ struct VulkanMaterialShader
     VulkanPipeline pipeline;
 };
 
+#pragma endregion
+
+#pragma region UI_SHADER
+
+constexpr uint32 VULKAN_UI_SHADER_STAGE_COUNT = 2;
+constexpr uint32 VULKAN_UI_SHADER_DESCRIPTOR_COUNT = 2;
+constexpr uint32 VULKAN_UI_SHADER_SAMPLER_COUNT = 1;
+
+// Max number of ui control instances.
+// TODO: make configurable.
+constexpr uint32 VULKAN_MAX_UI_COUNT = 1024;
+
+struct VulkanUIShaderInstanceState
+{
+    // Per frame
+    std::array<VkDescriptorSet, 3> descriptorSets;
+    // Per descriptor
+    std::array<VulkanDescriptorState, VULKAN_UI_SHADER_DESCRIPTOR_COUNT> descriptorStates;
+};
+
+struct VulkanUIShaderGlobalUBO
+{
+    float4x4 projection;   // 64 bytes
+    float4x4 view;         // 64 bytes
+
+    float4x4 m_reserved0;  // 64 bytes, reserved for future use
+    float4x4 m_reserved1;  // 64 bytes, reserved for future use
+};
+
+struct VulkanUIShaderInstanceUBO
+{
+    float4 diffuseColor;   // 16 bytes
+
+    float4 v_reserved0;     // 16 bytes, reserved for future use
+    float4 v_reserved1;     // 16 bytes, reserved for future use
+    float4 v_reserved2;     // 16 bytes, reserved for future use
+};
+
+struct VulkanUIShader
+{
+    // Vertex and Fragment Stages
+    std::array<VulkanShaderStage, VULKAN_UI_SHADER_STAGE_COUNT> stages;
+
+    VkDescriptorPool globalDescriptorPool;
+    VkDescriptorSetLayout globalDescriptorSetLayout;
+
+    // One descriptor set per frame - max 3 for triple-buffering.
+    std::array<VkDescriptorSet, 3> globalDescriptorSets;
+
+    // Global uniform object.
+    VulkanMaterialShaderGlobalUBO globalUBO;
+
+    // Global uniform buffer.
+    VulkanBuffer globalUniformBuffer;
+
+    VkDescriptorPool localDescriptorPool;
+    VkDescriptorSetLayout localDescriptorSetLayout;
+
+    // Local uniform buffers.
+    VulkanBuffer localUniformBuffer;
+    // TODO: manage a free list of some kind here instead.
+    uint32 localUniformBufferIndex;
+
+    std::array<TextureMapType, VULKAN_UI_SHADER_SAMPLER_COUNT> samplerUsage;
+
+    // TODO: make dynamic
+    std::array<VulkanUIShaderInstanceState, VULKAN_MAX_UI_COUNT> instanceStates;
+
+    VulkanPipeline pipeline;
+};
+
+#pragma endregion
+
 struct VulkanImGuiResources
 {
     VkDescriptorPool descriptorPool;
@@ -237,7 +328,7 @@ struct VulkanImGuiResources
     VulkanRenderpass viewportRenderPass;
     VulkanPipeline viewportPipeline;
 
-    std::vector<VulkanFramebuffer> viewportFramebuffers;
+    std::array<VkFramebuffer, 3> viewportFramebuffers;
 
     VkCommandPool viewportCommandPool;
     std::vector<VulkanCommandBuffer> viewportCommandBuffers;
@@ -275,6 +366,7 @@ struct VulkanContext
 
     VulkanSwapChain swapChain;
     VulkanRenderpass mainRenderpass;
+    VulkanRenderpass uiRenderpass;
 
     VulkanBuffer objectVertexBuffer;
     uint64 geometryVertexOffset;
@@ -297,9 +389,13 @@ struct VulkanContext
     bool recreatingSwapchain;
 
     VulkanMaterialShader materialShader;
+    VulkanUIShader uiShader;
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
+
+    // Multiple Render Passes
+    std::array<VkFramebuffer, 3> worldFramebuffers;
 
     VulkanImGuiResources imGuiResources;
 };

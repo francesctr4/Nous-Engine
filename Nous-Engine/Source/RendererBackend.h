@@ -24,7 +24,12 @@ public:
 	bool BeginFrame(float dt);
 	bool EndFrame(float dt);
 
-	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode);
+	bool BeginRenderpass(BuiltInRenderpass renderpassID);
+	bool EndRenderpass(BuiltInRenderpass renderpassID);
+
+	void UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode);
+	void UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode);
+
 	void DrawGeometry(GeometryRenderData renderData);
 
 	void CreateTexture(const uint8* pixels, ResourceTexture* outTexture);
@@ -33,7 +38,7 @@ public:
 	bool CreateMaterial(ResourceMaterial* material);
 	void DestroyMaterial(ResourceMaterial* material);
 
-	bool CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry);
+	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry);
 	void DestroyGeometry(ResourceMesh* geometry);
 
 	// -------------------------------------- \\

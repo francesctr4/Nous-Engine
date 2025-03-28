@@ -456,6 +456,9 @@
     <ClCompile Include="Source\SceneViewport.cpp">
       <Filter>Source Code\Editor\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanUIShader.cpp">
+      <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1238,6 +1241,9 @@
     <ClInclude Include="Source\SceneViewport.h">
       <Filter>Source Code\Editor\Windows</Filter>
     </ClInclude>
+    <ClInclude Include="Source\VulkanUIShader.h">
+      <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source\RendererTypes.inl">
@@ -1266,12 +1272,6 @@
     </None>
     <None Include="Source\External\MathGeoLib\include\Math\Matrix.inl">
       <Filter>Externals\MathGeoLib\Math</Filter>
-    </None>
-    <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.vert.glsl">
-      <Filter>Source Code\Renderer\GLSL</Filter>
-    </None>
-    <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.frag.glsl">
-      <Filter>Source Code\Renderer\GLSL</Filter>
     </None>
     <None Include="Source\ResourceTypes.inl">
       <Filter>Source Code\Systems\Resource System\Resource Management</Filter>
@@ -1305,6 +1305,18 @@
     </None>
     <None Include="Source\Importer.inl">
       <Filter>Source Code\!NousResource\Importers</Filter>
+    </None>
+    <None Include="Engine\Assets\Shaders\BuiltIn.MaterialShader.frag.glsl">
+      <Filter>Source Code\Renderer\GLSL</Filter>
+    </None>
+    <None Include="Engine\Assets\Shaders\BuiltIn.MaterialShader.vert.glsl">
+      <Filter>Source Code\Renderer\GLSL</Filter>
+    </None>
+    <None Include="Engine\Assets\Shaders\BuiltIn.UIShader.frag.glsl">
+      <Filter>Source Code\Renderer\GLSL</Filter>
+    </None>
+    <None Include="Engine\Assets\Shaders\BuiltIn.UIShader.vert.glsl">
+      <Filter>Source Code\Renderer\GLSL</Filter>
     </None>
   </ItemGroup>
 </Project>

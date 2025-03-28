@@ -11,18 +11,18 @@
 void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkContext)
 {
 	CreateImGuiDescriptorPool(vkContext);
-	CreateImGuiImages(vkContext, &vkContext->swapChain);
-	CreateImGuiRenderPass(vkContext);
+	//CreateImGuiImages(vkContext, &vkContext->swapChain);
+	//CreateImGuiRenderPass(vkContext);
 }
 
 void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkContext)
 {
-	DestroyRenderpass(vkContext, &vkContext->imGuiResources.viewportRenderPass);
+	//NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->imGuiResources.viewportRenderPass);
 
-	for (auto& image : vkContext->imGuiResources.viewportImages)
-	{
-		DestroyVulkanImage(vkContext, &image);
-	}
+	//for (auto& image : vkContext->imGuiResources.viewportImages)
+	//{
+	//	DestroyVulkanImage(vkContext, &image);
+	//}
 	
 	vkDestroyDescriptorPool(vkContext->device.logicalDevice, vkContext->imGuiResources.descriptorPool, vkContext->allocator);
 }
@@ -86,11 +86,13 @@ void NOUS_ImGuiVulkanResources::CreateImGuiImages(VulkanContext* vkContext, Vulk
 
 void NOUS_ImGuiVulkanResources::CreateImGuiRenderPass(VulkanContext* vkContext)
 {
-	NOUS_ASSERT(CreateRenderpass(vkContext, &vkContext->imGuiResources.viewportRenderPass,
-		0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight,
-		0.0f, 0.0f, 0.5f, 1.0f,
+	NOUS_ASSERT(NOUS_VulkanRenderpass::CreateRenderpass(vkContext, &vkContext->imGuiResources.viewportRenderPass,
+		float4(0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight),
+		float4(0.0f, 0.0f, 0.5f, 1.0f),
 		1.0f,
-		0));
+		0,
+		RenderpassClearFlag::NO_CLEAR,
+		false, false));
 }
 
 void NOUS_ImGuiVulkanResources::CreateImGuiPipeline(VulkanContext* vkContext)
@@ -100,15 +102,39 @@ void NOUS_ImGuiVulkanResources::CreateImGuiPipeline(VulkanContext* vkContext)
 
 void NOUS_ImGuiVulkanResources::CreateImGuiFramebuffers(VulkanContext* vkContext)
 {
-	vkContext->imGuiResources.viewportFramebuffers.resize(vkContext->swapChain.swapChainImageViews.size());
+	uint32 imageCount = vkContext->swapChain.swapChainFramebuffers.size();
 
-	for (uint16 i = 0; i < vkContext->swapChain.swapChainFramebuffers.size(); ++i)
+	for (uint16 i = 0; i < imageCount; ++i)
 	{
-		// TODO: make this dynamic based on the currently configured attachments
+		// World Attachments
+
 		std::array<VkImageView, 3> attachments = { vkContext->swapChain.colorAttachment.view, vkContext->swapChain.depthAttachment.view, vkContext->swapChain.swapChainImageViews[i] };
 
-		NOUS_VulkanFramebuffer::CreateVulkanFramebuffer(vkContext, &vkContext->imGuiResources.viewportRenderPass, vkContext->framebufferWidth, vkContext->framebufferHeight,
-			attachments.size(), attachments.data(), &vkContext->imGuiResources.viewportFramebuffers[i]);
+		VkFramebufferCreateInfo worldFramebufferCreateInfo{};
+		worldFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		worldFramebufferCreateInfo.renderPass = vkContext->mainRenderpass.handle;
+		worldFramebufferCreateInfo.attachmentCount = static_cast<uint32>(attachments.size());
+		worldFramebufferCreateInfo.pAttachments = attachments.data();
+		worldFramebufferCreateInfo.width = vkContext->framebufferWidth;
+		worldFramebufferCreateInfo.height = vkContext->framebufferHeight;
+		worldFramebufferCreateInfo.layers = 1;
+
+		VK_CHECK(vkCreateFramebuffer(vkContext->device.logicalDevice, &worldFramebufferCreateInfo,
+			vkContext->allocator, &vkContext->worldFramebuffers[i]));
+
+		// UI Attachments
+
+		VkFramebufferCreateInfo uiFramebufferCreateInfo{};
+		uiFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		uiFramebufferCreateInfo.renderPass = vkContext->uiRenderpass.handle;
+		uiFramebufferCreateInfo.attachmentCount = static_cast<uint32>(attachments.size());
+		uiFramebufferCreateInfo.pAttachments = attachments.data();
+		uiFramebufferCreateInfo.width = vkContext->framebufferWidth;
+		uiFramebufferCreateInfo.height = vkContext->framebufferHeight;
+		uiFramebufferCreateInfo.layers = 1;
+
+		VK_CHECK(vkCreateFramebuffer(vkContext->device.logicalDevice, &uiFramebufferCreateInfo,
+			vkContext->allocator, &vkContext->swapChain.swapChainFramebuffers[i]));
 	}
 }
 
@@ -142,7 +168,7 @@ void NOUS_ImGuiVulkanResources::CreateImGuiCommandBuffers(VulkanContext* vkConte
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = vkContext->imGuiResources.viewportRenderPass.handle;
-		renderPassInfo.framebuffer = vkContext->imGuiResources.viewportFramebuffers[i].handle;
+		renderPassInfo.framebuffer = vkContext->imGuiResources.viewportFramebuffers[i];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = vkContext->swapChain.swapChainExtent;
 
@@ -208,11 +234,11 @@ void NOUS_ImGuiVulkanResources::CreateImGuiDescriptorSets(VulkanContext* vkConte
 void NOUS_ImGuiVulkanResources::RenderImGuiDrawData(VulkanContext* vkContext, VulkanCommandBuffer* commandBuffer, VulkanRenderpass* renderPass)
 {
 	// Begin render pass
-	BeginRenderpass(commandBuffer, renderPass, vkContext->imGuiResources.viewportFramebuffers[vkContext->imageIndex].handle);
+	NOUS_VulkanRenderpass::BeginRenderpass(commandBuffer, renderPass, vkContext->imGuiResources.viewportFramebuffers[vkContext->imageIndex]);
 
 	// Render ImGui
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer->handle);
 
 	// End render pass
-	EndRenderpass(commandBuffer, renderPass);
+	NOUS_VulkanRenderpass::EndRenderpass(commandBuffer, renderPass);
 }

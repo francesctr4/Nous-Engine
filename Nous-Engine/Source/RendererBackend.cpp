@@ -95,11 +95,39 @@ bool RendererBackend::EndFrame(float dt)
     return false;
 }
 
-void RendererBackend::UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+bool RendererBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
 {
     if (backendInterface != nullptr)
     {
-        return backendInterface->UpdateGlobalState(projection, view, viewPosition, ambientColor, mode);
+        return backendInterface->BeginRenderpass(renderpassID);
+    }
+
+    return false;
+}
+
+bool RendererBackend::EndRenderpass(BuiltInRenderpass renderpassID)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->EndRenderpass(renderpassID);
+    }
+
+    return false;
+}
+
+void RendererBackend::UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->UpdateGlobalWorldState(projection, view, viewPosition, ambientColor, mode);
+    }
+}
+
+void RendererBackend::UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode)
+{
+    if (backendInterface != nullptr)
+    {
+        return backendInterface->UpdateGlobalUIState(projection, view, mode);
     }
 }
 
@@ -143,7 +171,7 @@ void RendererBackend::DestroyMaterial(ResourceMaterial* material)
     }
 }
 
-bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry)
+bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry)
 {
     if (backendInterface != nullptr)
     {

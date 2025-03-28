@@ -303,6 +303,7 @@
     <ClCompile Include="Source\VulkanShaderUtils.cpp" />
     <ClCompile Include="Source\VulkanSwapchain.cpp" />
     <ClCompile Include="Source\VulkanSyncObjects.cpp" />
+    <ClCompile Include="Source\VulkanUIShader.cpp" />
     <ClCompile Include="Source\VulkanUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -565,11 +566,14 @@
     <ClInclude Include="Source\VulkanShaderUtils.h" />
     <ClInclude Include="Source\VulkanSwapchain.h" />
     <ClInclude Include="Source\VulkanSyncObjects.h" />
+    <ClInclude Include="Source\VulkanUIShader.h" />
     <ClInclude Include="Source\VulkanUtils.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.frag.glsl" />
-    <None Include="Engine\Assets\Shaders\BuiltIn.ObjectShader.vert.glsl" />
+    <None Include="Engine\Assets\Shaders\BuiltIn.MaterialShader.frag.glsl" />
+    <None Include="Engine\Assets\Shaders\BuiltIn.MaterialShader.vert.glsl" />
+    <None Include="Engine\Assets\Shaders\BuiltIn.UIShader.frag.glsl" />
+    <None Include="Engine\Assets\Shaders\BuiltIn.UIShader.vert.glsl" />
     <None Include="Source\IEditorWindow.inl" />
     <None Include="Source\External\Assimp\include\color4.inl" />
     <None Include="Source\External\Assimp\include\material.inl" />

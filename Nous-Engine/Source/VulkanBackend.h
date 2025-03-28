@@ -27,9 +27,14 @@ public:
 	bool BeginFrame(float dt) override;
 	bool EndFrame(float dt) override;
 
+	bool BeginRenderpass(BuiltInRenderpass renderpassID) override;
+	bool EndRenderpass(BuiltInRenderpass renderpassID) override;
+
 	bool RecreateResources();
 
-	void UpdateGlobalState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) override;
+	void UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) override;
+	void UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode) override;
+
 	void DrawGeometry(GeometryRenderData renderData) override;
 
 	// ----------------------------------------------------------------------------------------------- //
@@ -41,7 +46,7 @@ public:
 	bool CreateMaterial(ResourceMaterial* material) override;
 	void DestroyMaterial(ResourceMaterial* material) override;
 
-	bool CreateGeometry(uint32 vertexCount, const Vertex* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry) override;
+	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry) override;
 	void DestroyGeometry(ResourceMesh* geometry) override;
 
 	static VulkanContext* GetVulkanContext();

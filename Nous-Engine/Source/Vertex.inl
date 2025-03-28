@@ -4,7 +4,7 @@
 
 // --------------- Vertex Struct --------------- //
 
-struct Vertex
+struct Vertex3D
 {
     float3 position;
     float3 color;
@@ -12,7 +12,7 @@ struct Vertex
 
     static const uint16 ATTRIBUTE_COUNT = 3;
 
-    bool operator==(const Vertex& other) const
+    bool operator==(const Vertex3D& other) const
     {
         return (position.Equals(other.position) && color.Equals(other.color) && texCoord.Equals(other.texCoord));
     }

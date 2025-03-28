@@ -179,7 +179,7 @@ void NOUS_GeometrySystem::DestroyGeometry(ResourceMesh* geometry)
 
 bool NOUS_GeometrySystem::CreateDefaultGeometry(GeometrySystemState* state)
 {
-    std::array<Vertex, 4> vertices;
+    std::array<Vertex3D, 4> vertices;
     MemoryManager::ZeroMemory(vertices.data(), sizeof(vertices));
 
     const float f = 10.0f;
@@ -294,10 +294,10 @@ GeometryConfig NOUS_GeometrySystem::GeneratePlaneConfig(float width, float heigh
 
             uint32 vOffset = ((y * xSegmentCount) + x) * 4;
 
-            Vertex* v0 = &config.vertices[vOffset + 0];
-            Vertex* v1 = &config.vertices[vOffset + 1];
-            Vertex* v2 = &config.vertices[vOffset + 2];
-            Vertex* v3 = &config.vertices[vOffset + 3];
+            Vertex3D* v0 = &config.vertices[vOffset + 0];
+            Vertex3D* v1 = &config.vertices[vOffset + 1];
+            Vertex3D* v2 = &config.vertices[vOffset + 2];
+            Vertex3D* v3 = &config.vertices[vOffset + 3];
 
             v0->position.x = minX;
             v0->position.y = minY;

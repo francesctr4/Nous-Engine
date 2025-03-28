@@ -22,7 +22,7 @@ public:
 	uint32 internalID;
 	uint32 generation;
 
-	std::vector<Vertex> vertices;
+	std::vector<Vertex3D> vertices;
 	std::vector<uint32> indices;
 
 	ResourceMaterial* material;

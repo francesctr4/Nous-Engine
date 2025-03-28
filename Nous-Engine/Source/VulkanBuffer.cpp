@@ -10,8 +10,8 @@ bool NOUS_VulkanBuffer::CreateBuffers(VulkanContext* vkContext)
 {
     VkMemoryPropertyFlagBits memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    // Vertex Buffer (VBO)
-    const uint64 vertexBufferSize = sizeof(Vertex) * 1024 * 1024; // Placeholder
+    // Geometry Vertex Buffer (VBO)
+    const uint64 vertexBufferSize = sizeof(Vertex3D) * 1024 * 1024; // Placeholder
 
     if (!CreateBuffer(vkContext, vertexBufferSize,
         (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
@@ -24,7 +24,7 @@ bool NOUS_VulkanBuffer::CreateBuffers(VulkanContext* vkContext)
 
     vkContext->geometryVertexOffset = 0;
 
-    // Index Buffer (EBO)
+    // Geometry Index Buffer (EBO)
     const uint64 indexBufferSize = sizeof(uint32) * 1024 * 1024; // Placeholder
 
     if (!CreateBuffer(vkContext, indexBufferSize,

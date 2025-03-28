@@ -91,7 +91,7 @@ bool ModuleEditor::Awake()
 			imGuiVulkanInitInfo.PhysicalDevice = vkContext->device.physicalDevice;
 			imGuiVulkanInitInfo.Queue = vkContext->device.graphicsQueue;
 			imGuiVulkanInitInfo.QueueFamily = vkContext->device.graphicsQueueIndex;
-			imGuiVulkanInitInfo.RenderPass = vkContext->mainRenderpass.handle;
+			imGuiVulkanInitInfo.RenderPass = vkContext->uiRenderpass.handle;
 			imGuiVulkanInitInfo.UseDynamicRendering = false;
 			imGuiVulkanInitInfo.MinImageCount = 2;
 

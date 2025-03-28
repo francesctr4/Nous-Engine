@@ -5,16 +5,40 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 {
     bool ret = true;
 
-    vkContext->swapChain.swapChainFramebuffers.resize(vkContext->swapChain.swapChainImageViews.size());
+	uint32 imageCount = vkContext->swapChain.swapChainFramebuffers.size();
 
-    for (uint16 i = 0; i < vkContext->swapChain.swapChainFramebuffers.size(); ++i)
-    {
-        // TODO: make this dynamic based on the currently configured attachments
-        std::array<VkImageView, 3> attachments = { vkContext->swapChain.colorAttachment.view, vkContext->swapChain.depthAttachment.view, vkContext->swapChain.swapChainImageViews[i] };
+	for (uint16 i = 0; i < imageCount; ++i)
+	{
+		// World Attachments
 
-        CreateVulkanFramebuffer(vkContext, &vkContext->mainRenderpass, vkContext->framebufferWidth, vkContext->framebufferHeight,
-            attachments.size(), attachments.data(), &vkContext->swapChain.swapChainFramebuffers[i]);
-    }
+		std::array<VkImageView, 3> attachments = { vkContext->swapChain.colorAttachment.view, vkContext->swapChain.depthAttachment.view, vkContext->swapChain.swapChainImageViews[i] };
+
+		VkFramebufferCreateInfo worldFramebufferCreateInfo{};
+		worldFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		worldFramebufferCreateInfo.renderPass = vkContext->mainRenderpass.handle;
+		worldFramebufferCreateInfo.attachmentCount = static_cast<uint32>(attachments.size());
+		worldFramebufferCreateInfo.pAttachments = attachments.data();
+		worldFramebufferCreateInfo.width = vkContext->framebufferWidth;
+		worldFramebufferCreateInfo.height = vkContext->framebufferHeight;
+		worldFramebufferCreateInfo.layers = 1;
+
+		VK_CHECK(vkCreateFramebuffer(vkContext->device.logicalDevice, &worldFramebufferCreateInfo,
+			vkContext->allocator, &vkContext->worldFramebuffers[i]));
+
+		// UI Attachments
+
+		VkFramebufferCreateInfo uiFramebufferCreateInfo{};
+		uiFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		uiFramebufferCreateInfo.renderPass = vkContext->uiRenderpass.handle;
+		uiFramebufferCreateInfo.attachmentCount = static_cast<uint32>(attachments.size());
+		uiFramebufferCreateInfo.pAttachments = attachments.data();
+		uiFramebufferCreateInfo.width = vkContext->framebufferWidth;
+		uiFramebufferCreateInfo.height = vkContext->framebufferHeight;
+		uiFramebufferCreateInfo.layers = 1;
+
+		VK_CHECK(vkCreateFramebuffer(vkContext->device.logicalDevice, &uiFramebufferCreateInfo,
+			vkContext->allocator, &vkContext->swapChain.swapChainFramebuffers[i]));
+	}
 
     return ret;
 }
@@ -25,49 +49,7 @@ void NOUS_VulkanFramebuffer::DestroyFramebuffers(VulkanContext* vkContext)
 
     for (uint16 i = 0; i < vkContext->swapChain.swapChainFramebuffers.size(); ++i) 
     {
-        DestroyVulkanFramebuffer(vkContext, &vkContext->swapChain.swapChainFramebuffers[i]);
+		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->worldFramebuffers[i], vkContext->allocator);
+		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->swapChain.swapChainFramebuffers[i], vkContext->allocator);
     }
-}
-
-void NOUS_VulkanFramebuffer::CreateVulkanFramebuffer(VulkanContext* vkContext, VulkanRenderpass* renderpass, uint32 width, uint32 height, uint32 attachmentCount, VkImageView* attachments, VulkanFramebuffer* outFramebuffer)
-{
-    // Take a copy of the attachments, renderpass and attachment count
-
-    outFramebuffer->attachments.resize(attachmentCount);
-
-    for (uint32 i = 0; i < outFramebuffer->attachments.size(); ++i)
-    {
-        outFramebuffer->attachments[i] = attachments[i];
-    }
-
-    outFramebuffer->renderpass = renderpass;
-
-    // Creation info
-
-    VkFramebufferCreateInfo framebufferCreateInfo{};
-    framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-
-    framebufferCreateInfo.renderPass = renderpass->handle;
-
-    framebufferCreateInfo.attachmentCount = static_cast<uint32>(outFramebuffer->attachments.size());
-    framebufferCreateInfo.pAttachments = outFramebuffer->attachments.data();
-
-    framebufferCreateInfo.width = width;
-    framebufferCreateInfo.height = height;
-
-    framebufferCreateInfo.layers = 1;
-
-    VK_CHECK(vkCreateFramebuffer(vkContext->device.logicalDevice, &framebufferCreateInfo,
-        vkContext->allocator, &outFramebuffer->handle));
-}
-
-void NOUS_VulkanFramebuffer::DestroyVulkanFramebuffer(VulkanContext* vkContext, VulkanFramebuffer* framebuffer)
-{
-    vkDestroyFramebuffer(vkContext->device.logicalDevice, framebuffer->handle, vkContext->allocator);
-
-    framebuffer->attachments.clear();
-    framebuffer->attachments.shrink_to_fit();
-
-    framebuffer->handle = 0;
-    framebuffer->renderpass = nullptr;
 }
