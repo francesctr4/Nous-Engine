@@ -211,6 +211,10 @@ struct VulkanMaterialShaderInstanceUBO
     float4 v_reserved0;     // 16 bytes, reserved for future use
     float4 v_reserved1;     // 16 bytes, reserved for future use
     float4 v_reserved2;     // 16 bytes, reserved for future use
+
+    float4x4 m_reserved0;  // 64 bytes, reserved for future use
+    float4x4 m_reserved1;  // 64 bytes, reserved for future use
+    float4x4 m_reserved2;  // 64 bytes, reserved for future use
 };
 
 struct VulkanMaterialShader 
@@ -282,6 +286,10 @@ struct VulkanUIShaderInstanceUBO
     float4 v_reserved0;     // 16 bytes, reserved for future use
     float4 v_reserved1;     // 16 bytes, reserved for future use
     float4 v_reserved2;     // 16 bytes, reserved for future use
+
+    float4x4 m_reserved0;  // 64 bytes, reserved for future use
+    float4x4 m_reserved1;  // 64 bytes, reserved for future use
+    float4x4 m_reserved2;  // 64 bytes, reserved for future use
 };
 
 struct VulkanUIShader

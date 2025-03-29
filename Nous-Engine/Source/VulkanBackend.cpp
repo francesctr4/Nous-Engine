@@ -335,7 +335,7 @@ bool VulkanBackend::BeginFrame(float dt)
     VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame], true, UINT64_MAX);
     if (!VkResultIsSuccess(result))
     {
-        NOUS_ERROR("In-flight fence wait failure! Error: %s", VkResultMessage(result, true));
+        NOUS_FATAL("In-flight fence wait failure! Error: %s", VkResultMessage(result, true));
         return false;
     }
 
@@ -344,6 +344,7 @@ bool VulkanBackend::BeginFrame(float dt)
     if (!SwapChainAcquireNextImageIndex(vkContext, &vkContext->swapChain, UINT64_MAX,
         vkContext->imageAvailableSemaphores[vkContext->currentFrame], 0, &vkContext->imageIndex))
     {
+        NOUS_FATAL("Failed to acquire next image index, booting.");
         return false;
     }
 

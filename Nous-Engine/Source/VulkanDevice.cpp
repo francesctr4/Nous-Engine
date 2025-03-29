@@ -72,6 +72,8 @@ bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* v
     // Check if device supports local/host visible combo
     bool supportsDeviceLocalHostVisible = false;
 
+    NOUS_INFO("Evaluating device: '%s'", deviceProperties.deviceName);
+
     for (uint32 i = 0; i < deviceMemory.memoryTypeCount; ++i)
     {
         // Check each memory type to see if its bit is set to 1.
