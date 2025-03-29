@@ -10,6 +10,8 @@ DynamicAllocator::DynamicAllocator(uint64 total_size, void* memory) {
     state_ = static_cast<InternalState*>(memory);
     new (state_) InternalState();
 
+    state_->total_size = total_size; // Add this line
+
     char* mem_ptr = static_cast<char*>(memory);
 
     // Calculate freelist requirement

@@ -162,7 +162,9 @@ void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UN
 
 	// TODO: Memory Alignment
 	//free(block);
-	config.allocator->Free(block, size);
+	const uint64 alignment = 16;
+	const uint64 aligned_size = (size + (alignment - 1)) & ~(alignment - 1);
+	config.allocator->Free(block, aligned_size); // Pass aligned_size instead of size
 }
 
 void* MemoryManager::ZeroMemory(void* block, uint64 size)
