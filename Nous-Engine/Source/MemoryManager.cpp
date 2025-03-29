@@ -60,24 +60,26 @@ static const char* memoryTagStrings[static_cast<uint64>(MemoryManager::MemoryTag
 
 static struct MemorySystemConfig config;
 
-void MemoryManager::InitializeMemory()
+void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 {
-	std::memset(&config, 0, sizeof(config));
+	ZeroMemory(&config, sizeof(config));
 
-	config.totalAllocationSize = GIBIBYTES(1);
+	config.totalAllocationSize = preAllocatedMemorySize;
 
 	// 1. Get memory requirement FIRST
 	config.allocatorRequirement = DynamicAllocator::GetMemoryRequirement(config.totalAllocationSize);
 
 	// 2. Allocate single block for entire system
 	config.allocatorBlock = malloc(config.allocatorRequirement);
-	if (!config.allocatorBlock) {
+
+	if (!config.allocatorBlock) 
+	{
 		NOUS_FATAL("Memory system allocation failed");
 		return;
 	}
 
 	// 3. Construct allocator using placement new
-	config.allocator = new DynamicAllocator(
+	config.allocator = new (&config.allocatorBlock) DynamicAllocator(
 		config.totalAllocationSize,
 		config.allocatorBlock
 	);
@@ -87,10 +89,12 @@ void MemoryManager::InitializeMemory()
 
 void MemoryManager::ShutdownMemory()
 {
-	if (config.allocator) {
+	if (config.allocator) 
+	{
 		// Explicit destructor call
 		config.allocator->~DynamicAllocator();
 		free(config.allocatorBlock);
+
 		config.allocatorBlock = nullptr;
 		config.allocator = nullptr;
 	}
@@ -127,13 +131,14 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 	config.stats.totalAllocations++;
 	config.stats.taggedAllocations[static_cast<uint64>(tag)] += size;
 
-	// TODO: Memory Alignment
 	//void* block = malloc(size);
-		// Add 16-byte alignment
+	
+	// ----------------- Memory Alignment ----------------- //
+	// Add 16-byte alignment
 	const uint64 alignment = 16;
-	const uint64 aligned_size = (size + (alignment - 1)) & ~(alignment - 1);
+	const uint64 alignedSize = (size + (alignment - 1)) & ~(alignment - 1);
 
-	void* block = config.allocator->Allocate(aligned_size);
+	void* block = config.allocator->Allocate(alignedSize);
 	ZeroMemory(block, size);
 
 #ifdef _PROFILING
@@ -160,11 +165,12 @@ void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UN
 	TracyFree(block);
 #endif // _PROFILING
 
-	// TODO: Memory Alignment
 	//free(block);
+
+	// ----------------- Memory Alignment ----------------- //
 	const uint64 alignment = 16;
-	const uint64 aligned_size = (size + (alignment - 1)) & ~(alignment - 1);
-	config.allocator->Free(block, aligned_size); // Pass aligned_size instead of size
+	const uint64 alignedSize = (size + (alignment - 1)) & ~(alignment - 1);
+	config.allocator->Free(block, alignedSize);
 }
 
 void* MemoryManager::ZeroMemory(void* block, uint64 size)

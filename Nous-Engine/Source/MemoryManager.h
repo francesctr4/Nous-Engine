@@ -35,7 +35,7 @@ namespace MemoryManager
 		MAX
 	};
 
-	void InitializeMemory();
+	void InitializeMemory(uint64 preAllocatedMemorySize);
 
 	void ShutdownMemory();
 

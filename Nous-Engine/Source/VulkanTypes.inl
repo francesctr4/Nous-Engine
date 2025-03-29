@@ -8,6 +8,7 @@
 #include "ResourceTexture.h"
 
 #include "Vulkan.h"
+#include "FreeList.h"
 
 struct VulkanImage
 {
@@ -57,6 +58,11 @@ struct VulkanBuffer
 
     uint64 totalSize;
     bool isLocked;
+
+    // ------- Freelist ------- //
+    uint64 freelistMemoryRequirement;   // The amount of memory required for the freelist.
+    void* freelistBlock;                // The memory block used by the internal freelist.
+    Freelist* bufferFreelist;           // A freelist to track allocations.
 };
 
 struct VulkanSwapChain
@@ -170,11 +176,11 @@ struct VulkanGeometryData
 
     uint32 vertexCount;
     uint32 vertexSize;
-    uint32 vertexBufferOffset;
+    uint64 vertexBufferOffset;
 
     uint32 indexCount;
     uint32 indexSize;
-    uint32 indexBufferOffset;
+    uint64 indexBufferOffset;
 };
 
 #pragma region MATERIAL_SHADER
@@ -377,10 +383,7 @@ struct VulkanContext
     VulkanRenderpass uiRenderpass;
 
     VulkanBuffer objectVertexBuffer;
-    uint64 geometryVertexOffset;
-
     VulkanBuffer objectIndexBuffer;
-    uint64 geometryIndexOffset;
 
     std::vector<VulkanCommandBuffer> graphicsCommandBuffers;
 

@@ -23,7 +23,8 @@ void DumpMemoryLeaks()
 
 int main(int argc, char** argv) 
 {
-	MemoryManager::InitializeMemory();
+	// Specify the amount of memory available for the project
+	MemoryManager::InitializeMemory(MiB(100));
 
 	NOUS_Multithreading::Initialize();
 

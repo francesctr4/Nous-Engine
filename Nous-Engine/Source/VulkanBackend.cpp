@@ -842,8 +842,10 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     }
 
     // Check if this is a re-upload. If it is, need to free old data afterward.
-    //bool isReupload = geometry->internalID != INVALID_ID;
-    bool isReupload = false;
+    // TODO: Resource Manager needs to take care of reuploads, not here.
+    
+    //bool isReupload = false;
+    bool isReupload = geometry->internalID != INVALID_ID;
 
     VulkanGeometryData oldRange;
     VulkanGeometryData* internalData = nullptr;
@@ -886,28 +888,28 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     VkQueue queue = vkContext->device.graphicsQueue;
 
     // Vertex data.
-    internalData->vertexBufferOffset = vkContext->geometryVertexOffset;
     internalData->vertexCount = vertexCount;
     internalData->vertexSize = sizeof(Vertex3D) * vertexCount;
 
-    NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectVertexBuffer, 
-        internalData->vertexBufferOffset, internalData->vertexSize, vertices);
-
-    // TODO: should maintain a free list instead of this.
-    vkContext->geometryVertexOffset += internalData->vertexSize;
+    if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectVertexBuffer,
+        &internalData->vertexBufferOffset, internalData->vertexSize, vertices))
+    {
+        NOUS_ERROR("VulkanBackend::CreateGeometry() failed to upload to the vertex buffer!");
+        return false;
+    }
 
     // Index data, if applicable
     if (indexCount && indices) 
     {
-        internalData->indexBufferOffset = vkContext->geometryIndexOffset;
         internalData->indexCount = indexCount;
         internalData->indexSize = sizeof(uint32) * indexCount;
 
-        NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectIndexBuffer, 
-            internalData->indexBufferOffset, internalData->indexSize, indices);
-
-        // TODO: should maintain a free list instead of this.
-        vkContext->geometryIndexOffset += internalData->indexSize;
+        if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectIndexBuffer,
+            &internalData->indexBufferOffset, internalData->indexSize, indices))
+        {
+            NOUS_ERROR("VulkanBackend::CreateGeometry() failed to upload to the index buffer!");
+            return false;
+        }
     }
 
     if (internalData->generation == INVALID_ID) 

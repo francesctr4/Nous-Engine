@@ -48,16 +48,38 @@ typedef enum UpdateStatus
  */
 constexpr unsigned int INVALID_ID = 4294967295U;
 
-/** @brief Gets the number of bytes from amount of gibibytes (GiB) (1024*1024*1024) */
-#define GIBIBYTES(amount) amount * 1024 * 1024 * 1024
-/** @brief Gets the number of bytes from amount of mebibytes (MiB) (1024*1024) */
-#define MEBIBYTES(amount) amount * 1024 * 1024
-/** @brief Gets the number of bytes from amount of kibibytes (KiB) (1024) */
-#define KIBIBYTES(amount) amount * 1024
+// Gibibytes (2^30)
+constexpr uint64 GiB(uint64 amount) 
+{
+    return amount * 1024ULL * 1024 * 1024;
+}
 
-/** @brief Gets the number of bytes from amount of gigabytes (GB) (1000*1000*1000) */
-#define GIGABYTES(amount) amount * 1000 * 1000 * 1000
-/** @brief Gets the number of bytes from amount of megabytes (MB) (1000*1000) */
-#define MEGABYTES(amount) amount * 1000 * 1000
-/** @brief Gets the number of bytes from amount of kilobytes (KB) (1000) */
-#define KILOBYTES(amount) amount * 1000
+// Mebibytes (2^20)
+constexpr uint64 MiB(uint64 amount) 
+{
+    return amount * 1024ULL * 1024;
+}
+
+// Kibibytes (2^10)
+constexpr uint64 KiB(uint64 amount) 
+{
+    return amount * 1024ULL;
+}
+
+// Gigabytes (10^9)
+constexpr uint64 GB(uint64 amount) 
+{
+    return amount * 1000ULL * 1000 * 1000;
+}
+
+// Megabytes (10^6)
+constexpr uint64 MB(uint64 amount) 
+{
+    return amount * 1000ULL * 1000;
+}
+
+// Kilobytes (10^3)
+constexpr uint64 KB(uint64 amount) 
+{
+    return amount * 1000ULL;
+}
