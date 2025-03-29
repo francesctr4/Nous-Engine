@@ -1,40 +1,32 @@
 #include "DynamicAllocator.h"
 
-inline uint64 DynamicAllocator::GetMemoryRequirement(uint64 total_size)
+ uint64 DynamicAllocator::GetMemoryRequirement(uint64 total_size)
 {
     const uint64 freelist_req = Freelist::GetMemoryRequirement(total_size);
     return sizeof(InternalState) + freelist_req + total_size;
 }
 
-inline DynamicAllocator::DynamicAllocator(uint64 total_size, void* memory)
-{
-    if (total_size == 0) {
-        // throw or handle error
-        return;
-    }
-
+DynamicAllocator::DynamicAllocator(uint64 total_size, void* memory) {
     state_ = static_cast<InternalState*>(memory);
     new (state_) InternalState();
 
-    // Memory layout:
-    // 1. Internal state (already placed)
-    // 2. Freelist memory
-    // 3. User memory block
     char* mem_ptr = static_cast<char*>(memory);
 
+    // Calculate freelist requirement
+    const uint64 freelist_req = Freelist::GetMemoryRequirement(total_size);
+
+    // Memory layout correction
     state_->freelist_memory = mem_ptr + sizeof(InternalState);
-    state_->user_memory = mem_ptr + sizeof(InternalState) +
-        Freelist::GetMemoryRequirement(total_size);
+    state_->user_memory = mem_ptr + sizeof(InternalState) + freelist_req;
 
-    // Initialize freelist using placement new
-    state_->freelist = new (state_->freelist_memory) Freelist(total_size, state_->freelist_memory);
-
-    // Initialize user memory
-    std::memset(state_->user_memory, 0, total_size);
-    state_->total_size = total_size;
+    // Initialize freelist in pre-allocated space
+    state_->freelist = new Freelist(
+        total_size,
+        state_->freelist_memory
+    );
 }
 
-inline DynamicAllocator::~DynamicAllocator()
+DynamicAllocator::~DynamicAllocator()
 {
     if (state_)
     {
@@ -44,7 +36,7 @@ inline DynamicAllocator::~DynamicAllocator()
     }
 }
 
-inline void* DynamicAllocator::Allocate(uint64 size)
+void* DynamicAllocator::Allocate(uint64 size)
 {
     if (!state_ || size == 0) return nullptr;
 
@@ -59,7 +51,7 @@ inline void* DynamicAllocator::Allocate(uint64 size)
     return nullptr;
 }
 
-inline bool DynamicAllocator::Free(void* block, uint64 size)
+bool DynamicAllocator::Free(void* block, uint64 size)
 {
     if (!state_ || !block || size == 0) return false;
 
@@ -77,7 +69,7 @@ inline bool DynamicAllocator::Free(void* block, uint64 size)
     return state_->freelist->Free(size, offset);
 }
 
-inline uint64 DynamicAllocator::GetFreeSpace() const
+uint64 DynamicAllocator::GetFreeSpace() const
 {
     return state_ ? state_->freelist->FreeSpace() : 0;
 }

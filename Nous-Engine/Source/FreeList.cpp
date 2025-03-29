@@ -1,12 +1,12 @@
 #include "FreeList.h"
 
-inline uint64 Freelist::GetMemoryRequirement(uint64 total_size) 
+uint64 Freelist::GetMemoryRequirement(uint64 total_size) 
 {
     const uint64 max_entries = total_size / (sizeof(void*) * sizeof(Node));
     return sizeof(InternalState) + (sizeof(Node) * max_entries);
 }
 
-inline Freelist::Freelist(uint64 total_size, void* memory)
+Freelist::Freelist(uint64 total_size, void* memory)
 {
     state_ = reinterpret_cast<InternalState*>(memory);
     new (state_) InternalState();
@@ -27,7 +27,7 @@ inline Freelist::Freelist(uint64 total_size, void* memory)
     }
 }
 
-inline Freelist::~Freelist() 
+Freelist::~Freelist() 
 {
     if (state_) {
         // Clear memory as per original implementation
@@ -35,7 +35,7 @@ inline Freelist::~Freelist()
     }
 }
 
-inline bool Freelist::Allocate(uint64 size, uint64* out_offset)
+bool Freelist::Allocate(uint64 size, uint64* out_offset)
 {
     if (!out_offset || !state_) return false;
 
@@ -71,7 +71,7 @@ inline bool Freelist::Allocate(uint64 size, uint64* out_offset)
     return false;
 }
 
-inline bool Freelist::Free(uint64 size, uint64 offset) 
+bool Freelist::Free(uint64 size, uint64 offset) 
 {
     if (!state_ || size == 0) return false;
 
@@ -119,7 +119,7 @@ inline bool Freelist::Free(uint64 size, uint64 offset)
     return false;
 }
 
-inline void Freelist::Clear()
+void Freelist::Clear()
 {
     if (!state_) return;
 
@@ -132,7 +132,7 @@ inline void Freelist::Clear()
     state_->head->next = nullptr;
 }
 
-inline uint64 Freelist::FreeSpace() const
+uint64 Freelist::FreeSpace() const
 {
     if (!state_) return 0;
 
@@ -145,7 +145,7 @@ inline uint64 Freelist::FreeSpace() const
     return total;
 }
 
-inline Freelist::Node* Freelist::GetNode()
+Freelist::Node* Freelist::GetNode()
 {
     for (uint64 i = 1; i < state_->max_entries; ++i) {
         if (state_->nodes[i].offset == INVALID_ID) {
@@ -157,14 +157,14 @@ inline Freelist::Node* Freelist::GetNode()
     return nullptr;
 }
 
-inline void Freelist::ReturnNode(Node* node) 
+void Freelist::ReturnNode(Node* node) 
 {
     node->offset = INVALID_ID;
     node->size = INVALID_ID;
     node->next = nullptr;
 }
 
-inline void Freelist::MergeWithNext(Node* node) 
+void Freelist::MergeWithNext(Node* node) 
 {
     if (node->next && (node->offset + node->size == node->next->offset)) {
         node->size += node->next->size;
