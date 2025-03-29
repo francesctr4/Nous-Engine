@@ -388,9 +388,7 @@ struct VulkanContext
     std::vector<VkSemaphore> queueCompleteSemaphores;
 
     std::array<VkFence, 2> inFlightFences;
-
-    // Holds pointers to fences which exist and are owned elsewhere.
-    std::array<VkFence*, 3> imagesInFlight;
+    std::array<VkFence, 3> imagesInFlight;
 
     uint32 imageIndex;
     uint32 currentFrame;

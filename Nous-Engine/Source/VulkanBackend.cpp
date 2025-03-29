@@ -394,7 +394,7 @@ bool VulkanBackend::EndFrame(float dt)
     // Make sure the previous frame is not using this image (i.e. its fence is being waited on)
     if (vkContext->imagesInFlight[vkContext->imageIndex] != VK_NULL_HANDLE) // was frame
     {  
-        VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, vkContext->imagesInFlight[vkContext->imageIndex], true, UINT64_MAX);
+        VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, &vkContext->imagesInFlight[vkContext->imageIndex], true, UINT64_MAX);
         if (!VkResultIsSuccess(result))
         {
             NOUS_FATAL("VkFence wait failure! Error: %s", VkResultMessage(result, true));
@@ -403,7 +403,7 @@ bool VulkanBackend::EndFrame(float dt)
     }
 
     // Mark the image fence as in-use by this frame.
-    vkContext->imagesInFlight[vkContext->imageIndex] = &vkContext->inFlightFences[vkContext->currentFrame];
+    vkContext->imagesInFlight[vkContext->imageIndex] = vkContext->inFlightFences[vkContext->currentFrame];
 
     // Reset the fence for use on the next frame
     VK_CHECK(vkResetFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame]));
