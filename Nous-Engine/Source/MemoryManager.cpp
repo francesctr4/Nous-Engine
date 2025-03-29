@@ -51,6 +51,9 @@ static struct MemoryStats stats;
 void MemoryManager::InitializeMemory()
 {
 	ZeroMemory(&stats, sizeof(stats));
+
+	// TODO: Retrieve the necessary memory for our engine using the dynamic allocator, for example 1 GB.
+	// TODO: We will also need the util defines for GIGABYTES, KILOBYTES, ETC.
 }
 
 void MemoryManager::ShutdownMemory()

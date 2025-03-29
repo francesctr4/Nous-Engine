@@ -459,6 +459,12 @@
     <ClCompile Include="Source\VulkanUIShader.cpp">
       <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="Source\DynamicAllocator.cpp">
+      <Filter>Source Code\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\FreeList.cpp">
+      <Filter>Source Code\Memory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1243,6 +1249,12 @@
     </ClInclude>
     <ClInclude Include="Source\VulkanUIShader.h">
       <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\DynamicAllocator.h">
+      <Filter>Source Code\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\FreeList.h">
+      <Filter>Source Code\Memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
