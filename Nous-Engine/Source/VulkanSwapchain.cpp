@@ -39,7 +39,7 @@ bool CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, Vulk
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
     uint32_t queueFamilyIndices[] = { vkContext->device.graphicsQueueIndex, vkContext->device.presentQueueIndex };
 

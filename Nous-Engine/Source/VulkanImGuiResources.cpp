@@ -11,19 +11,20 @@
 void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkContext)
 {
 	CreateImGuiDescriptorPool(vkContext);
-	//CreateImGuiImages(vkContext, &vkContext->swapChain);
-	//CreateImGuiRenderPass(vkContext);
+	CreateImGuiTextureSampler(vkContext);
+	CreateImGuiImages(vkContext, &vkContext->swapChain);
 }
 
 void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkContext)
 {
 	//NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->imGuiResources.viewportRenderPass);
 
-	//for (auto& image : vkContext->imGuiResources.viewportImages)
-	//{
-	//	DestroyVulkanImage(vkContext, &image);
-	//}
+	for (auto& image : vkContext->imGuiResources.viewportImages)
+	{
+		DestroyVulkanImage(vkContext, &image);
+	}
 	
+	vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.textureSampler, vkContext->allocator);
 	vkDestroyDescriptorPool(vkContext->device.logicalDevice, vkContext->imGuiResources.descriptorPool, vkContext->allocator);
 }
 
@@ -73,7 +74,7 @@ void NOUS_ImGuiVulkanResources::CreateImGuiImages(VulkanContext* vkContext, Vulk
 			swapChain->swapChainExtent.width,
 			swapChain->swapChainExtent.height,
 			1,
-			vkContext->device.msaaSamples,
+			VK_SAMPLE_COUNT_1_BIT,
 			vkContext->device.colorFormat,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
