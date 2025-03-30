@@ -74,7 +74,7 @@ void NOUS_ImGuiVulkanResources::CreateImGuiImages(VulkanContext* vkContext, Vulk
 			swapChain->swapChainExtent.width,
 			swapChain->swapChainExtent.height,
 			1,
-			VK_SAMPLE_COUNT_1_BIT,
+			vkContext->device.msaaSamples,
 			vkContext->device.colorFormat,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,

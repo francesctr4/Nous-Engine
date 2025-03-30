@@ -11,13 +11,13 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 	{
 		// World Attachments
 
-		std::array<VkImageView, 3> attachments = { vkContext->swapChain.colorAttachment.view, vkContext->swapChain.depthAttachment.view, vkContext->swapChain.swapChainImageViews[i] };
+		std::array<VkImageView, 3> worldAttachments = { vkContext->swapChain.colorAttachment.view, vkContext->swapChain.depthAttachment.view, vkContext->imGuiResources.viewportImages[i].view };
 
 		VkFramebufferCreateInfo worldFramebufferCreateInfo{};
 		worldFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		worldFramebufferCreateInfo.renderPass = vkContext->mainRenderpass.handle;
-		worldFramebufferCreateInfo.attachmentCount = static_cast<uint32>(attachments.size());
-		worldFramebufferCreateInfo.pAttachments = attachments.data();
+		worldFramebufferCreateInfo.attachmentCount = static_cast<uint32>(worldAttachments.size());
+		worldFramebufferCreateInfo.pAttachments = worldAttachments.data();
 		worldFramebufferCreateInfo.width = vkContext->framebufferWidth;
 		worldFramebufferCreateInfo.height = vkContext->framebufferHeight;
 		worldFramebufferCreateInfo.layers = 1;
@@ -26,12 +26,14 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 			vkContext->allocator, &vkContext->worldFramebuffers[i]));
 
 		// UI Attachments
+		
+		std::array<VkImageView, 3> uiAttachments = { vkContext->swapChain.colorAttachment.view, vkContext->swapChain.depthAttachment.view, vkContext->swapChain.swapChainImageViews[i] };
 
 		VkFramebufferCreateInfo uiFramebufferCreateInfo{};
 		uiFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		uiFramebufferCreateInfo.renderPass = vkContext->uiRenderpass.handle;
-		uiFramebufferCreateInfo.attachmentCount = static_cast<uint32>(attachments.size());
-		uiFramebufferCreateInfo.pAttachments = attachments.data();
+		uiFramebufferCreateInfo.attachmentCount = static_cast<uint32>(uiAttachments.size());
+		uiFramebufferCreateInfo.pAttachments = uiAttachments.data();
 		uiFramebufferCreateInfo.width = vkContext->framebufferWidth;
 		uiFramebufferCreateInfo.height = vkContext->framebufferHeight;
 		uiFramebufferCreateInfo.layers = 1;

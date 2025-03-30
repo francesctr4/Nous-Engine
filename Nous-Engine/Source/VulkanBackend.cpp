@@ -25,6 +25,7 @@
 #include "ResourceMesh.h"
 #include "ResourceTexture.h"
 #include "ResourceMaterial.h"
+#include "VulkanImGuiResources.h"
 
 VulkanContext* VulkanBackend::vkContext = nullptr;
 
@@ -127,6 +128,8 @@ bool VulkanBackend::Initialize()
     {
         NOUS_DEBUG("Vulkan Swap Chain created successfully!");
     }
+
+    NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(vkContext);
 
     // World Render Pass
     NOUS_DEBUG("Creating Vulkan World Render Pass...");
@@ -335,7 +338,7 @@ bool VulkanBackend::BeginFrame(float dt)
     VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame], true, UINT64_MAX);
     if (!VkResultIsSuccess(result))
     {
-        NOUS_FATAL("In-flight fence wait failure! Error: %s", VkResultMessage(result, true));
+        NOUS_FATAL("In-flight fence wait failure! Error: %s", VkResultMessage(result, true).c_str());
         return false;
     }
 

@@ -74,8 +74,6 @@ bool ModuleEditor::Awake()
 		{
 			VulkanContext* vkContext = GetVulkanContext();
 
-			NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(vkContext);
-
 			// Setup Platform/Renderer backends
 			ImGui_ImplSDL2_InitForVulkan(GetSDLWindowData());
 

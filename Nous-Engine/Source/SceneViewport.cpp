@@ -65,7 +65,7 @@ void SceneViewport::Draw()
 
             VkDescriptorSet sceneTexture = ImGui_ImplVulkan_AddTexture(
                 vkContext->imGuiResources.textureSampler,
-                vkContext->swapChain.swapChainImageViews[vkContext->imageIndex],
+                vkContext->imGuiResources.viewportImages[vkContext->imageIndex].view,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             );
 
