@@ -14,7 +14,13 @@ SceneViewport::SceneViewport(const char* title, bool start_open)
 
 void SceneViewport::Init()
 {
+    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 
+    // Viewport Image Views
+    for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImageViews.size(); ++i)
+    {
+        vkContext->imGuiResources.m_ViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(vkContext->imGuiResources.m_ViewportTextureSampler, vkContext->imGuiResources.m_ViewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
 }
 
 void SceneViewport::Draw()
@@ -61,17 +67,13 @@ void SceneViewport::Draw()
                 uvMax.y = 0.5f + 0.5f / cropFactor;
             }
 
-            VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
-
-            VkDescriptorSet sceneTexture = ImGui_ImplVulkan_AddTexture(
-                vkContext->imGuiResources.textureSampler,
-                vkContext->imGuiResources.viewportImages[vkContext->imageIndex].view,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-            );
+            VulkanContext* vkContext = VulkanBackend::GetVulkanContext(); 
 
             // Position the image at the start of the content region and render
             ImGui::SetCursorPos(contentMin); // Position relative to window's content area
-            ImGui::Image((ImTextureID)sceneTexture, squareSize, uvMin, uvMax);
+
+            VkDescriptorSet currentSceneTexture = vkContext->imGuiResources.m_ViewportDescriptorSets[vkContext->imageIndex];
+            ImGui::Image((ImTextureID)currentSceneTexture, squareSize, uvMin, uvMax);
 
             // Draw white border on top
             drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));

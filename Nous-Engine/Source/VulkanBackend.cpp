@@ -133,13 +133,7 @@ bool VulkanBackend::Initialize()
 
     // World Render Pass
     NOUS_DEBUG("Creating Vulkan World Render Pass...");
-    if (!NOUS_VulkanRenderpass::CreateRenderpass(vkContext, &vkContext->mainRenderpass,
-        float4(0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight),
-        float4(0.1f, 0.0f, 0.0f, 1.0f),
-        1.0f,
-        0,
-        RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER,
-        false, true))
+    if (!NOUS_VulkanRenderpass::CreateOffscreenRenderpass(vkContext))
     {
         NOUS_ERROR("Failed to create Vulkan World Render Pass. Shutting the Application.");
         ret = false;

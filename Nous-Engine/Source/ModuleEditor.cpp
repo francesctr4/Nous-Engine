@@ -29,14 +29,6 @@ ModuleEditor::ModuleEditor(Application* app, std::string name, bool start_enable
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	currentBackendType = RendererBackendType::UNKNOWN;
-
-	AddEditorWindow(std::make_unique<MainMenuBar>("MainMenuBar"));
-	//AddEditorWindow(std::make_unique<Properties>("Properties"));
-	//AddEditorWindow(std::make_unique<Assets>("Assets"));
-	AddEditorWindow(std::make_unique<AssetsBrowser>("Assets"));
-	AddEditorWindow(std::make_unique<Resources>("Resources"));
-	AddEditorWindow(std::make_unique<Threads>("Threads"));
-	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
 }
 
 ModuleEditor::~ModuleEditor()
@@ -85,7 +77,7 @@ bool ModuleEditor::Awake()
 			imGuiVulkanInitInfo.Device = vkContext->device.logicalDevice;
 			imGuiVulkanInitInfo.ImageCount = vkContext->swapChain.swapChainImages.size();
 			imGuiVulkanInitInfo.Instance = vkContext->instance;
-			imGuiVulkanInitInfo.MSAASamples = vkContext->device.msaaSamples;
+			imGuiVulkanInitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 			imGuiVulkanInitInfo.PhysicalDevice = vkContext->device.physicalDevice;
 			imGuiVulkanInitInfo.Queue = vkContext->device.graphicsQueue;
 			imGuiVulkanInitInfo.QueueFamily = vkContext->device.graphicsQueueIndex;
@@ -113,6 +105,14 @@ bool ModuleEditor::Awake()
 			break;
 		}
 	}
+
+	AddEditorWindow(std::make_unique<MainMenuBar>("MainMenuBar"));
+	//AddEditorWindow(std::make_unique<Properties>("Properties"));
+	//AddEditorWindow(std::make_unique<Assets>("Assets"));
+	AddEditorWindow(std::make_unique<AssetsBrowser>("Assets"));
+	AddEditorWindow(std::make_unique<Resources>("Resources"));
+	AddEditorWindow(std::make_unique<Threads>("Threads"));
+	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
 
 	return true;
 }

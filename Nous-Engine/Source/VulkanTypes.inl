@@ -337,20 +337,13 @@ struct VulkanImGuiResources
 {
     VkDescriptorPool descriptorPool;
 
-    std::vector<VulkanImage> viewportImages;
+    std::vector<VkImage> m_ViewportImages;
+    std::vector<VkImageView> m_ViewportImageViews;
+    std::vector<VkDeviceMemory> m_ViewportDstImageMemory;
 
-    VulkanRenderpass viewportRenderPass;
-    VulkanPipeline viewportPipeline;
-
-    std::array<VkFramebuffer, 3> viewportFramebuffers;
-
-    VkCommandPool viewportCommandPool;
-    std::vector<VulkanCommandBuffer> viewportCommandBuffers;
-
-    // -------------------- //
-
-    VkSampler textureSampler;
-    std::vector<VkDescriptorSet> descriptorSets;
+    std::array<VkFramebuffer, 3> m_ViewportFramebuffers;
+    VkSampler m_ViewportTextureSampler;
+    std::array<VkDescriptorSet, 3> m_ViewportDescriptorSets;
 };
 
 /**

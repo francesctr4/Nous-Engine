@@ -11,7 +11,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 	{
 		// World Attachments
 
-		std::array<VkImageView, 3> worldAttachments = { vkContext->swapChain.colorAttachment.view, vkContext->swapChain.depthAttachment.view, vkContext->imGuiResources.viewportImages[i].view };
+		std::array<VkImageView, 2> worldAttachments = { vkContext->imGuiResources.m_ViewportImageViews[i], vkContext->swapChain.depthAttachment.view };
 
 		VkFramebufferCreateInfo worldFramebufferCreateInfo{};
 		worldFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
