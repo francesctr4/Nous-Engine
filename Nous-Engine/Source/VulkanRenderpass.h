@@ -20,7 +20,11 @@ namespace NOUS_VulkanRenderpass
         float depth, uint32 stencil, uint8 clearFlags,
         bool prevPass, bool nextPass);
 
-	bool CreateOffscreenRenderpass(VulkanContext* vkContext);
+	bool CreateOffscreenRenderpass(
+        VulkanContext* vkContext,
+        VulkanRenderpass* outRenderpass,
+        float4 renderArea, float4 clearColor,
+        float depth, uint32 stencil, uint8 clearFlags);
 
     void DestroyRenderpass(VulkanContext* vkContext, VulkanRenderpass* renderpass);
 

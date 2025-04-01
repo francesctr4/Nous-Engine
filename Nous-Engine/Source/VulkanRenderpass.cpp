@@ -29,18 +29,16 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     bool doClearColor = (outRenderpass->clearFlags & RenderpassClearFlag::COLOR_BUFFER) != 0;
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = vkContext->swapChain.swapChainImageFormat;
-    colorAttachment.samples = vkContext->device.msaaSamples;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = doClearColor ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
     // Fix: Set initialLayout based on loadOp
-    colorAttachment.initialLayout = doClearColor ?
-        (prevPass ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED) :
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachment.initialLayout = doClearColor ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    colorAttachment.finalLayout = nextPass ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     attachments[attachmentCount++] = colorAttachment;
 
     VkAttachmentReference colorAttachmentRef{};
@@ -51,7 +49,7 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     bool doClearDepth = (outRenderpass->clearFlags & RenderpassClearFlag::DEPTH_BUFFER) != 0;
     VkAttachmentDescription depthAttachment{};
     depthAttachment.format = FindDepthFormat(vkContext->device.physicalDevice);
-    depthAttachment.samples = vkContext->device.msaaSamples;
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = doClearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // Adjust if needed
     depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -69,38 +67,25 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     depthAttachmentRef.attachment = 1;
     depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    // --- Resolve Attachment (Always Present) ---
-    VkAttachmentDescription colorAttachmentResolve{};
-    colorAttachmentResolve.format = vkContext->swapChain.swapChainImageFormat;
-    colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    attachments[attachmentCount++] = colorAttachmentResolve;
-
-    VkAttachmentReference colorAttachmentResolveRef{};
-    colorAttachmentResolveRef.attachment = 2;
-    colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
     // --- Subpass Setup ---
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
     subpass.pDepthStencilAttachment = &depthAttachmentRef; // Always reference depth
-    subpass.pResolveAttachments = &colorAttachmentResolveRef; // Always reference resolve
 
-    // Dependency setup
+    // UI render pass subpass dependency
     VkSubpassDependency dependency{};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT; // Wait for offscreen pass
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
     // Render pass creation
     VkRenderPassCreateInfo renderPassInfo{};
@@ -118,8 +103,19 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     return ret;
 }
 
-bool NOUS_VulkanRenderpass::CreateOffscreenRenderpass(VulkanContext* vkContext)
+bool NOUS_VulkanRenderpass::CreateOffscreenRenderpass(
+    VulkanContext* vkContext,
+    VulkanRenderpass* outRenderpass,
+    float4 renderArea, float4 clearColor,
+    float depth, uint32 stencil, uint8 clearFlags)
 {
+    outRenderpass->clearFlags = clearFlags;
+    outRenderpass->renderArea = renderArea;
+    outRenderpass->clearColor = clearColor;
+
+    outRenderpass->depth = depth;
+    outRenderpass->stencil = stencil;
+
     {
         std::array<VkAttachmentDescription, 2> attachments = {};
         // Color attachment
@@ -174,9 +170,9 @@ bool NOUS_VulkanRenderpass::CreateOffscreenRenderpass(VulkanContext* vkContext)
         dependencies[1].srcSubpass = 0;
         dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
         dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
         dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
         VkRenderPassCreateInfo renderPassInfo = {};
@@ -188,7 +184,7 @@ bool NOUS_VulkanRenderpass::CreateOffscreenRenderpass(VulkanContext* vkContext)
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
         renderPassInfo.pDependencies = dependencies.data();
 
-        if (vkCreateRenderPass(vkContext->device.logicalDevice, &renderPassInfo, nullptr, &vkContext->mainRenderpass.handle) != VK_SUCCESS)
+        if (vkCreateRenderPass(vkContext->device.logicalDevice, &renderPassInfo, vkContext->allocator, &vkContext->mainRenderpass.handle) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create render pass!");
         }
