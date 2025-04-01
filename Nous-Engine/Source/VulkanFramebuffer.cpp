@@ -27,7 +27,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 
 		// UI Attachments
 		
-		std::array<VkImageView, 2> uiAttachments = { vkContext->swapChain.colorAttachment.view, vkContext->swapChain.depthAttachment.view };
+		std::array<VkImageView, 2> uiAttachments = { vkContext->swapChain.swapChainImageViews[i], vkContext->swapChain.depthAttachment.view};
 
 		VkFramebufferCreateInfo uiFramebufferCreateInfo{};
 		uiFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

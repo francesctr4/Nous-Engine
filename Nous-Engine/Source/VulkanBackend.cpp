@@ -384,27 +384,6 @@ bool VulkanBackend::BeginFrame(float dt)
     vkContext->mainRenderpass.renderArea.z = vkContext->framebufferWidth;
     vkContext->mainRenderpass.renderArea.w = vkContext->framebufferHeight;
 
-    // After acquiring the swapchain image:
-    VkImageMemoryBarrier acquireBarrier{};
-    acquireBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    acquireBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Or current layout
-    acquireBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    acquireBarrier.image = vkContext->swapChain.swapChainImages[vkContext->imageIndex];
-    acquireBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // Critical fix
-    acquireBarrier.subresourceRange.baseMipLevel = 0;
-    acquireBarrier.subresourceRange.levelCount = 1;
-    acquireBarrier.subresourceRange.baseArrayLayer = 0;
-    acquireBarrier.subresourceRange.layerCount = 1;
-    acquireBarrier.srcAccessMask = 0;
-    acquireBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    vkCmdPipelineBarrier(
-        commandBuffer->handle,
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        0, 0, nullptr, 0, nullptr, 1, &acquireBarrier
-    );
-
     return true;
 }
 
@@ -594,6 +573,7 @@ bool VulkanBackend::RecreateResources()
 
     vkContext->mainRenderpass.renderArea.z = vkContext->framebufferWidth;
     vkContext->mainRenderpass.renderArea.w = vkContext->framebufferHeight;
+
     vkContext->uiRenderpass.renderArea.z = vkContext->framebufferWidth;
     vkContext->uiRenderpass.renderArea.w = vkContext->framebufferHeight;
 
