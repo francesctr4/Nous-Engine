@@ -344,6 +344,8 @@ struct VulkanImGuiResources
     std::array<VkFramebuffer, 3> m_ViewportFramebuffers;
     VkSampler m_ViewportTextureSampler;
     std::array<VkDescriptorSet, 3> m_ViewportDescriptorSets;
+
+    std::vector<VulkanCommandBuffer> m_ViewportCommandBuffers;
 };
 
 /**

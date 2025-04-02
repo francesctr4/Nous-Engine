@@ -350,8 +350,108 @@ bool VulkanBackend::BeginFrame(float dt)
         return false;
     }
 
+    return true;
+}
+
+bool VulkanBackend::EndFrame(float dt)
+{
+    // Make sure the previous frame is not using this image (i.e. its fence is being waited on)
+    if (vkContext->imagesInFlight[vkContext->imageIndex] != VK_NULL_HANDLE) // was frame
+    {  
+        VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, &vkContext->imagesInFlight[vkContext->imageIndex], true, UINT64_MAX);
+        if (!VkResultIsSuccess(result))
+        {
+            NOUS_FATAL("VkFence wait failure! Error: %s", VkResultMessage(result, true));
+            return false;
+        }
+    }
+
+    // Mark the image fence as in-use by this frame.
+    vkContext->imagesInFlight[vkContext->imageIndex] = vkContext->inFlightFences[vkContext->currentFrame];
+
+    // Reset the fence for use on the next frame
+    VK_CHECK(vkResetFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame]));
+
+    std::array<VulkanCommandBuffer*, 2> commandBuffers = { &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex], &vkContext->graphicsCommandBuffers[vkContext->imageIndex] };
+    std::array<VkCommandBuffer, 2> commandBuffersPtrs = { vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex].handle, vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle };
+
+    // Submit the queue and wait for the operation to complete.
+    // Begin queue submission
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    // Command buffer(s) to be executed.
+    submitInfo.commandBufferCount = static_cast<uint32>(commandBuffersPtrs.size());
+    submitInfo.pCommandBuffers = commandBuffersPtrs.data();
+
+    // The semaphore(s) to be signaled when the queue is complete.
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = &vkContext->queueCompleteSemaphores[vkContext->currentFrame];
+
+    // Wait semaphore ensures that the operation cannot begin until the image is available.
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &vkContext->imageAvailableSemaphores[vkContext->currentFrame];
+
+    // Each semaphore waits on the corresponding pipeline stage to complete. 1:1 ratio.
+    
+    // VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT prevents subsequent colour attachment
+    // writes from executing until the semaphore signals (i.e. one frame is presented at a time)
+    VkPipelineStageFlags flags[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.pWaitDstStageMask = flags;
+
+    VkResult result = vkQueueSubmit(vkContext->device.graphicsQueue, 1, &submitInfo, 
+        vkContext->inFlightFences[vkContext->currentFrame]);
+
+    if (result != VK_SUCCESS) 
+    {
+        NOUS_ERROR("vkQueueSubmit failed with result: '%s'", VkResultMessage(result, true));
+        return false;
+    }
+
+    NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(commandBuffers[0]);
+    NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(commandBuffers[1]);
+
+    // End queue submission
+    // Give the image back to the swapchain.
+    SwapChainPresent(vkContext, &vkContext->swapChain, vkContext->device.graphicsQueue,
+        vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
+        vkContext->imageIndex);
+
+    // TODO: Fix problem on class and ImGui
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
+	return true;
+}
+
+bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
+{
     // Begin recording commands.
-    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+    VulkanCommandBuffer* commandBuffer = nullptr;
+    VulkanRenderpass* renderpass = nullptr;
+    VkFramebuffer framebuffer = 0;
+    
+    switch (renderpassID)
+    {
+        case BuiltInRenderpass::WORLD: 
+        {
+            commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
+            renderpass = &vkContext->mainRenderpass;
+            framebuffer = vkContext->worldFramebuffers[vkContext->imageIndex];
+            break;
+        }
+        case BuiltInRenderpass::UI:
+        {
+            commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+            renderpass = &vkContext->uiRenderpass;
+            framebuffer = vkContext->swapChain.swapChainFramebuffers[vkContext->imageIndex];
+            break;
+        }
+        default:
+        {
+            NOUS_ERROR("Vulkan Renderpass called on an unrecognized renderpass ID.");
+            return false;
+        }
+    }
 
     NOUS_VulkanCommandBuffer::CommandBufferReset(commandBuffer);
     NOUS_VulkanCommandBuffer::CommandBufferBegin(commandBuffer, false, false, false);
@@ -378,7 +478,7 @@ bool VulkanBackend::BeginFrame(float dt)
 
     scissor.extent.width = vkContext->framebufferWidth;
     scissor.extent.height = vkContext->framebufferHeight;
-    
+
     vkCmdSetScissor(commandBuffer->handle, 0, 1, &scissor);
 
     vkContext->mainRenderpass.renderArea.z = vkContext->framebufferWidth;
@@ -386,106 +486,6 @@ bool VulkanBackend::BeginFrame(float dt)
 
     vkContext->uiRenderpass.renderArea.z = vkContext->framebufferWidth;
     vkContext->uiRenderpass.renderArea.w = vkContext->framebufferHeight;
-
-    return true;
-}
-
-bool VulkanBackend::EndFrame(float dt)
-{
-    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
-
-    NOUS_VulkanCommandBuffer::CommandBufferEnd(commandBuffer);
-
-    // Make sure the previous frame is not using this image (i.e. its fence is being waited on)
-    if (vkContext->imagesInFlight[vkContext->imageIndex] != VK_NULL_HANDLE) // was frame
-    {  
-        VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, &vkContext->imagesInFlight[vkContext->imageIndex], true, UINT64_MAX);
-        if (!VkResultIsSuccess(result))
-        {
-            NOUS_FATAL("VkFence wait failure! Error: %s", VkResultMessage(result, true));
-            return false;
-        }
-    }
-
-    // Mark the image fence as in-use by this frame.
-    vkContext->imagesInFlight[vkContext->imageIndex] = vkContext->inFlightFences[vkContext->currentFrame];
-
-    // Reset the fence for use on the next frame
-    VK_CHECK(vkResetFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame]));
-
-    // Submit the queue and wait for the operation to complete.
-    // Begin queue submission
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    // Command buffer(s) to be executed.
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer->handle;
-
-    // The semaphore(s) to be signaled when the queue is complete.
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &vkContext->queueCompleteSemaphores[vkContext->currentFrame];
-
-    // Wait semaphore ensures that the operation cannot begin until the image is available.
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &vkContext->imageAvailableSemaphores[vkContext->currentFrame];
-
-    // Each semaphore waits on the corresponding pipeline stage to complete. 1:1 ratio.
-    
-    // VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT prevents subsequent colour attachment
-    // writes from executing until the semaphore signals (i.e. one frame is presented at a time)
-    VkPipelineStageFlags flags[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    submitInfo.pWaitDstStageMask = flags;
-
-    VkResult result = vkQueueSubmit(vkContext->device.graphicsQueue, 1, &submitInfo, 
-        vkContext->inFlightFences[vkContext->currentFrame]);
-
-    if (result != VK_SUCCESS) 
-    {
-        NOUS_ERROR("vkQueueSubmit failed with result: '%s'", VkResultMessage(result, true));
-        return false;
-    }
-
-    NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(commandBuffer);
-
-    // End queue submission
-    // Give the image back to the swapchain.
-    SwapChainPresent(vkContext, &vkContext->swapChain, vkContext->device.graphicsQueue,
-        vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
-        vkContext->imageIndex);
-
-    // TODO: Fix problem on class and ImGui
-    vkDeviceWaitIdle(vkContext->device.logicalDevice);
-
-	return true;
-}
-
-bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
-{
-    VulkanRenderpass* renderpass = nullptr;
-    VkFramebuffer framebuffer = 0;
-    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
-    
-    switch (renderpassID)
-    {
-        case BuiltInRenderpass::WORLD: 
-        {
-            renderpass = &vkContext->mainRenderpass;
-            framebuffer = vkContext->worldFramebuffers[vkContext->imageIndex];
-            break;
-        }
-        case BuiltInRenderpass::UI:
-        {
-            renderpass = &vkContext->uiRenderpass;
-            framebuffer = vkContext->swapChain.swapChainFramebuffers[vkContext->imageIndex];
-            break;
-        }
-        default:
-        {
-            NOUS_ERROR("Vulkan Renderpass called on an unrecognized renderpass ID.");
-            return false;
-        }
-    }
 
     NOUS_VulkanRenderpass::BeginRenderpass(commandBuffer, renderpass, framebuffer);
 
@@ -509,17 +509,19 @@ bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
 bool VulkanBackend::EndRenderpass(BuiltInRenderpass renderpassID)
 {
     VulkanRenderpass* renderpass = nullptr;
-    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
-
+    VulkanCommandBuffer* commandBuffer = nullptr;
+    
     switch (renderpassID)
     {
         case BuiltInRenderpass::WORLD:
         {
+            commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
             renderpass = &vkContext->mainRenderpass;
             break;
         }
         case BuiltInRenderpass::UI:
         {
+            commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
             renderpass = &vkContext->uiRenderpass;
             break;
         }
@@ -532,6 +534,9 @@ bool VulkanBackend::EndRenderpass(BuiltInRenderpass renderpassID)
 
     // End renderpass
     NOUS_VulkanRenderpass::EndRenderpass(commandBuffer, renderpass);
+
+    // End command buffer
+    NOUS_VulkanCommandBuffer::CommandBufferEnd(commandBuffer);
 
     return true;
 }
@@ -592,6 +597,7 @@ bool VulkanBackend::RecreateResources()
     for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
         NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
+        NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &vkContext->imGuiResources.m_ViewportCommandBuffers[i]);
     }
 
     // Framebuffers.
@@ -626,7 +632,7 @@ bool VulkanBackend::RecreateResources()
 
 void VulkanBackend::UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
 {
-    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+    VulkanCommandBuffer* commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
 
     UseMaterialShader(vkContext, &vkContext->materialShader);
 
@@ -657,7 +663,7 @@ void VulkanBackend::DrawGeometry(GeometryRenderData renderData)
     }
 
     VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
-    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+    VulkanCommandBuffer* commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex] ;
 
     UseMaterialShader(vkContext, &vkContext->materialShader);
 
