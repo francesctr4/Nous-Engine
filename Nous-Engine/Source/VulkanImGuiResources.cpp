@@ -52,6 +52,48 @@ void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkCon
 	vkDestroyDescriptorPool(vkContext->device.logicalDevice, vkContext->imGuiResources.descriptorPool, vkContext->allocator);
 }
 
+void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkContext)
+{
+	// Destroy all
+
+	for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
+	{
+		if (vkContext->imGuiResources.m_ViewportImageViews[i])
+		{
+			vkDestroyImageView(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportImageViews[i], vkContext->allocator);
+			vkContext->imGuiResources.m_ViewportImageViews[i] = 0;
+		}
+
+		if (vkContext->imGuiResources.m_ViewportDstImageMemory[i])
+		{
+			vkFreeMemory(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportDstImageMemory[i], vkContext->allocator);
+			vkContext->imGuiResources.m_ViewportDstImageMemory[i] = 0;
+		}
+
+		if (vkContext->imGuiResources.m_ViewportImages[i])
+		{
+			vkDestroyImage(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportImages[i], vkContext->allocator);
+			vkContext->imGuiResources.m_ViewportImages[i] = 0;
+		}
+
+	}
+
+	for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImageViews.size(); ++i)
+	{
+		ImGui_ImplVulkan_RemoveTexture(vkContext->imGuiResources.m_ViewportDescriptorSets[i]);
+	}
+
+	// Recreate all
+
+	CreateViewportImages(vkContext);
+	CreateViewportImageViews(vkContext);
+
+	for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImageViews.size(); ++i)
+	{
+		vkContext->imGuiResources.m_ViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(vkContext->imGuiResources.m_ViewportTextureSampler, vkContext->imGuiResources.m_ViewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	}
+}
+
 // ----------------------------------------------------------------------------------- //
 
 void NOUS_ImGuiVulkanResources::CreateImGuiDescriptorPool(VulkanContext* vkContext)

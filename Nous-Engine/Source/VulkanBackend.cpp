@@ -571,6 +571,8 @@ bool VulkanBackend::RecreateResources()
     vkContext->framebufferWidth = cachedFramebufferWidth;
     vkContext->framebufferHeight = cachedFramebufferHeight;
 
+    NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(vkContext);
+
     vkContext->mainRenderpass.renderArea.z = vkContext->framebufferWidth;
     vkContext->mainRenderpass.renderArea.w = vkContext->framebufferHeight;
 

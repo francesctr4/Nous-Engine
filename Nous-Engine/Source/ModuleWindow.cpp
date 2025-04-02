@@ -52,7 +52,7 @@ bool ModuleWindow::Start()
 {
     NOUS_TRACE("%s()", __FUNCTION__);
 
-    //SDL_MaximizeWindow(window);
+    SDL_MaximizeWindow(window);
 
     return true;
 }

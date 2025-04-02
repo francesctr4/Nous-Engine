@@ -6,6 +6,7 @@ namespace NOUS_ImGuiVulkanResources
 {
 	void CreateImGuiVulkanResources(VulkanContext* vkContext);
 	void DestroyImGuiVulkanResources(VulkanContext* vkContext);
+	void RecreateImGuiVulkanResources(VulkanContext* vkContext);
 
 	// ----------------------------------------------------------------------------------- //
 
