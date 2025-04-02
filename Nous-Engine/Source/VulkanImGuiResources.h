@@ -49,4 +49,8 @@ namespace NOUS_ImGuiVulkanResources
 	VkImageView CreateImageView(VulkanContext* vkContext, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
 	void CreateViewportImageViews(VulkanContext* vkContext);
+
+	void CreateDepthResources(VulkanContext* vkContext);
+
+	void DestroyDepthResources(VulkanContext* vkContext);
 }

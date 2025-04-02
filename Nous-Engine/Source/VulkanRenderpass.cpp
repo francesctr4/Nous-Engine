@@ -23,7 +23,7 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     outRenderpass->stencil = stencil;
 
     uint32 attachmentCount = 0;
-    std::array<VkAttachmentDescription, 3> attachments;
+    std::array<VkAttachmentDescription, 2> attachments;
 
     // --- Color Attachment (Always Present) ---
     bool doClearColor = (outRenderpass->clearFlags & RenderpassClearFlag::COLOR_BUFFER) != 0;
@@ -47,18 +47,18 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
 
     // --- Depth Attachment (Always Present) ---
     bool doClearDepth = (outRenderpass->clearFlags & RenderpassClearFlag::DEPTH_BUFFER) != 0;
+    // In CreateRenderpass (UI render pass)
     VkAttachmentDescription depthAttachment{};
     depthAttachment.format = FindDepthFormat(vkContext->device.physicalDevice);
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = doClearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // Adjust if needed
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.loadOp = doClearDepth ?
+        VK_ATTACHMENT_LOAD_OP_CLEAR :
+        VK_ATTACHMENT_LOAD_OP_LOAD; // Preserve depth data if not clearing
 
-    // Fix: Set initialLayout based on loadOp
+    // Match the offscreen pass's final layout when loading
     depthAttachment.initialLayout = doClearDepth ?
-        VK_IMAGE_LAYOUT_UNDEFINED :
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        VK_IMAGE_LAYOUT_UNDEFINED : // Clear requires UNDEFINED layout
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // Preserve layout
 
     depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     attachments[attachmentCount++] = depthAttachment;
@@ -74,18 +74,22 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     subpass.pColorAttachments = &colorAttachmentRef;
     subpass.pDepthStencilAttachment = &depthAttachmentRef; // Always reference depth
 
-    // UI render pass subpass dependency
     VkSubpassDependency dependency{};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT; // Wait for offscreen pass
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+    dependency.srcStageMask =
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    dependency.dstStageMask =
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
         VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+    dependency.srcAccessMask =
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+    dependency.dstAccessMask =
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     // Render pass creation
     VkRenderPassCreateInfo renderPassInfo{};
@@ -161,10 +165,18 @@ bool NOUS_VulkanRenderpass::CreateOffscreenRenderpass(
 
         dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
         dependencies[0].dstSubpass = 0;
-        dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[0].srcStageMask =
+            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | // Wait for previous depth writes
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[0].dstStageMask =
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | // Depth testing/clearing
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // Color writes
+        dependencies[0].srcAccessMask =
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | // Previous depth writes
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[0].dstAccessMask =
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | // Offscreen depth writes
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
         dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
         dependencies[1].srcSubpass = 0;

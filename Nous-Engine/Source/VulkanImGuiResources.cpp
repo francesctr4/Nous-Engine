@@ -16,6 +16,7 @@ void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkCont
 	//CreateImGuiImages(vkContext, &vkContext->swapChain);
 	CreateViewportImages(vkContext);
 	CreateViewportImageViews(vkContext);
+	CreateDepthResources(vkContext);
 }
 
 void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkContext)
@@ -26,6 +27,8 @@ void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkCon
 	//{
 	//	DestroyVulkanImage(vkContext, &image);
 	//}
+
+	DestroyDepthResources(vkContext);
 
 	for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
 	{
@@ -55,6 +58,8 @@ void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkCon
 void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkContext)
 {
 	// Destroy all
+
+	DestroyDepthResources(vkContext);
 
 	for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
 	{
@@ -87,6 +92,8 @@ void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkCo
 
 	CreateViewportImages(vkContext);
 	CreateViewportImageViews(vkContext);
+
+	CreateDepthResources(vkContext);
 
 	for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImageViews.size(); ++i)
 	{
@@ -453,4 +460,32 @@ void NOUS_ImGuiVulkanResources::CreateViewportImageViews(VulkanContext* vkContex
 	{
 		vkContext->imGuiResources.m_ViewportImageViews[i] = CreateImageView(vkContext, vkContext->imGuiResources.m_ViewportImages[i], VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
+}
+
+void NOUS_ImGuiVulkanResources::CreateDepthResources(VulkanContext* vkContext)
+{
+	// Depth resources
+	vkContext->device.depthFormat = FindDepthFormat(vkContext->device.physicalDevice);
+
+	// Create depth image and its view.
+	CreateVulkanImage(
+		vkContext,
+		VK_IMAGE_TYPE_2D,
+		vkContext->framebufferWidth,  // Use framebuffer dimensions, NOT swapchain
+		vkContext->framebufferHeight,
+		1,  // Mip levels
+		VK_SAMPLE_COUNT_1_BIT,
+		vkContext->device.depthFormat,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		true,  // Create view
+		VK_IMAGE_ASPECT_DEPTH_BIT,  // Use VK_IMAGE_ASPECT_DEPTH_BIT | STENCIL if needed
+		&vkContext->imGuiResources.m_ViewportDepthAttachment
+	);
+}
+
+void NOUS_ImGuiVulkanResources::DestroyDepthResources(VulkanContext* vkContext)
+{
+	DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
 }

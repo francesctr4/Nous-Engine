@@ -346,6 +346,7 @@ struct VulkanImGuiResources
     std::array<VkDescriptorSet, 3> m_ViewportDescriptorSets;
 
     std::vector<VulkanCommandBuffer> m_ViewportCommandBuffers;
+    VulkanImage m_ViewportDepthAttachment;
 };
 
 /**

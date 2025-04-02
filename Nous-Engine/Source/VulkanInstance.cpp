@@ -23,40 +23,65 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 
     std::vector<const char*> extensions = GetRequiredExtensions();
 
-    VkApplicationInfo appInfo{};
+    // Add portability enumeration extension if needed
+    bool requiresPortability = false;
+    for (auto& ext : extensions) {
+        if (strcmp(ext, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) == 0) {
+            requiresPortability = true;
+            break;
+        }
+    }
 
+    VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.apiVersion = VK_API_VERSION_1_2;
-    appInfo.pNext = nullptr;
-
     appInfo.pApplicationName = TITLE;
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-
     appInfo.pEngineName = TITLE;
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 
     VkInstanceCreateInfo createInfo{};
-
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 
-    // BUG FIX: "RenderDoc does not support requested instance extension: VK_KHR_portability_enumeration"
-    //createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    // Conditionally enable portability enumeration
+    if (requiresPortability) {
+        createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    }
+
+    // Set up validation features
+    VkValidationFeatureEnableEXT enabledFeatures[] = {
+        VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
+        VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
+    };
+
+    VkValidationFeaturesEXT validationFeatures{};
+    validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+    validationFeatures.enabledValidationFeatureCount = 2;
+    validationFeatures.pEnabledValidationFeatures = enabledFeatures;
+
+    // Set up debug messenger create info
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+    if (enableValidationLayers) {
+        NOUS_VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+        validationFeatures.pNext = &debugCreateInfo;
+    }
+
+    // Chain the validation features to the main create info
+    createInfo.pNext = &validationFeatures;
 
     createInfo.pApplicationInfo = &appInfo;
-    createInfo.pNext = nullptr;
-
     createInfo.enabledExtensionCount = static_cast<uint32>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
+    createInfo.enabledLayerCount = enableValidationLayers ?
+        static_cast<uint32>(validationLayers.size()) : 0;
+    createInfo.ppEnabledLayerNames = enableValidationLayers ?
+        validationLayers.data() : nullptr;
 
-    createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32>(validationLayers.size()) : 0;
-    createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
-
-    // Validation Layers Loading Debugger
-    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (enableValidationLayers) NOUS_VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
-    createInfo.pNext = enableValidationLayers ? (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo : nullptr;
-
-    VK_CHECK_MSG(vkCreateInstance(&createInfo, vkContext->allocator, &vkContext->instance), "vkCreateInstance failed!");
+    VkResult result = vkCreateInstance(&createInfo, vkContext->allocator, &vkContext->instance);
+    if (result != VK_SUCCESS) {
+        NOUS_ERROR("Failed to create Vulkan instance: %s", VkResultMessage(result, true));
+        return false;
+    }
 
     return ret;
 }

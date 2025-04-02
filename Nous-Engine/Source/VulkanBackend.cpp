@@ -396,7 +396,8 @@ bool VulkanBackend::EndFrame(float dt)
     
     // VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT prevents subsequent colour attachment
     // writes from executing until the semaphore signals (i.e. one frame is presented at a time)
-    VkPipelineStageFlags flags[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkPipelineStageFlags flags[2] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT };
     submitInfo.pWaitDstStageMask = flags;
 
     VkResult result = vkQueueSubmit(vkContext->device.graphicsQueue, 1, &submitInfo, 
