@@ -384,6 +384,9 @@ bool VulkanBackend::BeginFrame(float dt)
     vkContext->mainRenderpass.renderArea.z = vkContext->framebufferWidth;
     vkContext->mainRenderpass.renderArea.w = vkContext->framebufferHeight;
 
+    vkContext->uiRenderpass.renderArea.z = vkContext->framebufferWidth;
+    vkContext->uiRenderpass.renderArea.w = vkContext->framebufferHeight;
+
     return true;
 }
 
