@@ -1,0 +1,117 @@
+#include "NOUS_ThreadPool.h"
+
+#include "MemoryManager.h"
+
+/// @brief NOUS_ThreadPool constructor.
+/// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
+NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(size_t numThreads) :
+	mShutdown(false)
+{
+	numThreads = std::max<size_t>(0, numThreads);
+	mThreads.reserve(numThreads);
+
+	for (size_t i = 0; i < numThreads; ++i)
+	{
+		mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
+
+		mThreads[i]->Start([this, i]() {
+			mThreads[i]->SetName("Worker Thread " + std::to_string(i + 1));
+			WorkerLoop(mThreads[i]);
+			});
+	}
+}
+
+/// @brief NOUS_ThreadPool destructor.
+NOUS_Multithreading::NOUS_ThreadPool::~NOUS_ThreadPool()
+{
+	Shutdown();
+}
+
+/// @brief Adds a job to the queue and notifies a worker.
+/// @param job The job to be executed.
+void NOUS_Multithreading::NOUS_ThreadPool::SubmitJob(NOUS_Job* job)
+{
+	{
+		std::lock_guard<std::mutex> lock(mMutex);
+		mJobQueue.push(std::move(job));
+	}
+	mConditionVar.notify_one();
+}
+
+/// @brief Deletes pending jobs, joins all threads and cleans up resources afterwards.
+void NOUS_Multithreading::NOUS_ThreadPool::Shutdown()
+{
+	if (mShutdown.exchange(true))
+	{
+		return;
+	}
+
+	while (!mJobQueue.empty())
+	{
+		NOUS_Job* job = mJobQueue.front();
+		NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
+		mJobQueue.pop();
+	}
+
+	mConditionVar.notify_all();
+
+	for (NOUS_Thread* thread : mThreads)
+	{
+		thread->Join();
+		NOUS_DELETE<NOUS_Thread>(thread, MemoryManager::MemoryTag::THREAD);
+	}
+
+	mThreads.clear();
+}
+
+/// @return A vector of NOUS_Thread contained inside the thread pool.
+const std::vector<NOUS_Multithreading::NOUS_Thread*>& NOUS_Multithreading::NOUS_ThreadPool::GetThreads() const
+{ 
+	return mThreads; 
+}
+
+/// @brief Worker loop that each thread executes to process jobs from the queue.
+/// @param thread The thread executing this loop.
+void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
+{
+	while (true)
+	{
+		NOUS_Job* job = nullptr;
+
+		{
+			std::unique_lock<std::mutex> lock(mMutex);
+
+			thread->SetThreadState(ThreadState::READY);
+
+			mConditionVar.wait(lock, [this]() {
+				return !mJobQueue.empty() || mShutdown; // Threads sleep when there's no work.
+				});
+
+			if (mShutdown && mJobQueue.empty()) break;
+
+			job = std::move(mJobQueue.front());
+			mJobQueue.pop();
+		}
+
+		thread->SetThreadState(ThreadState::RUNNING);
+		thread->SetCurrentJob(job);
+		thread->StartExecutionTimer();
+
+		try
+		{
+			job->Execute();
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Job '" << job->GetName() << "' failed: " << e.what() << '\n';
+		}
+
+		NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
+
+		thread->StopExecutionTimer();
+		thread->SetCurrentJob(nullptr);
+		thread->SetThreadState(ThreadState::READY);
+	}
+
+	thread->SetThreadState(ThreadState::READY);
+}

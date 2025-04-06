@@ -272,7 +272,11 @@
     <ClCompile Include="Source\ModuleScene.cpp" />
     <ClCompile Include="Source\ModuleWindow.cpp" />
     <ClCompile Include="Source\MemoryManager.cpp" />
+    <ClCompile Include="Source\NOUS_Job.cpp" />
+    <ClCompile Include="Source\NOUS_JobSystem.cpp" />
     <ClCompile Include="Source\NOUS_Multithreading.cpp" />
+    <ClCompile Include="Source\NOUS_Thread.cpp" />
+    <ClCompile Include="Source\NOUS_ThreadPool.cpp" />
     <ClCompile Include="Source\OpenGLBackend.cpp" />
     <ClCompile Include="Source\Properties.cpp" />
     <ClCompile Include="Source\Random.cpp" />
@@ -325,7 +329,11 @@
     <ClInclude Include="Source\MaterialSystem.h" />
     <ClInclude Include="Source\MetaFileData.inl" />
     <ClInclude Include="Source\ModuleResourceManager.h" />
+    <ClInclude Include="Source\NOUS_Job.h" />
+    <ClInclude Include="Source\NOUS_JobSystem.h" />
     <ClInclude Include="Source\NOUS_Multithreading.h" />
+    <ClInclude Include="Source\NOUS_Thread.h" />
+    <ClInclude Include="Source\NOUS_ThreadPool.h" />
     <ClInclude Include="Source\Properties.h" />
     <ClInclude Include="Source\EventSystem.h" />
     <ClInclude Include="Source\External\Assimp\include\ai_assert.h" />

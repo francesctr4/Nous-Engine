@@ -121,6 +121,15 @@ namespace NOUS_Multithreading
 		void StopExecutionTimer() { mExecutionTime.Stop(); }
 		double GetExecutionTimeMS() const { return mExecutionTime.ReadMS(); }
 
+		/// @brief Sets a std::thread::id to this NOUS_Thread.
+		/// @note Used mainly for registering main thread.
+		void SetThreadID(std::thread::id id) 
+		{
+			std::stringstream ss;
+			ss << id;
+			mThreadID = static_cast<uint32>(std::stoul(ss.str()));
+		}
+
 		/// @brief Converts a std::thread::id to a numeric uint32.
 		/// @note Relies on string conversion; platform-dependent.
 		static uint32 GetThreadID(std::thread::id id)
@@ -403,6 +412,7 @@ namespace NOUS_Multithreading
 			sMainThread = NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD);
 
 			sMainThread->SetName("Main Thread");
+			sMainThread->SetThreadID(std::this_thread::get_id());
 			sMainThread->SetThreadState(ThreadState::RUNNING);
 			sMainThread->StartExecutionTimer();
 		}
@@ -441,7 +451,7 @@ namespace NOUS_Multithreading
 		if (mainThread) 
 		{
 			std::cout << "Thread '" << mainThread->GetName() 
-				      << "' (ID: " << NOUS_Thread::GetThreadID(std::this_thread::get_id()) << ") - "
+				      << "' (ID: " << mainThread->GetID() << ") - "
 					  << NOUS_Thread::GetStringFromState(mainThread->GetThreadState())
 					  << ", Exec Time: " << mainThread->GetExecutionTimeMS() << "ms" << "\n";
 		}

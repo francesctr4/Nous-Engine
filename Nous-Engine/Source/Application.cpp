@@ -59,15 +59,15 @@ Application::Application()
     listModules[6] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleRenderer3D");
     listModules[7] = editor = NOUS_NEW<ModuleEditor>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleEditor");
 
-    // Here goes the job system
-    //jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryManager::MemoryTag::THREAD);
+    // ------------- MULTITHREADING ------------- //
+    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryManager::MemoryTag::THREAD);
 }
 
 Application::~Application()
 {
-    // Here goes the job system
-    //jobSystem->WaitForAll();
-    //NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
+    // ------------- MULTITHREADING ------------- //
+    jobSystem->WaitForPendingJobs();
+    NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
 
     //for (int i = 0; i < NUM_MODULES; ++i)
     //{

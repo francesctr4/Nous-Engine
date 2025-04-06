@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 	// Specify the amount of memory available for the project
 	MemoryManager::InitializeMemory(MiB(100));
 
-	NOUS_Multithreading::Initialize();
+	NOUS_Multithreading::RegisterMainThread();
 
 	InitializeLogging();
 
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
 
 	NOUS_INFO("Exiting engine '%s'...\n", TITLE);
 
-	NOUS_Multithreading::Shutdown();
+	NOUS_Multithreading::UnregisterMainThread();
 
 	NOUS_INFO(MemoryManager::GetMemoryUsageStats());
 

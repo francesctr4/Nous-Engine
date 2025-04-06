@@ -4,6 +4,8 @@
 #include "EventSystem.h"
 #include "Timer.h"
 
+#include "NOUS_JobSystem.h"
+
 constexpr uint16 NUM_MODULES = 8;
 
 class Module;
@@ -49,8 +51,8 @@ public:
 
 	bool isMinimized;
 
-	// Here goes the job system
-	//NOUS_Multithreading::NOUS_JobSystem* jobSystem;
+	// ------------- MULTITHREADING ------------- //
+	NOUS_Multithreading::NOUS_JobSystem* jobSystem;
 	
 private:
 

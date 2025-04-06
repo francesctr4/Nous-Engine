@@ -462,6 +462,18 @@
     <ClCompile Include="Source\FreeList.cpp">
       <Filter>Source Code\Memory</Filter>
     </ClCompile>
+    <ClCompile Include="Source\NOUS_JobSystem.cpp">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\NOUS_ThreadPool.cpp">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\NOUS_Job.cpp">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\NOUS_Thread.cpp">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1249,6 +1261,18 @@
     </ClInclude>
     <ClInclude Include="Source\FreeList.h">
       <Filter>Source Code\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\NOUS_JobSystem.h">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\NOUS_ThreadPool.h">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\NOUS_Job.h">
+      <Filter>Source Code\!!NousMultithreading</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\NOUS_Thread.h">
+      <Filter>Source Code\!!NousMultithreading</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
