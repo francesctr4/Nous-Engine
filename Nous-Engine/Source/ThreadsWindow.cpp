@@ -4,6 +4,8 @@
 #include "NOUS_JobSystem.h"
 #include "NOUS_Multithreading.h"
 
+#include <algorithm>
+
 Threads::Threads(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
 {
