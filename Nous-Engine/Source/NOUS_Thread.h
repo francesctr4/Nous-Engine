@@ -5,6 +5,7 @@
 
 #include "NOUS_Job.h"
 
+#include <thread>
 #include <functional>
 
 namespace NOUS_Multithreading
