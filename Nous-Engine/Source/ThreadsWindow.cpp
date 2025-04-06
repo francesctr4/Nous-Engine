@@ -26,6 +26,21 @@ void Threads::Draw()
         ImGui::Text("Thread System Overview");
         ImGui::Separator();
 
+        static int newSize = NOUS_Multithreading::c_MAX_HARDWARE_THREADS;
+        const int minThreads = 0;
+        const int maxThreads = NOUS_Multithreading::c_MAX_HARDWARE_THREADS * 2;
+
+        if (ImGui::InputInt("Thread Count", &newSize, 1, 5))
+        {
+            newSize = std::clamp(newSize, minThreads, maxThreads);
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Resize Pool"))
+        {
+            External->jobSystem->Resize(newSize);
+        }
+        
         ImGui::Columns(2);
         ImGui::Text("Max Worker Threads: %u", NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
         ImGui::NextColumn();
@@ -33,6 +48,9 @@ void Threads::Draw()
         static const auto& threadPool = External->jobSystem->GetThreadPool();
         static const auto& threads = threadPool.GetThreads();
         auto* mainThread = NOUS_Multithreading::GetMainThread();
+
+        NOUS_Multithreading::NOUS_Job mainThreadJob("Nous Engine", {});
+        mainThread->SetCurrentJob(&mainThreadJob);
 
         // Calculate active threads
         int activeThreads = 0;
@@ -44,10 +62,29 @@ void Threads::Draw()
             if (thread->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING)
                 activeThreads++;
 
-        // Active threads progress bar
-        ImGui::ProgressBar((float)activeThreads / allThreads.size(),
-            ImVec2(-1, 0),
-            std::to_string(activeThreads).c_str());
+        // Active threads progress bar with threshold-based coloring
+        float progress = static_cast<float>(activeThreads) / allThreads.size();
+        const float yellowThreshold = 1.0f / 3.0f;
+        const float redThreshold = 2.0f / 3.0f;
+
+        // Determine color based on current progress
+        ImVec4 barColor;
+        if (progress <= yellowThreshold) {
+            barColor = ImVec4(0.0f, 0.8f, 0.0f, 1.0f);  // Green
+        }
+        else if (progress <= redThreshold) {
+            barColor = ImVec4(0.8f, 0.8f, 0.0f, 1.0f);  // Yellow
+        }
+        else {
+            barColor = ImVec4(0.8f, 0.0f, 0.0f, 1.0f);  // Red
+        }
+
+        // Apply custom color to the progress bar
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, barColor);
+        std::string text = "Active Threads: " + std::to_string(activeThreads) + "/" + std::to_string(allThreads.size());
+        ImGui::ProgressBar(progress, ImVec2(-1, 0), text.c_str());
+        ImGui::PopStyleColor();
+
         ImGui::Columns(1);
 
         ImGui::Separator();

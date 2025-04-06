@@ -33,11 +33,20 @@ void Resources::Draw()
 
             ImGui::Spacing();
 
-            static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg |
-                ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
-                ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+            // Calculate available space after previous widgets
+            ImVec2 availableSpace = ImGui::GetContentRegionAvail();
 
-            if (ImGui::BeginTable("ResourcesTable", 4, flags))
+            // Add ScrollY to flags for table scrolling if needed
+            static ImGuiTableFlags flags =
+                ImGuiTableFlags_SizingFixedFit |
+                ImGuiTableFlags_RowBg |
+                ImGuiTableFlags_Borders |
+                ImGuiTableFlags_Resizable |
+                ImGuiTableFlags_Reorderable |
+                ImGuiTableFlags_Hideable |
+                ImGuiTableFlags_ScrollY;  // <-- Added ScrollY flag
+
+            if (ImGui::BeginTable("ResourcesTable", 4, flags, ImVec2(0, availableSpace.y)))
             {
                 ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
                 ImGui::TableSetupColumn("UID", ImGuiTableColumnFlags_WidthStretch);
@@ -56,7 +65,7 @@ void Resources::Draw()
                     DisplayResource(Resource, textColor);
                 }
 
-                // Scroll to the bottom if a new resource is added
+                // Scroll to the bottom if a new resource is added (now affects the table's scroll)
                 if (currentResourceCount > previousResourceCount)
                 {
                     ImGui::SetScrollHereY(1.0f);
@@ -65,7 +74,6 @@ void Resources::Draw()
                 ImGui::EndTable();
             }
 
-            // Update the previous resource count
             previousResourceCount = currentResourceCount;
         }
         ImGui::End();
