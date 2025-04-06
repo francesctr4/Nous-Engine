@@ -447,9 +447,6 @@
     <ClCompile Include="Source\NOUS_Multithreading.cpp">
       <Filter>Source Code\!!NousMultithreading</Filter>
     </ClCompile>
-    <ClCompile Include="Source\ThreadPool.cpp">
-      <Filter>Source Code\!!NousMultithreading</Filter>
-    </ClCompile>
     <ClCompile Include="Source\ThreadsWindow.cpp">
       <Filter>Source Code\!!NousMultithreading</Filter>
     </ClCompile>
@@ -1236,9 +1233,6 @@
       <Filter>Source Code\!NousResource\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\NOUS_Multithreading.h">
-      <Filter>Source Code\!!NousMultithreading</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\ThreadPool.h">
       <Filter>Source Code\!!NousMultithreading</Filter>
     </ClInclude>
     <ClInclude Include="Source\ThreadsWindow.h">
