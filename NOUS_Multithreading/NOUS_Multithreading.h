@@ -3,20 +3,20 @@
 
 #include "MemoryManager.h"
 
-#include <thread>
-#include <functional>
-#include <atomic>
-#include <mutex>
-#include <condition_variable>
-#include <queue>
-#include <vector>
-#include <iostream>
-#include <sstream>				// For std::stringstream (thread ID conversion)
-#include <cstdint>				// For uint8_t, uint16_t, uint32_t, uint64_t...
-#include <algorithm>			// For std::max (thread pool sizing)
-#include <string>				// For std::string
-#include <memory>				// For Smart Pointers std::unique_ptr & std::shared_ptr
-#include <chrono>				// For Job Execution Time Management
+#include <thread>               // For std::thread and thread management
+#include <mutex>                // For std::mutex, std::lock_guard, etc
+#include <condition_variable>   // For std::condition_variable (thread synchronization)
+#include <atomic>               // For std::atomic (thread-safe variables)
+#include <functional>           // For std::function (type-safe function wrappers)
+#include <queue>                // For std::queue (FIFO job queue)
+#include <vector>               // For std::vector (dynamic array for thread storage)
+#include <iostream>             // For std::cout, std::cerr (console output)
+#include <sstream>              // For std::stringstream (thread ID string conversion)
+#include <cstdint>              // For uint8_t, uint16_t, uint32_t, etc (portable integers)
+#include <algorithm>            // For std::max (thread pool sizing calculations)
+#include <string>               // For std::string (thread/job names)
+#include <memory>               // For std::unique_ptr, std::shared_ptr (memory management)
+#include <chrono>               // For std::chrono (job execution timing)
 
 namespace NOUS_Multithreading
 {
@@ -48,10 +48,7 @@ namespace NOUS_Multithreading
 		std::function<void()>	mFunction;
 
 	};
-}
 
-namespace NOUS_Multithreading
-{
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Available thread states during its lifecycle.
 	///////////////////////////////////////////////////////////////////////////
@@ -196,10 +193,7 @@ namespace NOUS_Multithreading
 		bool												mTimerRunning;
 
 	};
-}
 
-namespace NOUS_Multithreading
-{
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Manages a pool of worker threads and job distribution between them.
 	///////////////////////////////////////////////////////////////////////////
@@ -328,10 +322,7 @@ namespace NOUS_Multithreading
 		std::atomic<bool>			mShutdown;
 
 	};
-}
 
-namespace NOUS_Multithreading
-{
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief High-level interface for job submission and management.
 	///////////////////////////////////////////////////////////////////////////
@@ -423,10 +414,7 @@ namespace NOUS_Multithreading
 		std::condition_variable		mWaitCondition;
 
 	};
-}
 
-namespace NOUS_Multithreading
-{
 	/// @brief Global pointer to the main thread instance.
 	/// @note Initialized by RegisterMainThread() and cleaned up by UnregisterMainThread().
 	static NOUS_Thread* sMainThread = nullptr;
