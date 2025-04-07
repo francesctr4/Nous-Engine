@@ -70,6 +70,12 @@ const std::vector<NOUS_Multithreading::NOUS_Thread*>& NOUS_Multithreading::NOUS_
 	return mThreads; 
 }
 
+/// @return A queue of NOUS_Job to be executed by the thread pool.
+const std::queue<NOUS_Multithreading::NOUS_Job*>& NOUS_Multithreading::NOUS_ThreadPool::GetJobQueue() const
+{
+	return mJobQueue;
+}
+
 /// @brief Worker loop that each thread executes to process jobs from the queue.
 /// @param thread The thread executing this loop.
 void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)

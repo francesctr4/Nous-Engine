@@ -45,12 +45,14 @@ void Threads::Draw()
         
         ImGui::Columns(2);
         ImGui::Text("Max Hardware Threads: %u", NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
+        ImGui::Text("Total Jobs: %u", External->jobSystem->GetPendingJobs());
         ImGui::NextColumn();
 
         static const auto& threadPool = External->jobSystem->GetThreadPool();
         static const auto& threads = threadPool.GetThreads();
+        static const auto& jobQueue = threadPool.GetJobQueue();
         auto* mainThread = NOUS_Multithreading::GetMainThread();
-
+        
         NOUS_Multithreading::NOUS_Job mainThreadJob("Nous Engine", {});
         mainThread->SetCurrentJob(&mainThreadJob);
 
@@ -132,11 +134,11 @@ void Threads::Draw()
 
                 // Job
                 ImGui::TableSetColumnIndex(3);
-                if (thread->GetCurrentJob()) 
+                if (thread->GetCurrentJob())
                 {
                     ImGui::Text("%s", thread->GetCurrentJob()->GetName().c_str());
                 }
-                else 
+                else
                 {
                     ImGui::Text("%s", "None");
                 }
@@ -148,6 +150,42 @@ void Threads::Draw()
 
             ImGui::EndTable();
         }
+    }
+    ImGui::End();
+
+    ImGui::Begin("Job Queue");
+
+    const auto& threadPool = External->jobSystem->GetThreadPool();
+    const auto& jobQueue = threadPool.GetJobQueue();
+
+    // New Job Queue table
+    if (ImGui::BeginTable("JobQueue", 1,
+        ImGuiTableFlags_Borders |
+        ImGuiTableFlags_RowBg |
+        ImGuiTableFlags_ScrollY))
+    {
+        ImGui::TableSetupColumn(std::format("Job Name ({} pending jobs)", jobQueue.size()).c_str(), ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+
+        // Create a copy of the queue for safe iteration
+        std::queue<NOUS_Multithreading::NOUS_Job*> tempQueue = jobQueue;
+
+        while (!tempQueue.empty())
+        {
+            NOUS_Multithreading::NOUS_Job* job = tempQueue.front();
+            tempQueue.pop();
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+
+            if (job) {
+                ImGui::Text("%s", job->GetName().c_str());
+            }
+            else {
+                ImGui::TextDisabled("(null job)");
+            }
+        }
+        ImGui::EndTable();
     }
     ImGui::End();
 }

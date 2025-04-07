@@ -35,6 +35,9 @@ namespace NOUS_Multithreading
 		/// @return A vector of NOUS_Thread contained inside the thread pool.
 		const std::vector<NOUS_Thread*>& GetThreads() const;
 
+		/// @return A queue of NOUS_Job to be executed by the thread pool.
+		const std::queue<NOUS_Job*>& GetJobQueue() const;
+
 	private:
 
 		/// @brief Worker loop that each thread executes to process jobs from the queue.
