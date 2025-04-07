@@ -4,13 +4,13 @@
 
 /// @brief NOUS_ThreadPool constructor.
 /// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
-NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(size_t numThreads) :
+NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8 numThreads) :
 	mShutdown(false)
 {
-	numThreads = std::max<size_t>(0, numThreads);
+	numThreads = std::max<uint8>(0, numThreads);
 	mThreads.reserve(numThreads);
 
-	for (size_t i = 0; i < numThreads; ++i)
+	for (uint8 i = 0; i < numThreads; ++i)
 	{
 		mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
 

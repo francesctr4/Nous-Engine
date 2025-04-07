@@ -11,7 +11,7 @@ namespace NOUS_Multithreading
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Maximum hardware threads available, minus one reserved for the main thread.
 	///////////////////////////////////////////////////////////////////////////
-	const uint32 c_MAX_HARDWARE_THREADS = (std::thread::hardware_concurrency() - 1);
+	const uint8 c_MAX_HARDWARE_THREADS = (std::thread::hardware_concurrency() - 1);
 
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief High-level interface for job submission and management.
@@ -23,7 +23,7 @@ namespace NOUS_Multithreading
 		/// @brief NOUS_JobSystem constructor.
 		/// @param size: Number of worker threads available inside the thread pool.
 		/// @note If size is not specified, c_MAX_HARDWARE_THREADS is used.
-		NOUS_JobSystem(const uint32 size = c_MAX_HARDWARE_THREADS);
+		NOUS_JobSystem(const uint8 size = c_MAX_HARDWARE_THREADS);
 
 		/// @brief NOUS_JobSystem destructor.
 		/// @note Wait until all threads have finished their work and then delete the thread pool.
@@ -42,7 +42,7 @@ namespace NOUS_Multithreading
 		/// @param newSize: The new number of worker threads in the pool.
 		/// @note If the size passed is 0, the program becomes single-threaded.
 		/// @note Ensures all current jobs finish before resizing.
-		void Resize(uint32 newSize);
+		void Resize(uint8 newSize);
 
 		/// @return Reference to the underlying thread pool.
 		const NOUS_ThreadPool& GetThreadPool() const;

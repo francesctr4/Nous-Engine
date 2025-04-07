@@ -1,8 +1,6 @@
 #ifndef NOUS_MULTITHREADING_H
 #define NOUS_MULTITHREADING_H
 
-#include "Globals.h"
-#include "Timer.h"
 #include "MemoryManager.h"
 
 #include <thread>
@@ -13,13 +11,19 @@
 #include <queue>
 #include <vector>
 #include <iostream>
+#include <sstream>				// For std::stringstream (thread ID conversion)
+#include <cstdint>				// For uint8_t, uint16_t, uint32_t, uint64_t...
+#include <algorithm>			// For std::max (thread pool sizing)
+#include <string>				// For std::string
+#include <memory>				// For Smart Pointers std::unique_ptr & std::shared_ptr
+#include <chrono>				// For Job Execution Time Management
 
 namespace NOUS_Multithreading
 {
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Maximum hardware threads available, minus one reserved for the main thread.
 	///////////////////////////////////////////////////////////////////////////
-	const uint32 c_MAX_HARDWARE_THREADS = (std::thread::hardware_concurrency() - 1);
+	const uint8_t c_MAX_HARDWARE_THREADS = (std::thread::hardware_concurrency() - 1);
 
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Represents an executable task with a name and function.
@@ -66,7 +70,8 @@ namespace NOUS_Multithreading
 
 		/// @brief NOUS_Thread constructor.
 		NOUS_Thread() : 
-			mThreadID(0), mIsRunning(false), mCurrentJob(nullptr), mThreadState(ThreadState::READY) {}
+			mThreadID(0), mIsRunning(false), mCurrentJob(nullptr), 
+			mThreadState(ThreadState::READY), mTimerRunning(false) {}
 
 		/// @brief NOUS_Thread destructor.
 		~NOUS_Thread() { if (mIsRunning) Join(); }
@@ -117,9 +122,29 @@ namespace NOUS_Multithreading
 		uint32_t GetID() const { return mThreadID; }
 
 		/// @brief Job execution time tracking.
-		void StartExecutionTimer() { mExecutionTime.Start(); }
-		void StopExecutionTimer() { mExecutionTime.Stop(); }
-		double GetExecutionTimeMS() const { return mExecutionTime.ReadMS(); }
+		void StartExecutionTimer() 
+		{ 
+			mStartTime = std::chrono::steady_clock::now();
+			mTimerRunning = true;
+		}
+
+		void StopExecutionTimer() 
+		{ 
+			mEndTime = std::chrono::steady_clock::now();
+			mTimerRunning = false;
+		}
+
+		double GetExecutionTimeMS() const 
+		{ 
+			if (mTimerRunning) 
+			{
+				return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(std::chrono::steady_clock::now() - mStartTime).count();
+			}
+			else 
+			{
+				return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(mEndTime - mStartTime).count();
+			}
+		}
 
 		/// @brief Sets a std::thread::id to this NOUS_Thread.
 		/// @note Used mainly for registering main thread.
@@ -127,16 +152,16 @@ namespace NOUS_Multithreading
 		{
 			std::stringstream ss;
 			ss << id;
-			mThreadID = static_cast<uint32>(std::stoul(ss.str()));
+			mThreadID = static_cast<uint32_t>(std::stoul(ss.str()));
 		}
 
 		/// @brief Converts a std::thread::id to a numeric uint32.
 		/// @note Relies on string conversion; platform-dependent.
-		static uint32 GetThreadID(std::thread::id id)
+		static uint32_t GetThreadID(std::thread::id id)
 		{
 			std::stringstream ss;
 			ss << id;
-			return static_cast<uint32>(std::stoul(ss.str()));
+			return static_cast<uint32_t>(std::stoul(ss.str()));
 		}
 
 		/// @return std::string representation of the passed thread state.
@@ -151,7 +176,7 @@ namespace NOUS_Multithreading
 		}
 
 		/// @brief Sleep the current thread for an amount of time (ms).
-		static const void SleepMS(const uint32& ms)
+		static const void SleepMS(const uint32_t& ms)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 		}
@@ -160,12 +185,15 @@ namespace NOUS_Multithreading
 
 		std::string					mThreadName;
 		std::thread					mThreadHandle;
-		uint32						mThreadID;
+		uint32_t					mThreadID;
 		std::atomic<ThreadState>	mThreadState;
 
 		std::atomic<bool>			mIsRunning;
 		NOUS_Job*					mCurrentJob;
-		Timer						mExecutionTime;
+		
+		std::chrono::time_point<std::chrono::steady_clock>	mStartTime;
+		std::chrono::time_point<std::chrono::steady_clock>	mEndTime;
+		bool												mTimerRunning;
 
 	};
 }
@@ -181,13 +209,13 @@ namespace NOUS_Multithreading
 
 		/// @brief NOUS_ThreadPool constructor.
 		/// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
-		explicit NOUS_ThreadPool(size_t numThreads) : 
+		explicit NOUS_ThreadPool(uint8_t numThreads) : 
 			mShutdown(false)
 		{
-			numThreads = std::max<size_t>(0, numThreads);
+			numThreads = std::max<uint8_t>(0, numThreads);
 			mThreads.reserve(numThreads);
 
-			for (size_t i = 0; i < numThreads; ++i) 
+			for (uint8_t i = 0; i < numThreads; ++i)
 			{
 				mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
 
@@ -314,7 +342,7 @@ namespace NOUS_Multithreading
 		/// @brief NOUS_JobSystem constructor.
 		/// @param size: Number of worker threads available inside the thread pool.
 		/// @note If size is not specified, c_MAX_HARDWARE_THREADS is used.
-		NOUS_JobSystem(const uint32 size = c_MAX_HARDWARE_THREADS)
+		NOUS_JobSystem(const uint8_t size = c_MAX_HARDWARE_THREADS)
 		{
 			mPendingJobs = 0;
 			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, size);
@@ -372,7 +400,7 @@ namespace NOUS_Multithreading
 		/// @param newSize: The new number of worker threads in the pool.
 		/// @note If the size passed is 0, the program becomes single-threaded.
 		/// @note Ensures all current jobs finish before resizing.
-		void Resize(uint32 newSize) 
+		void Resize(uint8_t newSize) 
 		{
 			WaitForPendingJobs(); 
 

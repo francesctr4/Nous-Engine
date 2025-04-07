@@ -7,7 +7,7 @@
 /// @brief NOUS_JobSystem constructor.
 /// @param size: Number of worker threads available inside the thread pool.
 /// @note If size is not specified, c_MAX_HARDWARE_THREADS is used.
-NOUS_Multithreading::NOUS_JobSystem::NOUS_JobSystem(const uint32 size)
+NOUS_Multithreading::NOUS_JobSystem::NOUS_JobSystem(const uint8 size)
 {
 	mPendingJobs = 0;
 	mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, size);
@@ -65,7 +65,7 @@ void NOUS_Multithreading::NOUS_JobSystem::WaitForPendingJobs()
 /// @param newSize: The new number of worker threads in the pool.
 /// @note If the size passed is 0, the program becomes single-threaded.
 /// @note Ensures all current jobs finish before resizing.
-void NOUS_Multithreading::NOUS_JobSystem::Resize(uint32 newSize)
+void NOUS_Multithreading::NOUS_JobSystem::Resize(uint8 newSize)
 {
 	WaitForPendingJobs();
 

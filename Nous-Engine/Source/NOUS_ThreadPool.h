@@ -20,7 +20,7 @@ namespace NOUS_Multithreading
 
 		/// @brief NOUS_ThreadPool constructor.
 		/// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
-		explicit NOUS_ThreadPool(size_t numThreads);
+		explicit NOUS_ThreadPool(uint8 numThreads);
 
 		/// @brief NOUS_ThreadPool destructor.
 		~NOUS_ThreadPool();
