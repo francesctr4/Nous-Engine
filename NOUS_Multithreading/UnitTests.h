@@ -21,20 +21,15 @@ protected:
 
     void SetUp() override 
     {
-        jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(
-            MemoryManager::MemoryTag::THREAD,
-            NOUS_Multithreading::c_MAX_HARDWARE_THREADS
-        );
+        jobSystem = new NOUS_Multithreading::NOUS_JobSystem(NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
     }
 
     void TearDown() override 
     {
         jobSystem->WaitForPendingJobs();
 
-        NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(
-            jobSystem,
-            MemoryManager::MemoryTag::THREAD
-        );
+        delete jobSystem;
+        jobSystem = nullptr;
     }
 
     NOUS_Multithreading::NOUS_JobSystem* jobSystem = nullptr;
@@ -449,7 +444,7 @@ TEST_F(JobSystemTest, ThreadStateTransitionsVisibleInDebugInfo)
 /// @brief Tests dynamic thread pool resizing.
 TEST_F(JobSystemTest, DynamicThreadPoolResizing) 
 {
-    const uint32 initialSize = jobSystem->GetThreadPool().GetThreads().size();
+    const uint32_t initialSize = jobSystem->GetThreadPool().GetThreads().size();
 
     // Reduce to zero threads on the thread pool
     jobSystem->Resize(0);

@@ -1,8 +1,6 @@
 #ifndef NOUS_MULTITHREADING_H
 #define NOUS_MULTITHREADING_H
 
-#include "MemoryManager.h"
-
 #include <thread>               // For std::thread and thread management
 #include <mutex>                // For std::mutex, std::lock_guard, etc
 #include <condition_variable>   // For std::condition_variable (thread synchronization)
@@ -15,7 +13,6 @@
 #include <cstdint>              // For uint8_t, uint16_t, uint32_t, etc (portable integers)
 #include <algorithm>            // For std::max (thread pool sizing calculations)
 #include <string>               // For std::string (thread/job names)
-#include <memory>               // For std::unique_ptr, std::shared_ptr (memory management)
 #include <chrono>               // For std::chrono (job execution timing)
 
 namespace NOUS_Multithreading
@@ -211,7 +208,7 @@ namespace NOUS_Multithreading
 
 			for (uint8_t i = 0; i < numThreads; ++i)
 			{
-				mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
+				mThreads.push_back(new NOUS_Thread());
 
 				mThreads[i]->Start([this, i]() {
 					mThreads[i]->SetName("Worker Thread " + std::to_string(i + 1));
@@ -248,7 +245,10 @@ namespace NOUS_Multithreading
 			while (!mJobQueue.empty()) 
 			{
 				NOUS_Job* job = mJobQueue.front();
-				NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
+
+				delete job;
+				job = nullptr;
+
 				mJobQueue.pop();
 			}
 
@@ -257,7 +257,9 @@ namespace NOUS_Multithreading
 			for (NOUS_Thread* thread : mThreads) 
 			{
 				thread->Join();
-				NOUS_DELETE<NOUS_Thread>(thread, MemoryManager::MemoryTag::THREAD);
+
+				delete thread;
+				thread = nullptr;
 			}
 
 			mThreads.clear();
@@ -304,7 +306,8 @@ namespace NOUS_Multithreading
 					std::cerr << "Job '" << job->GetName() << "' failed: " << e.what() << '\n';
 				}
 
-				NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
+				delete job;
+				job = nullptr;
 
 				thread->StopExecutionTimer();
 				thread->SetCurrentJob(nullptr);
@@ -336,7 +339,7 @@ namespace NOUS_Multithreading
 		NOUS_JobSystem(const uint8_t size = c_MAX_HARDWARE_THREADS)
 		{
 			mPendingJobs = 0;
-			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, size);
+			mThreadPool = new NOUS_ThreadPool(size);
 		}	
 
 		/// @brief NOUS_JobSystem destructor.
@@ -345,7 +348,8 @@ namespace NOUS_Multithreading
 		{
 			WaitForPendingJobs();
 
-			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
+			delete mThreadPool;
+			mThreadPool = nullptr;
 		}
 
 		/// @brief Submits a job to the thread pool, to be executed by a free worker thread.
@@ -367,12 +371,14 @@ namespace NOUS_Multithreading
 
 			};
 
-			NOUS_Job* job = NOUS_NEW<NOUS_Job>(MemoryManager::MemoryTag::THREAD, jobName, wrappedJob);
+			NOUS_Job* job = new NOUS_Job(jobName, wrappedJob);
 
 			if (mThreadPool->GetThreads().empty()) // Running on Main Thread (sequentially)
 			{
 				job->Execute();
-				NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
+
+				delete job;
+				job = nullptr;
 			}
 			else 
 			{
@@ -395,8 +401,10 @@ namespace NOUS_Multithreading
 		{
 			WaitForPendingJobs(); 
 
-			NOUS_DELETE<NOUS_ThreadPool>(mThreadPool, MemoryManager::MemoryTag::THREAD);
-			mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, newSize);
+			delete mThreadPool;
+			mThreadPool = nullptr;
+
+			mThreadPool = new NOUS_ThreadPool(newSize);
 		}
 
 		/// @return Reference to the underlying thread pool.
@@ -425,7 +433,7 @@ namespace NOUS_Multithreading
 	{
 		if (!sMainThread) 
 		{
-			sMainThread = NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD);
+			sMainThread = new NOUS_Thread();
 
 			sMainThread->SetName("Main Thread");
 			sMainThread->SetThreadID(std::this_thread::get_id());
@@ -440,7 +448,7 @@ namespace NOUS_Multithreading
 	{
 		if (sMainThread)
 		{
-			NOUS_DELETE<NOUS_Thread>(sMainThread, MemoryManager::MemoryTag::THREAD);
+			delete sMainThread;
 			sMainThread = nullptr;
 		}
 	}

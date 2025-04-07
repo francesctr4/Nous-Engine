@@ -98,19 +98,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Asserts.h" />
-    <ClInclude Include="Globals.h" />
-    <ClInclude Include="Logger.h" />
-    <ClInclude Include="MemoryManager.h" />
     <ClInclude Include="NOUS_Multithreading.h" />
-    <ClInclude Include="Timer.h" />
     <ClInclude Include="UnitTests.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MemoryManager.cpp" />
-    <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
