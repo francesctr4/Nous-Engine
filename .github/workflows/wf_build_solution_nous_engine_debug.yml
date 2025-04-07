@@ -1,0 +1,26 @@
+name: Build Solution - Nous Engine (Debug)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Visual Studio Build Tools
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Build solution with C++20
+        run: msbuild Nous-Engine/Nous-Engine.sln /p:Configuration=Debug /p:LanguageStandard=c++20
+
+      - name: Run tests (optional)
+        run: |
+          echo "Running tests..."
