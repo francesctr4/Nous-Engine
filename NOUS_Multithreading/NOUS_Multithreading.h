@@ -45,10 +45,10 @@ namespace NOUS_Multithreading
 	/// @note This value being 0 represents single-threaded behaviour. No worker threads will be created.
 	///////////////////////////////////////////////////////////////////////////
 	const uint8_t c_MAX_HARDWARE_THREADS = []() 
-	{
-		const unsigned int hardwareThreads = std::thread::hardware_concurrency();
-		return (hardwareThreads == 0) ? 0 : (hardwareThreads - 1);
-	}();
+		{
+			const unsigned int hardwareThreads = std::thread::hardware_concurrency();
+			return (hardwareThreads == 0) ? 0 : (hardwareThreads - 1);
+		}();
 
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Represents an executable task with a name and function.

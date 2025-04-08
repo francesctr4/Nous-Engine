@@ -11,7 +11,11 @@ namespace NOUS_Multithreading
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Maximum hardware threads available, minus one reserved for the main thread.
 	///////////////////////////////////////////////////////////////////////////
-	const uint8 c_MAX_HARDWARE_THREADS = (std::thread::hardware_concurrency() - 1);
+	const uint8 c_MAX_HARDWARE_THREADS = []()
+		{
+			const unsigned int hardwareThreads = std::thread::hardware_concurrency();
+			return (hardwareThreads == 0) ? 0 : (hardwareThreads - 1);
+		}();
 
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief High-level interface for job submission and management.
