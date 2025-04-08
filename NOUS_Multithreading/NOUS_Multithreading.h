@@ -1,26 +1,21 @@
-/*
- * NOUS_Multithreading.h - Thread Pool based Job System Implementation
- *
- * Single Header Library
- * Cross-Platform
- * Created by: [Your Name]
- * Date: [Creation Date]
- * Version: 1.0
- *
- * Features:
- * - Thread pool with dynamic resizing
- * - Job queue
- * - Thread-safe job submission
- * - Job execution timing
- * - Thread state tracking
- * - Debugging utilities
- *
- * License: [Your License, e.g., MIT, Apache 2.0, etc.]
- *
- * Copyright (c) [Year] [Your Name/Company]
- *
- * Note: Requires ISO C++11 Standard (/std:c++11) or later
- */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+ * --------------------------------------------------------------------------------------- *
+ * -------------------------------- NOUS_Multithreading.h -------------------------------- *
+ * -------------------- A Thread Pool based Job System Implementation -------------------- *
+ * --------------------------------------------------------------------------------------- *
+ *  A single-header, cross-platform C++11 library for managing concurrent task execution.  *
+ *																						   *
+ *				Author: Francesc Teruel Rodriguez (francesctr4 on GitHub)				   *
+ *				Created: 30/06/2025														   *
+ *				Version: 1.0															   *
+ *				Repository: https://github.com/francesctr4/NOUS_Multithreading.h		   *													   *
+ *																						   *
+ *				License: MIT License													   *
+ *				Copyright (c) 2025 Francesc Teruel Rodriguez							   *
+ *																						   *
+ *				Dependencies:															   *
+ *				  - ISO C++11 Standard (/std:c++11, -std=c++11) or newer				   *
+\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef NOUS_MULTITHREADING_H
 #define NOUS_MULTITHREADING_H
