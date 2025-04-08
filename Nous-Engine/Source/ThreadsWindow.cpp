@@ -3,6 +3,8 @@
 #include "Application.h"
 #include "NOUS_JobSystem.h"
 #include "NOUS_Multithreading.h"
+#include "VulkanMultithreading.h"
+#include "VulkanBackend.h"
 
 #include <algorithm>
 
@@ -41,16 +43,19 @@ void Threads::Draw()
         if (ImGui::Button("Resize Pool"))
         {
             External->jobSystem->Resize(newSize);
+            NOUS_VulkanMultithreading::RecreateWorkerCommandPools(VulkanBackend::GetVulkanContext());
         }
         
-        ImGui::Columns(2);
-        ImGui::Text("Max Hardware Threads: %u", NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
-        ImGui::Text("Total Jobs: %u", External->jobSystem->GetPendingJobs());
-        ImGui::NextColumn();
-
         static const auto& threadPool = External->jobSystem->GetThreadPool();
         static const auto& threads = threadPool.GetThreads();
         static const auto& jobQueue = threadPool.GetJobQueue();
+
+        ImGui::Columns(2);
+        ImGui::Text("Max Hardware Threads: %u", NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
+        ImGui::Text("Total Worker Threads: %u", static_cast<uint8>(threads.size()));
+        ImGui::Text("Total Jobs: %u", External->jobSystem->GetPendingJobs());
+        ImGui::NextColumn();
+
         auto* mainThread = NOUS_Multithreading::GetMainThread();
         
         NOUS_Multithreading::NOUS_Job mainThreadJob("Nous Engine", {});

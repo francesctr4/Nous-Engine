@@ -89,7 +89,12 @@ void SceneViewport::Draw()
                     for (const auto& path : filePaths)
                     {
                         ImGui::Text("Dropped file: %s", path.c_str());
-                        External->resourceManager->CreateResource(path);
+
+                        External->jobSystem->SubmitJob([path]()
+                            {
+                                External->resourceManager->CreateResource(path);
+                            }, "Create Resource");
+                        
                     }
 
                 }

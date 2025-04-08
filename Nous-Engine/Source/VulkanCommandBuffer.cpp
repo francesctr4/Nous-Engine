@@ -18,12 +18,12 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
     {
         if ((*it).handle)
         {
-            CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &(*it));
+            CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &(*it));
             (*it).handle = 0;
         }
 
         MemoryManager::ZeroMemory(&(*it), sizeof(VulkanCommandBuffer));
-        CommandBufferAllocate(vkContext, vkContext->device.graphicsCommandPool, true, &(*it));
+        CommandBufferAllocate(vkContext, vkContext->device.mainGraphicsCommandPool, true, &(*it));
     }
 
     return ret;
@@ -37,7 +37,7 @@ void NOUS_VulkanCommandBuffer::DestroyCommandBuffers(VulkanContext* vkContext)
     {
         if ((*it).handle) 
         {
-            CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &(*it));
+            CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &(*it));
             (*it).handle = 0;
         }   
     }

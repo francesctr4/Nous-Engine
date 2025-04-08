@@ -304,6 +304,7 @@
     <ClCompile Include="Source\VulkanMaterialShader.cpp" />
     <ClCompile Include="Source\VulkanGraphicsPipeline.cpp" />
     <ClCompile Include="Source\VulkanExternal.cpp" />
+    <ClCompile Include="Source\VulkanMultithreading.cpp" />
     <ClCompile Include="Source\VulkanRenderpass.cpp" />
     <ClCompile Include="Source\VulkanShaderUtils.cpp" />
     <ClCompile Include="Source\VulkanSwapchain.cpp" />
@@ -572,6 +573,7 @@
     <ClInclude Include="Source\VulkanMaterialShader.h" />
     <ClInclude Include="Source\VulkanGraphicsPipeline.h" />
     <ClInclude Include="Source\VulkanExternal.h" />
+    <ClInclude Include="Source\VulkanMultithreading.h" />
     <ClInclude Include="Source\VulkanRenderpass.h" />
     <ClInclude Include="Source\VulkanShaderUtils.h" />
     <ClInclude Include="Source\VulkanSwapchain.h" />

@@ -16,6 +16,7 @@
 #include "VulkanShaderUtils.h"
 #include "VulkanMaterialShader.h"
 #include "VulkanUIShader.h"
+#include "VulkanMultithreading.h"
 
 #include "MaterialSystem.h"
 
@@ -25,6 +26,8 @@
 #include "ResourceMesh.h"
 #include "ResourceTexture.h"
 #include "ResourceMaterial.h"
+
+#include "NOUS_Thread.h"
 
 VulkanContext* VulkanBackend::vkContext = nullptr;
 
@@ -188,6 +191,19 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Vulkan Command Buffers created successfully!");
     }
 
+    // MULTITHREADING
+    // Create Vulkan Worker Command Pools
+    NOUS_DEBUG("Creating Vulkan Worker Command Pools...");
+    if (!NOUS_VulkanMultithreading::CreateWorkerCommandPools(vkContext))
+    {
+        NOUS_ERROR("Failed to create Vulkan Worker Command Pools. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Vulkan Worker Command Pools created successfully!");
+    }
+
     // Create Sync Objects
     NOUS_DEBUG("Creating Vulkan Sync Objects...");
     if (!NOUS_VulkanSyncObjects::CreateSyncObjects(vkContext))
@@ -256,6 +272,8 @@ void VulkanBackend::Shutdown()
     DestroyMaterialShader(vkContext, &vkContext->materialShader);
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
+
+    NOUS_VulkanMultithreading::DestroyWorkerCommandPools(vkContext);
 
     NOUS_VulkanCommandBuffer::DestroyCommandBuffers(vkContext);
 
@@ -583,7 +601,7 @@ bool VulkanBackend::RecreateResources()
     // CleanUp swapchain.
     for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
-        NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
+        NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
     }
 
     // Framebuffers.
@@ -722,7 +740,7 @@ void VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
         &textureData->image);
 
     VulkanCommandBuffer tempCommandBuffer;
-    VkCommandPool pool = vkContext->device.graphicsCommandPool;
+    VkCommandPool pool = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()));
     VkQueue queue = vkContext->device.graphicsQueue;
 
     NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(vkContext, pool, &tempCommandBuffer);
@@ -850,7 +868,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     VulkanGeometryData oldRange;
     VulkanGeometryData* internalData = nullptr;
 
-    if (isReupload) 
+    if (isReupload)
     {
         internalData = &vkContext->geometries[geometry->internalID];
 
@@ -863,11 +881,11 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
         oldRange.vertexCount = internalData->vertexCount;
         oldRange.vertexSize = internalData->vertexSize;
     }
-    else 
+    else
     {
-        for (u32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i) 
+        for (u32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i)
         {
-            if (vkContext->geometries[i].ID == INVALID_ID) 
+            if (vkContext->geometries[i].ID == INVALID_ID)
             {
                 // Found a free index.
                 geometry->internalID = i;
@@ -884,7 +902,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
         return false;
     }
 
-    VkCommandPool pool = vkContext->device.graphicsCommandPool;
+    VkCommandPool pool = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()));
     VkQueue queue = vkContext->device.graphicsQueue;
 
     // Vertex data.

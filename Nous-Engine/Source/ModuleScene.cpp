@@ -1,5 +1,9 @@
 #include "ModuleScene.h"
 #include "ModuleInput.h"
+#include "ModuleResourceManager.h"
+
+#include "ResourceMesh.h"
+#include "ResourceMaterial.h"
 
 ModuleScene::ModuleScene(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
@@ -35,7 +39,15 @@ UpdateStatus ModuleScene::Update(float dt)
 
 	if (App->input->GetKey(SDL_SCANCODE_T) == KeyState::DOWN) 
 	{
-		App->jobSystem->SubmitJob([]() {NOUS_Multithreading::NOUS_Thread::SleepMS(10000); }, "Test");
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(2000);
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(2000);
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(2000);
+
+			}, "Render Lagiacrus");
 	}
 
 	return UPDATE_CONTINUE;

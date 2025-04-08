@@ -469,7 +469,7 @@ void CreateCommandPool(VulkanContext* vkContext)
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     VK_CHECK(vkCreateCommandPool(vkContext->device.logicalDevice, &commandPoolCreateInfo,
-        vkContext->allocator, &vkContext->device.graphicsCommandPool));
+        vkContext->allocator, &vkContext->device.mainGraphicsCommandPool));
 
     NOUS_DEBUG("Graphics Command Pool Created");
 }
@@ -482,7 +482,7 @@ void DestroyLogicalDevice(VulkanContext* vkContext)
     vkContext->device.transferQueue = 0;
 
     NOUS_DEBUG("Destroying Command Pool...");
-    vkDestroyCommandPool(vkContext->device.logicalDevice, vkContext->device.graphicsCommandPool, vkContext->allocator);
+    vkDestroyCommandPool(vkContext->device.logicalDevice, vkContext->device.mainGraphicsCommandPool, vkContext->allocator);
 
     NOUS_DEBUG("Destroying Vulkan Logical Device...");
     vkDestroyDevice(vkContext->device.logicalDevice, vkContext->allocator);

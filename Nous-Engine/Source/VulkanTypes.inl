@@ -129,7 +129,10 @@ struct VulkanDevice
 
     bool supportsDeviceLocalHostVisible;
 
-    VkCommandPool graphicsCommandPool;
+    VkCommandPool mainGraphicsCommandPool;
+
+    /* MULTITHREADING */
+    std::unordered_map<uint32, VkCommandPool> workerCommandPools;
 
     VkQueue graphicsQueue;
     VkQueue presentQueue;
