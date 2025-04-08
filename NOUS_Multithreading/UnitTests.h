@@ -1,6 +1,11 @@
 #pragma once
 
 #include "NOUS_Multithreading.h"
+
+#define ENABLE_UNIT_TESTS 1  // Enable/Disable Unit Tests
+
+#if ENABLE_UNIT_TESTS == 1
+
 #include "gtest/gtest.h"
 
 #include <numeric>
@@ -463,3 +468,5 @@ TEST_F(JobSystemTest, DynamicThreadPoolResizing)
 }
 
 #pragma endregion
+
+#endif // ENABLE_UNIT_TESTS

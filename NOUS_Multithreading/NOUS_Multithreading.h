@@ -1,6 +1,32 @@
 #ifndef NOUS_MULTITHREADING_H
 #define NOUS_MULTITHREADING_H
 
+// Requires ISO C++11 Standard (/std:c++11) or newer
+// Hash Thread IDs: std::hash<std::thread::id>()(std::this_thread::get_id())
+
+/*
+ * NOUS_Multithreading.h - Thread Pool based Job System Implementation
+ *
+ * Single Header Library
+ * Created by: [Your Name]
+ * Date: [Creation Date]
+ * Version: 1.0
+ *
+ * Features:
+ * - Thread pool with dynamic resizing
+ * - Job queue
+ * - Thread-safe job submission
+ * - Job execution timing
+ * - Thread state tracking
+ * - Debugging utilities
+ *
+ * License: [Your License, e.g., MIT, Apache 2.0, etc.]
+ *
+ * Copyright (c) [Year] [Your Name/Company]
+ *
+ * Note: Requires C++11 or later standard
+ */
+
 #include <thread>               // For std::thread and thread management
 #include <mutex>                // For std::mutex, std::lock_guard, etc
 #include <condition_variable>   // For std::condition_variable (thread synchronization)
@@ -19,8 +45,13 @@ namespace NOUS_Multithreading
 {
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Maximum hardware threads available, minus one reserved for the main thread.
+	/// @note The value being 0 represents single-threaded behaviour. No worker threads will be created.
 	///////////////////////////////////////////////////////////////////////////
-	const uint8_t c_MAX_HARDWARE_THREADS = (std::thread::hardware_concurrency() - 1);
+	const uint8_t c_MAX_HARDWARE_THREADS = []() 
+	{
+		const unsigned hardwareThreads = std::thread::hardware_concurrency();
+		return (hardwareThreads == 0) ? 0 : (hardwareThreads - 1);
+	}();
 
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Represents an executable task with a name and function.
@@ -113,7 +144,7 @@ namespace NOUS_Multithreading
 		void SetCurrentJob(NOUS_Job* job) { mCurrentJob = job; }
 		NOUS_Job* GetCurrentJob() const { return mCurrentJob; }
 		bool IsRunning() const { return mIsRunning; }
-		uint32_t GetID() const { return mThreadID; }
+		uint64_t GetID() const { return mThreadID; }
 
 		/// @brief Job execution time tracking.
 		void StartExecutionTimer() 
@@ -144,18 +175,14 @@ namespace NOUS_Multithreading
 		/// @note Used mainly for registering main thread.
 		void SetThreadID(std::thread::id id) 
 		{
-			std::stringstream ss;
-			ss << id;
-			mThreadID = static_cast<uint32_t>(std::stoul(ss.str()));
+			mThreadID = std::hash<std::thread::id>()(id);
 		}
 
 		/// @brief Converts a std::thread::id to a numeric uint32.
 		/// @note Relies on string conversion; platform-dependent.
-		static uint32_t GetThreadID(std::thread::id id)
+		static uint64_t GetThreadID(std::thread::id id)
 		{
-			std::stringstream ss;
-			ss << id;
-			return static_cast<uint32_t>(std::stoul(ss.str()));
+			return std::hash<std::thread::id>()(id);
 		}
 
 		/// @return std::string representation of the passed thread state.
@@ -179,7 +206,7 @@ namespace NOUS_Multithreading
 
 		std::string					mThreadName;
 		std::thread					mThreadHandle;
-		uint32_t					mThreadID;
+		uint64_t					mThreadID;
 		std::atomic<ThreadState>	mThreadState;
 
 		std::atomic<bool>			mIsRunning;
