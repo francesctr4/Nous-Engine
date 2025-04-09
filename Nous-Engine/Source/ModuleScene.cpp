@@ -44,13 +44,19 @@ UpdateStatus ModuleScene::Update(float dt)
 				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
 				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
 			}, "Render Lagiacrus");
+	}
 
+	if (App->input->GetKey(SDL_SCANCODE_G) == KeyState::DOWN)
+	{
 		App->jobSystem->SubmitJob([this]()
 			{
 				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
 				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
 			}, "Render Cypher");
+	}
 
+	if (App->input->GetKey(SDL_SCANCODE_B) == KeyState::DOWN)
+	{
 		App->jobSystem->SubmitJob([this]()
 			{
 				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
