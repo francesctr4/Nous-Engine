@@ -177,13 +177,16 @@ void AssetsBrowser::Draw()
 
                 if (ImGui::MenuItem("Regenerate Library"))
                 {
-                    NOUS_FileManager::DeleteDirectory("Library");
+                    External->jobSystem->SubmitJob([]() 
+                        {
+                            NOUS_FileManager::DeleteDirectory("Library");
 
-                    External->fileSystem->CreateLibraryFolder();
+                            External->fileSystem->CreateLibraryFolder();
 
-                    std::system("compile-shaders.bat");
+                            std::system("compile-shaders.bat");
 
-                    External->fileSystem->ImportDirectory("Assets");
+                            External->fileSystem->ImportDirectory("Assets");
+                        }, "Regenerate Library");
                 }
 
                 if (ImGui::MenuItem("Add 10000 items"))
