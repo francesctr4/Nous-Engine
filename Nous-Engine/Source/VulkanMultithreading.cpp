@@ -18,7 +18,7 @@ bool NOUS_VulkanMultithreading::CreateWorkerCommandPools(VulkanContext* vkContex
     VkCommandPoolCreateInfo commandPoolCreateInfo{};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 
-    commandPoolCreateInfo.queueFamilyIndex = vkContext->device.graphicsQueueIndex;
+    commandPoolCreateInfo.queueFamilyIndex = vkContext->device.transferQueueIndex;
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     for (const auto& thread : threads)

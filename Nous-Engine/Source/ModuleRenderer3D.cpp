@@ -72,9 +72,27 @@ bool ModuleRenderer3D::Start()
 
 	App->jobSystem->SubmitJob([this]()
 		{
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
 			ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
 			mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
-		}, "Lagiacrus");
+		}, "Render Lagiacrus");
+
+	App->jobSystem->SubmitJob([this]()
+		{
+			NOUS_Multithreading::NOUS_Thread::SleepMS(2000);
+			ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
+			NOUS_Multithreading::NOUS_Thread::SleepMS(2000);
+			mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
+		}, "Render Cypher");
+
+	App->jobSystem->SubmitJob([this]()
+		{
+			NOUS_Multithreading::NOUS_Thread::SleepMS(3000);
+			ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
+			NOUS_Multithreading::NOUS_Thread::SleepMS(3000);
+			mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
+		}, "Render Queen Xenomorph");
 	
 	return true;
 }
