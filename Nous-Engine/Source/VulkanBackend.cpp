@@ -308,6 +308,8 @@ void VulkanBackend::Resized(uint16 width, uint16 height)
 
 bool VulkanBackend::BeginFrame(float dt)
 {
+    ProcessPendingSubmissions();
+
     vkContext->frameDeltaTime = dt;
 
     VulkanDevice* device = &vkContext->device;
@@ -353,7 +355,7 @@ bool VulkanBackend::BeginFrame(float dt)
     VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame], true, UINT64_MAX);
     if (!VkResultIsSuccess(result))
     {
-        NOUS_FATAL("In-flight fence wait failure! Error: %s", VkResultMessage(result, true));
+        NOUS_FATAL("In-flight fence wait failure! Error: %s", VkResultMessage(result, true).c_str());
         return false;
     }
 
@@ -450,12 +452,9 @@ bool VulkanBackend::EndFrame(float dt)
     VkPipelineStageFlags flags[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.pWaitDstStageMask = flags;
 
-    VkResult result = vkQueueSubmit(vkContext->device.graphicsQueue, 1, &submitInfo, 
-        vkContext->inFlightFences[vkContext->currentFrame]);
-
-    if (result != VK_SUCCESS) 
+    if (!NOUS_VulkanMultithreading::QueueSubmitThreadSafe(vkContext, vkContext->device.graphicsQueue, 1,
+        &submitInfo, vkContext->inFlightFences[vkContext->currentFrame], true))
     {
-        NOUS_ERROR("vkQueueSubmit failed with result: '%s'", VkResultMessage(result, true));
         return false;
     }
 
@@ -466,6 +465,8 @@ bool VulkanBackend::EndFrame(float dt)
     SwapChainPresent(vkContext, &vkContext->swapChain, vkContext->device.graphicsQueue,
         vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
         vkContext->imageIndex);
+
+    ProcessPendingSubmissions();
 
     // TODO: Fix problem on class and ImGui
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
@@ -726,6 +727,7 @@ void VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     VulkanBuffer stagingBuffer;
+
     NOUS_VulkanBuffer::CreateBuffer(vkContext, imageSize, usage, memoryPropertyFlags, true, &stagingBuffer);
     NOUS_VulkanBuffer::LoadData(vkContext, &stagingBuffer, 0, imageSize, 0, pixels);
 
@@ -917,7 +919,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     }
 
     // Index data, if applicable
-    if (indexCount && indices) 
+    if (indexCount && indices)
     {
         internalData->indexCount = indexCount;
         internalData->indexSize = sizeof(uint32) * indexCount;
@@ -984,4 +986,30 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry)
 VulkanContext* VulkanBackend::GetVulkanContext()
 {
     return vkContext;
+}
+
+void VulkanBackend::ProcessPendingSubmissions() 
+{
+    std::unique_lock<std::mutex> lock(vkContext->submitQueueMutex);
+
+    while (!vkContext->submitQueue.empty()) 
+    {
+        auto task = std::move(vkContext->submitQueue.front());
+        vkContext->submitQueue.pop_front();
+
+        lock.unlock(); // Unlock while processing
+
+        std::lock_guard<std::mutex> queueLock(vkContext->device.graphicsQueueMutex);
+        VkResult result = vkQueueSubmit(task.queue, task.submitCount, task.pSubmits, task.fence);
+
+        bool success = (result == VK_SUCCESS);
+        if (success && task.waitIdle) 
+        {
+            success = (vkQueueWaitIdle(task.queue) == VK_SUCCESS);
+        }
+
+        task.resultPromise.set_value(success);
+
+        lock.lock(); // Re-lock for next iteration
+    }
 }

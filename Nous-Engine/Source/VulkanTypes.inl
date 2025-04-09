@@ -10,6 +10,8 @@
 #include "Vulkan.h"
 #include "FreeList.h"
 
+#include <future>
+
 struct VulkanImage
 {
     VkImage handle;
@@ -135,6 +137,8 @@ struct VulkanDevice
     std::unordered_map<uint32, VkCommandPool> workerCommandPools;
 
     VkQueue graphicsQueue;
+    std::mutex graphicsQueueMutex;
+
     VkQueue presentQueue;
     VkQueue computeQueue;
     VkQueue transferQueue;
@@ -356,6 +360,15 @@ struct VulkanImGuiResources
     std::vector<VkDescriptorSet> descriptorSets;
 };
 
+struct VulkanSubmitTask {
+    VkQueue queue;
+    uint32_t submitCount;
+    const VkSubmitInfo* pSubmits;
+    VkFence fence;
+    bool waitIdle;
+    std::promise<bool> resultPromise;
+};
+
 /**
  * @brief Stores all the Vulkan Context variables
  */
@@ -410,6 +423,10 @@ struct VulkanContext
     std::array<VkFramebuffer, 3> worldFramebuffers;
 
     VulkanImGuiResources imGuiResources;
+
+    std::deque<VulkanSubmitTask> submitQueue;
+    std::mutex submitQueueMutex;
+    std::condition_variable submitQueueCV;
 };
 
 struct VulkanTextureData 

@@ -2,6 +2,7 @@
 #include "VulkanUtils.h"
 
 #include "MemoryManager.h"
+#include "VulkanMultithreading.h"
 
 bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
 {
@@ -136,10 +137,7 @@ void NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(VulkanContext* 
     queueSubmitInfo.commandBufferCount = 1;
     queueSubmitInfo.pCommandBuffers = &commandBuffer->handle;
 
-    VK_CHECK(vkQueueSubmit(queue, 1, &queueSubmitInfo, 0));
-
-    // Wait for it to finish
-    VK_CHECK(vkQueueWaitIdle(queue));
+    NOUS_VulkanMultithreading::CreateQueueSubmitTask(vkContext, queue, 1, &queueSubmitInfo, 0, true);
 
     // Free the command buffer.
     CommandBufferFree(vkContext, commandPool, commandBuffer);

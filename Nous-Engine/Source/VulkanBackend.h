@@ -51,6 +51,8 @@ public:
 
 	static VulkanContext* GetVulkanContext();
 
+	void ProcessPendingSubmissions();
+
 private:
 
 	static VulkanContext* vkContext;

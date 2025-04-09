@@ -2,6 +2,7 @@
 
 #include "VulkanUtils.h"
 #include "Application.h"
+#include "NOUS_Multithreading.h"
 
 bool NOUS_VulkanMultithreading::CreateWorkerCommandPools(VulkanContext* vkContext)
 {
@@ -102,4 +103,70 @@ VkCommandPool NOUS_VulkanMultithreading::GetThreadCommandPool(VulkanContext* vkC
         NOUS_WARN("Unexpected error accessing worker command pools. Falling back to main graphics pool.");
         return vkContext->device.mainGraphicsCommandPool;
     }
+}
+
+bool NOUS_VulkanMultithreading::QueueSubmitThreadSafe(VulkanContext* vkContext, VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence, bool waitIdle)
+{
+    // If we're on the main thread, submit immediately
+    if (NOUS_Multithreading::GetMainThread()->GetID() == NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id())) 
+    {
+        std::lock_guard<std::mutex> lock(vkContext->device.graphicsQueueMutex);
+        VkResult result = vkQueueSubmit(queue, submitCount, pSubmits, fence);
+        if (result != VK_SUCCESS) return false;
+        if (waitIdle) return vkQueueWaitIdle(queue) == VK_SUCCESS;
+        return true;
+    }
+
+    // Otherwise, enqueue the task for the main thread
+    VulkanSubmitTask task;
+    task.queue = queue;
+    task.submitCount = submitCount;
+    task.pSubmits = pSubmits;
+    task.fence = fence;
+    task.waitIdle = waitIdle;
+
+    std::promise<bool> resultPromise;
+    auto resultFuture = resultPromise.get_future();
+    task.resultPromise = std::move(resultPromise);
+
+    {
+        std::lock_guard<std::mutex> lock(vkContext->submitQueueMutex);
+        vkContext->submitQueue.push_back(std::move(task));
+    }
+    vkContext->submitQueueCV.notify_one();
+
+    return resultFuture.get(); // Block until the main thread processes it
+}
+
+bool NOUS_VulkanMultithreading::CreateQueueSubmitTask(VulkanContext* vkContext, VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence, bool waitIdle)
+{
+    // If we're on the main thread, submit immediately
+    if (NOUS_Multithreading::GetMainThread()->GetID() == NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()))
+    {
+        std::lock_guard<std::mutex> lock(vkContext->device.graphicsQueueMutex);
+        VkResult result = vkQueueSubmit(queue, submitCount, pSubmits, fence);
+        if (result != VK_SUCCESS) return false;
+        if (waitIdle) return vkQueueWaitIdle(queue) == VK_SUCCESS;
+        return true;
+    }
+
+    // Otherwise, enqueue the task for the main thread
+    VulkanSubmitTask task;
+    task.queue = queue;
+    task.submitCount = submitCount;
+    task.pSubmits = pSubmits;
+    task.fence = fence;
+    task.waitIdle = waitIdle;
+
+    std::promise<bool> resultPromise;
+    auto resultFuture = resultPromise.get_future();
+    task.resultPromise = std::move(resultPromise);
+
+    {
+        std::lock_guard<std::mutex> lock(vkContext->submitQueueMutex);
+        vkContext->submitQueue.push_back(std::move(task));
+    }
+    vkContext->submitQueueCV.notify_one();
+
+    return resultFuture.get(); // Block until the main thread processes it
 }
