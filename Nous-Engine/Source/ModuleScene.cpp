@@ -64,6 +64,50 @@ UpdateStatus ModuleScene::Update(float dt)
 			}, "Render Queen Xenomorph");
 	}
 
+	if (App->input->GetKey(SDL_SCANCODE_N) == KeyState::DOWN)
+	{
+		App->jobSystem->SubmitJob([this]()
+			{
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
+			}, "Render Wolf");
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN) 
+	{
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
+			}, "Render Lagiacrus");
+
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
+			}, "Render Cypher");
+
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
+			}, "Render Queen Xenomorph");
+
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
+			}, "Render Wolf");
+	}
+
 	return UPDATE_CONTINUE;
 }
 
