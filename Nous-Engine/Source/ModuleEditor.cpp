@@ -136,6 +136,7 @@ bool ModuleEditor::CleanUp()
 		{
 			ImGui_ImplVulkan_Shutdown();
 			NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(GetVulkanContext());
+
 			break;
 		}
 
@@ -247,9 +248,6 @@ void ModuleEditor::EndFrame(RendererBackendType backendType)
 	{
 		case RendererBackendType::VULKAN:
 		{
-			//NOUS_ImGuiVulkanResources::RenderImGuiDrawData(GetVulkanContext(),
-			//	&GetVulkanContext()->graphicsCommandBuffers[GetVulkanContext()->imageIndex], 
-			//	&GetVulkanContext()->imGuiResources.viewportRenderPass);
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), GetVulkanContext()->graphicsCommandBuffers[GetVulkanContext()->imageIndex].handle);
 
 			break;
