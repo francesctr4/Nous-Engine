@@ -29,14 +29,6 @@ ModuleEditor::ModuleEditor(Application* app, std::string name, bool start_enable
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	currentBackendType = RendererBackendType::UNKNOWN;
-
-	AddEditorWindow(std::make_unique<MainMenuBar>("MainMenuBar"));
-	//AddEditorWindow(std::make_unique<Properties>("Properties"));
-	//AddEditorWindow(std::make_unique<Assets>("Assets"));
-	AddEditorWindow(std::make_unique<AssetsBrowser>("Assets"));
-	AddEditorWindow(std::make_unique<Resources>("Resources"));
-	AddEditorWindow(std::make_unique<Threads>("Threads"));
-	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
 }
 
 ModuleEditor::~ModuleEditor()
@@ -74,8 +66,6 @@ bool ModuleEditor::Awake()
 		{
 			VulkanContext* vkContext = GetVulkanContext();
 
-			NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(vkContext);
-
 			// Setup Platform/Renderer backends
 			ImGui_ImplSDL2_InitForVulkan(GetSDLWindowData());
 
@@ -87,7 +77,7 @@ bool ModuleEditor::Awake()
 			imGuiVulkanInitInfo.Device = vkContext->device.logicalDevice;
 			imGuiVulkanInitInfo.ImageCount = vkContext->swapChain.swapChainImages.size();
 			imGuiVulkanInitInfo.Instance = vkContext->instance;
-			imGuiVulkanInitInfo.MSAASamples = vkContext->device.msaaSamples;
+			imGuiVulkanInitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 			imGuiVulkanInitInfo.PhysicalDevice = vkContext->device.physicalDevice;
 			imGuiVulkanInitInfo.Queue = vkContext->device.graphicsQueue;
 			imGuiVulkanInitInfo.QueueFamily = vkContext->device.graphicsQueueIndex;
@@ -116,6 +106,14 @@ bool ModuleEditor::Awake()
 		}
 	}
 
+	AddEditorWindow(std::make_unique<MainMenuBar>("MainMenuBar"));
+	//AddEditorWindow(std::make_unique<Properties>("Properties"));
+	//AddEditorWindow(std::make_unique<Assets>("Assets"));
+	AddEditorWindow(std::make_unique<AssetsBrowser>("Assets"));
+	AddEditorWindow(std::make_unique<Resources>("Resources"));
+	AddEditorWindow(std::make_unique<Threads>("Threads"));
+	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
+
 	return true;
 }
 
@@ -138,6 +136,7 @@ bool ModuleEditor::CleanUp()
 		{
 			ImGui_ImplVulkan_Shutdown();
 			NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(GetVulkanContext());
+
 			break;
 		}
 
@@ -249,9 +248,6 @@ void ModuleEditor::EndFrame(RendererBackendType backendType)
 	{
 		case RendererBackendType::VULKAN:
 		{
-			//NOUS_ImGuiVulkanResources::RenderImGuiDrawData(GetVulkanContext(),
-			//	&GetVulkanContext()->graphicsCommandBuffers[GetVulkanContext()->imageIndex], 
-			//	&GetVulkanContext()->imGuiResources.viewportRenderPass);
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), GetVulkanContext()->graphicsCommandBuffers[GetVulkanContext()->imageIndex].handle);
 
 			break;

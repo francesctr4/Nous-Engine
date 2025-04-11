@@ -241,14 +241,14 @@ void DestroyMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* shade
 
 void UseMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* shader)
 {
-    BindGraphicsPipeline(&vkContext->graphicsCommandBuffers[vkContext->imageIndex],
+    BindGraphicsPipeline(&vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex],
         VK_PIPELINE_BIND_POINT_GRAPHICS, &shader->pipeline);
 }
 
 void UpdateMaterialShaderGlobalState(VulkanContext* vkContext, VulkanMaterialShader* shader, float deltaTime)
 {
     u32 imageIndex = vkContext->imageIndex;
-    VkCommandBuffer commandBuffer = vkContext->graphicsCommandBuffers[imageIndex].handle;
+    VkCommandBuffer commandBuffer = vkContext->imGuiResources.m_ViewportCommandBuffers[imageIndex].handle;
     VkDescriptorSet globalDescriptorSet = shader->globalDescriptorSets[imageIndex];
 
     // Configure the descriptors for the given index.
@@ -287,7 +287,7 @@ void MaterialShaderSetModel(VulkanContext* vkContext, VulkanMaterialShader* shad
     if (vkContext && shader) 
     {
         uint32 imageIndex = vkContext->imageIndex;
-        VkCommandBuffer command_buffer = vkContext->graphicsCommandBuffers[imageIndex].handle;
+        VkCommandBuffer command_buffer = vkContext->imGuiResources.m_ViewportCommandBuffers[imageIndex].handle;
 
         vkCmdPushConstants(command_buffer, shader->pipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float4x4), &model);
     }
@@ -298,7 +298,7 @@ void MaterialShaderApplyMaterial(VulkanContext* vkContext, VulkanMaterialShader*
     if (vkContext && shader) 
     {
         uint32 imageIndex = vkContext->imageIndex;
-        VkCommandBuffer commandBuffer = vkContext->graphicsCommandBuffers[imageIndex].handle;
+        VkCommandBuffer commandBuffer = vkContext->imGuiResources.m_ViewportCommandBuffers[imageIndex].handle;
 
         // Obtain material data.
         VulkanMaterialShaderInstanceState* objectState = &shader->instanceStates[material->internalID];

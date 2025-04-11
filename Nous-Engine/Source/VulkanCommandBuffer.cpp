@@ -27,6 +27,27 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
         CommandBufferAllocate(vkContext, vkContext->device.mainGraphicsCommandPool, true, &(*it));
     }
 
+    // Viewport
+
+    if (vkContext->imGuiResources.m_ViewportCommandBuffers.empty())
+    {
+        // Careful here, maybe we should use MAX_FRAMES_IN_FLIGHT
+        vkContext->imGuiResources.m_ViewportCommandBuffers.resize(vkContext->imGuiResources.m_ViewportImages.size());
+        MemoryManager::ZeroMemory(vkContext->imGuiResources.m_ViewportCommandBuffers.data(), vkContext->imGuiResources.m_ViewportCommandBuffers.size() * sizeof(VulkanCommandBuffer));
+    }
+
+    for (auto it = vkContext->imGuiResources.m_ViewportCommandBuffers.begin(); it != vkContext->imGuiResources.m_ViewportCommandBuffers.end(); ++it)
+    {
+        if ((*it).handle)
+        {
+            CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &(*it));
+            (*it).handle = 0;
+        }
+
+        MemoryManager::ZeroMemory(&(*it), sizeof(VulkanCommandBuffer));
+        CommandBufferAllocate(vkContext, vkContext->device.graphicsCommandPool, true, &(*it));
+    }
+
     return ret;
 }
 
@@ -45,6 +66,20 @@ void NOUS_VulkanCommandBuffer::DestroyCommandBuffers(VulkanContext* vkContext)
 
     vkContext->graphicsCommandBuffers.clear();
     vkContext->graphicsCommandBuffers.shrink_to_fit();
+
+    // Viewport
+
+    for (auto it = vkContext->imGuiResources.m_ViewportCommandBuffers.rbegin(); it != vkContext->imGuiResources.m_ViewportCommandBuffers.rend(); ++it)
+    {
+        if ((*it).handle)
+        {
+            CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &(*it));
+            (*it).handle = 0;
+        }
+    }
+
+    vkContext->imGuiResources.m_ViewportCommandBuffers.clear();
+    vkContext->imGuiResources.m_ViewportCommandBuffers.shrink_to_fit();
 }
 
 void NOUS_VulkanCommandBuffer::CommandBufferAllocate(VulkanContext* vkContext, VkCommandPool commandPool,

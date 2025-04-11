@@ -237,7 +237,7 @@ void CreateColorResources(VulkanContext* vkContext, VulkanSwapChain* swapchain)
         swapchain->swapChainExtent.width,
         swapchain->swapChainExtent.height,
         1,
-        vkContext->device.msaaSamples,
+        VK_SAMPLE_COUNT_1_BIT,
         vkContext->device.colorFormat,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
@@ -260,7 +260,7 @@ void CreateDepthResources(VulkanContext* vkContext, VulkanSwapChain* swapchain)
         swapchain->swapChainExtent.width,
         swapchain->swapChainExtent.height,
         1,
-        vkContext->device.msaaSamples,
+        VK_SAMPLE_COUNT_1_BIT,
         vkContext->device.depthFormat,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,

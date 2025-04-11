@@ -1,6 +1,10 @@
 #include "SceneViewport.h"
 
 #include "ModuleResourceManager.h"
+#include "ModuleCamera3D.h"
+
+#include "VulkanTypes.inl"
+#include "VulkanBackend.h"
 
 SceneViewport::SceneViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
@@ -10,7 +14,13 @@ SceneViewport::SceneViewport(const char* title, bool start_open)
 
 void SceneViewport::Init()
 {
+    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 
+    // Viewport Image Views
+    for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImageViews.size(); ++i)
+    {
+        vkContext->imGuiResources.m_ViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(vkContext->imGuiResources.m_ViewportTextureSampler, vkContext->imGuiResources.m_ViewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
 }
 
 void SceneViewport::Draw()
@@ -20,26 +30,53 @@ void SceneViewport::Draw()
         if (ImGui::Begin(title, p_open))
         {
             // Get the size of the window's content area
-            ImVec2 contentMin = ImGui::GetWindowContentRegionMin(); // Top-left of content area (relative to window)
-            ImVec2 contentMax = ImGui::GetWindowContentRegionMax(); // Bottom-right of content area (relative to window)
-            ImVec2 windowPos = ImGui::GetWindowPos();               // Top-left of the window on screen
-            ImVec2 squarePos = { windowPos.x + contentMin.x, windowPos.y + contentMin.y };
-            ImVec2 squareSize = { contentMax.x - contentMin.x, contentMax.y - contentMin.y };
-            ImVec2 squareEnd = { squarePos.x + squareSize.x, squarePos.y + squareSize.y };
+            ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
+            ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
+            ImVec2 windowPos = ImGui::GetWindowPos();
+            ImVec2 squareSize = ImVec2(contentMax.x - contentMin.x, contentMax.y - contentMin.y);
+            ImVec2 squarePos = ImVec2(windowPos.x + contentMin.x, windowPos.y + contentMin.y);
+            ImVec2 squareEnd = ImVec2(squarePos.x + squareSize.x, squarePos.y + squareSize.y);
 
-            // Draw the square (optional, for visualization)
             ImDrawList* drawList = ImGui::GetWindowDrawList();
-            drawList->AddRectFilled(squarePos, squareEnd, IM_COL32(100, 100, 100, 255)); // Gray square
-            drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));       // White border
 
-            // Draw centered text
-            const char* text = "Insert Viewport Here";
-            ImVec2 textSize = ImGui::CalcTextSize(text); // Calculate the size of the text
-            ImVec2 textPos = {
-                squarePos.x + (squareSize.x - textSize.x) * 0.5f, // Center X
-                squarePos.y + (squareSize.y - textSize.y) * 0.5f  // Center Y
-            };
-            drawList->AddText(textPos, IM_COL32(255, 255, 255, 255), text); // White text
+            // Draw gray background
+            drawList->AddRectFilled(squarePos, squareEnd, IM_COL32(100, 100, 100, 255));
+
+            // Calculate aspect ratios and UV coordinates
+            float textureWidth = 1920.0f;
+            float textureHeight = 1080.0f;
+
+            float textureAspect = textureWidth / textureHeight;
+            float viewportAspect = squareSize.x / squareSize.y;
+
+            ImVec2 uvMin(0.0f, 0.0f);
+            ImVec2 uvMax(1.0f, 1.0f);
+
+            if (viewportAspect < textureAspect) 
+            {
+                // Viewport is narrower: crop left/right
+                float cropFactor = textureAspect / viewportAspect;
+                uvMin.x = 0.5f - 0.5f / cropFactor;
+                uvMax.x = 0.5f + 0.5f / cropFactor;
+            }
+            else if (viewportAspect > textureAspect) 
+            {
+                // Viewport is wider: crop top/bottom
+                float cropFactor = viewportAspect / textureAspect;
+                uvMin.y = 0.5f - 0.5f / cropFactor;
+                uvMax.y = 0.5f + 0.5f / cropFactor;
+            }
+
+            VulkanContext* vkContext = VulkanBackend::GetVulkanContext(); 
+
+            // Position the image at the start of the content region and render
+            ImGui::SetCursorPos(contentMin); // Position relative to window's content area
+
+            VkDescriptorSet currentSceneTexture = vkContext->imGuiResources.m_ViewportDescriptorSets[vkContext->imageIndex];
+            ImGui::Image((ImTextureID)currentSceneTexture, squareSize, uvMin, uvMax);
+
+            // Draw white border on top
+            drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
 
             // Make the entire window area a drag-and-drop target
             ImGui::SetCursorScreenPos(squarePos);          // Position the invisible button to start at the top-left of the content area

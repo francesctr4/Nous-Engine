@@ -40,16 +40,14 @@ bool CreateGraphicsPipeline(VulkanContext* vkContext, VulkanRenderpass* renderpa
 
     // Multisampling
     VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+
     multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // Match render pass
 
-    multisampleStateCreateInfo.sampleShadingEnable = VK_TRUE;  // Enable sample shading feature for the device
-    multisampleStateCreateInfo.rasterizationSamples = vkContext->device.msaaSamples;
+    multisampleStateCreateInfo.sampleShadingEnable = VK_FALSE; // Disabled for non-MSAA
+    multisampleStateCreateInfo.minSampleShading = 1.0f;
 
-    multisampleStateCreateInfo.minSampleShading = 0.2f;  // Min fraction for sample shading; closer to one is smoother
     multisampleStateCreateInfo.pSampleMask = nullptr;
-
-    multisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
-    multisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
 
     // Depth and stencil testing
     VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};

@@ -74,9 +74,12 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
     // Chain the validation features to the main create info
     createInfo.pNext = &validationFeatures;
     createInfo.pApplicationInfo = &appInfo;
-
     createInfo.enabledExtensionCount = static_cast<uint32>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
+    createInfo.enabledLayerCount = enableValidationLayers ?
+        static_cast<uint32>(validationLayers.size()) : 0;
+    createInfo.ppEnabledLayerNames = enableValidationLayers ?
+        validationLayers.data() : nullptr;
 
     createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32>(validationLayers.size()) : 0;
     createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
