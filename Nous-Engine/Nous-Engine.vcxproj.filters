@@ -477,6 +477,9 @@
     <ClCompile Include="Source\VulkanMultithreading.cpp">
       <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Source\GameViewport.cpp">
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Globals.h">
@@ -1279,6 +1282,9 @@
     </ClInclude>
     <ClInclude Include="Source\VulkanMultithreading.h">
       <Filter>Source Code\Renderer\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GameViewport.h">
+      <Filter>Source Code\Editor\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

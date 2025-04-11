@@ -154,6 +154,8 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 			DrawGeometry(geometry);
 		}
 
+		// DrawGrid();
+
 		if (!EndRenderpass(BuiltInRenderpass::WORLD))
 		{
 			NOUS_ERROR("EndRenderpass WORLD failed! Application shutting down...");

@@ -250,6 +250,7 @@
     <ClCompile Include="Source\FileHandle.cpp" />
     <ClCompile Include="Source\FileManager.cpp" />
     <ClCompile Include="Source\FreeList.cpp" />
+    <ClCompile Include="Source\GameViewport.cpp" />
     <ClCompile Include="Source\GeometrySystem.cpp" />
     <ClCompile Include="Source\ImGuiCustom.cpp" />
     <ClCompile Include="Source\ImporterManager.cpp" />
@@ -322,6 +323,7 @@
     <ClInclude Include="Source\DynamicAllocator.h" />
     <ClInclude Include="Source\DynamicArray.h" />
     <ClInclude Include="Source\FreeList.h" />
+    <ClInclude Include="Source\GameViewport.h" />
     <ClInclude Include="Source\GeometrySystem.h" />
     <ClInclude Include="Source\ImGuiCustom.h" />
     <ClInclude Include="Source\ImporterManager.h" />

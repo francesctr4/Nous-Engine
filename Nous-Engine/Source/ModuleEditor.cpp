@@ -21,6 +21,7 @@
 #include "ResourcesWindow.h"
 #include "ThreadsWindow.h"
 #include "SceneViewport.h"
+#include "GameViewport.h"
 
 #pragma endregion
 
@@ -112,6 +113,7 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(std::make_unique<AssetsBrowser>("Assets"));
 	AddEditorWindow(std::make_unique<Resources>("Resources"));
 	AddEditorWindow(std::make_unique<Threads>("Threads"));
+	AddEditorWindow(std::make_unique<GameViewport>("Game"));
 	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
 
 	return true;
