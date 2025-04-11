@@ -5,19 +5,28 @@
 #include "ResourceMesh.h"
 #include "ResourceMaterial.h"
 
+#include "MemoryManager.h"
+
 ModuleScene::ModuleScene(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	gameCamera = NOUS_NEW<Camera>(MemoryManager::MemoryTag::GAME);
 }
 
 ModuleScene::~ModuleScene()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	NOUS_DELETE<Camera>(gameCamera, MemoryManager::MemoryTag::GAME);
 }
 
 bool ModuleScene::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	gameCamera->SetPos(-4.61, 100, 718.32);
+
 	return true;
 }
 
@@ -120,10 +129,22 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 bool ModuleScene::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
 	return true;
 }
 
 void ModuleScene::ReceiveEvent(const Event& event)
 {
+	switch (event.type)
+	{
+		case EventType::WINDOW_RESIZED:
+		{
+			NOUS_DEBUG("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
+			NOUS_DEBUG("Received context: %d, %d", event.context.int64[0], event.context.int64[1]);
 
+			gameCamera->SetAspectRatio((float)event.context.int64[0] / (float)event.context.int64[1]);
+
+			break;
+		}
+	}
 }

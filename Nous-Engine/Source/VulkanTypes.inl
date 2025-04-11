@@ -344,14 +344,23 @@ struct VulkanImGuiResources
 {
     VkDescriptorPool descriptorPool;
 
+    // Scene Viewport
     std::vector<VulkanImage> m_ViewportImages;
-
+    VulkanImage m_ViewportDepthAttachment;
     std::array<VkFramebuffer, 3> m_ViewportFramebuffers;
+    std::vector<VulkanCommandBuffer> m_ViewportCommandBuffers;
+
     VkSampler m_ViewportTextureSampler;
     std::array<VkDescriptorSet, 3> m_ViewportDescriptorSets;
 
-    std::vector<VulkanCommandBuffer> m_ViewportCommandBuffers;
-    VulkanImage m_ViewportDepthAttachment;
+    // Game Viewport
+    std::vector<VulkanImage> m_GameViewportImages;
+    VulkanImage m_GameViewportDepthAttachment;
+    std::array<VkFramebuffer, 3> m_GameViewportFramebuffers;
+    std::vector<VulkanCommandBuffer> m_GameViewportCommandBuffers;
+
+    VkSampler m_GameViewportTextureSampler;
+    std::array<VkDescriptorSet, 3> m_GameViewportDescriptorSets;
 };
 
 struct VulkanSubmitTask {

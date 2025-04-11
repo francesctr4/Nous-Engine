@@ -147,7 +147,7 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 		}
 
 		// Use Camera Attributes, passed along with renderpacket.
-		UpdateGlobalWorldState(packet->camera.GetProjectionMatrix(), packet->camera.GetViewMatrix(), packet->camera.GetPos(), float4::one, 0);
+		UpdateGlobalWorldState(packet->gameCamera.GetProjectionMatrix(), packet->gameCamera.GetViewMatrix(), packet->gameCamera.GetPos(), float4::one, 0);
 
 		for (auto& geometry : packet->geometries)
 		{
@@ -170,7 +170,7 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 			ret = false;
 		}
 
-		UpdateGlobalUIState(packet->camera.GetProjectionMatrix(), packet->camera.GetViewMatrix(), 0);
+		UpdateGlobalUIState(packet->editorCamera.GetProjectionMatrix(), packet->editorCamera.GetViewMatrix(), 0);
 		
 		DrawEditor();
 

@@ -1,5 +1,6 @@
 #include "ModuleRenderer3D.h"
 #include "ModuleCamera3D.h"
+#include "ModuleScene.h"
 
 #include "Logger.h"
 #include "MemoryManager.h";
@@ -127,7 +128,18 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 	// TODO: Refactor packet creation
 	packet.deltaTime = dt;
-	packet.camera = *App->camera->GetCamera();
+	packet.editorCamera = *App->camera->GetCamera();
+	packet.gameCamera = *App->scene->gameCamera;
+
+	// Angular velocity in radians per second.
+	static constexpr float angularVelocity = 1.0f; // Adjust for desired speed
+
+	// Accumulate the angle based on elapsed time (deltaTime).
+	static float angle = 0.0f;
+	angle += angularVelocity * packet.deltaTime;
+
+	// Create the rotation matrix using the accumulated angle.
+	float4x4 model = Quat(float3::unitY, angle).ToFloat4x4();
 
 	for (const auto& [UID, Resource] : App->resourceManager->GetResourcesMap()) 
 	{
@@ -135,17 +147,6 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		{
 			GeometryRenderData testRender;
 			testRender.geometry = static_cast<ResourceMesh*>(Resource);
-
-			// Angular velocity in radians per second.
-			static constexpr float angularVelocity = 1.0f; // Adjust for desired speed
-
-			// Accumulate the angle based on elapsed time (deltaTime).
-			static float angle = 0.0f;
-			angle += angularVelocity * packet.deltaTime;
-
-			// Create the rotation matrix using the accumulated angle.
-			float4x4 model = Quat(float3::unitY, angle).ToFloat4x4();
-
 			testRender.model = model;
 
 			packet.geometries.push_back(testRender);

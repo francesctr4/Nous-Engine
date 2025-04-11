@@ -2,6 +2,8 @@
 
 #include "Module.h"
 
+class Camera;
+
 class ModuleScene : public Module
 {
 public:
@@ -22,5 +24,9 @@ public:
 	bool CleanUp() override;
 
 	void ReceiveEvent(const Event& event) override;
+
+public:
+
+	Camera* gameCamera;
 
 };

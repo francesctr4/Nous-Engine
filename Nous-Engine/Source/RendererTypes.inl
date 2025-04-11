@@ -24,7 +24,8 @@ enum class BuiltInRenderpass
 
 struct RenderPacket
 {
-    Camera camera;
+    Camera editorCamera;
+    Camera gameCamera;
     float deltaTime;
 
     std::vector<GeometryRenderData> geometries;
