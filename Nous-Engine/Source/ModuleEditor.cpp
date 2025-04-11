@@ -286,3 +286,18 @@ void ModuleEditor::AddEditorWindow(std::unique_ptr<IEditorWindow> editorWindow)
 {
 	editorWindows.emplace_back(std::move(editorWindow));
 }
+
+IEditorWindow* ModuleEditor::GetEditorWindowByName(std::string name)
+{
+	IEditorWindow* window = nullptr;
+
+	for (auto& w : editorWindows) 
+	{
+		if (strcmp(w->GetTitle(), name.c_str()) == 0)
+		{
+			window = w.get();
+		}
+	}
+
+	return window;
+}

@@ -1,5 +1,7 @@
 #include "MainMenuBar.h"
 
+#include "ModuleEditor.h"
+
 MainMenuBar::MainMenuBar(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open) 
 {
@@ -114,8 +116,6 @@ void MainMenuBar::Draw()
 
 			if (ImGui::MenuItem("Save editor configuration")) {
 
-
-
 			}
 
 			if (ImGui::MenuItem("Load editor configuration")) {
@@ -209,16 +209,14 @@ void MainMenuBar::Draw()
 
 			}
 
-			if (ImGui::MenuItem("Scene")) {
-
-				
-
+			if (ImGui::MenuItem("Scene")) 
+			{
+				External->editor->GetEditorWindowByName("Scene")->Open();
 			}
 
-			if (ImGui::MenuItem("Game")) {
-
-				
-
+			if (ImGui::MenuItem("Game")) 
+			{
+				External->editor->GetEditorWindowByName("Game")->Open();
 			}
 
 			if (ImGui::MenuItem("Resources")) {

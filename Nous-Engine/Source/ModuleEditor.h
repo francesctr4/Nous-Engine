@@ -28,6 +28,8 @@ public:
 	// Array to store ImFont pointers
 	static std::vector<ImFont*> fonts;
 
+	IEditorWindow* GetEditorWindowByName(std::string name);
+
 private:
 
 	void InitFrame(RendererBackendType backendType);
