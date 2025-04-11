@@ -44,36 +44,6 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	if (App->input->GetKey(SDL_SCANCODE_Y) == KeyState::DOWN) 
-	{
-		CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx");
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN)
-	{
-		CreateResource("Assets/Materials/cypher_material.nmat");
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_N) == KeyState::DOWN)
-	{
-		CreateResource("Assets/Textures/cypher_tex.png");
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_U) == KeyState::DOWN)
-	{
-		UnloadResource(3841219433);
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_J) == KeyState::DOWN)
-	{
-		UnloadResource(3801599100);
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
-	{
-		UnloadResource(1043038790);
-	}
-
 	if (App->input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN) 
 	{
 		ClearResources();
