@@ -617,8 +617,8 @@ bool VulkanBackend::RecreateResources()
     // CleanUp swapchain.
     for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
-        NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
-        NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.graphicsCommandPool, &vkContext->imGuiResources.m_ViewportCommandBuffers[i]);
+        NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
+        NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->imGuiResources.m_ViewportCommandBuffers[i]);
     }
 
     // Framebuffers.

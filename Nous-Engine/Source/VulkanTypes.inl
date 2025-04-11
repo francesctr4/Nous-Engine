@@ -344,9 +344,7 @@ struct VulkanImGuiResources
 {
     VkDescriptorPool descriptorPool;
 
-    std::vector<VkImage> m_ViewportImages;
-    std::vector<VkImageView> m_ViewportImageViews;
-    std::vector<VkDeviceMemory> m_ViewportDstImageMemory;
+    std::vector<VulkanImage> m_ViewportImages;
 
     std::array<VkFramebuffer, 3> m_ViewportFramebuffers;
     VkSampler m_ViewportTextureSampler;
