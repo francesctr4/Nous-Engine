@@ -134,21 +134,38 @@ bool VulkanBackend::Initialize()
 
     NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(vkContext);
 
-    // World Render Pass
-    NOUS_DEBUG("Creating Vulkan World Render Pass...");
-    if (!NOUS_VulkanRenderpass::CreateOffscreenRenderpass(vkContext, &vkContext->mainRenderpass, 
+    // Scene Render Pass
+    NOUS_DEBUG("Creating Vulkan Scene Render Pass...");
+    if (!NOUS_VulkanRenderpass::CreateOffscreenRenderpass(vkContext, &vkContext->sceneRenderpass, 
         float4(0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight),
         float4(0.1f, 0.0f, 0.0f, 1.0f),
         1.0f,
         0, 
         RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER))
     {
-        NOUS_ERROR("Failed to create Vulkan World Render Pass. Shutting the Application.");
+        NOUS_ERROR("Failed to create Vulkan Scene Render Pass. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan World Render Pass created successfully!");
+        NOUS_DEBUG("Vulkan Scene Render Pass created successfully!");
+    }
+
+    // Game Render Pass
+    NOUS_DEBUG("Creating Vulkan Game Render Pass...");
+    if (!NOUS_VulkanRenderpass::CreateOffscreenRenderpass(vkContext, &vkContext->gameRenderpass,
+        float4(0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight),
+        float4(0.0f, 0.0f, 0.1f, 1.0f),
+        1.0f,
+        0,
+        RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER))
+    {
+        NOUS_ERROR("Failed to create Vulkan Game Render Pass. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Vulkan Game Render Pass created successfully!");
     }
 
     // UI Render Pass
@@ -218,9 +235,13 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG("Vulkan Sync Objects created successfully!");
     }
 
+#ifdef _DEBUG
+    ExecuteBatchFile("compile-shaders.bat");
+#endif // _DEBUG
+
     // Create Vulkan Material Shader
     NOUS_DEBUG("Creating Nous Material Shader...");
-    if (!CreateMaterialShader(vkContext, &vkContext->materialShader))
+    if (!CreateMaterialShader(vkContext, &vkContext->sceneRenderpass, &vkContext->materialShader))
     {
         NOUS_ERROR("Failed to create Nous Material Shader. Shutting the Application.");
         ret = false;
@@ -228,6 +249,18 @@ bool VulkanBackend::Initialize()
     else
     {
         NOUS_DEBUG("Nous Material Shader created successfully!");
+    }
+
+    // Create Vulkan Game Shader
+    NOUS_DEBUG("Creating Nous Game Shader...");
+    if (!CreateMaterialShader(vkContext, &vkContext->gameRenderpass, &vkContext->gameShader))
+    {
+        NOUS_ERROR("Failed to create Nous Game Shader. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG("Nous Game Shader created successfully!");
     }
 
     // Create Vulkan UI Shader
@@ -272,6 +305,7 @@ void VulkanBackend::Shutdown()
 
     DestroyUIShader(vkContext, &vkContext->uiShader);
     DestroyMaterialShader(vkContext, &vkContext->materialShader);
+    DestroyMaterialShader(vkContext, &vkContext->gameShader);
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
@@ -282,7 +316,8 @@ void VulkanBackend::Shutdown()
     NOUS_VulkanFramebuffer::DestroyFramebuffers(vkContext);
 
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->uiRenderpass);
-    NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->mainRenderpass);
+    NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->gameRenderpass);
+    NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->sceneRenderpass);
 
     DestroySwapChain(vkContext, &vkContext->swapChain);
 
@@ -392,8 +427,17 @@ bool VulkanBackend::EndFrame(float dt)
     // Reset the fence for use on the next frame
     VK_CHECK(vkResetFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame]));
 
-    std::array<VulkanCommandBuffer*, 2> commandBuffers = { &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex], &vkContext->graphicsCommandBuffers[vkContext->imageIndex] };
-    std::array<VkCommandBuffer, 2> commandBuffersPtrs = { vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex].handle, vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle };
+    std::array<VulkanCommandBuffer*, 3> commandBuffers = { 
+        &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex], 
+        &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex], 
+        &vkContext->graphicsCommandBuffers[vkContext->imageIndex] 
+    };
+
+    std::array<VkCommandBuffer, 3> commandBuffersPtrs = { 
+        vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex].handle,
+        vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex].handle,
+        vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle 
+    };
 
     // Submit the queue and wait for the operation to complete.
     // Begin queue submission
@@ -429,8 +473,10 @@ bool VulkanBackend::EndFrame(float dt)
         return false;
     }
 
-    NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(commandBuffers[0]);
-    NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(commandBuffers[1]);
+    for (auto& cb : commandBuffers) 
+    {
+        NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(cb);
+    }
 
     // End queue submission
     // Give the image back to the swapchain.
@@ -453,11 +499,18 @@ bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
     
     switch (renderpassID)
     {
-        case BuiltInRenderpass::WORLD: 
+        case BuiltInRenderpass::SCENE: 
         {
             commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
-            renderpass = &vkContext->mainRenderpass;
-            framebuffer = vkContext->worldFramebuffers[vkContext->imageIndex];
+            renderpass = &vkContext->sceneRenderpass;
+            framebuffer = vkContext->imGuiResources.m_ViewportFramebuffers[vkContext->imageIndex];
+            break;
+        }
+        case BuiltInRenderpass::GAME:
+        {
+            commandBuffer = &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex];
+            renderpass = &vkContext->gameRenderpass;
+            framebuffer = vkContext->imGuiResources.m_GameViewportFramebuffers[vkContext->imageIndex];
             break;
         }
         case BuiltInRenderpass::UI:
@@ -502,8 +555,11 @@ bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
 
     vkCmdSetScissor(commandBuffer->handle, 0, 1, &scissor);
 
-    vkContext->mainRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->mainRenderpass.renderArea.w = vkContext->framebufferHeight;
+    vkContext->sceneRenderpass.renderArea.z = vkContext->framebufferWidth;
+    vkContext->sceneRenderpass.renderArea.w = vkContext->framebufferHeight;
+
+    vkContext->gameRenderpass.renderArea.z = vkContext->framebufferWidth;
+    vkContext->gameRenderpass.renderArea.w = vkContext->framebufferHeight;
 
     vkContext->uiRenderpass.renderArea.z = vkContext->framebufferWidth;
     vkContext->uiRenderpass.renderArea.w = vkContext->framebufferHeight;
@@ -512,9 +568,14 @@ bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
 
     switch (renderpassID)
     {
-        case BuiltInRenderpass::WORLD:
+        case BuiltInRenderpass::SCENE:
         {
-            UseMaterialShader(vkContext, &vkContext->materialShader);
+            UseMaterialShader(vkContext, commandBuffer, &vkContext->materialShader);
+            break;
+        }
+        case BuiltInRenderpass::GAME:
+        {
+            UseMaterialShader(vkContext, commandBuffer, &vkContext->gameShader);
             break;
         }
         case BuiltInRenderpass::UI:
@@ -534,10 +595,16 @@ bool VulkanBackend::EndRenderpass(BuiltInRenderpass renderpassID)
     
     switch (renderpassID)
     {
-        case BuiltInRenderpass::WORLD:
+        case BuiltInRenderpass::SCENE:
         {
             commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
-            renderpass = &vkContext->mainRenderpass;
+            renderpass = &vkContext->sceneRenderpass;
+            break;
+        }
+        case BuiltInRenderpass::GAME:
+        {
+            commandBuffer = &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex];
+            renderpass = &vkContext->gameRenderpass;
             break;
         }
         case BuiltInRenderpass::UI:
@@ -602,8 +669,11 @@ bool VulkanBackend::RecreateResources()
 
     NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(vkContext);
 
-    vkContext->mainRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->mainRenderpass.renderArea.w = vkContext->framebufferHeight;
+    vkContext->sceneRenderpass.renderArea.z = vkContext->framebufferWidth;
+    vkContext->sceneRenderpass.renderArea.w = vkContext->framebufferHeight;
+
+    vkContext->gameRenderpass.renderArea.z = vkContext->framebufferWidth;
+    vkContext->gameRenderpass.renderArea.w = vkContext->framebufferHeight;
 
     vkContext->uiRenderpass.renderArea.z = vkContext->framebufferWidth;
     vkContext->uiRenderpass.renderArea.w = vkContext->framebufferHeight;
@@ -619,20 +689,28 @@ bool VulkanBackend::RecreateResources()
     {
         NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
         NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->imGuiResources.m_ViewportCommandBuffers[i]);
+        NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->imGuiResources.m_GameViewportCommandBuffers[i]);
     }
 
     // Framebuffers.
     for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
-        vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->worldFramebuffers[i], vkContext->allocator);
+        vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportFramebuffers[i], vkContext->allocator);
+        vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportFramebuffers[i], vkContext->allocator);
         vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->swapChain.swapChainFramebuffers[i], vkContext->allocator);
     }
 
-    vkContext->mainRenderpass.renderArea.x = 0;
-    vkContext->mainRenderpass.renderArea.y = 0;
+    vkContext->sceneRenderpass.renderArea.x = 0;
+    vkContext->sceneRenderpass.renderArea.y = 0;
 
-    vkContext->mainRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->mainRenderpass.renderArea.w = vkContext->framebufferHeight;
+    vkContext->sceneRenderpass.renderArea.z = vkContext->framebufferWidth;
+    vkContext->sceneRenderpass.renderArea.w = vkContext->framebufferHeight;
+
+    vkContext->gameRenderpass.renderArea.x = 0;
+    vkContext->gameRenderpass.renderArea.y = 0;
+
+    vkContext->gameRenderpass.renderArea.z = vkContext->framebufferWidth;
+    vkContext->gameRenderpass.renderArea.w = vkContext->framebufferHeight;
 
     vkContext->uiRenderpass.renderArea.x = 0;
     vkContext->uiRenderpass.renderArea.y = 0;
@@ -651,22 +729,31 @@ bool VulkanBackend::RecreateResources()
     return true;
 }
 
-void VulkanBackend::UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+void VulkanBackend::UpdateGlobalWorldState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
 {
-    VulkanCommandBuffer* commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
+    VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
 
-    UseMaterialShader(vkContext, &vkContext->materialShader);
+    VulkanMaterialShader* shader = nullptr;
 
-    vkContext->materialShader.globalUBO.projection = projection;
-    vkContext->materialShader.globalUBO.view = view;
+    if (renderpassID == BuiltInRenderpass::GAME) 
+    {
+        shader = &vkContext->gameShader;
+    }
+    else 
+    {
+        shader = &vkContext->materialShader;
+    }
 
-    UpdateMaterialShaderGlobalState(vkContext, &vkContext->materialShader, vkContext->frameDeltaTime);
+    UseMaterialShader(vkContext, commandBuffer, shader);
+
+    shader->globalUBO.projection = projection;
+    shader->globalUBO.view = view;
+
+    UpdateMaterialShaderGlobalState(vkContext, commandBuffer, shader, vkContext->frameDeltaTime);
 }
 
-void VulkanBackend::UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode)
+void VulkanBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, int32 mode)
 {
-    VulkanCommandBuffer* commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
-
     UseUIShader(vkContext, &vkContext->uiShader);
 
     vkContext->uiShader.globalUBO.projection = projection;
@@ -675,7 +762,37 @@ void VulkanBackend::UpdateGlobalUIState(float4x4 projection, float4x4 view, int3
     UpdateUIShaderGlobalState(vkContext, &vkContext->uiShader, vkContext->frameDeltaTime);
 }
 
-void VulkanBackend::DrawGeometry(GeometryRenderData renderData)
+VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(BuiltInRenderpass renderpassID) 
+{
+    VulkanCommandBuffer* commandBuffer = nullptr;
+
+    switch (renderpassID)
+    {
+        case BuiltInRenderpass::SCENE:
+        {
+            commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
+            break;
+        }
+        case BuiltInRenderpass::GAME:
+        {
+            commandBuffer = &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex];
+            break;
+        }
+        case BuiltInRenderpass::UI:
+        {
+            commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
+            break;
+        }
+        default:
+        {
+            NOUS_ERROR("Vulkan Renderpass called on an unrecognized renderpass ID.");
+        }
+    }
+
+    return commandBuffer;
+}
+
+void VulkanBackend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData)
 {
     // Ignore non-uploaded geometries.
     if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID)
@@ -683,12 +800,24 @@ void VulkanBackend::DrawGeometry(GeometryRenderData renderData)
         return;
     }
 
+    VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
+
+    VulkanMaterialShader* shader = nullptr;
+
+    if (renderpassID == BuiltInRenderpass::GAME)
+    {
+        shader = &vkContext->gameShader;
+    }
+    else
+    {
+        shader = &vkContext->materialShader;
+    }
+
     VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
-    VulkanCommandBuffer* commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex] ;
 
-    UseMaterialShader(vkContext, &vkContext->materialShader);
+    UseMaterialShader(vkContext, commandBuffer, shader);
 
-    MaterialShaderSetModel(vkContext, &vkContext->materialShader, renderData.model);
+    MaterialShaderSetModel(vkContext, commandBuffer, shader, renderData.model);
 
     ResourceMaterial* material = nullptr;
 
@@ -701,7 +830,7 @@ void VulkanBackend::DrawGeometry(GeometryRenderData renderData)
         material = NOUS_MaterialSystem::GetDefaultMaterial();
     }
 
-    MaterialShaderApplyMaterial(vkContext, &vkContext->materialShader, material);
+    MaterialShaderApplyMaterial(vkContext, commandBuffer, shader, material);
 
     // Bind vertex buffer at offset.
     VkDeviceSize offsets[1] = { bufferData->vertexBufferOffset };
@@ -842,6 +971,12 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
             return false;
         }
 
+        if (!AcquireMaterialShaderResources(vkContext, &vkContext->gameShader, material))
+        {
+            NOUS_ERROR("VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
+            return false;
+        }
+
         NOUS_TRACE("Renderer: Material created.");
         return true;
     }
@@ -857,6 +992,7 @@ void VulkanBackend::DestroyMaterial(ResourceMaterial* material)
         if (material->internalID != INVALID_ID) 
         {
             ReleaseMaterialShaderResources(vkContext, &vkContext->materialShader, material);
+            //ReleaseMaterialShaderResources(vkContext, &vkContext->gameShader, material);
         }
         else 
         {

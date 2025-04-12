@@ -342,9 +342,10 @@ struct VulkanUIShader
 
 struct VulkanImGuiResources
 {
+    // ---------- Editor Resources ---------- //
     VkDescriptorPool descriptorPool;
 
-    // Scene Viewport
+    // ---------- Scene Viewport Resources ---------- //
     std::vector<VulkanImage> m_ViewportImages;
     VulkanImage m_ViewportDepthAttachment;
     std::array<VkFramebuffer, 3> m_ViewportFramebuffers;
@@ -353,7 +354,7 @@ struct VulkanImGuiResources
     VkSampler m_ViewportTextureSampler;
     std::array<VkDescriptorSet, 3> m_ViewportDescriptorSets;
 
-    // Game Viewport
+    // ---------- Game Viewport Resources ---------- //
     std::vector<VulkanImage> m_GameViewportImages;
     VulkanImage m_GameViewportDepthAttachment;
     std::array<VkFramebuffer, 3> m_GameViewportFramebuffers;
@@ -398,7 +399,9 @@ struct VulkanContext
 	VulkanDevice device;
 
     VulkanSwapChain swapChain;
-    VulkanRenderpass mainRenderpass;
+
+    VulkanRenderpass sceneRenderpass;
+    VulkanRenderpass gameRenderpass;
     VulkanRenderpass uiRenderpass;
 
     VulkanBuffer objectVertexBuffer;
@@ -417,13 +420,11 @@ struct VulkanContext
     bool recreatingSwapchain;
 
     VulkanMaterialShader materialShader;
+    VulkanMaterialShader gameShader;
     VulkanUIShader uiShader;
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
-
-    // Multiple Render Passes
-    std::array<VkFramebuffer, 3> worldFramebuffers;
 
     VulkanImGuiResources imGuiResources;
 

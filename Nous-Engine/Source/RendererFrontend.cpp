@@ -81,19 +81,19 @@ bool RendererFrontend::EndRenderpass(BuiltInRenderpass renderpassID)
 	return backend->EndRenderpass(renderpassID);
 }
 
-void RendererFrontend::UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+void RendererFrontend::UpdateGlobalWorldState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
 {
-	backend->UpdateGlobalWorldState(projection, view, viewPosition, ambientColor, mode);
+	backend->UpdateGlobalWorldState(renderpassID, projection, view, viewPosition, ambientColor, mode);
 }
 
-void RendererFrontend::UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode)
+void RendererFrontend::UpdateGlobalUIState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, int32 mode)
 {
-	backend->UpdateGlobalUIState(projection, view, mode);
+	backend->UpdateGlobalUIState(renderpassID, projection, view, mode);
 }
 
-void RendererFrontend::DrawGeometry(GeometryRenderData renderData)
+void RendererFrontend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData)
 {
-	backend->DrawGeometry(renderData);
+	backend->DrawGeometry(renderpassID, renderData);
 }
 
 void RendererFrontend::DrawEditor()
@@ -140,25 +140,47 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 	{
 		// ----------------------------------------------------------------------------------------------------- //
 
-		if (!BeginRenderpass(BuiltInRenderpass::WORLD))
+		if (!BeginRenderpass(BuiltInRenderpass::SCENE))
 		{
-			NOUS_ERROR("BeginRenderpass WORLD failed! Application shutting down...");
+			NOUS_ERROR("BeginRenderpass SCENE failed! Application shutting down...");
 			ret = false;
 		}
 
 		// Use Camera Attributes, passed along with renderpacket.
-		UpdateGlobalWorldState(packet->gameCamera.GetProjectionMatrix(), packet->gameCamera.GetViewMatrix(), packet->gameCamera.GetPos(), float4::one, 0);
+		UpdateGlobalWorldState(BuiltInRenderpass::SCENE, packet->editorCamera.GetProjectionMatrix(), packet->editorCamera.GetViewMatrix(), packet->editorCamera.GetPos(), float4::one, 0);
 
 		for (auto& geometry : packet->geometries)
 		{
-			DrawGeometry(geometry);
+			DrawGeometry(BuiltInRenderpass::SCENE, geometry);
 		}
 
 		// DrawGrid();
 
-		if (!EndRenderpass(BuiltInRenderpass::WORLD))
+		if (!EndRenderpass(BuiltInRenderpass::SCENE))
 		{
-			NOUS_ERROR("EndRenderpass WORLD failed! Application shutting down...");
+			NOUS_ERROR("EndRenderpass SCENE failed! Application shutting down...");
+			ret = false;
+		}
+
+		// ----------------------------------------------------------------------------------------------------- //
+
+		if (!BeginRenderpass(BuiltInRenderpass::GAME))
+		{
+			NOUS_ERROR("BeginRenderpass GAME failed! Application shutting down...");
+			ret = false;
+		}
+
+		// Use Camera Attributes, passed along with renderpacket.
+		UpdateGlobalWorldState(BuiltInRenderpass::GAME, packet->gameCamera.GetProjectionMatrix(), packet->gameCamera.GetViewMatrix(), packet->gameCamera.GetPos(), float4::one, 0);
+
+		for (auto& geometry : packet->geometries)
+		{
+			DrawGeometry(BuiltInRenderpass::GAME, geometry);
+		}
+
+		if (!EndRenderpass(BuiltInRenderpass::GAME))
+		{
+			NOUS_ERROR("EndRenderpass GAME failed! Application shutting down...");
 			ret = false;
 		}
 
@@ -170,7 +192,7 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 			ret = false;
 		}
 
-		UpdateGlobalUIState(packet->editorCamera.GetProjectionMatrix(), packet->editorCamera.GetViewMatrix(), 0);
+		UpdateGlobalUIState(BuiltInRenderpass::UI, packet->editorCamera.GetProjectionMatrix(), packet->editorCamera.GetViewMatrix(), 0);
 		
 		DrawEditor();
 

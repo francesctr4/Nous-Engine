@@ -115,27 +115,27 @@ bool RendererBackend::EndRenderpass(BuiltInRenderpass renderpassID)
     return false;
 }
 
-void RendererBackend::UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
+void RendererBackend::UpdateGlobalWorldState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode)
 {
     if (backendInterface != nullptr)
     {
-        return backendInterface->UpdateGlobalWorldState(projection, view, viewPosition, ambientColor, mode);
+        return backendInterface->UpdateGlobalWorldState(renderpassID, projection, view, viewPosition, ambientColor, mode);
     }
 }
 
-void RendererBackend::UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode)
+void RendererBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, int32 mode)
 {
     if (backendInterface != nullptr)
     {
-        return backendInterface->UpdateGlobalUIState(projection, view, mode);
+        return backendInterface->UpdateGlobalUIState(renderpassID, projection, view, mode);
     }
 }
 
-void RendererBackend::DrawGeometry(GeometryRenderData renderData)
+void RendererBackend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData)
 {
     if (backendInterface != nullptr)
     {
-        return backendInterface->DrawGeometry(renderData);
+        return backendInterface->DrawGeometry(renderpassID, renderData);
     }
 }
 

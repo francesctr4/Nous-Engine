@@ -153,7 +153,7 @@ bool CreateUIShader(VulkanContext* vkContext, VulkanUIShader* outShader)
         shaderStageCreateInfos[i] = outShader->stages[i].shaderStageCreateInfo;
     }
 
-    if (!CreateGraphicsPipeline(vkContext, &vkContext->mainRenderpass, bindingDescription,
+    if (!CreateGraphicsPipeline(vkContext, &vkContext->sceneRenderpass, bindingDescription,
         static_cast<uint32>(attributeDescriptions.size()), attributeDescriptions.data(),
         static_cast<uint32>(descriptorSetlayouts.size()), descriptorSetlayouts.data(),
         VULKAN_UI_SHADER_STAGE_COUNT, shaderStageCreateInfos.data(), viewport, scissor,

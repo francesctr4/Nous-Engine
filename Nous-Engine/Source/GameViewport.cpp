@@ -18,7 +18,7 @@ void GameViewport::Init()
 {
     VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 
-    NOUS_ImGuiVulkanResources::CreateViewportDescriptorSets(vkContext);
+    NOUS_ImGuiVulkanResources::CreateGameViewportDescriptorSets(vkContext);
 }
 
 void GameViewport::Draw()
@@ -70,7 +70,8 @@ void GameViewport::Draw()
 
             VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 
-            ImGui::Image(NOUS_ImGuiVulkanResources::GetViewportTexture(vkContext, vkContext->imageIndex),
+            ImGui::Image(NOUS_ImGuiVulkanResources::GetViewportTexture(
+                vkContext->imGuiResources.m_GameViewportDescriptorSets[vkContext->imageIndex]),
                 squareSize, uvMin, uvMax);
 
             // Draw white border on top

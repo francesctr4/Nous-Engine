@@ -196,7 +196,7 @@ bool NOUS_VulkanRenderpass::CreateOffscreenRenderpass(
         renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
         renderPassInfo.pDependencies = dependencies.data();
 
-        if (vkCreateRenderPass(vkContext->device.logicalDevice, &renderPassInfo, vkContext->allocator, &vkContext->mainRenderpass.handle) != VK_SUCCESS)
+        if (vkCreateRenderPass(vkContext->device.logicalDevice, &renderPassInfo, vkContext->allocator, &outRenderpass->handle) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create render pass!");
         }

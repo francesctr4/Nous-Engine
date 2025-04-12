@@ -11,6 +11,7 @@ class ResourceTexture;
 // --------------- Vulkan Renderer Backend --------------- \\
 
 struct VulkanContext;
+class VulkanCommandBuffer;
 
 class VulkanBackend : public IRendererBackend 
 {
@@ -32,10 +33,10 @@ public:
 
 	bool RecreateResources();
 
-	void UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) override;
-	void UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode) override;
+	void UpdateGlobalWorldState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) override;
+	void UpdateGlobalUIState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, int32 mode) override;
 
-	void DrawGeometry(GeometryRenderData renderData) override;
+	void DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData) override;
 
 	// ----------------------------------------------------------------------------------------------- //
 	// TEMPORAL //
@@ -52,6 +53,8 @@ public:
 	static VulkanContext* GetVulkanContext();
 
 	void ProcessPendingSubmissions();
+
+	VulkanCommandBuffer* GetCommandBufferByRenderpassID(BuiltInRenderpass renderpassID);
 
 private:
 

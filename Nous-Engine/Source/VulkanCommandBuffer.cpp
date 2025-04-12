@@ -8,6 +8,8 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
 {
     bool ret = true;
 
+    // Swap Chain
+
     if (vkContext->graphicsCommandBuffers.empty()) 
     {
         // Careful here, maybe we should use MAX_FRAMES_IN_FLIGHT
@@ -27,7 +29,7 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
         CommandBufferAllocate(vkContext, vkContext->device.mainGraphicsCommandPool, true, &(*it));
     }
 
-    // Viewport
+    // Scene Viewport
 
     if (vkContext->imGuiResources.m_ViewportCommandBuffers.empty())
     {
@@ -48,12 +50,35 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
         CommandBufferAllocate(vkContext, vkContext->device.mainGraphicsCommandPool, true, &(*it));
     }
 
+    // Game Viewport
+
+    if (vkContext->imGuiResources.m_GameViewportCommandBuffers.empty())
+    {
+        // Careful here, maybe we should use MAX_FRAMES_IN_FLIGHT
+        vkContext->imGuiResources.m_GameViewportCommandBuffers.resize(vkContext->imGuiResources.m_GameViewportImages.size());
+        MemoryManager::ZeroMemory(vkContext->imGuiResources.m_GameViewportCommandBuffers.data(), vkContext->imGuiResources.m_GameViewportCommandBuffers.size() * sizeof(VulkanCommandBuffer));
+    }
+
+    for (auto it = vkContext->imGuiResources.m_GameViewportCommandBuffers.begin(); it != vkContext->imGuiResources.m_GameViewportCommandBuffers.end(); ++it)
+    {
+        if ((*it).handle)
+        {
+            CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &(*it));
+            (*it).handle = 0;
+        }
+
+        MemoryManager::ZeroMemory(&(*it), sizeof(VulkanCommandBuffer));
+        CommandBufferAllocate(vkContext, vkContext->device.mainGraphicsCommandPool, true, &(*it));
+    }
+
     return ret;
 }
 
 void NOUS_VulkanCommandBuffer::DestroyCommandBuffers(VulkanContext* vkContext)
 {
     NOUS_DEBUG("Destroying Command Buffers...");
+
+    // Swap Chain
 
     for (auto it = vkContext->graphicsCommandBuffers.rbegin(); it != vkContext->graphicsCommandBuffers.rend(); ++it) 
     {
@@ -67,7 +92,7 @@ void NOUS_VulkanCommandBuffer::DestroyCommandBuffers(VulkanContext* vkContext)
     vkContext->graphicsCommandBuffers.clear();
     vkContext->graphicsCommandBuffers.shrink_to_fit();
 
-    // Viewport
+    // Scene Viewport
 
     for (auto it = vkContext->imGuiResources.m_ViewportCommandBuffers.rbegin(); it != vkContext->imGuiResources.m_ViewportCommandBuffers.rend(); ++it)
     {
@@ -80,6 +105,20 @@ void NOUS_VulkanCommandBuffer::DestroyCommandBuffers(VulkanContext* vkContext)
 
     vkContext->imGuiResources.m_ViewportCommandBuffers.clear();
     vkContext->imGuiResources.m_ViewportCommandBuffers.shrink_to_fit();
+
+    // Game Viewport
+
+    for (auto it = vkContext->imGuiResources.m_GameViewportCommandBuffers.rbegin(); it != vkContext->imGuiResources.m_GameViewportCommandBuffers.rend(); ++it)
+    {
+        if ((*it).handle)
+        {
+            CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &(*it));
+            (*it).handle = 0;
+        }
+    }
+
+    vkContext->imGuiResources.m_GameViewportCommandBuffers.clear();
+    vkContext->imGuiResources.m_GameViewportCommandBuffers.shrink_to_fit();
 }
 
 void NOUS_VulkanCommandBuffer::CommandBufferAllocate(VulkanContext* vkContext, VkCommandPool commandPool,

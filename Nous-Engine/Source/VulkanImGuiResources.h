@@ -14,14 +14,19 @@ namespace NOUS_ImGuiVulkanResources
 	// ----------------------------------------------------------------------------------- //
 
 	void CreateImGuiDescriptorPool(VulkanContext* vkContext);
-	void CreateImGuiTextureSampler(VulkanContext* vkContext);
+	void CreateViewportTextureSampler(VulkanContext* vkContext, VkSampler* sampler);
 
 	void CreateViewportImages(VulkanContext* vkContext);
-	void CreateDepthResources(VulkanContext* vkContext);
+	void CreateViewportDepthResources(VulkanContext* vkContext);
 
 	// ----------------------------------------------------------------------------------- //
 
-	void CreateViewportDescriptorSets(VulkanContext* vkContext);
-	ImTextureID GetViewportTexture(VulkanContext* vkContext, uint32 imageIndex);
-	void DestroyViewportDescriptorSets(VulkanContext* vkContext);
+	void CreateSceneViewportDescriptorSets(VulkanContext* vkContext);
+	void DestroySceneViewportDescriptorSets(VulkanContext* vkContext);
+
+	void CreateGameViewportDescriptorSets(VulkanContext* vkContext);
+	void DestroyGameViewportDescriptorSets(VulkanContext* vkContext);
+
+	ImTextureID GetViewportTexture(VkDescriptorSet descriptorSet);
+
 }

@@ -39,10 +39,10 @@ private:
 	bool BeginRenderpass(BuiltInRenderpass renderpassID);
 	bool EndRenderpass(BuiltInRenderpass renderpassID);
 
-	void UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode);
-	void UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode);
+	void UpdateGlobalWorldState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode);
+	void UpdateGlobalUIState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, int32 mode);
 
-	void DrawGeometry(GeometryRenderData renderData);
+	void DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData);
 	void DrawEditor();
 
 public:

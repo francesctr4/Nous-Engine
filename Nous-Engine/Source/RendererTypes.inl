@@ -18,7 +18,8 @@ struct GeometryRenderData
 
 enum class BuiltInRenderpass
 {
-    WORLD,
+    SCENE,
+    GAME,
     UI
 };
 
@@ -58,10 +59,10 @@ struct IRendererBackend
     virtual bool BeginRenderpass(BuiltInRenderpass renderpassID) = 0;
     virtual bool EndRenderpass(BuiltInRenderpass renderpassID) = 0;
 
-    virtual void UpdateGlobalWorldState(float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) = 0;
-    virtual void UpdateGlobalUIState(float4x4 projection, float4x4 view, int32 mode) = 0;
+    virtual void UpdateGlobalWorldState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, float3 viewPosition, float4 ambientColor, int32 mode) = 0;
+    virtual void UpdateGlobalUIState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, int32 mode) = 0;
 
-    virtual void DrawGeometry(GeometryRenderData renderData) = 0;
+    virtual void DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData) = 0;
 
     // ---------------------------------------------------------------------------------------------------- //
 
