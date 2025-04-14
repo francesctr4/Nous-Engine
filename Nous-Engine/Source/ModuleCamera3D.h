@@ -23,6 +23,8 @@ public:
 
 	Camera* GetCamera();
 
+	bool sceneViewportHovered;
+
 private:
 
 	void HandleCameraMovement(float3& newPos, const float& speed);

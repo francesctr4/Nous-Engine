@@ -8,6 +8,8 @@
 ModuleCamera3D::ModuleCamera3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	sceneViewportHovered = false;
 }
 
 ModuleCamera3D::~ModuleCamera3D()
@@ -41,36 +43,39 @@ UpdateStatus ModuleCamera3D::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	float3 newPos(0, 0, 0);
-	float speed = 20.0f * dt;
-	float rotSensivity = 0.3f;
-	float panSensivity = 3.6f;
-
-	if (App->input->GetKey(SDL_SCANCODE_LSHIFT) == KeyState::REPEAT) speed *= 6;
-
-	if (App->input->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::REPEAT && App->input->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::IDLE) 
+	if (sceneViewportHovered) 
 	{
-		// WASD Camera Movement Handling
-		HandleCameraMovement(newPos, speed);
+		float3 newPos(0, 0, 0);
+		float speed = 20.0f * dt;
+		float rotSensivity = 0.3f;
+		float panSensivity = 3.6f;
 
-		// Camera Rotation Handling
-		HandleCameraRotation(rotSensivity, dt);
+		if (App->input->GetKey(SDL_SCANCODE_LSHIFT) == KeyState::REPEAT) speed *= 6;
 
-		if (App->input->GetKey(SDL_SCANCODE_LALT) == KeyState::REPEAT)
+		if (App->input->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::REPEAT && App->input->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::IDLE)
 		{
-			HandleCameraOrbit(newPos, rotSensivity, dt, float3::zero);
+			// WASD Camera Movement Handling
+			HandleCameraMovement(newPos, speed);
+
+			// Camera Rotation Handling
+			HandleCameraRotation(rotSensivity, dt);
+
+			if (App->input->GetKey(SDL_SCANCODE_LALT) == KeyState::REPEAT)
+			{
+				HandleCameraOrbit(newPos, rotSensivity, dt, float3::zero);
+			}
 		}
+
+		if (App->input->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::REPEAT)
+		{
+			// Mouse wheel pressed while dragging movement handling
+			HandleCameraPan(newPos, speed, panSensivity, dt);
+		}
+
+		HandleCameraZoom(newPos, speed);
+
+		camera.UpdatePos(newPos);
 	}
-
-	if (App->input->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::REPEAT) 
-	{
-		// Mouse wheel pressed while dragging movement handling
-		HandleCameraPan(newPos, speed, panSensivity, dt);
-	}
-
-	HandleCameraZoom(newPos, speed);
-
-	camera.UpdatePos(newPos);
 
 	return UPDATE_CONTINUE;
 }

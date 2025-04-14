@@ -27,6 +27,8 @@ void SceneViewport::Draw()
     {
         if (ImGui::Begin(title, p_open))
         {
+            External->camera->sceneViewportHovered = ImGui::IsWindowHovered();
+
             // Get the size of the window's content area
             ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
             ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
