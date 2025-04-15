@@ -154,6 +154,7 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 			DrawGeometry(BuiltInRenderpass::SCENE, geometry);
 		}
 
+		// DrawGameCamera();
 		// DrawGrid();
 
 		if (!EndRenderpass(BuiltInRenderpass::SCENE))
