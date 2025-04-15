@@ -446,19 +446,19 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 	{
 		case ResourceType::MESH:
 		{
-			ResourceMesh* r = static_cast<ResourceMesh*>(resource);
+			ResourceMesh* r = down_cast<ResourceMesh*>(resource);
 			NOUS_DELETE<ResourceMesh>(r, MemoryManager::MemoryTag::RESOURCE_MESH);
 			break;
 		}
 		case ResourceType::MATERIAL:
 		{
-			ResourceMaterial* r = static_cast<ResourceMaterial*>(resource);
+			ResourceMaterial* r = down_cast<ResourceMaterial*>(resource);
 			NOUS_DELETE<ResourceMaterial>(r, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
 			break;
 		}
 		case ResourceType::TEXTURE:
 		{
-			ResourceTexture* r = static_cast<ResourceTexture*>(resource);
+			ResourceTexture* r = down_cast<ResourceTexture*>(resource);
 			NOUS_DELETE<ResourceTexture>(r, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
 			break;
 		}
@@ -571,19 +571,19 @@ void ModuleResourceManager::ClearResources()
 		{
 			case ResourceType::MESH:
 			{
-				ResourceMesh* r = static_cast<ResourceMesh*>(Resource);
+				ResourceMesh* r = down_cast<ResourceMesh*>(Resource);
 				NOUS_DELETE<ResourceMesh>(r, MemoryManager::MemoryTag::RESOURCE_MESH);
 				break;
 			}
 			case ResourceType::MATERIAL:
 			{
-				ResourceMaterial* r = static_cast<ResourceMaterial*>(Resource);
+				ResourceMaterial* r = down_cast<ResourceMaterial*>(Resource);
 				NOUS_DELETE<ResourceMaterial>(r, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
 				break;
 			}
 			case ResourceType::TEXTURE:
 			{
-				ResourceTexture* r = static_cast<ResourceTexture*>(Resource);
+				ResourceTexture* r = down_cast<ResourceTexture*>(Resource);
 				NOUS_DELETE<ResourceTexture>(r, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
 				break;
 			}

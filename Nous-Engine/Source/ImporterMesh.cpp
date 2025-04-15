@@ -41,8 +41,7 @@ bool ImporterMesh::Import(const MetaFileData& metaFileData)
 
 bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
 {
-    ResourceMesh* mesh = static_cast<ResourceMesh*>(inResource);
-    if (!mesh) return false;
+    ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
 
     bool ret = true;
 
@@ -95,8 +94,7 @@ bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
 
 bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
 {
-    ResourceMesh* mesh = static_cast<ResourceMesh*>(outResource);
-    if (!mesh) return false;
+    ResourceMesh* mesh = down_cast<ResourceMesh*>(outResource);
 
     bool ret = true;
 
@@ -154,8 +152,7 @@ bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
 
 bool ImporterMesh::Unload(Resource* inResource)
 {
-    ResourceMesh* mesh = static_cast<ResourceMesh*>(inResource);
-    if (!mesh) return false;
+    ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
 
     if (mesh->material != nullptr) 
     {
@@ -238,7 +235,7 @@ void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh)
             vertex.texCoord = { 0.0f, 0.0f };
         }
 
-        static_cast<ResourceMesh*>(outMesh)->vertices.emplace_back(vertex);
+        down_cast<ResourceMesh*>(outMesh)->vertices.emplace_back(vertex);
     }
 
     // Indices
@@ -250,7 +247,7 @@ void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh)
 
             for (uint32_t j = 0; j < face.mNumIndices; ++j)
             {
-                static_cast<ResourceMesh*>(outMesh)->indices.emplace_back(face.mIndices[j]);
+                down_cast<ResourceMesh*>(outMesh)->indices.emplace_back(face.mIndices[j]);
             }
         }
     }

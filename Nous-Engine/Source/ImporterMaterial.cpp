@@ -22,8 +22,7 @@ bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 
 bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResource)
 {
-	ResourceMaterial* material = static_cast<ResourceMaterial*>(inResource);
-	if (!material) return false;
+	ResourceMaterial* material = down_cast<ResourceMaterial*>(inResource);
     NOUS_DELETE<ResourceMaterial>(material, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
 
     bool ret = NOUS_FileManager::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
@@ -33,8 +32,7 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
 
 bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResource)
 {
-    ResourceMaterial* material = static_cast<ResourceMaterial*>(outResource);
-    if (!material) return false;
+    ResourceMaterial* material = down_cast<ResourceMaterial*>(outResource);
 
     JsonFile jsonFile;
 
@@ -60,7 +58,7 @@ bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResourc
     bool ret = true;
 
     // Diffuse Texture
-    ResourceTexture* diffuseTexture = static_cast<ResourceTexture*>(External->resourceManager->CreateResource(diffuseMapPath));
+    ResourceTexture* diffuseTexture = down_cast<ResourceTexture*>(External->resourceManager->CreateResource(diffuseMapPath));
     material->diffuseMap.type = TextureMapType::DIFFUSE;
     material->diffuseMap.texture = diffuseTexture;
 
@@ -71,8 +69,7 @@ bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResourc
 
 bool ImporterMaterial::Unload(Resource* inResource)
 {
-	ResourceMaterial* material = static_cast<ResourceMaterial*>(inResource);
-	if (!material) return false;
+	ResourceMaterial* material = down_cast<ResourceMaterial*>(inResource);
 
     if (material->diffuseMap.texture != nullptr)
     {

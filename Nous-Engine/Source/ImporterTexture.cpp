@@ -21,8 +21,7 @@ bool ImporterTexture::Import(const MetaFileData& metaFileData)
 
 bool ImporterTexture::Save(const MetaFileData& metaFileData, Resource*& inResource)
 {
-    ResourceTexture* texture = static_cast<ResourceTexture*>(inResource);
-    if (!texture) return false;
+    ResourceTexture* texture = down_cast<ResourceTexture*>(inResource);
     NOUS_DELETE<ResourceTexture>(texture, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
 
     bool ret = NOUS_FileManager::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
@@ -32,8 +31,7 @@ bool ImporterTexture::Save(const MetaFileData& metaFileData, Resource*& inResour
 
 bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource)
 {
-    ResourceTexture* texture = static_cast<ResourceTexture*>(outResource);
-    if (!texture) return false;
+    ResourceTexture* texture = down_cast<ResourceTexture*>(outResource);
 
     const int32 requiredChannelCount = 4;
 
@@ -117,8 +115,7 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
 
 bool ImporterTexture::Unload(Resource* inResource)
 {
-    ResourceTexture* texture = static_cast<ResourceTexture*>(inResource);
-    if (!texture) return false;
+    ResourceTexture* texture = down_cast<ResourceTexture*>(inResource);
 
     External->renderer->rendererFrontend->DestroyTexture(texture);
 
