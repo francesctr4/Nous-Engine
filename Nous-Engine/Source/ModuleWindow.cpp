@@ -27,7 +27,7 @@ bool ModuleWindow::Awake()
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
 
-        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+        NOUS_ERROR("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
 
         ret = false;
     }
@@ -40,7 +40,7 @@ bool ModuleWindow::Awake()
 
     if (window == NULL) {
 
-        printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+        NOUS_ERROR("Window could not be created! SDL_Error: %s\n", SDL_GetError());
 
         ret = false;
     }
