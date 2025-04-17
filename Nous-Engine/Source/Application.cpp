@@ -110,7 +110,8 @@ bool Application::Awake()
     NOUS_INFO("-------------- Application Awake --------------");
     for (int i = 0; i < NUM_MODULES && ret; ++i)
     {
-        if (listModules[i] != nullptr) {
+        if (listModules[i] != nullptr) 
+        {
             ret = listModules[i]->Awake();
         }
     }
@@ -119,7 +120,8 @@ bool Application::Awake()
     NOUS_INFO("-------------- Application Start --------------");
     for (int i = 0; i < NUM_MODULES && ret; ++i)
     {
-        if (listModules[i] != nullptr) {
+        if (listModules[i] != nullptr) 
+        {
             ret = listModules[i]->Start();
         }
     }
