@@ -6,7 +6,7 @@
 
 #include "NOUS_JobSystem.h"
 
-constexpr uint16 NUM_MODULES = 8;
+constexpr uint8 NUM_MODULES = 8;
 
 class Module;
 class ModuleWindow;
@@ -38,7 +38,12 @@ public:
 	float GetDT();
 	float GetMS();
 
-	// ---------------------------------------- \\
+private:
+
+	UpdateStatus PrepareUpdate();
+	void FinishUpdate();
+
+public:
 
 	ModuleWindow* window;
 	ModuleInput* input;
@@ -53,13 +58,8 @@ public:
 
 	// ------------- MULTITHREADING ------------- //
 	NOUS_Multithreading::NOUS_JobSystem* jobSystem;
-	
+
 private:
-
-	UpdateStatus PrepareUpdate();
-	void FinishUpdate();
-
-	// ---------------------------------------- \\
 
 	Module* listModules[NUM_MODULES];
 
