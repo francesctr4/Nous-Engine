@@ -40,12 +40,12 @@ bool Module::CleanUp()
 	return true;
 }
 
-std::string Module::GetName()
-{
-	return name;
-}
-
 void Module::ReceiveEvent(const Event& event)
 {
 
+}
+
+std::string Module::GetName()
+{
+	return name;
 }

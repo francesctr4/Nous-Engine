@@ -20,9 +20,9 @@ public:
 
 	virtual bool CleanUp();
 
-	std::string GetName();
-
 	virtual void ReceiveEvent(const Event& event);
+
+	std::string GetName();
 
 public:
 
