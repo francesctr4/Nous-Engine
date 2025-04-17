@@ -16,7 +16,7 @@
 
 #include "ImporterManager.h"
 
-ModuleResourceManager::ModuleResourceManager(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
+ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 }

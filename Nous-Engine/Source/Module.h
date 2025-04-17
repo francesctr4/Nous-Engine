@@ -2,13 +2,11 @@
 
 #include "Application.h"
 
-class Application;
-
 class Module
 {
 public:
 
-	Module(Application* app, std::string name, bool startEnabled = true);
+	Module(Application* app);
 	virtual ~Module();
 
 	virtual bool Awake();
@@ -22,15 +20,8 @@ public:
 
 	virtual void ReceiveEvent(const Event& event);
 
-	std::string GetName();
-
 public:
 
 	Application* App;
-	
-private:
-
-	bool enabled;
-	std::string name;
 	
 };

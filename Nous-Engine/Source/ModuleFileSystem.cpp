@@ -8,7 +8,7 @@
 
 #include <filesystem>
 
-ModuleFileSystem::ModuleFileSystem(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
+ModuleFileSystem::ModuleFileSystem(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 }

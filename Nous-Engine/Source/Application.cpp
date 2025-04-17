@@ -50,14 +50,14 @@ Application::Application()
     //listModules[6] = renderer;
     //listModules[7] = editor;
 
-    listModules[0] = window = NOUS_NEW<ModuleWindow>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleWindow");
-    listModules[1] = input = NOUS_NEW<ModuleInput>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleInput");
-    listModules[2] = fileSystem = NOUS_NEW<ModuleFileSystem>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleFileSystem");
-    listModules[3] = camera = NOUS_NEW<ModuleCamera3D>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleCamera3D");
-    listModules[4] = resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleResourceManager");
-    listModules[5] = scene = NOUS_NEW<ModuleScene>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleScene");
-    listModules[6] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleRenderer3D");
-    listModules[7] = editor = NOUS_NEW<ModuleEditor>(MemoryManager::MemoryTag::APPLICATION, this, "ModuleEditor");
+    listModules[0] = window = NOUS_NEW<ModuleWindow>(MemoryManager::MemoryTag::APPLICATION, this);
+    listModules[1] = input = NOUS_NEW<ModuleInput>(MemoryManager::MemoryTag::APPLICATION, this);
+    listModules[2] = fileSystem = NOUS_NEW<ModuleFileSystem>(MemoryManager::MemoryTag::APPLICATION, this);
+    listModules[3] = camera = NOUS_NEW<ModuleCamera3D>(MemoryManager::MemoryTag::APPLICATION, this);
+    listModules[4] = resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryManager::MemoryTag::APPLICATION, this);
+    listModules[5] = scene = NOUS_NEW<ModuleScene>(MemoryManager::MemoryTag::APPLICATION, this);
+    listModules[6] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryManager::MemoryTag::APPLICATION, this);
+    listModules[7] = editor = NOUS_NEW<ModuleEditor>(MemoryManager::MemoryTag::APPLICATION, this);
 
     // ------------- MULTITHREADING ------------- //
     jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryManager::MemoryTag::THREAD);
@@ -107,6 +107,7 @@ bool Application::Awake()
     bool ret = true;
 
     // Call Awake() in all modules
+    NOUS_INFO("-------------- Application Awake --------------");
     for (int i = 0; i < NUM_MODULES && ret; ++i)
     {
         if (listModules[i] != nullptr) {
@@ -243,6 +244,8 @@ void Application::FinishUpdate()
 bool Application::CleanUp()
 {
     bool ret = true;
+
+    NOUS_INFO("-------------- Application CleanUp --------------");
     for (int i = (NUM_MODULES - 1); i >= 0 && ret; --i)
     {
         if (listModules[i] != nullptr) {

@@ -5,7 +5,7 @@
 #include "Logger.h"
 #include "MemoryManager.h"
 
-ModuleWindow::ModuleWindow(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
+ModuleWindow::ModuleWindow(Application* app) : Module(app)
 {
     NOUS_TRACE("%s()", __FUNCTION__);
 

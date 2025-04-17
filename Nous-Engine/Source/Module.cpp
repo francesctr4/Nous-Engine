@@ -1,8 +1,6 @@
 #include "Module.h"
 
-#include "Logger.h"
-
-Module::Module(Application* app, std::string name, bool start_enabled) : App(app), name(name), enabled(start_enabled)
+Module::Module(Application* app) : App(app)
 {
 }
 
@@ -43,9 +41,4 @@ bool Module::CleanUp()
 void Module::ReceiveEvent(const Event& event)
 {
 
-}
-
-std::string Module::GetName()
-{
-	return name;
 }

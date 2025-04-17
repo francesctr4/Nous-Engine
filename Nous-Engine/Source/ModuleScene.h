@@ -9,7 +9,7 @@ class ModuleScene : public Module
 public:
 
 	// Constructor
-	ModuleScene(Application* app, std::string name, bool start_enabled = true);
+	ModuleScene(Application* app);
 
 	// Destructor
 	virtual ~ModuleScene();

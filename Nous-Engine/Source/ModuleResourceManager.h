@@ -12,7 +12,7 @@ class ModuleResourceManager : public Module
 public:
 
 	// Constructor
-	ModuleResourceManager(Application* app, std::string name, bool start_enabled = true);
+	ModuleResourceManager(Application* app);
 
 	// Destructor
 	virtual ~ModuleResourceManager();

@@ -10,7 +10,7 @@ class ModuleRenderer3D : public Module
 {
 public:
 
-	ModuleRenderer3D(Application* app, std::string name, bool start_enabled = true);
+	ModuleRenderer3D(Application* app);
 	virtual ~ModuleRenderer3D();
 
 	bool Awake() override;

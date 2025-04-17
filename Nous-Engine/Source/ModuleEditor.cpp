@@ -25,7 +25,7 @@
 
 #pragma endregion
 
-ModuleEditor::ModuleEditor(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
+ModuleEditor::ModuleEditor(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 

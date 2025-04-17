@@ -19,7 +19,7 @@ class ModuleInput : public Module
 {
 public: 
 
-	ModuleInput(Application* app, std::string name, bool start_enabled = true);
+	ModuleInput(Application* app);
 	virtual ~ModuleInput();
 
 	bool Awake() override;

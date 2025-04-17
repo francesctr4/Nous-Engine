@@ -7,7 +7,7 @@ class ModuleCamera3D : public Module
 {
 public:
 
-	ModuleCamera3D(Application* app, std::string name, bool start_enabled = true);
+	ModuleCamera3D(Application* app);
 	virtual ~ModuleCamera3D();
 
 	bool Awake() override;

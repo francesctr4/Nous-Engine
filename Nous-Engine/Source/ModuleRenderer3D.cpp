@@ -23,7 +23,7 @@ RendererFrontend* ModuleRenderer3D::rendererFrontend = nullptr;
 ResourceMesh* testGeometry = nullptr;
 // End Temp
 
-ModuleRenderer3D::ModuleRenderer3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
+ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 

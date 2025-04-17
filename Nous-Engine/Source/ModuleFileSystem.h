@@ -7,7 +7,7 @@ class ModuleFileSystem : public Module
 public:
 
 	// Constructor
-	ModuleFileSystem(Application* app, std::string name, bool start_enabled = true);
+	ModuleFileSystem(Application* app);
 
 	// Destructor
 	virtual ~ModuleFileSystem();

@@ -4,7 +4,7 @@
 #include "Logger.h"
 #include "MemoryManager.h"
 
-ModuleInput::ModuleInput(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
+ModuleInput::ModuleInput(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 

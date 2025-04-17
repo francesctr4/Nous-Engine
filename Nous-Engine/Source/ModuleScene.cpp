@@ -7,7 +7,7 @@
 
 #include "MemoryManager.h"
 
-ModuleScene::ModuleScene(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
+ModuleScene::ModuleScene(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 

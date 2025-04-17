@@ -5,7 +5,7 @@
 
 #include <algorithm>  // Required for std::clamp
 
-ModuleCamera3D::ModuleCamera3D(Application* app, std::string name, bool start_enabled) : Module(app, name, start_enabled)
+ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 

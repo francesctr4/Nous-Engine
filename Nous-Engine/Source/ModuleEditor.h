@@ -14,7 +14,7 @@ class ModuleEditor : public Module
 public:
 
 	// Constructor
-	ModuleEditor(Application* app, std::string name, bool start_enabled = true);
+	ModuleEditor(Application* app);
 
 	// Destructor
 	virtual ~ModuleEditor();
