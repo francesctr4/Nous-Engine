@@ -52,7 +52,8 @@ void* DynamicAllocator::Allocate(uint64 size)
     }
 
     // Handle allocation failure
-    NOUS_ERROR("DynamicAllocator::Allocate() failed. Requested: %lu, Available: %lu", size, GetFreeSpace());
+    NOUS_ERROR("DynamicAllocator::Allocate() failed. Requested: %lu bytes, Available: %lu bytes", size, GetFreeSpace());
+    NOUS_ASSERT_MSG(size < GetFreeSpace(), "Memory Manager has been initialized with insufficient memory.");
 
     return nullptr;
 }
