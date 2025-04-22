@@ -109,7 +109,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 		}
 		catch (const std::exception& e)
 		{
-			std::cerr << "Job '" << job->GetName() << "' failed: " << e.what() << '\n';
+			NOUS_ERROR(("Job '" + job->GetName() + "' failed: " + e.what()).c_str());
 		}
 
 		NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
