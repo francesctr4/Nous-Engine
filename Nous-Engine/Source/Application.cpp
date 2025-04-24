@@ -107,7 +107,6 @@ bool Application::Awake()
     bool ret = true;
 
     // Call Awake() in all modules
-    NOUS_INFO("-------------- Application Awake --------------");
     for (int i = 0; i < NUM_MODULES && ret; ++i)
     {
         if (listModules[i] != nullptr) 
