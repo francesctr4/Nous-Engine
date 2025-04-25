@@ -19,7 +19,8 @@
 #include "Assets.h"
 #include "AssetsBrowser.h"
 #include "ResourcesWindow.h"
-#include "ThreadsWindow.h"
+#include "MultithreadingWindow.h"
+#include "JobQueueWindow.h"
 #include "SceneViewport.h"
 #include "GameViewport.h"
 
@@ -112,7 +113,8 @@ bool ModuleEditor::Awake()
 	//AddEditorWindow(std::make_unique<Assets>("Assets"));
 	AddEditorWindow(std::make_unique<AssetsBrowser>("Assets"));
 	AddEditorWindow(std::make_unique<Resources>("Resources"));
-	AddEditorWindow(std::make_unique<Threads>("Threads"));
+	AddEditorWindow(std::make_unique<Multithreading>("Multithreading"));
+	AddEditorWindow(std::make_unique<JobQueue>("Job Queue"));
 	AddEditorWindow(std::make_unique<GameViewport>("Game"));
 	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
 

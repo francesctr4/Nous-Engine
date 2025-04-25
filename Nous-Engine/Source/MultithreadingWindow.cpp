@@ -1,4 +1,4 @@
-#include "ThreadsWindow.h"
+#include "MultithreadingWindow.h"
 
 #include "Application.h"
 #include "NOUS_JobSystem.h"
@@ -8,18 +8,18 @@
 
 #include <algorithm>
 
-Threads::Threads(const char* title, bool start_open)
+Multithreading::Multithreading(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
 {
     Init();
 }
 
-void Threads::Init()
+void Multithreading::Init()
 {
 
 }
 
-void Threads::Draw()
+void Multithreading::Draw()
 {
     if (!*p_open) return;
 
@@ -27,7 +27,7 @@ void Threads::Draw()
     if (ImGui::Begin(title, p_open))
     {
         // System overview section
-        ImGui::Text("Thread System Overview");
+        ImGui::Text("Job System Overview");
         ImGui::Separator();
 
         static int newSize = NOUS_Multithreading::c_MAX_HARDWARE_THREADS;
@@ -45,6 +45,8 @@ void Threads::Draw()
             External->jobSystem->Resize(newSize);
             NOUS_VulkanMultithreading::RecreateWorkerCommandPools(VulkanBackend::GetVulkanContext());
         }
+
+        ImGui::Separator();
         
         static const auto& threadPool = External->jobSystem->GetThreadPool();
         static const auto& threads = threadPool.GetThreads();
@@ -93,6 +95,23 @@ void Threads::Draw()
         std::string text = "Active Threads: " + std::to_string(activeThreads) + "/" + std::to_string(allThreads.size());
         ImGui::ProgressBar(progress, ImVec2(-1, 0), text.c_str());
         ImGui::PopStyleColor();
+
+        // Determine and display threading mode
+        const bool isSingleThreaded = (threads.size() == 0);
+        const char* modeText = isSingleThreaded ? "Single-threaded Mode" : "Multi-threaded Mode";
+        const ImVec4 modeColor = isSingleThreaded ? ImVec4(0.8f, 0.0f, 0.0f, 1.0f) : ImVec4(0.1f, 0.6f, 1.0f, 1.0f);
+
+        // Create centered container
+        ImGui::BeginChild("##ModeTextContainer", ImVec2(-1, 30), true);
+        {
+            ImVec2 textSize = ImGui::CalcTextSize(modeText);
+            ImGui::SetCursorPos(ImVec2(
+                (ImGui::GetWindowWidth() - textSize.x) * 0.5f,
+                (ImGui::GetWindowHeight() - textSize.y) * 0.5f
+            ));
+            ImGui::TextColored(modeColor, "%s", modeText);
+        }
+        ImGui::EndChild();
 
         ImGui::Columns(1);
 
@@ -155,42 +174,6 @@ void Threads::Draw()
 
             ImGui::EndTable();
         }
-    }
-    ImGui::End();
-
-    ImGui::Begin("Job Queue");
-
-    const auto& threadPool = External->jobSystem->GetThreadPool();
-    const auto& jobQueue = threadPool.GetJobQueue();
-
-    // New Job Queue table
-    if (ImGui::BeginTable("JobQueue", 1,
-        ImGuiTableFlags_Borders |
-        ImGuiTableFlags_RowBg |
-        ImGuiTableFlags_ScrollY))
-    {
-        ImGui::TableSetupColumn(std::format("Job Name ({} pending jobs)", jobQueue.size()).c_str(), ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableHeadersRow();
-
-        // Create a copy of the queue for safe iteration
-        std::queue<NOUS_Multithreading::NOUS_Job*> tempQueue = jobQueue;
-
-        while (!tempQueue.empty())
-        {
-            NOUS_Multithreading::NOUS_Job* job = tempQueue.front();
-            tempQueue.pop();
-
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-
-            if (job) {
-                ImGui::Text("%s", job->GetName().c_str());
-            }
-            else {
-                ImGui::TextDisabled("(null job)");
-            }
-        }
-        ImGui::EndTable();
     }
     ImGui::End();
 }

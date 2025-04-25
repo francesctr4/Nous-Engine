@@ -2,11 +2,11 @@
 
 #include "IEditorWindow.inl"
 
-class Threads : public IEditorWindow
+class JobQueue : public IEditorWindow
 {
 public:
 
-    explicit Threads(const char* title, bool start_open = true);
+    explicit JobQueue(const char* title, bool start_open = true);
 
     void Init() override;
     void Draw() override;

@@ -447,7 +447,7 @@
     <ClCompile Include="Source\NOUS_Multithreading.cpp">
       <Filter>Source Code\!!NousMultithreading</Filter>
     </ClCompile>
-    <ClCompile Include="Source\ThreadsWindow.cpp">
+    <ClCompile Include="Source\MultithreadingWindow.cpp">
       <Filter>Source Code\!!NousMultithreading</Filter>
     </ClCompile>
     <ClCompile Include="Source\SceneViewport.cpp">
@@ -479,6 +479,9 @@
     </ClCompile>
     <ClCompile Include="Source\GameViewport.cpp">
       <Filter>Source Code\Editor\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\JobQueueWindow.cpp">
+      <Filter>Source Code\!!NousMultithreading</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1253,7 +1256,7 @@
     <ClInclude Include="Source\NOUS_Multithreading.h">
       <Filter>Source Code\!!NousMultithreading</Filter>
     </ClInclude>
-    <ClInclude Include="Source\ThreadsWindow.h">
+    <ClInclude Include="Source\MultithreadingWindow.h">
       <Filter>Source Code\!!NousMultithreading</Filter>
     </ClInclude>
     <ClInclude Include="Source\SceneViewport.h">
@@ -1285,6 +1288,9 @@
     </ClInclude>
     <ClInclude Include="Source\GameViewport.h">
       <Filter>Source Code\Editor\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\JobQueueWindow.h">
+      <Filter>Source Code\!!NousMultithreading</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
