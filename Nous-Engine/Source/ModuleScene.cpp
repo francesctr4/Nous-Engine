@@ -46,6 +46,14 @@ UpdateStatus ModuleScene::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN)
+	{
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(10000);
+			}, "Test");
+	}
+
 	if (App->input->GetKey(SDL_SCANCODE_T) == KeyState::DOWN) 
 	{
 		App->jobSystem->SubmitJob([this]()
