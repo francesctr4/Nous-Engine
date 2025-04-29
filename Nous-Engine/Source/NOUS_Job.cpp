@@ -1,5 +1,9 @@
 #include "NOUS_Job.h"
 
+#ifdef TRACY_ENABLE
+#include "Tracy.h"
+#endif
+
 /// @brief NOUS_Job constructor.
 NOUS_Multithreading::NOUS_Job::NOUS_Job(const std::string& name, std::function<void()> func) :
 	mName(name), mFunction(func) 

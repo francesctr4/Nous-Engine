@@ -2,6 +2,10 @@
 
 #include "MemoryManager.h"
 
+#ifdef TRACY_ENABLE
+#include "Tracy.h"
+#endif
+
 /// @brief NOUS_ThreadPool constructor.
 /// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
 NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8 numThreads) :
@@ -80,8 +84,16 @@ const std::queue<NOUS_Multithreading::NOUS_Job*>& NOUS_Multithreading::NOUS_Thre
 /// @param thread The thread executing this loop.
 void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 {
+#ifdef TRACY_ENABLE
+	tracy::SetThreadName(thread->GetName().c_str()); // Set thread name
+#endif
+
 	while (true)
 	{
+#ifdef TRACY_ENABLE
+		ZoneScoped;
+#endif
+
 		NOUS_Job* job = nullptr;
 
 		{
