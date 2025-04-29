@@ -60,8 +60,10 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 
     VkValidationFeaturesEXT validationFeatures{};
     validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
-    validationFeatures.enabledValidationFeatureCount = static_cast<uint32>(enabledFeatures.size());
-    validationFeatures.pEnabledValidationFeatures = enabledFeatures.data();
+    //validationFeatures.enabledValidationFeatureCount = static_cast<uint32>(enabledFeatures.size());
+    //validationFeatures.pEnabledValidationFeatures = enabledFeatures.data();
+    validationFeatures.enabledValidationFeatureCount = 0;
+    validationFeatures.pEnabledValidationFeatures = nullptr;
 
     // Set up debug messenger create info
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
