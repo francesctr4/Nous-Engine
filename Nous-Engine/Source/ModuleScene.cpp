@@ -33,6 +33,39 @@ bool ModuleScene::Awake()
 bool ModuleScene::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	App->jobSystem->SubmitJob([this]()
+		{
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+			ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+			mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
+		}, "Render Lagiacrus");
+
+	App->jobSystem->SubmitJob([this]()
+		{
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+			ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+			mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
+		}, "Render Cypher");
+
+	App->jobSystem->SubmitJob([this]()
+		{
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+			ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+			mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
+		}, "Render Queen Xenomorph");
+
+	App->jobSystem->SubmitJob([this]()
+		{
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+			ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+			mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
+		}, "Render Wolf");
+
 	return true;
 }
 
@@ -45,6 +78,24 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 UpdateStatus ModuleScene::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	if (App->input->GetKey(SDL_SCANCODE_L) == KeyState::DOWN)
+	{
+		for (int i = 0; i < 100; ++i)
+		{
+			App->jobSystem->SubmitJob([]
+				{
+					std::chrono::milliseconds duration(500);
+					auto start = std::chrono::steady_clock::now();
+
+					while (std::chrono::steady_clock::now() - start < duration) 
+					{
+						std::sqrt(123.456); // Dummy CPU-bound work
+					}
+
+				}, "Stress Test");
+		}
+	}
 
 	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN)
 	{

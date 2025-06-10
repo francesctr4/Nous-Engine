@@ -21,8 +21,12 @@ void DumpMemoryLeaks()
 	_CrtDumpMemoryLeaks();
 }
 
+Timer startupTimer;
+
 int main(int argc, char** argv) 
 {
+	startupTimer.Start();
+
 	// Specify the amount of memory available for the project
 	MemoryManager::InitializeMemory(MiB(300));
 

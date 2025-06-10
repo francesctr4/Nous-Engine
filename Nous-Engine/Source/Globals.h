@@ -8,11 +8,13 @@
 
 #include "Logger.h"
 #include "Asserts.h"
+#include "Timer.h"
 
 constexpr const char* TITLE = "Nous Engine";
 constexpr int WINDOW_WIDTH = 800;
 constexpr int WINDOW_HEIGHT = 600;
 constexpr float DEFAULT_TARGET_FPS = 144.00f;
+extern Timer startupTimer;
 
 // ---------- Type Definitions ---------- \\
 

@@ -134,6 +134,8 @@ bool Application::Awake()
 
     updateTitleTimer.Start();
 
+    NOUS_DEBUG(" -------------- ENGINE START UP TIME: %.3f seconds --------------\n", startupTimer.ReadSec());
+
     return ret;
 }
 
