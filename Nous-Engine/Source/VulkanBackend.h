@@ -2,8 +2,6 @@
 
 #include "RendererBackend.h"
 
-#include "ResourceTypes.inl"
-
 class ResourceMesh;
 class ResourceMaterial;
 class ResourceTexture;

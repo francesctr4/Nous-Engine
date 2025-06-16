@@ -4,7 +4,7 @@
 
 #include "Camera.h"
 #include "MathUtils.h"
-#include "ResourceTypes.inl"
+#include "Vertex.inl"
 
 class ResourceMesh;
 class ResourceMaterial;

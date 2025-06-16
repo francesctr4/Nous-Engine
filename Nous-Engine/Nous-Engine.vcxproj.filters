@@ -46,9 +46,6 @@
     <Filter Include="Externals\MathGeoLib\Algorithm\Random">
       <UniqueIdentifier>{452dbac4-6d4d-48fe-b784-bdbebd3c5983}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\Memory">
-      <UniqueIdentifier>{90b980f7-cb77-42c8-941a-c7b656389a06}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Externals\stb_image">
       <UniqueIdentifier>{eda1c102-79d6-4228-bc17-f97d72a5e4f4}</UniqueIdentifier>
     </Filter>
@@ -70,23 +67,11 @@
     <Filter Include="Source Code\Systems\Geometry System">
       <UniqueIdentifier>{558a9edd-cc83-4a5c-83f4-8729f187c9bc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\Systems\Resource System">
-      <UniqueIdentifier>{620b6683-76cb-47ea-a78a-589380290082}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Code\Systems\Time System">
-      <UniqueIdentifier>{ec51bf85-4a11-47e1-aee8-07b4e831a541}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Code\Systems\Event System">
       <UniqueIdentifier>{7379e384-3579-4f19-ba7c-9337a21dd3b9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Code\Systems\File System">
       <UniqueIdentifier>{ff81d40c-a9ac-403a-98b9-985b1512de20}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Code\Systems\Resource System\Resource Management">
-      <UniqueIdentifier>{567c033a-37ae-422d-9317-e6961b50ac4b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Code\Systems\Time System\Time Management">
-      <UniqueIdentifier>{01d6b9c2-add3-4cd7-95af-8172d197a115}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\ImGui">
       <UniqueIdentifier>{716b3e2b-e692-453a-b766-bcc506e84eab}</UniqueIdentifier>
@@ -124,17 +109,26 @@
     <Filter Include="Source Code\Renderer\GLSL">
       <UniqueIdentifier>{54e10806-e8e3-4c46-bd27-d8eddf9138cd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\!NousResource">
+    <Filter Include="Source Code\Multithreading">
+      <UniqueIdentifier>{734a49f4-035b-4947-a4f4-76343e7f08f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Resource Manager">
       <UniqueIdentifier>{c83a4b7f-9899-4e6d-8973-6c2d055aecc9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\!NousResource\Resource Types">
+    <Filter Include="Source Code\Systems\Resource Manager\Resource Types">
       <UniqueIdentifier>{70bf0e05-daba-4cdd-8d61-8fcf1e0fdb70}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\!NousResource\Importers">
+    <Filter Include="Source Code\Systems\Resource Manager\Importers">
       <UniqueIdentifier>{9e8975b9-a62c-49b1-9d6e-31c6df4059dd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Code\!!NousMultithreading">
-      <UniqueIdentifier>{734a49f4-035b-4947-a4f4-76343e7f08f9}</UniqueIdentifier>
+    <Filter Include="Source Code\Systems\Memory Manager">
+      <UniqueIdentifier>{90b980f7-cb77-42c8-941a-c7b656389a06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Time Management">
+      <UniqueIdentifier>{ec51bf85-4a11-47e1-aee8-07b4e831a541}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Code\Systems\Memory Manager\Custom Allocators">
+      <UniqueIdentifier>{48992f23-a7b2-468c-a398-7875fed70f07}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -162,14 +156,8 @@
     <ClCompile Include="Source\ModuleCamera3D.cpp">
       <Filter>Source Code\Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Source\RingQueue.cpp">
-      <Filter>Source Code\Data Structures</Filter>
-    </ClCompile>
     <ClCompile Include="Source\External\Tracy\TracyClient.cpp">
       <Filter>Externals\Tracy</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Timer.cpp">
-      <Filter>Source Code\Systems\Time System\Time Management</Filter>
     </ClCompile>
     <ClCompile Include="Source\RendererBackend.cpp">
       <Filter>Source Code\Renderer</Filter>
@@ -313,10 +301,7 @@
       <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\MemoryManager.cpp">
-      <Filter>Source Code\Memory</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\LinearAllocator.cpp">
-      <Filter>Source Code\Memory</Filter>
+      <Filter>Source Code\Systems\Memory Manager</Filter>
     </ClCompile>
     <ClCompile Include="Source\ModuleFileSystem.cpp">
       <Filter>Source Code\Modules</Filter>
@@ -343,10 +328,10 @@
       <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterMesh.cpp">
-      <Filter>Source Code\!NousResource\Importers</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterTexture.cpp">
-      <Filter>Source Code\!NousResource\Importers</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\Camera.cpp">
       <Filter>Source Code\Systems\Camera System</Filter>
@@ -421,34 +406,25 @@
       <Filter>Source Code\Systems\Material System</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterMaterial.cpp">
-      <Filter>Source Code\!NousResource\Importers</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\ModuleResourceManager.cpp">
-      <Filter>Source Code\!NousResource</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\ResourcesWindow.cpp">
-      <Filter>Source Code\!NousResource</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\Resource.cpp">
-      <Filter>Source Code\!NousResource\Resource Types</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Resource Types</Filter>
     </ClCompile>
     <ClCompile Include="Source\ResourceMaterial.cpp">
-      <Filter>Source Code\!NousResource\Resource Types</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Resource Types</Filter>
     </ClCompile>
     <ClCompile Include="Source\ResourceMesh.cpp">
-      <Filter>Source Code\!NousResource\Resource Types</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Resource Types</Filter>
     </ClCompile>
     <ClCompile Include="Source\ResourceTexture.cpp">
-      <Filter>Source Code\!NousResource\Resource Types</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Resource Types</Filter>
     </ClCompile>
     <ClCompile Include="Source\ImporterManager.cpp">
-      <Filter>Source Code\!NousResource\Importers</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Importers</Filter>
     </ClCompile>
     <ClCompile Include="Source\NOUS_Multithreading.cpp">
-      <Filter>Source Code\!!NousMultithreading</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\MultithreadingWindow.cpp">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClCompile>
     <ClCompile Include="Source\SceneViewport.cpp">
       <Filter>Source Code\Editor\Windows</Filter>
@@ -456,23 +432,17 @@
     <ClCompile Include="Source\VulkanUIShader.cpp">
       <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="Source\DynamicAllocator.cpp">
-      <Filter>Source Code\Memory</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\FreeList.cpp">
-      <Filter>Source Code\Memory</Filter>
-    </ClCompile>
     <ClCompile Include="Source\NOUS_JobSystem.cpp">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClCompile>
     <ClCompile Include="Source\NOUS_ThreadPool.cpp">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClCompile>
     <ClCompile Include="Source\NOUS_Job.cpp">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClCompile>
     <ClCompile Include="Source\NOUS_Thread.cpp">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClCompile>
     <ClCompile Include="Source\VulkanMultithreading.cpp">
       <Filter>Source Code\Renderer\Vulkan</Filter>
@@ -481,7 +451,28 @@
       <Filter>Source Code\Editor\Windows</Filter>
     </ClCompile>
     <ClCompile Include="Source\JobQueueWindow.cpp">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\MultithreadingWindow.cpp">
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Timer.cpp">
+      <Filter>Source Code\Systems\Time Management</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\DynamicAllocator.cpp">
+      <Filter>Source Code\Systems\Memory Manager\Custom Allocators</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\FreeList.cpp">
+      <Filter>Source Code\Systems\Memory Manager\Custom Allocators</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\LinearAllocator.cpp">
+      <Filter>Source Code\Systems\Memory Manager\Custom Allocators</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ModuleResourceManager.cpp">
+      <Filter>Source Code\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ResourcesWindow.cpp">
+      <Filter>Source Code\Editor\Windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -749,9 +740,6 @@
     <ClInclude Include="Source\ModuleCamera3D.h">
       <Filter>Source Code\Modules</Filter>
     </ClInclude>
-    <ClInclude Include="Source\RingQueue.h">
-      <Filter>Source Code\Data Structures</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Tracy.h">
       <Filter>Source Code\Includes</Filter>
     </ClInclude>
@@ -760,12 +748,6 @@
     </ClInclude>
     <ClInclude Include="Source\DynamicArray.h">
       <Filter>Source Code\Data Structures</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\TimeManager.h">
-      <Filter>Source Code\Systems\Time System\Time Management</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Timer.h">
-      <Filter>Source Code\Systems\Time System\Time Management</Filter>
     </ClInclude>
     <ClInclude Include="Source\RendererFrontend.h">
       <Filter>Source Code\Renderer</Filter>
@@ -1011,10 +993,7 @@
       <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\MemoryManager.h">
-      <Filter>Source Code\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\LinearAllocator.h">
-      <Filter>Source Code\Memory</Filter>
+      <Filter>Source Code\Systems\Memory Manager</Filter>
     </ClInclude>
     <ClInclude Include="Source\ModuleFileSystem.h">
       <Filter>Source Code\Modules</Filter>
@@ -1038,10 +1017,10 @@
       <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterMesh.h">
-      <Filter>Source Code\!NousResource\Importers</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterTexture.h">
-      <Filter>Source Code\!NousResource\Importers</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\Camera.h">
       <Filter>Source Code\Systems\Camera System</Filter>
@@ -1227,37 +1206,28 @@
       <Filter>Source Code\Systems\Material System</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterMaterial.h">
-      <Filter>Source Code\!NousResource\Importers</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\ModuleResourceManager.h">
-      <Filter>Source Code\!NousResource</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\ResourcesWindow.h">
-      <Filter>Source Code\!NousResource</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\Resource.h">
-      <Filter>Source Code\!NousResource\Resource Types</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Resource Types</Filter>
     </ClInclude>
     <ClInclude Include="Source\ResourceMaterial.h">
-      <Filter>Source Code\!NousResource\Resource Types</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Resource Types</Filter>
     </ClInclude>
     <ClInclude Include="Source\ResourceMesh.h">
-      <Filter>Source Code\!NousResource\Resource Types</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Resource Types</Filter>
     </ClInclude>
     <ClInclude Include="Source\ResourceTexture.h">
-      <Filter>Source Code\!NousResource\Resource Types</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Resource Types</Filter>
     </ClInclude>
     <ClInclude Include="Source\MetaFileData.inl">
-      <Filter>Source Code\!NousResource</Filter>
+      <Filter>Source Code\Systems\Resource Manager</Filter>
     </ClInclude>
     <ClInclude Include="Source\ImporterManager.h">
-      <Filter>Source Code\!NousResource\Importers</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Importers</Filter>
     </ClInclude>
     <ClInclude Include="Source\NOUS_Multithreading.h">
-      <Filter>Source Code\!!NousMultithreading</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\MultithreadingWindow.h">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClInclude>
     <ClInclude Include="Source\SceneViewport.h">
       <Filter>Source Code\Editor\Windows</Filter>
@@ -1265,23 +1235,17 @@
     <ClInclude Include="Source\VulkanUIShader.h">
       <Filter>Source Code\Renderer\Vulkan\Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="Source\DynamicAllocator.h">
-      <Filter>Source Code\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\FreeList.h">
-      <Filter>Source Code\Memory</Filter>
-    </ClInclude>
     <ClInclude Include="Source\NOUS_JobSystem.h">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClInclude>
     <ClInclude Include="Source\NOUS_ThreadPool.h">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClInclude>
     <ClInclude Include="Source\NOUS_Job.h">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClInclude>
     <ClInclude Include="Source\NOUS_Thread.h">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Multithreading</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanMultithreading.h">
       <Filter>Source Code\Renderer\Vulkan</Filter>
@@ -1290,7 +1254,31 @@
       <Filter>Source Code\Editor\Windows</Filter>
     </ClInclude>
     <ClInclude Include="Source\JobQueueWindow.h">
-      <Filter>Source Code\!!NousMultithreading</Filter>
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\MultithreadingWindow.h">
+      <Filter>Source Code\Editor\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TimeManager.h">
+      <Filter>Source Code\Systems\Time Management</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Timer.h">
+      <Filter>Source Code\Systems\Time Management</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\LinearAllocator.h">
+      <Filter>Source Code\Systems\Memory Manager\Custom Allocators</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\DynamicAllocator.h">
+      <Filter>Source Code\Systems\Memory Manager\Custom Allocators</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\FreeList.h">
+      <Filter>Source Code\Systems\Memory Manager\Custom Allocators</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ModuleResourceManager.h">
+      <Filter>Source Code\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ResourcesWindow.h">
+      <Filter>Source Code\Editor\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1321,9 +1309,6 @@
     <None Include="Source\External\MathGeoLib\include\Math\Matrix.inl">
       <Filter>Externals\MathGeoLib\Math</Filter>
     </None>
-    <None Include="Source\ResourceTypes.inl">
-      <Filter>Source Code\Systems\Resource System\Resource Management</Filter>
-    </None>
     <None Include="Source\External\Assimp\include\color4.inl">
       <Filter>Externals\Assimp</Filter>
     </None>
@@ -1352,7 +1337,7 @@
       <Filter>Source Code\Editor</Filter>
     </None>
     <None Include="Source\Importer.inl">
-      <Filter>Source Code\!NousResource\Importers</Filter>
+      <Filter>Source Code\Systems\Resource Manager\Importers</Filter>
     </None>
     <None Include="Engine\Assets\Shaders\BuiltIn.MaterialShader.frag.glsl">
       <Filter>Source Code\Renderer\GLSL</Filter>
