@@ -38,6 +38,8 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 - [Description](#description)
 - [Features](#features)
 - [Dependencies](#dependencies)
+- [Third Party Libraries](#third-party-libraries)
+- [Third Party Assets](#third-party-assets)
 - [Installation](#installation)
 - [Instructions](#usage-instructions)  
   - [Controls](#controls)  
@@ -60,6 +62,7 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 #### Assets Browser
 #### Offscreen Rendering (scene and game viewports)
 #### 3d geometry and texture loading
+#### build system
 
 ---
 
@@ -80,26 +83,26 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ---
 
-## Libraries used
+### Third Party Libraries
 
-### SDL2 - [Download](https://www.libsdl.org/)
-### Vulkan - [Download](https://vulkan.lunarg.com/)
-### Assimp - [Download](https://github.com/assimp/assimp)
-### ImGui - [Download](https://github.com/ocornut/imgui)
-### stb_image - [Download](https://github.com/nothings/stb/blob/master/stb_image.h)
-### MathGeoLib - [Download](https://github.com/juj/MathGeoLib)
-### Tracy - [Download](https://github.com/wolfpld/tracy)
-### Parson - [Download](https://github.com/kgabis/parson)
+#### SDL2 - [Download](https://www.libsdl.org/)
+#### Vulkan - [Download](https://vulkan.lunarg.com/)
+#### Assimp - [Download](https://github.com/assimp/assimp)
+#### ImGui - [Download](https://github.com/ocornut/imgui)
+#### stb_image - [Download](https://github.com/nothings/stb/blob/master/stb_image.h)
+#### MathGeoLib - [Download](https://github.com/juj/MathGeoLib)
+#### Tracy - [Download](https://github.com/wolfpld/tracy)
+#### Parson - [Download](https://github.com/kgabis/parson)
 
 ---
 
-## Third Party Assets used
+### Third Party Assets
 
-### [Lagiacrus](https://skfb.ly/oZrqM) by [09williamsad](https://sketchfab.com/adamw1806)
-### [Wolf](https://skfb.ly/KJpv) by [Juan_Puerta](https://sketchfab.com/Juan_Puerta)
-### [Cypher](https://skfb.ly/6SnPX) by [vintnes6](https://sketchfab.com/vintnes6)
-### [Viking room](https://skfb.ly/VAKF) by [nigelgoh](https://sketchfab.com/nigelgoh)
-### [Queen Xenomorph](https://github.com/Clapcom-Studios/Alien-Extraction) by [xdavido](https://github.com/xdavido)
+#### [Lagiacrus](https://skfb.ly/oZrqM) by [09williamsad](https://sketchfab.com/adamw1806)
+#### [Wolf](https://skfb.ly/KJpv) by [Juan_Puerta](https://sketchfab.com/Juan_Puerta)
+#### [Cypher](https://skfb.ly/6SnPX) by [vintnes6](https://sketchfab.com/vintnes6)
+#### [Viking room](https://skfb.ly/VAKF) by [nigelgoh](https://sketchfab.com/nigelgoh)
+#### [Queen Xenomorph](https://github.com/Clapcom-Studios/Alien-Extraction) by [xdavido](https://github.com/xdavido)
 
 ---
 
@@ -124,19 +127,65 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ### **Known Bugs**
 
-- engine is not taking into account submeshes right now.
-- crash when uploading several instances of the same textured mesh.
-- vulakn synchronization issues when uploading concurrent geometry in release config
-- vulkan validation errors when rendering different geometry at the same time
+- Submesh support is currently unimplemented; only a single mesh per entity is rendered.
+- Crashes may occur when uploading multiple instances of the same textured mesh simultaneously.
+- Vulkan synchronization issues are present when uploading geometry concurrently in **Release** configurations.
+- Vulkan validation layer errors may appear when rendering different geometries concurrently.
 
 ---
 
 ### **Future Roadmap**
 
-While the current version of the engine demonstrates satisfactory results, this is only the beginning. There is still a great deal of potential to unlock, both by expanding the engine’s features and by diving deeper into areas where multithreading can shine even more:
-From a Multithreading perspective, there are several advanced features that could be explored and implemented in the future. These include work-stealing, interruptible threads, lock-free concurrency algorithms, adding priority to jobs, job dependencies, and callback functions on job completion or failure.
-On the Engine Programming side, there is a long list of modules and tools that could be added to make it more complete. These include support for scripting, physics, animation, audio, UI, shaders, particles, and AI systems. Some core engine tools could also be implemented, such as the inspector, hierarchy, scene graph, mouse picking, frustum culling, time management, and some enhancements to the resource manager and assets browser.
-In terms of Graphics Programming, there is significant room to enhance the visual capabilities of the engine. Some basic improvements could include implementing forward and deferred shading models with Blinn-Phong lighting. For more advanced techniques, support for physically-based rendering (PBR) with image-based lighting (IBL) could be added, along with post-processing effects such as screen-space ambient occlusion (SSAO), environment mapping, relief mapping, multi-pass bloom, water effects and shadow mapping.
-Both the engine and graphics programming features have strong potential to benefit from the multithreading capabilities of the engine. Expanding in these areas would not only enhance its functionality but also better showcase the power of the job system. The work done so far has provided a solid foundation and allowed to deeply understand the core principles of Multithreading and Vulkan within the context of a Game Engine architecture. Nous Engine will remain ongoing; a project that will continue to be developed and evolved over time as a part of the personal portfolio.
+While the current version of *Nous Engine* delivers promising results, it remains a foundation for much broader possibilities. Future development will focus on both expanding engine capabilities and deepening multithreading optimizations.
+
+#### Multithreading Enhancements
+
+Planned improvements to the Job System include:
+
+- Work-stealing mechanisms for better load balancing
+- Interruptible and cooperative threads
+- Lock-free concurrency algorithms
+- Job prioritization
+- Job dependencies and graph-based scheduling
+- Callback support on job completion or failure
+
+#### Engine Features
+
+To evolve into a more complete engine, future modules and tools may include:
+
+- Scripting system (e.g., Lua or C#)
+- Physics engine integration
+- Animation system
+- Audio subsystem
+- User Interface (UI) framework
+- Particle system
+- Artificial Intelligence (AI) modules
+- Shader management and editor tools
+
+Additionally, planned core tools include:
+
+- Scene graph and hierarchy system
+- Inspector and property editor
+- Mouse picking and object selection
+- Frustum culling
+- Advanced time management
+- Resource manager and asset browser enhancements
+
+#### Graphics Features
+
+Graphics rendering will continue to evolve with both foundational and advanced techniques:
+
+- Forward and deferred rendering pipelines
+- Blinn-Phong and Phong lighting models
+- Physically-Based Rendering (PBR) with Image-Based Lighting (IBL)
+- Post-processing effects:
+  - Screen Space Ambient Occlusion (SSAO)
+  - Environment and relief mapping
+  - Shadow mapping
+  - Multi-pass bloom and water effects
+
+---
+
+As development continues, both the engine’s architecture and its multithreading capabilities will be refined and extended. *Nous Engine* remains an evolving project.
 
 ---
