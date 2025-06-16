@@ -95,11 +95,11 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ## Third Party Assets used
 
-### [Lagiacrus](https://skfb.ly/oZrqM) by [nigelgoh](https://sketchfab.com/nigelgoh)
-### [Wolf](https://skfb.ly/KJpv) by [nigelgoh](https://sketchfab.com/nigelgoh)
-### [Cypher](https://skfb.ly/6SnPX) by [nigelgoh](https://sketchfab.com/nigelgoh)
+### [Lagiacrus](https://skfb.ly/oZrqM) by [09williamsad](https://sketchfab.com/adamw1806)
+### [Wolf](https://skfb.ly/KJpv) by [Juan_Puerta](https://sketchfab.com/Juan_Puerta)
+### [Cypher](https://skfb.ly/6SnPX) by [vintnes6](https://sketchfab.com/vintnes6)
 ### [Viking room](https://skfb.ly/VAKF) by [nigelgoh](https://sketchfab.com/nigelgoh)
-### [Queen Xenomorph](https://github.com/Clapcom-Studios/Alien-Extraction) by [nigelgoh](https://sketchfab.com/nigelgoh)
+### [Queen Xenomorph](https://github.com/Clapcom-Studios/Alien-Extraction) by [xdavido](https://github.com/xdavido)
 
 ---
 
