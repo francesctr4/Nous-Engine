@@ -218,14 +218,15 @@ These shortcuts trigger test jobs and resource loading using the job system for 
 
 ### **Known Bugs**
 
-This bugs are related to the resource manager and the vulkan implementation, that must be looked carefully.
-The thesis was anout multithreading and the implementation is working, so they were considered out of scope 
-for the project but will definitely be taking a look at them on the near future.
+The following issues are primarily related to the **Resource Manager** and the **Vulkan backend implementation**. 
+While these fall outside the core focus of the thesis — which centered on multithreading and job system architecture — they are acknowledged and will be addressed in the near future.
 
 - Submesh support is currently unimplemented; only a single mesh per entity is rendered.
 - Crashes may occur when uploading multiple instances of the same textured mesh.
 - Vulkan synchronization issues may happen when uploading geometry concurrently (RNG).
 - Vulkan validation layer errors may appear when rendering multiple geometries on the scene.
+
+These issues do not affect the core multithreaded job system, which is functioning as intended.
 
 ---
 
