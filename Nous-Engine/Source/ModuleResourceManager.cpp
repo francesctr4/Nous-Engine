@@ -44,11 +44,6 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	if (App->input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN) 
-	{
-		ClearResources();
-	}
-
 	return UPDATE_CONTINUE;
 }
 
@@ -61,6 +56,7 @@ UpdateStatus ModuleResourceManager::Update(float dt)
 UpdateStatus ModuleResourceManager::PostUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
 	return UPDATE_CONTINUE;
 }
 

@@ -79,7 +79,91 @@ UpdateStatus ModuleScene::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	if (App->input->GetKey(SDL_SCANCODE_L) == KeyState::DOWN)
+	if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN) 
+	{
+		App->jobSystem->SubmitJob([this]()
+			{
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
+			}, "Render Lagiacrus");
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
+	{
+		App->jobSystem->SubmitJob([this]()
+			{
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
+			}, "Render Cypher");
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
+	{
+		App->jobSystem->SubmitJob([this]()
+			{
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
+			}, "Render Queen Xenomorph");
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
+	{
+		App->jobSystem->SubmitJob([this]()
+			{
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
+			}, "Render Wolf");
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN) 
+	{
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
+			}, "Render Lagiacrus");
+
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
+			}, "Render Cypher");
+
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
+			}, "Render Queen Xenomorph");
+
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
+				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
+			}, "Render Wolf");
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F6) == KeyState::DOWN)
+	{
+		App->resourceManager->ClearResources();
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
+	{
+		App->jobSystem->SubmitJob([this]()
+			{
+				NOUS_Multithreading::NOUS_Thread::SleepMS(5000);
+			}, "Test");
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_F8) == KeyState::DOWN)
 	{
 		for (int i = 0; i < 100; ++i)
 		{
@@ -88,92 +172,13 @@ UpdateStatus ModuleScene::Update(float dt)
 					std::chrono::milliseconds duration(500);
 					auto start = std::chrono::steady_clock::now();
 
-					while (std::chrono::steady_clock::now() - start < duration) 
+					while (std::chrono::steady_clock::now() - start < duration)
 					{
 						std::sqrt(123.456); // Dummy CPU-bound work
 					}
 
 				}, "Stress Test");
 		}
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_H) == KeyState::DOWN)
-	{
-		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(10000);
-			}, "Test");
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_T) == KeyState::DOWN) 
-	{
-		App->jobSystem->SubmitJob([this]()
-			{
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
-			}, "Render Lagiacrus");
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_G) == KeyState::DOWN)
-	{
-		App->jobSystem->SubmitJob([this]()
-			{
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
-			}, "Render Cypher");
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_B) == KeyState::DOWN)
-	{
-		App->jobSystem->SubmitJob([this]()
-			{
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
-			}, "Render Queen Xenomorph");
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_N) == KeyState::DOWN)
-	{
-		App->jobSystem->SubmitJob([this]()
-			{
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
-			}, "Render Wolf");
-	}
-
-	if (App->input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN) 
-	{
-		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
-			}, "Render Lagiacrus");
-
-		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
-			}, "Render Cypher");
-
-		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
-			}, "Render Queen Xenomorph");
-
-		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
-			}, "Render Wolf");
 	}
 
 	return UPDATE_CONTINUE;

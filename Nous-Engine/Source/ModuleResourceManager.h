@@ -38,6 +38,8 @@ public:
 
 	const std::unordered_map<UID, Resource*>& GetResourcesMap() const;
 
+	void ClearResources();
+
 private:
 
 	bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
@@ -48,8 +50,6 @@ private:
 
 	Resource* RequestResource(const UID& uid);
 	void AddResource(const UID& uid, Resource*& resource);
-
-	void ClearResources();
 
 	//std::string GetLibraryPath(const std::string& assetsPath);
 
