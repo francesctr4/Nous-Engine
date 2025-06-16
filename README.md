@@ -119,35 +119,60 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 ---
 
 ### **Controls**
+
 #### **Camera**
 
+The 3D editor camera supports smooth navigation using a combination of mouse and keyboard inputs. Controls are only active when the **scene viewport is hovered**.
+
 | Input                                              | Action                                |
-|---------------------------------------------------|---------------------------------------|
-| `Right Mouse Button (RMB)` + `W`                  | Move Forward                          |
-| `Right Mouse Button (RMB)` + `S`                  | Move Backward                         |
-| `Right Mouse Button (RMB)` + `A`                  | Move Left                             |
-| `Right Mouse Button (RMB)` + `D`                  | Move Right                            |
-| `Right Mouse Button (RMB)` + `E`                  | Move Up                               |
-| `Right Mouse Button (RMB)` + `Q`                  | Move Down                             |
-| `Shift` (Hold while moving)                       | Speed Boost                           |
-| `Right Mouse Button (RMB)` + Mouse Drag           | Rotate Camera (Yaw / Pitch)           |
-| `Alt` + `Right Mouse Button (RMB)` + Mouse Drag   | Orbit around target (origin)          |
-| `Middle Mouse Button (MMB)` + Mouse Drag          | Pan camera (move on X/Y axes)         |
-| Mouse Wheel Scroll                                | Zoom In / Out                         |
+|----------------------------------------------------|---------------------------------------|
+| `Right Mouse Button (RMB)` + `W`                   | Move Forward                          |
+| `Right Mouse Button (RMB)` + `S`                   | Move Backward                         |
+| `Right Mouse Button (RMB)` + `A`                   | Move Left                             |
+| `Right Mouse Button (RMB)` + `D`                   | Move Right                            |
+| `Right Mouse Button (RMB)` + `E`                   | Move Up                               |
+| `Right Mouse Button (RMB)` + `Q`                   | Move Down                             |
+| `Shift` (Hold while moving)                        | Speed Boost                           |
+| `Right Mouse Button (RMB)` + Mouse Drag            | Rotate Camera                         |
+| `Alt` + `Right Mouse Button (RMB)` + Mouse Drag    | Orbit around target (origin)          |
+| `Middle Mouse Button (MMB)` + Mouse Drag           | Pan camera (move on X/Y axes)         |
+| `Mouse Wheel Scroll`                               | Zoom In / Out                         |
 
 #### **Multithreading**
+
+![image](https://github.com/user-attachments/assets/08b39436-886a-477b-af06-01833380d4af)
+
+for multithreading we can change the size of the thread pool and resize it. 
+if we resize the job system to 0 we are going to be using single threaded behaviour.
+he can always resize the job system from [0, (HARDWARE_CONCURRECCNY - 1) * 2].
+
 #### **Debug Keys**
 
+These shortcuts trigger test jobs and resource loading using the job system for debugging and performance testing.
 
+| Key    | Action Description                                                                   |
+|--------|--------------------------------------------------------------------------------------|
+| `F1`   | Submits a job to **load Lagiacrus Head mesh and material**.                          |
+| `F2`   | Submits a job to **load Cypher mesh and material**.                                  |
+| `F3`   | Submits a job to **load Queen Xenomorph mesh and material**.                         |
+| `F4`   | Submits a job to **load Wolf mesh and material**.                                    |
+| `F5`   | Submits **4 staggered jobs**, each loading a mesh and material with delays.          |
+| `F6`   | Clears all loaded resources on the scene.                                            |
+| `F7`   | Submits a job that **sleeps for 5 seconds**.                                         |
+| `F8`   | Submits **100 CPU-bound jobs** doing heavy dummy work for stress testing.            |
 
 ---
 
 ### **Known Bugs**
 
+This bugs are related to the resource manager and the vulkan implementation, that must be looked carefully.
+The thesis was anout multithreading and the implementation is working, so they were considered out of scope 
+for the project but will definitely be taking a look at them on the near future.
+
 - Submesh support is currently unimplemented; only a single mesh per entity is rendered.
-- Crashes may occur when uploading multiple instances of the same textured mesh simultaneously.
-- Vulkan synchronization issues are present when uploading geometry concurrently in **Release** configurations.
-- Vulkan validation layer errors may appear when rendering different geometries concurrently.
+- Crashes may occur when uploading multiple instances of the same textured mesh.
+- Vulkan synchronization issues may happen when uploading geometry concurrently (RNG).
+- Vulkan validation layer errors may appear when rendering multiple geometries on the scene.
 
 ---
 
