@@ -57,12 +57,14 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 ### **Features**
 
 #### Resource Manager
-#### Vulkan Implementation
+#### Vulkan renderer backend
 #### Multithreading Implementation
 #### Assets Browser
 #### Offscreen Rendering (scene and game viewports)
 #### 3d geometry and texture loading
 #### build system
+#### memory management
+#### modular structure
 
 ---
 
@@ -140,11 +142,62 @@ The 3D editor camera supports smooth navigation using a combination of mouse and
 
 #### **Multithreading**
 
-![image](https://github.com/user-attachments/assets/08b39436-886a-477b-af06-01833380d4af)
+![Multithreading](https://github.com/user-attachments/assets/08b39436-886a-477b-af06-01833380d4af)
 
-for multithreading we can change the size of the thread pool and resize it. 
-if we resize the job system to 0 we are going to be using single threaded behaviour.
-he can always resize the job system from [0, (HARDWARE_CONCURRECCNY - 1) * 2].
+This tool provides **real-time visibility** into the **Job System** and thread pool usage in the engine. It is divided into two main sections:
+
+- **Job System Overview**
+- **Job Queue**
+
+---
+
+##### Job System Overview
+
+This section displays the current state of the thread pool and job processing.
+
+| Label | Description |
+|-------|-------------|
+| **Max Hardware Threads** | Number of hardware threads detected on the system (`std::thread::hardware_concurrency() - 1`). |
+| **Total Worker Threads** | Number of active worker threads in the pool (excluding the main thread). |
+| **Total Jobs** | Total number of jobs currently being handled or queued. |
+| **Active Threads** | Visual indicator showing how many threads are actively running jobs (green bar). |
+| **Thread Count Spinner** | Lets you configure the number of worker threads. Setting it to `0` disables multithreading. |
+| **Resize Pool Button** | Applies the new thread count, resizing the thread pool at runtime. |
+| **Multithreaded Mode Button** | Indicates if the job system is currently in multithreaded mode. |
+
+---
+
+##### Thread Table
+
+Displays the current state of each thread (including the main thread).
+
+| Column | Description |
+|--------|-------------|
+| **ID** | Unique identifier for each thread. |
+| **Name** | Friendly label for the thread (e.g., Main Thread, Worker Thread 1, etc.). |
+| **State** | Thread status — either `RUNNING` (executing a job) or `READY` (idle). |
+| **Current Job** | The name of the job currently being executed. `None` if the thread is idle. |
+| **Time (s)** | Duration (in seconds) the current job has been running. Useful for spotting long-running tasks. |
+
+---
+
+##### Job Queue
+
+This section lists all **pending jobs** that are waiting to be assigned to threads.
+
+| Column | Description |
+|--------|-------------|
+| **Job Name** | The label of the pending job, useful for tracking or debugging. |
+| **(count)** | Displays the number of currently queued jobs. |
+
+---
+
+##### Dynamic Thread Scaling
+
+You can dynamically resize the thread pool using the spinner and **Resize Pool** button.
+
+- Setting the worker count to `0` switches the system to **single-threaded mode**.
+- The thread count can be adjusted in the range: `[0, (std::thread::hardware_concurrency() - 1) * 2]`
 
 #### **Debug Keys**
 
