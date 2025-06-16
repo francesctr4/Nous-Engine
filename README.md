@@ -82,14 +82,14 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ## Libraries used
 
-### SDL2 - [Download](https://github.com/libsdl-org/SDL/releases/tag/release-2.28.5)
-### Vulkan - [Download](https://github.com/nothings/stb/blob/master/stb_image.h)
-### Assimp - [Download](https://github.com/assimp/assimp/releases/tag/v5.3.1)
-### ImGui - [Download](https://github.com/nothings/stb/blob/master/stb_image.h)
+### SDL2 - [Download](https://www.libsdl.org/)
+### Vulkan - [Download](https://vulkan.lunarg.com/)
+### Assimp - [Download](https://github.com/assimp/assimp)
+### ImGui - [Download](https://github.com/ocornut/imgui)
 ### stb_image - [Download](https://github.com/nothings/stb/blob/master/stb_image.h)
-### MathGeoLib - [Download](https://github.com/nothings/stb/blob/master/stb_image.h)
-### Tracy - [Download](https://github.com/nothings/stb/blob/master/stb_image.h)
-### Parson - [Download]()
+### MathGeoLib - [Download](https://github.com/juj/MathGeoLib)
+### Tracy - [Download](https://github.com/wolfpld/tracy)
+### Parson - [Download](https://github.com/kgabis/parson)
 
 ---
 
