@@ -114,7 +114,7 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 > (e.g. ```D:\Nous-Engine-v0.3```)
 >
 > In this case, the **executable path** will be as follows: <br>
-> ```D:\Nous-Engine-v0.3\Nous-Engine.exe```
+> ```D:\Nous-Engine-v0.3\Nous-Engine\Nous-Engine.exe```
 
 ---
 
