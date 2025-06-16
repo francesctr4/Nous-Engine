@@ -41,9 +41,9 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 - [Third Party Libraries](#third-party-libraries)
 - [Third Party Assets](#third-party-assets)
 - [Installation](#installation)
-- [Instructions](#usage-instructions)  
-  - [Controls](#controls)  
-  - [Camera](#camera)  
+- [Controls](#controls)  
+  - [Camera](#camera)
+  - [Multithreading](#multithreading)
   - [Debug Keys](#debug-keys)
 - [Known Bugs](#known-bugs)
 - [Future Roadmap](#future-roadmap)
@@ -118,9 +118,9 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ---
 
-### **Instructions**
-#### **Controls**
+### **Controls**
 #### **Camera**
+#### **Multithreading**
 #### **Debug Keys**
 
 ---
