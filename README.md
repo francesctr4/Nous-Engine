@@ -1,11 +1,12 @@
 # Nous Engine
-
----
-
 ### A multithreaded, Vulkan-based game engine developed in C++
 
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20%2B-blue)
+
+---
+
+![Showcase](https://github.com/user-attachments/assets/384d2461-457c-42ee-ba22-7a63221d16c2)
 
 ---
 
