@@ -1,5 +1,5 @@
 # Nous Engine
-### A multithreaded, Vulkan-based game engine developed in C++
+### **A multithreaded, Vulkan-based game engine developed in C++**
 
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20%2B-blue)
@@ -10,7 +10,7 @@
 
 ---
 
-### Enhancing Software Performance through Multithreading and Parallel Programming Techniques
+### **Enhancing Software Performance through Multithreading and Parallel Programming Techniques**
 
 This repository contains source code developed as part of my **Bachelor's Thesis (TFG)**:
 
@@ -32,23 +32,27 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ---
 
-## 📚 Table of Contents
+## 📚 **Table of Contents**
 
-- [Home](#nous-engine)
+- [Nous Engine](#nous-engine)
+- [Description](#description)
+- [Features](#features)
 - [Dependencies](#dependencies)
-- [Setup](#setup)
-- [Usage](#usage)
-- [Quick Start](#quick-start)
-- [Documentation](#documentation)
-  - [NOUS_Job](#-nous_job)
-  - [NOUS_Thread](#-nous_thread)
-  - [NOUS_ThreadPool](#-nous_threadpool)
-  - [NOUS_JobSystem](#-nous_jobsystem)
-  - [Global Functions](#-global-functions)
+- [Installation](#installation)
+- [Instructions](#usage-instructions)  
+  - [Controls](#controls)  
+  - [Camera](#camera)  
+  - [Debug Keys](#debug-keys)
+- [Known Bugs](#known-bugs)
+- [Future Roadmap](#future-roadmap)
 
 ---
 
-### Description
+### **Description**
+
+---
+
+### **Features**
 
 ---
 
@@ -58,26 +62,24 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ---
 
-### Installation
+### **Installation**
 
 ---
 
-### Instructions
-#### Controls
-#### Camera
-#### Debug Keys
-#### How to use multithreading?
+### **Instructions**
+#### **Controls**
+#### **Camera**
+#### **Debug Keys**
 
 ---
 
-### Features
+### **Known Bugs**
+
+- engine is not taking into account submeshes right now.
+- 
 
 ---
 
-### Known Bugs
-
----
-
-### Future Guidelines
+### **Future Roadmap**
 
 ---
