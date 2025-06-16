@@ -120,8 +120,25 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ### **Controls**
 #### **Camera**
+
+| Input                                              | Action                                |
+|---------------------------------------------------|---------------------------------------|
+| `Right Mouse Button (RMB)` + `W`                  | Move Forward                          |
+| `Right Mouse Button (RMB)` + `S`                  | Move Backward                         |
+| `Right Mouse Button (RMB)` + `A`                  | Move Left                             |
+| `Right Mouse Button (RMB)` + `D`                  | Move Right                            |
+| `Right Mouse Button (RMB)` + `E`                  | Move Up                               |
+| `Right Mouse Button (RMB)` + `Q`                  | Move Down                             |
+| `Shift` (Hold while moving)                       | Speed Boost                           |
+| `Right Mouse Button (RMB)` + Mouse Drag           | Rotate Camera (Yaw / Pitch)           |
+| `Alt` + `Right Mouse Button (RMB)` + Mouse Drag   | Orbit around target (origin)          |
+| `Middle Mouse Button (MMB)` + Mouse Drag          | Pan camera (move on X/Y axes)         |
+| Mouse Wheel Scroll                                | Zoom In / Out                         |
+
 #### **Multithreading**
 #### **Debug Keys**
+
+
 
 ---
 
