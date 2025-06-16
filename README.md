@@ -34,7 +34,7 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ## 📚 **Table of Contents**
 
-- [Nous Engine](#nous-engine)
+- [Home](#nous-engine)
 - [Description](#description)
 - [Features](#features)
 - [Dependencies](#dependencies)
