@@ -1,51 +1,66 @@
 @echo off
-REM Define versioned folder name
-set VERSIONED_FOLDER=Build\Nous-Engine-v0.1
+REM Define versioned paths
+set BASE_FOLDER=Build\Nous-Engine-v0.1
+set ENGINE_FOLDER=%BASE_FOLDER%\Nous-Engine
 set ZIP_FILE=Build\Nous-Engine-v0.1.zip
-set SHORTCUT_FILE=Build\Nous-Engine.exe
 
-REM Check if the versioned folder exists
-if not exist %VERSIONED_FOLDER% (
-    echo Creating versioned folder: %VERSIONED_FOLDER%...
-    mkdir %VERSIONED_FOLDER%
+REM Create parent and nested folders
+if not exist %ENGINE_FOLDER% (
+    echo Creating engine folder: %ENGINE_FOLDER%...
+    mkdir %ENGINE_FOLDER%
 ) else (
-    echo Versioned folder already exists.
+    echo Engine folder already exists.
 )
 
-REM Copy the entire Assets directory
-echo Copying Assets directory to %VERSIONED_FOLDER%...
-xcopy Engine\Assets %VERSIONED_FOLDER%\Assets /E /I /Y
+REM Copy Assets
+echo Copying Assets directory...
+xcopy Engine\Assets %ENGINE_FOLDER%\Assets /E /I /Y
 
-REM Copy the entire Library directory
-echo Copying Library directory to %VERSIONED_FOLDER%...
-xcopy Engine\Library %VERSIONED_FOLDER%\Library /E /I /Y
+REM Copy Library
+echo Copying Library directory...
+xcopy Engine\Library %ENGINE_FOLDER%\Library /E /I /Y
 
-REM Copy only .dll files from Engine directory (not subdirectories)
-echo Copying .dll files from Engine to %VERSIONED_FOLDER%...
+REM Copy only .dll files from Engine (no subdirectories)
+echo Copying .dll files from Engine...
 for %%F in (Engine\*.dll) do (
-    copy "%%F" %VERSIONED_FOLDER%\
+    copy "%%F" %ENGINE_FOLDER%\
 )
 
-REM Copy Nous-Engine.exe if it exists
+REM Copy Nous-Engine.exe
 if exist x64\Release\Nous-Engine.exe (
-    echo Copying Nous-Engine.exe to %VERSIONED_FOLDER%...
-    copy x64\Release\Nous-Engine.exe %VERSIONED_FOLDER%\
+    echo Copying Nous-Engine.exe...
+    copy x64\Release\Nous-Engine.exe %ENGINE_FOLDER%\
 ) else (
     echo Nous-Engine.exe not found, skipping...
 )
 
-REM Copy imgui.ini if it exists
+REM Copy imgui.ini
 if exist Engine\imgui.ini (
-    echo Copying imgui.ini to %VERSIONED_FOLDER%...
-    copy Engine\imgui.ini %VERSIONED_FOLDER%\
+    echo Copying imgui.ini...
+    copy Engine\imgui.ini %ENGINE_FOLDER%\
 ) else (
     echo imgui.ini not found, skipping...
 )
 
-REM Create a zip file of the Nous-Engine-v0.1 folder
+REM Copy README.md and LICENSE to root of versioned folder (not inside Nous-Engine)
+if exist ..\README.md (
+    echo Copying README.md to versioned root...
+    copy ..\README.md %BASE_FOLDER%\ >nul
+) else (
+    echo README.md not found, skipping...
+)
+
+if exist ..\LICENSE (
+    echo Copying LICENSE to versioned root...
+    copy ..\LICENSE %BASE_FOLDER%\ >nul
+) else (
+    echo LICENSE not found, skipping...
+)
+
+REM Create the zip file
 echo Creating zip file: %ZIP_FILE%...
 powershell -Command ^
-    "Compress-Archive -Path '%VERSIONED_FOLDER%' -DestinationPath '%ZIP_FILE%' -Force"
+    "Compress-Archive -Path '%BASE_FOLDER%' -DestinationPath '%ZIP_FILE%' -Force"
 
 echo Build process complete!
 pause
