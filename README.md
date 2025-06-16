@@ -54,15 +54,39 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ### **Features**
 
+#### Resource Manager
+#### Vulkan Implementation
+#### Multithreading Implementation
+#### Assets Browser
+#### Offscreen Rendering (scene and game viewports)
+#### 3d geometry and texture loading
+
 ---
 
 ### **Dependencies**  
 
-- ISO C++20 Standard (compile with `/std:c++20` or `-std=c++20`) or newer
+> [!IMPORTANT]
+> #### ISO C++20 Standard (compile with `/std:c++20` or `-std=c++20`) or newer.
+> #### It is _required_ to download [Visual Studio Community 2022](https://visualstudio.microsoft.com/es/free-developer-offers/) with the following extension to execute the engine.
+> <table>
+>   <tr>
+>     <td align="center">
+>       <img src="https://github.com/Clapcom-Studios/Alien-Extraction/assets/99948892/ded6aef0-c9ff-4666-95cb-3123b605b5cf" alt="Image 2"/>
+>     </td>
+>   </tr>
+> </table>
 
 ---
 
 ### **Installation**
+
+> [!IMPORTANT]
+> #### In order to download and execute the engine you have to [Download the Latest Release](https://github.com/francesctr4/Nous-Engine/releases) and extract the zip.
+> It is recommended that you extract the zip on the parent folder of the disk, so that the path doesn't get too long. <br>
+> (e.g. ```D:\Nous-Engine-v0.3```)
+>
+> In this case, the **executable path** will be as follows: <br>
+> ```D:\Nous-Engine-v0.3\Nous-Engine.exe```
 
 ---
 
