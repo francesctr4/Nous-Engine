@@ -48,33 +48,36 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ---
 
+### Description
+
+---
+
 ### **Dependencies**  
 
 - ISO C++20 Standard (compile with `/std:c++20` or `-std=c++20`) or newer
 
 ---
 
-info about the engine
-version
-author
-license etc
+### Installation
 
-link to multithreading implementation
-## Description
+---
 
-## Features
+### Instructions
+#### Controls
+#### Camera
+#### Debug Keys
+#### How to use multithreading?
 
-## Instructions
-### Controls
+---
 
-## Known Bugs
+### Features
 
-## System Requirements
+---
 
-## Dependencies
+### Known Bugs
 
-## Installation
+---
 
-## Future Guidelines
+### Future Guidelines
 
-## 
+---
