@@ -35,7 +35,7 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 ## 📚 **Table of Contents**
 
 - [Home](#nous-engine)
-- [Description](#description)
+- [Context](#context)
 - [Features](#features)
 - [Dependencies](#dependencies)
 - [Third Party Libraries](#third-party-libraries)
@@ -50,7 +50,13 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ---
 
-### **Description**
+### **Context**
+
+Multithreading is a powerful yet complex area of software development, especially when applied to game engines. While professional ones include advanced multithreading systems, their internal implementations are rarely shared publicly. Moreover, existing tutorials often lack depth, leaving many developers unprepared for production level usage.
+
+This project aims to bridge that gap by providing a beginner-friendly and practical introduction to multithreading, answering essential questions around performance, architecture, challenges, and limitations. The goal is to create a custom solution built from scratch, offering a solid starting point for developers interested in concurrent programming and game engine architecture on how to use multithreading effectively.
+
+The practical part of the bachelor's thesis consists on developing a multithreaded game engine written in C++, featuring a Vulkan-based renderer to take advantage of its multithreading affinity. The chosen approach for the multithreading implementation is a thread-based job system built on top of a thread pool.
 
 ---
 
