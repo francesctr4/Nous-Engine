@@ -255,9 +255,9 @@ These issues do not affect the multithreading implementation, which is functioni
 
 ### **Future Roadmap**
 
-While the current version of *Nous Engine* delivers promising results, it remains a foundation for much broader possibilities. Future development will focus on both expanding engine capabilities and deepening multithreading optimizations.
+While the current version of *Nous Engine* delivers promising results, it remains a foundation for much broader possibilities. Future development will focus on expanding the engine's capabilities:
 
-#### Multithreading Enhancements
+#### Multithreading
 
 Planned improvements to the Job System include:
 
@@ -268,18 +268,18 @@ Planned improvements to the Job System include:
 - Job dependencies and graph-based scheduling
 - Callback support on job completion or failure
 
-#### Engine Features
+#### Engine Programming
 
 To evolve into a more complete engine, future modules and tools may include:
 
-- Scripting system (e.g., Lua or C#)
-- Physics engine integration
+- Scripting system
+- Physics engine
 - Animation system
-- Audio subsystem
-- User Interface (UI) framework
+- Audio engine
+- User Interface (UI) system
 - Particle system
-- Artificial Intelligence (AI) modules
-- Shader management and editor tools
+- Artificial Intelligence (AI) module
+- Shader system
 
 Additionally, planned core tools include:
 
@@ -290,18 +290,18 @@ Additionally, planned core tools include:
 - Advanced time management
 - Resource manager and asset browser enhancements
 
-#### Graphics Features
+#### Graphics Programming
 
-Graphics rendering will continue to evolve with both foundational and advanced techniques:
+The render engine will continue to evolve with both foundational and advanced techniques:
 
-- Forward and deferred rendering pipelines
-- Blinn-Phong and Phong lighting models
+- Forward and Deferred rendering pipelines
+- Phong and Blinn-Phong lighting models
 - Physically-Based Rendering (PBR) with Image-Based Lighting (IBL)
-- Post-processing effects:
-  - Screen Space Ambient Occlusion (SSAO)
-  - Environment and relief mapping
-  - Shadow mapping
-  - Multi-pass bloom and water effects
+- Shadow Mapping
+- Screen Space Ambient Occlusion (SSAO)
+- Environment and Relief mapping
+- Multi-pass bloom and Water effects
+- More Multithreaded Rendering features
 
 ---
 
