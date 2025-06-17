@@ -85,7 +85,7 @@ bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64 size, VkBu
     VkMemoryRequirements requirements;
     vkGetBufferMemoryRequirements(vkContext->device.logicalDevice, outBuffer->handle, &requirements);
    
-    outBuffer->memoryIndex = FindMemoryIndex(vkContext->device.physicalDevice, requirements.memoryTypeBits, outBuffer->memoryPropertyFlags);
+    outBuffer->memoryIndex = NOUS_VulkanDevice::FindMemoryIndex(vkContext->device.physicalDevice, requirements.memoryTypeBits, outBuffer->memoryPropertyFlags);
     
     if (outBuffer->memoryIndex == -1) 
     {

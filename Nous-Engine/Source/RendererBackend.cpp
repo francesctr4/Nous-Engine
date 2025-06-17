@@ -160,6 +160,8 @@ bool RendererBackend::CreateMaterial(ResourceMaterial* material)
     {
         return backendInterface->CreateMaterial(material);
     }
+
+    return false;
 }
 
 void RendererBackend::DestroyMaterial(ResourceMaterial* material)
@@ -176,6 +178,8 @@ bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertice
     {
         return backendInterface->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
     }
+
+    return false;
 }
 
 void RendererBackend::DestroyGeometry(ResourceMesh* geometry)

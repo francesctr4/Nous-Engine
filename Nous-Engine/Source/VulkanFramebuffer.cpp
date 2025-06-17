@@ -5,7 +5,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 {
     bool ret = true;
 
-	uint32 imageCount = vkContext->swapChain.swapChainFramebuffers.size();
+	uint32 imageCount = static_cast<uint32>(vkContext->swapChain.swapChainFramebuffers.size());
 
 	for (uint16 i = 0; i < imageCount; ++i)
 	{

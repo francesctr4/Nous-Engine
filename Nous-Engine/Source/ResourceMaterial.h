@@ -14,6 +14,8 @@ enum class TextureMapType
 
 struct TextureMap
 {
+    TextureMap() : type(TextureMapType::UNKNOWN), texture(nullptr) {}
+
     TextureMapType type;
     ResourceTexture* texture;
 };

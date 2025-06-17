@@ -49,7 +49,7 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     bool doClearDepth = (outRenderpass->clearFlags & RenderpassClearFlag::DEPTH_BUFFER) != 0;
     // In CreateRenderpass (UI render pass)
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = FindDepthFormat(vkContext->device.physicalDevice);
+    depthAttachment.format = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = doClearDepth ?
         VK_ATTACHMENT_LOAD_OP_CLEAR :
@@ -132,7 +132,7 @@ bool NOUS_VulkanRenderpass::CreateOffscreenRenderpass(
         attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         // Depth attachment
-        attachments[1].format = FindDepthFormat(vkContext->device.physicalDevice);
+        attachments[1].format = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
         attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
         attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;

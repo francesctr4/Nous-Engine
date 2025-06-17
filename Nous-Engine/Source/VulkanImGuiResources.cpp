@@ -23,21 +23,21 @@ void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkCont
 void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkContext)
 {
 	// Game Viewport
-	DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
+	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
 
 	for (int i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
 	{
-		DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportImages[i]);
+		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportImages[i]);
 	}
 
 	vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportTextureSampler, vkContext->allocator);
 
 	// Scene Viewport
-	DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
+	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
 
 	for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
 	{
-		DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportImages[i]);
+		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportImages[i]);
 	}
 
 	vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportTextureSampler, vkContext->allocator);
@@ -53,21 +53,21 @@ void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkCo
 	// Game
 	DestroyGameViewportDescriptorSets(vkContext);
 
-	DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
+	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
 
 	for (int i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
 	{
-		DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportImages[i]);
+		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportImages[i]);
 	}
 
 	// Scene
 	DestroySceneViewportDescriptorSets(vkContext);
 
-	DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
+	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
 
 	for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
 	{
-		DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportImages[i]);
+		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportImages[i]);
 	}
 
 	// Recreate all
@@ -104,7 +104,7 @@ void NOUS_ImGuiVulkanResources::CreateImGuiDescriptorPool(VulkanContext* vkConte
 	descriptorPoolCreateInfo.pNext = nullptr; // No extensions, so null
 	descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-	descriptorPoolCreateInfo.maxSets = 1000 * descriptorPoolSizes.size();
+	descriptorPoolCreateInfo.maxSets = static_cast<uint32>((1000 * descriptorPoolSizes.size()));
 	descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32>(descriptorPoolSizes.size());
 	descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
 
@@ -151,7 +151,7 @@ void NOUS_ImGuiVulkanResources::CreateViewportImages(VulkanContext* vkContext)
 	for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
 	{
 		// Create depth image and its view.
-		CreateVulkanImage(
+		NOUS_VulkanImage::CreateVulkanImage(
 			vkContext,
 			VK_IMAGE_TYPE_2D,
 			vkContext->framebufferWidth,  // Use framebuffer dimensions, NOT swapchain
@@ -175,7 +175,7 @@ void NOUS_ImGuiVulkanResources::CreateViewportImages(VulkanContext* vkContext)
 	for (uint32 i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
 	{
 		// Create depth image and its view.
-		CreateVulkanImage(
+		NOUS_VulkanImage::CreateVulkanImage(
 			vkContext,
 			VK_IMAGE_TYPE_2D,
 			vkContext->framebufferWidth,  // Use framebuffer dimensions, NOT swapchain
@@ -196,10 +196,10 @@ void NOUS_ImGuiVulkanResources::CreateViewportImages(VulkanContext* vkContext)
 void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkContext)
 {
 	// Depth resources
-	vkContext->device.depthFormat = FindDepthFormat(vkContext->device.physicalDevice);
+	vkContext->device.depthFormat = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
 
 	// Create depth image and its view.
-	CreateVulkanImage(
+	NOUS_VulkanImage::CreateVulkanImage(
 		vkContext,
 		VK_IMAGE_TYPE_2D,
 		vkContext->framebufferWidth,  // Use framebuffer dimensions, NOT swapchain
@@ -218,7 +218,7 @@ void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkCo
 	// ------------------------------------------------------------------------------------------------- //
 	 
 	// Create depth image and its view.
-	CreateVulkanImage(
+	NOUS_VulkanImage::CreateVulkanImage(
 		vkContext,
 		VK_IMAGE_TYPE_2D,
 		vkContext->framebufferWidth,  // Use framebuffer dimensions, NOT swapchain

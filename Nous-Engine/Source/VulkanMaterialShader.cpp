@@ -14,7 +14,7 @@
 
 constexpr const char* BUILTIN_MATERIAL_SHADER_NAME = "BuiltIn.MaterialShader";
 
-bool CreateMaterialShader(VulkanContext* vkContext, VulkanRenderpass* renderPass, VulkanMaterialShader* outShader)
+bool NOUS_VulkanMaterialShader::CreateMaterialShader(VulkanContext* vkContext, VulkanRenderpass* renderPass, VulkanMaterialShader* outShader)
 {
     bool ret = true;
 
@@ -24,7 +24,7 @@ bool CreateMaterialShader(VulkanContext* vkContext, VulkanRenderpass* renderPass
 
     for (uint32 i = 0; i < VULKAN_MATERIAL_SHADER_STAGE_COUNT; ++i)
     {
-        if (!CreateShaderModule(vkContext, BUILTIN_MATERIAL_SHADER_NAME, stageTypeStrings[i], stageTypes[i], i, outShader->stages.data()))
+        if (!NOUS_VulkanShaderUtils::CreateShaderModule(vkContext, BUILTIN_MATERIAL_SHADER_NAME, stageTypeStrings[i], stageTypes[i], i, outShader->stages.data()))
         {
             NOUS_ERROR("Unable to create %s shader module for '%s'.", stageTypeStrings[i].c_str(), BUILTIN_MATERIAL_SHADER_NAME);
             ret = false;
@@ -53,7 +53,7 @@ bool CreateMaterialShader(VulkanContext* vkContext, VulkanRenderpass* renderPass
     VkDescriptorPoolSize globalDescriptorPoolSize;
     globalDescriptorPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-    globalDescriptorPoolSize.descriptorCount = vkContext->swapChain.swapChainImages.size();
+    globalDescriptorPoolSize.descriptorCount = static_cast<uint32>(vkContext->swapChain.swapChainImages.size());
 
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -61,7 +61,7 @@ bool CreateMaterialShader(VulkanContext* vkContext, VulkanRenderpass* renderPass
     descriptorPoolCreateInfo.poolSizeCount = 1;
     descriptorPoolCreateInfo.pPoolSizes = &globalDescriptorPoolSize;
 
-    descriptorPoolCreateInfo.maxSets = vkContext->swapChain.swapChainImages.size();
+    descriptorPoolCreateInfo.maxSets = static_cast<uint32>(vkContext->swapChain.swapChainImages.size());
 
     VK_CHECK(vkCreateDescriptorPool(vkContext->device.logicalDevice, &descriptorPoolCreateInfo, vkContext->allocator, &outShader->globalDescriptorPool));
 
@@ -153,7 +153,7 @@ bool CreateMaterialShader(VulkanContext* vkContext, VulkanRenderpass* renderPass
         shaderStageCreateInfos[i] = outShader->stages[i].shaderStageCreateInfo;
     }
 
-    if (!CreateGraphicsPipeline(vkContext, renderPass, bindingDescription, 
+    if (!NOUS_VulkanGraphicsPipeline::CreateGraphicsPipeline(vkContext, renderPass, bindingDescription,
         static_cast<uint32>(attributeDescriptions.size()), attributeDescriptions.data(),
         static_cast<uint32>(descriptorSetlayouts.size()), descriptorSetlayouts.data(), 
         VULKAN_MATERIAL_SHADER_STAGE_COUNT, shaderStageCreateInfos.data(), viewport, scissor,
@@ -207,7 +207,7 @@ bool CreateMaterialShader(VulkanContext* vkContext, VulkanRenderpass* renderPass
     return ret;
 }
 
-void DestroyMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* shader)
+void NOUS_VulkanMaterialShader::DestroyMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* shader)
 {
     VkDevice logicalDevice = vkContext->device.logicalDevice;
 
@@ -224,7 +224,7 @@ void DestroyMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* shade
     NOUS_VulkanBuffer::DestroyBuffer(vkContext, &shader->globalUniformBuffer);
 
     // Destroy pipeline.
-    DestroyGraphicsPipeline(vkContext, &shader->pipeline);
+    NOUS_VulkanGraphicsPipeline::DestroyGraphicsPipeline(vkContext, &shader->pipeline);
 
     NOUS_DEBUG("Destroying Shader Modules...");
     // Destroy shader modules.
@@ -235,13 +235,13 @@ void DestroyMaterialShader(VulkanContext* vkContext, VulkanMaterialShader* shade
     }
 }
 
-void UseMaterialShader(VulkanContext* vkContext, VulkanCommandBuffer* cmdBuffer, VulkanMaterialShader* shader)
+void NOUS_VulkanMaterialShader::UseMaterialShader(VulkanContext* vkContext, VulkanCommandBuffer* cmdBuffer, VulkanMaterialShader* shader)
 {
-    BindGraphicsPipeline(cmdBuffer,
+    NOUS_VulkanGraphicsPipeline::BindGraphicsPipeline(cmdBuffer,
         VK_PIPELINE_BIND_POINT_GRAPHICS, &shader->pipeline);
 }
 
-void UpdateMaterialShaderGlobalState(VulkanContext* vkContext, VulkanCommandBuffer* cmdBuffer, VulkanMaterialShader* shader, float deltaTime)
+void NOUS_VulkanMaterialShader::UpdateMaterialShaderGlobalState(VulkanContext* vkContext, VulkanCommandBuffer* cmdBuffer, VulkanMaterialShader* shader, float deltaTime)
 {
     u32 imageIndex = vkContext->imageIndex;
     VkCommandBuffer commandBuffer = cmdBuffer->handle;
@@ -278,7 +278,7 @@ void UpdateMaterialShaderGlobalState(VulkanContext* vkContext, VulkanCommandBuff
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->pipeline.pipelineLayout, 0, 1, &globalDescriptorSet, 0, 0);
 }
 
-void MaterialShaderSetModel(VulkanContext* vkContext, VulkanCommandBuffer* cmdBuffer, VulkanMaterialShader* shader, float4x4 model)
+void NOUS_VulkanMaterialShader::MaterialShaderSetModel(VulkanContext* vkContext, VulkanCommandBuffer* cmdBuffer, VulkanMaterialShader* shader, float4x4 model)
 {
     if (vkContext && shader) 
     {
@@ -289,7 +289,7 @@ void MaterialShaderSetModel(VulkanContext* vkContext, VulkanCommandBuffer* cmdBu
     }
 }
 
-void MaterialShaderApplyMaterial(VulkanContext* vkContext, VulkanCommandBuffer* cmdBuffer, VulkanMaterialShader* shader, ResourceMaterial* material)
+void NOUS_VulkanMaterialShader::MaterialShaderApplyMaterial(VulkanContext* vkContext, VulkanCommandBuffer* cmdBuffer, VulkanMaterialShader* shader, ResourceMaterial* material)
 {
     if (vkContext && shader) 
     {
@@ -430,7 +430,7 @@ void MaterialShaderApplyMaterial(VulkanContext* vkContext, VulkanCommandBuffer* 
     }
 }
 
-bool AcquireMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, ResourceMaterial* material)
+bool NOUS_VulkanMaterialShader::AcquireMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, ResourceMaterial* material)
 {
     // TODO: free list
     material->internalID = shader->localUniformBufferIndex;
@@ -468,7 +468,7 @@ bool AcquireMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShad
     return true;
 }
 
-void ReleaseMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, ResourceMaterial* material)
+void NOUS_VulkanMaterialShader::ReleaseMaterialShaderResources(VulkanContext* vkContext, VulkanMaterialShader* shader, ResourceMaterial* material)
 {
     VulkanMaterialShaderInstanceState* instanceState = &shader->instanceStates[material->internalID];
 

@@ -9,7 +9,7 @@ class ResourceTexture;
 // --------------- Vulkan Renderer Backend --------------- \\
 
 struct VulkanContext;
-class VulkanCommandBuffer;
+struct VulkanCommandBuffer;
 
 class VulkanBackend : public IRendererBackend 
 {

@@ -98,7 +98,7 @@ bool VulkanBackend::Initialize()
 
     // Physical Device
     NOUS_DEBUG("Searching for a suitable Physical Device...");
-    if (!PickPhysicalDevice(vkContext))
+    if (!NOUS_VulkanDevice::PickPhysicalDevice(vkContext))
     {
         NOUS_ERROR("Failed to find a suitable GPU!");
         ret = false;
@@ -110,7 +110,7 @@ bool VulkanBackend::Initialize()
 
     // Logical Device
     NOUS_DEBUG("Creating Vulkan Logical Device...");
-    if (!CreateLogicalDevice(vkContext))
+    if (!NOUS_VulkanDevice::CreateLogicalDevice(vkContext))
     {
         NOUS_ERROR("Failed to create Vulkan Logical Device. Shutting the Application.");
         ret = false;
@@ -122,7 +122,7 @@ bool VulkanBackend::Initialize()
 
     // Swap Chain
     NOUS_DEBUG("Creating Vulkan Swap Chain...");
-    if (!CreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, &vkContext->swapChain))
+    if (!NOUS_VulkanSwapChain::CreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, &vkContext->swapChain))
     {
         NOUS_ERROR("Failed to create Vulkan Swap Chain. Shutting the Application.");
         ret = false;
@@ -241,7 +241,7 @@ bool VulkanBackend::Initialize()
 
     // Create Vulkan Material Shader
     NOUS_DEBUG("Creating Nous Material Shader...");
-    if (!CreateMaterialShader(vkContext, &vkContext->sceneRenderpass, &vkContext->materialShader))
+    if (!NOUS_VulkanMaterialShader::CreateMaterialShader(vkContext, &vkContext->sceneRenderpass, &vkContext->materialShader))
     {
         NOUS_ERROR("Failed to create Nous Material Shader. Shutting the Application.");
         ret = false;
@@ -253,7 +253,7 @@ bool VulkanBackend::Initialize()
 
     // Create Vulkan Game Shader
     NOUS_DEBUG("Creating Nous Game Shader...");
-    if (!CreateMaterialShader(vkContext, &vkContext->gameRenderpass, &vkContext->gameShader))
+    if (!NOUS_VulkanMaterialShader::CreateMaterialShader(vkContext, &vkContext->gameRenderpass, &vkContext->gameShader))
     {
         NOUS_ERROR("Failed to create Nous Game Shader. Shutting the Application.");
         ret = false;
@@ -265,7 +265,7 @@ bool VulkanBackend::Initialize()
 
     // Create Vulkan UI Shader
     NOUS_DEBUG("Creating Nous UI Shader...");
-    if (!CreateUIShader(vkContext, &vkContext->uiShader))
+    if (!NOUS_VulkanUIShader::CreateUIShader(vkContext, &vkContext->uiShader))
     {
         NOUS_ERROR("Failed to create Nous UI Shader. Shutting the Application.");
         ret = false;
@@ -303,9 +303,9 @@ void VulkanBackend::Shutdown()
 
     NOUS_VulkanBuffer::DestroyBuffers(vkContext);
 
-    DestroyUIShader(vkContext, &vkContext->uiShader);
-    DestroyMaterialShader(vkContext, &vkContext->materialShader);
-    DestroyMaterialShader(vkContext, &vkContext->gameShader);
+    NOUS_VulkanUIShader::DestroyUIShader(vkContext, &vkContext->uiShader);
+    NOUS_VulkanMaterialShader::DestroyMaterialShader(vkContext, &vkContext->materialShader);
+    NOUS_VulkanMaterialShader::DestroyMaterialShader(vkContext, &vkContext->gameShader);
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
@@ -319,9 +319,9 @@ void VulkanBackend::Shutdown()
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->gameRenderpass);
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->sceneRenderpass);
 
-    DestroySwapChain(vkContext, &vkContext->swapChain);
+    NOUS_VulkanSwapChain::DestroySwapChain(vkContext, &vkContext->swapChain);
 
-    DestroyLogicalDevice(vkContext);
+    NOUS_VulkanDevice::DestroyLogicalDevice(vkContext);
 
     NOUS_VulkanInstance::DestroySurface(vkContext);
 
@@ -398,7 +398,7 @@ bool VulkanBackend::BeginFrame(float dt)
 
     // Acquire the next image from the swap chain. Pass along the semaphore that should signaled when this completes.
     // This same semaphore will later be waited on by the queue submission to ensure this image is available.
-    if (!SwapChainAcquireNextImageIndex(vkContext, &vkContext->swapChain, UINT64_MAX,
+    if (!NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(vkContext, &vkContext->swapChain, UINT64_MAX,
         vkContext->imageAvailableSemaphores[vkContext->currentFrame], 0, &vkContext->imageIndex))
     {
         NOUS_FATAL("Failed to acquire next image index, booting.");
@@ -480,7 +480,7 @@ bool VulkanBackend::EndFrame(float dt)
 
     // End queue submission
     // Give the image back to the swapchain.
-    SwapChainPresent(vkContext, &vkContext->swapChain, vkContext->device.graphicsQueue,
+    NOUS_VulkanSwapChain::SwapChainPresent(vkContext, &vkContext->swapChain, vkContext->device.graphicsQueue,
         vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
         vkContext->imageIndex);
 
@@ -570,17 +570,17 @@ bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
     {
         case BuiltInRenderpass::SCENE:
         {
-            UseMaterialShader(vkContext, commandBuffer, &vkContext->materialShader);
+            NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, &vkContext->materialShader);
             break;
         }
         case BuiltInRenderpass::GAME:
         {
-            UseMaterialShader(vkContext, commandBuffer, &vkContext->gameShader);
+            NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, &vkContext->gameShader);
             break;
         }
         case BuiltInRenderpass::UI:
         {
-            UseUIShader(vkContext, &vkContext->uiShader);
+            NOUS_VulkanUIShader::UseUIShader(vkContext, &vkContext->uiShader);
             break;
         }
     }
@@ -658,10 +658,10 @@ bool VulkanBackend::RecreateResources()
     }
 
     // Requery support and depth format
-    vkContext->device.swapChainSupport = QuerySwapChainSupport(vkContext->device.physicalDevice, vkContext);
-    vkContext->device.depthFormat = FindDepthFormat(vkContext->device.physicalDevice);
+    vkContext->device.swapChainSupport = NOUS_VulkanDevice::QuerySwapChainSupport(vkContext->device.physicalDevice, vkContext);
+    vkContext->device.depthFormat = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
 
-    RecreateSwapChain(vkContext, cachedFramebufferWidth, cachedFramebufferHeight, &vkContext->swapChain);
+    NOUS_VulkanSwapChain::RecreateSwapChain(vkContext, cachedFramebufferWidth, cachedFramebufferHeight, &vkContext->swapChain);
 
     // Sync the framebuffer size with the cached sizes.
     vkContext->framebufferWidth = cachedFramebufferWidth;
@@ -744,22 +744,22 @@ void VulkanBackend::UpdateGlobalWorldState(BuiltInRenderpass renderpassID, float
         shader = &vkContext->materialShader;
     }
 
-    UseMaterialShader(vkContext, commandBuffer, shader);
+    NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, shader);
 
     shader->globalUBO.projection = projection;
     shader->globalUBO.view = view;
 
-    UpdateMaterialShaderGlobalState(vkContext, commandBuffer, shader, vkContext->frameDeltaTime);
+    NOUS_VulkanMaterialShader::UpdateMaterialShaderGlobalState(vkContext, commandBuffer, shader, vkContext->frameDeltaTime);
 }
 
 void VulkanBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID, float4x4 projection, float4x4 view, int32 mode)
 {
-    UseUIShader(vkContext, &vkContext->uiShader);
+    NOUS_VulkanUIShader::UseUIShader(vkContext, &vkContext->uiShader);
 
     vkContext->uiShader.globalUBO.projection = projection;
     vkContext->uiShader.globalUBO.view = view;
 
-    UpdateUIShaderGlobalState(vkContext, &vkContext->uiShader, vkContext->frameDeltaTime);
+    NOUS_VulkanUIShader::UpdateUIShaderGlobalState(vkContext, &vkContext->uiShader, vkContext->frameDeltaTime);
 }
 
 VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(BuiltInRenderpass renderpassID) 
@@ -815,9 +815,9 @@ void VulkanBackend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderD
 
     VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
 
-    UseMaterialShader(vkContext, commandBuffer, shader);
+    NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, shader);
 
-    MaterialShaderSetModel(vkContext, commandBuffer, shader, renderData.model);
+    NOUS_VulkanMaterialShader::MaterialShaderSetModel(vkContext, commandBuffer, shader, renderData.model);
 
     ResourceMaterial* material = nullptr;
 
@@ -830,7 +830,7 @@ void VulkanBackend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderD
         material = NOUS_MaterialSystem::GetDefaultMaterial();
     }
 
-    MaterialShaderApplyMaterial(vkContext, commandBuffer, shader, material);
+    NOUS_VulkanMaterialShader::MaterialShaderApplyMaterial(vkContext, commandBuffer, shader, material);
 
     // Bind vertex buffer at offset.
     VkDeviceSize offsets[1] = { bufferData->vertexBufferOffset };
@@ -878,7 +878,7 @@ void VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
 
     // NOTE: Lots of assumptions here, different texture types will require
     // different options here.
-    CreateVulkanImage(vkContext, VK_IMAGE_TYPE_2D, texture->width, texture->height, 1, VK_SAMPLE_COUNT_1_BIT, imageFormat,
+    NOUS_VulkanImage::CreateVulkanImage(vkContext, VK_IMAGE_TYPE_2D, texture->width, texture->height, 1, VK_SAMPLE_COUNT_1_BIT, imageFormat,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -893,14 +893,14 @@ void VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(vkContext, pool, &tempCommandBuffer);
 
     // Transition the layout from whatever it is currently to optimal for recieving data.
-    TransitionVulkanImageLayout(vkContext, &tempCommandBuffer, &textureData->image, imageFormat,
+    NOUS_VulkanImage::TransitionVulkanImageLayout(vkContext, &tempCommandBuffer, &textureData->image, imageFormat,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     // Copy the data from the buffer.
-    CopyBufferToVulkanImage(vkContext, &textureData->image, stagingBuffer.handle, &tempCommandBuffer);
+    NOUS_VulkanImage::CopyBufferToVulkanImage(vkContext, &textureData->image, stagingBuffer.handle, &tempCommandBuffer);
 
     // Transition from optimal for data reciept to shader-read-only optimal layout.
-    TransitionVulkanImageLayout(vkContext, &tempCommandBuffer, &textureData->image, imageFormat,
+    NOUS_VulkanImage::TransitionVulkanImageLayout(vkContext, &tempCommandBuffer, &textureData->image, imageFormat,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(vkContext, pool, &tempCommandBuffer, queue);
@@ -951,7 +951,7 @@ void VulkanBackend::DestroyTexture(ResourceTexture* texture)
 
     if (textureData) 
     {
-        DestroyVulkanImage(vkContext, &textureData->image);
+        NOUS_VulkanImage::DestroyVulkanImage(vkContext, &textureData->image);
         MemoryManager::ZeroMemory(&textureData->image, sizeof(VulkanImage));
 
         vkDestroySampler(vkContext->device.logicalDevice, textureData->sampler, vkContext->allocator);
@@ -965,13 +965,13 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
 {
     if (material) 
     {
-        if (!AcquireMaterialShaderResources(vkContext, &vkContext->materialShader, material))
+        if (!NOUS_VulkanMaterialShader::AcquireMaterialShaderResources(vkContext, &vkContext->materialShader, material))
         {
             NOUS_ERROR("VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
             return false;
         }
 
-        if (!AcquireMaterialShaderResources(vkContext, &vkContext->gameShader, material))
+        if (!NOUS_VulkanMaterialShader::AcquireMaterialShaderResources(vkContext, &vkContext->gameShader, material))
         {
             NOUS_ERROR("VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
             return false;
@@ -991,7 +991,7 @@ void VulkanBackend::DestroyMaterial(ResourceMaterial* material)
     {
         if (material->internalID != INVALID_ID) 
         {
-            ReleaseMaterialShaderResources(vkContext, &vkContext->materialShader, material);
+            NOUS_VulkanMaterialShader::ReleaseMaterialShaderResources(vkContext, &vkContext->materialShader, material);
             //ReleaseMaterialShaderResources(vkContext, &vkContext->gameShader, material);
         }
         else 

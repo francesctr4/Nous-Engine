@@ -25,7 +25,7 @@ bool ModuleScene::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	gameCamera->SetPos(-4.61, 100, 718.32);
+	gameCamera->SetPos(-4.61f, 100.0f, 718.32f);
 
 	return true;
 }

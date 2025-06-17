@@ -5,6 +5,8 @@
 
 struct MetaFileData
 {
+    MetaFileData() : uid(0), resourceType(ResourceType::UNKNOWN) {}
+    
 	std::string name;
     UID uid;
     ResourceType resourceType;

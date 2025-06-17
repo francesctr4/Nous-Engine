@@ -14,7 +14,7 @@
 
 constexpr const char* BUILTIN_UI_SHADER_NAME = "BuiltIn.UIShader";
 
-bool CreateUIShader(VulkanContext* vkContext, VulkanUIShader* outShader)
+bool NOUS_VulkanUIShader::CreateUIShader(VulkanContext* vkContext, VulkanUIShader* outShader)
 {
     bool ret = true;
 
@@ -24,7 +24,7 @@ bool CreateUIShader(VulkanContext* vkContext, VulkanUIShader* outShader)
 
     for (uint32 i = 0; i < VULKAN_UI_SHADER_STAGE_COUNT; ++i)
     {
-        if (!CreateShaderModule(vkContext, BUILTIN_UI_SHADER_NAME, stageTypeStrings[i], stageTypes[i], i, outShader->stages.data()))
+        if (!NOUS_VulkanShaderUtils::CreateShaderModule(vkContext, BUILTIN_UI_SHADER_NAME, stageTypeStrings[i], stageTypes[i], i, outShader->stages.data()))
         {
             NOUS_ERROR("Unable to create %s shader module for '%s'.", stageTypeStrings[i].c_str(), BUILTIN_UI_SHADER_NAME);
             ret = false;
@@ -53,7 +53,7 @@ bool CreateUIShader(VulkanContext* vkContext, VulkanUIShader* outShader)
     VkDescriptorPoolSize globalDescriptorPoolSize;
     globalDescriptorPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-    globalDescriptorPoolSize.descriptorCount = vkContext->swapChain.swapChainImages.size();
+    globalDescriptorPoolSize.descriptorCount = static_cast<uint32>(vkContext->swapChain.swapChainImages.size());
 
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -61,7 +61,7 @@ bool CreateUIShader(VulkanContext* vkContext, VulkanUIShader* outShader)
     descriptorPoolCreateInfo.poolSizeCount = 1;
     descriptorPoolCreateInfo.pPoolSizes = &globalDescriptorPoolSize;
 
-    descriptorPoolCreateInfo.maxSets = vkContext->swapChain.swapChainImages.size();
+    descriptorPoolCreateInfo.maxSets = static_cast<uint32>(vkContext->swapChain.swapChainImages.size());
 
     VK_CHECK(vkCreateDescriptorPool(vkContext->device.logicalDevice, &descriptorPoolCreateInfo, vkContext->allocator, &outShader->globalDescriptorPool));
 
@@ -153,7 +153,7 @@ bool CreateUIShader(VulkanContext* vkContext, VulkanUIShader* outShader)
         shaderStageCreateInfos[i] = outShader->stages[i].shaderStageCreateInfo;
     }
 
-    if (!CreateGraphicsPipeline(vkContext, &vkContext->sceneRenderpass, bindingDescription,
+    if (!NOUS_VulkanGraphicsPipeline::CreateGraphicsPipeline(vkContext, &vkContext->sceneRenderpass, bindingDescription,
         static_cast<uint32>(attributeDescriptions.size()), attributeDescriptions.data(),
         static_cast<uint32>(descriptorSetlayouts.size()), descriptorSetlayouts.data(),
         VULKAN_UI_SHADER_STAGE_COUNT, shaderStageCreateInfos.data(), viewport, scissor,
@@ -207,7 +207,7 @@ bool CreateUIShader(VulkanContext* vkContext, VulkanUIShader* outShader)
     return ret;
 }
 
-void DestroyUIShader(VulkanContext* vkContext, VulkanUIShader* shader)
+void NOUS_VulkanUIShader::DestroyUIShader(VulkanContext* vkContext, VulkanUIShader* shader)
 {
     VkDevice logicalDevice = vkContext->device.logicalDevice;
 
@@ -224,7 +224,7 @@ void DestroyUIShader(VulkanContext* vkContext, VulkanUIShader* shader)
     NOUS_VulkanBuffer::DestroyBuffer(vkContext, &shader->globalUniformBuffer);
 
     // Destroy pipeline.
-    DestroyGraphicsPipeline(vkContext, &shader->pipeline);
+    NOUS_VulkanGraphicsPipeline::DestroyGraphicsPipeline(vkContext, &shader->pipeline);
 
     NOUS_DEBUG("Destroying Shader Modules...");
     // Destroy shader modules.
@@ -235,13 +235,13 @@ void DestroyUIShader(VulkanContext* vkContext, VulkanUIShader* shader)
     }
 }
 
-void UseUIShader(VulkanContext* vkContext, VulkanUIShader* shader)
+void NOUS_VulkanUIShader::UseUIShader(VulkanContext* vkContext, VulkanUIShader* shader)
 {
-    BindGraphicsPipeline(&vkContext->graphicsCommandBuffers[vkContext->imageIndex],
+    NOUS_VulkanGraphicsPipeline::BindGraphicsPipeline(&vkContext->graphicsCommandBuffers[vkContext->imageIndex],
         VK_PIPELINE_BIND_POINT_GRAPHICS, &shader->pipeline);
 }
 
-void UpdateUIShaderGlobalState(VulkanContext* vkContext, VulkanUIShader* shader, float deltaTime)
+void NOUS_VulkanUIShader::UpdateUIShaderGlobalState(VulkanContext* vkContext, VulkanUIShader* shader, float deltaTime)
 {
     u32 imageIndex = vkContext->imageIndex;
     VkCommandBuffer commandBuffer = vkContext->graphicsCommandBuffers[imageIndex].handle;
@@ -278,7 +278,7 @@ void UpdateUIShaderGlobalState(VulkanContext* vkContext, VulkanUIShader* shader,
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->pipeline.pipelineLayout, 0, 1, &globalDescriptorSet, 0, 0);
 }
 
-void UIShaderSetModel(VulkanContext* vkContext, VulkanUIShader* shader, float4x4 model)
+void NOUS_VulkanUIShader::UIShaderSetModel(VulkanContext* vkContext, VulkanUIShader* shader, float4x4 model)
 {
     if (vkContext && shader)
     {
@@ -289,7 +289,7 @@ void UIShaderSetModel(VulkanContext* vkContext, VulkanUIShader* shader, float4x4
     }
 }
 
-void UIShaderApplyMaterial(VulkanContext* vkContext, VulkanUIShader* shader, ResourceMaterial* material)
+void NOUS_VulkanUIShader::UIShaderApplyMaterial(VulkanContext* vkContext, VulkanUIShader* shader, ResourceMaterial* material)
 {
     if (vkContext && shader)
     {
@@ -430,7 +430,7 @@ void UIShaderApplyMaterial(VulkanContext* vkContext, VulkanUIShader* shader, Res
     }
 }
 
-bool AcquireUIShaderResources(VulkanContext* vkContext, VulkanUIShader* shader, ResourceMaterial* material)
+bool NOUS_VulkanUIShader::AcquireUIShaderResources(VulkanContext* vkContext, VulkanUIShader* shader, ResourceMaterial* material)
 {
     // TODO: free list
     material->internalID = shader->localUniformBufferIndex;
@@ -468,7 +468,7 @@ bool AcquireUIShaderResources(VulkanContext* vkContext, VulkanUIShader* shader, 
     return true;
 }
 
-void ReleaseUIShaderResources(VulkanContext* vkContext, VulkanUIShader* shader, ResourceMaterial* material)
+void NOUS_VulkanUIShader::ReleaseUIShaderResources(VulkanContext* vkContext, VulkanUIShader* shader, ResourceMaterial* material)
 {
     VulkanUIShaderInstanceState* instanceState = &shader->instanceStates[material->internalID];
 

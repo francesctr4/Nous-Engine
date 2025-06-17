@@ -196,7 +196,8 @@ ResourceMaterial* NOUS_MaterialSystem::AcquireMaterialFromConfig(MaterialConfig 
     //}
     //// NOTE: This would only happen in the event something went wrong with the state.
     //KERROR("material_system_acquire_from_config failed to acquire material '%s'. Null pointer will be returned.", config.name);
-    //return 0;
+    
+    return nullptr;
 }
 
 void NOUS_MaterialSystem::ReleaseMaterial(ResourceMaterial* material)

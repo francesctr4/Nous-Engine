@@ -339,9 +339,6 @@
     <ClCompile Include="Source\External\Parson\parson.cpp">
       <Filter>Externals\Parson</Filter>
     </ClCompile>
-    <ClCompile Include="Source\EventSystem.cpp">
-      <Filter>Source Code\Systems\Event System</Filter>
-    </ClCompile>
     <ClCompile Include="Source\TextureSystem.cpp">
       <Filter>Source Code\Systems\Texture System</Filter>
     </ClCompile>

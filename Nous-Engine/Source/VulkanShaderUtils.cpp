@@ -5,7 +5,7 @@
 #include "MemoryManager.h"
 #include "FileHandle.h"
 
-bool CreateShaderModule(VulkanContext* vkContext, std::string name, std::string typeStr, VkShaderStageFlagBits shaderStageFlag, uint32 stageIndex, VulkanShaderStage* shaderStages)
+bool NOUS_VulkanShaderUtils::CreateShaderModule(VulkanContext* vkContext, std::string name, std::string typeStr, VkShaderStageFlagBits shaderStageFlag, uint32 stageIndex, VulkanShaderStage* shaderStages)
 {
     // Build filename.
     std::string filename = std::format("Library/Shaders/{}.{}.spv", name, typeStr);

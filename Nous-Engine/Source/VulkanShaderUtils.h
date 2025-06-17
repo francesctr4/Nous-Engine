@@ -82,5 +82,8 @@ static std::array<VkVertexInputAttributeDescription, Vertex2D::ATTRIBUTE_COUNT> 
     return attributeDescriptions;
 }
 
-bool CreateShaderModule(VulkanContext* vkContext, std::string name, std::string typeStr,
-    VkShaderStageFlagBits shaderStageFlag, uint32 stageIndex, VulkanShaderStage* shaderStages);
+namespace NOUS_VulkanShaderUtils 
+{
+    bool CreateShaderModule(VulkanContext* vkContext, std::string name, std::string typeStr,
+        VkShaderStageFlagBits shaderStageFlag, uint32 stageIndex, VulkanShaderStage* shaderStages);
+}

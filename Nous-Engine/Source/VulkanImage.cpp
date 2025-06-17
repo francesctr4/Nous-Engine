@@ -5,7 +5,7 @@
 #include "Logger.h"
 #include "MemoryManager.h"
 
-void CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32 width, uint32 height,
+void NOUS_VulkanImage::CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32 width, uint32 height,
     uint32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, 
     VkImageUsageFlags usage, VkMemoryPropertyFlags memoryFlags, bool createView, 
     VkImageAspectFlags viewAspectFlags, VulkanImage* outImage)
@@ -37,7 +37,7 @@ void CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32 w
     VkMemoryRequirements memoryRequirements;
     vkGetImageMemoryRequirements(vkContext->device.logicalDevice, outImage->handle, &memoryRequirements);
 
-    int32 memoryType = FindMemoryIndex(vkContext->device.physicalDevice, memoryRequirements.memoryTypeBits, memoryFlags);
+    int32 memoryType = NOUS_VulkanDevice::FindMemoryIndex(vkContext->device.physicalDevice, memoryRequirements.memoryTypeBits, memoryFlags);
     if (memoryType == -1) 
     {
         NOUS_ERROR("Required memory type not found. Image not valid.");
@@ -60,7 +60,7 @@ void CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32 w
     }
 }
 
-void CreateVulkanImageView(VulkanContext* vkContext, VkFormat format,
+void NOUS_VulkanImage::CreateVulkanImageView(VulkanContext* vkContext, VkFormat format,
 	VulkanImage* image, VkImageAspectFlags aspectFlags, uint32 mipLevels)
 {
     VkImageViewCreateInfo imageViewCreateInfo{}; 
@@ -80,7 +80,7 @@ void CreateVulkanImageView(VulkanContext* vkContext, VkFormat format,
     VK_CHECK(vkCreateImageView(vkContext->device.logicalDevice, &imageViewCreateInfo, vkContext->allocator, &image->view));
 }
 
-void TransitionVulkanImageLayout(VulkanContext* vkContext, VulkanCommandBuffer* commandBuffer, 
+void NOUS_VulkanImage::TransitionVulkanImageLayout(VulkanContext* vkContext, VulkanCommandBuffer* commandBuffer,
     VulkanImage* image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
     VkImageMemoryBarrier imageMemoryBarrier{};
@@ -141,7 +141,7 @@ void TransitionVulkanImageLayout(VulkanContext* vkContext, VulkanCommandBuffer* 
         1, &imageMemoryBarrier);
 }
 
-void CopyBufferToVulkanImage(VulkanContext* vkContext, VulkanImage* image, 
+void NOUS_VulkanImage::CopyBufferToVulkanImage(VulkanContext* vkContext, VulkanImage* image,
     VkBuffer buffer, VulkanCommandBuffer* commandBuffer)
 {
     // Region to copy
@@ -165,7 +165,7 @@ void CopyBufferToVulkanImage(VulkanContext* vkContext, VulkanImage* image,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopyRegion);
 }
 
-void DestroyVulkanImage(VulkanContext* vkContext, VulkanImage* image)
+void NOUS_VulkanImage::DestroyVulkanImage(VulkanContext* vkContext, VulkanImage* image)
 {
     if (image->view) 
     {

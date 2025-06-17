@@ -5,7 +5,7 @@
 union SDL_Event;
 struct VulkanContext;
 enum class RendererBackendType;
-struct IEditorWindow;
+class IEditorWindow;
 struct ImGuiIO;
 struct ImFont;
 

@@ -99,7 +99,7 @@ bool NOUS_FileManager::DeleteDirectory(const std::string& path)
 			// Remove the empty directory after cleaning it up
 			std::filesystem::remove(path);
 		}
-		catch (const std::exception& e)
+		catch (...)
 		{
 			// Handle any errors that occur during the process
 			return false;

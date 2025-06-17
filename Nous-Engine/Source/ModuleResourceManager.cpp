@@ -121,7 +121,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 			// CASE 1: The file is in "Assets\\" and DOES NOT HAVE Meta File
 			// New Resource, Create Meta File
 
-			UID resourceUID = Random::Generate();
+			UID resourceUID = static_cast<uint32>(Random::Generate());
 			std::string libraryExtension = Resource::GetLibraryExtensionFromType(resourceType);
 			std::string libraryPath = Resource::GetLibraryDirectoryFromType(resourceType) +
 									  std::to_string(resourceUID) + "." + libraryExtension;

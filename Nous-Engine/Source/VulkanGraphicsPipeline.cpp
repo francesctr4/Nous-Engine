@@ -4,7 +4,7 @@
 #include "MemoryManager.h"
 #include "Logger.h"
 
-bool CreateGraphicsPipeline(VulkanContext* vkContext, VulkanRenderpass* renderpass,
+bool NOUS_VulkanGraphicsPipeline::CreateGraphicsPipeline(VulkanContext* vkContext, VulkanRenderpass* renderpass,
     VkVertexInputBindingDescription bindingDescription, uint32 attributeDescriptionCount,
     VkVertexInputAttributeDescription* attributeDescriptions, uint32 descriptorSetLayoutCount,
     VkDescriptorSetLayout* descriptorSetLayouts, uint32 shaderStageCount, VkPipelineShaderStageCreateInfo* shaderStages,
@@ -188,7 +188,7 @@ bool CreateGraphicsPipeline(VulkanContext* vkContext, VulkanRenderpass* renderpa
     return false;
 }
 
-void DestroyGraphicsPipeline(VulkanContext* vkContext, VulkanPipeline* pipeline)
+void NOUS_VulkanGraphicsPipeline::DestroyGraphicsPipeline(VulkanContext* vkContext, VulkanPipeline* pipeline)
 {
     NOUS_DEBUG("Destroying Graphics Pipeline...");
     if (pipeline) 
@@ -209,7 +209,7 @@ void DestroyGraphicsPipeline(VulkanContext* vkContext, VulkanPipeline* pipeline)
     }
 }
 
-void BindGraphicsPipeline(VulkanCommandBuffer* commandBuffer, 
+void NOUS_VulkanGraphicsPipeline::BindGraphicsPipeline(VulkanCommandBuffer* commandBuffer,
 	VkPipelineBindPoint bindPoint, VulkanPipeline* pipeline)
 {
 	vkCmdBindPipeline(commandBuffer->handle, bindPoint, pipeline->handle);

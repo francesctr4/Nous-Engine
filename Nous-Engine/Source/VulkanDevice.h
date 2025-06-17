@@ -1,14 +1,3 @@
-/********************************************************************************************
- *																							*
- *  Project Name: [ Nous Engine: a multithreaded game engine built with Vulkan in C++ ]		*
- *  File Name:    [ VulkanDevice.h ]														*
- *  Description:  [ Header file for Managing Vulkan Physical and Logical Device ]			*
- *																							*
- *  Author:       [ Francesc Teruel Rodríguez ]												*
- *  GitHub:       [ https://github.com/francesctr4 ]										*
- *																							*
- ********************************************************************************************/
-
 #pragma once
 
 #include "Globals.h"
@@ -47,39 +36,42 @@ struct VkPhysicalDeviceRequirements
 	}
 };
 
-// ----------------------------------------------------------- //
-// --------------------- Physical Device --------------------- //
-// ----------------------------------------------------------- //
+namespace NOUS_VulkanDevice 
+{
+	// ----------------------------------------------------------- //
+	// --------------------- Physical Device --------------------- //
+	// ----------------------------------------------------------- //
 
-bool PickPhysicalDevice(VulkanContext* vkContext);
+	bool PickPhysicalDevice(VulkanContext* vkContext);
 
-bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
-VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
-bool CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	bool CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
-VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
-int32 FindMemoryIndex(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties);
+	int32 FindMemoryIndex(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties);
 
-VkFormat FindDepthFormat(VkPhysicalDevice& physicalDevice);
-VkFormat FindSupportedFormat(VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat FindDepthFormat(VkPhysicalDevice& physicalDevice);
+	VkFormat FindSupportedFormat(VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
-VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties); // Multisampling
+	VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties); // Multisampling
 
-/**
- * @brief Logs detailed information about the selected Vulkan physical device.
- * @param vkContext: The Vulkan context containing information about the selected device.
- */
-void LogInfoAboutDevice(VulkanContext* vkContext);
+	/**
+	 * @brief Logs detailed information about the selected Vulkan physical device.
+	 * @param vkContext: The Vulkan context containing information about the selected device.
+	 */
+	void LogInfoAboutDevice(VulkanContext* vkContext);
 
-// ----------------------------------------------------------- //
-// ---------------------- Logical Device --------------------- //
-// ----------------------------------------------------------- //
+	// ----------------------------------------------------------- //
+	// ---------------------- Logical Device --------------------- //
+	// ----------------------------------------------------------- //
 
-bool CreateLogicalDevice(VulkanContext* vkContext);
+	bool CreateLogicalDevice(VulkanContext* vkContext);
 
-void CreateCommandPool(VulkanContext* vkContext);
+	void CreateCommandPool(VulkanContext* vkContext);
 
-void DestroyLogicalDevice(VulkanContext* vkContext);
+	void DestroyLogicalDevice(VulkanContext* vkContext);
+}

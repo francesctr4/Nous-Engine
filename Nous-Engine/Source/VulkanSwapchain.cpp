@@ -9,14 +9,14 @@
 
 #include <algorithm>  // Required for std::clamp
 
-bool CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain)
+bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain)
 {
     bool ret = true;
 
     VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(vkContext->device.swapChainSupport.formats);
     VkPresentModeKHR presentMode = ChooseSwapPresentMode(vkContext->device.swapChainSupport.presentModes);
 
-    vkContext->device.swapChainSupport = QuerySwapChainSupport(vkContext->device.physicalDevice, vkContext);
+    vkContext->device.swapChainSupport = NOUS_VulkanDevice::QuerySwapChainSupport(vkContext->device.physicalDevice, vkContext);
 
     VkExtent2D extent = ChooseSwapExtent(vkContext->device.swapChainSupport.capabilities);
 
@@ -85,7 +85,7 @@ bool CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, Vulk
         tempImage.handle = vkContext->swapChain.swapChainImages[i];
 
         // Call CreateVulkanImageView to populate tempImage.view.
-        CreateVulkanImageView(vkContext, vkContext->swapChain.swapChainImageFormat, &tempImage, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        NOUS_VulkanImage::CreateVulkanImageView(vkContext, vkContext->swapChain.swapChainImageFormat, &tempImage, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
         // Assign the created view to the vector.
         swapChain->swapChainImageViews[i] = tempImage.view;
@@ -98,19 +98,18 @@ bool CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, Vulk
     return ret;
 }
 
-void RecreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain)
+void NOUS_VulkanSwapChain::RecreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain)
 {
     DestroySwapChain(vkContext, swapChain);
     CreateSwapChain(vkContext, width, height, swapChain);
 }
 
-void DestroySwapChain(VulkanContext* vkContext, VulkanSwapChain* swapChain)
+void NOUS_VulkanSwapChain::DestroySwapChain(VulkanContext* vkContext, VulkanSwapChain* swapChain)
 {
     NOUS_DEBUG("Destroying Swap Chain...");
 
-    DestroyVulkanImage(vkContext, &swapChain->colorAttachment);
-
-    DestroyVulkanImage(vkContext, &swapChain->depthAttachment);
+    NOUS_VulkanImage::DestroyVulkanImage(vkContext, &swapChain->colorAttachment);
+    NOUS_VulkanImage::DestroyVulkanImage(vkContext, &swapChain->depthAttachment);
 
     // Only destroy the views, not the images, since those are owned by the swapchain and are thus destroyed when it is.
     for (VkImageView imageView : swapChain->swapChainImageViews) 
@@ -121,7 +120,7 @@ void DestroySwapChain(VulkanContext* vkContext, VulkanSwapChain* swapChain)
     vkDestroySwapchainKHR(vkContext->device.logicalDevice, swapChain->handle, vkContext->allocator);
 }
 
-bool SwapChainAcquireNextImageIndex(VulkanContext* vkContext, VulkanSwapChain* swapchain, uint64 timeout_ns,
+bool NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(VulkanContext* vkContext, VulkanSwapChain* swapchain, uint64 timeout_ns,
     VkSemaphore imageAvailableSemaphore, VkFence fence, uint32* outImageIndex)
 {
     VkResult result = vkAcquireNextImageKHR(vkContext->device.logicalDevice, swapchain->handle, timeout_ns,
@@ -142,7 +141,7 @@ bool SwapChainAcquireNextImageIndex(VulkanContext* vkContext, VulkanSwapChain* s
     return true;
 }
 
-void SwapChainPresent(VulkanContext* vkContext, VulkanSwapChain* swapchain, VkQueue graphicsQueue,
+void NOUS_VulkanSwapChain::SwapChainPresent(VulkanContext* vkContext, VulkanSwapChain* swapchain, VkQueue graphicsQueue,
     VkQueue presentQueue, VkSemaphore renderCompleteSemaphore, uint32 presentImageIndex)
 {
     // Return the image to the swapchain for presentation.
@@ -174,7 +173,7 @@ void SwapChainPresent(VulkanContext* vkContext, VulkanSwapChain* swapchain, VkQu
     vkContext->currentFrame = (vkContext->currentFrame + 1) % swapchain->maxFramesInFlight;
 }
 
-VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+VkSurfaceFormatKHR NOUS_VulkanSwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
     for (const auto& availableFormat : availableFormats) {
 
@@ -190,7 +189,7 @@ VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>
     return availableFormats[0];
 }
 
-VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+VkPresentModeKHR NOUS_VulkanSwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 {
     for (const auto& availablePresentMode : availablePresentModes) {
 
@@ -205,7 +204,7 @@ VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avai
     return VK_PRESENT_MODE_FIFO_KHR; // Vertical Sync
 }
 
-VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+VkExtent2D NOUS_VulkanSwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) 
     {
@@ -225,13 +224,13 @@ VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
     }
 }
 
-void CreateColorResources(VulkanContext* vkContext, VulkanSwapChain* swapchain)
+void NOUS_VulkanSwapChain::CreateColorResources(VulkanContext* vkContext, VulkanSwapChain* swapchain)
 {
     // Color resources
     vkContext->device.colorFormat = swapchain->swapChainImageFormat;
 
     // Create color image and its view.
-    CreateVulkanImage(
+    NOUS_VulkanImage::CreateVulkanImage(
         vkContext,
         VK_IMAGE_TYPE_2D,
         swapchain->swapChainExtent.width,
@@ -248,13 +247,13 @@ void CreateColorResources(VulkanContext* vkContext, VulkanSwapChain* swapchain)
         &swapchain->colorAttachment);
 }
 
-void CreateDepthResources(VulkanContext* vkContext, VulkanSwapChain* swapchain)
+void NOUS_VulkanSwapChain::CreateDepthResources(VulkanContext* vkContext, VulkanSwapChain* swapchain)
 {
     // Depth resources
-    vkContext->device.depthFormat = FindDepthFormat(vkContext->device.physicalDevice);
+    vkContext->device.depthFormat = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
 
     // Create depth image and its view.
-    CreateVulkanImage(
+    NOUS_VulkanImage::CreateVulkanImage(
         vkContext,
         VK_IMAGE_TYPE_2D,
         swapchain->swapChainExtent.width,
