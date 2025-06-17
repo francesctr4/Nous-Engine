@@ -1,8 +1,8 @@
 @echo off
 REM Define versioned paths
-set BASE_FOLDER=Build\Nous-Engine-v0.1
+set BASE_FOLDER=Build\Nous-Engine-v0.3
 set ENGINE_FOLDER=%BASE_FOLDER%\Nous-Engine
-set ZIP_FILE=Build\Nous-Engine-v0.1.zip
+set ZIP_FILE=Build\Nous-Engine-v0.3.zip
 
 REM Create parent and nested folders
 if not exist %ENGINE_FOLDER% (
@@ -27,9 +27,9 @@ for %%F in (Engine\*.dll) do (
 )
 
 REM Copy Nous-Engine.exe
-if exist x64\Release\Nous-Engine.exe (
+if exist x64\Debug\Nous-Engine.exe (
     echo Copying Nous-Engine.exe...
-    copy x64\Release\Nous-Engine.exe %ENGINE_FOLDER%\
+    copy x64\Debug\Nous-Engine.exe %ENGINE_FOLDER%\
 ) else (
     echo Nous-Engine.exe not found, skipping...
 )
