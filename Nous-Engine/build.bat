@@ -16,10 +16,6 @@ REM Copy Assets
 echo Copying Assets directory...
 xcopy Engine\Assets %ENGINE_FOLDER%\Assets /E /I /Y
 
-REM Copy Library
-echo Copying Library directory...
-xcopy Engine\Library %ENGINE_FOLDER%\Library /E /I /Y
-
 REM Copy only .dll files from Engine (no subdirectories)
 echo Copying .dll files from Engine...
 for %%F in (Engine\*.dll) do (
