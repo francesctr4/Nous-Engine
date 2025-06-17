@@ -29,27 +29,6 @@ Application::Application()
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
 
-    // We allocate the memory for the module first, then we use it with new to call the constructor.
-    // The application itself should NOT use custom allocators. Shush.
-
-    //window = new ModuleWindow(this, "ModuleWindow");
-    //input = new ModuleInput(this, "ModuleInput");
-    //fileSystem = new ModuleFileSystem(this, "ModuleFileSystem");
-    //camera = new ModuleCamera3D(this, "ModuleCamera3D");
-    //resourceManager = new ModuleResourceManager(this, "ModuleResourceManager");
-    //scene = new ModuleScene(this, "ModuleScene");
-    //renderer = new ModuleRenderer3D(this, "ModuleRenderer3D");
-    //editor = new ModuleEditor(this, "ModuleEditor");
-
-    //listModules[0] = window;
-    //listModules[1] = input;
-    //listModules[2] = fileSystem;
-    //listModules[3] = camera;
-    //listModules[4] = resourceManager;
-    //listModules[5] = scene;
-    //listModules[6] = renderer;
-    //listModules[7] = editor;
-
     listModules[0] = window = NOUS_NEW<ModuleWindow>(MemoryManager::MemoryTag::APPLICATION, this);
     listModules[1] = input = NOUS_NEW<ModuleInput>(MemoryManager::MemoryTag::APPLICATION, this);
     listModules[2] = fileSystem = NOUS_NEW<ModuleFileSystem>(MemoryManager::MemoryTag::APPLICATION, this);
@@ -68,14 +47,6 @@ Application::~Application()
     // ------------- MULTITHREADING ------------- //
     jobSystem->WaitForPendingJobs();
     NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
-
-    //for (int i = 0; i < NUM_MODULES; ++i)
-    //{
-    //    if (listModules[i] != nullptr) {
-    //        delete listModules[i];
-    //        listModules[i] = nullptr;
-    //    }
-    //}
 
     ModuleEditor* editor = static_cast<ModuleEditor*>(listModules[7]);
     NOUS_DELETE<ModuleEditor>(editor, MemoryManager::MemoryTag::APPLICATION);

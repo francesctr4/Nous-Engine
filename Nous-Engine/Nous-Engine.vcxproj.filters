@@ -168,9 +168,6 @@
     <ClCompile Include="Source\VulkanBackend.cpp">
       <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Source\OpenGLBackend.cpp">
-      <Filter>Source Code\Renderer\OpenGL</Filter>
-    </ClCompile>
     <ClCompile Include="Source\VulkanDevice.cpp">
       <Filter>Source Code\Renderer\Vulkan</Filter>
     </ClCompile>
@@ -383,12 +380,6 @@
     </ClCompile>
     <ClCompile Include="Source\ImGuiCustom.cpp">
       <Filter>Source Code\Editor\ImGuiConfig</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Properties.cpp">
-      <Filter>Source Code\Editor\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Assets.cpp">
-      <Filter>Source Code\Editor\Windows</Filter>
     </ClCompile>
     <ClCompile Include="Source\AssetsBrowser.cpp">
       <Filter>Source Code\Editor\Windows</Filter>
@@ -760,9 +751,6 @@
     </ClInclude>
     <ClInclude Include="Source\Vulkan.h">
       <Filter>Source Code\Includes</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\OpenGLBackend.h">
-      <Filter>Source Code\Renderer\OpenGL</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanExternal.h">
       <Filter>Source Code\Renderer\Vulkan</Filter>
@@ -1184,12 +1172,6 @@
     <ClInclude Include="Source\ImGuiCustom.h">
       <Filter>Source Code\Editor\ImGuiConfig</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Properties.h">
-      <Filter>Source Code\Editor\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Assets.h">
-      <Filter>Source Code\Editor\Windows</Filter>
-    </ClInclude>
     <ClInclude Include="Source\AssetsBrowser.h">
       <Filter>Source Code\Editor\Windows</Filter>
     </ClInclude>
@@ -1287,9 +1269,6 @@
     </None>
     <None Include="Source\VulkanTypes.inl">
       <Filter>Source Code\Renderer\Vulkan</Filter>
-    </None>
-    <None Include="Source\OpenGLTypes.inl">
-      <Filter>Source Code\Renderer\OpenGL</Filter>
     </None>
     <None Include="Source\External\MathGeoLib\include\Geometry\KDTree.inl">
       <Filter>Externals\MathGeoLib\Geometry</Filter>

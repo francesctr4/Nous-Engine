@@ -199,7 +199,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Application.cpp" />
-    <ClCompile Include="Source\Assets.cpp" />
     <ClCompile Include="Source\AssetsBrowser.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\DynamicAllocator.cpp" />
@@ -279,8 +278,6 @@
     <ClCompile Include="Source\NOUS_Multithreading.cpp" />
     <ClCompile Include="Source\NOUS_Thread.cpp" />
     <ClCompile Include="Source\NOUS_ThreadPool.cpp" />
-    <ClCompile Include="Source\OpenGLBackend.cpp" />
-    <ClCompile Include="Source\Properties.cpp" />
     <ClCompile Include="Source\Random.cpp" />
     <ClCompile Include="Source\RendererBackend.cpp" />
     <ClCompile Include="Source\RendererFrontend.cpp" />
@@ -316,7 +313,6 @@
   <ItemGroup>
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Asserts.h" />
-    <ClInclude Include="Source\Assets.h" />
     <ClInclude Include="Source\AssetsBrowser.h" />
     <ClInclude Include="Source\Assimp.h" />
     <ClInclude Include="Source\Camera.h" />
@@ -338,7 +334,6 @@
     <ClInclude Include="Source\NOUS_Multithreading.h" />
     <ClInclude Include="Source\NOUS_Thread.h" />
     <ClInclude Include="Source\NOUS_ThreadPool.h" />
-    <ClInclude Include="Source\Properties.h" />
     <ClInclude Include="Source\EventSystem.h" />
     <ClInclude Include="Source\External\Assimp\include\ai_assert.h" />
     <ClInclude Include="Source\External\Assimp\include\anim.h" />
@@ -544,7 +539,6 @@
     <ClInclude Include="Source\ModuleScene.h" />
     <ClInclude Include="Source\ModuleWindow.h" />
     <ClInclude Include="Source\MemoryManager.h" />
-    <ClInclude Include="Source\OpenGLBackend.h" />
     <ClInclude Include="Source\Random.h" />
     <ClInclude Include="Source\RendererBackend.h" />
     <ClInclude Include="Source\RendererFrontend.h" />
@@ -603,7 +597,6 @@
     <None Include="Source\External\MathGeoLib\include\Geometry\TriangleMesh_IntersectRay_SSE.inl" />
     <None Include="Source\External\MathGeoLib\include\Math\Matrix.inl" />
     <None Include="Source\Importer.inl" />
-    <None Include="Source\OpenGLTypes.inl" />
     <None Include="Source\RendererTypes.inl" />
     <None Include="Source\Vertex.inl" />
     <None Include="Source\VulkanTypes.inl" />

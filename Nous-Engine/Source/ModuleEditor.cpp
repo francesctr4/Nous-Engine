@@ -15,8 +15,6 @@
 #pragma region EDITOR WINDOWS
 
 #include "MainMenuBar.h"
-#include "Properties.h"
-#include "Assets.h"
 #include "AssetsBrowser.h"
 #include "ResourcesWindow.h"
 #include "MultithreadingWindow.h"
@@ -109,8 +107,6 @@ bool ModuleEditor::Awake()
 	}
 
 	AddEditorWindow(std::make_unique<MainMenuBar>("MainMenuBar"));
-	//AddEditorWindow(std::make_unique<Properties>("Properties"));
-	//AddEditorWindow(std::make_unique<Assets>("Assets"));
 	AddEditorWindow(std::make_unique<AssetsBrowser>("Assets"));
 	AddEditorWindow(std::make_unique<Resources>("Resources"));
 	AddEditorWindow(std::make_unique<Multithreading>("Multithreading"));
