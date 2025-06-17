@@ -71,8 +71,6 @@ Nous Engine is a modular C++ game engine with a focus on multithreaded performan
 - Event system for modular communication
 - Logging and assertion utilities
 
----
-
 #### 🖼️ Rendering & Graphics
 - Vulkan renderer backend with validation and GPU info logging
 - Offscreen rendering support (Game and Scene viewports)
@@ -80,22 +78,16 @@ Nous Engine is a modular C++ game engine with a focus on multithreaded performan
 - Scene and game cameras
 - 3D geometry and texture loading (supports FBX, OBJ, etc.)
 
----
-
 #### 🛠️ Editor & Tooling
 - ImGui-based editor UI
 - Asset browser for visual resource management
 - Debugging tools: multithreaded job viewer, job queue monitor, memory tools
 - Serialization system for saving/loading resources
 
----
-
 #### 🗃️ File & Resource Management
 - Resource manager with support for meshes, textures, and materials
 - Custom file system for accessing engine assets
 - File-based serialization for components and scene data
-
----
 
 #### 🏗️ Build & Development
 - Cross-platform CMake build system
