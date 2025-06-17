@@ -186,7 +186,7 @@ This section displays the current state of the thread pool and job processing.
 | **Active Threads** | Visual indicator showing how many threads are actively running jobs (green bar). |
 | **Thread Count Spinner** | Lets you configure the number of worker threads. Setting it to `0` disables multithreading. |
 | **Resize Pool Button** | Applies the new thread count, resizing the thread pool at runtime. |
-| **Multithreaded Mode Button** | Indicates if the job system is currently in multithreaded mode. |
+| **Multithreaded Mode** | Indicates if the job system is currently in multithreaded mode. |
 
 ---
 
@@ -200,7 +200,7 @@ Displays the current state of each thread (including the main thread).
 | **Name** | Friendly label for the thread (e.g., Main Thread, Worker Thread 1, etc.). |
 | **State** | Thread status — either `RUNNING` (executing a job) or `READY` (idle). |
 | **Current Job** | The name of the job currently being executed. `None` if the thread is idle. |
-| **Time (s)** | Duration (in seconds) the current job has been running. Useful for spotting long-running tasks. |
+| **Time (s)** | Duration (in seconds) the current job has been running / has taken to complete. |
 
 ---
 
@@ -234,22 +234,22 @@ These shortcuts trigger test jobs and resource loading using the job system for 
 | `F4`   | Submits a job to **load Wolf mesh and material**.                                    |
 | `F5`   | Submits **4 staggered jobs**, each loading a mesh and material with delays.          |
 | `F6`   | Clears all loaded resources on the scene.                                            |
-| `F7`   | Submits a job that **sleeps for 5 seconds**.                                         |
+| `F7`   | Submits a test job that **sleeps for 5 seconds**.                                    |
 | `F8`   | Submits **100 CPU-bound jobs** doing heavy dummy work for stress testing.            |
 
 ---
 
 ### **Known Bugs**
 
-The following issues are primarily related to the **Resource Manager** and the **Vulkan backend implementation**. 
-While these fall outside the core focus of the thesis — which centered on multithreading and job system architecture — they are acknowledged and will be addressed in the near future.
+The following issues are primarily related to the **Resource Manager** and the **Vulkan Renderer Backend**.
+While these fall outside the core focus of the thesis (which is centered on multithreading and the job system architecture), they are acknowledged and will be addressed in the near future:
 
 - Submesh support is currently unimplemented; only a single mesh per entity is rendered.
 - Crashes may occur when uploading multiple instances of the same textured mesh.
 - Vulkan synchronization issues may happen when uploading geometry concurrently (RNG).
 - Vulkan validation layer errors may appear when rendering multiple geometries on the scene.
 
-These issues do not affect the core multithreaded job system, which is functioning as intended.
+These issues do not affect the multithreading implementation, which is functioning as intended.
 
 ---
 
