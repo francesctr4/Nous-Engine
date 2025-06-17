@@ -62,15 +62,46 @@ The practical part of the bachelor's thesis consists on developing a multithread
 
 ### **Features**
 
-#### Resource Manager
-#### Vulkan renderer backend
-#### Multithreading Implementation
-#### Assets Browser
-#### Offscreen Rendering (scene and game viewports)
-#### 3d geometry and texture loading
-#### build system
-#### memory management
-#### modular structure
+Nous Engine is a modular C++ game engine with a focus on multithreaded performance and low-level rendering control. Below is an overview of its key features:
+
+#### 🧠 Core Engine Architecture
+- Modular engine structure (Renderer, Resource Manager, Input, etc.)
+- Multithreading Job System
+- Memory management system with custom allocators and tagging
+- Event system for modular communication
+- Logging and assertion utilities
+
+---
+
+#### 🖼️ Rendering & Graphics
+- Vulkan renderer backend with validation and GPU info logging
+- Offscreen rendering support (Game and Scene viewports)
+- Material system with support for `.nmat` custom materials
+- Scene and game cameras
+- 3D geometry and texture loading (supports FBX, OBJ, etc.)
+
+---
+
+#### 🛠️ Editor & Tooling
+- ImGui-based editor UI
+- Asset browser for visual resource management
+- Debugging tools: multithreaded job viewer, job queue monitor, memory tools
+- Serialization system for saving/loading resources
+
+---
+
+#### 🗃️ File & Resource Management
+- Resource manager with support for meshes, textures, and materials
+- Custom file system for accessing engine assets
+- File-based serialization for components and scene data
+
+---
+
+#### 🏗️ Build & Development
+- Cross-platform CMake build system
+- Written in modern C++ (C++20 standard)
+- Built-in unit testing framework
+- Flexible engine module structure for extensibility
 
 ---
 
