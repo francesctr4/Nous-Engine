@@ -42,6 +42,14 @@ if exist Engine\imgui.ini (
     echo imgui.ini not found, skipping...
 )
 
+REM Copy compile-shaders.bat
+if exist Engine\compile-shaders.bat (
+    echo Copying compile-shaders.bat...
+    copy Engine\compile-shaders.bat %ENGINE_FOLDER%\
+) else (
+    echo compile-shaders.bat not found, skipping...
+)
+
 REM Copy README.md and LICENSE to root of versioned folder (not inside Nous-Engine)
 if exist ..\README.md (
     echo Copying README.md to versioned root...
