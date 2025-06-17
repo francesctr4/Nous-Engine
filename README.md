@@ -64,36 +64,30 @@ The practical part of the bachelor's thesis consists on developing a multithread
 
 Nous Engine is a modular C++ game engine with a focus on multithreaded performance and low-level rendering control. Below is an overview of its key features:
 
-#### 🧠 Core Engine Architecture
+#### Core Engine Architecture
 - Modular engine structure (Renderer, Resource Manager, Input, etc.)
-- Multithreading Job System
+- Thread-based Job System built on top of a Thread Pool
 - Memory management system with custom allocators and tagging
-- Event system for modular communication
+- Event system for module communication
 - Logging and assertion utilities
 
-#### 🖼️ Rendering & Graphics
-- Vulkan renderer backend with validation and GPU info logging
-- Offscreen rendering support (Game and Scene viewports)
-- Material system with support for `.nmat` custom materials
-- Scene and game cameras
-- 3D geometry and texture loading (supports FBX, OBJ, etc.)
+#### Rendering & Graphics
+- Vulkan renderer backend
+- Camera controls
+- Offscreen rendering support (Scene and Game viewports)
+- 3D Geometry, Material and Texture loading
 
-#### 🛠️ Editor & Tooling
-- ImGui-based editor UI
-- Asset browser for visual resource management
-- Debugging tools: multithreaded job viewer, job queue monitor, memory tools
-- Serialization system for saving/loading resources
-
-#### 🗃️ File & Resource Management
+#### File & Resource Management
 - Resource manager with support for meshes, textures, and materials
-- Custom file system for accessing engine assets
-- File-based serialization for components and scene data
+- Custom file system and serialization for accessing engine assets
 
-#### 🏗️ Build & Development
-- Cross-platform CMake build system
-- Written in modern C++ (C++20 standard)
-- Built-in unit testing framework
-- Flexible engine module structure for extensibility
+#### Editor & Debugging Tools
+- ImGui editor UI
+- Asset browser for visual resource management
+- Debugging tools for multithreading and resources
+
+#### Build & Development
+- Custom script to build the engine
 
 ---
 
