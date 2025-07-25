@@ -1,7 +1,6 @@
 # Nous Engine
 ### **A multithreaded, Vulkan-based game engine developed in C++**
 
-![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20%2B-blue)
 
 ---
@@ -14,16 +13,22 @@
 
 This repository contains source code developed as part of my **Bachelor's Thesis (TFG)**:
 
+- **Bachelor's Thesis URL:** [https://hdl.handle.net/2117/439429](https://hdl.handle.net/2117/439429)
+
+- **Video Showcase:** [https://youtu.be/A4NfI6ALey8](https://youtu.be/A4NfI6ALey8)
+
 - **Nous Engine Repository:** [https://github.com/francesctr4/Nous-Engine](https://github.com/francesctr4/Nous-Engine)
 
 - **Multithreading Library:** [https://github.com/francesctr4/NOUS_Multithreading.h](https://github.com/francesctr4/NOUS_Multithreading.h)
 
 **Author:** Francesc Teruel Rodriguez ([francesctr4](https://github.com/francesctr4) on GitHub)  
-**Updated:** 30/06/2025  
-**Version:** 0.3  
+**Created:** 11/07/2025  
+**Version:** 1.0
 
-**License:** MIT License  
-© 2025 Francesc Teruel Rodriguez
+**License:** CC-BY-NC-SA License <br>
+Attribution-NonCommercial-ShareAlike 4.0 International
+
+Copyright (©) 2025 Francesc Teruel Rodríguez
 
 ---
 
