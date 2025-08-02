@@ -1,5 +1,7 @@
+set(PROJECT_NAME "Nous-Engine")
+
 cmake_minimum_required(VERSION 3.21)
-project(HelloCLion)
+project(${PROJECT_NAME} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -184,16 +186,16 @@ set(ALL_SOURCES
         "Source/Utils/Random.h"
 )
 
-add_executable(HelloCLion ${ALL_SOURCES})
+add_executable(${PROJECT_NAME} ${ALL_SOURCES})
 
 # Debug/Release configurations (works for all generators)
-target_compile_definitions(HelloCLion PRIVATE
+target_compile_definitions(${PROJECT_NAME} PRIVATE
         $<$<CONFIG:Debug>:_DEBUG>
         $<$<CONFIG:Release>:_RELEASE;NDEBUG>
 )
 
 if (ENABLE_PROFILING)
-    target_compile_definitions(HelloCLion PRIVATE _PROFILING NDEBUG)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _PROFILING NDEBUG)
 endif()
 
 # Find dependencies
@@ -206,12 +208,12 @@ find_package(Tracy CONFIG REQUIRED)
 find_package(glm REQUIRED)
 
 # Include directories
-target_include_directories(HelloCLion PRIVATE
+target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/Source/  # Adjust if needed
         ${STB_INCLUDE_PATH}          # Explicit path to STB
 )
 
-target_link_libraries(HelloCLion PRIVATE
+target_link_libraries(${PROJECT_NAME} PRIVATE
         SDL3::SDL3
         Vulkan::Vulkan
         assimp::assimp
@@ -224,7 +226,7 @@ target_link_libraries(HelloCLion PRIVATE
 # IDE Source grouping
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/Source" PREFIX "Source Files" FILES ${ALL_SOURCES})
 set_property(GLOBAL PROPERTY USE_FOLDERS TRUE)
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT HelloCLion)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 
 #----------------------------------------------------------------
 # Shader Compilation with CMake (Cross-platform)
@@ -301,7 +303,7 @@ else()
                 DEPENDS ${COMPILED_SHADERS}
                 COMMENT "Compiling all shaders"
         )
-        add_dependencies(HelloCLion CompileShaders)
+        add_dependencies(${PROJECT_NAME} CompileShaders)
     endif()
 endif()
 
@@ -312,11 +314,11 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/Assets)
     add_custom_target(CopyAssets ALL
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/Assets
-            $<TARGET_FILE_DIR:HelloCLion>/Assets
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/Assets
             COMMENT "Updating assets directory"
             VERBATIM
     )
-    add_dependencies(HelloCLion CopyAssets)
+    add_dependencies(${PROJECT_NAME} CopyAssets)
 else()
     message(WARNING "Assets directory not found: ${CMAKE_SOURCE_DIR}/Assets")
 endif()

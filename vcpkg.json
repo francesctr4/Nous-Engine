@@ -1,6 +1,6 @@
 {
-  "name" : "hello-clion",
-  "version-string" : "1.0.0",
+  "name" : "nous-engine",
+  "version-string" : "0.4",
   "builtin-baseline" : "b28d7e55666d6819ec408e392b8e0cdcfc2df6bd",
   "dependencies" : 
   [ 
