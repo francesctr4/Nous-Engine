@@ -57,7 +57,7 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ---
 
-## 📜 **Changelog**
+### **Changelog**
 
 ### v0.4 (Current)
 - **Build System**: Migrated to CMake with vcpkg dependency management
