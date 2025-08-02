@@ -1,11 +1,15 @@
-set(PROJECT_NAME "Nous-Engine")
-
 cmake_minimum_required(VERSION 3.21)
-project(${PROJECT_NAME} LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(CMAKE_CXX_SCAN_FOR_MODULES FALSE)
+set(PROJECT_NAME "Nous-Engine")
+set(PROJECT_VERSION_MAJOR 0)
+set(PROJECT_VERSION_MINOR 4)
+set(PROJECT_VERSION_PATCH 0)
+
+project(${PROJECT_NAME} 
+    VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+    LANGUAGES CXX
+    DESCRIPTION "A multithreaded, Vulkan-based game engine"
+)
 
 # Define ALL_SOURCES once
 set(ALL_SOURCES
@@ -187,6 +191,12 @@ set(ALL_SOURCES
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 23
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
 
 # Debug/Release configurations (works for all generators)
 target_compile_definitions(${PROJECT_NAME} PRIVATE

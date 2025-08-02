@@ -102,7 +102,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	{
 		if (Resource->GetType() == ResourceType::MESH) 
 		{
-			GeometryRenderData testRender;
+			GeometryRenderData testRender{};
 			testRender.geometry = static_cast<ResourceMesh*>(Resource);
 			testRender.model = model;
 
