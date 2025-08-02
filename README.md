@@ -66,22 +66,23 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ### **Changelog**
 
-### v0.4 (Current)
-- **Development Environment**: Migrated project to CLion.
-- **Build System**: Migrated project to CMake with vcpkg dependency management and presets.
-- **Dependencies**: All third-party libraries now managed through vcpkg.
-- **Cross-platform**: Set foundations for the project to work also on Linux and macOS.
-- SDL2 --> SDL3
-- MathGeoLib --> glmath
-- CMake min +3.21
+#### Version 0.4 - After Bachelor's Thesis Delivery (Current)
+- **Development Environment**: Migrated project to **CLion** for improved cross-platform IDE support.
+- **Build System**: Rebuilt the project using **CMake** with support for **vcpkg** (manifest mode) and **CMake presets**.
+- **Dependency Management**: All third-party libraries are now handled through **vcpkg**, simplifying setup and updates.
+- **Cross-Platform Foundations**: Refactored the codebase to begin supporting **Linux** and **macOS**, in addition to Windows.
+- **Library Updates**:
+  - Upgraded from **SDL2 → SDL3**
+  - Replaced **MathGeoLib → glmath** for math utilities
+- **CMake Minimum Version**: Now requires **CMake 3.21 or higher**
 
-### v0.3
+#### Version 0.3
 - **Bachelor's Thesis**: Final Delivery.
 
-### v0.2
+#### Version 0.2
 - **Bachelor's Thesis**: Delivery 2.
 
-### v0.1
+#### Version 0.1
 - **Bachelor's Thesis**: Delivery 1.
 
 ---
