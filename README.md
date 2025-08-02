@@ -94,10 +94,19 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 > 1. **Visual Studio Community 2022**: Download and install [Visual Studio Community 2022](https://visualstudio.microsoft.com/es/free-developer-offers/) with the following workloads:
 >    - Desktop development with C++
 >    - Make sure to include the latest C++ toolset and Windows SDK.
+> 
 > 2. **Vulkan SDK 1.3.296.0**: Download and install the [Vulkan SDK 1.3.296.0](https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe). This provides the Vulkan runtime, headers, and tools (like `glslc` for shader compilation).
+> 
+> 3. **CMake (≥ 3.21)**: Build system.
+> 
+> 4. **Ninja**: Build generator (specified in CMakePresets).
+> 
+> 5. **C++23 Compiler**: e.g., MSVC, GCC ≥ 11, Clang ≥ 14...
+>
+> 6. **vcpkg**: [Clone the repository](https://github.com/microsoft/vcpkg) on the same parent directory as this project (e.g. Nous-Engine/../vcpkg).
 >
 > #### Additional Dependencies (Managed by vcpkg)
-> The project uses **vcpkg** to manage the following dependencies. They will be automatically installed and built when configuring the project with CMake (if vcpkg is set up as the toolchain).
+> The project uses **vcpkg** to manage the following dependencies. They will be automatically installed and built when configuring the project with CMake.
 >
 > - **SDL3** (with Vulkan support enabled)
 > - **Vulkan** (Headers and libraries)
@@ -108,44 +117,10 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 > - **Tracy** (Profiling tool)
 > - **GLM** (Mathematics library for graphics)
 >
-> #### C++ Standard
-> The project requires **C++23**. The compiler must support C++23 (e.g., MSVC in Visual Studio 2022 with the `/std:c++20` flag or later; note that the project sets `/std:c++23` in CMake).
-> ## 📦 Installing Dependencies with vcpkg
-
-To install all required dependencies in classic mode:
-
-```
-# Install Nous Engine dependencies using vcpkg (classic mode)
-vcpkg install vulkan sdl3[vulkan] assimp imgui[docking-experimental,sdl3-binding,sdl3-renderer-binding,vulkan-binding] stb parson tracy glm
-```
-
-```
-1. Core Dependencies
-CMake (≥ 3.21) - Build system
-
-Ninja - Build generator (specified in CMakePresets)
-
-Vulkan SDK - For Vulkan headers, loader, and glslc shader compiler
-
-C++23 Compiler (e.g., MSVC, GCC ≥ 11, Clang ≥ 14)
-
-2. Vcpkg Dependencies (Managed via vcpkg.json)
-SDL3 (with Vulkan support)
-
-Vulkan (Graphics API)
-
-Assimp (Asset loading)
-
-Dear ImGui (with docking, SDL3, Vulkan bindings)
-
-STB (Image loading)
-
-Parson (JSON parsing)
-
-Tracy (Profiling)
-
-GLM (Math library)
-```
+> To install all required dependencies in classic mode:
+> ```
+> vcpkg install vulkan sdl3[vulkan] assimp imgui[docking-experimental,sdl3-binding,sdl3-renderer-binding,vulkan-binding] stb parson tracy glm
+> ```
 
 ---
 
