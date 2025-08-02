@@ -1,7 +1,8 @@
 # Nous Engine
 ### **A multithreaded, Vulkan-based game engine developed in C++**
 
-![C++20](https://img.shields.io/badge/C%2B%2B-20%2B-blue)
+![GitHub repo size](https://img.shields.io/github/repo-size/francesctr4/Nous-Engine)
+![C++23](https://img.shields.io/badge/C%2B%2B-23%2B-blue)
 
 ---
 
@@ -111,6 +112,7 @@ Nous Engine is a modular C++ game engine with a focus on multithreaded performan
 > #### It is also _required_ to download the [Vulkan SDK 1.3.296.0](https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe) to execute the engine.
 > #### Nous Engine uses ISO C++20 Standard (compile with `/std:c++20` or `-std=c++20`) or newer.
 
+## WORK IN PROGRESS -> VCPKG AND CMAKE 
 ---
 
 ### Third Party Libraries
