@@ -71,6 +71,8 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 - **Build System**: Migrated project to CMake with vcpkg dependency management and presets.
 - **Dependencies**: All third-party libraries now managed through vcpkg.
 - **Cross-platform**: Set foundations for the project to work also on Linux and macOS.
+- SDL2 --> SDL3
+- MathGeoLib --> glmath
 
 ### v0.3
 - **Bachelor's Thesis**: Final Delivery.
