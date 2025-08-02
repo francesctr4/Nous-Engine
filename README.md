@@ -2,7 +2,14 @@
 ### **A multithreaded, Vulkan-based game engine developed in C++**
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/francesctr4/Nous-Engine)
-![C++23](https://img.shields.io/badge/C%2B%2B-23%2B-blue)
+
+![C++23](https://img.shields.io/badge/C%2B%2B-23%2B-00599C?style=flat&logo=c%2B%2B&logoColor=white)
+![SDL3](https://img.shields.io/badge/SDL3-8B4513?style=flat&logo=sdl&logoColor=white)
+![Vulkan](https://img.shields.io/badge/Vulkan-AC162C?style=flat&logo=vulkan&logoColor=white)
+
+![CLion](https://img.shields.io/badge/CLion-000000?style=flat&logo=clion&logoColor=white)
+![CMake](https://img.shields.io/badge/CMake-064F8C?style=flat&logo=cmake&logoColor=white)
+![vcpkg](https://img.shields.io/badge/vcpkg-8f4b8d?style=flat&logo=github&logoColor=white)
 
 ---
 
@@ -60,32 +67,19 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 ### **Changelog**
 
 ### v0.4 (Current)
-- **Build System**: Migrated to CMake with vcpkg dependency management
-- **Dependencies**: All third-party libraries now managed through vcpkg
-- **Core**: Improved Vulkan resource loading synchronization
-- **Editor**: Added resource loading progress indicators
-- **Multithreading**: Enhanced job system monitoring tools
+- **Development Environment**: Migrated project to CLion.
+- **Build System**: Migrated project to CMake with vcpkg dependency management and presets.
+- **Dependencies**: All third-party libraries now managed through vcpkg.
+- **Cross-platform**: Set foundations for the project to work also on Linux and macOS.
 
 ### v0.3
-- **Build System**: Migrated to CMake with vcpkg dependency management
-- **Dependencies**: All third-party libraries now managed through vcpkg
-- **Core**: Improved Vulkan resource loading synchronization
-- **Editor**: Added resource loading progress indicators
-- **Multithreading**: Enhanced job system monitoring tools
+- **Bachelor's Thesis**: Final Delivery.
 
 ### v0.2
-- **Build System**: Migrated to CMake with vcpkg dependency management
-- **Dependencies**: All third-party libraries now managed through vcpkg
-- **Core**: Improved Vulkan resource loading synchronization
-- **Editor**: Added resource loading progress indicators
-- **Multithreading**: Enhanced job system monitoring tools
+- **Bachelor's Thesis**: Delivery 2.
 
 ### v0.1
-- Core engine architecture with modular systems
-- Vulkan-based renderer with multi-viewport support
-- Thread-based job system with dynamic pool scaling
-- Resource manager with async loading
-- ImGui-based editor interface
+- **Bachelor's Thesis**: Delivery 1.
 
 ---
 
