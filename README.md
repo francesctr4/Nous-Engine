@@ -49,9 +49,9 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 - [Home](#nous-engine)
 - [Changelog](#changelog)
+- [Dependencies](#dependencies)
 - [Context](#context)
 - [Features](#features)
-- [Dependencies](#dependencies)
 - [Third Party Libraries](#third-party-libraries)
 - [Third Party Assets](#third-party-assets)
 - [Installation](#installation)
@@ -73,6 +73,44 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 - **Cross-platform**: Set foundations for the project to work also on Linux and macOS.
 - SDL2 --> SDL3
 - MathGeoLib --> glmath
+- CMake min +3.21
+
+## 📦 Installing Dependencies with vcpkg
+
+To install all required dependencies in classic mode:
+
+```
+# Install Nous Engine dependencies using vcpkg (classic mode)
+vcpkg install vulkan sdl3[vulkan] assimp imgui[docking-experimental,sdl3-binding,sdl3-renderer-binding,vulkan-binding] stb parson tracy glm
+```
+
+```
+1. Core Dependencies
+CMake (≥ 3.21) - Build system
+
+Ninja - Build generator (specified in CMakePresets)
+
+Vulkan SDK - For Vulkan headers, loader, and glslc shader compiler
+
+C++23 Compiler (e.g., MSVC, GCC ≥ 11, Clang ≥ 14)
+
+2. Vcpkg Dependencies (Managed via vcpkg.json)
+SDL3 (with Vulkan support)
+
+Vulkan (Graphics API)
+
+Assimp (Asset loading)
+
+Dear ImGui (with docking, SDL3, Vulkan bindings)
+
+STB (Image loading)
+
+Parson (JSON parsing)
+
+Tracy (Profiling)
+
+GLM (Math library)
+```
 
 ### v0.3
 - **Bachelor's Thesis**: Final Delivery.
@@ -82,6 +120,25 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ### v0.1
 - **Bachelor's Thesis**: Delivery 1.
+
+---
+
+### **Dependencies**  
+
+> [!IMPORTANT]
+> #### It is _required_ to download [Visual Studio Community 2022](https://visualstudio.microsoft.com/es/free-developer-offers/) with the following extension to execute the engine.
+> <table>
+>   <tr>
+>     <td align="center">
+>       <img src="https://github.com/Clapcom-Studios/Alien-Extraction/assets/99948892/ded6aef0-c9ff-4666-95cb-3123b605b5cf" alt="Image 2"/>
+>     </td>
+>   </tr>
+> </table>
+>
+> #### It is also _required_ to download the [Vulkan SDK 1.3.296.0](https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe) to execute the engine.
+> #### Nous Engine uses ISO C++20 Standard (compile with `/std:c++20` or `-std=c++20`) or newer.
+
+## WORK IN PROGRESS -> VCPKG AND CMAKE 
 
 ---
 
@@ -124,24 +181,6 @@ Nous Engine is a modular C++ game engine with a focus on multithreaded performan
 #### Build & Development
 - Custom script to build the engine
 
----
-
-### **Dependencies**  
-
-> [!IMPORTANT]
-> #### It is _required_ to download [Visual Studio Community 2022](https://visualstudio.microsoft.com/es/free-developer-offers/) with the following extension to execute the engine.
-> <table>
->   <tr>
->     <td align="center">
->       <img src="https://github.com/Clapcom-Studios/Alien-Extraction/assets/99948892/ded6aef0-c9ff-4666-95cb-3123b605b5cf" alt="Image 2"/>
->     </td>
->   </tr>
-> </table>
->
-> #### It is also _required_ to download the [Vulkan SDK 1.3.296.0](https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe) to execute the engine.
-> #### Nous Engine uses ISO C++20 Standard (compile with `/std:c++20` or `-std=c++20`) or newer.
-
-## WORK IN PROGRESS -> VCPKG AND CMAKE 
 ---
 
 ### Third Party Libraries
