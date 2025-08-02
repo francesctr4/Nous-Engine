@@ -1,0 +1,34 @@
+{
+  "name" : "hello-clion",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "b28d7e55666d6819ec408e392b8e0cdcfc2df6bd",
+  "dependencies" : 
+  [ 
+    {
+      "name" : "vulkan"
+    }, 
+    {
+      "name" : "sdl3",
+      "features": [ "vulkan" ]
+    }, 
+    {
+      "name" : "assimp"
+    }, 
+    {
+      "name" : "imgui",
+      "features": [ "docking-experimental", "sdl3-binding", "sdl3-renderer-binding", "vulkan-binding" ]
+    }, 
+    {
+      "name" : "stb"
+    }, 
+    {
+      "name" : "parson"
+    }, 
+    {
+      "name" : "tracy"
+    },
+    {
+      "name" : "glm"
+    }
+  ]
+}

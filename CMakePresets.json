@@ -1,0 +1,160 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/Build/${presetName}",
+      "toolchainFile": "${sourceDir}/../vcpkg/scripts/buildsystems/vcpkg.cmake"
+    },
+    {
+      "name": "debug-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "profiling-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "ENABLE_PROFILING": "ON"
+      }
+    },
+    {
+      "name": "release-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "Debug-Windows",
+      "displayName": "Debug-Windows",
+      "inherits": "debug-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "Profiling-Windows",
+      "displayName": "Profiling-Windows",
+      "inherits": "profiling-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "Release-Windows",
+      "displayName": "Release-Windows",
+      "inherits": "release-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "Debug-Linux",
+      "displayName": "Debug-Linux",
+      "inherits": "debug-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      }
+    },
+    {
+      "name": "Profiling-Linux",
+      "displayName": "Profiling-Linux",
+      "inherits": "profiling-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      }
+    },
+    {
+      "name": "Release-Linux",
+      "displayName": "Release-Linux",
+      "inherits": "release-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      }
+    },
+    {
+      "name": "Debug-macOS",
+      "displayName": "Debug-macOS",
+      "inherits": "debug-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-osx"
+      }
+    },
+    {
+      "name": "Profiling-macOS",
+      "displayName": "Profiling-macOS",
+      "inherits": "profiling-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-osx"
+      }
+    },
+    {
+      "name": "Release-macOS",
+      "displayName": "Release-macOS",
+      "inherits": "release-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-osx"
+      }
+    }
+  ]
+}
