@@ -31,7 +31,7 @@ This repository contains source code developed as part of my **Bachelor's Thesis
 
 **Author:** Francesc Teruel Rodriguez ([francesctr4](https://github.com/francesctr4) on GitHub)  
 **Created:** 11/07/2025  
-**Version:** 1.0
+**Published Version:** v0.3
 
 **License:** CC-BY-NC-SA License <br>
 Attribution-NonCommercial-ShareAlike 4.0 International
