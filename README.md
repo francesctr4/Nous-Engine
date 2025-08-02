@@ -41,6 +41,7 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 ## 📚 **Table of Contents**
 
 - [Home](#nous-engine)
+- [Changelog](#changelog)
 - [Context](#context)
 - [Features](#features)
 - [Dependencies](#dependencies)
@@ -53,6 +54,38 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
   - [Debug Keys](#debug-keys)
 - [Known Bugs](#known-bugs)
 - [Future Roadmap](#future-roadmap)
+
+---
+
+## 📜 **Changelog**
+
+### v0.4 (Current)
+- **Build System**: Migrated to CMake with vcpkg dependency management
+- **Dependencies**: All third-party libraries now managed through vcpkg
+- **Core**: Improved Vulkan resource loading synchronization
+- **Editor**: Added resource loading progress indicators
+- **Multithreading**: Enhanced job system monitoring tools
+
+### v0.3
+- **Build System**: Migrated to CMake with vcpkg dependency management
+- **Dependencies**: All third-party libraries now managed through vcpkg
+- **Core**: Improved Vulkan resource loading synchronization
+- **Editor**: Added resource loading progress indicators
+- **Multithreading**: Enhanced job system monitoring tools
+
+### v0.2
+- **Build System**: Migrated to CMake with vcpkg dependency management
+- **Dependencies**: All third-party libraries now managed through vcpkg
+- **Core**: Improved Vulkan resource loading synchronization
+- **Editor**: Added resource loading progress indicators
+- **Multithreading**: Enhanced job system monitoring tools
+
+### v0.1
+- Core engine architecture with modular systems
+- Vulkan-based renderer with multi-viewport support
+- Thread-based job system with dynamic pool scaling
+- Resource manager with async loading
+- ImGui-based editor interface
 
 ---
 
