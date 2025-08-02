@@ -75,7 +75,41 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 - MathGeoLib --> glmath
 - CMake min +3.21
 
-## 📦 Installing Dependencies with vcpkg
+### v0.3
+- **Bachelor's Thesis**: Final Delivery.
+
+### v0.2
+- **Bachelor's Thesis**: Delivery 2.
+
+### v0.1
+- **Bachelor's Thesis**: Delivery 1.
+
+---
+
+### **Dependencies**  
+
+> [!IMPORTANT]
+> #### For Windows Development and Execution
+> 1. **Visual Studio Community 2022**: Download and install [Visual Studio Community 2022](https://visualstudio.microsoft.com/es/free-developer-offers/) with the following workloads:
+>    - Desktop development with C++
+>    - Make sure to include the latest C++ toolset and Windows SDK.
+> 2. **Vulkan SDK 1.3.296.0**: Download and install the [Vulkan SDK 1.3.296.0](https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe). This provides the Vulkan runtime, headers, and tools (like `glslc` for shader compilation).
+>
+> #### Additional Dependencies (Managed by vcpkg)
+> The project uses **vcpkg** to manage the following dependencies. They will be automatically installed and built when configuring the project with CMake (if vcpkg is set up as the toolchain).
+>
+> - **SDL3** (with Vulkan support enabled)
+> - **Vulkan** (Headers and libraries)
+> - **Assimp** (Asset import library)
+> - **Dear ImGui** (with features: docking-experimental, SDL3-binding, SDL3-renderer-binding, Vulkan-binding)
+> - **STB** (Single-file image loading library)
+> - **Parson** (Lightweight JSON library)
+> - **Tracy** (Profiling tool)
+> - **GLM** (Mathematics library for graphics)
+>
+> #### C++ Standard
+> The project requires **C++23**. The compiler must support C++23 (e.g., MSVC in Visual Studio 2022 with the `/std:c++20` flag or later; note that the project sets `/std:c++23` in CMake).
+> ## 📦 Installing Dependencies with vcpkg
 
 To install all required dependencies in classic mode:
 
@@ -112,35 +146,9 @@ Tracy (Profiling)
 GLM (Math library)
 ```
 
-### v0.3
-- **Bachelor's Thesis**: Final Delivery.
-
-### v0.2
-- **Bachelor's Thesis**: Delivery 2.
-
-### v0.1
-- **Bachelor's Thesis**: Delivery 1.
-
 ---
 
-### **Dependencies**  
-
-> [!IMPORTANT]
-> #### It is _required_ to download [Visual Studio Community 2022](https://visualstudio.microsoft.com/es/free-developer-offers/) with the following extension to execute the engine.
-> <table>
->   <tr>
->     <td align="center">
->       <img src="https://github.com/Clapcom-Studios/Alien-Extraction/assets/99948892/ded6aef0-c9ff-4666-95cb-3123b605b5cf" alt="Image 2"/>
->     </td>
->   </tr>
-> </table>
->
-> #### It is also _required_ to download the [Vulkan SDK 1.3.296.0](https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe) to execute the engine.
-> #### Nous Engine uses ISO C++20 Standard (compile with `/std:c++20` or `-std=c++20`) or newer.
-
-## WORK IN PROGRESS -> VCPKG AND CMAKE 
-
----
+## Nous Engine v0.3
 
 ### **Context**
 
