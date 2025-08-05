@@ -11,7 +11,10 @@
 #include "Utils/Logger.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 
+#ifdef _PROFILING
 #include "Includes/Tracy.h"
+#endif
+
 #include "Includes/SDL3.h"
 
 #include "Systems/Time Management/TimeManager.h"
