@@ -188,6 +188,8 @@ set(ALL_SOURCES
         "Source/Utils/MathUtils.h"
         "Source/Utils/Random.cpp"
         "Source/Utils/Random.h"
+        "Source/Scripting System/IScript.inl"
+        "Source/Scripting System/ScriptTemplate.inl"
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
