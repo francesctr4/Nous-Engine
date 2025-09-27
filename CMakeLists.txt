@@ -190,6 +190,11 @@ set(ALL_SOURCES
         "Source/Utils/Random.h"
         "Source/Scripting System/IScript.inl"
         "Source/Scripting System/ScriptTemplate.inl"
+        "Source/Scripting System/ScriptRegistry.h"
+        "Source/Scripting System/ScriptRegistryExport.h"
+        "Source/Scripting System/ScriptRegistration.h"
+        "Source/Scripting System/ScriptRegistry.cpp"
+        "Source/Scripting System/ScriptRegistryExport.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
@@ -334,3 +339,8 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/Assets)
 else()
     message(WARNING "Assets directory not found: ${CMAKE_SOURCE_DIR}/Assets")
 endif()
+
+#----------------------------------------------------------------
+# Scripts Library Configuration
+#----------------------------------------------------------------
+add_subdirectory("Source/Scripting System")
