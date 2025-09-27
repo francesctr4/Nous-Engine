@@ -8,6 +8,9 @@
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "Systems/Camera System/Camera.h"
 
+#include "Scripting System/ScriptManager.h"
+#include "Scripting System/IScript.inl"
+
 ModuleScene::ModuleScene(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -34,6 +37,20 @@ bool ModuleScene::Awake()
 bool ModuleScene::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	// In your main engine code
+	ScriptManager scriptManager;
+
+	// Load the script library
+	scriptManager.LoadScriptLibrary("../../Scripts/Scripts.dll"); // or .so on Linux
+
+	// Create script instances (this should be done for each script, without knowing their names).
+	IScript* playerController = scriptManager.CreateScriptInstance("PlayerController");
+	if (playerController)
+	{
+		playerController->Awake();
+		playerController->Start();
+	}
 
 	return true;
 }

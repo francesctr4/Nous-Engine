@@ -195,6 +195,8 @@ set(ALL_SOURCES
         "Source/Scripting System/ScriptRegistration.h"
         "Source/Scripting System/ScriptRegistry.cpp"
         "Source/Scripting System/ScriptRegistryExport.cpp"
+        "Source/Scripting System/ScriptManager.h"
+        "Source/Scripting System/ScriptManager.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})

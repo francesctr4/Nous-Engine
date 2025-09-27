@@ -12,6 +12,7 @@
 
 // ----- HEADER FILES ----- //
 /*coding_start::PlayerController*/
+#include <iostream>
 /*coding_end::PlayerController*/
 
 class PlayerController : public IScript
@@ -33,6 +34,7 @@ public:
     void Awake() override
     {
         /*coding_start::PlayerController::Awake*/
+        std::cout << "HOLA HOLA HOLA HOLA" << std::endl;
         /*coding_end::PlayerController::Awake*/
     }
 
