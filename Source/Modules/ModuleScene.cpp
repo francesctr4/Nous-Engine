@@ -45,12 +45,17 @@ bool ModuleScene::Start()
 	scriptManager.LoadScriptLibrary("Scripts/Scripts.dll"); // or .so on Linux
 
 	// Create script instances (this should be done for each script, without knowing their names).
-	IScript* playerController = scriptManager.CreateScriptInstance("PlayerController");
-	if (playerController)
-	{
-		playerController->Awake();
-		playerController->Start();
-	}
+	std::vector<IScript*> scripts;
+    scripts.emplace_back(scriptManager.CreateScriptInstance("PlayerController"));
+    scripts.emplace_back(scriptManager.CreateScriptInstance("Test"));
+
+    for (auto& script : scripts)
+    {
+        script->Awake();
+        script->Start();
+    }
+
+    scriptManager.UnloadScriptLibrary();
 
 	return true;
 }
