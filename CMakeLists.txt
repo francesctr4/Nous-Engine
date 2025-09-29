@@ -194,9 +194,10 @@ set(ALL_SOURCES
         "Source/Scripting System/ScriptRegistryExport.h"
         "Source/Scripting System/ScriptRegistration.h"
         "Source/Scripting System/ScriptRegistry.cpp"
-        "Source/Scripting System/ScriptRegistryExport.cpp"
         "Source/Scripting System/ScriptManager.h"
         "Source/Scripting System/ScriptManager.cpp"
+        "Source/Scripting System/Bindings/CPP_Logger_Bindings.h"
+        "Source/Scripting System/Bindings/CPP_Logger_Bindings.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
@@ -346,3 +347,4 @@ endif()
 # Scripts Library Configuration
 #----------------------------------------------------------------
 add_subdirectory("Source/Scripting System")
+add_dependencies(${PROJECT_NAME} Scripts)

@@ -29,7 +29,7 @@ private:
     std::unordered_map<std::string, Factory> factories;
 };
 
-// 🔹 declare global registry here
-extern SCRIPTS_API ScriptRegistry g_ScriptRegistry;
+// instead of exposing a global variable, expose a function:
+extern "C" SCRIPTS_API ScriptRegistry* GetScriptRegistry();
 
 #endif //NOUS_ENGINE_SCRIPTREGISTRY_H

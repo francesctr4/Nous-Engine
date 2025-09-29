@@ -36,6 +36,8 @@ private:
     void* LoadDLL(const std::string& path);
     void UnloadLibrary(void* handle);
     void* GetSymbol(void* handle, const std::string& symbol);
+
+    void BuildScriptsDLL();
 };
 
 #endif //NOUS_ENGINE_SCRIPTMANAGER_H

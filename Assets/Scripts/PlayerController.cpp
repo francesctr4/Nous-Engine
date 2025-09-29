@@ -35,6 +35,7 @@ public:
     {
         /*coding_start::PlayerController::Awake*/
         std::cout << "HOLA HOLA HOLA HOLA" << std::endl;
+        std::cout << "ADIOS ADIOS ADIOS ADIOS" << std::endl;
         /*coding_end::PlayerController::Awake*/
     }
 

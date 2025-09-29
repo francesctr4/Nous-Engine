@@ -74,6 +74,17 @@ ScriptManager::GetAvailableScripts() const {
     return m_scriptRegistry ? m_scriptRegistry->GetAll() : empty;
 }
 
+void ScriptManager::BuildScriptsDLL()
+{
+    // TODO: Need to test this properly on the engine
+    // Change working directory to your build folder
+    int result = std::system(
+            "cmake --build \".\" --target Scripts --config Debug-Windows");
+
+    if (result != 0)
+        std::cerr << "Failed to build Scripts DLL!" << std::endl;
+}
+
 // Platform-specific implementations
 void* ScriptManager::LoadDLL(const std::string& path) {
 #ifdef _WIN32

@@ -1,4 +1,8 @@
 #include "Scripting System/ScriptRegistry.h"
 
-// Define the global registry instance
-ScriptRegistry g_ScriptRegistry;
+// function-local static ensures safe initialization
+extern "C" SCRIPTS_API inline ScriptRegistry* GetScriptRegistry()
+{
+    static ScriptRegistry instance;
+    return &instance;
+}

@@ -14,7 +14,6 @@ file(GLOB_RECURSE SCRIPT_SOURCES
 # Also include registry files
 list(APPEND SCRIPT_SOURCES
         "${CMAKE_SOURCE_DIR}/Source/Scripting System/ScriptRegistry.cpp"
-        "${CMAKE_SOURCE_DIR}/Source/Scripting System/ScriptRegistryExport.cpp"
 )
 
 # Create the DLL (shared library)
@@ -30,7 +29,6 @@ set_target_properties(Scripts PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${SCRIPTS_OUTPUT_DIR}"
         LIBRARY_OUTPUT_DIRECTORY "${SCRIPTS_OUTPUT_DIR}"
         ARCHIVE_OUTPUT_DIRECTORY "${SCRIPTS_OUTPUT_DIR}"
-        OUTPUT_NAME "Scripts"  # Consistent naming
 )
 
 # Include dirs so scripts can find engine headers

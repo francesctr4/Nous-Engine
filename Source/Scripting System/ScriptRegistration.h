@@ -7,10 +7,11 @@
 namespace { \
     struct AutoRegister_##CLASS { \
         AutoRegister_##CLASS() { \
-            g_ScriptRegistry.Register(#CLASS, [](){ return new CLASS(); }); \
+            GetScriptRegistry()->Register(#CLASS, [](){ return new CLASS(); }); \
+            printf("[ScriptRegistry] Registered: %s\n", #CLASS); \
         } \
     }; \
-    AutoRegister_##CLASS autoRegisterInstance_##CLASS; \
+    static AutoRegister_##CLASS autoRegisterInstance_##CLASS; \
 }
 
 #endif //NOUS_ENGINE_SCRIPTREGISTRATION_H

@@ -42,7 +42,7 @@ bool ModuleScene::Start()
 	ScriptManager scriptManager;
 
 	// Load the script library
-	scriptManager.LoadScriptLibrary("../../Scripts/Scripts.dll"); // or .so on Linux
+	scriptManager.LoadScriptLibrary("Scripts/Scripts.dll"); // or .so on Linux
 
 	// Create script instances (this should be done for each script, without knowing their names).
 	IScript* playerController = scriptManager.CreateScriptInstance("PlayerController");
