@@ -9,10 +9,10 @@
 
 #include "Scripting System/Internal/IScript.inl"
 #include "Scripting System/Internal/ScriptRegistry.inl"
+#include "Scripting System/Bindings/EngineAPI.h"
 
 // ----- HEADER FILES ----- //
 /*coding_start::PlayerController*/
-#include <iostream>
 /*coding_end::PlayerController*/
 
 class PlayerController : public IScript
@@ -22,26 +22,33 @@ public:
     PlayerController()
     {
         /*coding_start::PlayerController::PlayerController*/
+        Nous_Engine->Logger.Warn(__FUNCTION__);
         /*coding_end::PlayerController::PlayerController*/
     }
 
     ~PlayerController() override
     {
         /*coding_start::PlayerController::~PlayerController*/
+        Nous_Engine->Logger.Warn(__FUNCTION__);
         /*coding_end::PlayerController::~PlayerController*/
     }
 
     void Awake() override
     {
         /*coding_start::PlayerController::Awake*/
-        std::cout << "HOLA HOLA HOLA HOLA" << std::endl;
-        std::cout << "ADIOS ADIOS ADIOS ADIOS" << std::endl;
+        for (int i = 0; i < 5; i++)
+        {
+            Nous_Engine->Logger.Fatal("HOLA!");
+        }
+        Nous_Engine->Logger.Fatal("ADIOS ADIOS ADIOS ADIOS");
+        Nous_Engine->Logger.Warn(__FUNCTION__);
         /*coding_end::PlayerController::Awake*/
     }
 
     void Start() override
     {
         /*coding_start::PlayerController::Start*/
+        Nous_Engine->Logger.Warn(__FUNCTION__);
         /*coding_end::PlayerController::Start*/
     }
 

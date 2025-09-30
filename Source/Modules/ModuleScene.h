@@ -4,6 +4,8 @@
 #include "Modules/Module.h"
 
 class Camera;
+class IScript;
+class ScriptManager;
 
 class ModuleScene : public Module
 {
@@ -29,6 +31,10 @@ public:
 public:
 
 	Camera* gameCamera;
+
+	// Scripting
+	ScriptManager* scriptManager;
+	std::vector<IScript*> scripts;
 
 };
 

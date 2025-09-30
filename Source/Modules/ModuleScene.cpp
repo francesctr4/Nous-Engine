@@ -16,6 +16,16 @@ ModuleScene::ModuleScene(Application* app) : Module(app)
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	gameCamera = NOUS_NEW<Camera>(MemoryManager::MemoryTag::GAME);
+	scriptManager = NOUS_NEW<ScriptManager>(MemoryManager::MemoryTag::GAME);
+
+	// Load the script library
+	scriptManager->LoadScriptLibrary("Scripts/Scripts.dll"); // or .so on Linux
+
+	// Create script instances (this should be done for each script, without knowing their names).
+	scripts.emplace_back(scriptManager->CreateScriptInstance("PlayerController"));
+	scripts.emplace_back(scriptManager->CreateScriptInstance("Test"));
+	scripts.emplace_back(scriptManager->CreateScriptInstance("NEW_TEST"));
+	scripts.emplace_back(scriptManager->CreateScriptInstance("Rykan"));
 }
 
 ModuleScene::~ModuleScene()
@@ -23,6 +33,7 @@ ModuleScene::~ModuleScene()
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	NOUS_DELETE<Camera>(gameCamera, MemoryManager::MemoryTag::GAME);
+	NOUS_DELETE<ScriptManager>(scriptManager, MemoryManager::MemoryTag::GAME);
 }
 
 bool ModuleScene::Awake()
@@ -31,6 +42,11 @@ bool ModuleScene::Awake()
 
 	gameCamera->SetPos(-4.61f, 100.0f, 718.32f);
 
+	for (auto& script : scripts)
+	{
+		script->Awake();
+	}
+
 	return true;
 }
 
@@ -38,25 +54,10 @@ bool ModuleScene::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	// In your main engine code
-	ScriptManager scriptManager;
-
-	// Load the script library
-	scriptManager.LoadScriptLibrary("Scripts/Scripts.dll"); // or .so on Linux
-
-	// Create script instances (this should be done for each script, without knowing their names).
-	std::vector<IScript*> scripts;
-    scripts.emplace_back(scriptManager.CreateScriptInstance("PlayerController"));
-    scripts.emplace_back(scriptManager.CreateScriptInstance("Test"));
-	scripts.emplace_back(scriptManager.CreateScriptInstance("NEW_TEST"));
-
     for (auto& script : scripts)
     {
-        script->Awake();
         script->Start();
     }
-
-    scriptManager.UnloadScriptLibrary();
 
 	return true;
 }
@@ -173,18 +174,31 @@ UpdateStatus ModuleScene::Update(float dt)
 		}
 	}
 
+	for (auto& script : scripts)
+	{
+		script->Update(dt);
+	}
+
 	return UPDATE_CONTINUE;
 }
 
 UpdateStatus ModuleScene::PostUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	for (auto& script : scripts)
+	{
+		script->LateUpdate(dt);
+	}
+
 	return UPDATE_CONTINUE;
 }
 
 bool ModuleScene::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	scriptManager->UnloadScriptLibrary();
 
 	return true;
 }

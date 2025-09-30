@@ -8,6 +8,7 @@
 #include "Scripting System/Internal/ScriptRegistry.inl"
 
 class IScript;
+struct EngineAPI;
 
 class ScriptManager
 {
@@ -29,8 +30,10 @@ public:
     bool IsLibraryLoaded() const { return m_libraryHandle != nullptr; }
 
 private:
+
     void* m_libraryHandle;
     ScriptRegistry* m_scriptRegistry;
+    EngineAPI* api;
 
     // Platform-specific library handling
     void* LoadDLL(const std::string& path);

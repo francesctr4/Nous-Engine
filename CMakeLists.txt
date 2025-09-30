@@ -193,8 +193,9 @@ set(ALL_SOURCES
         "Source/Scripting System/Internal/ScriptRegistry.inl"
         "Source/Scripting System/ScriptManager.h"
         "Source/Scripting System/ScriptManager.cpp"
-        "Source/Scripting System/Bindings/CPP_Logger_Bindings.h"
-        "Source/Scripting System/Bindings/CPP_Logger_Bindings.cpp"
+        "Source/Scripting System/Bindings/ScriptBindings.h"
+        "Source/Scripting System/Bindings/ScriptBindings.cpp"
+        "Source/Scripting System/Bindings/EngineAPI.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})

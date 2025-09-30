@@ -9,6 +9,7 @@
 
 #include "Scripting System/Internal/IScript.inl"
 #include "Scripting System/Internal/ScriptRegistry.inl"
+#include "Scripting System/Bindings/EngineAPI.h"
 
 // ----- HEADER FILES ----- //
 /*coding_start::Test*/

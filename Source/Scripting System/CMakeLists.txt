@@ -9,6 +9,7 @@ set(SCRIPTS_OUTPUT_DIR "${CMAKE_BINARY_DIR}/Scripts")
 file(GLOB_RECURSE SCRIPT_SOURCES
         CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/Assets/Scripts/*.cpp"
+        "${CMAKE_SOURCE_DIR}/Source/Scripting System/Bindings/EngineAPI.cpp"
 )
 
 # Create the DLL (shared library)

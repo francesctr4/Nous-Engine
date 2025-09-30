@@ -1,6 +1,8 @@
 #include "Scripting System/ScriptManager.h"
 #include "Scripting System/Internal/ScriptRegistry.inl"
 #include "Utils/Logger.h"
+#include "Scripting System/Bindings/ScriptBindings.h"
+#include "Systems/Memory Manager/MemoryManager.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -10,11 +12,14 @@
 
 ScriptManager::ScriptManager() : m_libraryHandle(nullptr), m_scriptRegistry(nullptr)
 {
-
+    api = NOUS_NEW<EngineAPI>(MemoryManager::MemoryTag::GAME);
 }
 
-ScriptManager::~ScriptManager() {
+ScriptManager::~ScriptManager()
+{
     UnloadScriptLibrary();
+
+    NOUS_DELETE(api, MemoryManager::MemoryTag::GAME);
 }
 
 bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
@@ -43,7 +48,22 @@ bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
         return false;
     }
 
+    ScriptBindings::SetupAllBindings(*api);
+
+    // Set the API pointer inside the scripts DLL
+    using SetEngineAPIFunc = void(*)(EngineAPI*);
+    auto setEngineAPIFunc = reinterpret_cast<SetEngineAPIFunc>(
+            GetSymbol(m_libraryHandle, "SetEngineAPI")
+    );
+
+    if (setEngineAPIFunc) {
+        setEngineAPIFunc(api);
+    } else {
+        NOUS_ERROR("Failed to find SetEngineAPI in script library");
+    }
+
     NOUS_INFO("Script library loaded successfully: %s", dllPath.c_str());
+
     return true;
 }
 
