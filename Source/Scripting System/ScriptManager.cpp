@@ -1,5 +1,5 @@
 #include "Scripting System/ScriptManager.h"
-#include "Scripting System/ScriptRegistry.h"
+#include "Scripting System/Internal/ScriptRegistry.inl"
 #include "Utils/Logger.h"
 
 #ifdef _WIN32
@@ -8,8 +8,9 @@
 #include <dlfcn.h>
 #endif
 
-ScriptManager::ScriptManager()
-        : m_libraryHandle(nullptr), m_scriptRegistry(nullptr) {
+ScriptManager::ScriptManager() : m_libraryHandle(nullptr), m_scriptRegistry(nullptr)
+{
+
 }
 
 ScriptManager::~ScriptManager() {

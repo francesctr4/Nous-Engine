@@ -7,8 +7,8 @@
  *     coding_start and coding_end
  ****************************************************/
 
-#include "Scripting System/IScript.inl"
-#include "Scripting System/ScriptRegistration.h"
+#include "Scripting System/Internal/IScript.inl"
+#include "Scripting System/Internal/ScriptRegistry.inl"
 
 // ----- HEADER FILES ----- //
 /*coding_start::$CLASSNAME$*/

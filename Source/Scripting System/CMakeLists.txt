@@ -11,11 +11,6 @@ file(GLOB_RECURSE SCRIPT_SOURCES
         "${CMAKE_SOURCE_DIR}/Assets/Scripts/*.cpp"
 )
 
-# Also include registry files
-list(APPEND SCRIPT_SOURCES
-        "${CMAKE_SOURCE_DIR}/Source/Scripting System/ScriptRegistry.cpp"
-)
-
 # Create the DLL (shared library)
 add_library(Scripts SHARED ${SCRIPT_SOURCES})
 

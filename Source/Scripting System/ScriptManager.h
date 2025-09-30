@@ -5,7 +5,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include "Scripting System/ScriptRegistry.h"
+#include "Scripting System/Internal/ScriptRegistry.inl"
 
 class IScript;
 

@@ -9,7 +9,7 @@
 #include "Systems/Camera System/Camera.h"
 
 #include "Scripting System/ScriptManager.h"
-#include "Scripting System/IScript.inl"
+#include "Scripting System/Internal/IScript.inl"
 
 ModuleScene::ModuleScene(Application* app) : Module(app)
 {
@@ -48,6 +48,7 @@ bool ModuleScene::Start()
 	std::vector<IScript*> scripts;
     scripts.emplace_back(scriptManager.CreateScriptInstance("PlayerController"));
     scripts.emplace_back(scriptManager.CreateScriptInstance("Test"));
+	scripts.emplace_back(scriptManager.CreateScriptInstance("NEW_TEST"));
 
     for (auto& script : scripts)
     {

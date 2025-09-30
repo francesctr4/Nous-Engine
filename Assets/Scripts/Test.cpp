@@ -7,8 +7,8 @@
  *     coding_start and coding_end
  ****************************************************/
 
-#include "Scripting System/IScript.inl"
-#include "Scripting System/ScriptRegistration.h"
+#include "Scripting System/Internal/IScript.inl"
+#include "Scripting System/Internal/ScriptRegistry.inl"
 
 // ----- HEADER FILES ----- //
 /*coding_start::Test*/
@@ -34,7 +34,7 @@ public:
     void Awake() override
     {
         /*coding_start::Test::Awake*/
-        std::cout << "This is a test" << std::endl;
+        std::cout << "This is a NOT" << std::endl;
         /*coding_end::Test::Awake*/
     }
 

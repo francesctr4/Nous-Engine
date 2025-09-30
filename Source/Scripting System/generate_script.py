@@ -9,7 +9,7 @@ if len(sys.argv) < 2:
 classname = sys.argv[1]
 
 # Read the template
-with open("ScriptTemplate.inl", "r") as f:
+with open("Internal/ScriptTemplate.inl", "r") as f:
     template = f.read()
 
 # Replace the placeholder with the actual class name
