@@ -68,15 +68,30 @@ bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
 }
 
 void ScriptManager::UnloadScriptLibrary() {
-    if (m_libraryHandle) {
+    if (m_libraryHandle)
+    {
         UnloadLibrary(m_libraryHandle);
         m_libraryHandle = nullptr;
         m_scriptRegistry = nullptr;
     }
 }
 
-bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath) {
-    NOUS_INFO("Reloading script library: %s", dllPath.c_str());
+bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
+{
+    NOUS_FATAL("Reloading script library...");
+
+    // Save currently active scripts if you want persistence
+    // For now, just unload everything.
+    UnloadScriptLibrary();
+
+    int result = std::system("\"..\\..\\Source\\Scripting System\\rebuildscripts.bat\"");
+
+    if (result == 0) {
+        NOUS_INFO("Scripts recompiled successfully!");
+    } else {
+        NOUS_ERROR("Scripts recompilation failed!");
+    }
+
     return LoadScriptLibrary(dllPath);
 }
 
@@ -117,7 +132,24 @@ void* ScriptManager::LoadDLL(const std::string& path) {
 
 void ScriptManager::UnloadLibrary(void* handle) {
 #ifdef _WIN32
-    if (handle) FreeLibrary(static_cast<HMODULE>(handle));
+    if (handle)
+    {
+        if (!FreeLibrary(static_cast<HMODULE>(handle)))
+        {
+            DWORD err = GetLastError();
+            printf("[ERROR] FreeLibrary failed, error code: %lu\n", err);
+        } else {
+            printf("[INFO] FreeLibrary succeeded.\n");
+        }
+
+        if (DeleteFileA("Scripts/Scripts.dll")) {
+            printf("[INFO] DLL file can be deleted => FreeLibrary worked.\n");
+        } else {
+            DWORD err = GetLastError();
+            printf("[WARN] Could not delete DLL (error %lu).\n", err);
+        }
+    }
+
 #else
     if (handle) dlclose(handle);
 #endif

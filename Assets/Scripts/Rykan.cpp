@@ -47,6 +47,10 @@ public:
     void Update(float deltaTime) override
     {
         /*coding_start::Rykan::Update*/
+        for (int i = 0; i < 10; i++)
+        {
+            Nous_Engine->Logger.Fatal("HOT-RELOAD TEST");
+        }
         /*coding_end::Rykan::Update*/
     }
 

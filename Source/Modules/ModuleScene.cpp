@@ -72,6 +72,11 @@ UpdateStatus ModuleScene::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	for (auto& script : scripts)
+	{
+		script->Update(dt);
+	}
+
 	if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN) 
 	{
 		App->jobSystem->SubmitJob([this]()
@@ -174,10 +179,10 @@ UpdateStatus ModuleScene::Update(float dt)
 		}
 	}
 
-	for (auto& script : scripts)
-	{
-		script->Update(dt);
-	}
+    if (App->input->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
+    {
+		scriptManager->ReloadScriptLibrary("Scripts/Scripts.dll");
+    }
 
 	return UPDATE_CONTINUE;
 }
