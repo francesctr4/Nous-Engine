@@ -36,6 +36,9 @@ public:
 	ScriptManager* scriptManager;
 	std::vector<IScript*> scripts;
 
+	void CreateScriptInstances();
+	void RecompileScripts();
+	void CleanupScripts();
 };
 
 #endif // MODULESCENE_H

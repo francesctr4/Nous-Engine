@@ -19,18 +19,20 @@ ModuleScene::ModuleScene(Application* app) : Module(app)
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryManager::MemoryTag::GAME);
 
 	// Load the script library
-	scriptManager->LoadScriptLibrary("Scripts/Scripts.dll"); // or .so on Linux
+	if (!scriptManager->LoadScriptLibrary("Scripts/Scripts.dll")) {
+		NOUS_ERROR("Failed to load script library on startup");
+	}
 
-	// Create script instances (this should be done for each script, without knowing their names).
-	scripts.emplace_back(scriptManager->CreateScriptInstance("PlayerController"));
-	scripts.emplace_back(scriptManager->CreateScriptInstance("Test"));
-	scripts.emplace_back(scriptManager->CreateScriptInstance("NEW_TEST"));
-	scripts.emplace_back(scriptManager->CreateScriptInstance("Rykan"));
+	// Create script instances
+	CreateScriptInstances();
 }
 
 ModuleScene::~ModuleScene()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	// Clean up scripts before destroying script manager
+	CleanupScripts();
 
 	NOUS_DELETE<Camera>(gameCamera, MemoryManager::MemoryTag::GAME);
 	NOUS_DELETE<ScriptManager>(scriptManager, MemoryManager::MemoryTag::GAME);
@@ -44,7 +46,9 @@ bool ModuleScene::Awake()
 
 	for (auto& script : scripts)
 	{
-		script->Awake();
+		if (script) {
+			script->Awake();
+		}
 	}
 
 	return true;
@@ -54,10 +58,12 @@ bool ModuleScene::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-    for (auto& script : scripts)
-    {
-        script->Start();
-    }
+	for (auto& script : scripts)
+	{
+		if (script) {
+			script->Start();
+		}
+	}
 
 	return true;
 }
@@ -72,80 +78,87 @@ UpdateStatus ModuleScene::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	for (auto& script : scripts)
-	{
-		script->Update(dt);
+	// Update only valid scripts
+	for (auto it = scripts.begin(); it != scripts.end(); ) {
+		if (*it) {
+			(*it)->Update(dt);
+			++it;
+		} else {
+			// Remove null scripts
+			it = scripts.erase(it);
+		}
 	}
 
-	if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN) 
+	// [Your existing F1-F8 code remains the same...]
+	if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
 	{
 		App->jobSystem->SubmitJob([this]()
-			{
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
-			}, "Render Lagiacrus");
+								  {
+									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
+									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
+								  }, "Render Lagiacrus");
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
 	{
 		App->jobSystem->SubmitJob([this]()
-			{
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
-			}, "Render Cypher");
+								  {
+									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
+									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
+								  }, "Render Cypher");
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
 	{
 		App->jobSystem->SubmitJob([this]()
-			{
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
-			}, "Render Queen Xenomorph");
+								  {
+									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
+									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
+								  }, "Render Queen Xenomorph");
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
 	{
 		App->jobSystem->SubmitJob([this]()
-			{
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
-			}, "Render Wolf");
+								  {
+									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
+									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
+								  }, "Render Wolf");
 	}
 
-	if (App->input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN) 
+	if (App->input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN)
 	{
 		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
-			}, "Render Lagiacrus");
+								  {
+									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
+									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
+								  }, "Render Lagiacrus");
 
 		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
-			}, "Render Cypher");
+								  {
+									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
+									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
+								  }, "Render Cypher");
 
 		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
-			}, "Render Queen Xenomorph");
+								  {
+									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
+									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
+								  }, "Render Queen Xenomorph");
 
 		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
-				NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-				mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
-			}, "Render Wolf");
+								  {
+									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
+									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
+									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
+								  }, "Render Wolf");
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_F6) == KeyState::DOWN)
@@ -156,9 +169,9 @@ UpdateStatus ModuleScene::Update(float dt)
 	if (App->input->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
 	{
 		App->jobSystem->SubmitJob([this]()
-			{
-				NOUS_Multithreading::NOUS_Thread::SleepMS(5000);
-			}, "Test");
+								  {
+									  NOUS_Multithreading::NOUS_Thread::SleepMS(5000);
+								  }, "Test");
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_F8) == KeyState::DOWN)
@@ -166,23 +179,29 @@ UpdateStatus ModuleScene::Update(float dt)
 		for (int i = 0; i < 100; ++i)
 		{
 			App->jobSystem->SubmitJob([]
-				{
-					std::chrono::milliseconds duration(500);
-					auto start = std::chrono::steady_clock::now();
+									  {
+										  std::chrono::milliseconds duration(500);
+										  auto start = std::chrono::steady_clock::now();
 
-					while (std::chrono::steady_clock::now() - start < duration)
-					{
-						std::sqrt(123.456); // Dummy CPU-bound work
-					}
+										  while (std::chrono::steady_clock::now() - start < duration)
+										  {
+											  std::sqrt(123.456); // Dummy CPU-bound work
+										  }
 
-				}, "Stress Test");
+									  }, "Stress Test");
 		}
 	}
 
-    if (App->input->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
-    {
-		scriptManager->ReloadScriptLibrary("Scripts/Scripts.dll");
-    }
+	if (App->input->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
+	{
+		NOUS_INFO("Initiating script hot-reload...");
+
+		App->jobSystem->SubmitJob([this]
+		{
+			RecompileScripts();
+
+		}, "Scripts Hot-Reload");
+	}
 
 	return UPDATE_CONTINUE;
 }
@@ -193,7 +212,9 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 
 	for (auto& script : scripts)
 	{
-		script->LateUpdate(dt);
+		if (script) {
+			script->LateUpdate(dt);
+		}
 	}
 
 	return UPDATE_CONTINUE;
@@ -203,6 +224,7 @@ bool ModuleScene::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	CleanupScripts();
 	scriptManager->UnloadScriptLibrary();
 
 	return true;
@@ -222,4 +244,63 @@ void ModuleScene::ReceiveEvent(const Event& event)
 			break;
 		}
 	}
+}
+
+void ModuleScene::CreateScriptInstances() {
+	// Clear any existing scripts first
+	CleanupScripts();
+
+	// Create new script instances
+	const char* scriptNames[] = {
+			"PlayerController",
+			"Test",
+			"NEW_TEST",
+			"Rykan"
+	};
+
+	for (const char* name : scriptNames) {
+		IScript* script = scriptManager->CreateScriptInstance(name);
+		if (script) {
+			scripts.emplace_back(script);
+			NOUS_INFO("Created script instance: %s", name);
+		} else {
+			NOUS_WARN("Failed to create script instance: %s", name);
+		}
+	}
+}
+
+void ModuleScene::RecompileScripts()
+{
+	// Clean up current scripts
+	CleanupScripts();
+
+	// Reload the script library
+	if (scriptManager->ReloadScriptLibrary("Scripts/Scripts.dll")) {
+		// Recreate script instances
+		CreateScriptInstances();
+
+		// Re-initialize scripts
+		for (auto &script: scripts) {
+			if (script) {
+				script->Awake();
+				script->Start();
+			}
+		}
+		NOUS_INFO("Script hot-reload completed successfully");
+	} else {
+		NOUS_ERROR("Script hot-reload failed");
+	}
+}
+
+
+void ModuleScene::CleanupScripts() {
+	// Call cleanup on all scripts first
+	for (auto& script : scripts) {
+		if (script) {
+			// Note: If your IScript has a cleanup/destructor method, call it here
+			delete script;
+		}
+	}
+	scripts.clear();
+	NOUS_INFO("Cleaned up all script instances");
 }

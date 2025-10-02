@@ -3,6 +3,7 @@
 #include "Utils/Logger.h"
 #include "Scripting System/Bindings/ScriptBindings.h"
 #include "Systems/Memory Manager/MemoryManager.h"
+#include "MultiThreading/NOUS_Multithreading.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -18,7 +19,6 @@ ScriptManager::ScriptManager() : m_libraryHandle(nullptr), m_scriptRegistry(null
 ScriptManager::~ScriptManager()
 {
     UnloadScriptLibrary();
-
     NOUS_DELETE(api, MemoryManager::MemoryTag::GAME);
 }
 
@@ -63,36 +63,80 @@ bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
     }
 
     NOUS_INFO("Script library loaded successfully: %s", dllPath.c_str());
-
     return true;
 }
 
 void ScriptManager::UnloadScriptLibrary() {
     if (m_libraryHandle)
     {
+        // Clear registry before unloading
+        m_scriptRegistry = nullptr;
+
         UnloadLibrary(m_libraryHandle);
         m_libraryHandle = nullptr;
-        m_scriptRegistry = nullptr;
+
+        // Small delay to ensure DLL is fully unloaded
+        NOUS_Multithreading::NOUS_Thread::SleepMS(100);
     }
 }
 
 bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
 {
-    NOUS_FATAL("Reloading script library...");
+    NOUS_INFO("Reloading script library...");
 
-    // Save currently active scripts if you want persistence
-    // For now, just unload everything.
+    // Unload current library first
     UnloadScriptLibrary();
 
+    // Build the scripts
     int result = std::system("\"..\\..\\Source\\Scripting System\\rebuildscripts.bat\"");
 
     if (result == 0) {
         NOUS_INFO("Scripts recompiled successfully!");
     } else {
         NOUS_ERROR("Scripts recompilation failed!");
+        return false;
+    }
+
+    // Wait for file system and ensure DLL can be loaded
+    if (!WaitForDLLUnload(dllPath)) {
+        NOUS_ERROR("DLL is still locked, cannot reload");
+        return false;
     }
 
     return LoadScriptLibrary(dllPath);
+}
+
+bool ScriptManager::WaitForDLLUnload(const std::string& dllPath, int maxRetries) {
+#ifdef _WIN32
+    for (int i = 0; i < maxRetries; ++i) {
+        HANDLE fileHandle = CreateFileA(
+                dllPath.c_str(),
+                GENERIC_READ,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                NULL,
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
+                NULL
+        );
+
+        if (fileHandle != INVALID_HANDLE_VALUE) {
+            CloseHandle(fileHandle);
+            return true; // File is accessible
+        }
+
+        DWORD error = GetLastError();
+        if (error == ERROR_SHARING_VIOLATION) {
+            // DLL is still locked, wait and retry
+            NOUS_Multithreading::NOUS_Thread::SleepMS(50);
+        } else if (error == ERROR_FILE_NOT_FOUND) {
+            // DLL doesn't exist yet (might be compiling)
+            NOUS_Multithreading::NOUS_Thread::SleepMS(100);
+        } else {
+            break; // Other error
+        }
+    }
+#endif
+    return true; // On non-Windows or if we can't check, just proceed
 }
 
 IScript* ScriptManager::CreateScriptInstance(const std::string& scriptName) {
@@ -101,24 +145,11 @@ IScript* ScriptManager::CreateScriptInstance(const std::string& scriptName) {
         return nullptr;
     }
 
-    return m_scriptRegistry->Create(scriptName);
-}
-
-const std::unordered_map<std::string, ScriptRegistry::Factory>&
-ScriptManager::GetAvailableScripts() const {
-    static std::unordered_map<std::string, ScriptRegistry::Factory> empty;
-    return m_scriptRegistry ? m_scriptRegistry->GetAll() : empty;
-}
-
-void ScriptManager::BuildScriptsDLL()
-{
-    // TODO: Need to test this properly on the engine
-    // Change working directory to your build folder
-    int result = std::system(
-            "cmake --build \".\" --target Scripts --config Debug-Windows");
-
-    if (result != 0)
-        std::cerr << "Failed to build Scripts DLL!" << std::endl;
+    IScript* script = m_scriptRegistry->Create(scriptName);
+    if (!script) {
+        NOUS_ERROR("Failed to create script instance: %s", scriptName.c_str());
+    }
+    return script;
 }
 
 // Platform-specific implementations
@@ -134,22 +165,10 @@ void ScriptManager::UnloadLibrary(void* handle) {
 #ifdef _WIN32
     if (handle)
     {
-        if (!FreeLibrary(static_cast<HMODULE>(handle)))
-        {
-            DWORD err = GetLastError();
-            printf("[ERROR] FreeLibrary failed, error code: %lu\n", err);
-        } else {
-            printf("[INFO] FreeLibrary succeeded.\n");
-        }
-
-        if (DeleteFileA("Scripts/Scripts.dll")) {
-            printf("[INFO] DLL file can be deleted => FreeLibrary worked.\n");
-        } else {
-            DWORD err = GetLastError();
-            printf("[WARN] Could not delete DLL (error %lu).\n", err);
-        }
+        // Don't try to delete the file here - that's unsafe
+        // Let the build system handle file management
+        FreeLibrary(static_cast<HMODULE>(handle));
     }
-
 #else
     if (handle) dlclose(handle);
 #endif
