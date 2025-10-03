@@ -22,6 +22,7 @@
 #include "Editor/Windows/JobQueueWindow.h"
 #include "Editor/Windows/SceneViewport.h"
 #include "Editor/Windows/GameViewport.h"
+#include "Editor/Windows/HierarchyWindow.h"
 
 #pragma endregion
 
@@ -114,6 +115,7 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(std::make_unique<JobQueue>("Job Queue"));
 	AddEditorWindow(std::make_unique<GameViewport>("Game"));
 	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
+	AddEditorWindow(std::make_unique<HierarchyWindow>("Hierarchy"));
 
 	return true;
 }

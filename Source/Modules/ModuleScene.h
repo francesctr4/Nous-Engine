@@ -3,6 +3,8 @@
 
 #include "Modules/Module.h"
 
+class Scene;
+class GameObject;
 class Camera;
 class IScript;
 class ScriptManager;
@@ -30,6 +32,8 @@ public:
 
 public:
 
+	Scene* activeScene;
+	GameObject* selectedGameObject;
 	Camera* gameCamera;
 
 	// Scripting

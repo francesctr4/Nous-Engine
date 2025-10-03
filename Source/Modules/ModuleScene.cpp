@@ -11,10 +11,14 @@
 #include "Scripting System/ScriptManager.h"
 #include "Scripting System/Internal/IScript.inl"
 
+#include "ECS/Scene.h"
+#include "ECS/GameObject.h"
+
 ModuleScene::ModuleScene(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	activeScene = NOUS_NEW<Scene>(MemoryManager::MemoryTag::GAME);
 	gameCamera = NOUS_NEW<Camera>(MemoryManager::MemoryTag::GAME);
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryManager::MemoryTag::GAME);
 
@@ -36,6 +40,7 @@ ModuleScene::~ModuleScene()
 
 	NOUS_DELETE<Camera>(gameCamera, MemoryManager::MemoryTag::GAME);
 	NOUS_DELETE<ScriptManager>(scriptManager, MemoryManager::MemoryTag::GAME);
+	NOUS_DELETE<Scene>(activeScene, MemoryManager::MemoryTag::GAME);
 }
 
 bool ModuleScene::Awake()
@@ -43,6 +48,14 @@ bool ModuleScene::Awake()
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	gameCamera->SetPos(-4.61f, 100.0f, 718.32f);
+
+	// Add some game objects
+	GameObject* player = activeScene->CreateGameObject("Player");
+	GameObject* enemy  = activeScene->CreateGameObject("Enemy");
+
+	activeScene->CreateGameObject("Sword", player);
+	activeScene->CreateGameObject("Shield", player);
+	activeScene->CreateGameObject("Gun", enemy);
 
 	for (auto& script : scripts)
 	{

@@ -196,6 +196,14 @@ set(ALL_SOURCES
         "Source/Scripting System/Bindings/ScriptBindings.h"
         "Source/Scripting System/Bindings/ScriptBindings.cpp"
         "Source/Scripting System/Bindings/EngineAPI.cpp"
+        Source/ECS/GameObject.h
+        Source/ECS/Scene.h
+        Source/ECS/Components/ComponentTransform.h
+        Source/ECS/Components/ComponentMesh.h
+        Source/ECS/Components/ComponentMaterial.h
+        Source/ECS/Components/ComponentScript.h
+        Source/Editor/Windows/HierarchyWindow.cpp
+        Source/Editor/Windows/HierarchyWindow.h
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
@@ -224,6 +232,8 @@ find_package(imgui CONFIG REQUIRED)
 find_package(parson CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
 find_package(glm REQUIRED)
+find_package(EnTT CONFIG REQUIRED)
+find_package(imguizmo CONFIG REQUIRED)
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -239,6 +249,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         parson::parson
         Tracy::TracyClient
         glm::glm
+        EnTT::EnTT
+        imguizmo::imguizmo
 )
 
 # IDE Source grouping
