@@ -14,6 +14,9 @@
 #include "ECS/Scene.h"
 #include "ECS/GameObject.h"
 
+#include "ECS/Components/ComponentMesh.h"
+#include "ECS/Components/ComponentMaterial.h"
+
 ModuleScene::ModuleScene(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -106,10 +109,22 @@ UpdateStatus ModuleScene::Update(float dt)
 	if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
 	{
 		App->jobSystem->SubmitJob([this]()
-								  {
-									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
-									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
-								  }, "Render Lagiacrus");
+			{
+                GameObject* go = activeScene->CreateGameObject("Lagiacrus Head");
+
+                auto& meshComp = go->AddComponent<CMesh>();
+                meshComp.mesh = down_cast<ResourceMesh*>(
+                        App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx")
+                );
+
+                auto& matComp = go->AddComponent<CMaterial>();
+                matComp.material = down_cast<ResourceMaterial*>(
+                        App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat")
+                );
+
+                meshComp.mesh->material = matComp.material;
+
+			}, "Render Lagiacrus");
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)

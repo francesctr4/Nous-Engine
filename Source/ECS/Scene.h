@@ -3,6 +3,8 @@
 
 #include <entt/entt.hpp>
 #include "GameObject.h"
+#include "Core/Application.h"
+#include "Modules/ModuleScene.h"
 
 class Scene {
 public:
@@ -31,6 +33,11 @@ public:
         auto childrenCopy = go->GetChildren(); // copy, since we'll modify
         for (auto* child : childrenCopy) {
             DestroyGameObject(child);
+        }
+
+        // If this object was selected → clear selection
+        if (External->scene->selectedGameObject == go) {
+            External->scene->selectedGameObject = nullptr;
         }
 
         // Remove from parent’s children

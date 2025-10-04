@@ -204,6 +204,8 @@ set(ALL_SOURCES
         Source/ECS/Components/ComponentScript.h
         Source/Editor/Windows/HierarchyWindow.cpp
         Source/Editor/Windows/HierarchyWindow.h
+        Source/Editor/Windows/InspectorWindow.cpp
+        Source/Editor/Windows/InspectorWindow.h
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})

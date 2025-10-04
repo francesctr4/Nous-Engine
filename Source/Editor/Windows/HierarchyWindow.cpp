@@ -29,6 +29,15 @@ void HierarchyWindow::Draw() {
                                                 m_Scene->GetName().c_str());
 
                 if (opened) {
+
+                    if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
+                        if (!ImGui::IsAnyItemHovered()) {
+                            m_Selected = nullptr;
+                            // Optionally notify the application/inspector:
+                            External->scene->selectedGameObject = m_Selected;
+                        }
+                    }
+
                     // Draw only root-level objects
                     for (auto& goPtr : m_Scene->GetGameObjects())
                     {
@@ -42,6 +51,10 @@ void HierarchyWindow::Draw() {
 
                 // Process deletion first
                 for (auto* go : m_ToDelete) {
+                    if (External->scene->selectedGameObject == go) {
+                        m_Selected = nullptr;
+                        External->scene->selectedGameObject = nullptr;
+                    }
                     m_Scene->DestroyGameObject(go);
                 }
                 m_ToDelete.clear();
@@ -73,7 +86,7 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go) {
     if (ImGui::IsItemClicked()) {
         m_Selected = go;
         // Optionally notify the application/inspector:
-        External->scene->selectedGameObject = go;
+        External->scene->selectedGameObject = m_Selected;
     }
 
     // Right-click menu
@@ -99,7 +112,8 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go) {
             IM_ASSERT(payload->DataSize == sizeof(GameObject*));
             GameObject* draggedGO = *(GameObject**)payload->Data;
 
-            if (draggedGO != go && !IsChildOf(go, draggedGO)) {
+            // Don't allow dropping onto itself or any of its own children
+            if (draggedGO != go && !IsChildOf(draggedGO, go)) {
                 m_ToReparent.push_back({ draggedGO, go });
             }
         }
