@@ -215,9 +215,6 @@ bool NOUS_GeometrySystem::CreateDefaultGeometry(GeometrySystemState* state)
     //    return false;
     //}
 
-    // Acquire the default material.
-    state->defaultGeometry.material = NOUS_MaterialSystem::GetDefaultMaterial();
-
     return true;
 }
 

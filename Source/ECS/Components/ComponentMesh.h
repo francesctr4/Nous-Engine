@@ -8,7 +8,8 @@
 #include "Systems/Resource Manager/Resource Types/ResourceMesh.h"
 #include "Modules/ModuleResourceManager.h"
 
-struct CMesh {
+struct CMesh : public Component {
+    COMPONENT_TYPE(CMesh)
     ResourceMesh* mesh = nullptr;
 
     ~CMesh() {

@@ -31,9 +31,6 @@
       "name" : "glm"
     },
     {
-      "name" : "entt"
-    },
-    {
       "name" : "imguizmo"
     }
   ]

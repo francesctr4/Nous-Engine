@@ -16,6 +16,7 @@
 
 #include "ECS/Components/ComponentMesh.h"
 #include "ECS/Components/ComponentMaterial.h"
+#include "ECS/Components/ComponentTransform.h"
 
 ModuleScene::ModuleScene(Application* app) : Module(app)
 {
@@ -105,89 +106,94 @@ UpdateStatus ModuleScene::Update(float dt)
 		}
 	}
 
-	// [Your existing F1-F8 code remains the same...]
-	if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
-	{
-		App->jobSystem->SubmitJob([this]()
-			{
-                GameObject* go = activeScene->CreateGameObject("Lagiacrus Head");
+    if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
+    {
+        App->jobSystem->SubmitJob([this]()
+                                  {
+                                      GameObject* go = activeScene->CreateGameObject("Lagiacrus Head");
 
-                auto& meshComp = go->AddComponent<CMesh>();
-                meshComp.mesh = down_cast<ResourceMesh*>(
-                        App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx")
-                );
+                                      auto& meshComp = go->AddComponent<CMesh>();
+                                      meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
 
-                auto& matComp = go->AddComponent<CMaterial>();
-                matComp.material = down_cast<ResourceMaterial*>(
-                        App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat")
-                );
+                                      auto& matComp = go->AddComponent<CMaterial>();
+                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
 
-                meshComp.mesh->material = matComp.material;
+                                  }, "Render Lagiacrus");
+    }
 
-			}, "Render Lagiacrus");
-	}
+    if (App->input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
+    {
+        App->jobSystem->SubmitJob([this]()
+                                  {
+                                      GameObject* go = activeScene->CreateGameObject("Cypher");
 
-	if (App->input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
-	{
-		App->jobSystem->SubmitJob([this]()
-								  {
-									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
-									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
-								  }, "Render Cypher");
-	}
+                                      auto& meshComp = go->AddComponent<CMesh>();
+                                      meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
 
-	if (App->input->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
-	{
-		App->jobSystem->SubmitJob([this]()
-								  {
-									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
-									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
-								  }, "Render Queen Xenomorph");
-	}
+                                      auto& matComp = go->AddComponent<CMaterial>();
+                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
 
-	if (App->input->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
-	{
-		App->jobSystem->SubmitJob([this]()
-								  {
-									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
-									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
-								  }, "Render Wolf");
-	}
+                                  }, "Render Cypher");
+    }
 
-	if (App->input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN)
-	{
-		App->jobSystem->SubmitJob([this]()
-								  {
-									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
-									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
-								  }, "Render Lagiacrus");
+    if (App->input->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
+    {
+        App->jobSystem->SubmitJob([this]()
+                                  {
+                                      GameObject* go = activeScene->CreateGameObject("Queen Xenomorph");
 
-		App->jobSystem->SubmitJob([this]()
-								  {
-									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
-									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
-								  }, "Render Cypher");
+                                      auto& meshComp = go->AddComponent<CMesh>();
+                                      meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
 
-		App->jobSystem->SubmitJob([this]()
-								  {
-									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
-									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
-								  }, "Render Queen Xenomorph");
+                                      auto& matComp = go->AddComponent<CMaterial>();
+                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
 
-		App->jobSystem->SubmitJob([this]()
-								  {
-									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-									  ResourceMesh* mesh2 = static_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
-									  NOUS_Multithreading::NOUS_Thread::SleepMS(1000);
-									  mesh2->material = static_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
-								  }, "Render Wolf");
-	}
+                                  }, "Render Queen Xenomorph");
+    }
+
+    if (App->input->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
+    {
+        App->jobSystem->SubmitJob([this]()
+                                  {
+                                      GameObject* go = activeScene->CreateGameObject("Wolf");
+
+                                      auto& meshComp = go->AddComponent<CMesh>();
+                                      meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
+
+                                      auto& matComp = go->AddComponent<CMaterial>();
+                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
+
+                                  }, "Render Wolf");
+    }
+
+// Optional: Batch creation with delays (like your F5 example)
+    if (App->input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN)
+    {
+        struct ModelData { const char* name; const char* meshPath; const char* matPath; const char* jobName; };
+        std::vector<ModelData> models = {
+                {"Lagiacrus Head", "Assets/Meshes/Lagiacrus_Head.fbx", "Assets/Materials/Lagiacrus_Head.nmat", "Render Lagiacrus"},
+                {"Cypher", "Assets/Meshes/Cypher_S0_Skelmesh.fbx", "Assets/Materials/cypher_material.nmat", "Render Cypher"},
+                {"Queen Xenomorph", "Assets/Meshes/Queen_Xenomorph.fbx", "Assets/Materials/queen_xenomorph.nmat", "Render Queen Xenomorph"},
+                {"Wolf", "Assets/Meshes/Wolf.obj", "Assets/Materials/wolf_material.nmat", "Render Wolf"}
+        };
+
+        for (const auto& model : models)
+        {
+            App->jobSystem->SubmitJob([this, model]()
+                                      {
+                                          GameObject* go = activeScene->CreateGameObject(model.name);
+
+                                          auto& meshComp = go->AddComponent<CMesh>();
+                                          meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource(model.meshPath));
+
+                                          NOUS_Multithreading::NOUS_Thread::SleepMS(1000); // optional delay
+
+                                          auto& matComp = go->AddComponent<CMaterial>();
+                                          matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource(model.matPath));
+
+                                      }, model.jobName);
+        }
+    }
 
 	if (App->input->GetKey(SDL_SCANCODE_F6) == KeyState::DOWN)
 	{

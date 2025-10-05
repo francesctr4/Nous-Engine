@@ -206,6 +206,7 @@ set(ALL_SOURCES
         Source/Editor/Windows/HierarchyWindow.h
         Source/Editor/Windows/InspectorWindow.cpp
         Source/Editor/Windows/InspectorWindow.h
+        Source/ECS/Component.h
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
@@ -234,7 +235,6 @@ find_package(imgui CONFIG REQUIRED)
 find_package(parson CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
 find_package(glm REQUIRED)
-find_package(EnTT CONFIG REQUIRED)
 find_package(imguizmo CONFIG REQUIRED)
 
 # Include directories
@@ -251,7 +251,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         parson::parson
         Tracy::TracyClient
         glm::glm
-        EnTT::EnTT
         imguizmo::imguizmo
 )
 

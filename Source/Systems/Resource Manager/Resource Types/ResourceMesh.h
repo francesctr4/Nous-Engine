@@ -25,8 +25,6 @@ public:
 
 	std::vector<Vertex3D> vertices;
 	std::vector<uint32> indices;
-
-	ResourceMaterial* material;
 };
 
 #endif // RESOURCEMESH_H

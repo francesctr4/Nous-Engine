@@ -17,6 +17,11 @@
 
 #include "Includes/glmath.h"
 
+#include "ECS/Scene.h"
+#include "ECS/Components/ComponentMesh.h"
+#include "ECS/Components/ComponentTransform.h"
+#include "ECS/Components/ComponentMaterial.h"
+
 RendererFrontend* ModuleRenderer3D::rendererFrontend = nullptr;
 
 // Temp
@@ -98,17 +103,50 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
     glm::quat rotation = glm::angleAxis(angle, glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 model = glm::toMat4(rotation);
 
-	for (const auto& [UID, Resource] : App->resourceManager->GetResourcesMap()) 
-	{
-		if (Resource->GetType() == ResourceType::MESH) 
-		{
-			GeometryRenderData testRender{};
-			testRender.geometry = static_cast<ResourceMesh*>(Resource);
-			testRender.model = model;
+	/*
+	TODO: Refactor a, por cada gameobject con mesh component con contenido válido, testrendergeometry es la cmesh
+	y para el model le pasamos el ctransform del gameobject. de esta manera desde elinspector podemos cambiar
+	el model de cada mesh. de forma independiente. Deberiamos separar el material de la mesh en si, para que se
+	aplique luego despues en el vulkan y no aquí.
+	*/
 
-			packet.geometries.push_back(testRender);
+	for (const auto& goPtr : App->scene->activeScene->GetGameObjects())
+	{
+		GameObject* go = goPtr.get();
+
+		GeometryRenderData data{};
+		// Skip objects without the required components
+
+		if (go->HasComponent<CTransform>())
+		{
+			auto& ctransform = go->GetComponent<CTransform>();
+			data.model = ctransform.worldMatrix;   // or transform.GetMatrix()
 		}
+
+		if (go->HasComponent<CMesh>()){
+			auto& cmesh= go->GetComponent<CMesh>();
+			data.geometry = cmesh.mesh;
+		}
+
+		if (go->HasComponent<CMaterial>()) {
+			auto &cmaterial = go->GetComponent<CMaterial>();
+			data.material = cmaterial.material;
+		}
+
+		packet.geometries.push_back(data);
 	}
+
+//	for (const auto& [UID, Resource] : App->resourceManager->GetResourcesMap())
+//	{
+//		if (Resource->GetType() == ResourceType::MESH)
+//		{
+//			GeometryRenderData testRender{};
+//			testRender.geometry = static_cast<ResourceMesh*>(Resource);
+//			testRender.model = model;
+//
+//			packet.geometries.push_back(testRender);
+//		}
+//	}
 
 	// TODO: end temp
 

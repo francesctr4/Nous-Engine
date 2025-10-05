@@ -7,7 +7,8 @@
 
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 
-struct CMaterial {
+struct CMaterial : public Component {
+    COMPONENT_TYPE(CMaterial)
     ResourceMaterial* material = nullptr;
 
     ~CMaterial() {

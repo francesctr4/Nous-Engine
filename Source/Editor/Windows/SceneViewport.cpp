@@ -9,6 +9,12 @@
 #include "Renderer/Vulkan/VulkanImGuiResources.h"
 #include "Core/Application.h"
 
+#include "Includes/glmath.h"
+#include "ECS/Components/ComponentTransform.h"
+#include "Modules/ModuleScene.h"
+#include "Modules/ModuleInput.h"
+#include "ECS/GameObject.h"
+
 SceneViewport::SceneViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
 {
@@ -82,6 +88,52 @@ void SceneViewport::Draw()
 
             // Draw white border on top
             drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
+
+            ImGuizmo::BeginFrame();
+
+            if (GameObject* go = External->scene->selectedGameObject) {
+                if (go->HasComponent<CTransform>()) {
+                    CTransform& transform = go->GetComponent<CTransform>(); // <-- reference!
+
+                    static ImGuizmo::OPERATION gizmoOperation = ImGuizmo::TRANSLATE;
+                    static ImGuizmo::MODE gizmoMode = ImGuizmo::WORLD;
+
+                    // Handle W/E/R input
+                    if (External->input->GetKey(SDL_SCANCODE_W) == KeyState::DOWN) gizmoOperation = ImGuizmo::TRANSLATE;
+                    if (External->input->GetKey(SDL_SCANCODE_E) == KeyState::DOWN) gizmoOperation = ImGuizmo::ROTATE;
+                    if (External->input->GetKey(SDL_SCANCODE_R) == KeyState::DOWN) gizmoOperation = ImGuizmo::SCALE;
+
+                    // Viewport rect
+                    ImVec2 windowPos = ImGui::GetWindowPos();
+                    ImVec2 min = ImGui::GetWindowContentRegionMin();
+                    ImVec2 max = ImGui::GetWindowContentRegionMax();
+                    ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+                    ImGuizmo::SetRect(windowPos.x + min.x, windowPos.y + min.y,
+                                      max.x - min.x, max.y - min.y);
+
+                    // Camera matrices
+                    glm::mat4 view = External->camera->GetCamera()->GetViewMatrix();
+                    glm::mat4 proj = External->camera->GetCamera()->GetProjectionMatrix();
+
+                    // Manipulate
+                    glm::mat4 model = transform.worldMatrix;
+                    ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj),
+                                         gizmoOperation, gizmoMode, glm::value_ptr(model));
+
+                    // Apply changes back to ECS
+                    if (ImGuizmo::IsUsing()) {
+                        glm::vec3 pos, scale, skew;
+                        glm::vec4 perspective;
+                        glm::quat rot;
+                        glm::decompose(model, scale, rot, pos, skew, perspective);
+
+                        transform.position = pos;
+                        transform.rotation = glm::degrees(glm::eulerAngles(rot));
+                        transform.scale = scale;
+                        transform.UpdateMatrix(); // rebuilds worldMatrix
+                    }
+                }
+            }
 
             // Make the entire window area a drag-and-drop target
             ImGui::SetCursorScreenPos(squarePos);          // Position the invisible button to start at the top-left of the content area

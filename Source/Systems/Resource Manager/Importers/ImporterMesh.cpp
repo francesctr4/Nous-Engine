@@ -153,17 +153,6 @@ bool ImporterMesh::Unload(Resource* inResource)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
 
-    if (mesh->material != nullptr) 
-    {
-        if (mesh->material->diffuseMap.texture != nullptr)
-        {
-            External->resourceManager->UnloadResource(mesh->material->diffuseMap.texture->GetUID());
-            mesh->material->diffuseMap.texture = nullptr;
-        }
-
-        External->resourceManager->UnloadResource(mesh->material->GetUID());
-    }
-
     External->renderer->rendererFrontend->DestroyGeometry(mesh);
 
     mesh->ID = INVALID_ID;

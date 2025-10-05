@@ -8,4 +8,6 @@
 #include <imgui_impl_sdlrenderer3.h>
 #include <imgui_impl_vulkan.h>
 
+#include <ImGuizmo.h>
+
 #endif // IMGUI_INCLUDES

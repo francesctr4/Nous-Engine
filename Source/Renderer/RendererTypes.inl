@@ -15,8 +15,9 @@ class ResourceTexture;
 
 struct GeometryRenderData
 {
-    ResourceMesh* geometry;
     glm::mat4x4 model;
+    ResourceMesh* geometry;
+    ResourceMaterial* material;
 };
 
 enum class BuiltInRenderpass

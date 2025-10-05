@@ -818,9 +818,9 @@ void VulkanBackend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderD
 
     ResourceMaterial* material = nullptr;
 
-    if (renderData.geometry->material) 
+    if (renderData.material)
     {
-        material = renderData.geometry->material;
+        material = renderData.material;
     }
     else 
     {
