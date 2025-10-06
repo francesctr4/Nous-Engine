@@ -9,7 +9,8 @@
 
 #include "Scripting System/Internal/IScript.inl"
 #include "Scripting System/Internal/ScriptRegistry.inl"
-#include "Scripting System/Bindings/EngineAPI.h"
+#include "Scripting System/EngineAPI/EngineAPI.h"
+#include "Scripting System/EngineAPI/ScriptBindings.h"
 
 // ----- HEADER FILES ----- //
 /*coding_start::PlayerController*/
@@ -22,14 +23,14 @@ public:
     PlayerController()
     {
         /*coding_start::PlayerController::PlayerController*/
-        Nous_Engine->Logger.Warn(__FUNCTION__);
+        Nous_Engine->Logger->Warn(__FUNCTION__);
         /*coding_end::PlayerController::PlayerController*/
     }
 
     ~PlayerController() override
     {
         /*coding_start::PlayerController::~PlayerController*/
-        Nous_Engine->Logger.Warn(__FUNCTION__);
+        Nous_Engine->Logger->Warn(__FUNCTION__);
         /*coding_end::PlayerController::~PlayerController*/
     }
 
@@ -38,17 +39,17 @@ public:
         /*coding_start::PlayerController::Awake*/
         for (int i = 0; i < 5; i++)
         {
-            Nous_Engine->Logger.Fatal("HOLA!");
+            Nous_Engine->Logger->Fatal("HOLA!");
         }
-        Nous_Engine->Logger.Fatal("ADIOS ADIOS ADIOS ADIOS");
-        Nous_Engine->Logger.Warn(__FUNCTION__);
+        Nous_Engine->Logger->Fatal("ADIOS ADIOS ADIOS ADIOS");
+        Nous_Engine->Logger->Warn(__FUNCTION__);
         /*coding_end::PlayerController::Awake*/
     }
 
     void Start() override
     {
         /*coding_start::PlayerController::Start*/
-        Nous_Engine->Logger.Warn(__FUNCTION__);
+        Nous_Engine->Logger->Warn(__FUNCTION__);
         /*coding_end::PlayerController::Start*/
     }
 

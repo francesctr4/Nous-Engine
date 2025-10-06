@@ -1,9 +1,10 @@
 #include "Scripting System/ScriptManager.h"
 #include "Scripting System/Internal/ScriptRegistry.inl"
 #include "Utils/Logger.h"
-#include "Scripting System/Bindings/ScriptBindings.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "MultiThreading/NOUS_Multithreading.h"
+#include "Scripting System/EngineAPI/EngineAPI.h"
+#include "Scripting System/EngineAPI/ScriptBindings.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -13,13 +14,13 @@
 
 ScriptManager::ScriptManager() : m_libraryHandle(nullptr), m_scriptRegistry(nullptr)
 {
-    api = NOUS_NEW<EngineAPI>(MemoryManager::MemoryTag::GAME);
+    ScriptBindings::InitializeBindings(api);
 }
 
 ScriptManager::~ScriptManager()
 {
     UnloadScriptLibrary();
-    NOUS_DELETE(api, MemoryManager::MemoryTag::GAME);
+    ScriptBindings::DeleteBindings(api);
 }
 
 bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
@@ -180,4 +181,33 @@ void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
 #else
     return dlsym(handle, symbol.c_str());
 #endif
+}
+
+bool ScriptManager::GenerateScript(const std::string& scriptName)
+{
+    if (scriptName.empty()) {
+        NOUS_ERROR("[SCRIPT] Cannot generate script with empty name");
+        return false;
+    }
+
+    NOUS_INFO("[SCRIPT] Generating new script: %s", scriptName.c_str());
+
+    // Define the path to the Python executable in your virtual environment
+    std::string pythonExe = "\"..\\..\\.venv\\Scripts\\python.exe\""; // Adjust path if your venv has a different name
+    std::string generateScript = "\"..\\..\\Source\\Scripting System\\generate_script.py\"";
+
+    // Build the command with the full path
+    std::string command = "\"" + pythonExe + "\" \"" + generateScript + "\" \"" + scriptName.c_str() + "\"";
+
+    NOUS_DEBUG("[SCRIPT] Running command: %s", command.c_str());
+    int result = std::system(command.c_str());
+
+    if (result == 0) {
+        NOUS_INFO("[SCRIPT] Successfully generated script: %s", scriptName.c_str());
+        return true;
+    } else {
+        NOUS_ERROR("[SCRIPT] Failed to generate script: %s (error code: %d)",
+                   scriptName.c_str(), result);
+        return false;
+    }
 }

@@ -1,19 +1,5 @@
-#ifndef NOUS_ENGINE_ENGINEAPI_H
-#define NOUS_ENGINE_ENGINEAPI_H
-
-#include <functional>
-
-// --- Subsystem APIs ---
-struct LoggerAPI
-{
-    // Function pointers exposed to scripts
-    void (*Trace)(const char* msg, ...) = nullptr;
-    void (*Debug)(const char* msg, ...) = nullptr;
-    void (*Info)(const char* msg, ...) = nullptr;
-    void (*Warn)(const char* msg, ...) = nullptr;
-    void (*Error)(const char* msg, ...) = nullptr;
-    void (*Fatal)(const char* msg, ...) = nullptr;
-};
+#ifndef NOUS_ENGINE_INPUTBINDINGS_H
+#define NOUS_ENGINE_INPUTBINDINGS_H
 
 // In EngineAPI.h - update the InputAPI struct
 struct InputAPI
@@ -413,29 +399,7 @@ struct InputAPI
     } SDL_Scancode;
 };
 
-struct GameObjectAPI
-{
-    uint32_t (*Create)(const char* name) = nullptr;
-    void (*Destroy)(uint32_t UID) = nullptr;
+// Setup function for this specific API
+void SetupInputBindings(InputAPI& input);
 
-    void (*SetPosition)(uint32_t id, float x, float y, float z) = nullptr;
-    void (*SetRotation)(uint32_t id, float x, float y, float z) = nullptr;
-    void (*SetScale)(uint32_t id, float x, float y, float z) = nullptr;
-};
-
-// --- Engine API (root) ---
-struct EngineAPI
-{
-    LoggerAPI Logger;
-    InputAPI Input;
-    GameObjectAPI GameObject;
-    // Add PhysicsAPI, InputAPI, etc here later
-};
-
-// Only declare here
-extern EngineAPI* Nous_Engine;
-
-// Exported function to set the pointer
-extern "C" __declspec(dllexport) void __cdecl SetEngineAPI(EngineAPI* api);
-
-#endif //NOUS_ENGINE_ENGINEAPI_H
+#endif //NOUS_ENGINE_INPUTBINDINGS_H

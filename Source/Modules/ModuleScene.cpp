@@ -106,6 +106,11 @@ UpdateStatus ModuleScene::Update(float dt)
 		}
 	}
 
+	if (App->input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
+	{
+		ScriptManager::GenerateScript("PRUEBA_CREAR_SCRIPT_DESDE_MOTOR");
+	}
+
     if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
     {
         App->jobSystem->SubmitJob([this]()

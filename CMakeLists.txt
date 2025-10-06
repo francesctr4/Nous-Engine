@@ -193,9 +193,9 @@ set(ALL_SOURCES
         "Source/Scripting System/Internal/ScriptRegistry.inl"
         "Source/Scripting System/ScriptManager.h"
         "Source/Scripting System/ScriptManager.cpp"
-        "Source/Scripting System/Bindings/ScriptBindings.h"
-        "Source/Scripting System/Bindings/ScriptBindings.cpp"
-        "Source/Scripting System/Bindings/EngineAPI.cpp"
+        "Source/Scripting System/EngineAPI/ScriptBindings.h"
+        "Source/Scripting System/EngineAPI/ScriptBindings.cpp"
+        "Source/Scripting System/EngineAPI/EngineAPI.cpp"
         Source/ECS/GameObject.h
         Source/ECS/Scene.h
         Source/ECS/Components/ComponentTransform.h
@@ -207,6 +207,12 @@ set(ALL_SOURCES
         Source/Editor/Windows/InspectorWindow.cpp
         Source/Editor/Windows/InspectorWindow.h
         Source/ECS/Component.h
+        "Source/Scripting System/EngineAPI/Bindings/InputBindings.cpp"
+        "Source/Scripting System/EngineAPI/Bindings/InputBindings.h"
+        "Source/Scripting System/EngineAPI/Bindings/LoggerBindings.cpp"
+        "Source/Scripting System/EngineAPI/Bindings/LoggerBindings.h"
+        "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.cpp"
+        "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.h"
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
