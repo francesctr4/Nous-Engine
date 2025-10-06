@@ -35,21 +35,31 @@ public:
     {
         /*coding_start::Rykan::Awake*/
         Nous_Engine->Logger.Warn(__FUNCTION__);
+        //DoSomething();
         /*coding_end::Rykan::Awake*/
     }
 
     void Start() override
     {
         /*coding_start::Rykan::Start*/
+        //Nous_Engine->GameObject.Destroy(gameobjectHandleID);
         /*coding_end::Rykan::Start*/
     }
 
     void Update(float deltaTime) override
     {
         /*coding_start::Rykan::Update*/
-        for (int i = 0; i < 10; i++)
+        // Check for F4 key press
+        if (Nous_Engine->Input.GetKey(InputAPI::SDL_SCANCODE_F) == InputAPI::KeyState::DOWN)
         {
-            Nous_Engine->Logger.Fatal("HOT-RELOAD TEST");
+            Nous_Engine->Logger.Fatal("F key pressed!");
+            Nous_Engine->GameObject.Create("HOLAAAA");
+        }
+
+        if (Nous_Engine->Input.GetKey(InputAPI::SDL_SCANCODE_H) == InputAPI::KeyState::DOWN)
+        {
+            Nous_Engine->Logger.Fatal("H key pressed!");
+            Nous_Engine->GameObject.Create("RYKAAAAN");
         }
         /*coding_end::Rykan::Update*/
     }
@@ -86,12 +96,23 @@ public:
 
     // ----- METHODS ----- //
     /*coding_start::Rykan*/
+    void DoSomething()
+    {
+        Nous_Engine->Logger.Warn("Doing something");
+        gameobjectHandleID = Nous_Engine->GameObject.Create("HolaSoyRykan");
+        Nous_Engine->Logger.Warn("Created gameobject with ID: %u", gameobjectHandleID);
+
+        Nous_Engine->GameObject.SetPosition(gameobjectHandleID, 69.0f, 69.0f, 69.0f);
+        Nous_Engine->GameObject.SetRotation(gameobjectHandleID, 69.0f, 69.0f, 69.0f);
+        Nous_Engine->GameObject.SetScale(gameobjectHandleID, 69.0f, 69.0f, 69.0f);
+    }
     /*coding_end::Rykan*/
 
 private:
 
     // ----- ATTRIBUTES ----- //
     /*coding_start::Rykan*/
+    uint32_t gameobjectHandleID = 0;
     /*coding_end::Rykan*/
 
 };

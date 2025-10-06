@@ -80,7 +80,8 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go) {
     if (go == m_Selected)
         flags |= ImGuiTreeNodeFlags_Selected;
 
-    bool open = ImGui::TreeNodeEx(go->GetName().c_str(), flags);
+    std::string label = go->GetName() + "###" + std::to_string(go->GetID());
+    bool open = ImGui::TreeNodeEx(label.c_str(), flags);
 
     // Left-click to select
     if (ImGui::IsItemClicked()) {

@@ -5,17 +5,18 @@
 #include "ECS/Components/ComponentTransform.h"
 #include "Core/Application.h"
 #include "Modules/ModuleScene.h"
+#include "Utils/Random.h"
 #include <unordered_set>
 
 class Scene {
 public:
     Scene(const std::string& name = "Untitled Scene")
-            : m_Name(name), m_NextID(1) {}
+            : m_Name(name) {}
 
     // Create new GameObject, optionally parented
     GameObject* CreateGameObject(const std::string& name = "GameObject", GameObject* parent = nullptr) {
         std::lock_guard<std::mutex> lock(m_Mutex); // Acquire lock
-        uint32_t id = m_NextID++;
+        auto id = static_cast<uint32_t>(Random::Generate());
         auto go = std::make_unique<GameObject>(id, this, name);
         GameObject* ptr = go.get();
 
@@ -86,6 +87,42 @@ public:
         return result;
     }
 
+    // Helper to get GameObject by ID
+    GameObject* GetGameObjectByID(uint32_t id) {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        auto it = std::find_if(m_GameObjects.begin(), m_GameObjects.end(),
+                               [id](const std::unique_ptr<GameObject>& go) {
+                                   return go->GetID() == id;
+                               });
+        return (it != m_GameObjects.end()) ? it->get() : nullptr;
+    }
+
+// Create GameObject and return ID (not pointer)
+    uint32_t CreateGameObjectID(const std::string& name = "GameObject", GameObject* parent = nullptr) {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        auto id = static_cast<uint32_t>(Random::Generate());
+        auto go = std::make_unique<GameObject>(id, this, name);
+        GameObject* ptr = go.get();
+
+        // Add default Transform component
+        ptr->AddComponent<CTransform>();
+
+        if (parent) {
+            parent->AddChild(ptr);
+        }
+
+        m_GameObjects.push_back(std::move(go));
+        return id; // Return the ID instead of pointer
+    }
+
+// Destroy GameObject by ID
+    void DestroyGameObjectByID(uint32_t id) {
+        GameObject* go = GetGameObjectByID(id);
+        if (go) {
+            DestroyGameObject(go); // Use your existing destroy method
+        }
+    }
+
     // Getters
     const std::string& GetName() const { return m_Name; }
     void SetName(const std::string& name) { m_Name = name; }
@@ -95,7 +132,6 @@ public:
 private:
     std::string m_Name;
     std::vector<std::unique_ptr<GameObject>> m_GameObjects;
-    uint32_t m_NextID;
     std::mutex m_Mutex; // protects m_GameObjects and m_NextID
 };
 

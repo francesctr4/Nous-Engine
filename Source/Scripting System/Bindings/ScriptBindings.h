@@ -10,6 +10,7 @@ public:
     static void SetupAllBindings(EngineAPI& api);
     static void SetupLoggerBindings(LoggerAPI& logger);
     static void SetupInputBindings(InputAPI& input);
+    static void SetupGameObjectBindings(GameObjectAPI& gameObject);
     // Add future binding setup methods here:
     // static void SetupPhysicsBindings(PhysicsAPI& physics);
     // static void SetupInputBindings(InputAPI& input);
