@@ -4,6 +4,7 @@
 #include "Systems/File System/FileManager.h"
 #include "Modules/ModuleFileSystem.h"
 #include "Core/Application.h"
+#include "Scripting System/ScriptManager.h"
 
 static void HelpMarker(const char* desc)
 {
@@ -608,8 +609,85 @@ void AssetsBrowser::Draw()
             {
                 ImGui::Text("Selection: %d items", Selection.Size);
                 ImGui::Separator();
+
+                // Add "Create Script" option
+                if (ImGui::MenuItem("Create Script"))
+                {
+                    script_creation_path = current_directory;
+                    memset(script_name_buffer, 0, sizeof(script_name_buffer));
+                    show_create_script_popup = true;
+                    ImGui::CloseCurrentPopup(); // Close the context menu
+                }
+
+                ImGui::Separator();
                 if (ImGui::MenuItem("Delete", "Del", false, Selection.Size > 0))
                     RequestDelete = true;
+                ImGui::EndPopup();
+            }
+
+            // Script creation popup (place this after the context menu but before EndChild())
+            if (show_create_script_popup)
+            {
+                ImGui::OpenPopup("Create New Script");
+                show_create_script_popup = false;
+            }
+
+            if (ImGui::BeginPopupModal("Create New Script", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::Text("Create a new script in: %s", script_creation_path.c_str());
+                ImGui::Spacing();
+
+                ImGui::Text("Script Name:");
+                ImGui::SetNextItemWidth(300.0f);
+                bool enter_pressed = ImGui::InputText("##ScriptName", script_name_buffer, IM_ARRAYSIZE(script_name_buffer),
+                                                      ImGuiInputTextFlags_EnterReturnsTrue);
+
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+
+                // Create button (only enabled if name is not empty)
+                bool name_empty = strlen(script_name_buffer) == 0;
+                if (name_empty) {
+                    ImGui::BeginDisabled();
+                }
+
+                if (ImGui::Button("Create", ImVec2(120, 0)) || enter_pressed)
+                {
+                    if (!name_empty) {
+                        std::string script_name = script_name_buffer;
+
+                        if (ScriptManager::GenerateScript(script_name)) {
+                            NOUS_INFO("Successfully created script: %s", script_name.c_str());
+
+                            // Refresh the assets browser to show the new script
+                            AddItemsFromDirectory(current_directory);
+                        } else {
+                            NOUS_ERROR("Failed to create script: %s", script_name.c_str());
+                        }
+
+                        // Close the popup
+                        memset(script_name_buffer, 0, sizeof(script_name_buffer));
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+
+                if (name_empty) {
+                    ImGui::EndDisabled();
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+                        ImGui::SetTooltip("Please enter a script name");
+                    }
+                }
+
+                ImGui::SetItemDefaultFocus();
+                ImGui::SameLine();
+
+                if (ImGui::Button("Cancel", ImVec2(120, 0)))
+                {
+                    memset(script_name_buffer, 0, sizeof(script_name_buffer));
+                    ImGui::CloseCurrentPopup();
+                }
+
                 ImGui::EndPopup();
             }
 

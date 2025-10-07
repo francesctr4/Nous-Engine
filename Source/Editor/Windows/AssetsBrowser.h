@@ -230,6 +230,12 @@ public:
 
     std::string current_directory = "Assets";
     std::stack<std::string> directory_stack;
+
+    // Script creation
+    bool show_create_script_popup = false;
+    char script_name_buffer[128] = "";
+    std::string script_creation_path;
+    std::string scriptsPath = "../../Assets/Scripts/";
 };
 
 #endif // ASSETSBROWSER_H

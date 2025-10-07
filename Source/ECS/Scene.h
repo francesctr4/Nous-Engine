@@ -17,7 +17,7 @@ public:
     GameObject* CreateGameObject(const std::string& name = "GameObject", GameObject* parent = nullptr) {
         std::lock_guard<std::mutex> lock(m_Mutex); // Acquire lock
         auto id = static_cast<uint32_t>(Random::Generate());
-        auto go = std::make_unique<GameObject>(id, this, name);
+        auto go = std::make_unique<GameObject>(id, name);
         GameObject* ptr = go.get();
 
         // Add default Transform component
@@ -101,7 +101,7 @@ public:
     uint32_t CreateGameObjectID(const std::string& name = "GameObject", GameObject* parent = nullptr) {
         std::lock_guard<std::mutex> lock(m_Mutex);
         auto id = static_cast<uint32_t>(Random::Generate());
-        auto go = std::make_unique<GameObject>(id, this, name);
+        auto go = std::make_unique<GameObject>(id, name);
         GameObject* ptr = go.get();
 
         // Add default Transform component

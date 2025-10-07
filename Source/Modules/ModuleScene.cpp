@@ -18,6 +18,8 @@
 #include "ECS/Components/ComponentMaterial.h"
 #include "ECS/Components/ComponentTransform.h"
 
+#include <filesystem>
+
 ModuleScene::ModuleScene(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -286,26 +288,59 @@ void ModuleScene::ReceiveEvent(const Event& event)
 }
 
 void ModuleScene::CreateScriptInstances() {
-	// Clear any existing scripts first
-	CleanupScripts();
+    // Clear any existing scripts first
+    CleanupScripts();
 
-	// Create new script instances
-	const char* scriptNames[] = {
-			"PlayerController",
-			"Test",
-			"NEW_TEST",
-			"Rykan"
-	};
+    // Define the scripts directory path
+    std::string scriptsPath = "../../Assets/Scripts/";
 
-	for (const char* name : scriptNames) {
-		IScript* script = scriptManager->CreateScriptInstance(name);
-		if (script) {
-			scripts.emplace_back(script);
-			NOUS_INFO("Created script instance: %s", name);
-		} else {
-			NOUS_WARN("Failed to create script instance: %s", name);
-		}
-	}
+    // Vector to store script names
+    std::vector<std::string> scriptNames;
+
+    try {
+        // Check if directory exists
+        if (!std::filesystem::exists(scriptsPath)) {
+            NOUS_WARN("Scripts directory does not exist: %s", scriptsPath.c_str());
+            return;
+        }
+
+        // Iterate through all files in the directory
+        for (const auto& entry : std::filesystem::directory_iterator(scriptsPath)) {
+            if (entry.is_regular_file()) {
+                std::string filename = entry.path().filename().string();
+                std::string extension = entry.path().extension().string();
+
+                // Only process .cpp files (or adjust for your script extension)
+                if (extension == ".cpp" || extension == ".inl" || extension == ".h") {
+                    // Remove extension to get the class name
+                    std::string className = entry.path().stem().string();
+
+                    // Skip the template file if it exists
+                    if (className != "ScriptTemplate") {
+                        scriptNames.push_back(className);
+                    }
+                }
+            }
+        }
+
+        // Create script instances for all found scripts
+        for (const std::string& name : scriptNames) {
+            IScript* script = scriptManager->CreateScriptInstance(name);
+            if (script) {
+                scripts.emplace_back(script);
+                NOUS_INFO("Created script instance: %s", name.c_str());
+            } else {
+                NOUS_WARN("Failed to create script instance: %s", name.c_str());
+            }
+        }
+
+        NOUS_INFO("Successfully created %zu script instances", scriptNames.size());
+
+    } catch (const std::filesystem::filesystem_error& ex) {
+        NOUS_ERROR("Filesystem error while reading scripts directory: %s", ex.what());
+    } catch (const std::exception& ex) {
+        NOUS_ERROR("Error reading scripts directory: %s", ex.what());
+    }
 }
 
 void ModuleScene::RecompileScripts()

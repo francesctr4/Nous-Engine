@@ -6,6 +6,8 @@
 #include "Scripting System/EngineAPI/EngineAPI.h"
 #include "Scripting System/EngineAPI/ScriptBindings.h"
 
+#include <fstream>
+
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -183,31 +185,38 @@ void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
 #endif
 }
 
-bool ScriptManager::GenerateScript(const std::string& scriptName)
+bool ScriptManager::GenerateScript(const std::string& className)
 {
-    if (scriptName.empty()) {
-        NOUS_ERROR("[SCRIPT] Cannot generate script with empty name");
-        return false;
+    const std::string& templatePath = "../../Source/Scripting System/Internal/ScriptTemplate.inl";
+    const std::string& outputPath = "../../Assets/Scripts/" + className + ".cpp";
+
+    // Read the template file
+    std::ifstream templateFile(templatePath);
+    if (!templateFile.is_open()) {
+        return false; // Failed to open template
     }
 
-    NOUS_INFO("[SCRIPT] Generating new script: %s", scriptName.c_str());
+    // Read entire template content
+    std::stringstream buffer;
+    buffer << templateFile.rdbuf();
+    std::string content = buffer.str();
+    templateFile.close();
 
-    // Define the path to the Python executable in your virtual environment
-    std::string pythonExe = "\"..\\..\\.venv\\Scripts\\python.exe\""; // Adjust path if your venv has a different name
-    std::string generateScript = "\"..\\..\\Source\\Scripting System\\generate_script.py\"";
-
-    // Build the command with the full path
-    std::string command = "\"" + pythonExe + "\" \"" + generateScript + "\" \"" + scriptName.c_str() + "\"";
-
-    NOUS_DEBUG("[SCRIPT] Running command: %s", command.c_str());
-    int result = std::system(command.c_str());
-
-    if (result == 0) {
-        NOUS_INFO("[SCRIPT] Successfully generated script: %s", scriptName.c_str());
-        return true;
-    } else {
-        NOUS_ERROR("[SCRIPT] Failed to generate script: %s (error code: %d)",
-                   scriptName.c_str(), result);
-        return false;
+    // Replace all occurrences of $CLASSNAME$ with the actual class name
+    size_t pos = 0;
+    while ((pos = content.find("$CLASSNAME$", pos)) != std::string::npos) {
+        content.replace(pos, 11, className); // 11 is length of "$CLASSNAME$"
+        pos += className.length();
     }
+
+    // Write the modified content to output file
+    std::ofstream outputFile(outputPath);
+    if (!outputFile.is_open()) {
+        return false; // Failed to create output file
+    }
+
+    outputFile << content;
+    outputFile.close();
+
+    return true;
 }

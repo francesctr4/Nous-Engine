@@ -25,7 +25,7 @@ public:
     IScript* CreateScriptInstance(const std::string& scriptName);
 
     // Script generation
-    static bool GenerateScript(const std::string& scriptName);
+    static bool GenerateScript(const std::string& className);
 
 private:
 

@@ -9,6 +9,8 @@
 #include <algorithm>
 
 #include "ECS/Component.h"
+#include "ECS/Components/ComponentTransform.h"
+#include "Includes/Parson.h"
 
 // Forward declarations
 class Scene;
@@ -16,8 +18,9 @@ class Scene;
 class GameObject {
 public:
     GameObject() = default;
-    GameObject(uint32_t id, Scene* scene, const std::string& name = "GameObject")
-            : m_ID(id), m_Scene(scene), m_Name(name) {}
+
+    GameObject(uint32_t id, const std::string& name = "GameObject")
+            : m_ID(id), m_Name(name) {}
 
     // ---------- Components ----------
     template<typename T, typename... Args>
@@ -88,7 +91,6 @@ public:
     }
 
     uint32_t GetID() const { return m_ID; }
-    Scene* GetScene() const { return m_Scene; }
 
     // ---------- Name ----------
     void SetName(const std::string& name) { m_Name = name; }
@@ -144,9 +146,59 @@ public:
         return nullptr;
     }
 
+//    // --- Serialize ---
+//    JSON_Value* Serialize() const {
+//        JSON_Value* value = json_value_init_object();
+//        JSON_Object* obj = json_value_get_object(value);
+//
+//        json_object_set_number(obj, "uid", m_ID);
+//        json_object_set_string(obj, "name", m_Name.c_str());
+//
+//        if (m_Parent)
+//            json_object_set_number(obj, "parent", m_Parent->m_ID);
+//        else
+//            json_object_set_null(obj, "parent");
+//
+//        JSON_Value* compArrayValue = json_value_init_array();
+//        JSON_Array* compArray = json_value_get_array(compArrayValue);
+//        for (const auto& comp : m_Components)
+//            json_array_append_value(compArray, comp->Serialize());
+//        json_object_set_value(obj, "components", compArrayValue);
+//
+//        return value;
+//    }
+//
+//    // --- Deserialize (first pass: structure only) ---
+//    static std::unique_ptr<GameObject> Deserialize(JSON_Object* obj) {
+//        uint32_t uid = (uint32_t)json_object_get_number(obj, "uid");
+//        const char* name = json_object_get_string(obj, "name");
+//
+//        auto gameObject = std::make_unique<GameObject>(uid, name ? name : "Unnamed");
+//
+//        if (!json_object_has_value_of_type(obj, "parent", JSONNull))
+//            gameObject->m_ID = (uint32_t)json_object_get_number(obj, "parent");
+//
+//        // Deserialize components
+//        JSON_Array* compArray = json_object_get_array(obj, "components");
+//        if (compArray) {
+//            size_t count = json_array_get_count(compArray);
+//            for (size_t i = 0; i < count; ++i) {
+//                JSON_Object* compObj = json_array_get_object(compArray, i);
+//                const char* type = json_object_get_string(compObj, "type");
+//
+//                if (strcmp(type, "Transform") == 0) {
+//                    auto transform = std::make_unique<CTransform>();
+//                    transform->Deserialize(compObj);
+//                    gameObject->m_Components[typeid(transform)] = std::move(transform);
+//                }
+//            }
+//        }
+//
+//        return gameObject;
+//    }
+
 private:
     uint32_t m_ID = 0;
-    Scene* m_Scene = nullptr;
     std::string m_Name;
     GameObject* m_Parent = nullptr;
     std::vector<GameObject*> m_Children;
