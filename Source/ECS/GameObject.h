@@ -22,6 +22,16 @@ public:
     GameObject(uint32_t id, const std::string& name = "GameObject")
             : m_ID(id), m_Name(name) {}
 
+    ~GameObject() {
+        // Call OnDestroy for all components
+        for (auto& [type, component] : m_Components) {
+            component->OnDestroy();
+        }
+
+        // Clear children to avoid dangling pointers
+        ClearChildren();
+    }
+
     // ---------- Components ----------
     template<typename T, typename... Args>
     T& AddComponent(Args&&... args) {
@@ -31,11 +41,21 @@ public:
         component->m_GameObject = this;
         T* ptr = component.get();
 
-        // Call OnStart when component is added
-        component->OnStart();
-
         m_Components[typeid(T)] = std::move(component);
+        ptr->OnStart(); // Call OnStart after adding
         return *ptr;
+    }
+
+    // Add component from unique_ptr (for deserialization)
+    void AddComponent(std::unique_ptr<Component> component) {
+        if (!component) return;
+
+        component->m_GameObject = this;
+        auto type = std::type_index(typeid(*component));
+        Component* ptr = component.get();
+
+        m_Components[type] = std::move(component);
+        ptr->OnStart();
     }
 
     template<typename T>
@@ -98,7 +118,7 @@ public:
 
     // ---------- Hierarchy ----------
     GameObject* GetParent() const { return m_Parent; }
-    std::vector<GameObject*>& GetChildren() { return m_Children; }
+    const std::vector<GameObject*>& GetChildren() const { return m_Children; } // Return const reference
 
     void SetParent(GameObject* parent) {
         if (m_Parent == parent) return;
@@ -132,6 +152,15 @@ public:
         }
     }
 
+    // Clear all children safely
+    void ClearChildren() {
+        // Make a copy since RemoveChild modifies m_Children
+        auto childrenCopy = m_Children;
+        for (auto* child : childrenCopy) {
+            RemoveChild(child);
+        }
+    }
+
     // Recursively find child by name
     GameObject* FindChildByName(const std::string& name, bool recursive = true) {
         for (auto* child : m_Children) {
@@ -146,56 +175,68 @@ public:
         return nullptr;
     }
 
-//    // --- Serialize ---
-//    JSON_Value* Serialize() const {
-//        JSON_Value* value = json_value_init_object();
-//        JSON_Object* obj = json_value_get_object(value);
-//
-//        json_object_set_number(obj, "uid", m_ID);
-//        json_object_set_string(obj, "name", m_Name.c_str());
-//
-//        if (m_Parent)
-//            json_object_set_number(obj, "parent", m_Parent->m_ID);
-//        else
-//            json_object_set_null(obj, "parent");
-//
-//        JSON_Value* compArrayValue = json_value_init_array();
-//        JSON_Array* compArray = json_value_get_array(compArrayValue);
-//        for (const auto& comp : m_Components)
-//            json_array_append_value(compArray, comp->Serialize());
-//        json_object_set_value(obj, "components", compArrayValue);
-//
-//        return value;
-//    }
-//
-//    // --- Deserialize (first pass: structure only) ---
-//    static std::unique_ptr<GameObject> Deserialize(JSON_Object* obj) {
-//        uint32_t uid = (uint32_t)json_object_get_number(obj, "uid");
-//        const char* name = json_object_get_string(obj, "name");
-//
-//        auto gameObject = std::make_unique<GameObject>(uid, name ? name : "Unnamed");
-//
-//        if (!json_object_has_value_of_type(obj, "parent", JSONNull))
-//            gameObject->m_ID = (uint32_t)json_object_get_number(obj, "parent");
-//
-//        // Deserialize components
-//        JSON_Array* compArray = json_object_get_array(obj, "components");
-//        if (compArray) {
-//            size_t count = json_array_get_count(compArray);
-//            for (size_t i = 0; i < count; ++i) {
-//                JSON_Object* compObj = json_array_get_object(compArray, i);
-//                const char* type = json_object_get_string(compObj, "type");
-//
-//                if (strcmp(type, "Transform") == 0) {
-//                    auto transform = std::make_unique<CTransform>();
-//                    transform->Deserialize(compObj);
-//                    gameObject->m_Components[typeid(transform)] = std::move(transform);
-//                }
-//            }
-//        }
-//
-//        return gameObject;
-//    }
+    JSON_Value* Serialize() const {
+        JSON_Value* objVal = json_value_init_object();
+        JSON_Object* obj = json_value_get_object(objVal);
+
+        json_object_set_number(obj, "uid", m_ID);
+        json_object_set_string(obj, "name", m_Name.c_str());
+
+        // Store parent ID (0 if no parent) - THIS IS CRITICAL
+        uint32_t parentID = m_Parent ? m_Parent->GetID() : 0;
+        json_object_set_number(obj, "parent", parentID);
+
+        printf("Serializing: %s (ID: %u) -> Parent ID: %u\n",
+               m_Name.c_str(), m_ID, parentID);
+
+        // Serialize components
+        JSON_Value* componentsVal = json_value_init_array();
+        JSON_Array* componentsArr = json_value_get_array(componentsVal);
+
+        for (const auto& [type, component] : m_Components) {
+            json_array_append_value(componentsArr, component->Serialize());
+        }
+
+        json_object_set_value(obj, "components", componentsVal);
+        return objVal;
+    }
+
+    static std::unique_ptr<GameObject> Deserialize(JSON_Object* obj) {
+        uint32_t uid = static_cast<uint32_t>(json_object_get_number(obj, "uid"));
+        const char* name = json_object_get_string(obj, "name");
+        uint32_t parentID = static_cast<uint32_t>(json_object_get_number(obj, "parent"));
+
+        auto go = std::make_unique<GameObject>(uid, name ? name : "");
+
+        // Store the parent ID for later resolution
+        go->m_ParentID = parentID;
+
+        printf("Deserializing: %s (ID: %u) -> Parent ID: %u\n",
+               name ? name : "", uid, parentID);
+
+        // Deserialize components
+        JSON_Array* comps = json_object_get_array(obj, "components");
+        if (comps) {
+            size_t count = json_array_get_count(comps);
+            for (size_t i = 0; i < count; ++i) {
+                JSON_Object* compObj = json_array_get_object(comps, i);
+                const char* type = json_object_get_string(compObj, "type");
+
+                if (type) {
+                    auto component = Component::CreateComponent(type);
+                    if (component) {
+                        component->Deserialize(compObj);
+                        go->AddComponent(std::move(component));
+                    }
+                }
+            }
+        }
+
+        return go;
+    }
+
+    // Helper for scene deserialization
+    uint32_t GetParentID() const { return m_ParentID; }
 
 private:
     uint32_t m_ID = 0;
@@ -203,6 +244,9 @@ private:
     GameObject* m_Parent = nullptr;
     std::vector<GameObject*> m_Children;
     std::unordered_map<std::type_index, std::unique_ptr<Component>> m_Components;
+
+    // Temporary storage for deserialization
+    uint32_t m_ParentID = 0;
 };
 
 #endif //NOUS_ENGINE_GAMEOBJECT_H

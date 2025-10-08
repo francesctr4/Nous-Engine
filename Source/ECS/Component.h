@@ -2,9 +2,14 @@
 #define NOUS_ENGINE_COMPONENT_H
 
 #include <string>
+#include <memory>
 
 // Forward declaration
 class GameObject;
+
+typedef struct json_object_t JSON_Object;
+typedef struct json_array_t  JSON_Array;
+typedef struct json_value_t  JSON_Value;
 
 class Component {
 public:
@@ -20,8 +25,11 @@ public:
     virtual void OnDestroy() {}
 
     // Serialization
-    virtual void Serialize() {}
-    virtual void Deserialize() {}
+    virtual JSON_Value* Serialize() const = 0;
+    virtual void Deserialize(JSON_Object* obj) = 0;
+
+    // Static method for component creation during deserialization
+    static std::unique_ptr<Component> CreateComponent(const std::string& type);
 
 protected:
     friend class GameObject;

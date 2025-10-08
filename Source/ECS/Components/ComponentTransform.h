@@ -3,6 +3,7 @@
 
 #include "ECS/Component.h"
 #include "Includes/glmath.h"
+#include "Includes/Parson.h"
 
 class CTransform : public Component {
 public:
@@ -66,6 +67,68 @@ public:
                       glm::scale(glm::mat4(1.0f), scale);
     }
 
+    // ---------- JSON Serialization ----------
+    JSON_Value* Serialize() const override {
+        JSON_Value* objVal = json_value_init_object();
+        JSON_Object* obj = json_value_get_object(objVal);
+
+        json_object_set_string(obj, "type", GetType().c_str());
+
+        // Position
+        JSON_Value* posVal = json_value_init_array();
+        JSON_Array* posArr = json_value_get_array(posVal);
+        json_array_append_number(posArr, position.x);
+        json_array_append_number(posArr, position.y);
+        json_array_append_number(posArr, position.z);
+        json_object_set_value(obj, "position", posVal);
+
+        // Rotation
+        JSON_Value* rotVal = json_value_init_array();
+        JSON_Array* rotArr = json_value_get_array(rotVal);
+        json_array_append_number(rotArr, rotation.x);
+        json_array_append_number(rotArr, rotation.y);
+        json_array_append_number(rotArr, rotation.z);
+        json_object_set_value(obj, "rotation", rotVal);
+
+        // Scale
+        JSON_Value* scaleVal = json_value_init_array();
+        JSON_Array* scaleArr = json_value_get_array(scaleVal);
+        json_array_append_number(scaleArr, scale.x);
+        json_array_append_number(scaleArr, scale.y);
+        json_array_append_number(scaleArr, scale.z);
+        json_object_set_value(obj, "scale", scaleVal);
+
+        return objVal;
+    }
+
+    void Deserialize(JSON_Object* obj) override
+    {
+        // Position
+        JSON_Array* pos = json_object_get_array(obj, "position");
+        if (pos && json_array_get_count(pos) == 3) {
+            position.x = static_cast<float>(json_array_get_number(pos, 0));
+            position.y = static_cast<float>(json_array_get_number(pos, 1));
+            position.z = static_cast<float>(json_array_get_number(pos, 2));
+        }
+
+        // Rotation
+        JSON_Array* rot = json_object_get_array(obj, "rotation");
+        if (rot && json_array_get_count(rot) == 3) {
+            rotation.x = static_cast<float>(json_array_get_number(rot, 0));
+            rotation.y = static_cast<float>(json_array_get_number(rot, 1));
+            rotation.z = static_cast<float>(json_array_get_number(rot, 2));
+        }
+
+        // Scale
+        JSON_Array* scl = json_object_get_array(obj, "scale");
+        if (scl && json_array_get_count(scl) == 3) {
+            scale.x = static_cast<float>(json_array_get_number(scl, 0));
+            scale.y = static_cast<float>(json_array_get_number(scl, 1));
+            scale.z = static_cast<float>(json_array_get_number(scl, 2));
+        }
+
+        UpdateMatrix();
+    }
 };
 
 #endif //NOUS_ENGINE_COMPONENTTRANSFORM_H

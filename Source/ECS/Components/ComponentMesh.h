@@ -8,9 +8,21 @@
 #include "Systems/Resource Manager/Resource Types/ResourceMesh.h"
 #include "Modules/ModuleResourceManager.h"
 
-struct CMesh : public Component {
+class CMesh : public Component {
+public:
     COMPONENT_TYPE(CMesh)
     ResourceMesh* mesh = nullptr;
+
+    // ---------- JSON Serialization ----------
+    JSON_Value* Serialize() const override
+    {
+        return nullptr;
+    }
+
+    void Deserialize(JSON_Object* obj) override
+    {
+
+    }
 
     ~CMesh() {
         //External->resourceManager->UnloadResource(mesh->GetUID());
