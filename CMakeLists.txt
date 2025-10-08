@@ -213,6 +213,7 @@ set(ALL_SOURCES
         "Source/Scripting System/EngineAPI/Bindings/LoggerBindings.h"
         "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.cpp"
         "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.h"
+        Source/ECS/Component.cpp
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
@@ -241,7 +242,6 @@ find_package(imgui CONFIG REQUIRED)
 find_package(parson CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
 find_package(glm REQUIRED)
-find_package(imguizmo CONFIG REQUIRED)
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -257,7 +257,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         parson::parson
         Tracy::TracyClient
         glm::glm
-        imguizmo::imguizmo
 )
 
 # IDE Source grouping
