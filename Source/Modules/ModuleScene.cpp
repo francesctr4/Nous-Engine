@@ -41,6 +41,8 @@ ModuleScene::~ModuleScene()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+    selectedGameObject = nullptr;
+
 	// Clean up scripts before destroying script manager
 	CleanupScripts();
 
@@ -111,6 +113,21 @@ UpdateStatus ModuleScene::Update(float dt)
 	if (App->input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
 	{
 		ScriptManager::GenerateScript("PRUEBA_CREAR_SCRIPT_DESDE_MOTOR");
+	}
+
+    if (App->input->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
+    {
+        SaveScene("../../Assets/Scenes/TestScene.nous");
+    }
+
+	if (App->input->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
+	{
+		ClearScene();
+	}
+
+	if (App->input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN)
+	{
+		LoadScene("../../Assets/Scenes/TestScene.nous");
 	}
 
     if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
@@ -377,4 +394,25 @@ void ModuleScene::CleanupScripts() {
 	}
 	scripts.clear();
 	NOUS_INFO("Cleaned up all script instances");
+}
+
+void ModuleScene::SaveScene(const std::string& path)
+{
+    activeScene->Serialize(path);
+}
+
+void ModuleScene::LoadScene(const std::string& path)
+{
+	ClearScene();
+
+	App->jobSystem->SubmitJob([this, path](){
+		activeScene->Deserialize(path);
+	}, "LoadScene");
+
+}
+
+void ModuleScene::ClearScene()
+{
+    selectedGameObject = nullptr;
+    activeScene->Clear();
 }

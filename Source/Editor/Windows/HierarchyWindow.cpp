@@ -28,12 +28,22 @@ void HierarchyWindow::Draw() {
                                                 ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow,
                                                 m_Scene->GetName().c_str());
 
-                if (opened) {
+                // 🔹 Make the SCENE NODE a drag-drop target for reparenting to root
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
+                        IM_ASSERT(payload->DataSize == sizeof(GameObject*));
+                        GameObject* draggedGO = *(GameObject**)payload->Data;
 
+                        // Reparent to root (nullptr)
+                        m_ToReparent.push_back({ draggedGO, nullptr });
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+
+                if (opened) {
                     if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
                         if (!ImGui::IsAnyItemHovered()) {
                             m_Selected = nullptr;
-                            // Optionally notify the application/inspector:
                             External->scene->selectedGameObject = m_Selected;
                         }
                     }
@@ -59,7 +69,7 @@ void HierarchyWindow::Draw() {
                 }
                 m_ToDelete.clear();
 
-// Process reparenting safely
+                // Process reparenting safely
                 for (auto& req : m_ToReparent) {
                     req.child->SetParent(req.newParent);
                 }

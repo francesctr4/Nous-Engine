@@ -174,7 +174,12 @@ void AssetsBrowser::Draw()
             {
                 if (ImGui::MenuItem("Refresh Assets"))
                 {
-                    AddItemsFromDirectory(current_directory);
+                    External->jobSystem->SubmitJob([this]()
+                        {
+                            std::system("cmake --build ./ --target CopyAssets");
+                            AddItemsFromDirectory(current_directory);
+
+                        }, "Refresh Assets");
                 }
 
                 if (ImGui::MenuItem("Regenerate Library"))

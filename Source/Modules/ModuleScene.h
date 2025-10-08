@@ -30,6 +30,10 @@ public:
 
 	void ReceiveEvent(const Event& event) override;
 
+    void SaveScene(const std::string& path);
+    void LoadScene(const std::string& path);
+    void ClearScene();
+
 public:
 
 	Scene* activeScene;
