@@ -36,7 +36,7 @@ public:
     void Awake() override
     {
         /*coding_start::NEW_TEST::Awake*/
-        std::cout << "OMG i canot belive my eyes" << std::endl;
+        Nous_Engine->Logger->Info("[%s] OMG i canot belive my eyes", __FUNCTION__);
         /*coding_end::NEW_TEST::Awake*/
     }
 

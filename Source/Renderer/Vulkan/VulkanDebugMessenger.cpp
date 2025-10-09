@@ -53,7 +53,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL NOUS_VulkanDebugMessenger::DebugCallback(VkDebugU
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
     {
-        NOUS_TRACE("Validation layer: %s", pCallbackData->pMessage);
+        NOUS_DEBUG("Validation layer: %s", pCallbackData->pMessage);
         break;
     }
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:

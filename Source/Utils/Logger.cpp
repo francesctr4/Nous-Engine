@@ -3,153 +3,158 @@
 #include "Systems/File System/FileHandle.h"
 
 #include <cstdio>
-#include <vector>
+#include <deque>
 #include <cstring>
 #include <cstdarg>
+#include <functional>
+#include <mutex>
 
-// Platform-specific includes
 #ifdef _WIN32
 #include <windows.h>
-#include <io.h>
 #elif defined(__linux__) || defined(__APPLE__)
 #include <unistd.h>
-    #include <sys/ioctl.h>
 #endif
 
-static FileHandle logFile;
+static std::atomic<bool> loggingPaused = false;
 
-void ReportAssertionFailure(const char* expression, const char* message, const char* file, int32_t line)
-{
-    LogOutput(LogLevel::LOG_LEVEL_FATAL, "Assertion Failure: %s, message: '%s', in file: %s, line: %d\n", expression, message, file, line);
+// Enabled log levels (bitmask)
+static bool logLevelEnabled[LOG_LEVEL_MAX] = {
+        true, true, true, true, true, false // Default: all enabled
+};
+
+static FileHandle logFile;
+static std::deque<std::pair<LogLevel, std::string>> logHistory;
+static const size_t MAX_LOG_HISTORY = 10000;
+
+static std::function<void(LogLevel, const char*)> logCallback = nullptr;
+static std::mutex logMutex; // protect log history (in case of multithreaded logging)
+
+void SetLogCallback(std::function<void(LogLevel, const char*)> callback) {
+    std::scoped_lock lock(logMutex);
+    logCallback = std::move(callback);
 }
 
-// Cross-platform console color function
+const std::deque<std::pair<LogLevel, std::string>>& GetLogHistory() {
+    return logHistory;
+}
+
+void ClearLogHistory() {
+    std::scoped_lock lock(logMutex);
+    logHistory.clear();
+}
+
+void ReportAssertionFailure(const char* expression, const char* message, const char* file, int32_t line) {
+    LogOutput(LOG_LEVEL_FATAL, "Assertion Failure: %s, message: '%s', in file: %s, line: %d",
+              expression, message, file, line);
+}
+
+// Platform console color printing
 void PrintToConsoleColor(const char* message, uint8_t color) {
 #ifdef _WIN32
-    // Windows implementation
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    // Save the current text color
     CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
     GetConsoleScreenBufferInfo(hConsole, &consoleInfo);
     WORD savedAttributes = consoleInfo.wAttributes;
 
-    // Windows color mapping
     WORD windowsColor;
-    switch(color) {
-        case 64: windowsColor = FOREGROUND_RED | FOREGROUND_INTENSITY; break;                    // FATAL - Bright Red
-        case 4:  windowsColor = FOREGROUND_RED; break;                                           // ERROR - Red
-        case 6:  windowsColor = FOREGROUND_RED | FOREGROUND_GREEN; break;                       // WARN - Yellow
-        case 2:  windowsColor = FOREGROUND_GREEN; break;                                         // INFO - Green
-        case 1:  windowsColor = FOREGROUND_BLUE; break;                                          // DEBUG - Blue
-        case 8:  windowsColor = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE; break;     // TRACE - White
+    switch (color) {
+        case 64: windowsColor = FOREGROUND_RED | FOREGROUND_INTENSITY; break;
+        case 4:  windowsColor = FOREGROUND_RED; break;
+        case 6:  windowsColor = FOREGROUND_RED | FOREGROUND_GREEN; break;
+        case 2:  windowsColor = FOREGROUND_GREEN; break;
+        case 1:  windowsColor = FOREGROUND_BLUE; break;
+        case 8:  windowsColor = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE; break;
         default: windowsColor = savedAttributes; break;
     }
 
-    // Set the text color
     SetConsoleTextAttribute(hConsole, windowsColor);
-
-    // Print the message
     printf("%s", message);
-
-    // Restore the original text color
     SetConsoleTextAttribute(hConsole, savedAttributes);
 
 #elif defined(__linux__) || defined(__APPLE__)
-    // Unix/Linux/macOS implementation using ANSI escape codes
     const char* ansiColor;
-    switch(color) {
-        case 64: ansiColor = "\033[1;31m"; break;  // FATAL - Bright Red
-        case 4:  ansiColor = "\033[0;31m"; break;  // ERROR - Red
-        case 6:  ansiColor = "\033[0;33m"; break;  // WARN - Yellow
-        case 2:  ansiColor = "\033[0;32m"; break;  // INFO - Green
-        case 1:  ansiColor = "\033[0;34m"; break;  // DEBUG - Blue
-        case 8:  ansiColor = "\033[0;37m"; break;  // TRACE - White
-        default: ansiColor = "\033[0m"; break;     // Default
+    switch (color) {
+        case 64: ansiColor = "\033[1;31m"; break;
+        case 4:  ansiColor = "\033[0;31m"; break;
+        case 6:  ansiColor = "\033[0;33m"; break;
+        case 2:  ansiColor = "\033[0;32m"; break;
+        case 1:  ansiColor = "\033[0;34m"; break;
+        case 8:  ansiColor = "\033[0;37m"; break;
+        default: ansiColor = "\033[0m"; break;
     }
 
-    printf("%s%s\033[0m", ansiColor, message);  // Reset color after message
-
+    printf("%s%s\033[0m", ansiColor, message);
 #else
-    // Fallback for unsupported platforms - just print without color
     printf("%s", message);
 #endif
 }
 
-bool InitializeLogging()
-{
-    // Create new/wipe existing log file, then open it.
-    if (!logFile.Open("console.log", FileMode::WRITE, false))
-    {
-        NOUS_ERROR("Unable to open console.log for writing.");
+bool InitializeLogging() {
+    if (!logFile.Open("console.log", FileMode::WRITE, false)) {
+        LogOutput(LOG_LEVEL_ERROR, "Unable to open console.log for writing.");
         return false;
     }
-
-	return true;
+    return true;
 }
 
-void ShutdownLogging()
-{
+void ShutdownLogging() {
     logFile.Close();
 }
 
-void AppendToLogFile(const char* message)
-{
-    if (logFile.IsOpen())
-    {
-        auto length = static_cast<uint64>(std::strlen(message));
+void AppendToLogFile(const char* message) {
+    if (logFile.IsOpen()) {
+        const uint64 length = static_cast<uint64>(std::strlen(message));
         uint64 written = 0;
-
-        if (!logFile.Write(length, message, &written)) 
-        {
-            NOUS_ERROR("Error writing to console.log.");
+        if (!logFile.Write(length, message, &written)) {
+            LogOutput(LOG_LEVEL_ERROR, "Error writing to console.log.");
         }
     }
 }
 
-void LogOutput(LogLevel level, const char* message, ...)
+void SetLogLevelEnabled(LogLevel level, bool enabled)
 {
-    // TODO: These string operations are all pretty slow. This needs to be
-    // moved to another thread eventually, along with the file writes, to
-    // avoid slowing things down while the engine is trying to run.
+    if (level >= 0 && level < LOG_LEVEL_MAX)
+        logLevelEnabled[level] = enabled;
+}
 
-    const char* levelStrings[6] = { "[FATAL]: ", "[ERROR]: ", "[WARN]: ", "[INFO]: ", "[DEBUG]: ", "[TRACE]: " };
-    uint8_t levelColor[6] = { 64, 4, 6, 2, 1, 8 };
+bool IsLogLevelEnabled(LogLevel level)
+{
+    return (level >= 0 && level < LOG_LEVEL_MAX) ? logLevelEnabled[level] : false;
+}
 
-    // Calculate the size needed for the formatted message
+void LogOutput(LogLevel level, const char* message, ...) {
+
+    if (IsLoggingPaused()) return;
+    if (!IsLogLevelEnabled(level)) return;
+
+    const char* levelStrings[] = {
+            "[FATAL]: ", "[ERROR]: ", "[WARN]: ",
+            "[INFO]: ", "[DEBUG]: ", "[TRACE]: "
+    };
+    const uint8_t levelColor[] = { 64, 4, 6, 2, 1, 8 };
+
+    constexpr int BUFFER_SIZE = 16384;
+    char formatBuffer[BUFFER_SIZE];
+    char finalBuffer[BUFFER_SIZE];
+
     va_list arg_ptr;
             va_start(arg_ptr, message);
-    int message_len = vsnprintf(nullptr, 0, message, arg_ptr);
+    vsnprintf(formatBuffer, BUFFER_SIZE, message, arg_ptr);
             va_end(arg_ptr);
 
-    NOUS_ASSERT_MSG(message_len >= 0, "vsnprintf failed to calculate the message length");
+    snprintf(finalBuffer, BUFFER_SIZE, "%s%s\n", levelStrings[level], formatBuffer);
 
-    // Allocate memory for the formatted message
-    char* out_message = (char*)malloc(message_len + 1);
-    NOUS_ASSERT_MSG(out_message != nullptr, "Memory allocation for out_message failed");
+    PrintToConsoleColor(finalBuffer, levelColor[level]);
+    AppendToLogFile(finalBuffer);
 
-            va_start(arg_ptr, message);
-    vsnprintf(out_message, message_len + 1, message, arg_ptr);
-            va_end(arg_ptr);
+    // Add to history (automatically drops oldest entries)
+    if (logHistory.size() >= MAX_LOG_HISTORY)
+        logHistory.pop_front();
+    logHistory.emplace_back(level, std::string(levelStrings[level]) + formatBuffer);
 
-    // Calculate the total size needed for the final message
-    size_t level_len = strlen(levelStrings[level]);
-    size_t total_len = level_len + message_len + 2; // +2 for the newline and null terminator
-
-    // Allocate memory for the final message
-    char* out_message2 = (char*)malloc(total_len);
-    NOUS_ASSERT_MSG(out_message2 != nullptr, "Memory allocation for out_message2 failed");
-
-    // Construct the final message
-    snprintf(out_message2, total_len, "%s%s\n", levelStrings[level], out_message);
-
-    // Print the final message
-    PrintToConsoleColor(out_message2, levelColor[level]);
-
-    // Queue a copy to be written to the log file.
-    AppendToLogFile(out_message2);
-
-    // Free allocated memory
-    free(out_message);
-    free(out_message2);
+    if (logCallback)
+        logCallback(level, logHistory.back().second.c_str());
 }
+
+void SetLoggingPaused(bool paused) { loggingPaused = paused; }
+bool IsLoggingPaused() { return loggingPaused.load(); }

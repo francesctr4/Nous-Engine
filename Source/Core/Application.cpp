@@ -132,11 +132,11 @@ UpdateStatus Application::Update()
     ZoneScoped;
 #endif
    
-    NOUS_INFO("-------------- PrepareUpdate --------------");
+    NOUS_TRACE("-------------- PrepareUpdate --------------");
 
     ret = PrepareUpdate();
 
-    NOUS_INFO("-------------- PreUpdate --------------");
+    NOUS_TRACE("-------------- PreUpdate --------------");
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
@@ -146,7 +146,7 @@ UpdateStatus Application::Update()
         }
     }
 
-    NOUS_INFO("-------------- Update --------------");
+    NOUS_TRACE("-------------- Update --------------");
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
@@ -156,7 +156,7 @@ UpdateStatus Application::Update()
         }
     }
 
-    NOUS_INFO("-------------- PostUpdate --------------");
+    NOUS_TRACE("-------------- PostUpdate --------------");
 
     for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
     {
@@ -166,7 +166,7 @@ UpdateStatus Application::Update()
         }
     }
 
-    NOUS_INFO("-------------- FinishUpdate --------------");
+    NOUS_TRACE("-------------- FinishUpdate --------------");
 
     FinishUpdate();
 
@@ -201,7 +201,7 @@ void Application::FinishUpdate()
 
     window->SetTitle(buffer);
 
-    NOUS_DEBUG("-------------- Frame Finished --------------");
+    NOUS_TRACE("-------------- Frame Finished --------------");
 
     // Adapt according to target FPS
 

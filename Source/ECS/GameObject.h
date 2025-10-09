@@ -186,7 +186,7 @@ public:
         uint32_t parentID = m_Parent ? m_Parent->GetID() : 0;
         json_object_set_number(obj, "parent", parentID);
 
-        printf("Serializing: %s (ID: %u) -> Parent ID: %u\n",
+        NOUS_INFO("Serializing: %s (ID: %u) -> Parent ID: %u\n",
                m_Name.c_str(), m_ID, parentID);
 
         // Serialize components
@@ -211,7 +211,7 @@ public:
         // Store the parent ID for later resolution
         go->m_ParentID = parentID;
 
-        printf("Deserializing: %s (ID: %u) -> Parent ID: %u\n",
+        NOUS_INFO("Deserializing: %s (ID: %u) -> Parent ID: %u\n",
                name ? name : "", uid, parentID);
 
         // Deserialize components

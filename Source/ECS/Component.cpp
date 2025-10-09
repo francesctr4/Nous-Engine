@@ -1,6 +1,8 @@
 #include "ECS/Component.h"
 #include "ECS/Components/ComponentTransform.h"
 
+#include "Utils/Logger.h"
+
 std::unique_ptr<Component> Component::CreateComponent(const std::string& type) {
     if (type == "CTransform") {
         return std::make_unique<CTransform>();
@@ -10,6 +12,6 @@ std::unique_ptr<Component> Component::CreateComponent(const std::string& type) {
     // if (type == "CRenderer") return std::make_unique<CRenderer>();
     // if (type == "CScript") return std::make_unique<CScript>();
 
-    printf("Unknown component type: %s\n", type.c_str());
+    NOUS_WARN("Unknown component type: %s\n", type.c_str());
     return nullptr;
 }

@@ -57,13 +57,7 @@ bool ModuleScene::Awake()
 
 	gameCamera->SetPos(-4.61f, 100.0f, 718.32f);
 
-	// Add some game objects
-	GameObject* player = activeScene->CreateGameObject("Player");
-	GameObject* enemy  = activeScene->CreateGameObject("Enemy");
-
-	activeScene->CreateGameObject("Sword", player);
-	activeScene->CreateGameObject("Shield", player);
-	activeScene->CreateGameObject("Gun", enemy);
+	LoadScene("Assets/Scenes/TestScene.nous");
 
 	for (auto& script : scripts)
 	{

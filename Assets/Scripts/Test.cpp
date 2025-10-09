@@ -36,7 +36,7 @@ public:
     void Awake() override
     {
         /*coding_start::Test::Awake*/
-        std::cout << "This is a NOT" << std::endl;
+        Nous_Engine->Logger->Info("[%s] This is a TEST", __FUNCTION__);
         /*coding_end::Test::Awake*/
     }
 

@@ -175,7 +175,7 @@ bool ModuleFileSystem::CompileShaders()
             std::string command = "\"" + glslc_path + "\" -fshader-stage=" + shader_stage +
                                   " \"" + input_file + "\" -o \"" + output_file + "\"";
 
-            NOUS_TRACE("Compiling shader: %s -> %s", input_file.c_str(), output_file.c_str());
+            NOUS_DEBUG("Compiling shader: %s -> %s", input_file.c_str(), output_file.c_str());
 
             int result = std::system(command.c_str());
             if (result != 0) {

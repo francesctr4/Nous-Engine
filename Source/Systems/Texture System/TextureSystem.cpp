@@ -89,7 +89,7 @@ bool NOUS_TextureSystem::CreateDefaultTextures()
 	// NOTE: Create default texture, a 256x256 blue/white checkerboard pattern.
 	// This is done in code to eliminate asset dependencies.
 
-	NOUS_TRACE("Creating default texture...");
+	NOUS_INFO("Creating default texture...");
 
 	const uint32 texDimension = 256;
 	const uint32 channels = 4;

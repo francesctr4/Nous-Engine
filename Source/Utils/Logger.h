@@ -2,6 +2,10 @@
 #define LOGGER_H
 
 #include "Core/Globals.h"
+#include <vector>
+#include <string>
+#include <functional>
+#include <deque>
 
 #define LOG_WARN_ENABLED 1
 #define LOG_INFO_ENABLED 1
@@ -27,7 +31,7 @@ typedef enum LogLevel {
 	LOG_LEVEL_DEBUG = 4,
 	LOG_LEVEL_TRACE = 5,
 
-	ALL
+	LOG_LEVEL_MAX
 
 } LogLevel;
 
@@ -37,6 +41,16 @@ void ShutdownLogging();
 void AppendToLogFile(const char* message);
 
 void LogOutput(LogLevel level, const char* message, ...);
+
+void SetLogCallback(std::function<void(LogLevel, const char*)> callback);
+const std::deque<std::pair<LogLevel, std::string>>& GetLogHistory();
+void ClearLogHistory();
+
+void SetLogLevelEnabled(LogLevel level, bool enabled);
+bool IsLogLevelEnabled(LogLevel level);
+
+void SetLoggingPaused(bool paused);
+bool IsLoggingPaused();
 
 #ifndef NOUS_FATAL
 // Logs a fatal-level message.

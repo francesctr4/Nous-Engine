@@ -974,7 +974,7 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
             return false;
         }
 
-        NOUS_TRACE("Renderer: Material created.");
+        NOUS_INFO("[%s] Material created.", __FUNCTION__);
         return true;
     }
 

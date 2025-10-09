@@ -24,6 +24,7 @@
 #include "Editor/Windows/GameViewport.h"
 #include "Editor/Windows/HierarchyWindow.h"
 #include "Editor/Windows/InspectorWindow.h"
+#include "Editor/Windows/ConsoleWindow.h"
 
 #pragma endregion
 
@@ -118,6 +119,7 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
 	AddEditorWindow(std::make_unique<HierarchyWindow>("Hierarchy"));
     AddEditorWindow(std::make_unique<InspectorWindow>("Inspector"));
+    AddEditorWindow(std::make_unique<ConsoleWindow>("Console"));
 
 	return true;
 }

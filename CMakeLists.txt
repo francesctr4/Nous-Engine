@@ -214,6 +214,8 @@ set(ALL_SOURCES
         "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.cpp"
         "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.h"
         Source/ECS/Component.cpp
+        Source/Editor/Windows/ConsoleWindow.cpp
+        Source/Editor/Windows/ConsoleWindow.h
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})

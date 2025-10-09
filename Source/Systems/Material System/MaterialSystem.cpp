@@ -67,7 +67,7 @@ ResourceMaterial* NOUS_MaterialSystem::GetDefaultMaterial()
 
 void DestroyMaterial(ResourceMaterial* material)
 {
-    NOUS_TRACE("Destroying material '%s'...", material->GetName().c_str());
+    NOUS_INFO("Destroying material '%s'...", material->GetName().c_str());
 
     // Release texture references.
     if (material->diffuseMap.texture)
