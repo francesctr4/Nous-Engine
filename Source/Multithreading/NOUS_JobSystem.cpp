@@ -49,6 +49,7 @@ void NOUS_Multithreading::NOUS_JobSystem::SubmitJob(std::function<void()> userJo
 	}
 	else
 	{
+		NOUS_DEBUG("Submitting job '%s' to thread pool (%d pending jobs)", jobName.c_str(), GetPendingJobs());
 		mThreadPool->SubmitJob(job);
 	}
 }

@@ -42,6 +42,8 @@ Resource::Resource()
 	this->type = ResourceType::UNKNOWN;
 	this->uID = 0;
 	this->referenceCount = 0;
+
+	this->valid = false;
 }
 
 Resource::Resource(UID uID, ResourceType type)
@@ -49,6 +51,8 @@ Resource::Resource(UID uID, ResourceType type)
 	this->type = type;
 	this->uID = uID;
 	this->referenceCount = 0;
+
+	this->valid = false;
 }
 
 Resource::~Resource()
@@ -60,6 +64,8 @@ Resource::~Resource()
 
 	this->assetsFilePath.clear();
 	this->libraryFilePath.clear();
+
+	this->valid = false;
 }
 
 void Resource::SetName(const std::string& name)
@@ -115,6 +121,21 @@ void Resource::IncreaseReferenceCount()
 void Resource::DecreaseReferenceCount()
 {
 	referenceCount--;
+}
+
+bool Resource::IsValid() const
+{
+	return valid;
+}
+
+void Resource::Validate()
+{
+	valid = true;
+}
+
+void Resource::Invalidate()
+{
+	valid = false;
 }
 
 std::string Resource::GetAssetsPath() const

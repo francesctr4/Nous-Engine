@@ -1,5 +1,7 @@
 #include "ECS/Component.h"
 #include "ECS/Components/ComponentTransform.h"
+#include "ECS/Components/ComponentMaterial.h"
+#include "ECS/Components/ComponentMesh.h"
 
 #include "Utils/Logger.h"
 
@@ -8,10 +10,16 @@ std::unique_ptr<Component> Component::CreateComponent(const std::string& type) {
         return std::make_unique<CTransform>();
     }
 
-    // Add other component types here as you create them
-    // if (type == "CRenderer") return std::make_unique<CRenderer>();
-    // if (type == "CScript") return std::make_unique<CScript>();
+    if (type == "CMesh") {
+        return std::make_unique<CMesh>();
+    }
 
-    NOUS_WARN("Unknown component type: %s\n", type.c_str());
+    if (type == "CMaterial") {
+        return std::make_unique<CMaterial>();
+    }
+
+    NOUS_WARN("[%s] Unable to create component. "
+              "Unknown component type: %s. \n", type.c_str());
+
     return nullptr;
 }

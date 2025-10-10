@@ -57,8 +57,6 @@ bool ModuleScene::Awake()
 
 	gameCamera->SetPos(-4.61f, 100.0f, 718.32f);
 
-	LoadScene("Assets/Scenes/TestScene.nous");
-
 	for (auto& script : scripts)
 	{
 		if (script) {
@@ -79,6 +77,8 @@ bool ModuleScene::Start()
 			script->Start();
 		}
 	}
+
+    LoadScene("Assets/Scenes/LagiacrusScene.nous");
 
 	return true;
 }
@@ -111,7 +111,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
     if (App->input->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
     {
-        SaveScene("../../Assets/Scenes/TestScene.nous");
+        SaveScene("../../Assets/Scenes/LagiacrusScene.nous");
     }
 
 	if (App->input->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
@@ -121,7 +121,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
 	if (App->input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN)
 	{
-		LoadScene("../../Assets/Scenes/TestScene.nous");
+		LoadScene("../../Assets/Scenes/LagiacrusScene.nous");
 	}
 
     if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
@@ -133,8 +133,8 @@ UpdateStatus ModuleScene::Update(float dt)
                                       auto& meshComp = go->AddComponent<CMesh>();
                                       meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
 
-                                      auto& matComp = go->AddComponent<CMaterial>();
-                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
+//                                      auto& matComp = go->AddComponent<CMaterial>();
+//                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
 
                                   }, "Render Lagiacrus");
     }

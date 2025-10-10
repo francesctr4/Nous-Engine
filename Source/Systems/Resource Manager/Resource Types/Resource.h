@@ -39,8 +39,12 @@ public:
 	std::string GetLibraryPath() const;
 
 	uint32 GetReferenceCount() const;
-	virtual void IncreaseReferenceCount();
-	virtual void DecreaseReferenceCount();
+	void IncreaseReferenceCount();
+	void DecreaseReferenceCount();
+
+	bool IsValid() const;
+	void Validate();
+	void Invalidate();
 
 	static int16 GetIndexFromType(const ResourceType& type);
 	static std::string GetLibraryExtensionFromType(ResourceType type);
@@ -49,6 +53,8 @@ public:
 	static std::string GetLibraryDirectoryFromType(ResourceType type);
 
 private:
+
+	bool valid;
 
 	std::string name;
 	UID uID;

@@ -1,0 +1,35 @@
+{
+    "name": "Lagiacrus Scene",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 298497733,
+            "name": "Lagiacrus Head",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -74.300003051757812,
+                        98.400001525878906,
+                        -246.19999694824219
+                    ],
+                    "rotation": [
+                        0.69999998807907104,
+                        -119,
+                        0
+                    ],
+                    "scale": [
+                        1.0299999713897705,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Lagiacrus_Head.fbx"
+                }
+            ]
+        }
+    ]
+}

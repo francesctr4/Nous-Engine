@@ -28,6 +28,9 @@ public:
             component->OnDestroy();
         }
 
+        // Clear components (invokes unique_ptr destructors)
+        m_Components.clear();
+
         // Clear children to avoid dangling pointers
         ClearChildren();
     }

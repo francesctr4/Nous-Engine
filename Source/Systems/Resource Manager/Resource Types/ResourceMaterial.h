@@ -32,9 +32,6 @@ public:
 	ResourceMaterial(UID uid = 0);
 	~ResourceMaterial() override;
 
-    void IncreaseReferenceCount() override;
-    void DecreaseReferenceCount() override;
-
 public:
 
     uint32 ID;

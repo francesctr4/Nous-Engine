@@ -115,6 +115,9 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 		thread->SetCurrentJob(job);
 		thread->StartExecutionTimer();
 
+		NOUS_DEBUG("Executing job '%s' on thread '%s' (%u)",
+				   job->GetName().c_str(), thread->GetName().c_str(), thread->GetID());
+
 		try
 		{
 			job->Execute();
@@ -123,6 +126,10 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 		{
 			NOUS_ERROR(("Job '" + job->GetName() + "' failed: " + e.what()).c_str());
 		}
+
+		NOUS_DEBUG("Job '%s' completed successfully on thread '%s' (%u) in %.3f s",
+				   job->GetName().c_str(), thread->GetName().c_str(),
+				   thread->GetID(), (thread->GetExecutionTimeMS() / 1000.0f));
 
 		NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
 

@@ -470,52 +470,83 @@ bool ModuleResourceManager::ResourceExists(const UID& uid)
 
 Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 {
-	// TODO: Needs to be reworked
+	NOUS_INFO("[%s] Creating Resource", __FUNCTION__);
+	NOUS_INFO("Assets path: %s", assetsPath.c_str());
+
 	std::string metaFilePath = assetsPath + ".meta";
+	NOUS_INFO("Looking for meta file: %s", metaFilePath.c_str());
 
 	MetaFileData metaFileData;
 	if (!ReadMetaFile(metaFilePath, metaFileData))
 	{
-		NOUS_ERROR("Create Resource ERROR: Error reading meta file: %s", metaFilePath.c_str());
+		NOUS_ERROR("CreateResource ERROR: Failed to read meta file: %s", metaFilePath.c_str());
 		return nullptr;
 	}
 
+	NOUS_INFO("Meta file read successfully:");
+	NOUS_INFO(" - Name: %s", metaFileData.name.c_str());
+	NOUS_INFO(" - UID: %u", metaFileData.uid);
+	NOUS_INFO(" - Type: %s", Resource::GetLibraryExtensionFromType(metaFileData.resourceType).c_str());
+	NOUS_INFO(" - Assets path: %s", metaFileData.assetsPath.c_str());
+	NOUS_INFO(" - Library path: %s", metaFileData.libraryPath.c_str());
+
 	if (!ResourceExists(metaFileData.uid))
 	{
-		// Create New Resource Into Scene
-		Resource* resource = InstantiateResource(metaFileData.resourceType);
+		NOUS_INFO("Resource with UID %u does not exist. Creating new instance...", metaFileData.uid);
 
-		if (resource != nullptr)
+		Resource* resource = InstantiateResource(metaFileData.resourceType);
+		if (resource == nullptr)
 		{
-			resource->SetName(metaFileData.name);
-			resource->SetUID(metaFileData.uid);
-			resource->SetType(metaFileData.resourceType);
-			resource->SetAssetsPath(metaFileData.assetsPath);
-			resource->SetLibraryPath(metaFileData.libraryPath);
-		}
-		else
-		{
-			NOUS_ERROR("Create Resource ERROR: CASE New Resource --> Failed to Instantiate Resource. Returned nullptr.");
+			NOUS_ERROR("CreateResource ERROR: Failed to instantiate resource of type %s.",
+					   Resource::GetLibraryExtensionFromType(metaFileData.resourceType).c_str());
 			return nullptr;
 		}
 
-		// Manage inside: Loading in memory & increase reference count. 
-		// Manage inside: Retrieve resource name and assetspath from libraryfile.
+		resource->SetName(metaFileData.name);
+		resource->SetUID(metaFileData.uid);
+		resource->SetType(metaFileData.resourceType);
+		resource->SetAssetsPath(metaFileData.assetsPath);
+		resource->SetLibraryPath(metaFileData.libraryPath);
+
+		NOUS_INFO("Resource instantiated successfully (UID: %u, Name: %s). Loading from library...",
+				  metaFileData.uid, metaFileData.name.c_str());
+
 		if (!ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource))
 		{
-			NOUS_ERROR("Create Resource ERROR: CASE New Resource --> Failed to Load Resource From Library. Returned nullptr.");
+			NOUS_ERROR("CreateResource ERROR: Failed to load resource from library: %s",
+					   metaFileData.libraryPath.c_str());
 			return nullptr;
 		}
 
 		AddResource(metaFileData.uid, resource);
 
 		resource->IncreaseReferenceCount();
+		resource->Validate();
+
+		NOUS_INFO("Resource successfully created and loaded into memory.");
+		NOUS_INFO("Reference count: %u", resource->GetReferenceCount());
+		NOUS_INFO("========================================");
 
 		return resource;
 	}
 	else
 	{
-		return RequestResource(metaFileData.uid);
+		NOUS_INFO("Resource with UID %u already exists. Requesting existing instance...", metaFileData.uid);
+		Resource* existingResource = RequestResource(metaFileData.uid);
+		if (existingResource)
+		{
+			NOUS_INFO("Existing resource retrieved successfully (Name: %s, RefCount: %u).",
+					  existingResource->GetName().c_str(), existingResource->GetReferenceCount());
+
+			existingResource->Validate();
+		}
+		else
+		{
+			NOUS_ERROR("CreateResource ERROR: Failed to retrieve existing resource with UID %u.", metaFileData.uid);
+		}
+		NOUS_INFO("========================================");
+
+		return existingResource;
 	}
 }
 

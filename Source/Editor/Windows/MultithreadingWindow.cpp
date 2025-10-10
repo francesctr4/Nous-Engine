@@ -169,7 +169,7 @@ void Multithreading::Draw()
 
                 // Time
                 ImGui::TableSetColumnIndex(4);
-                ImGui::Text("%.3f", thread->GetExecutionTimeMS() / 1000);
+                ImGui::Text("%.3f", thread->GetExecutionTimeMS() / 1000.0f);
             }
 
             ImGui::EndTable();

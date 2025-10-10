@@ -6,6 +6,7 @@
 #define NOUS_ENGINE_COMPONENTMATERIAL_H
 
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
+#include "Modules/ModuleResourceManager.h"
 
 class CMaterial : public Component {
 public:
@@ -23,8 +24,12 @@ public:
 
     }
 
-    ~CMaterial() {
-        //External->resourceManager->UnloadResource(material->GetUID());
+    void OnDestroy() override
+    {
+        if (material->IsValid())
+        {
+            //External->resourceManager->UnloadResource(material->GetUID());
+        }
     }
 };
 
