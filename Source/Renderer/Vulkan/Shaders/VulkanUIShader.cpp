@@ -365,7 +365,7 @@ void NOUS_VulkanUIShader::UIShaderApplyMaterial(VulkanContext* vkContext, Vulkan
             }
             default:
             {
-                NOUS_FATAL("Unable to bind sampler to unknown use.");
+                NOUS_FATAL("[%s] Unable to bind sampler to unknown use.", __FUNCTION__);
                 return;
             }
             }

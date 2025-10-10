@@ -62,7 +62,7 @@ bool VulkanBackend::Initialize()
     cachedFramebufferWidth = 0;
 
     // Instance
-    NOUS_DEBUG("Creating Vulkan instance...");
+    NOUS_DEBUG("[%s][VULKAN] Creating Vulkan instance...", __FUNCTION__);
     if (!NOUS_VulkanInstance::CreateInstance(vkContext)) 
     {
         NOUS_ERROR("Failed to create Vulkan Instance. Shutting the Application.");

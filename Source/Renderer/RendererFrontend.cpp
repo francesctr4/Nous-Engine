@@ -33,7 +33,7 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 
 	if (!backend->Initalize()) 
 	{
-		NOUS_FATAL("Renderer backend failed to initialize. Shutting down.");
+		NOUS_FATAL("[%s] Renderer backend failed to initialize. Shutting down.", __FUNCTION__);
 		ret = false;
 	}
 

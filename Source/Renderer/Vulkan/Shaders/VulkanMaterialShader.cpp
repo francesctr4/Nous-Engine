@@ -365,7 +365,7 @@ void NOUS_VulkanMaterialShader::MaterialShaderApplyMaterial(VulkanContext* vkCon
             }
             default:
             {
-                NOUS_FATAL("Unable to bind sampler to unknown use.");
+                NOUS_FATAL("[%s][VULKAN] Unable to bind sampler to unknown use.", __FUNCTION__);
                 return;
             }
             }

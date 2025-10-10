@@ -75,7 +75,7 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 
 	if (!config.allocatorBlock) 
 	{
-		NOUS_FATAL("Memory system allocation failed");
+		NOUS_FATAL("[%s] Memory system allocation failed", __FUNCTION__);
 		return;
 	}
 
@@ -85,7 +85,8 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 		config.allocatorBlock
 	);
 
-	NOUS_DEBUG("Memory system initialized with %llu bytes", config.totalAllocationSize);
+	NOUS_DEBUG("[%s] Memory system initialized with %llu bytes",
+			   __FUNCTION__, config.totalAllocationSize);
 }
 
 void MemoryManager::ShutdownMemory()
