@@ -46,7 +46,7 @@ void RendererBackend::Destroy()
     NOUS_DELETE(backendInterface, MemoryManager::MemoryTag::RENDERER);
 }
 
-bool RendererBackend::Initalize()
+bool RendererBackend::Initialize()
 {
     if (backendInterface != nullptr) 
     {
@@ -72,24 +72,20 @@ void RendererBackend::Resized(uint16 width, uint16 height)
     }
 }
 
-bool RendererBackend::BeginFrame(float dt)
+FrameResult RendererBackend::BeginFrame(float dt)
 {
-    if (backendInterface != nullptr) 
-    {
+    if (backendInterface)
         return backendInterface->BeginFrame(dt);
-    }
 
-    return false;
+    return FrameResult::ERROR;
 }
 
-bool RendererBackend::EndFrame(float dt)
+FrameResult RendererBackend::EndFrame(float dt)
 {
-    if (backendInterface != nullptr) 
-    {
+    if (backendInterface)
         return backendInterface->EndFrame(dt);
-    }
 
-    return false;
+    return FrameResult::ERROR;
 }
 
 bool RendererBackend::BeginRenderpass(RenderpassType renderpassID)

@@ -225,7 +225,6 @@ bool Application::CleanUp()
 {
     bool ret = true;
 
-    NOUS_INFO("-------------- Application CleanUp --------------");
     for (int i = (NUM_MODULES - 1); i >= 0 && ret; --i)
     {
         if (listModules[i] != nullptr) {

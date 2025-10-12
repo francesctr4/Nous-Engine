@@ -24,8 +24,8 @@ public:
 
 	void Resized(uint16 width, uint16 height) noexcept override;
 
-	bool BeginFrame(float dt) override;
-	bool EndFrame(float dt) override;
+	FrameResult BeginFrame(float dt) override;
+	FrameResult EndFrame(float dt) override;
 
 	bool BeginRenderpass(RenderpassType renderpassID) override;
 	bool EndRenderpass(RenderpassType renderpassID) override;

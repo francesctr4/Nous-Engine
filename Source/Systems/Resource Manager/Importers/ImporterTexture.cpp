@@ -99,7 +99,12 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
         texture->generation = (currentGeneration == INVALID_ID) ? 0 : currentGeneration;
 
         // Acquire internal texture resources and upload to GPU.
-        External->renderer->GetRendererFrontend()->CreateTexture(data, texture);
+        if(!External->renderer->GetRendererFrontend()->CreateTexture(data, texture))
+        {
+            NOUS_ERROR("[%s] Failed to acquire renderer resources for texture '%s'",
+                       __FUNCTION__, texture->GetName().c_str());
+            return false;
+        }
 
         // Clean up data.
         stbi_image_free(data);

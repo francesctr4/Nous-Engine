@@ -1,60 +1,74 @@
-#ifndef RENDERERFRONTEND_H
-#define RENDERERFRONTEND_H
+#ifndef NOUS_ENGINE_RENDERER_FRONTEND_H
+#define NOUS_ENGINE_RENDERER_FRONTEND_H
 
 #include "Renderer/RendererTypes.h"
-#include "Core/Globals.h"
+#include <functional>
 
+// Forward declarations
+class RendererBackend;
 class ResourceMesh;
 class ResourceMaterial;
 class ResourceTexture;
 
-class RendererBackend;
-
+/**
+ * @brief High-level rendering controller.
+ *
+ * Orchestrates frame rendering, render passes, and delegates GPU operations to RendererBackend.
+ */
 class RendererFrontend
 {
 public:
-
 	RendererFrontend();
-	virtual ~RendererFrontend();
+	~RendererFrontend();
 
-	bool Initialize(RendererBackendType backendType);
+	// ---------------------------------------------------------------------
+	// Accessors
+	// ---------------------------------------------------------------------
+	void SetBackendType(RendererBackendType backendType) noexcept { mBackendType = backendType; }
+	[[nodiscard]] RendererBackendType GetBackendType() const noexcept { return mBackendType; }
+
+	// ---------------------------------------------------------------------
+	// Lifecycle
+	// ---------------------------------------------------------------------
+	[[nodiscard]] bool Initialize(RendererBackendType backendType);
 	void Shutdown();
+	void OnResized(uint16_t width, uint16_t height);
 
-	void OnResized(uint16 width, uint16 height);
+	// ---------------------------------------------------------------------
+	// Rendering
+	// ---------------------------------------------------------------------
+	[[nodiscard]] FrameResult DrawFrame(RenderPacket* packet);
 
-	bool DrawFrame(RenderPacket* packet);
-
-	void CreateTexture(const uint8* pixels, ResourceTexture* outTexture);
+	// ---------------------------------------------------------------------
+	// GPU Resource Management
+	// ---------------------------------------------------------------------
+	[[nodiscard]] bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture);
 	void DestroyTexture(ResourceTexture* texture);
 
-	bool CreateMaterial(ResourceMaterial* material);
+	[[nodiscard]] bool CreateMaterial(ResourceMaterial* material);
 	void DestroyMaterial(ResourceMaterial* material);
 
-	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry);
+	[[nodiscard]] bool CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices,
+									  uint32_t indexCount, const uint32_t* indices,
+									  ResourceMesh* outGeometry);
 	void DestroyGeometry(ResourceMesh* geometry);
 
 private:
+	// ---------------------------------------------------------------------
+	// Internal helpers
+	// ---------------------------------------------------------------------
+	[[nodiscard]] FrameResult BeginFrame(float dt);
+	[[nodiscard]] FrameResult EndFrame(float dt);
 
-	bool BeginFrame(float dt);
-	bool EndFrame(float dt);
+	[[nodiscard]] bool ExecuteRenderpass(RenderpassType pass, const std::function<void()>& drawCommands);
 
-	bool BeginRenderpass(RenderpassType renderpassID);
-	bool EndRenderpass(RenderpassType renderpassID);
-
-	void UpdateGlobalWorldState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode);
-	void UpdateGlobalUIState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode);
-
-	void DrawGeometry(RenderpassType renderpassID, GeometryRenderData renderData);
 	void DrawEditor();
-
-public:
-
-	RendererBackendType backendType;
 
 private:
 
-	RendererBackend* backend;
+	RendererBackend* mBackend;
+	RendererBackendType mBackendType;
 
 };
 
-#endif // RENDERERFRONTEND_H
+#endif // NOUS_ENGINE_RENDERER_FRONTEND_H

@@ -53,7 +53,7 @@ bool ModuleEditor::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	currentBackendType = App->renderer->GetRendererFrontend()->backendType;
+	currentBackendType = App->renderer->GetRendererFrontend()->GetBackendType();
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();

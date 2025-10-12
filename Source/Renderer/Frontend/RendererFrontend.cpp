@@ -1,100 +1,189 @@
-#include "RendererFrontend.h"
+#include "Renderer/Frontend/RendererFrontend.h"
 #include "Renderer/Backend/RendererBackend.h"
+
 #include "Core/Application.h"
+#include "Core/Modules/ModuleEditor.h"
+
+#include "Systems/Camera System/Camera.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "Utils/Logger.h"
 
-#include "Systems/Texture System/TextureSystem.h"
-#include "Systems/Material System/MaterialSystem.h"
-#include "Systems/Geometry System/GeometrySystem.h"
-#include "Systems/Camera System/Camera.h"
-
-#include "Core/Modules/ModuleEditor.h"
-
 RendererFrontend::RendererFrontend()
 {
-	backendType = RendererBackendType::UNKNOWN;
-	backend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
+	mBackendType = RendererBackendType::UNKNOWN;
+	mBackend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
 }
 
 RendererFrontend::~RendererFrontend()
 {
-	NOUS_DELETE(backend, MemoryManager::MemoryTag::RENDERER);
+	NOUS_DELETE(mBackend, MemoryManager::MemoryTag::RENDERER);
 }
 
 bool RendererFrontend::Initialize(RendererBackendType backendType)
 {
-	bool ret = true;
+	mBackendType = backendType;
 
-	this->backendType = backendType;
-
-	// TODO: Make this configurable
-	backend->Create(backendType);
-	backend->frameNumber = 0;
-
-	if (!backend->Initalize()) 
+	if(!mBackend->Create(backendType))
 	{
-		NOUS_FATAL("[%s] Renderer backend failed to initialize. Shutting down.", __FUNCTION__);
-		ret = false;
+		NOUS_ERROR("[%s] Renderer backend failed to create. Aborting application...", __FUNCTION__);
+		return false;
 	}
 
-	NOUS_TextureSystem::Initialize();
-	NOUS_MaterialSystem::Initialize();
-	NOUS_GeometrySystem::Initialize();
+	if (!mBackend->Initialize())
+	{
+		NOUS_ERROR("[%s] Renderer backend initialization failed. Aborting application...", __FUNCTION__);
 
-	return ret;
+		Shutdown();
+		return false;
+	}
+
+	return true;
 }
 
 void RendererFrontend::Shutdown()
 {
-	NOUS_GeometrySystem::Shutdown();
-	NOUS_MaterialSystem::Shutdown();
-	NOUS_TextureSystem::Shutdown();
+	if (!mBackend) return;
 
-	backend->Shutdown();
+	mBackend->Shutdown();
+	mBackend->Destroy();
 }
 
-void RendererFrontend::OnResized(uint16 width, uint16 height)
+void RendererFrontend::OnResized(uint16_t width, uint16_t height)
 {
-	backend->Resized(width, height);
+	mBackend->Resized(width, height);
 }
 
-bool RendererFrontend::BeginFrame(float dt)
+FrameResult RendererFrontend::BeginFrame(float dt)
 {
-	return backend->BeginFrame(dt);
+	return mBackend->BeginFrame(dt);
 }
 
-bool RendererFrontend::EndFrame(float dt)
+FrameResult RendererFrontend::EndFrame(float dt)
 {
-	bool result = backend->EndFrame(dt);
-	backend->frameNumber++;
+	FrameResult result = mBackend->EndFrame(dt);
+
+	if (result == FrameResult::SUCCESS)
+	{
+		mBackend->frameNumber++;
+	}
 
 	return result;
 }
 
-bool RendererFrontend::BeginRenderpass(RenderpassType renderpassID)
+FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 {
-	return backend->BeginRenderpass(renderpassID);
+	if (!packet || !packet->editorCamera || !packet->gameCamera)
+	{
+		NOUS_WARN("[%s] Missing render packet or cameras; skipping frame.", __FUNCTION__);
+		return FrameResult::SKIPPED;
+	}
+
+	// --- BEGIN FRAME ---
+	const FrameResult beginResult = BeginFrame(packet->deltaTime);
+
+	switch (beginResult)
+	{
+		case FrameResult::SUCCESS:
+			break;
+
+		case FrameResult::SKIPPED:
+			NOUS_DEBUG("[%s] Frame skipped (swapchain recreation/minimized).", __FUNCTION__);
+			return FrameResult::SKIPPED;
+
+		case FrameResult::ERROR:
+			NOUS_ERROR("[%s] BeginFrame() failed.", __FUNCTION__);
+			return FrameResult::ERROR;
+	}
+
+	bool success = true;
+
+	// --- SCENE PASS ---
+	RenderpassType sceneRenderpass = RenderpassType::SCENE;
+	success &= ExecuteRenderpass(sceneRenderpass, [&]()
+	{
+		mBackend->UpdateGlobalWorldState(
+				sceneRenderpass,
+				packet->editorCamera->GetProjectionMatrix(),
+				packet->editorCamera->GetViewMatrix(),
+				packet->editorCamera->GetPos(),
+				glm::vec4(1.0f), 0);
+
+		for (auto& geometry : packet->geometries)
+		{
+			mBackend->DrawGeometry(sceneRenderpass, geometry);
+		}
+	});
+
+	// --- GAME PASS ---
+	RenderpassType gameRenderpass = RenderpassType::GAME;
+	success &= ExecuteRenderpass(gameRenderpass, [&]()
+	{
+		mBackend->UpdateGlobalWorldState(
+				gameRenderpass,
+				packet->gameCamera->GetProjectionMatrix(),
+				packet->gameCamera->GetViewMatrix(),
+				packet->gameCamera->GetPos(),
+				glm::vec4(1.0f), 0);
+
+		for (auto& geometry : packet->geometries)
+		{
+			mBackend->DrawGeometry(gameRenderpass, geometry);
+		}
+	});
+
+	// --- UI PASS ---
+	RenderpassType uiRenderpass = RenderpassType::UI;
+	success &= ExecuteRenderpass(uiRenderpass, [&]()
+	{
+		mBackend->UpdateGlobalUIState(
+				uiRenderpass,
+				packet->editorCamera->GetProjectionMatrix(),
+				packet->editorCamera->GetViewMatrix(), 0);
+
+		DrawEditor();
+	});
+
+	// --- END FRAME ---
+	const FrameResult endResult = EndFrame(packet->deltaTime);
+
+	if (endResult == FrameResult::ERROR)
+	{
+		NOUS_ERROR("[%s] EndFrame() failed.", __FUNCTION__);
+		return FrameResult::ERROR;
+	}
+
+	if (endResult == FrameResult::SKIPPED)
+	{
+		NOUS_DEBUG("[%s] Frame skipped during EndFrame (likely swapchain reset).", __FUNCTION__);
+		return FrameResult::SKIPPED;
+	}
+
+	if (!success)
+	{
+		NOUS_ERROR("[%s] One or more render passes failed.", __FUNCTION__);
+		return FrameResult::ERROR;
+	}
+
+	return FrameResult::SUCCESS;
 }
 
-bool RendererFrontend::EndRenderpass(RenderpassType renderpassID)
+bool RendererFrontend::ExecuteRenderpass(RenderpassType type, const std::function<void()>& drawCommands)
 {
-	return backend->EndRenderpass(renderpassID);
-}
+	if (!mBackend->BeginRenderpass(type))
+	{
+		NOUS_ERROR("[%s] Begin Renderpass with type (%d) failed!", __FUNCTION__, static_cast<int>(type));
+		return false;
+	}
 
-void RendererFrontend::UpdateGlobalWorldState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode)
-{
-	backend->UpdateGlobalWorldState(renderpassID, projection, view, viewPosition, ambientColor, mode);
-}
+	drawCommands();
 
-void RendererFrontend::UpdateGlobalUIState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode)
-{
-	backend->UpdateGlobalUIState(renderpassID, projection, view, mode);
-}
+	if (!mBackend->EndRenderpass(type))
+	{
+		NOUS_ERROR("[%s] End Renderpass with type (%d) failed!", __FUNCTION__, static_cast<int>(type));
+		return false;
+	}
 
-void RendererFrontend::DrawGeometry(RenderpassType renderpassID, GeometryRenderData renderData)
-{
-	backend->DrawGeometry(renderpassID, renderData);
+	return true;
 }
 
 void RendererFrontend::DrawEditor()
@@ -102,119 +191,32 @@ void RendererFrontend::DrawEditor()
 	External->editor->DrawEditor();
 }
 
-void RendererFrontend::CreateTexture(const uint8* pixels, ResourceTexture* outTexture)
+bool RendererFrontend::CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture)
 {
-	backend->CreateTexture(pixels, outTexture);
+	return mBackend->CreateTexture(pixels, outTexture);
 }
 
 void RendererFrontend::DestroyTexture(ResourceTexture* texture)
 {
-	backend->DestroyTexture(texture);
+	mBackend->DestroyTexture(texture);
 }
 
 bool RendererFrontend::CreateMaterial(ResourceMaterial* material)
 {
-	return backend->CreateMaterial(material);
+	return mBackend->CreateMaterial(material);
 }
 
 void RendererFrontend::DestroyMaterial(ResourceMaterial* material)
 {
-	backend->DestroyMaterial(material);
+	mBackend->DestroyMaterial(material);
 }
 
-bool RendererFrontend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry)
+bool RendererFrontend::CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices, uint32_t indexCount, const uint32_t* indices, ResourceMesh* outGeometry)
 {
-	return backend->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
+	return mBackend->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
 }
 
 void RendererFrontend::DestroyGeometry(ResourceMesh* geometry)
 {
-	backend->DestroyGeometry(geometry);
-}
-
-bool RendererFrontend::DrawFrame(RenderPacket* packet)
-{
-	bool ret = true;
-
-	// If the begin frame returned successfully, mid-frame operations may continue.
-	if (BeginFrame(packet->deltaTime)) 
-	{
-		// ----------------------------------------------------------------------------------------------------- //
-
-		if (!BeginRenderpass(RenderpassType::SCENE))
-		{
-			NOUS_ERROR("BeginRenderpass SCENE failed! Application shutting down...");
-			ret = false;
-		}
-
-		// Use Camera Attributes, passed along with renderpacket.
-		UpdateGlobalWorldState(RenderpassType::SCENE, packet->editorCamera->GetProjectionMatrix(), packet->editorCamera->GetViewMatrix(), packet->editorCamera->GetPos(), glm::vec4(1.0f), 0);
-
-		for (auto& geometry : packet->geometries)
-		{
-			DrawGeometry(RenderpassType::SCENE, geometry);
-		}
-
-		// DrawGameCamera();
-		// DrawGrid();
-
-		if (!EndRenderpass(RenderpassType::SCENE))
-		{
-			NOUS_ERROR("EndRenderpass SCENE failed! Application shutting down...");
-			ret = false;
-		}
-
-		// ----------------------------------------------------------------------------------------------------- //
-
-		if (!BeginRenderpass(RenderpassType::GAME))
-		{
-			NOUS_ERROR("BeginRenderpass GAME failed! Application shutting down...");
-			ret = false;
-		}
-
-		// Use Camera Attributes, passed along with renderpacket.
-		UpdateGlobalWorldState(RenderpassType::GAME, packet->gameCamera->GetProjectionMatrix(), packet->gameCamera->GetViewMatrix(), packet->gameCamera->GetPos(), glm::vec4(1.0f), 0);
-
-		for (auto& geometry : packet->geometries)
-		{
-			DrawGeometry(RenderpassType::GAME, geometry);
-		}
-
-		if (!EndRenderpass(RenderpassType::GAME))
-		{
-			NOUS_ERROR("EndRenderpass GAME failed! Application shutting down...");
-			ret = false;
-		}
-
-		// ----------------------------------------------------------------------------------------------------- //
-
-		if (!BeginRenderpass(RenderpassType::UI))
-		{
-			NOUS_ERROR("BeginRenderpass UI failed! Application shutting down...");
-			ret = false;
-		}
-
-		UpdateGlobalUIState(RenderpassType::UI, packet->editorCamera->GetProjectionMatrix(), packet->editorCamera->GetViewMatrix(), 0);
-		
-		DrawEditor();
-
-		if (!EndRenderpass(RenderpassType::UI))
-		{
-			NOUS_ERROR("EndRenderpass UI failed! Application shutting down...");
-			ret = false;
-		}
-
-		// ----------------------------------------------------------------------------------------------------- //
-
-		// End of the frame. If this fails, it is likely unrecoverable.
-		bool result = EndFrame(packet->deltaTime);
-
-		if (!result) 
-		{
-			NOUS_ERROR("RendererFrontend::EndFrame() failed. Application shutting down...");
-			ret = false;
-		}
-	}
-
-	return ret;
+	mBackend->DestroyGeometry(geometry);
 }

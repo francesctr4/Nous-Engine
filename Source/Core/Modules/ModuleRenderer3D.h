@@ -60,10 +60,11 @@ private:
 	// ---------------------------------------------------------------------
 	[[nodiscard]] bool BuildRenderPacket(RenderPacket* packet);
 
+private:
 	// ---------------------------------------------------------------------
 	// Members
 	// ---------------------------------------------------------------------
-	RendererFrontend* rendererFrontend;
+	RendererFrontend* mRendererFrontend;
 };
 
 #endif // NOUS_ENGINE_MODULE_RENDERER3D_H

@@ -17,34 +17,37 @@
 #include <tracy/Tracy.hpp>
 #endif
 
+// TODO: TEMP
+#include "Systems/Texture System/TextureSystem.h"
+#include "Systems/Material System/MaterialSystem.h"
+#include "Systems/Geometry System/GeometrySystem.h"
+
 ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	rendererFrontend = NOUS_NEW<RendererFrontend>(MemoryManager::MemoryTag::RENDERER);
+	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryManager::MemoryTag::RENDERER);
 }
 
 ModuleRenderer3D::~ModuleRenderer3D()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	NOUS_DELETE(rendererFrontend, MemoryManager::MemoryTag::RENDERER);
+	NOUS_DELETE(mRendererFrontend, MemoryManager::MemoryTag::RENDERER);
 }
 
 bool ModuleRenderer3D::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	rendererFrontend->backendType = RendererBackendType::VULKAN;
+	mRendererFrontend->SetBackendType(RendererBackendType::VULKAN);
 
-	if (!rendererFrontend->Initialize(rendererFrontend->backendType))
+	if (!mRendererFrontend->Initialize(mRendererFrontend->GetBackendType()))
 	{
-		NOUS_FATAL("[%s] Failed to initialize renderer. Aborting application.", __FUNCTION__);
+		NOUS_FATAL("[%s] Failed to initialize renderer frontend with backend of type (%d). Aborting application.",
+				   __FUNCTION__, static_cast<int>(mRendererFrontend->GetBackendType()));
 		return false;
 	}
-
-	NOUS_INFO("[%s] Renderer Frontend initialized successfully with Renderer Backend: %d",
-			  __FUNCTION__, static_cast<int>(rendererFrontend->backendType));
 
 	return true;
 }
@@ -52,7 +55,12 @@ bool ModuleRenderer3D::Awake()
 bool ModuleRenderer3D::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-	
+
+	// TODO: This should be done in a different way.
+	NOUS_TextureSystem::Initialize();
+	NOUS_MaterialSystem::Initialize();
+	NOUS_GeometrySystem::Initialize();
+
 	return true;
 }
 
@@ -79,17 +87,26 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 #endif
 
 	RenderPacket packet{};
-
 	packet.deltaTime = dt;
 	packet.editorCamera = App->camera->GetCamera();
-	packet.gameCamera = App->scene->gameCamera;
+	packet.gameCamera  = App->scene->gameCamera;
 
 	if (BuildRenderPacket(&packet) && !App->isMinimized)
 	{
-		if (!rendererFrontend->DrawFrame(&packet))
+		FrameResult result = mRendererFrontend->DrawFrame(&packet);
+
+		switch (result)
 		{
-			NOUS_FATAL("[%s] Failed to draw frame. Aborting application.", __FUNCTION__);
-			return UpdateStatus::ERROR;
+			case FrameResult::SUCCESS:
+				break;
+
+			case FrameResult::SKIPPED:
+				NOUS_INFO("[%s] Frame skipped (window resize or swapchain recreation).", __FUNCTION__);
+				break;
+
+			case FrameResult::ERROR:
+				NOUS_FATAL("[%s] Fatal rendering error. Aborting application.", __FUNCTION__);
+				return UpdateStatus::ERROR;
 		}
 	}
 
@@ -100,7 +117,12 @@ bool ModuleRenderer3D::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	rendererFrontend->Shutdown();
+	// TODO: This should be done in a different way.
+	NOUS_GeometrySystem::Shutdown();
+	NOUS_MaterialSystem::Shutdown();
+	NOUS_TextureSystem::Shutdown();
+
+	mRendererFrontend->Shutdown();
 
 	NOUS_INFO("[%s] Renderer Frontend shutdown was successful.", __FUNCTION__);
 
@@ -119,7 +141,7 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 					  event.context._i64[0],
 					  event.context._i64[1]);
 
-			rendererFrontend->OnResized(event.context._i64[0], event.context._i64[1]);
+			mRendererFrontend->OnResized(event.context._i64[0], event.context._i64[1]);
 
 			break;
 		}
@@ -136,7 +158,7 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 
 RendererFrontend *ModuleRenderer3D::GetRendererFrontend() const
 {
-	return rendererFrontend;
+	return mRendererFrontend;
 }
 
 bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)

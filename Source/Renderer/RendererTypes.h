@@ -16,6 +16,13 @@ class ResourceTexture;
 // -----------------------------------------------------------------------------
 // Core rendering data
 // -----------------------------------------------------------------------------
+enum class FrameResult : uint8_t
+{
+    SUCCESS = 0,       // Frame rendered successfully
+    SKIPPED = 1,  // Frame intentionally skipped (e.g., swapchain recreation)
+    ERROR = 2     // Fatal failure
+};
+
 struct GeometryRenderData
 {
     GeometryRenderData() : model(1.0f), geometry(nullptr), material(nullptr) {}
@@ -76,8 +83,8 @@ struct IRendererBackend
     virtual void Resized(uint16_t width, uint16_t height) noexcept = 0;
 
     // Frame lifecycle
-    [[nodiscard]] virtual bool BeginFrame(float dt) = 0;
-    [[nodiscard]] virtual bool EndFrame(float dt) = 0;
+    [[nodiscard]] virtual FrameResult BeginFrame(float dt) = 0;
+    [[nodiscard]] virtual FrameResult EndFrame(float dt) = 0;
 
     // Render passes
     [[nodiscard]] virtual bool BeginRenderpass(RenderpassType renderpassID) = 0;

@@ -10,7 +10,7 @@ namespace NOUS_VulkanSwapChain
     void RecreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain);
     void DestroySwapChain(VulkanContext* vkContext, VulkanSwapChain* swapChain);
 
-    bool SwapChainAcquireNextImageIndex(
+    VkResult SwapChainAcquireNextImageIndex(
         VulkanContext* vkContext,
         VulkanSwapChain* swapchain,
         uint64 timeout_ns,
@@ -18,7 +18,7 @@ namespace NOUS_VulkanSwapChain
         VkFence fence,
         uint32* outImageIndex);
 
-    void SwapChainPresent(
+    VkResult SwapChainPresent(
         VulkanContext* vkContext,
         VulkanSwapChain* swapchain,
         VkQueue graphicsQueue,

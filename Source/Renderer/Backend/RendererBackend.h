@@ -18,13 +18,13 @@ public:
 	bool Create(RendererBackendType bType);
 	void Destroy();
 
-	bool Initalize();
+	bool Initialize();
 	void Shutdown();
 
 	void Resized(uint16 width, uint16 height);
 
-	bool BeginFrame(float dt);
-	bool EndFrame(float dt);
+	FrameResult BeginFrame(float dt);
+	FrameResult EndFrame(float dt);
 
 	bool BeginRenderpass(RenderpassType renderpassID);
 	bool EndRenderpass(RenderpassType renderpassID);

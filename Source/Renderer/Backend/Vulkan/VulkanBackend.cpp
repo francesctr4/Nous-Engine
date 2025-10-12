@@ -340,151 +340,200 @@ void VulkanBackend::Resized(uint16 width, uint16 height) noexcept
     NOUS_INFO("Vulkan Renderer Backend --> Resized: W / H / GEN: %i / %i / %llu", width, height, vkContext->framebufferSizeGeneration);
 }
 
-bool VulkanBackend::BeginFrame(float dt)
+FrameResult VulkanBackend::BeginFrame(float dt)
 {
     ProcessPendingSubmissions();
 
     vkContext->frameDeltaTime = dt;
-
     VulkanDevice* device = &vkContext->device;
 
-    if (vkContext->recreatingSwapchain) // Check if recreating swap chain and boot out.
+    // If we are in the middle of recreating the swapchain, skip this frame gracefully.
+    if (vkContext->recreatingSwapchain)
     {
-        VkResult result = vkDeviceWaitIdle(device->logicalDevice);
-
-        if (!VkResultIsSuccess(result)) 
+        VkResult waitRes = vkDeviceWaitIdle(device->logicalDevice);
+        if (!VkResultIsSuccess(waitRes))
         {
-            NOUS_ERROR("VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (1) failed: '%s'", VkResultMessage(result, true).c_str());
-            return false;
+            NOUS_ERROR("VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (recreate) failed: '%s'",
+                       VkResultMessage(waitRes, true).c_str());
+            return FrameResult::ERROR;
         }
 
-        NOUS_INFO("Recreating Vulkan Swapchain, booting.");
-        return false;
+        // Try to rebuild swapchain-dependent resources. If this fails, skip again (e.g., minimized).
+        if (!RecreateResources())
+        {
+            NOUS_INFO("Swapchain recreation still pending (likely minimized). Skipping frame.");
+            return FrameResult::SKIPPED;
+        }
+
+        NOUS_INFO("Swapchain recreated. Skipping frame to complete transition.");
+        return FrameResult::SKIPPED;
     }
 
-    // Check if the Framebuffer has been resized. If so, a new swapchain must be created.
-
+    // Detect resize: framebuffer generation changed -> rebuild swapchain
     if (vkContext->framebufferSizeGeneration != vkContext->framebufferSizeLastGeneration)
     {
-        VkResult result = vkDeviceWaitIdle(device->logicalDevice);
-
-        if (!VkResultIsSuccess(result))
+        VkResult waitRes = vkDeviceWaitIdle(device->logicalDevice);
+        if (!VkResultIsSuccess(waitRes))
         {
-            NOUS_ERROR("VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (2) failed: '%s'", VkResultMessage(result, true).c_str());
-            return false;
+            NOUS_ERROR("VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (resize) failed: '%s'",
+                       VkResultMessage(waitRes, true).c_str());
+            return FrameResult::ERROR;
         }
 
-        // If the swapchain recreation failed (because, for example, the window was minimized),
-        // boot out before unsetting the flag.
-        if (!RecreateResources()) 
+        if (!RecreateResources())
         {
-            return false;
+            NOUS_INFO("Resize detected but resources not ready (likely minimized). Skipping frame.");
+            return FrameResult::SKIPPED;
         }
 
-        NOUS_INFO("Resized, booting.");
-        return false;
+        NOUS_INFO("Resize handled. Skipping this frame.");
+        return FrameResult::SKIPPED;
     }
 
-    // Wait for the execution of the current frame to complete. The fence being free will allow this one to move on.
-    VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame], true, UINT64_MAX);
-    if (!VkResultIsSuccess(result))
+    // Wait for the current frame's fence (CPU/GPU sync).
     {
-        NOUS_FATAL("In-flight fence wait failure! Error: %s", VkResultMessage(result, true).c_str());
-        return false;
+        VkFence inFlight = vkContext->inFlightFences[vkContext->currentFrame];
+        VkResult fenceRes = vkWaitForFences(device->logicalDevice, 1, &inFlight, VK_TRUE, UINT64_MAX);
+        if (!VkResultIsSuccess(fenceRes))
+        {
+            NOUS_FATAL("In-flight fence wait failure! Error: %s", VkResultMessage(fenceRes, true).c_str());
+            return FrameResult::ERROR;
+        }
     }
 
-    // Acquire the next image from the swap chain. Pass along the semaphore that should signaled when this completes.
-    // This same semaphore will later be waited on by the queue submission to ensure this image is available.
-    if (!NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(vkContext, &vkContext->swapChain, UINT64_MAX,
-        vkContext->imageAvailableSemaphores[vkContext->currentFrame], 0, &vkContext->imageIndex))
+    // Acquire next image from the swapchain.
+    // IMPORTANT: handle OUT_OF_DATE and SUBOPTIMAL as "skip and recreate".
     {
-        NOUS_FATAL("Failed to acquire next image index, booting.");
-        return false;
+        VkResult acquireRes = NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(
+                vkContext,
+                &vkContext->swapChain,
+                UINT64_MAX,
+                vkContext->imageAvailableSemaphores[vkContext->currentFrame],
+                VK_NULL_HANDLE,
+                &vkContext->imageIndex);
+
+        if (acquireRes == VK_ERROR_OUT_OF_DATE_KHR || acquireRes == VK_SUBOPTIMAL_KHR)
+        {
+            // Trigger recreation on next frame; skip now.
+            vkContext->recreatingSwapchain = true;
+            NOUS_INFO("Swapchain acquire returned %s. Scheduling recreation, skipping frame.",
+                      VkResultMessage(acquireRes, true).c_str());
+            return FrameResult::SKIPPED;
+        }
+
+        if (!VkResultIsSuccess(acquireRes))
+        {
+            NOUS_FATAL("Failed to acquire next image index: %s", VkResultMessage(acquireRes, true).c_str());
+            return FrameResult::ERROR;
+        }
     }
 
-    return true;
+    return FrameResult::SUCCESS;
 }
 
-bool VulkanBackend::EndFrame(float dt)
+FrameResult VulkanBackend::EndFrame(float /*dt*/)
 {
-    // Make sure the previous frame is not using this image (i.e. its fence is being waited on)
-    if (vkContext->imagesInFlight[vkContext->imageIndex] != VK_NULL_HANDLE) // was frame
-    {  
-        VkResult result = vkWaitForFences(vkContext->device.logicalDevice, 1, &vkContext->imagesInFlight[vkContext->imageIndex], true, UINT64_MAX);
-        if (!VkResultIsSuccess(result))
+    // Ensure the image we are about to use isn't still in-flight from a previous frame.
+    if (vkContext->imagesInFlight[vkContext->imageIndex] != VK_NULL_HANDLE)
+    {
+        VkFence imgFence = vkContext->imagesInFlight[vkContext->imageIndex];
+        VkResult waitRes = vkWaitForFences(vkContext->device.logicalDevice, 1, &imgFence, VK_TRUE, UINT64_MAX);
+        if (!VkResultIsSuccess(waitRes))
         {
-            NOUS_FATAL("VkFence wait failure! Error: %s", VkResultMessage(result, true).c_str());
-            return false;
+            NOUS_FATAL("Image fence wait failure! Error: %s", VkResultMessage(waitRes, true).c_str());
+            return FrameResult::ERROR;
         }
     }
 
-    // Mark the image fence as in-use by this frame.
+    // Mark this swapchain image as now being used by this frame's fence.
     vkContext->imagesInFlight[vkContext->imageIndex] = vkContext->inFlightFences[vkContext->currentFrame];
 
-    // Reset the fence for use on the next frame
-    VK_CHECK(vkResetFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame]));
+    // Reset the current frame fence for reuse.
+    {
+        VkResult resetRes = vkResetFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame]);
+        if (!VkResultIsSuccess(resetRes))
+        {
+            NOUS_ERROR("vkResetFences failed: %s", VkResultMessage(resetRes, true).c_str());
+            return FrameResult::ERROR;
+        }
+    }
 
-    std::array<VulkanCommandBuffer*, 3> commandBuffers = { 
-        &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex], 
-        &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex], 
-        &vkContext->graphicsCommandBuffers[vkContext->imageIndex] 
-    };
+    // Collect command buffers for this frame
+    std::array<VkCommandBuffer, 3> cmdBuffers =
+            {
+                    vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex].handle,
+                    vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex].handle,
+                    vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle
+            };
 
-    std::array<VkCommandBuffer, 3> commandBuffersPtrs = { 
-        vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex].handle,
-        vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex].handle,
-        vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle 
-    };
-
-    // Submit the queue and wait for the operation to complete.
-    // Begin queue submission
+    // Submit to graphics queue
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    // Command buffer(s) to be executed.
-    submitInfo.commandBufferCount = static_cast<uint32>(commandBuffersPtrs.size());
-    submitInfo.pCommandBuffers = commandBuffersPtrs.data();
+    submitInfo.commandBufferCount = static_cast<uint32>(cmdBuffers.size());
+    submitInfo.pCommandBuffers    = cmdBuffers.data();
 
-    // The semaphore(s) to be signaled when the queue is complete.
+    // Signal when graphics queue is done
     submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &vkContext->queueCompleteSemaphores[vkContext->currentFrame];
+    submitInfo.pSignalSemaphores    = &vkContext->queueCompleteSemaphores[vkContext->currentFrame];
 
-    // Wait semaphore ensures that the operation cannot begin until the image is available.
+    // Wait on the "image available" semaphore before executing CBs
     submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &vkContext->imageAvailableSemaphores[vkContext->currentFrame];
+    submitInfo.pWaitSemaphores    = &vkContext->imageAvailableSemaphores[vkContext->currentFrame];
 
-    // Each semaphore waits on the corresponding pipeline stage to complete. 1:1 ratio.
-    
-    // VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT prevents subsequent colour attachment
-    // writes from executing until the semaphore signals (i.e. one frame is presented at a time)
-    VkPipelineStageFlags flags[2] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 
-        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT };
-    submitInfo.pWaitDstStageMask = flags;
+    // IMPORTANT: wait stage mask count MUST equal waitSemaphoreCount (was mismatched before)
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.pWaitDstStageMask = waitStages;
 
-    VkResult result = vkQueueSubmit(vkContext->device.graphicsQueue, 1, &submitInfo, 
-        vkContext->inFlightFences[vkContext->currentFrame]);
+    VkResult submitRes = vkQueueSubmit(
+            vkContext->device.graphicsQueue,
+            1, &submitInfo,
+            vkContext->inFlightFences[vkContext->currentFrame]);
 
-    if (result != VK_SUCCESS) 
+    if (!VkResultIsSuccess(submitRes))
     {
-        NOUS_ERROR("vkQueueSubmit failed with result: '%s'", VkResultMessage(result, true).c_str());
-        return false;
+        NOUS_ERROR("vkQueueSubmit failed: %s", VkResultMessage(submitRes, true).c_str());
+        return FrameResult::ERROR;
     }
 
-    for (auto& cb : commandBuffers) 
+    // Mark CBs as submitted (your helper)
     {
-        NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(cb);
+        NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(
+                &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex]);
+        NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(
+                &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex]);
+        NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(
+                &vkContext->graphicsCommandBuffers[vkContext->imageIndex]);
     }
 
-    // End queue submission
-    // Give the image back to the swapchain.
-    NOUS_VulkanSwapChain::SwapChainPresent(vkContext, &vkContext->swapChain, vkContext->device.graphicsQueue,
-        vkContext->device.presentQueue, vkContext->queueCompleteSemaphores[vkContext->currentFrame],
-        vkContext->imageIndex);
+    // Present
+    VkResult presentRes = NOUS_VulkanSwapChain::SwapChainPresent(
+            vkContext,
+            &vkContext->swapChain,
+            vkContext->device.graphicsQueue,
+            vkContext->device.presentQueue,
+            vkContext->queueCompleteSemaphores[vkContext->currentFrame],
+            vkContext->imageIndex);
 
-    // TODO: Fix problem on class and ImGui
+    if (presentRes == VK_ERROR_OUT_OF_DATE_KHR || presentRes == VK_SUBOPTIMAL_KHR)
+    {
+        // Trigger recreation path and skip this frame; not fatal.
+        vkContext->recreatingSwapchain = true;
+        NOUS_INFO("Queue present returned %s. Scheduling recreation; skipping frame.",
+                  VkResultMessage(presentRes, true).c_str());
+        return FrameResult::SKIPPED;
+    }
+
+    if (!VkResultIsSuccess(presentRes))
+    {
+        NOUS_ERROR("Queue present failed: %s", VkResultMessage(presentRes, true).c_str());
+        return FrameResult::ERROR;
+    }
+
+    // TODO: If I don't put this here, I get validation errors. Something must be wrong.
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
-	return true;
+    return FrameResult::SUCCESS;
 }
 
 bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)

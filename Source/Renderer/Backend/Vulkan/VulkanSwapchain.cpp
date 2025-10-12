@@ -118,7 +118,7 @@ void NOUS_VulkanSwapChain::DestroySwapChain(VulkanContext* vkContext, VulkanSwap
     vkDestroySwapchainKHR(vkContext->device.logicalDevice, swapChain->handle, vkContext->allocator);
 }
 
-bool NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(VulkanContext* vkContext, VulkanSwapChain* swapchain, uint64 timeout_ns,
+VkResult NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(VulkanContext* vkContext, VulkanSwapChain* swapchain, uint64 timeout_ns,
     VkSemaphore imageAvailableSemaphore, VkFence fence, uint32* outImageIndex)
 {
     VkResult result = vkAcquireNextImageKHR(vkContext->device.logicalDevice, swapchain->handle, timeout_ns,
@@ -128,18 +128,18 @@ bool NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(VulkanContext* vkConte
     {
         // Trigger swapchain recreation, then boot out of the render loop.
         RecreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, swapchain);
-        return false;
+        return result;
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) 
     {
         NOUS_FATAL("Failed to acquire swapchain image!");
-        return false;
+        return result;
     }
 
-    return true;
+    return result;
 }
 
-void NOUS_VulkanSwapChain::SwapChainPresent(VulkanContext* vkContext, VulkanSwapChain* swapchain, VkQueue graphicsQueue,
+VkResult NOUS_VulkanSwapChain::SwapChainPresent(VulkanContext* vkContext, VulkanSwapChain* swapchain, VkQueue graphicsQueue,
     VkQueue presentQueue, VkSemaphore renderCompleteSemaphore, uint32 presentImageIndex)
 {
     // Return the image to the swapchain for presentation.
@@ -169,6 +169,8 @@ void NOUS_VulkanSwapChain::SwapChainPresent(VulkanContext* vkContext, VulkanSwap
 
     // Increment (and loop) the index.
     vkContext->currentFrame = (vkContext->currentFrame + 1) % swapchain->maxFramesInFlight;
+
+    return result;
 }
 
 VkSurfaceFormatKHR NOUS_VulkanSwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
