@@ -10,7 +10,9 @@
 
 #include "Utils/Logger.h"
 #include "Systems/Memory Manager/MemoryManager.h"
-#include "Includes/SDL3.h"
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include "Systems/Time Management/TimeManager.h"
 #include "Multithreading/NOUS_JobSystem.h"

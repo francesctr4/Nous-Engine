@@ -6,6 +6,9 @@
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "ModuleWindow.h"
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+
 ModuleInput::ModuleInput(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);

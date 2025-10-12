@@ -4,7 +4,11 @@
 #include "Core/Application.h"
 #include <algorithm>  // Required for std::clamp
 #include "Includes/glmath.h"
-#include "Includes/SDL3.h"
+
+// SDL3
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+
 #include "Systems/Event System/EventSystem.h"
 
 ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)

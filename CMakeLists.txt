@@ -18,8 +18,6 @@ set(ALL_SOURCES
         "Source/Core/Globals.h"
         "Source/Core/Main.cpp"
 
-        "Source/Data Structures/DynamicArray.h"
-
         "Source/Editor/ImGuiConfig/ImGuiCustom.cpp"
         "Source/Editor/ImGuiConfig/ImGuiCustom.h"
         "Source/Editor/Windows/AssetsBrowser.cpp"
@@ -38,14 +36,11 @@ set(ALL_SOURCES
         "Source/Editor/Windows/SceneViewport.h"
         "Source/Editor/IEditorWindow.inl"
 
-        "Source/Includes/Assimp.h"
         "Source/Includes/ImGui.h"
         "Source/Includes/glmath.h"
-        "Source/Includes/SDL3.h"
         "Source/Includes/Tracy.h"
         "Source/Includes/Vulkan.h"
         "Source/Includes/Stb.h"
-        "Source/Includes/Parson.h"
 
         "Source/Core/Module.cpp"
         "Source/Core/Module.h"

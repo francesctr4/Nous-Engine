@@ -17,9 +17,9 @@
 
 #include "ECS/Components/ComponentMesh.h"
 #include "ECS/Components/ComponentMaterial.h"
-#include "ECS/Components/ComponentTransform.h"
 #include "Multithreading/NOUS_JobSystem.h"
 
+#include <SDL3/SDL.h>
 #include <filesystem>
 
 ModuleScene::ModuleScene(Application* app) : Module(app)

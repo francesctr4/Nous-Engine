@@ -12,10 +12,14 @@
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
 
-#include "Includes/Assimp.h"
 #include "Core/Application.h"
-#include "Utils/Asserts.h"
 #include "Utils/Logger.h"
+
+// Assimp
+#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace)
+#include <assimp/scene.h>
+#include <assimp/cimport.h>
+#include <assimp/postprocess.h>
 
 void ProcessNode(aiNode* node, const aiScene* scene, Resource*& outMesh);
 void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh);

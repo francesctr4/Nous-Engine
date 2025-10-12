@@ -3,7 +3,8 @@
 
 #include "ECS/Component.h"
 #include "Includes/glmath.h"
-#include "Includes/Parson.h"
+// Parson
+#include <parson.h>
 
 class CTransform : public Component {
 public:

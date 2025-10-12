@@ -3,7 +3,6 @@
 
 #include "Core/Module.h"
 #include "Core/Globals.h"
-#include "Includes/SDL3.h"
 
 #define MAX_KEYBOARD_KEYS 300
 #define MAX_MOUSE_BUTTONS 5

@@ -4,7 +4,8 @@
 #include "VulkanExternal.h"
 #include "VulkanGlobals.h"
 
-#include "Includes/SDL3.h"
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 {
