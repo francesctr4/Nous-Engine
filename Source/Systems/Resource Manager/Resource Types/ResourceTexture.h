@@ -3,7 +3,7 @@
 
 #include "Core/Globals.h"
 #include "Systems/Resource Manager/Resource Types/Resource.h"
-#include "Renderer/RendererTypes.inl"
+#include "Renderer/RendererTypes.h"
 
 class ResourceTexture : public Resource
 {

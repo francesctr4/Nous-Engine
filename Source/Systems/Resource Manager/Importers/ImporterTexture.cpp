@@ -1,5 +1,5 @@
 #include "Systems/Resource Manager/Importers/ImporterTexture.h"
-#include "Renderer/RendererFrontend.h"
+#include "Renderer/Frontend/RendererFrontend.h"
 #include "Systems/File System/FileHandle.h"
 #include "Systems/File System/FileManager.h"
 
@@ -92,7 +92,7 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
         texture->generation = (currentGeneration == INVALID_ID) ? 0 : currentGeneration;
 
         // Acquire internal texture resources and upload to GPU.
-        External->renderer->rendererFrontend->CreateTexture(data, texture);
+        External->renderer->GetRendererFrontend()->CreateTexture(data, texture);
 
         // Clean up data.
         stbi_image_free(data);
@@ -115,7 +115,7 @@ bool ImporterTexture::Unload(Resource* inResource)
 {
     ResourceTexture* texture = down_cast<ResourceTexture*>(inResource);
 
-    External->renderer->rendererFrontend->DestroyTexture(texture);
+    External->renderer->GetRendererFrontend()->DestroyTexture(texture);
 
     return true;
 }

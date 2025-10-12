@@ -1,7 +1,7 @@
 #ifndef TEXTURESYSTEM_H
 #define TEXTURESYSTEM_H
 
-#include "Renderer/RendererTypes.inl"
+#include "Renderer/RendererTypes.h"
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
 #include "Core/Globals.h"
 

@@ -28,7 +28,7 @@ public:
     {
         if (material->IsValid())
         {
-            //External->resourceManager->UnloadResource(material->GetUID());
+            External->resourceManager->UnloadResource(material->GetUID());
         }
     }
 };

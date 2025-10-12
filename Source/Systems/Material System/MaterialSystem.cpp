@@ -4,7 +4,7 @@
 
 #include "Modules/ModuleRenderer3D.h"
 #include "Systems/Texture System/TextureSystem.h"
-#include "Renderer/RendererFrontend.h"
+#include "Renderer/Frontend/RendererFrontend.h"
 
 #include "Utils/JsonFile.h"
 
@@ -51,7 +51,7 @@ bool NOUS_MaterialSystem::CreateDefaultMaterials()
     state.defaultMaterial.diffuseMap.type = TextureMapType::DIFFUSE;
     state.defaultMaterial.diffuseMap.texture = NOUS_TextureSystem::GetDefaultTexture();
 
-    if (!External->renderer->rendererFrontend->CreateMaterial(&state.defaultMaterial)) 
+    if (!External->renderer->GetRendererFrontend()->CreateMaterial(&state.defaultMaterial))
     {
         NOUS_FATAL("Failed to acquire renderer resources for default texture. Application cannot continue.");
         return false;
@@ -76,7 +76,7 @@ void DestroyMaterial(ResourceMaterial* material)
     }
 
     // Release renderer resources.
-    External->renderer->rendererFrontend->DestroyMaterial(material);
+    External->renderer->GetRendererFrontend()->DestroyMaterial(material);
 
     // Zero it out, invalidate IDs.
     MemoryManager::ZeroMemory(material, sizeof(material));

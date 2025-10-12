@@ -3,10 +3,10 @@
 #include "Modules/ModuleResourceManager.h"
 #include "Modules/ModuleCamera3D.h"
 
-#include "Renderer/Vulkan/VulkanTypes.inl"
-#include "Renderer/Vulkan/VulkanBackend.h"
+#include "Renderer/Backend/Vulkan/VulkanTypes.inl"
+#include "Renderer/Backend/Vulkan/VulkanBackend.h"
 
-#include "Renderer/Vulkan/VulkanImGuiResources.h"
+#include "Renderer/Backend/Vulkan/VulkanImGuiResources.h"
 #include "Core/Application.h"
 
 #include "ECS/Components/ComponentTransform.h"

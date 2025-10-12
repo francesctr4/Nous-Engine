@@ -1,13 +1,13 @@
 #include "Modules/ModuleEditor.h"
 
 #include "Modules/ModuleRenderer3D.h"
-#include "Renderer/RendererFrontend.h"
+#include "Renderer/Frontend/RendererFrontend.h"
 #include "Modules/ModuleCamera3D.h"
 
-#include "Renderer/Vulkan/VulkanBackend.h"
-#include "Renderer/Vulkan/VulkanExternal.h"
-#include "Renderer/Vulkan/VulkanUtils.h"
-#include "Renderer/Vulkan/VulkanImGuiResources.h"
+#include "Renderer/Backend/Vulkan/VulkanBackend.h"
+#include "Renderer/Backend/Vulkan/VulkanExternal.h"
+#include "Renderer/Backend/Vulkan/VulkanUtils.h"
+#include "Renderer/Backend/Vulkan/VulkanImGuiResources.h"
 
 #include "Editor/IEditorWindow.inl"
 #include "Editor/ImGuiConfig/ImGuiCustom.h"
@@ -47,7 +47,7 @@ bool ModuleEditor::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	currentBackendType = ModuleRenderer3D::rendererFrontend->backendType;
+	currentBackendType = App->renderer->GetRendererFrontend()->backendType;
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();

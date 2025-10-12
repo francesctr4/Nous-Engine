@@ -12,7 +12,7 @@
 #include "Systems/Memory Manager/MemoryManager.h"
 
 #include "Modules/ModuleRenderer3D.h"
-#include "Renderer/RendererFrontend.h"
+#include "Renderer/Frontend/RendererFrontend.h"
 
 bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 {
@@ -62,7 +62,7 @@ bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResourc
     material->diffuseMap.type = TextureMapType::DIFFUSE;
     material->diffuseMap.texture = diffuseTexture;
 
-    ret = External->renderer->rendererFrontend->CreateMaterial(material);
+    ret = External->renderer->GetRendererFrontend()->CreateMaterial(material);
 
     return ret;
 }
@@ -77,7 +77,7 @@ bool ImporterMaterial::Unload(Resource* inResource)
         material->diffuseMap.texture = nullptr;
     }
 
-    External->renderer->rendererFrontend->DestroyMaterial(material);
+    External->renderer->GetRendererFrontend()->DestroyMaterial(material);
 
 	return true;
 }

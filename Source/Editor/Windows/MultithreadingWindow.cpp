@@ -3,8 +3,8 @@
 #include "Core/Application.h"
 #include "Multithreading/NOUS_JobSystem.h"
 #include "Multithreading/NOUS_Multithreading.h"
-#include "Renderer/Vulkan/VulkanMultithreading.h"
-#include "Renderer/Vulkan/VulkanBackend.h"
+#include "Renderer/Backend/Vulkan/VulkanMultithreading.h"
+#include "Renderer/Backend/Vulkan/VulkanBackend.h"
 
 #include <algorithm>
 

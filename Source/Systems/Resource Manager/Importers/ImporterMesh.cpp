@@ -7,7 +7,7 @@
 #include "Systems/Memory Manager/MemoryManager.h"
 
 #include "Modules/ModuleRenderer3D.h"
-#include "Renderer/RendererFrontend.h"
+#include "Renderer/Frontend/RendererFrontend.h"
 #include "Modules/ModuleResourceManager.h"
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
@@ -143,7 +143,7 @@ bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
 
     fileHandle.Close();
 
-    ret = External->renderer->rendererFrontend->CreateGeometry(mesh->vertices.size(), mesh->vertices.data(),
+    ret = External->renderer->GetRendererFrontend()->CreateGeometry(mesh->vertices.size(), mesh->vertices.data(),
         mesh->indices.size(), mesh->indices.data(), mesh);
 
     return ret;
@@ -153,7 +153,7 @@ bool ImporterMesh::Unload(Resource* inResource)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
 
-    External->renderer->rendererFrontend->DestroyGeometry(mesh);
+    External->renderer->GetRendererFrontend()->DestroyGeometry(mesh);
 
     mesh->ID = INVALID_ID;
     mesh->internalID = INVALID_ID;

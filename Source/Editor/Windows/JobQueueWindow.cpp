@@ -4,7 +4,7 @@
 #include "Multithreading/NOUS_JobSystem.h"
 #include "Multithreading/NOUS_Multithreading.h"
 
-#include "Renderer/Vulkan/VulkanMultithreading.h"
+#include "Renderer/Backend/Vulkan/VulkanMultithreading.h"
 
 JobQueue::JobQueue(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)

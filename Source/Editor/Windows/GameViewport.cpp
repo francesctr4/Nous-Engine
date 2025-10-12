@@ -1,8 +1,8 @@
 #include "Editor/Windows/GameViewport.h"
 
-#include "Renderer/Vulkan/VulkanTypes.inl"
-#include "Renderer/Vulkan/VulkanImGuiResources.h"
-#include "Renderer/Vulkan/VulkanBackend.h"
+#include "Renderer/Backend/Vulkan/VulkanTypes.inl"
+#include "Renderer/Backend/Vulkan/VulkanImGuiResources.h"
+#include "Renderer/Backend/Vulkan/VulkanBackend.h"
 
 GameViewport::GameViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)

@@ -1,7 +1,7 @@
 #ifndef MATERIALSYSTEM_H
 #define MATERIALSYSTEM_H
 
-#include "Renderer/RendererTypes.inl"
+#include "Renderer/RendererTypes.h"
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Core/Globals.h"
 

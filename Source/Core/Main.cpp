@@ -110,6 +110,8 @@ int main(int argc, char** argv)
 
 	NOUS_INFO(MemoryManager::GetMemoryUsageStats());
 
+	NOUS_INFO("[%s] Successfully exited Nous Engine. See you soon!", __FUNCTION__);
+
 	ShutdownLogging();
 
 	MemoryManager::ShutdownMemory();

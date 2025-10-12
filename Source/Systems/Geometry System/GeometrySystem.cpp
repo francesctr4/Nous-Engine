@@ -3,7 +3,7 @@
 #include "Systems/Material System/MaterialSystem.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "Systems/Resource Manager/Resource Types/ResourceMesh.h"
-#include "Renderer/RendererFrontend.h"
+#include "Renderer/Frontend/RendererFrontend.h"
 #include <array>
 
 bool NOUS_GeometrySystem::Initialize()

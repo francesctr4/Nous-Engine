@@ -4,7 +4,7 @@
 #include "Systems/Memory Manager/MemoryManager.h"
 
 #include "Modules/ModuleRenderer3D.h"
-#include "Renderer/RendererFrontend.h"
+#include "Renderer/Frontend/RendererFrontend.h"
 
 #include <array>
 
@@ -74,7 +74,7 @@ ResourceTexture* NOUS_TextureSystem::AcquireTexture(const char* name, bool autoR
 
 void NOUS_TextureSystem::ReleaseTexture(ResourceTexture* texture)
 {
-	External->renderer->rendererFrontend->DestroyTexture(texture);
+	External->renderer->GetRendererFrontend()->DestroyTexture(texture);
 
 	// Clean up backend resources.
 	//texture->name.clear();
@@ -134,7 +134,7 @@ bool NOUS_TextureSystem::CreateDefaultTextures()
 	state.defaultTexture.height = texDimension;
 	state.defaultTexture.channelCount = 4;
 
-	External->renderer->rendererFrontend->CreateTexture(pixels.data(), &state.defaultTexture);
+	External->renderer->GetRendererFrontend()->CreateTexture(pixels.data(), &state.defaultTexture);
 
 	// Manually set the texture generation to invalid since this is a default texture.
 	state.defaultTexture.generation = INVALID_ID;
@@ -149,5 +149,5 @@ ResourceTexture* NOUS_TextureSystem::GetDefaultTexture()
 
 void NOUS_TextureSystem::DestroyDefaultTextures()
 {
-	External->renderer->rendererFrontend->DestroyTexture(&state.defaultTexture);
+	External->renderer->GetRendererFrontend()->DestroyTexture(&state.defaultTexture);
 }
