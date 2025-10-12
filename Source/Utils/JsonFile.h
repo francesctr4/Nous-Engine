@@ -3,7 +3,9 @@
 
 #include "Core/Globals.h"
 #include "Utils/MathUtils.h"
-#include "Includes/glmath.h"
+
+#include <glm/glm.hpp>
+
 #include <string>
 
 typedef struct json_value_t  JSON_Value;

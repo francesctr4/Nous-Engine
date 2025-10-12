@@ -5,7 +5,7 @@
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Core/Globals.h"
 
-#include "Includes/glmath.h"
+#include <glm/glm.hpp>
 
 namespace NOUS_MaterialSystem
 {

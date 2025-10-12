@@ -3,7 +3,8 @@
 
 #include "Core/Globals.h"
 #include "Utils/MathUtils.h"
-#include "Includes/glmath.h"
+
+#include <glm/glm.hpp>
 
 class Camera
 {
@@ -36,8 +37,8 @@ public:
     float GetAspectRatio() const;
     void SetAspectRatio(float aspectRatio);
 
-    glm::mat4x4 GetProjectionMatrix() const;
-    glm::mat4x4 GetViewMatrix() const;
+    glm::mat4 GetProjectionMatrix() const;
+    glm::mat4 GetViewMatrix() const;
 
 private:
     glm::vec3 position;

@@ -2,7 +2,8 @@
 #define VERTEX_INL
 
 #include "Core/Globals.h"
-#include "Includes/glmath.h"
+
+#include <glm/glm.hpp>
 
 // --------------- Vertex Struct --------------- //
 

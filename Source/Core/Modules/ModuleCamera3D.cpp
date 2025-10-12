@@ -2,14 +2,14 @@
 #include "ModuleInput.h"
 #include "Utils/Logger.h"
 #include "Core/Application.h"
-#include <algorithm>  // Required for std::clamp
-#include "Includes/glmath.h"
+#include <algorithm>
 
 // SDL3
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
 
 #include "Systems/Event System/EventSystem.h"
+
+#include <glm/gtc/quaternion.hpp>
 
 ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 {

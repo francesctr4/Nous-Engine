@@ -3,7 +3,8 @@
 
 #include "Core/Module.h"
 #include "Systems/Camera System/Camera.h"
-#include "Includes/glmath.h"
+
+#include <glm/glm.hpp>
 
 class ModuleCamera3D : public Module
 {

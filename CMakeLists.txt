@@ -36,8 +36,6 @@ set(ALL_SOURCES
         "Source/Editor/Windows/SceneViewport.h"
         "Source/Editor/IEditorWindow.inl"
 
-        "Source/Includes/glmath.h"
-
         "Source/Core/Module.cpp"
         "Source/Core/Module.h"
         "Source/Core/Modules/ModuleCamera3D.cpp"
@@ -208,6 +206,8 @@ set(ALL_SOURCES
         Source/Editor/Windows/ConsoleWindow.cpp
         Source/Editor/Windows/ConsoleWindow.h
         Source/Core/UpdateStatus.h
+        Source/ECS/Components/ComponentTransform.cpp
+        Source/ECS/Components/ComponentMesh.cpp
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
