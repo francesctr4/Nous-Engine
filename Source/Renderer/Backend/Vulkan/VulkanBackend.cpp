@@ -487,7 +487,7 @@ bool VulkanBackend::EndFrame(float dt)
 	return true;
 }
 
-bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
+bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
 {
     // Begin recording commands.
     VulkanCommandBuffer* commandBuffer = nullptr;
@@ -496,21 +496,21 @@ bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
     
     switch (renderpassID)
     {
-        case BuiltInRenderpass::SCENE: 
+        case RenderpassType::SCENE:
         {
             commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
             renderpass = &vkContext->sceneRenderpass;
             framebuffer = vkContext->imGuiResources.m_ViewportFramebuffers[vkContext->imageIndex];
             break;
         }
-        case BuiltInRenderpass::GAME:
+        case RenderpassType::GAME:
         {
             commandBuffer = &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex];
             renderpass = &vkContext->gameRenderpass;
             framebuffer = vkContext->imGuiResources.m_GameViewportFramebuffers[vkContext->imageIndex];
             break;
         }
-        case BuiltInRenderpass::UI:
+        case RenderpassType::UI:
         {
             commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
             renderpass = &vkContext->uiRenderpass;
@@ -565,17 +565,17 @@ bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
 
     switch (renderpassID)
     {
-        case BuiltInRenderpass::SCENE:
+        case RenderpassType::SCENE:
         {
             NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, &vkContext->materialShader);
             break;
         }
-        case BuiltInRenderpass::GAME:
+        case RenderpassType::GAME:
         {
             NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, &vkContext->gameShader);
             break;
         }
-        case BuiltInRenderpass::UI:
+        case RenderpassType::UI:
         {
             NOUS_VulkanUIShader::UseUIShader(vkContext, &vkContext->uiShader);
             break;
@@ -585,26 +585,26 @@ bool VulkanBackend::BeginRenderpass(BuiltInRenderpass renderpassID)
     return true;
 }
 
-bool VulkanBackend::EndRenderpass(BuiltInRenderpass renderpassID)
+bool VulkanBackend::EndRenderpass(RenderpassType renderpassID)
 {
     VulkanRenderpass* renderpass = nullptr;
     VulkanCommandBuffer* commandBuffer = nullptr;
     
     switch (renderpassID)
     {
-        case BuiltInRenderpass::SCENE:
+        case RenderpassType::SCENE:
         {
             commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
             renderpass = &vkContext->sceneRenderpass;
             break;
         }
-        case BuiltInRenderpass::GAME:
+        case RenderpassType::GAME:
         {
             commandBuffer = &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex];
             renderpass = &vkContext->gameRenderpass;
             break;
         }
-        case BuiltInRenderpass::UI:
+        case RenderpassType::UI:
         {
             commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
             renderpass = &vkContext->uiRenderpass;
@@ -727,7 +727,7 @@ bool VulkanBackend::RecreateResources()
 }
 
 bool VulkanBackend::UpdateGlobalWorldState(
-        BuiltInRenderpass renderpassID,
+        RenderpassType renderpassID,
         const glm::mat4& projection, const glm::mat4& view,
         const glm::vec3& viewPosition, const glm::vec4& ambientColor,
         int32 mode)
@@ -736,7 +736,7 @@ bool VulkanBackend::UpdateGlobalWorldState(
 
     VulkanMaterialShader* shader = nullptr;
 
-    if (renderpassID == BuiltInRenderpass::GAME) 
+    if (renderpassID == RenderpassType::GAME)
     {
         shader = &vkContext->gameShader;
     }
@@ -755,7 +755,7 @@ bool VulkanBackend::UpdateGlobalWorldState(
     return true;
 }
 
-bool VulkanBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID,
+bool VulkanBackend::UpdateGlobalUIState(RenderpassType renderpassID,
                                         const glm::mat4& projection, const glm::mat4& view,
                                         int32 mode)
 {
@@ -769,23 +769,23 @@ bool VulkanBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID,
     return true;
 }
 
-VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(BuiltInRenderpass renderpassID) 
+VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(RenderpassType renderpassID)
 {
     VulkanCommandBuffer* commandBuffer = nullptr;
 
     switch (renderpassID)
     {
-        case BuiltInRenderpass::SCENE:
+        case RenderpassType::SCENE:
         {
             commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
             break;
         }
-        case BuiltInRenderpass::GAME:
+        case RenderpassType::GAME:
         {
             commandBuffer = &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex];
             break;
         }
-        case BuiltInRenderpass::UI:
+        case RenderpassType::UI:
         {
             commandBuffer = &vkContext->graphicsCommandBuffers[vkContext->imageIndex];
             break;
@@ -799,7 +799,7 @@ VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(BuiltInRender
     return commandBuffer;
 }
 
-bool VulkanBackend::DrawGeometry(BuiltInRenderpass renderpassID, const GeometryRenderData& renderData)
+bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData)
 {
     // Ignore non-uploaded geometries.
     if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID)
@@ -811,7 +811,7 @@ bool VulkanBackend::DrawGeometry(BuiltInRenderpass renderpassID, const GeometryR
 
     VulkanMaterialShader* shader = nullptr;
 
-    if (renderpassID == BuiltInRenderpass::GAME)
+    if (renderpassID == RenderpassType::GAME)
     {
         shader = &vkContext->gameShader;
     }
@@ -956,7 +956,7 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     return true;
 }
 
-bool VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
+void VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
 {
     VulkanTextureData* textureData = reinterpret_cast<VulkanTextureData*>(texture->internalData);
 
@@ -969,11 +969,7 @@ bool VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
         textureData->sampler = 0;
 
         MemoryManager::Free(textureData, sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE);
-
-        return true;
     }
-
-    return false;
 }
 
 bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
@@ -1000,7 +996,7 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
     return false;
 }
 
-bool VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
+void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
 {
     if (material) 
     {
@@ -1008,18 +1004,15 @@ bool VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
         {
             NOUS_VulkanMaterialShader::ReleaseMaterialShaderResources(vkContext, &vkContext->materialShader, material);
             //ReleaseMaterialShaderResources(vkContext, &vkContext->gameShader, material);
-            return true;
         }
         else 
         {
             NOUS_WARN("VulkanBackend::DestroyMaterial() called with internal_id = INVALID_ID. Nothing was done.");
-            return false;
         }
     }
     else 
     {
         NOUS_WARN("VulkanBackend::DestroyMaterial() called with nullptr. Nothing was done.");
-        return false;
     }
 }
 
@@ -1128,7 +1121,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     return true;
 }
 
-bool VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
+void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
 {
     if (geometry && geometry->internalID != INVALID_ID) 
     {
@@ -1148,11 +1141,7 @@ bool VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
 
         internalData->ID = INVALID_ID;
         internalData->generation = INVALID_ID;
-
-        return true;
     }
-
-    return false;
 }
 
 VulkanContext* VulkanBackend::GetVulkanContext()

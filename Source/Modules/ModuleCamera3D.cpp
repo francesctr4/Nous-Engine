@@ -1,10 +1,11 @@
 #include "Modules/ModuleCamera3D.h"
 #include "Modules/ModuleInput.h"
 #include "Utils/Logger.h"
-
+#include "Core/Application.h"
 #include <algorithm>  // Required for std::clamp
 #include "Includes/glmath.h"
 #include "Includes/SDL3.h"
+#include "Systems/Event System/EventSystem.h"
 
 ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 {
@@ -36,7 +37,7 @@ UpdateStatus ModuleCamera3D::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleCamera3D::Update(float dt)
@@ -77,14 +78,14 @@ UpdateStatus ModuleCamera3D::Update(float dt)
 		camera.UpdatePos(newPos);
 	}
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleCamera3D::PostUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 bool ModuleCamera3D::CleanUp()

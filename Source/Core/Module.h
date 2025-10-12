@@ -1,13 +1,16 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include "Core/Application.h"
+#include "Core/UpdateStatus.h"
+
+struct Event;
+class Application;
 
 class Module
 {
 public:
 
-	Module(Application* app);
+	explicit Module(Application* app);
 	virtual ~Module();
 
 	virtual bool Awake();

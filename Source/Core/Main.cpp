@@ -65,14 +65,14 @@ int main(int argc, char** argv)
 
 		case MAIN_UPDATE:
 		{
-			int updateReturn = App->Update();
+			UpdateStatus updateReturn = App->Update();
 
-			if (updateReturn == UPDATE_ERROR)
+			if (updateReturn == UpdateStatus::ERROR)
 			{
 				NOUS_INFO("[ERROR] Application Update exits with ERROR");
 				nousState = MAIN_EXIT;
 			}
-			else if (updateReturn == UPDATE_STOP) 
+			else if (updateReturn == UpdateStatus::STOP)
 			{
 				nousState = MAIN_FINISH;
 			}

@@ -1,13 +1,13 @@
 #include "Modules/ModuleResourceManager.h"
 #include "Systems/Resource Manager/Resource Types/Resource.h"
-
+#include "Systems/Event System/EventSystem.h"
 #include "Systems/Resource Manager/Resource Types/ResourceMesh.h"
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
-
+#include "Core/Application.h"
 #include "Modules/ModuleInput.h"
 #include "Systems/File System/FileManager.h"
-
+#include "Utils/Logger.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 
 #include "Utils/Random.h"
@@ -44,20 +44,20 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleResourceManager::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleResourceManager::PostUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 bool ModuleResourceManager::CleanUp()

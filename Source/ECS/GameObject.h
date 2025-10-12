@@ -11,6 +11,7 @@
 #include "ECS/Component.h"
 #include "ECS/Components/ComponentTransform.h"
 #include "Includes/Parson.h"
+#include "Utils/Logger.h"
 
 // Forward declarations
 class Scene;

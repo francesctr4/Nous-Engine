@@ -27,41 +27,41 @@ public:
 	bool BeginFrame(float dt) override;
 	bool EndFrame(float dt) override;
 
-	bool BeginRenderpass(BuiltInRenderpass renderpassID) override;
-	bool EndRenderpass(BuiltInRenderpass renderpassID) override;
+	bool BeginRenderpass(RenderpassType renderpassID) override;
+	bool EndRenderpass(RenderpassType renderpassID) override;
 
 	bool RecreateResources();
 
 	bool UpdateGlobalWorldState(
-			BuiltInRenderpass renderpassID,
-			const glm::mat4& projection, const glm::mat4& view,
-			const glm::vec3& viewPosition, const glm::vec4& ambientColor,
-			int32 mode) override;
+            RenderpassType renderpassID,
+            const glm::mat4& projection, const glm::mat4& view,
+            const glm::vec3& viewPosition, const glm::vec4& ambientColor,
+            int32 mode) override;
 
 	bool UpdateGlobalUIState(
-			BuiltInRenderpass renderpassID,
-			const glm::mat4& projection, const glm::mat4& view,
-			int32 mode) override;
+            RenderpassType renderpassID,
+            const glm::mat4& projection, const glm::mat4& view,
+            int32 mode) override;
 
-	bool DrawGeometry(BuiltInRenderpass renderpassID, const GeometryRenderData& renderData) override;
+	bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData) override;
 
 	// ----------------------------------------------------------------------------------------------- //
 	// TEMPORAL //
 
 	bool CreateTexture(const uint8* pixels, ResourceTexture* outTexture) override;
-	bool DestroyTexture(ResourceTexture* texture) noexcept override;
+	void DestroyTexture(ResourceTexture* texture) noexcept override;
 
 	bool CreateMaterial(ResourceMaterial* material) override;
-	bool DestroyMaterial(ResourceMaterial* material) noexcept override;
+    void DestroyMaterial(ResourceMaterial* material) noexcept override;
 
 	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry) override;
-	bool DestroyGeometry(ResourceMesh* geometry) noexcept override;
+    void DestroyGeometry(ResourceMesh* geometry) noexcept override;
 
 	static VulkanContext* GetVulkanContext();
 
 	void ProcessPendingSubmissions();
 
-	VulkanCommandBuffer* GetCommandBufferByRenderpassID(BuiltInRenderpass renderpassID);
+	VulkanCommandBuffer* GetCommandBufferByRenderpassID(RenderpassType renderpassID);
 
 private:
 

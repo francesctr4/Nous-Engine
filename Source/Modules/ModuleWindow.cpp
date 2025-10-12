@@ -1,7 +1,7 @@
 #include "Modules/ModuleWindow.h"
 
 #include "Includes/SDL3.h"
-
+#include "Core/Application.h"
 #include "Utils/Logger.h"
 
 ModuleWindow::ModuleWindow(Application* app) : Module(app)

@@ -1,12 +1,8 @@
-#include "Modules/Module.h"
+#include "Core/Module.h"
 
-Module::Module(Application* app) : App(app)
-{
-}
+Module::Module(Application* app) : App(app) {}
 
-Module::~Module()
-{
-}
+Module::~Module() = default;
 
 bool Module::Awake()
 {
@@ -20,17 +16,17 @@ bool Module::Start()
 
 UpdateStatus Module::PreUpdate(float dt)
 {
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus Module::Update(float dt)
 {
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus Module::PostUpdate(float dt)
 {
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 bool Module::CleanUp()

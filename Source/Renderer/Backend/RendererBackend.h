@@ -2,6 +2,7 @@
 #define RENDERERBACKEND_H
 
 #include "Renderer/RendererTypes.h"
+#include "Core/Globals.h"
 
 class ResourceMesh;
 class ResourceMaterial;
@@ -25,22 +26,22 @@ public:
 	bool BeginFrame(float dt);
 	bool EndFrame(float dt);
 
-	bool BeginRenderpass(BuiltInRenderpass renderpassID);
-	bool EndRenderpass(BuiltInRenderpass renderpassID);
+	bool BeginRenderpass(RenderpassType renderpassID);
+	bool EndRenderpass(RenderpassType renderpassID);
 
-	bool UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode);
-	bool UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode);
+	bool UpdateGlobalWorldState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode);
+	bool UpdateGlobalUIState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode);
 
-	bool DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData);
+	bool DrawGeometry(RenderpassType renderpassID, GeometryRenderData renderData);
 
 	bool CreateTexture(const uint8* pixels, ResourceTexture* outTexture);
-	bool DestroyTexture(ResourceTexture* texture);
+	void DestroyTexture(ResourceTexture* texture);
 
 	bool CreateMaterial(ResourceMaterial* material);
-	bool DestroyMaterial(ResourceMaterial* material);
+    void DestroyMaterial(ResourceMaterial* material);
 
 	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry);
-	bool DestroyGeometry(ResourceMesh* geometry);
+    void DestroyGeometry(ResourceMesh* geometry);
 
 	// -------------------------------------- \\
 

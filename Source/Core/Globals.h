@@ -1,19 +1,17 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include <iostream>
 #include <cstdint>
 #include <cassert>
-#include <format>
-
-#include "Utils/Logger.h"
-#include "Utils/Asserts.h"
-#include "Systems/Time Management/Timer.h"
+#include <stdexcept>
+#include <limits>
 
 constexpr const char* TITLE = "Nous Engine";
 constexpr int WINDOW_WIDTH = 800;
 constexpr int WINDOW_HEIGHT = 600;
 constexpr float DEFAULT_TARGET_FPS = 144.00f;
+
+class Timer;
 extern Timer startupTimer;
 
 // ---------- Type Definitions ---------- \\
@@ -32,14 +30,6 @@ using int64 = std::int64_t;
 
 static int32 cachedFramebufferWidth = 0;
 static int32 cachedFramebufferHeight = 0;
-
-typedef enum UpdateStatus
-{
-	UPDATE_CONTINUE = 1,
-	UPDATE_STOP = 2,
-	UPDATE_ERROR = 3
-
-} UpdateStatus;
 
 /**
  * @brief Any id set to this should be considered invalid,

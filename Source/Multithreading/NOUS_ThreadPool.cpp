@@ -1,6 +1,7 @@
 #include "Multithreading/NOUS_ThreadPool.h"
 
 #include "Systems/Memory Manager/MemoryManager.h"
+#include "Utils/Logger.h"
 
 #ifdef _PROFILING
 #include "Includes/Tracy.h"

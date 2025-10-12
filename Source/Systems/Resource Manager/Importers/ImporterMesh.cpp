@@ -13,6 +13,9 @@
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
 
 #include "Includes/Assimp.h"
+#include "Core/Application.h"
+#include "Utils/Asserts.h"
+#include "Utils/Logger.h"
 
 void ProcessNode(aiNode* node, const aiScene* scene, Resource*& outMesh);
 void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh);

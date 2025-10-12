@@ -1,9 +1,10 @@
 #ifndef MODULERESOURCEMANAGER_H
 #define MODULERESOURCEMANAGER_H
 
-#include "Modules/Module.h"
+#include "Core/Module.h"
 #include "Systems/Resource Manager/Resource Types/Resource.h"
 #include <mutex>
+#include <unordered_map>
 
 using UID = uint32;
 struct MetaFileData;

@@ -2,6 +2,7 @@
 #define IMPORTERMANAGER_H
 
 #include "Core/Globals.h"
+#include <memory>
 
 class Resource;
 enum class ResourceType;

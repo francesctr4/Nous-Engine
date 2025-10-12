@@ -2,6 +2,7 @@
 #include "VulkanUtils.h"
 #include "Core/Application.h"
 #include "Multithreading/NOUS_Multithreading.h"
+#include "Multithreading/NOUS_JobSystem.h"
 
 bool NOUS_VulkanMultithreading::CreateWorkerCommandPools(VulkanContext* vkContext)
 {

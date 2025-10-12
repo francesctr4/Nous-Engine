@@ -2,6 +2,8 @@
 #define VULKANUTILS_H
 
 #include "VulkanTypes.inl"
+#include "Utils/Asserts.h"
+#include "Utils/Logger.h"
 
 /**
  * Returns the string representation of result.

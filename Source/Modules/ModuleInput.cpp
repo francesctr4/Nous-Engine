@@ -1,8 +1,10 @@
 #include "Modules/ModuleInput.h"
 #include "Modules/ModuleEditor.h"
-
+#include "Core/Application.h"
+#include "Systems/Event System/EventSystem.h"
 #include "Utils/Logger.h"
 #include "Systems/Memory Manager/MemoryManager.h"
+#include "Modules/ModuleWindow.h"
 
 ModuleInput::ModuleInput(Application* app) : Module(app)
 {
@@ -53,7 +55,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	UpdateStatus ret = UPDATE_CONTINUE;
+	UpdateStatus ret = UpdateStatus::CONTINUE;
 
 	SDL_PumpEvents();
 
@@ -139,7 +141,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 
 				if (GetKey(SDL_SCANCODE_ESCAPE) == KeyState::DOWN)
 				{
-					ret = UPDATE_STOP;
+					ret = UpdateStatus::STOP;
 				}
 
 				break;
@@ -188,8 +190,8 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 
                 if (width != cachedFramebufferWidth || height != cachedFramebufferHeight)
                 {
-                    cachedFramebufferWidth = width;
-                    cachedFramebufferHeight = height;
+					cachedFramebufferWidth = width;
+					cachedFramebufferHeight = height;
 
                     App->BroadcastEvent(Event(EventType::WINDOW_RESIZED, { ._i64 = { cachedFramebufferWidth, cachedFramebufferHeight } }));
                 }
@@ -216,7 +218,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			}
 			case SDL_EVENT_QUIT:
 			{
-				ret = UPDATE_STOP;
+				ret = UpdateStatus::STOP;
 				break;
 			}
 		}

@@ -1,7 +1,8 @@
 #ifndef MODULEFILESYSTEM_H
 #define MODULEFILESYSTEM_H
 
-#include "Modules/Module.h"
+#include "Core/Module.h"
+#include <string>
 
 class ModuleFileSystem : public Module
 {

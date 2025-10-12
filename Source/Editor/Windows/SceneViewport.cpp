@@ -13,6 +13,7 @@
 #include "Modules/ModuleScene.h"
 #include "Modules/ModuleInput.h"
 #include "ECS/GameObject.h"
+#include "Multithreading/NOUS_JobSystem.h"
 
 SceneViewport::SceneViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)

@@ -1,7 +1,7 @@
 #ifndef MODULEINPUT_H
 #define MODULEINPUT_H
 
-#include "Modules/Module.h"
+#include "Core/Module.h"
 #include "Core/Globals.h"
 #include "Includes/SDL3.h"
 

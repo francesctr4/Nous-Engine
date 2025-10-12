@@ -1,11 +1,14 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "Core/Globals.h"
-#include "Systems/Event System/EventSystem.h"
-#include "Multithreading/NOUS_JobSystem.h"
+#include "Core/UpdateStatus.h"
 
-constexpr uint8 NUM_MODULES = 8;
+// Forward declarations
+struct Event;
+class Timer;
+namespace NOUS_Multithreading { class NOUS_JobSystem; }
+
+constexpr uint8_t NUM_MODULES = 8;
 
 class Module;
 class ModuleWindow;
@@ -62,11 +65,11 @@ private:
 
 	Module* listModules[NUM_MODULES];
 
-	Timer msTimer;
+	Timer* msTimer;
 	float dt;
 	float targetFPS;
 
-	Timer updateTitleTimer;
+	Timer* updateTitleTimer;
 };
 
 extern Application* External;

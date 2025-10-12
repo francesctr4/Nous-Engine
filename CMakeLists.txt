@@ -47,8 +47,8 @@ set(ALL_SOURCES
         "Source/Includes/Stb.h"
         "Source/Includes/Parson.h"
 
-        "Source/Modules/Module.cpp"
-        "Source/Modules/Module.h"
+        "Source/Core/Module.cpp"
+        "Source/Core/Module.h"
         "Source/Modules/ModuleCamera3D.cpp"
         "Source/Modules/ModuleCamera3D.h"
         "Source/Modules/ModuleEditor.cpp"
@@ -216,6 +216,7 @@ set(ALL_SOURCES
         Source/ECS/Component.cpp
         Source/Editor/Windows/ConsoleWindow.cpp
         Source/Editor/Windows/ConsoleWindow.h
+        Source/Core/UpdateStatus.h
 )
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})

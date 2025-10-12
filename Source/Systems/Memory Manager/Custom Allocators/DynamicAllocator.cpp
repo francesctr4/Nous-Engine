@@ -2,6 +2,7 @@
 #include "Systems/Memory Manager/MemoryManager.h"
 
 #include "Utils/Logger.h"
+#include "Utils/Asserts.h"
 
  uint64 DynamicAllocator::GetMemoryRequirement(uint64 totalSize)
 {

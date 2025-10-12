@@ -15,7 +15,7 @@
 //  - Handle window resize and other render-related events.
 // -----------------------------------------------------------------------------
 
-#include "Modules/Module.h"
+#include "Core/Module.h"
 
 // ---------------------------------------------------------------------
 // Forward Declarations

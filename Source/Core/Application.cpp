@@ -10,14 +10,14 @@
 
 #include "Utils/Logger.h"
 #include "Systems/Memory Manager/MemoryManager.h"
+#include "Includes/SDL3.h"
+
+#include "Systems/Time Management/TimeManager.h"
+#include "Multithreading/NOUS_JobSystem.h"
 
 #ifdef _PROFILING
 #include "Includes/Tracy.h"
 #endif
-
-#include "Includes/SDL3.h"
-
-#include "Systems/Time Management/TimeManager.h"
 
 extern Application* External = nullptr;
 
@@ -29,6 +29,9 @@ Application::Application()
 
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
+
+    msTimer = NOUS_NEW<Timer>(MemoryManager::MemoryTag::APPLICATION);
+    updateTitleTimer = NOUS_NEW<Timer>(MemoryManager::MemoryTag::APPLICATION);
 
     listModules[0] = window = NOUS_NEW<ModuleWindow>(MemoryManager::MemoryTag::APPLICATION, this);
     listModules[1] = input = NOUS_NEW<ModuleInput>(MemoryManager::MemoryTag::APPLICATION, this);
@@ -45,6 +48,9 @@ Application::Application()
 
 Application::~Application()
 {
+    NOUS_DELETE(msTimer, MemoryManager::MemoryTag::APPLICATION);
+    NOUS_DELETE(updateTitleTimer, MemoryManager::MemoryTag::APPLICATION);
+
     // ------------- MULTITHREADING ------------- //
     jobSystem->WaitForPendingJobs();
     NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
@@ -99,12 +105,12 @@ bool Application::Awake()
 
     NOUS_INFO(MemoryManager::GetMemoryUsageStats());
 
-    msTimer.Start();
+    msTimer->Start();
 
     TimeManager::frameCount = 0;
     TimeManager::graphicsTimer.Start();
 
-    updateTitleTimer.Start();
+    updateTitleTimer->Start();
 
     NOUS_DEBUG(" -------------- ENGINE START UP TIME: %.3f seconds --------------\n", startupTimer.ReadSec());
 
@@ -115,18 +121,18 @@ UpdateStatus Application::PrepareUpdate()
 {
     NOUS_TRACE("%s()", __FUNCTION__);
 
-    dt = msTimer.ReadSec();
-    msTimer.Start();
+    dt = msTimer->ReadSec();
+    msTimer->Start();
 
     TimeManager::deltaTime = dt;
     TimeManager::frameCount++;
 
-    return UPDATE_CONTINUE;
+    return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus Application::Update()
 {
-    UpdateStatus ret = UPDATE_CONTINUE;
+    UpdateStatus ret = UpdateStatus::CONTINUE;
 
 #ifdef _PROFILING
     ZoneScoped;
@@ -138,7 +144,7 @@ UpdateStatus Application::Update()
 
     NOUS_TRACE("-------------- PreUpdate --------------");
 
-    for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
+    for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
     {
         if (listModules[i] != nullptr) 
         {
@@ -148,7 +154,7 @@ UpdateStatus Application::Update()
 
     NOUS_TRACE("-------------- Update --------------");
 
-    for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
+    for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
     {
         if (listModules[i] != nullptr) 
         {
@@ -158,7 +164,7 @@ UpdateStatus Application::Update()
 
     NOUS_TRACE("-------------- PostUpdate --------------");
 
-    for (int i = 0; i < NUM_MODULES && ret == UPDATE_CONTINUE; ++i)
+    for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
     {
         if (listModules[i] != nullptr) 
         {
@@ -187,12 +193,12 @@ void Application::FinishUpdate()
     static float cachedFPS = 0.0f;
     static char buffer[256];
 
-    if (updateTitleTimer.ReadMS() >= 100.0f)
+    if (updateTitleTimer->ReadMS() >= 100.0f)
     {
         cachedDt = GetDT();
         cachedFPS = GetFPS();
 
-        updateTitleTimer.Start();
+        updateTitleTimer->Start();
     }
 
     sprintf(buffer,
@@ -206,7 +212,7 @@ void Application::FinishUpdate()
     // Adapt according to target FPS
 
     const float targetFrameTime = 1.0f / targetFPS;
-    const float elapsedTime = msTimer.ReadSec();
+    const float elapsedTime = msTimer->ReadSec();
 
     if (elapsedTime < targetFrameTime)
     {

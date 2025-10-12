@@ -1,7 +1,7 @@
 #ifndef MODULE_CAMERA_3D_H
 #define MODULE_CAMERA_3D_H
 
-#include "Modules/Module.h"
+#include "Core/Module.h"
 #include "Systems/Camera System/Camera.h"
 #include "Includes/glmath.h"
 

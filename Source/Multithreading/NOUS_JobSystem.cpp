@@ -1,5 +1,6 @@
 #include "Multithreading/NOUS_JobSystem.h"
 #include "Multithreading/NOUS_Job.h"
+#include "Utils/Logger.h"
 
 #include "Systems/Memory Manager/MemoryManager.h"
 

@@ -1,7 +1,5 @@
 #include "Modules/ModuleRenderer3D.h"
-
 #include "Modules/ModuleCamera3D.h"
-#include "Modules/ModuleScene.h"
 
 #include "Renderer/Frontend/RendererFrontend.h"
 #include "Renderer/RendererTypes.h"
@@ -13,6 +11,7 @@
 
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "Utils/Logger.h"
+#include "Systems/Event System/EventSystem.h"
 
 #ifdef _PROFILING
 #include "Includes/Tracy.h"
@@ -61,14 +60,14 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleRenderer3D::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
@@ -90,11 +89,11 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		if (!rendererFrontend->DrawFrame(&packet))
 		{
 			NOUS_FATAL("[%s] Failed to draw frame. Aborting application.", __FUNCTION__);
-			return UPDATE_ERROR;
+			return UpdateStatus::ERROR;
 		}
 	}
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 bool ModuleRenderer3D::CleanUp()

@@ -1,7 +1,9 @@
 #ifndef MODULESCENE_H
 #define MODULESCENE_H
 
-#include "Modules/Module.h"
+#include "Core/Module.h"
+#include <string>
+#include <vector>
 
 class Scene;
 class GameObject;

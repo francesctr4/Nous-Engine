@@ -1,5 +1,6 @@
 #include "Systems/Memory Manager/Custom Allocators/LinearAllocator.h"
 #include "Systems/Memory Manager/MemoryManager.h"
+#include "Utils/Logger.h"
 
 LinearAllocator::LinearAllocator()
     : capacity(0), offset(0), memory(nullptr), ownsMemory(true) {}

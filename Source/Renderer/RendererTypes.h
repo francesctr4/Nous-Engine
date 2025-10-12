@@ -1,11 +1,12 @@
 #ifndef NOUS_ENGINE_RENDERER_TYPES_H
 #define NOUS_ENGINE_RENDERER_TYPES_H
 
-#include "Core/Globals.h"
-#include <vector>
 #include <glm/glm.hpp>
+#include <vector>
 
+// -----------------------------------------------------------------------------
 // Forward declarations
+// -----------------------------------------------------------------------------
 struct Vertex3D;
 class Camera;
 class ResourceMesh;
@@ -17,12 +18,14 @@ class ResourceTexture;
 // -----------------------------------------------------------------------------
 struct GeometryRenderData
 {
-    glm::mat4 model{ 1.0f };
-    ResourceMesh* geometry = nullptr;
-    ResourceMaterial* material = nullptr;
+    GeometryRenderData() : model(1.0f), geometry(nullptr), material(nullptr) {}
+
+    glm::mat4 model;
+    ResourceMesh* geometry;
+    ResourceMaterial* material;
 };
 
-enum class BuiltInRenderpass
+enum class RenderpassType
 {
     SCENE,
     GAME,
@@ -31,9 +34,11 @@ enum class BuiltInRenderpass
 
 struct RenderPacket
 {
-    Camera* editorCamera = nullptr;
-    Camera* gameCamera = nullptr;
-    float deltaTime = 0.0f;
+    RenderPacket() : editorCamera(nullptr), gameCamera(nullptr), deltaTime(0.0f) {}
+
+    Camera* editorCamera;
+    Camera* gameCamera;
+    float deltaTime;
 
     std::vector<GeometryRenderData> geometries;
 };
@@ -47,9 +52,7 @@ enum class RendererBackendType
 
     VULKAN = 0,
     OPENGL = 1,
-    DIRECTX = 2,
-
-    MAX
+    DIRECTX = 2
 };
 
 // -----------------------------------------------------------------------------
@@ -65,53 +68,52 @@ enum class RendererBackendType
  */
 struct IRendererBackend
 {
-    virtual ~IRendererBackend() = default;
+    virtual ~IRendererBackend() noexcept = default;
 
     // Lifecycle
     [[nodiscard]] virtual bool Initialize() = 0;
     virtual void Shutdown() noexcept = 0;
-    virtual void Resized(uint16 width, uint16 height) noexcept = 0;
+    virtual void Resized(uint16_t width, uint16_t height) noexcept = 0;
 
     // Frame lifecycle
     [[nodiscard]] virtual bool BeginFrame(float dt) = 0;
     [[nodiscard]] virtual bool EndFrame(float dt) = 0;
 
     // Render passes
-    [[nodiscard]] virtual bool BeginRenderpass(BuiltInRenderpass renderpassID) = 0;
-    [[nodiscard]] virtual bool EndRenderpass(BuiltInRenderpass renderpassID) = 0;
+    [[nodiscard]] virtual bool BeginRenderpass(RenderpassType renderpassID) = 0;
+    [[nodiscard]] virtual bool EndRenderpass(RenderpassType renderpassID) = 0;
 
     // Global states
     [[nodiscard]] virtual bool UpdateGlobalWorldState(
-            BuiltInRenderpass renderpassID,
+            RenderpassType renderpassID,
             const glm::mat4& projection, const glm::mat4& view,
             const glm::vec3& viewPosition, const glm::vec4& ambientColor,
-            int32 mode) = 0;
+            int32_t mode) = 0;
 
     [[nodiscard]] virtual bool UpdateGlobalUIState(
-            BuiltInRenderpass renderpassID,
+            RenderpassType renderpassID,
             const glm::mat4& projection, const glm::mat4& view,
-            int32 mode) = 0;
+            int32_t mode) = 0;
 
     // Drawing
     [[nodiscard]] virtual bool DrawGeometry(
-            BuiltInRenderpass renderpassID,
+            RenderpassType renderpassID,
             const GeometryRenderData& renderData) = 0;
 
     // Textures
-    [[nodiscard]] virtual bool CreateTexture(const uint8* pixels, ResourceTexture* outTexture) = 0;
-    virtual bool DestroyTexture(ResourceTexture* texture) noexcept = 0;
+    [[nodiscard]] virtual bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture) = 0;
+    virtual void DestroyTexture(ResourceTexture* texture) noexcept = 0;
 
     // Materials
     [[nodiscard]] virtual bool CreateMaterial(ResourceMaterial* material) = 0;
-    virtual bool DestroyMaterial(ResourceMaterial* material) noexcept = 0;
+    virtual void DestroyMaterial(ResourceMaterial* material) noexcept = 0;
 
     // Geometry
     [[nodiscard]] virtual bool CreateGeometry(
-            uint32 vertexCount, const Vertex3D* vertices,
-            uint32 indexCount, const uint32* indices,
+            uint32_t vertexCount, const Vertex3D* vertices,
+            uint32_t indexCount, const uint32_t* indices,
             ResourceMesh* outGeometry) = 0;
-
-    virtual bool DestroyGeometry(ResourceMesh* geometry) noexcept = 0;
+    virtual void DestroyGeometry(ResourceMesh* geometry) noexcept = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

@@ -3,6 +3,7 @@
 #include "Modules/ModuleRenderer3D.h"
 #include "Renderer/Frontend/RendererFrontend.h"
 #include "Modules/ModuleCamera3D.h"
+#include "Core/Application.h"
 
 #include "Renderer/Backend/Vulkan/VulkanBackend.h"
 #include "Renderer/Backend/Vulkan/VulkanExternal.h"

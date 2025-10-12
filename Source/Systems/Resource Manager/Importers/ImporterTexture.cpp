@@ -8,8 +8,9 @@
 
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
 #include "Systems/Memory Manager/MemoryManager.h"
-
+#include "Core/Application.h"
 #include "Includes/Stb.h"
+#include "Utils/Logger.h"
 
 bool ImporterTexture::Import(const MetaFileData& metaFileData)
 {

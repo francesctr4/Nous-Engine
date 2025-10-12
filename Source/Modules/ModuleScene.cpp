@@ -1,10 +1,11 @@
 #include "Modules/ModuleScene.h"
 #include "Modules/ModuleInput.h"
 #include "Modules/ModuleResourceManager.h"
+#include "Systems/Event System/EventSystem.h"
 
 #include "Systems/Resource Manager/Resource Types/ResourceMesh.h"
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
-
+#include "Core/Application.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "Systems/Camera System/Camera.h"
 
@@ -17,6 +18,7 @@
 #include "ECS/Components/ComponentMesh.h"
 #include "ECS/Components/ComponentMaterial.h"
 #include "ECS/Components/ComponentTransform.h"
+#include "Multithreading/NOUS_JobSystem.h"
 
 #include <filesystem>
 
@@ -86,7 +88,7 @@ bool ModuleScene::Start()
 UpdateStatus ModuleScene::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleScene::Update(float dt)
@@ -255,7 +257,7 @@ UpdateStatus ModuleScene::Update(float dt)
 		}, "Scripts Hot-Reload");
 	}
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleScene::PostUpdate(float dt)
@@ -269,7 +271,7 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 		}
 	}
 
-	return UPDATE_CONTINUE;
+	return UpdateStatus::CONTINUE;
 }
 
 bool ModuleScene::CleanUp()

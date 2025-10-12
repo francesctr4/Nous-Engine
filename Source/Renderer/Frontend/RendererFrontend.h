@@ -2,6 +2,7 @@
 #define RENDERERFRONTEND_H
 
 #include "Renderer/RendererTypes.h"
+#include "Core/Globals.h"
 
 class ResourceMesh;
 class ResourceMaterial;
@@ -37,13 +38,13 @@ private:
 	bool BeginFrame(float dt);
 	bool EndFrame(float dt);
 
-	bool BeginRenderpass(BuiltInRenderpass renderpassID);
-	bool EndRenderpass(BuiltInRenderpass renderpassID);
+	bool BeginRenderpass(RenderpassType renderpassID);
+	bool EndRenderpass(RenderpassType renderpassID);
 
-	void UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode);
-	void UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode);
+	void UpdateGlobalWorldState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode);
+	void UpdateGlobalUIState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode);
 
-	void DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData);
+	void DrawGeometry(RenderpassType renderpassID, GeometryRenderData renderData);
 	void DrawEditor();
 
 public:

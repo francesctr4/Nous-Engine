@@ -5,8 +5,8 @@
 #include "Modules/ModuleRenderer3D.h"
 #include "Systems/Texture System/TextureSystem.h"
 #include "Renderer/Frontend/RendererFrontend.h"
-
-#include "Utils/JsonFile.h"
+#include "Core/Application.h"
+#include "Utils/Logger.h"
 
 bool NOUS_MaterialSystem::Initialize()
 {

@@ -1,7 +1,11 @@
 #ifndef MODULEEDITOR_H
 #define MODULEEDITOR_H
 
-#include "Modules/Module.h"
+#include "Core/Module.h"
+
+#include <vector>
+#include <memory>
+#include <string>
 
 union SDL_Event;
 struct VulkanContext;

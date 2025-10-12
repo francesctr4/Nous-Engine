@@ -1,6 +1,6 @@
 #include "RendererFrontend.h"
 #include "Renderer/Backend/RendererBackend.h"
-
+#include "Core/Application.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "Utils/Logger.h"
 
@@ -72,27 +72,27 @@ bool RendererFrontend::EndFrame(float dt)
 	return result;
 }
 
-bool RendererFrontend::BeginRenderpass(BuiltInRenderpass renderpassID)
+bool RendererFrontend::BeginRenderpass(RenderpassType renderpassID)
 {
 	return backend->BeginRenderpass(renderpassID);
 }
 
-bool RendererFrontend::EndRenderpass(BuiltInRenderpass renderpassID)
+bool RendererFrontend::EndRenderpass(RenderpassType renderpassID)
 {
 	return backend->EndRenderpass(renderpassID);
 }
 
-void RendererFrontend::UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode)
+void RendererFrontend::UpdateGlobalWorldState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode)
 {
 	backend->UpdateGlobalWorldState(renderpassID, projection, view, viewPosition, ambientColor, mode);
 }
 
-void RendererFrontend::UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode)
+void RendererFrontend::UpdateGlobalUIState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode)
 {
 	backend->UpdateGlobalUIState(renderpassID, projection, view, mode);
 }
 
-void RendererFrontend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData)
+void RendererFrontend::DrawGeometry(RenderpassType renderpassID, GeometryRenderData renderData)
 {
 	backend->DrawGeometry(renderpassID, renderData);
 }
@@ -141,24 +141,24 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 	{
 		// ----------------------------------------------------------------------------------------------------- //
 
-		if (!BeginRenderpass(BuiltInRenderpass::SCENE))
+		if (!BeginRenderpass(RenderpassType::SCENE))
 		{
 			NOUS_ERROR("BeginRenderpass SCENE failed! Application shutting down...");
 			ret = false;
 		}
 
 		// Use Camera Attributes, passed along with renderpacket.
-		UpdateGlobalWorldState(BuiltInRenderpass::SCENE, packet->editorCamera->GetProjectionMatrix(), packet->editorCamera->GetViewMatrix(), packet->editorCamera->GetPos(), glm::vec4(1.0f), 0);
+		UpdateGlobalWorldState(RenderpassType::SCENE, packet->editorCamera->GetProjectionMatrix(), packet->editorCamera->GetViewMatrix(), packet->editorCamera->GetPos(), glm::vec4(1.0f), 0);
 
 		for (auto& geometry : packet->geometries)
 		{
-			DrawGeometry(BuiltInRenderpass::SCENE, geometry);
+			DrawGeometry(RenderpassType::SCENE, geometry);
 		}
 
 		// DrawGameCamera();
 		// DrawGrid();
 
-		if (!EndRenderpass(BuiltInRenderpass::SCENE))
+		if (!EndRenderpass(RenderpassType::SCENE))
 		{
 			NOUS_ERROR("EndRenderpass SCENE failed! Application shutting down...");
 			ret = false;
@@ -166,21 +166,21 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 
 		// ----------------------------------------------------------------------------------------------------- //
 
-		if (!BeginRenderpass(BuiltInRenderpass::GAME))
+		if (!BeginRenderpass(RenderpassType::GAME))
 		{
 			NOUS_ERROR("BeginRenderpass GAME failed! Application shutting down...");
 			ret = false;
 		}
 
 		// Use Camera Attributes, passed along with renderpacket.
-		UpdateGlobalWorldState(BuiltInRenderpass::GAME, packet->gameCamera->GetProjectionMatrix(), packet->gameCamera->GetViewMatrix(), packet->gameCamera->GetPos(), glm::vec4(1.0f), 0);
+		UpdateGlobalWorldState(RenderpassType::GAME, packet->gameCamera->GetProjectionMatrix(), packet->gameCamera->GetViewMatrix(), packet->gameCamera->GetPos(), glm::vec4(1.0f), 0);
 
 		for (auto& geometry : packet->geometries)
 		{
-			DrawGeometry(BuiltInRenderpass::GAME, geometry);
+			DrawGeometry(RenderpassType::GAME, geometry);
 		}
 
-		if (!EndRenderpass(BuiltInRenderpass::GAME))
+		if (!EndRenderpass(RenderpassType::GAME))
 		{
 			NOUS_ERROR("EndRenderpass GAME failed! Application shutting down...");
 			ret = false;
@@ -188,17 +188,17 @@ bool RendererFrontend::DrawFrame(RenderPacket* packet)
 
 		// ----------------------------------------------------------------------------------------------------- //
 
-		if (!BeginRenderpass(BuiltInRenderpass::UI))
+		if (!BeginRenderpass(RenderpassType::UI))
 		{
 			NOUS_ERROR("BeginRenderpass UI failed! Application shutting down...");
 			ret = false;
 		}
 
-		UpdateGlobalUIState(BuiltInRenderpass::UI, packet->editorCamera->GetProjectionMatrix(), packet->editorCamera->GetViewMatrix(), 0);
+		UpdateGlobalUIState(RenderpassType::UI, packet->editorCamera->GetProjectionMatrix(), packet->editorCamera->GetViewMatrix(), 0);
 		
 		DrawEditor();
 
-		if (!EndRenderpass(BuiltInRenderpass::UI))
+		if (!EndRenderpass(RenderpassType::UI))
 		{
 			NOUS_ERROR("EndRenderpass UI failed! Application shutting down...");
 			ret = false;

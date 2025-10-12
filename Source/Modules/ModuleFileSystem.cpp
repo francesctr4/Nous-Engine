@@ -3,6 +3,8 @@
 
 #include "Systems/File System/FileManager.h"
 #include <filesystem>
+#include "Core/Application.h"
+#include "Utils/Logger.h"
 
 ModuleFileSystem::ModuleFileSystem(Application* app) : Module(app)
 {
