@@ -1,7 +1,7 @@
 #include "InspectorWindow.h"
 
 #include "Core/Application.h"
-#include "Modules/ModuleScene.h"
+#include "Core/Modules/ModuleScene.h"
 
 #include "ECS/GameObject.h"
 #include "ECS/Components/ComponentTransform.h"

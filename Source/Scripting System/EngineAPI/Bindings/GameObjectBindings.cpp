@@ -1,7 +1,7 @@
 #include "GameObjectBindings.h"
 
 #include "Core/Application.h"
-#include "Modules/ModuleScene.h"
+#include "Core/Modules/ModuleScene.h"
 
 #include "ECS/Scene.h"
 #include "ECS/GameObject.h"

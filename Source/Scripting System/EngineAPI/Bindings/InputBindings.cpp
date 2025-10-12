@@ -1,7 +1,7 @@
 #include "InputBindings.h"
 
 #include "Core/Application.h"
-#include "Modules/ModuleInput.h"
+#include "Core/Modules/ModuleInput.h"
 
 void SetupInputBindings(InputAPI &input)
 {

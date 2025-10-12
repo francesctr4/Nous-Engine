@@ -1,6 +1,6 @@
-#include "Modules/ModuleScene.h"
-#include "Modules/ModuleInput.h"
-#include "Modules/ModuleResourceManager.h"
+#include "ModuleScene.h"
+#include "ModuleInput.h"
+#include "ModuleResourceManager.h"
 #include "Systems/Event System/EventSystem.h"
 
 #include "Systems/Resource Manager/Resource Types/ResourceMesh.h"

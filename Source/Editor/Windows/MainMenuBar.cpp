@@ -1,6 +1,6 @@
 #include "Editor/Windows/MainMenuBar.h"
 
-#include "Modules/ModuleEditor.h"
+#include "Core/Modules/ModuleEditor.h"
 #include "Core/Application.h"
 
 MainMenuBar::MainMenuBar(const char* title, bool start_open)

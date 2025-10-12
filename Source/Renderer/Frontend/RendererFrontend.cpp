@@ -9,7 +9,7 @@
 #include "Systems/Geometry System/GeometrySystem.h"
 #include "Systems/Camera System/Camera.h"
 
-#include "Modules/ModuleEditor.h"
+#include "Core/Modules/ModuleEditor.h"
 
 RendererFrontend::RendererFrontend()
 {

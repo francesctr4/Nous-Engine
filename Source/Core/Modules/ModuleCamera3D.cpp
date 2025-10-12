@@ -1,5 +1,5 @@
-#include "Modules/ModuleCamera3D.h"
-#include "Modules/ModuleInput.h"
+#include "ModuleCamera3D.h"
+#include "ModuleInput.h"
 #include "Utils/Logger.h"
 #include "Core/Application.h"
 #include <algorithm>  // Required for std::clamp

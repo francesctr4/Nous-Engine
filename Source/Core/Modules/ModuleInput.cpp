@@ -1,10 +1,10 @@
-#include "Modules/ModuleInput.h"
-#include "Modules/ModuleEditor.h"
+#include "ModuleInput.h"
+#include "ModuleEditor.h"
 #include "Core/Application.h"
 #include "Systems/Event System/EventSystem.h"
 #include "Utils/Logger.h"
 #include "Systems/Memory Manager/MemoryManager.h"
-#include "Modules/ModuleWindow.h"
+#include "ModuleWindow.h"
 
 ModuleInput::ModuleInput(Application* app) : Module(app)
 {

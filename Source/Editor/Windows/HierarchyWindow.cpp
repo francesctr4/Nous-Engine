@@ -4,7 +4,7 @@
 #include "ECS/GameObject.h"
 
 #include "Core/Application.h"
-#include "Modules/ModuleScene.h"
+#include "Core/Modules/ModuleScene.h"
 
 HierarchyWindow::HierarchyWindow(const char* title, bool start_open)
         : IEditorWindow(title, nullptr, start_open) {

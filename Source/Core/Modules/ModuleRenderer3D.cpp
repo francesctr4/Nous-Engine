@@ -1,5 +1,5 @@
-#include "Modules/ModuleRenderer3D.h"
-#include "Modules/ModuleCamera3D.h"
+#include "ModuleRenderer3D.h"
+#include "ModuleCamera3D.h"
 
 #include "Renderer/Frontend/RendererFrontend.h"
 #include "Renderer/RendererTypes.h"

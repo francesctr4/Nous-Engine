@@ -3,7 +3,7 @@
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
 #include "Core/Application.h"
-#include "Modules/ModuleResourceManager.h"
+#include "Core/Modules/ModuleResourceManager.h"
 
 #include "Systems/File System/FileManager.h"
 #include "Utils/JsonFile.h"
@@ -11,7 +11,7 @@
 
 #include "Systems/Memory Manager/MemoryManager.h"
 
-#include "Modules/ModuleRenderer3D.h"
+#include "Core/Modules/ModuleRenderer3D.h"
 #include "Utils/Logger.h"
 #include "Renderer/Frontend/RendererFrontend.h"
 

@@ -1,8 +1,8 @@
 #include "Editor/Windows/AssetsBrowser.h"
-#include "Modules/ModuleEditor.h"
+#include "Core/Modules/ModuleEditor.h"
 
 #include "Systems/File System/FileManager.h"
-#include "Modules/ModuleFileSystem.h"
+#include "Core/Modules/ModuleFileSystem.h"
 #include "Core/Application.h"
 #include "Scripting System/ScriptManager.h"
 #include "Multithreading/NOUS_JobSystem.h"

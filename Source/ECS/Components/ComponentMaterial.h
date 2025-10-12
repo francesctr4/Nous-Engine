@@ -6,7 +6,7 @@
 #define NOUS_ENGINE_COMPONENTMATERIAL_H
 
 #include "Systems/Resource Manager/Resource Types/ResourceMaterial.h"
-#include "Modules/ModuleResourceManager.h"
+#include "Core/Modules/ModuleResourceManager.h"
 #include "Core/Application.h"
 
 class CMaterial : public Component {

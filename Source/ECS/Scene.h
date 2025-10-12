@@ -4,7 +4,7 @@
 #include "GameObject.h"
 #include "ECS/Components/ComponentTransform.h"
 #include "Core/Application.h"
-#include "Modules/ModuleScene.h"
+#include "Core/Modules/ModuleScene.h"
 #include "Utils/Random.h"
 #include <unordered_set>
 #include <mutex>

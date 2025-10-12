@@ -3,7 +3,7 @@
 #include "Utils/Logger.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "Core/Application.h"
-#include "Modules/ModuleRenderer3D.h"
+#include "Core/Modules/ModuleRenderer3D.h"
 #include "Renderer/Frontend/RendererFrontend.h"
 
 #include <array>

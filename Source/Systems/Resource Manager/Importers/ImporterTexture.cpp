@@ -3,7 +3,7 @@
 #include "Systems/File System/FileHandle.h"
 #include "Systems/File System/FileManager.h"
 
-#include "Modules/ModuleRenderer3D.h"
+#include "Core/Modules/ModuleRenderer3D.h"
 #include "Systems/Resource Manager/MetaFileData.inl"
 
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"

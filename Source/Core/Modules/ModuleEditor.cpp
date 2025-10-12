@@ -1,8 +1,8 @@
-#include "Modules/ModuleEditor.h"
+#include "ModuleEditor.h"
 
-#include "Modules/ModuleRenderer3D.h"
+#include "ModuleRenderer3D.h"
 #include "Renderer/Frontend/RendererFrontend.h"
-#include "Modules/ModuleCamera3D.h"
+#include "ModuleCamera3D.h"
 #include "Core/Application.h"
 
 #include "Renderer/Backend/Vulkan/VulkanBackend.h"

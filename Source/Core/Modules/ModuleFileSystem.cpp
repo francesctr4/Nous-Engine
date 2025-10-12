@@ -1,5 +1,5 @@
-#include "Modules/ModuleFileSystem.h"
-#include "Modules/ModuleResourceManager.h"
+#include "ModuleFileSystem.h"
+#include "ModuleResourceManager.h"
 
 #include "Systems/File System/FileManager.h"
 #include <filesystem>
