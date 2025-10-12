@@ -17,12 +17,12 @@ class VulkanBackend : public IRendererBackend
 public:
 
 	VulkanBackend();
-	virtual ~VulkanBackend() override;
+	~VulkanBackend() override;
 
 	bool Initialize() override;
-	void Shutdown() override;
+	void Shutdown() noexcept override;
 
-	void Resized(uint16 width, uint16 height) override;
+	void Resized(uint16 width, uint16 height) noexcept override;
 
 	bool BeginFrame(float dt) override;
 	bool EndFrame(float dt) override;
@@ -32,22 +32,30 @@ public:
 
 	bool RecreateResources();
 
-	void UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode) override;
-	void UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode) override;
+	bool UpdateGlobalWorldState(
+			BuiltInRenderpass renderpassID,
+			const glm::mat4& projection, const glm::mat4& view,
+			const glm::vec3& viewPosition, const glm::vec4& ambientColor,
+			int32 mode) override;
 
-	void DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData) override;
+	bool UpdateGlobalUIState(
+			BuiltInRenderpass renderpassID,
+			const glm::mat4& projection, const glm::mat4& view,
+			int32 mode) override;
+
+	bool DrawGeometry(BuiltInRenderpass renderpassID, const GeometryRenderData& renderData) override;
 
 	// ----------------------------------------------------------------------------------------------- //
 	// TEMPORAL //
 
-	void CreateTexture(const uint8* pixels, ResourceTexture* outTexture) override;
-	void DestroyTexture(ResourceTexture* texture) override;
+	bool CreateTexture(const uint8* pixels, ResourceTexture* outTexture) override;
+	bool DestroyTexture(ResourceTexture* texture) noexcept override;
 
 	bool CreateMaterial(ResourceMaterial* material) override;
-	void DestroyMaterial(ResourceMaterial* material) override;
+	bool DestroyMaterial(ResourceMaterial* material) noexcept override;
 
 	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry) override;
-	void DestroyGeometry(ResourceMesh* geometry) override;
+	bool DestroyGeometry(ResourceMesh* geometry) noexcept override;
 
 	static VulkanContext* GetVulkanContext();
 

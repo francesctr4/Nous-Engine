@@ -294,7 +294,7 @@ bool VulkanBackend::Initialize()
 	return ret;
 }
 
-void VulkanBackend::Shutdown()
+void VulkanBackend::Shutdown() noexcept
 {
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
@@ -327,7 +327,7 @@ void VulkanBackend::Shutdown()
     NOUS_VulkanInstance::DestroyInstance(vkContext);
 }
 
-void VulkanBackend::Resized(uint16 width, uint16 height)
+void VulkanBackend::Resized(uint16 width, uint16 height) noexcept
 {
     // Update the "framebuffer size generation", a counter which indicates when the
     // framebuffer size has been updated.
@@ -726,7 +726,11 @@ bool VulkanBackend::RecreateResources()
     return true;
 }
 
-void VulkanBackend::UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode)
+bool VulkanBackend::UpdateGlobalWorldState(
+        BuiltInRenderpass renderpassID,
+        const glm::mat4& projection, const glm::mat4& view,
+        const glm::vec3& viewPosition, const glm::vec4& ambientColor,
+        int32 mode)
 {
     VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
 
@@ -747,9 +751,13 @@ void VulkanBackend::UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::
     shader->globalUBO.view = view;
 
     NOUS_VulkanMaterialShader::UpdateMaterialShaderGlobalState(vkContext, commandBuffer, shader, vkContext->frameDeltaTime);
+
+    return true;
 }
 
-void VulkanBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode)
+bool VulkanBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID,
+                                        const glm::mat4& projection, const glm::mat4& view,
+                                        int32 mode)
 {
     NOUS_VulkanUIShader::UseUIShader(vkContext, &vkContext->uiShader);
 
@@ -757,6 +765,8 @@ void VulkanBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat
     vkContext->uiShader.globalUBO.view = view;
 
     NOUS_VulkanUIShader::UpdateUIShaderGlobalState(vkContext, &vkContext->uiShader, vkContext->frameDeltaTime);
+
+    return true;
 }
 
 VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(BuiltInRenderpass renderpassID) 
@@ -789,12 +799,12 @@ VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(BuiltInRender
     return commandBuffer;
 }
 
-void VulkanBackend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData)
+bool VulkanBackend::DrawGeometry(BuiltInRenderpass renderpassID, const GeometryRenderData& renderData)
 {
     // Ignore non-uploaded geometries.
     if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID)
     {
-        return;
+        return true;
     }
 
     VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
@@ -846,12 +856,14 @@ void VulkanBackend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderD
     {
         vkCmdDraw(commandBuffer->handle, bufferData->vertexCount, 1, 0, 0);
     }
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------------------------- //
 // TEMPORAL //
 
-void VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
+bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
 {
     // Internal data creation.
     // TODO: Use an allocator for this.
@@ -935,12 +947,16 @@ void VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     
     if (!VkResultIsSuccess(result)) 
     {
-        NOUS_ERROR("Error creating texture sampler: %s", VkResultMessage(result, true).c_str());
-        return;
+        NOUS_ERROR("[%s][VULKAN] Error creating texture sampler: %s", VkResultMessage(result, true).c_str());
+        return false;
     }
+
+    NOUS_INFO("[%s][VULKAN] Texture Created Successfully: %s",
+              __FUNCTION__, VkResultMessage(result, true).c_str());
+    return true;
 }
 
-void VulkanBackend::DestroyTexture(ResourceTexture* texture)
+bool VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
 {
     VulkanTextureData* textureData = reinterpret_cast<VulkanTextureData*>(texture->internalData);
 
@@ -953,7 +969,11 @@ void VulkanBackend::DestroyTexture(ResourceTexture* texture)
         textureData->sampler = 0;
 
         MemoryManager::Free(textureData, sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE);
+
+        return true;
     }
+
+    return false;
 }
 
 bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
@@ -980,7 +1000,7 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
     return false;
 }
 
-void VulkanBackend::DestroyMaterial(ResourceMaterial* material)
+bool VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
 {
     if (material) 
     {
@@ -988,15 +1008,18 @@ void VulkanBackend::DestroyMaterial(ResourceMaterial* material)
         {
             NOUS_VulkanMaterialShader::ReleaseMaterialShaderResources(vkContext, &vkContext->materialShader, material);
             //ReleaseMaterialShaderResources(vkContext, &vkContext->gameShader, material);
+            return true;
         }
         else 
         {
             NOUS_WARN("VulkanBackend::DestroyMaterial() called with internal_id = INVALID_ID. Nothing was done.");
+            return false;
         }
     }
     else 
     {
         NOUS_WARN("VulkanBackend::DestroyMaterial() called with nullptr. Nothing was done.");
+        return false;
     }
 }
 
@@ -1105,7 +1128,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     return true;
 }
 
-void VulkanBackend::DestroyGeometry(ResourceMesh* geometry)
+bool VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
 {
     if (geometry && geometry->internalID != INVALID_ID) 
     {
@@ -1125,7 +1148,11 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry)
 
         internalData->ID = INVALID_ID;
         internalData->generation = INVALID_ID;
+
+        return true;
     }
+
+    return false;
 }
 
 VulkanContext* VulkanBackend::GetVulkanContext()

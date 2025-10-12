@@ -28,19 +28,19 @@ public:
 	bool BeginRenderpass(BuiltInRenderpass renderpassID);
 	bool EndRenderpass(BuiltInRenderpass renderpassID);
 
-	void UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode);
-	void UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode);
+	bool UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode);
+	bool UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode);
 
-	void DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData);
+	bool DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData);
 
-	void CreateTexture(const uint8* pixels, ResourceTexture* outTexture);
-	void DestroyTexture(ResourceTexture* texture);
+	bool CreateTexture(const uint8* pixels, ResourceTexture* outTexture);
+	bool DestroyTexture(ResourceTexture* texture);
 
 	bool CreateMaterial(ResourceMaterial* material);
-	void DestroyMaterial(ResourceMaterial* material);
+	bool DestroyMaterial(ResourceMaterial* material);
 
 	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry);
-	void DestroyGeometry(ResourceMesh* geometry);
+	bool DestroyGeometry(ResourceMesh* geometry);
 
 	// -------------------------------------- \\
 

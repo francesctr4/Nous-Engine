@@ -45,16 +45,13 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 	return ret;
 }
 
-bool RendererFrontend::Shutdown()
+void RendererFrontend::Shutdown()
 {
 	NOUS_GeometrySystem::Shutdown();
 	NOUS_MaterialSystem::Shutdown();
 	NOUS_TextureSystem::Shutdown();
 
-	// TODO: This should return bool to check for status.
 	backend->Shutdown();
-
-	return true;
 }
 
 void RendererFrontend::OnResized(uint16 width, uint16 height)

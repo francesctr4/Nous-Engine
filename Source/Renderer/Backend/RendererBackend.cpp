@@ -112,44 +112,54 @@ bool RendererBackend::EndRenderpass(BuiltInRenderpass renderpassID)
     return false;
 }
 
-void RendererBackend::UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode)
+bool RendererBackend::UpdateGlobalWorldState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode)
 {
     if (backendInterface != nullptr)
     {
         return backendInterface->UpdateGlobalWorldState(renderpassID, projection, view, viewPosition, ambientColor, mode);
     }
+
+    return false;
 }
 
-void RendererBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode)
+bool RendererBackend::UpdateGlobalUIState(BuiltInRenderpass renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode)
 {
     if (backendInterface != nullptr)
     {
         return backendInterface->UpdateGlobalUIState(renderpassID, projection, view, mode);
     }
+
+    return false;
 }
 
-void RendererBackend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData)
+bool RendererBackend::DrawGeometry(BuiltInRenderpass renderpassID, GeometryRenderData renderData)
 {
     if (backendInterface != nullptr)
     {
         return backendInterface->DrawGeometry(renderpassID, renderData);
     }
+
+    return false;
 }
 
-void RendererBackend::CreateTexture(const uint8* pixels, ResourceTexture* outTexture)
+bool RendererBackend::CreateTexture(const uint8* pixels, ResourceTexture* outTexture)
 {
     if (backendInterface != nullptr)
     {
         return backendInterface->CreateTexture(pixels, outTexture);
     }
+
+    return false;
 }
 
-void RendererBackend::DestroyTexture(ResourceTexture* texture)
+bool RendererBackend::DestroyTexture(ResourceTexture* texture)
 {
     if (backendInterface != nullptr)
     {
         return backendInterface->DestroyTexture(texture);
     }
+
+    return false;
 }
 
 bool RendererBackend::CreateMaterial(ResourceMaterial* material)
@@ -162,12 +172,14 @@ bool RendererBackend::CreateMaterial(ResourceMaterial* material)
     return false;
 }
 
-void RendererBackend::DestroyMaterial(ResourceMaterial* material)
+bool RendererBackend::DestroyMaterial(ResourceMaterial* material)
 {
     if (backendInterface != nullptr)
     {
         return backendInterface->DestroyMaterial(material);
     }
+
+    return false;
 }
 
 bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry)
@@ -180,10 +192,12 @@ bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertice
     return false;
 }
 
-void RendererBackend::DestroyGeometry(ResourceMesh* geometry)
+bool RendererBackend::DestroyGeometry(ResourceMesh* geometry)
 {
     if (backendInterface != nullptr)
     {
         return backendInterface->DestroyGeometry(geometry);
     }
+
+    return false;
 }

@@ -101,13 +101,10 @@ bool ModuleRenderer3D::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	if (!rendererFrontend->Shutdown())
-	{
-		NOUS_FATAL("[%s] Failed to shutdown renderer. Aborting application.", __FUNCTION__);
-		return false;
-	}
+	rendererFrontend->Shutdown();
 
 	NOUS_INFO("[%s] Renderer Frontend shutdown was successful.", __FUNCTION__);
+
 	return true;
 }
 

@@ -17,7 +17,7 @@ public:
 	virtual ~RendererFrontend();
 
 	bool Initialize(RendererBackendType backendType);
-	bool Shutdown();
+	void Shutdown();
 
 	void OnResized(uint16 width, uint16 height);
 
