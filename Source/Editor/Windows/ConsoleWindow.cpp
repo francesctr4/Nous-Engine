@@ -1,6 +1,17 @@
 #include "Editor/Windows/ConsoleWindow.h"
-#include <imgui.h>
 #include <algorithm>
+
+#include <imgui.h>
+
+// Colors for different log levels
+ImVec4 levelColors[6] = {
+        ImVec4(1.0f, 0.0f, 0.0f, 1.0f),        // FATAL - Red
+        ImVec4(1.0f, 0.4f, 0.4f, 1.0f),        // ERROR - Light Red
+        ImVec4(1.0f, 1.0f, 0.0f, 1.0f),        // WARN - Yellow
+        ImVec4(0.0f, 1.0f, 0.0f, 1.0f),        // INFO - Green
+        ImVec4(0.0f, 0.5f, 1.0f, 1.0f),        // DEBUG - Blue
+        ImVec4(0.5f, 0.5f, 0.5f, 1.0f)         // TRACE - Gray
+};
 
 ConsoleWindow::ConsoleWindow(const char* title, bool start_open)
         : IEditorWindow(title, nullptr, start_open)

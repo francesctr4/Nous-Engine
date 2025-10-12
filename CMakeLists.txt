@@ -36,7 +36,6 @@ set(ALL_SOURCES
         "Source/Editor/Windows/SceneViewport.h"
         "Source/Editor/IEditorWindow.inl"
 
-        "Source/Includes/ImGui.h"
         "Source/Includes/glmath.h"
 
         "Source/Core/Module.cpp"

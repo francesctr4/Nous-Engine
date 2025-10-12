@@ -6,7 +6,6 @@
 #include "Core/Application.h"
 #include "Scripting System/ScriptManager.h"
 #include "Multithreading/NOUS_JobSystem.h"
-#include "Utils/Asserts.h"
 #include "Utils/Logger.h"
 
 static void HelpMarker(const char* desc)

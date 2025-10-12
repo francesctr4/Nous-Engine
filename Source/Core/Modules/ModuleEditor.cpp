@@ -12,7 +12,12 @@
 
 #include "Editor/IEditorWindow.inl"
 #include "Editor/ImGuiConfig/ImGuiCustom.h"
-#include "Includes/ImGui.h"
+
+// ImGui
+#include <imgui.h>
+#include <imgui_stdlib.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_vulkan.h>
 
 #pragma region EDITOR WINDOWS
 

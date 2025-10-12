@@ -6,6 +6,8 @@
 #include "Core/Application.h"
 #include "Core/Modules/ModuleScene.h"
 
+#include <imgui.h>
+
 HierarchyWindow::HierarchyWindow(const char* title, bool start_open)
         : IEditorWindow(title, nullptr, start_open) {
     Init();

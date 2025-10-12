@@ -5,6 +5,7 @@
 
 enum class ResourceType;
 class Resource;
+struct ImVec4;
 
 class Resources : public IEditorWindow
 {

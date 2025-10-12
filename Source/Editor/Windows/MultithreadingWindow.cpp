@@ -8,6 +8,8 @@
 
 #include <algorithm>
 
+#include <imgui.h>
+
 Multithreading::Multithreading(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
 {

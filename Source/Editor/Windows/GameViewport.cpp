@@ -4,6 +4,8 @@
 #include "Renderer/Backend/Vulkan/VulkanImGuiResources.h"
 #include "Renderer/Backend/Vulkan/VulkanBackend.h"
 
+#include <imgui.h>
+
 GameViewport::GameViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
 {

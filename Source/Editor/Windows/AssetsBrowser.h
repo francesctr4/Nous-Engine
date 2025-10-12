@@ -7,6 +7,9 @@
 #include <unordered_map>
 #include <stack>
 
+// ImGui
+#include <imgui.h>
+
 // Extra functions to add deletion support to ImGuiSelectionBasicStorage
 struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
 {
@@ -72,7 +75,7 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
     }
 };
 
-enum class FileType 
+enum class FileType
 {
     UNKNOWN = -1,
 
@@ -110,7 +113,7 @@ const std::unordered_map<std::string, FileType> extensionToFileType =
     {".spv", FileType::SHADER},
 
     // Font file extensions
-    {".ttf", FileType::FONT}, 
+    {".ttf", FileType::FONT},
 
     // Scene file extensions
     {".nous", FileType::SCENE},

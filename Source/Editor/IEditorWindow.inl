@@ -2,7 +2,7 @@
 #define IEDITORWINDOW_INL
 
 #include "Core/Globals.h"
-#include "Includes/ImGui.h"
+
 #include "Core/UpdateStatus.h"
 #include <vector>
 #include <memory>

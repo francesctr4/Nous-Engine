@@ -9,6 +9,8 @@
 #include "ECS/Components/ComponentMaterial.h"
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
 
+#include <imgui.h>
+
 InspectorWindow::InspectorWindow(const char* title, bool start_open)
         : IEditorWindow(title, nullptr, start_open) {
     Init();

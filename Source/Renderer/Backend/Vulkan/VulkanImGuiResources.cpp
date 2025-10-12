@@ -3,7 +3,9 @@
 #include "VulkanUtils.h"
 #include "VulkanDevice.h"
 
-#include "Includes/ImGui.h"
+#include <imgui.h>
+#include <imgui_stdlib.h>
+#include <imgui_impl_vulkan.h>
 
 void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkContext)
 {

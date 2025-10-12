@@ -3,6 +3,8 @@
 #include "Core/Modules/ModuleEditor.h"
 #include "Core/Application.h"
 
+#include <imgui.h>
+
 MainMenuBar::MainMenuBar(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open) 
 {
