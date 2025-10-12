@@ -5,7 +5,7 @@
 #include "Systems/Memory Manager/Custom Allocators/DynamicAllocator.h"
 
 #ifdef _PROFILING
-#include "Includes/Tracy.h"
+#include <tracy/Tracy.hpp>
 #endif // _PROFILING
 
 #include <mutex>

@@ -1,7 +1,7 @@
 #include "Multithreading/NOUS_Job.h"
 
 #ifdef _PROFILING
-#include "Includes/Tracy.h"
+#include <tracy/Tracy.hpp>
 #endif
 
 /// @brief NOUS_Job constructor.

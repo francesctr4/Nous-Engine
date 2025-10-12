@@ -14,7 +14,7 @@
 #include "Systems/Event System/EventSystem.h"
 
 #ifdef _PROFILING
-#include "Includes/Tracy.h"
+#include <tracy/Tracy.hpp>
 #endif
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)

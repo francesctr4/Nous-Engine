@@ -12,13 +12,12 @@
 #include "Systems/Memory Manager/MemoryManager.h"
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
 
 #include "Systems/Time Management/TimeManager.h"
 #include "Multithreading/NOUS_JobSystem.h"
 
 #ifdef _PROFILING
-#include "Includes/Tracy.h"
+#include <tracy/Tracy.hpp>
 #endif
 
 extern Application* External = nullptr;

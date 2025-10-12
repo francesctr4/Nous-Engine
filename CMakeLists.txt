@@ -38,9 +38,6 @@ set(ALL_SOURCES
 
         "Source/Includes/ImGui.h"
         "Source/Includes/glmath.h"
-        "Source/Includes/Tracy.h"
-        "Source/Includes/Vulkan.h"
-        "Source/Includes/Stb.h"
 
         "Source/Core/Module.cpp"
         "Source/Core/Module.h"

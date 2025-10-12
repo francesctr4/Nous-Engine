@@ -8,7 +8,7 @@
 #include "Systems/Resource Manager/Resource Types/ResourceMesh.h"
 #include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
 
-#include "Includes/Vulkan.h"
+#include <vulkan/vulkan.h>
 #include "Systems/Memory Manager/Custom Allocators/FreeList.h"
 
 #include <future>
