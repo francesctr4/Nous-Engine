@@ -1,10 +1,10 @@
 #include "Editor/Windows/MultithreadingWindow.h"
 
-#include "Core/Application.h"
-#include "Multithreading/NOUS_JobSystem.h"
-#include "Multithreading/NOUS_Multithreading.h"
-#include "Renderer/Backend/Vulkan/VulkanMultithreading.h"
-#include "Renderer/Backend/Vulkan/VulkanBackend.h"
+#include "Engine/Core/Application.h"
+#include "Engine/Multithreading/NOUS_JobSystem.h"
+#include "Engine/Multithreading/NOUS_Multithreading.h"
+#include "Engine/Renderer/Backend/Vulkan/VulkanMultithreading.h"
+#include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
 
 #include <algorithm>
 

@@ -56,19 +56,19 @@ find_package(glm REQUIRED)
 # ==============================
 # Engine Modules
 # ==============================
-add_subdirectory(Source/Core)
+add_subdirectory(Source/Engine/Core)
 add_subdirectory(Source/Editor)
-add_subdirectory(Source/Scripting)
-add_subdirectory(Source/Multithreading)
-add_subdirectory(Source/Utils)
-add_subdirectory(Source/Renderer)
-add_subdirectory(Source/ECS)
-add_subdirectory(Source/Systems)
+add_subdirectory(Source/Engine/Scripting)
+add_subdirectory(Source/Engine/Multithreading)
+add_subdirectory(Source/Engine/Utils)
+add_subdirectory(Source/Engine/Renderer)
+add_subdirectory(Source/Engine/ECS)
+add_subdirectory(Source/Engine/Systems)
 
 # ==============================
 # Main Executable
 # ==============================
-add_executable(${PROJECT_NAME} Source/Core/Main.cpp)
+add_executable(${PROJECT_NAME} Source/Engine/Core/Main.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/Source

@@ -1,13 +1,13 @@
 #include "InspectorWindow.h"
 
-#include "Core/Application.h"
-#include "Core/Modules/ModuleScene.h"
+#include "Engine/Core/Application.h"
+#include "Engine/Core/Modules/ModuleScene.h"
 
-#include "ECS/GameObject.h"
-#include "ECS/Components/ComponentTransform.h"
-#include "ECS/Components/ComponentMesh.h"
-#include "ECS/Components/ComponentMaterial.h"
-#include "Systems/Resource Manager/Resource Types/ResourceTexture.h"
+#include "Engine/ECS/GameObject.h"
+#include "Engine/ECS/Components/ComponentTransform.h"
+#include "Engine/ECS/Components/ComponentMesh.h"
+#include "Engine/ECS/Components/ComponentMaterial.h"
+#include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
 
 #include <imgui.h>
 

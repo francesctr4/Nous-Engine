@@ -1,12 +1,12 @@
 #include "Editor/Windows/AssetsBrowser.h"
-#include "Core/Modules/ModuleEditor.h"
+#include "Engine/Core/Modules/ModuleEditor.h"
 
-#include "Systems/File System/FileManager.h"
-#include "Core/Modules/ModuleFileSystem.h"
-#include "Core/Application.h"
-#include "Scripting/ScriptManager.h"
-#include "Multithreading/NOUS_JobSystem.h"
-#include "Utils/Logger.h"
+#include "Engine/Systems/File System/FileManager.h"
+#include "Engine/Core/Modules/ModuleFileSystem.h"
+#include "Engine/Core/Application.h"
+#include "Engine/Scripting/ScriptManager.h"
+#include "Engine/Multithreading/NOUS_JobSystem.h"
+#include "Engine/Utils/Logger.h"
 
 static void HelpMarker(const char* desc)
 {
