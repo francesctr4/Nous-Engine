@@ -9,8 +9,8 @@
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "Systems/Camera System/Camera.h"
 
-#include "Scripting System/ScriptManager.h"
-#include "Scripting System/Internal/IScript.inl"
+#include "Scripting/ScriptManager.h"
+#include "Scripting/Internal/IScript.inl"
 
 #include "ECS/Scene.h"
 #include "ECS/GameObject.h"

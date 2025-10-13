@@ -12,6 +12,7 @@ set(CORE_SOURCES
 )
 
 add_library(Core STATIC ${CORE_SOURCES})
+add_library(NousEngine::Core ALIAS Core)
 
 set_target_properties(Core PROPERTIES
         CXX_STANDARD 23
@@ -26,4 +27,4 @@ target_include_directories(Core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 add_subdirectory(Modules)
 
 # Link Modules into Core (so any project linking Core automatically gets Modules)
-target_link_libraries(Core PUBLIC Modules)
+target_link_libraries(Core PUBLIC NousEngine::Modules)

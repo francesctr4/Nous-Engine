@@ -7,10 +7,10 @@
  *     coding_start and coding_end
  ****************************************************/
 
-#include "Scripting System/Internal/IScript.inl"
-#include "Scripting System/Internal/ScriptRegistry.inl"
-#include "Scripting System/EngineAPI/EngineAPI.h"
-#include "Scripting System/EngineAPI/ScriptBindings.h"
+#include "Scripting/Internal/IScript.inl"
+#include "Scripting/Internal/ScriptRegistry.inl"
+#include "Scripting/EngineAPI/EngineAPI.h"
+#include "Scripting/EngineAPI/ScriptBindings.h"
 
 // ----- HEADER FILES ----- //
 /*coding_start::Test*/

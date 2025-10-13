@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_COMPONENTSCRIPT_H
 #define NOUS_ENGINE_COMPONENTSCRIPT_H
 
-#include "Scripting System/Internal/IScript.inl"
+#include "Scripting/Internal/IScript.inl"
 #include "ECS/Component.h"
 
 class CScript : public Component {

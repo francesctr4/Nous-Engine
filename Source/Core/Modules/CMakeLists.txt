@@ -22,6 +22,7 @@ set(MODULES_SOURCES
 )
 
 add_library(Modules STATIC ${MODULES_SOURCES})
+add_library(NousEngine::Modules ALIAS Modules)
 
 set_target_properties(Modules PROPERTIES
         CXX_STANDARD 23

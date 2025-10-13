@@ -1,6 +1,6 @@
 #include "ScriptBindings.h"
 
-#include "Scripting System/EngineAPI/EngineAPI.h"
+#include "Scripting/EngineAPI/EngineAPI.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 
 void ScriptBindings::InitializeBindings(EngineAPI*& api)

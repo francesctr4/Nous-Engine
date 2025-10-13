@@ -15,157 +15,30 @@ project(${PROJECT_NAME}
 set(ALL_SOURCES
         Source/Core/Main.cpp
 
-        "Source/Multithreading/NOUS_Job.cpp"
-        "Source/Multithreading/NOUS_Job.h"
-        "Source/Multithreading/NOUS_JobSystem.cpp"
-        "Source/Multithreading/NOUS_JobSystem.h"
-        "Source/Multithreading/NOUS_Multithreading.cpp"
-        "Source/Multithreading/NOUS_Multithreading.h"
-        "Source/Multithreading/NOUS_Thread.cpp"
-        "Source/Multithreading/NOUS_Thread.h"
-        "Source/Multithreading/NOUS_ThreadPool.cpp"
-        "Source/Multithreading/NOUS_ThreadPool.h"
-
-        "Source/Renderer/Backend/RendererBackend.cpp"
-        "Source/Renderer/Backend/RendererBackend.h"
-        "Source/Renderer/Frontend/RendererFrontend.cpp"
-        "Source/Renderer/Frontend/RendererFrontend.h"
-        "Source/Renderer/RendererTypes.h"
-
-        "Source/Renderer/Backend/Vulkan/Shaders/VulkanMaterialShader.cpp"
-        "Source/Renderer/Backend/Vulkan/Shaders/VulkanMaterialShader.h"
-        "Source/Renderer/Backend/Vulkan/Shaders/VulkanShaderUtils.cpp"
-        "Source/Renderer/Backend/Vulkan/Shaders/VulkanShaderUtils.h"
-        "Source/Renderer/Backend/Vulkan/Shaders/VulkanUIShader.cpp"
-        "Source/Renderer/Backend/Vulkan/Shaders/VulkanUIShader.h"
-
-        "Source/Renderer/Backend/Vulkan/VulkanBackend.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanBackend.h"
-        "Source/Renderer/Backend/Vulkan/VulkanBuffer.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanBuffer.h"
-        "Source/Renderer/Backend/Vulkan/VulkanCommandBuffer.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanCommandBuffer.h"
-        "Source/Renderer/Backend/Vulkan/VulkanDebugMessenger.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanDebugMessenger.h"
-        "Source/Renderer/Backend/Vulkan/VulkanDevice.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanDevice.h"
-        "Source/Renderer/Backend/Vulkan/VulkanExternal.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanExternal.h"
-        "Source/Renderer/Backend/Vulkan/VulkanFramebuffer.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanFramebuffer.h"
-        "Source/Renderer/Backend/Vulkan/VulkanGlobals.h"
-        "Source/Renderer/Backend/Vulkan/VulkanGraphicsPipeline.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanGraphicsPipeline.h"
-        "Source/Renderer/Backend/Vulkan/VulkanImage.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanImage.h"
-        "Source/Renderer/Backend/Vulkan/VulkanImGuiResources.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanImGuiResources.h"
-        "Source/Renderer/Backend/Vulkan/VulkanInstance.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanInstance.h"
-        "Source/Renderer/Backend/Vulkan/VulkanMultithreading.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanMultithreading.h"
-        "Source/Renderer/Backend/Vulkan/VulkanRenderpass.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanRenderpass.h"
-        "Source/Renderer/Backend/Vulkan/VulkanSwapchain.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanSwapchain.h"
-        "Source/Renderer/Backend/Vulkan/VulkanSyncObjects.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanSyncObjects.h"
-        "Source/Renderer/Backend/Vulkan/VulkanTypes.inl"
-        "Source/Renderer/Backend/Vulkan/VulkanUtils.cpp"
-        "Source/Renderer/Backend/Vulkan/VulkanUtils.h"
-
-        "Source/Systems/Camera System/Camera.cpp"
-        "Source/Systems/Camera System/Camera.h"
-
-        "Source/Systems/Event System/EventSystem.h"
-
-        "Source/Systems/File System/FileHandle.cpp"
-        "Source/Systems/File System/FileHandle.h"
-        "Source/Systems/File System/FileManager.cpp"
-        "Source/Systems/File System/FileManager.h"
-
-        "Source/Systems/Geometry System/GeometrySystem.cpp"
-        "Source/Systems/Geometry System/GeometrySystem.h"
-        "Source/Systems/Geometry System/Vertex.inl"
-
-        "Source/Systems/Material System/MaterialSystem.cpp"
-        "Source/Systems/Material System/MaterialSystem.h"
-
-        "Source/Systems/Memory Manager/MemoryManager.cpp"
-        "Source/Systems/Memory Manager/MemoryManager.h"
-
-        "Source/Systems/Memory Manager/Custom Allocators/DynamicAllocator.cpp"
-        "Source/Systems/Memory Manager/Custom Allocators/DynamicAllocator.h"
-        "Source/Systems/Memory Manager/Custom Allocators/FreeList.cpp"
-        "Source/Systems/Memory Manager/Custom Allocators/FreeList.h"
-        "Source/Systems/Memory Manager/Custom Allocators/LinearAllocator.cpp"
-        "Source/Systems/Memory Manager/Custom Allocators/LinearAllocator.h"
-
-        "Source/Systems/Resource Manager/MetaFileData.inl"
-
-        "Source/Systems/Resource Manager/Importers/Importer.inl"
-        "Source/Systems/Resource Manager/Importers/ImporterManager.cpp"
-        "Source/Systems/Resource Manager/Importers/ImporterManager.h"
-        "Source/Systems/Resource Manager/Importers/ImporterMaterial.cpp"
-        "Source/Systems/Resource Manager/Importers/ImporterMaterial.h"
-        "Source/Systems/Resource Manager/Importers/ImporterMesh.cpp"
-        "Source/Systems/Resource Manager/Importers/ImporterMesh.h"
-        "Source/Systems/Resource Manager/Importers/ImporterTexture.cpp"
-        "Source/Systems/Resource Manager/Importers/ImporterTexture.h"
-
-        "Source/Systems/Resource Manager/Resource Types/Resource.cpp"
-        "Source/Systems/Resource Manager/Resource Types/Resource.h"
-        "Source/Systems/Resource Manager/Resource Types/ResourceMaterial.cpp"
-        "Source/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
-        "Source/Systems/Resource Manager/Resource Types/ResourceMesh.cpp"
-        "Source/Systems/Resource Manager/Resource Types/ResourceMesh.h"
-        "Source/Systems/Resource Manager/Resource Types/ResourceTexture.cpp"
-        "Source/Systems/Resource Manager/Resource Types/ResourceTexture.h"
-
-        "Source/Systems/Texture System/TextureSystem.cpp"
-        "Source/Systems/Texture System/TextureSystem.h"
-
-        "Source/Systems/Time Management/TimeManager.h"
-        "Source/Systems/Time Management/Timer.cpp"
-        "Source/Systems/Time Management/Timer.h"
-
-        "Source/Utils/Asserts.h"
-        "Source/Utils/JsonFile.cpp"
-        "Source/Utils/JsonFile.h"
-        "Source/Utils/Logger.cpp"
-        "Source/Utils/Logger.h"
-        "Source/Utils/MathUtils.h"
-        "Source/Utils/Random.cpp"
-        "Source/Utils/Random.h"
-        "Source/Scripting System/Internal/IScript.inl"
-        "Source/Scripting System/Internal/ScriptTemplate.inl"
-        "Source/Scripting System/Internal/ScriptRegistry.inl"
-        "Source/Scripting System/ScriptManager.h"
-        "Source/Scripting System/ScriptManager.cpp"
-        "Source/Scripting System/EngineAPI/ScriptBindings.h"
-        "Source/Scripting System/EngineAPI/ScriptBindings.cpp"
-        "Source/Scripting System/EngineAPI/EngineAPI.cpp"
-        Source/ECS/GameObject.h
-        Source/ECS/Scene.h
-        Source/ECS/Components/ComponentTransform.h
-        Source/ECS/Components/ComponentMesh.h
-        Source/ECS/Components/ComponentMaterial.h
-        Source/ECS/Components/ComponentScript.h
-        Source/ECS/Component.h
-        "Source/Scripting System/EngineAPI/Bindings/InputBindings.cpp"
-        "Source/Scripting System/EngineAPI/Bindings/InputBindings.h"
-        "Source/Scripting System/EngineAPI/Bindings/LoggerBindings.cpp"
-        "Source/Scripting System/EngineAPI/Bindings/LoggerBindings.h"
-        "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.cpp"
-        "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.h"
-        Source/ECS/Component.cpp
-        Source/ECS/Components/ComponentTransform.cpp
-        Source/ECS/Components/ComponentMesh.cpp
+        "Source/Scripting/Internal/IScript.inl"
+        "Source/Scripting/Internal/ScriptTemplate.inl"
+        "Source/Scripting/Internal/ScriptRegistry.inl"
+        "Source/Scripting/ScriptManager.h"
+        "Source/Scripting/ScriptManager.cpp"
+        "Source/Scripting/EngineAPI/ScriptBindings.h"
+        "Source/Scripting/EngineAPI/ScriptBindings.cpp"
+        "Source/Scripting/EngineAPI/EngineAPI.cpp"
+        "Source/Scripting/EngineAPI/Bindings/InputBindings.cpp"
+        "Source/Scripting/EngineAPI/Bindings/InputBindings.h"
+        "Source/Scripting/EngineAPI/Bindings/LoggerBindings.cpp"
+        "Source/Scripting/EngineAPI/Bindings/LoggerBindings.h"
+        "Source/Scripting/EngineAPI/Bindings/GameObjectBindings.cpp"
+        "Source/Scripting/EngineAPI/Bindings/GameObjectBindings.h"
 )
 
 add_subdirectory(Source/Core)
 add_subdirectory(Source/Editor)
-add_subdirectory("Source/Scripting System")
+add_subdirectory(Source/Scripting)
+add_subdirectory(Source/Multithreading)
+add_subdirectory(Source/Utils)
+add_subdirectory(Source/Renderer)
+add_subdirectory(Source/ECS)
+add_subdirectory(Source/Systems)
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
 
@@ -202,9 +75,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         # Engine
-        Core
-        Editor
-
+        NousEngine::Core
+        NousEngine::Editor
+        NousEngine::Multithreading
+        NousEngine::Utils
+        NousEngine::Renderer
+        NousEngine::ECS
+        NousEngine::Systems
         # Third Party
         SDL3::SDL3
         Vulkan::Vulkan

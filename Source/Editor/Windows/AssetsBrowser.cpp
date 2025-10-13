@@ -4,7 +4,7 @@
 #include "Systems/File System/FileManager.h"
 #include "Core/Modules/ModuleFileSystem.h"
 #include "Core/Application.h"
-#include "Scripting System/ScriptManager.h"
+#include "Scripting/ScriptManager.h"
 #include "Multithreading/NOUS_JobSystem.h"
 #include "Utils/Logger.h"
 

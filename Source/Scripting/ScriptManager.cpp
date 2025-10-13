@@ -1,10 +1,10 @@
-#include "Scripting System/ScriptManager.h"
-#include "Scripting System/Internal/ScriptRegistry.inl"
+#include "Scripting/ScriptManager.h"
+#include "Scripting/Internal/ScriptRegistry.inl"
 #include "Utils/Logger.h"
 #include "Systems/Memory Manager/MemoryManager.h"
 #include "MultiThreading/NOUS_Multithreading.h"
-#include "Scripting System/EngineAPI/EngineAPI.h"
-#include "Scripting System/EngineAPI/ScriptBindings.h"
+#include "Scripting/EngineAPI/EngineAPI.h"
+#include "Scripting/EngineAPI/ScriptBindings.h"
 
 #include <fstream>
 
@@ -91,7 +91,7 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     UnloadScriptLibrary();
 
     // Build the scripts
-    int result = std::system("\"..\\..\\Source\\Scripting System\\rebuildscripts.bat\"");
+    int result = std::system("\"..\\..\\Source\\Scripting\\rebuildscripts.bat\"");
 
     if (result == 0) {
         NOUS_INFO("Scripts recompiled successfully!");
@@ -187,7 +187,7 @@ void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
 
 bool ScriptManager::GenerateScript(const std::string& className)
 {
-    const std::string& templatePath = "../../Source/Scripting System/Internal/ScriptTemplate.inl";
+    const std::string& templatePath = "../../Source/Scripting/Internal/ScriptTemplate.inl";
     const std::string& outputPath = "../../Assets/Scripts/" + className + ".cpp";
 
     // Read the template file
