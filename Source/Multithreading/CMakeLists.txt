@@ -25,3 +25,8 @@ set_target_properties(Multithreading PROPERTIES
 )
 
 target_include_directories(Multithreading PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+if(ENABLE_PROFILING)
+    find_package(Tracy CONFIG REQUIRED)
+    target_link_libraries(Multithreading PUBLIC Tracy::TracyClient)
+endif()

@@ -134,7 +134,12 @@ bool NOUS_TextureSystem::CreateDefaultTextures()
 	state.defaultTexture.height = texDimension;
 	state.defaultTexture.channelCount = 4;
 
-	External->renderer->GetRendererFrontend()->CreateTexture(pixels.data(), &state.defaultTexture);
+	if (!External->renderer->GetRendererFrontend()->CreateTexture(pixels.data(), &state.defaultTexture))
+	{
+		NOUS_ERROR("[%s] Failed to acquire renderer resources for default texture. Application cannot continue.",
+				   __FUNCTION__);
+		return false;
+	}
 
 	// Manually set the texture generation to invalid since this is a default texture.
 	state.defaultTexture.generation = INVALID_ID;

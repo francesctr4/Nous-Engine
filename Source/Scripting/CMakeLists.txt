@@ -1,48 +1,39 @@
-cmake_minimum_required(VERSION 3.15)
+# ==============================
+# Nous Engine - Scripting System
+# ==============================
 
-project(Scripts)  # Add project name
+set(SCRIPTING_SOURCES
+        ScriptManager.cpp
+        ScriptManager.h
 
-# Set specific output directory for hot-reloading
-set(SCRIPTS_OUTPUT_DIR "${CMAKE_BINARY_DIR}/Scripts")
+        Internal/IScript.inl
+        Internal/ScriptTemplate.inl
+        Internal/ScriptRegistry.inl
 
-# Automatically gather all .cpp files in src/
-file(GLOB_RECURSE SCRIPT_SOURCES
-        CONFIGURE_DEPENDS
-        "${CMAKE_SOURCE_DIR}/Assets/Scripts/*.cpp"
-        "${CMAKE_SOURCE_DIR}/Source/Scripting/EngineAPI/EngineAPI.cpp"
+        EngineAPI/ScriptBindings.cpp
+        EngineAPI/ScriptBindings.h
+        EngineAPI/EngineAPI.cpp
+        EngineAPI/Bindings/InputBindings.cpp
+        EngineAPI/Bindings/InputBindings.h
+        EngineAPI/Bindings/LoggerBindings.cpp
+        EngineAPI/Bindings/LoggerBindings.h
+        EngineAPI/Bindings/GameObjectBindings.cpp
+        EngineAPI/Bindings/GameObjectBindings.h
 )
 
-# Create the DLL (shared library)
-add_library(Scripts SHARED ${SCRIPT_SOURCES})
+add_library(Scripting STATIC ${SCRIPTING_SOURCES})
+add_library(NousEngine::Scripting ALIAS Scripting)
 
-# Define export macro for this target
-target_compile_definitions(Scripts
-        PRIVATE SCRIPTS_EXPORTS
+# Include root source so "Scripting/..." includes work
+target_include_directories(Scripting PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+find_package(glm REQUIRED)
+target_link_libraries(Scripting PUBLIC glm::glm)
+
+set_target_properties(Scripting PROPERTIES
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
 )
 
-# Set output directory for this target
-set_target_properties(Scripts PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${SCRIPTS_OUTPUT_DIR}"
-        LIBRARY_OUTPUT_DIRECTORY "${SCRIPTS_OUTPUT_DIR}"
-        ARCHIVE_OUTPUT_DIRECTORY "${SCRIPTS_OUTPUT_DIR}"
-)
-
-# Include dirs so scripts can find engine headers
-target_include_directories(Scripts
-        PUBLIC
-        "${CMAKE_SOURCE_DIR}/Source/"
-)
-
-# Platform-specific settings for hot-reloading
-if(WIN32)
-    # On Windows, avoid locking the DLL
-    set_target_properties(Scripts PROPERTIES
-            SUFFIX ".dll"
-    )
-elseif(UNIX)
-    # On Linux/macOS, use position-independent code
-    set_target_properties(Scripts PROPERTIES
-            POSITION_INDEPENDENT_CODE ON
-            SUFFIX ".so"
-    )
-endif()
+add_subdirectory(Runtime "${CMAKE_CURRENT_BINARY_DIR}/Runtime")

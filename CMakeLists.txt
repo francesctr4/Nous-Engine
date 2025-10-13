@@ -1,36 +1,61 @@
-cmake_minimum_required(VERSION 3.21)
+# ==============================
+# Nous Engine - Root CMakeLists
+# ==============================
 
+cmake_minimum_required(VERSION 3.21...3.30)
+
+# Modern CMake policies for consistent behavior
+cmake_policy(SET CMP0077 NEW)
+cmake_policy(SET CMP0091 NEW)
+cmake_policy(SET CMP0111 NEW)
+
+# ==============================
+# Project Metadata
+# ==============================
 set(PROJECT_NAME "Nous-Engine")
-set(PROJECT_VERSION_MAJOR 0)
-set(PROJECT_VERSION_MINOR 4)
-set(PROJECT_VERSION_PATCH 0)
 
-project(${PROJECT_NAME} 
-    VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
-    LANGUAGES CXX
-    DESCRIPTION "A multithreaded, Vulkan-based game engine"
+project(${PROJECT_NAME}
+        VERSION 0.4.0
+        LANGUAGES CXX
+        DESCRIPTION "A multithreaded, Vulkan-based game engine"
 )
 
-# Define ALL_SOURCES once
-set(ALL_SOURCES
-        Source/Core/Main.cpp
+# ==============================
+# Global Settings
+# ==============================
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-        "Source/Scripting/Internal/IScript.inl"
-        "Source/Scripting/Internal/ScriptTemplate.inl"
-        "Source/Scripting/Internal/ScriptRegistry.inl"
-        "Source/Scripting/ScriptManager.h"
-        "Source/Scripting/ScriptManager.cpp"
-        "Source/Scripting/EngineAPI/ScriptBindings.h"
-        "Source/Scripting/EngineAPI/ScriptBindings.cpp"
-        "Source/Scripting/EngineAPI/EngineAPI.cpp"
-        "Source/Scripting/EngineAPI/Bindings/InputBindings.cpp"
-        "Source/Scripting/EngineAPI/Bindings/InputBindings.h"
-        "Source/Scripting/EngineAPI/Bindings/LoggerBindings.cpp"
-        "Source/Scripting/EngineAPI/Bindings/LoggerBindings.h"
-        "Source/Scripting/EngineAPI/Bindings/GameObjectBindings.cpp"
-        "Source/Scripting/EngineAPI/Bindings/GameObjectBindings.h"
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# Global Debug/Release definitions
+add_compile_definitions(
+        $$<CONFIG:Debug>:_DEBUG>
+        $$<CONFIG:Release>:_RELEASE;NDEBUG>
 )
 
+option(ENABLE_PROFILING "Enable profiling instrumentation (Tracy, etc.)" OFF)
+
+if(ENABLE_PROFILING)
+    message(STATUS "Profiling enabled: Tracy instrumentation will be active.")
+    add_compile_definitions(_PROFILING NDEBUG)
+endif()
+
+# ==============================
+# Third-party Dependencies
+# ==============================
+find_package(SDL3 CONFIG REQUIRED)
+find_package(Vulkan REQUIRED)
+find_package(assimp CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
+find_package(parson CONFIG REQUIRED)
+find_package(Tracy CONFIG REQUIRED)
+find_package(glm REQUIRED)
+
+# ==============================
+# Engine Modules
+# ==============================
 add_subdirectory(Source/Core)
 add_subdirectory(Source/Editor)
 add_subdirectory(Source/Scripting)
@@ -40,41 +65,18 @@ add_subdirectory(Source/Renderer)
 add_subdirectory(Source/ECS)
 add_subdirectory(Source/Systems)
 
-add_executable(${PROJECT_NAME} ${ALL_SOURCES})
+# ==============================
+# Main Executable
+# ==============================
+add_executable(${PROJECT_NAME} Source/Core/Main.cpp)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    CXX_STANDARD 23
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-)
-
-# Debug/Release configurations (works for all generators)
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Debug>:_DEBUG>
-        $<$<CONFIG:Release>:_RELEASE;NDEBUG>
-)
-
-if (ENABLE_PROFILING)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE _PROFILING NDEBUG)
-endif()
-
-# Find dependencies
-find_package(SDL3 CONFIG REQUIRED)
-find_package(Vulkan REQUIRED)
-find_package(assimp CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
-find_package(parson CONFIG REQUIRED)
-find_package(Tracy CONFIG REQUIRED)
-find_package(glm REQUIRED)
-
-# Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Source/  # Adjust if needed
-        ${STB_INCLUDE_PATH}          # Explicit path to STB
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        ${STB_INCLUDE_PATH}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        # Engine
+        # Engine Modules
         NousEngine::Core
         NousEngine::Editor
         NousEngine::Multithreading
@@ -82,7 +84,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         NousEngine::Renderer
         NousEngine::ECS
         NousEngine::Systems
-        # Third Party
+        NousEngine::Scripting
+
+        # Third-party Libraries
         SDL3::SDL3
         Vulkan::Vulkan
         assimp::assimp
@@ -92,16 +96,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         glm::glm
 )
 
-# IDE Source grouping
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/Source" PREFIX "Source Files" FILES ${ALL_SOURCES})
-set_property(GLOBAL PROPERTY USE_FOLDERS TRUE)
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        FOLDER "Executable"
+)
 
-#----------------------------------------------------------------
-# Shader Compilation with CMake (Cross-platform)
-#----------------------------------------------------------------
-
-# Find the Vulkan shader compiler
+# ==============================
+# Shader Compilation (Cross-platform)
+# ==============================
 find_program(GLSLC_EXECUTABLE
         NAMES glslc
         HINTS ${Vulkan_GLSLC_EXECUTABLE}
@@ -113,28 +115,21 @@ if(NOT GLSLC_EXECUTABLE)
 else()
     message(STATUS "Found glslc: ${GLSLC_EXECUTABLE}")
 
-    # Define shader directories
     set(SHADER_SOURCE_DIR "${CMAKE_SOURCE_DIR}/Assets/Shaders")
     set(SHADER_BUILD_DIR "${CMAKE_BINARY_DIR}/Library/Shaders")
 
-    # Find all shader files with .glsl extension
-    file(GLOB_RECURSE SHADER_FILES
+    file(GLOB_RECURSE SHADER_FILES CONFIGURE_DEPENDS
             "${SHADER_SOURCE_DIR}/*.glsl"
     )
 
-    # Create shader compilation targets
     set(COMPILED_SHADERS)
     foreach(SHADER_FILE ${SHADER_FILES})
-        # Get relative path and create output path
         file(RELATIVE_PATH SHADER_REL_PATH ${SHADER_SOURCE_DIR} ${SHADER_FILE})
-        # Remove .glsl and add .spv
         string(REGEX REPLACE "\\.glsl$" ".spv" SHADER_REL_PATH_SPV ${SHADER_REL_PATH})
         set(SHADER_OUTPUT_FILE "${SHADER_BUILD_DIR}/${SHADER_REL_PATH_SPV}")
-
-        # Get directory of output file and create it
         get_filename_component(SHADER_OUTPUT_DIR ${SHADER_OUTPUT_FILE} DIRECTORY)
 
-        # Determine shader stage from filename
+        # Detect shader stage
         set(SHADER_STAGE "")
         if(SHADER_REL_PATH MATCHES "\\.vert\\.")
             set(SHADER_STAGE "vertex")
@@ -153,20 +148,18 @@ else()
             continue()
         endif()
 
-        # Create custom command for each shader
         add_custom_command(
                 OUTPUT ${SHADER_OUTPUT_FILE}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_OUTPUT_DIR}"
                 COMMAND ${GLSLC_EXECUTABLE} -fshader-stage=${SHADER_STAGE} "${SHADER_FILE}" -o "${SHADER_OUTPUT_FILE}"
                 DEPENDS ${SHADER_FILE}
-                COMMENT "Compiling ${SHADER_STAGE} shader: ${SHADER_REL_PATH} -> ${SHADER_REL_PATH_SPV}"
+                COMMENT "Compiling ${SHADER_STAGE} shader: ${SHADER_REL_PATH}"
                 VERBATIM
         )
 
         list(APPEND COMPILED_SHADERS ${SHADER_OUTPUT_FILE})
     endforeach()
 
-    # Create a target that compiles all shaders
     if(COMPILED_SHADERS)
         add_custom_target(CompileShaders ALL
                 DEPENDS ${COMPILED_SHADERS}
@@ -176,23 +169,34 @@ else()
     endif()
 endif()
 
-#----------------------------------------------------------------
-# Copy assets to build directory (handles updates)
-#----------------------------------------------------------------
+# ==============================
+# Asset Copying
+# ==============================
 if(EXISTS ${CMAKE_SOURCE_DIR}/Assets)
     add_custom_target(CopyAssets ALL
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/Assets
             $<TARGET_FILE_DIR:${PROJECT_NAME}>/Assets
-            COMMENT "Updating assets directory"
-            VERBATIM
+            COMMENT "Copying Assets directory"
     )
     add_dependencies(${PROJECT_NAME} CopyAssets)
-else()
-    message(WARNING "Assets directory not found: ${CMAKE_SOURCE_DIR}/Assets")
 endif()
 
-#----------------------------------------------------------------
-# Scripts Library Configuration
-#----------------------------------------------------------------
+# ==============================
+# Scripts DLL Dependency
+# ==============================
 add_dependencies(${PROJECT_NAME} Scripts)
+
+# ==============================
+# Output Configuration Summary
+# ==============================
+message(STATUS "")
+message(STATUS "==============================")
+message(STATUS " Nous Engine Build Configuration")
+message(STATUS "==============================")
+message(STATUS " Project:          ${PROJECT_NAME}")
+message(STATUS " C++ Standard:     ${CMAKE_CXX_STANDARD}")
+message(STATUS " Build Type:       ${CMAKE_BUILD_TYPE}")
+message(STATUS " Output Directory: ${CMAKE_BINARY_DIR}")
+message(STATUS "==============================")
+message(STATUS "")
