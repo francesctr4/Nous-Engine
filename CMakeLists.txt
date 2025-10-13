@@ -13,47 +13,7 @@ project(${PROJECT_NAME}
 
 # Define ALL_SOURCES once
 set(ALL_SOURCES
-        "Source/Core/Application.cpp"
-        "Source/Core/Application.h"
-        "Source/Core/Globals.h"
-        "Source/Core/Main.cpp"
-
-        "Source/Editor/ImGuiConfig/ImGuiCustom.cpp"
-        "Source/Editor/ImGuiConfig/ImGuiCustom.h"
-        "Source/Editor/Windows/AssetsBrowser.cpp"
-        "Source/Editor/Windows/AssetsBrowser.h"
-        "Source/Editor/Windows/GameViewport.cpp"
-        "Source/Editor/Windows/GameViewport.h"
-        "Source/Editor/Windows/JobQueueWindow.cpp"
-        "Source/Editor/Windows/JobQueueWindow.h"
-        "Source/Editor/Windows/MainMenuBar.cpp"
-        "Source/Editor/Windows/MainMenuBar.h"
-        "Source/Editor/Windows/MultithreadingWindow.cpp"
-        "Source/Editor/Windows/MultithreadingWindow.h"
-        "Source/Editor/Windows/ResourcesWindow.cpp"
-        "Source/Editor/Windows/ResourcesWindow.h"
-        "Source/Editor/Windows/SceneViewport.cpp"
-        "Source/Editor/Windows/SceneViewport.h"
-        "Source/Editor/IEditorWindow.inl"
-
-        "Source/Core/Module.cpp"
-        "Source/Core/Module.h"
-        "Source/Core/Modules/ModuleCamera3D.cpp"
-        "Source/Core/Modules/ModuleCamera3D.h"
-        "Source/Core/Modules/ModuleEditor.cpp"
-        "Source/Core/Modules/ModuleEditor.h"
-        "Source/Core/Modules/ModuleFileSystem.cpp"
-        "Source/Core/Modules/ModuleFileSystem.h"
-        "Source/Core/Modules/ModuleInput.cpp"
-        "Source/Core/Modules/ModuleInput.h"
-        "Source/Core/Modules/ModuleRenderer3D.cpp"
-        "Source/Core/Modules/ModuleRenderer3D.h"
-        "Source/Core/Modules/ModuleResourceManager.cpp"
-        "Source/Core/Modules/ModuleResourceManager.h"
-        "Source/Core/Modules/ModuleScene.cpp"
-        "Source/Core/Modules/ModuleScene.h"
-        "Source/Core/Modules/ModuleWindow.cpp"
-        "Source/Core/Modules/ModuleWindow.h"
+        Source/Core/Main.cpp
 
         "Source/Multithreading/NOUS_Job.cpp"
         "Source/Multithreading/NOUS_Job.h"
@@ -191,10 +151,6 @@ set(ALL_SOURCES
         Source/ECS/Components/ComponentMesh.h
         Source/ECS/Components/ComponentMaterial.h
         Source/ECS/Components/ComponentScript.h
-        Source/Editor/Windows/HierarchyWindow.cpp
-        Source/Editor/Windows/HierarchyWindow.h
-        Source/Editor/Windows/InspectorWindow.cpp
-        Source/Editor/Windows/InspectorWindow.h
         Source/ECS/Component.h
         "Source/Scripting System/EngineAPI/Bindings/InputBindings.cpp"
         "Source/Scripting System/EngineAPI/Bindings/InputBindings.h"
@@ -203,12 +159,13 @@ set(ALL_SOURCES
         "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.cpp"
         "Source/Scripting System/EngineAPI/Bindings/GameObjectBindings.h"
         Source/ECS/Component.cpp
-        Source/Editor/Windows/ConsoleWindow.cpp
-        Source/Editor/Windows/ConsoleWindow.h
-        Source/Core/UpdateStatus.h
         Source/ECS/Components/ComponentTransform.cpp
         Source/ECS/Components/ComponentMesh.cpp
 )
+
+add_subdirectory(Source/Core)
+add_subdirectory(Source/Editor)
+add_subdirectory("Source/Scripting System")
 
 add_executable(${PROJECT_NAME} ${ALL_SOURCES})
 
@@ -244,6 +201,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
+        # Engine
+        Core
+        Editor
+
+        # Third Party
         SDL3::SDL3
         Vulkan::Vulkan
         assimp::assimp
@@ -356,5 +318,4 @@ endif()
 #----------------------------------------------------------------
 # Scripts Library Configuration
 #----------------------------------------------------------------
-add_subdirectory("Source/Scripting System")
 add_dependencies(${PROJECT_NAME} Scripts)
