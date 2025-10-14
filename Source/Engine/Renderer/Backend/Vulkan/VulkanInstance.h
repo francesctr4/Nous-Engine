@@ -1,7 +1,7 @@
 #ifndef VULKANINSTANCE_H
 #define VULKANINSTANCE_H
 
-#include "VulkanTypes.inl"
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 
 // --------------- Vulkan Validation Layers --------------- //
 const int8 c_VALIDATION_LAYERS_COUNT = 1;

@@ -5,9 +5,9 @@
 #ifndef NOUS_ENGINE_COMPONENTMATERIAL_H
 #define NOUS_ENGINE_COMPONENTMATERIAL_H
 
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
-#include "Engine/Core/Modules/ModuleResourceManager.h"
-#include "Engine/Core/Application.h"
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
+#include <Engine/Core/Modules/ModuleResourceManager.h>
+#include <Engine/Core/Application.h>
 
 class CMaterial : public Component {
 public:

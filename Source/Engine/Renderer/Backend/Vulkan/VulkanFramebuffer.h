@@ -1,7 +1,7 @@
 #ifndef VULKANFRAMEBUFFER_H
 #define VULKANFRAMEBUFFER_H
 
-#include "VulkanTypes.inl"
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 
 namespace NOUS_VulkanFramebuffer 
 {

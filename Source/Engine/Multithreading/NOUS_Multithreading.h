@@ -1,7 +1,7 @@
 #ifndef NOUSMULTITHREADING_H
 #define NOUSMULTITHREADING_H
 
-#include "NOUS_Thread.h"
+#include <Engine/Multithreading/NOUS_Thread.h>
 
 namespace NOUS_Multithreading
 {

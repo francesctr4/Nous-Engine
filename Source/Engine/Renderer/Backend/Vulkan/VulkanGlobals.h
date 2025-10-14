@@ -1,7 +1,7 @@
 #ifndef VULKANGLOBALS_H
 #define VULKANGLOBALS_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 
 // ---------------- Vulkan Validation Layers ---------------- //
 

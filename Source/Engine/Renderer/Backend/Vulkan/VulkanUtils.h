@@ -1,9 +1,9 @@
 #ifndef VULKANUTILS_H
 #define VULKANUTILS_H
 
-#include "VulkanTypes.inl"
-#include "Engine/Utils/Asserts.h"
-#include "Engine/Utils/Logger.h"
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
+#include <Engine/Utils/Asserts.h>
+#include <Engine/Utils/Logger.h>
 
 /**
  * Returns the string representation of result.

@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_RENDERER_FRONTEND_H
 #define NOUS_ENGINE_RENDERER_FRONTEND_H
 
-#include "Engine/Renderer/RendererTypes.h"
+#include <Engine/Renderer/RendererTypes.h>
 #include <functional>
 
 // Forward declarations

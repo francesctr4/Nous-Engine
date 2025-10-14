@@ -1,11 +1,11 @@
-#include "ImporterManager.h"
+#include <Engine/Systems/Resource Manager/Importers/ImporterManager.h>
 
-#include "Importer.inl"
-#include "Engine/Systems/Resource Manager/Resource Types/Resource.h"
+#include <Engine/Systems/Resource Manager/Importers/Importer.inl>
+#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
 
-#include "ImporterMaterial.h"
-#include "ImporterTexture.h"
-#include "ImporterMesh.h"
+#include <Engine/Systems/Resource Manager/Importers/ImporterMaterial.h>
+#include <Engine/Systems/Resource Manager/Importers/ImporterTexture.h>
+#include <Engine/Systems/Resource Manager/Importers/ImporterMesh.h>
 
 #include <array>
 

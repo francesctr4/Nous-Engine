@@ -1,7 +1,7 @@
 #ifndef VULKANEXTERNAL_H
 #define VULKANEXTERNAL_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 
 void ExecuteBatchFile(const char* batchFilePath);
 

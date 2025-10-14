@@ -1,16 +1,16 @@
-#include "VulkanMaterialShader.h"
-#include "VulkanShaderUtils.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanGraphicsPipeline.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanUtils.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanBuffer.h"
+#include <Engine/Renderer/Backend/Vulkan/Shaders/VulkanMaterialShader.h>
+#include <Engine/Renderer/Backend/Vulkan/Shaders/VulkanShaderUtils.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanGraphicsPipeline.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanUtils.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanBuffer.h>
 
-#include "Engine/Utils/Asserts.h"
-#include "Engine/Utils/Logger.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
+#include <Engine/Utils/Asserts.h>
+#include <Engine/Utils/Logger.h>
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
 
-#include "Engine/Systems/Texture System/TextureSystem.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
+#include <Engine/Systems/Texture System/TextureSystem.h>
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
 
 constexpr const char* BUILTIN_MATERIAL_SHADER_NAME = "BuiltIn.MaterialShader";
 

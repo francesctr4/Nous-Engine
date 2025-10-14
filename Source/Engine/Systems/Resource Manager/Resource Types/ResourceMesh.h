@@ -1,10 +1,10 @@
 #ifndef RESOURCEMESH_H
 #define RESOURCEMESH_H
 
-#include "Engine/Core/Globals.h"
-#include "Resource.h"
-#include "Engine/Renderer/RendererTypes.h"
-#include "Engine/Systems/Geometry System/Vertex.inl"
+#include <Engine/Core/Globals.h>
+#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
+#include <Engine/Renderer/RendererTypes.h>
+#include <Engine/Systems/Geometry System/Vertex.inl>
 
 class ResourceMaterial;
 

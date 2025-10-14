@@ -1,8 +1,8 @@
 #ifndef METAFILEDATA_INL
 #define METAFILEDATA_INL
 
-#include "Engine/Core/Globals.h"
-#include "Engine/Systems/Resource Manager/Resource Types/Resource.h"
+#include <Engine/Core/Globals.h>
+#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
 
 struct MetaFileData
 {

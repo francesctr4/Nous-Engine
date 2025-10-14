@@ -1,8 +1,8 @@
 #ifndef NOUS_ENGINE_COMPONENTSCRIPT_H
 #define NOUS_ENGINE_COMPONENTSCRIPT_H
 
-#include "Engine/Scripting/Internal/IScript.inl"
-#include "Engine/ECS/Component.h"
+#include <Engine/Scripting/Internal/IScript.inl>
+#include <Engine/ECS/Component.h>
 
 class CScript : public Component {
 public:

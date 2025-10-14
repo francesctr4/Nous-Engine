@@ -1,7 +1,7 @@
 #ifndef MEMORYMANAGER_H
 #define MEMORYMANAGER_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 
 namespace MemoryManager 
 {

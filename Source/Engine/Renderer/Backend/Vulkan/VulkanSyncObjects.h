@@ -1,7 +1,7 @@
 #ifndef VULKANSYNCOBJECTS_H
 #define VULKANSYNCOBJECTS_H
 
-#include "VulkanTypes.inl"
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 
 namespace NOUS_VulkanSyncObjects 
 {

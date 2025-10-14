@@ -1,25 +1,25 @@
-#include "ModuleScene.h"
-#include "ModuleInput.h"
-#include "ModuleResourceManager.h"
-#include "Engine/Systems/Event System/EventSystem.h"
+#include <Engine/Core/Modules/ModuleScene.h>
+#include <Engine/Core/Modules/ModuleInput.h>
+#include <Engine/Core/Modules/ModuleResourceManager.h>
+#include <Engine/Systems/Event System/EventSystem.h>
 
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
-#include "Engine/Core/Application.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Systems/Camera System/Camera.h"
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
+#include <Engine/Core/Application.h>
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include <Engine/Systems/Camera System/Camera.h>
 
-#include "Engine/Scripting/ScriptManager.h"
-#include "Engine/Scripting/Internal/IScript.inl"
+#include <Engine/Scripting/ScriptManager.h>
+#include <Engine/Scripting/Internal/IScript.inl>
 
-#include "Engine/ECS/Scene.h"
-#include "Engine/ECS/GameObject.h"
+#include <Engine/ECS/Scene.h>
+#include <Engine/ECS/GameObject.h>
 
-#include "Engine/ECS/Components/ComponentMesh.h"
-#include "Engine/ECS/Components/ComponentMaterial.h"
-#include "Engine/Multithreading/NOUS_JobSystem.h"
+#include <Engine/ECS/Components/ComponentMesh.h>
+#include <Engine/ECS/Components/ComponentMaterial.h>
+#include <Engine/Multithreading/NOUS_JobSystem.h>
 
-#include "SDL3/SDL.h"
+#include <SDL3/SDL.h>
 #include <filesystem>
 
 ModuleScene::ModuleScene(Application* app) : Module(app)

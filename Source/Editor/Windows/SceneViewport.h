@@ -1,7 +1,7 @@
 #ifndef SCENEVIEWPORT_H
 #define SCENEVIEWPORT_H
 
-#include "Editor/IEditorWindow.inl"
+#include <Editor/IEditorWindow.inl>
 
 class SceneViewport : public IEditorWindow
 {

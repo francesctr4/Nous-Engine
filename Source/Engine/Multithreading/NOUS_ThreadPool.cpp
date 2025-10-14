@@ -1,7 +1,7 @@
-#include "NOUS_ThreadPool.h"
+#include <Engine/Multithreading/NOUS_ThreadPool.h>
 
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Utils/Logger.h"
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include <Engine/Utils/Logger.h>
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

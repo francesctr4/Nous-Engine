@@ -1,7 +1,7 @@
 #ifndef VULKANIMAGE_H
 #define VULKANIMAGE_H
 
-#include "VulkanTypes.inl"
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 
 namespace NOUS_VulkanImage 
 {

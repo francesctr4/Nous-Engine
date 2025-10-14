@@ -1,10 +1,10 @@
-#include "GeometrySystem.h"
+#include <Engine/Systems/Geometry System/GeometrySystem.h>
 
-#include "Engine/Systems/Material System/MaterialSystem.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h"
+#include <Engine/Systems/Material System/MaterialSystem.h>
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
 #include <array>
-#include "Engine/Utils/Logger.h"
+#include <Engine/Utils/Logger.h>
 
 bool NOUS_GeometrySystem::Initialize()
 {

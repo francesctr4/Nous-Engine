@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_RENDERER_TYPES_H
 #define NOUS_ENGINE_RENDERER_TYPES_H
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 #include <vector>
 
 // -----------------------------------------------------------------------------

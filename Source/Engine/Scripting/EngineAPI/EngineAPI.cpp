@@ -1,5 +1,5 @@
 // EngineAPI.cpp inside scripts DLL
-#include "EngineAPI.h"
+#include <Engine/Scripting/EngineAPI/EngineAPI.h>
 
 // Define the single instance for the DLL
 EngineAPI* Nous_Engine = nullptr;

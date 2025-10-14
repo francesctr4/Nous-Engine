@@ -1,7 +1,7 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 
 namespace Random 
 {

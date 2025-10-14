@@ -1,7 +1,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "UpdateStatus.h"
+#include <Engine/Core/UpdateStatus.h>
 
 // Forward declarations
 struct Event;

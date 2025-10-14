@@ -1,15 +1,15 @@
 #ifndef NOUSTHREADPOOL_H
 #define NOUSTHREADPOOL_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 
 #include <vector>
 #include <queue>
 #include <mutex>
 #include <condition_variable>
 
-#include "NOUS_Job.h"
-#include "NOUS_Thread.h"
+#include <Engine/Multithreading/NOUS_Job.h>
+#include <Engine/Multithreading/NOUS_Thread.h>
 
 namespace NOUS_Multithreading
 {

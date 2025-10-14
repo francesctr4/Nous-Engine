@@ -1,8 +1,8 @@
 #ifndef MODULEINPUT_H
 #define MODULEINPUT_H
 
-#include "Engine/Core/Module.h"
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Module.h>
+#include <Engine/Core/Globals.h>
 
 #define MAX_KEYBOARD_KEYS 300
 #define MAX_MOUSE_BUTTONS 5

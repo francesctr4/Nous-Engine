@@ -1,9 +1,9 @@
 #ifndef VERTEX_INL
 #define VERTEX_INL
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 // --------------- Vertex Struct --------------- //
 

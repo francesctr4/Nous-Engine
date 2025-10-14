@@ -1,10 +1,10 @@
-#include "ModuleInput.h"
-#include "ModuleEditor.h"
-#include "Engine/Core/Application.h"
-#include "Engine/Systems/Event System/EventSystem.h"
-#include "Engine/Utils/Logger.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "ModuleWindow.h"
+#include <Engine/Core/Modules/ModuleInput.h>
+#include <Engine/Core/Modules/ModuleEditor.h>
+#include <Engine/Core/Application.h>
+#include <Engine/Systems/Event System/EventSystem.h>
+#include <Engine/Utils/Logger.h>
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include <Engine/Core/Modules/ModuleWindow.h>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>

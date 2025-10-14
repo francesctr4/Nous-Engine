@@ -1,7 +1,7 @@
 #ifndef IMPORTERMESH_H
 #define IMPORTERMESH_H
 
-#include "Importer.inl"
+#include <Engine/Systems/Resource Manager/Importers/Importer.inl>
 
 struct ImporterMesh : Importer
 {

@@ -1,10 +1,10 @@
 #ifndef NOUSTHREAD_H
 #define NOUSTHREAD_H
 
-#include "Engine/Core/Globals.h"
-#include "Engine/Systems/Time Management/Timer.h"
+#include <Engine/Core/Globals.h>
+#include <Engine/Systems/Time Management/Timer.h>
 
-#include "NOUS_Job.h"
+#include <Engine/Multithreading/NOUS_Job.h>
 
 #include <thread>
 #include <functional>

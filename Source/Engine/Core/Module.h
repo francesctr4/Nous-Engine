@@ -1,7 +1,7 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include "UpdateStatus.h"
+#include <Engine/Core/UpdateStatus.h>
 
 struct Event;
 class Application;

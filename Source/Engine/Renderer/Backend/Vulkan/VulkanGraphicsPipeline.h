@@ -1,7 +1,7 @@
 #ifndef VULKANGRAPHICSPIPELINE_H
 #define VULKANGRAPHICSPIPELINE_H
 
-#include "VulkanTypes.inl"
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 
 namespace NOUS_VulkanGraphicsPipeline
 {

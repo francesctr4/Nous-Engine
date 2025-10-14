@@ -1,11 +1,11 @@
 #ifndef RESOURCEMATERIAL_H
 #define RESOURCEMATERIAL_H
 
-#include "Engine/Core/Globals.h"
-#include "Resource.h"
-#include "Engine/Utils/MathUtils.h"
+#include <Engine/Core/Globals.h>
+#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
+#include <Engine/Utils/MathUtils.h>
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 class ResourceTexture;
 

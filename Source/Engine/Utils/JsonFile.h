@@ -1,10 +1,10 @@
 #ifndef JSONFILE_H
 #define JSONFILE_H
 
-#include "Engine/Core/Globals.h"
-#include "MathUtils.h"
+#include <Engine/Core/Globals.h>
+#include <Engine/Utils/MathUtils.h>
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 #include <string>
 

@@ -1,8 +1,8 @@
 #ifndef VULKANSWAPCHAIN_H
 #define VULKANSWAPCHAIN_H
 
-#include "Engine/Core/Globals.h"
-#include "VulkanTypes.inl"
+#include <Engine/Core/Globals.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 
 namespace NOUS_VulkanSwapChain
 {

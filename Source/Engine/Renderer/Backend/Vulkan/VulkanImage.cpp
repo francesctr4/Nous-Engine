@@ -1,9 +1,9 @@
-#include "VulkanImage.h"
-#include "VulkanDevice.h"
-#include "VulkanUtils.h"
+#include <Engine/Renderer/Backend/Vulkan/VulkanImage.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanDevice.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanUtils.h>
 
-#include "Engine/Utils/Logger.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
+#include <Engine/Utils/Logger.h>
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
 
 void NOUS_VulkanImage::CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32 width, uint32 height,
     uint32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, 

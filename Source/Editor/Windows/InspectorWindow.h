@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_INSPECTORWINDOW_H
 #define NOUS_ENGINE_INSPECTORWINDOW_H
 
-#include "Editor/IEditorWindow.inl"
+#include <Editor/IEditorWindow.inl>
 
 class InspectorWindow : public IEditorWindow
 {

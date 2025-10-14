@@ -1,8 +1,8 @@
 #ifndef VULKANSHADERUTILS_H
 #define VULKANSHADERUTILS_H
 
-#include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
-#include "Engine/Utils/MathUtils.h"
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
+#include <Engine/Utils/MathUtils.h>
 
 static VkVertexInputBindingDescription GetVertex3DBindingDescription()
 {

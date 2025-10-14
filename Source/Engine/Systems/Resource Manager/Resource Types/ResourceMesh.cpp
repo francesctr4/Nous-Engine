@@ -1,4 +1,4 @@
-#include "ResourceMesh.h"
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
 
 ResourceMesh::ResourceMesh(UID uid) : Resource(uid, ResourceType::MESH)
 {

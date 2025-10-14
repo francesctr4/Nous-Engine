@@ -1,10 +1,10 @@
 #ifndef MODULE_CAMERA_3D_H
 #define MODULE_CAMERA_3D_H
 
-#include "Engine/Core/Module.h"
-#include "Engine/Systems/Camera System/Camera.h"
+#include <Engine/Core/Module.h>
+#include <Engine/Systems/Camera System/Camera.h>
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 class ModuleCamera3D : public Module
 {

@@ -1,7 +1,7 @@
 #ifndef IMPORTERMANAGER_H
 #define IMPORTERMANAGER_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 #include <memory>
 
 class Resource;

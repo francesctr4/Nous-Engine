@@ -1,7 +1,7 @@
 #ifndef EVENTSYSTEM_H
 #define EVENTSYSTEM_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 #include <cstring>
 
 enum class EventType

@@ -1,11 +1,11 @@
-#include "GameObjectBindings.h"
+#include <Engine/Scripting/EngineAPI/Bindings/GameObjectBindings.h>
 
-#include "Engine/Core/Application.h"
-#include "Engine/Core/Modules/ModuleScene.h"
+#include <Engine/Core/Application.h>
+#include <Engine/Core/Modules/ModuleScene.h>
 
-#include "Engine/ECS/Scene.h"
-#include "Engine/ECS/GameObject.h"
-#include "Engine/ECS/Components/ComponentTransform.h"
+#include <Engine/ECS/Scene.h>
+#include <Engine/ECS/GameObject.h>
+#include <Engine/ECS/Components/ComponentTransform.h>
 
 void SetupGameObjectBindings(GameObjectAPI &gameObject)
 {

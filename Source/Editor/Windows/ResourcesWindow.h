@@ -1,7 +1,7 @@
 #ifndef RESOURCESWINDOW_H
 #define RESOURCESWINDOW_H
 
-#include "Editor/IEditorWindow.inl"
+#include <Editor/IEditorWindow.inl>
 
 enum class ResourceType;
 class Resource;

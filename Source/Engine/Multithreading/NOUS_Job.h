@@ -1,7 +1,7 @@
 #ifndef NOUSJOB_H
 #define NOUSJOB_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 #include <functional>
 
 namespace NOUS_Multithreading

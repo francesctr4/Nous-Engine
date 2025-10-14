@@ -1,9 +1,9 @@
 #ifndef IEDITORWINDOW_INL
 #define IEDITORWINDOW_INL
 
-#include "Engine/Core/Globals.h"
-#include "Engine/Renderer/RendererTypes.h"
-#include "Engine/Core/UpdateStatus.h"
+#include <Engine/Core/Globals.h>
+#include <Engine/Renderer/RendererTypes.h>
+#include <Engine/Core/UpdateStatus.h>
 #include <vector>
 #include <memory>
 

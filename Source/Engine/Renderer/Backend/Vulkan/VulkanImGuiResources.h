@@ -1,7 +1,7 @@
 #ifndef VULKANIMGUIRESOURCES_H
 #define VULKANIMGUIRESOURCES_H
 
-#include "VulkanTypes.inl"
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 
 typedef unsigned long long ImTextureID;
 

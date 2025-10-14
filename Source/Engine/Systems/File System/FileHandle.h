@@ -1,7 +1,7 @@
 #ifndef FILEHANDLE_H
 #define FILEHANDLE_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 
 #include <string>
 #include <memory>

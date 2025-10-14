@@ -1,7 +1,7 @@
 #ifndef IMPORTERMATERIAL_H
 #define IMPORTERMATERIAL_H
 
-#include "Importer.inl"
+#include <Engine/Systems/Resource Manager/Importers/Importer.inl>
 
 struct ImporterMaterial : Importer
 {

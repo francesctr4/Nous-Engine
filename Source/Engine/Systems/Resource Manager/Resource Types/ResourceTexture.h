@@ -1,9 +1,9 @@
 #ifndef RESOURCETEXTURE_H
 #define RESOURCETEXTURE_H
 
-#include "Engine/Core/Globals.h"
-#include "Resource.h"
-#include "Engine/Renderer/RendererTypes.h"
+#include <Engine/Core/Globals.h>
+#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
+#include <Engine/Renderer/RendererTypes.h>
 
 class ResourceTexture : public Resource
 {

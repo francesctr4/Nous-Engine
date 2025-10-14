@@ -1,7 +1,7 @@
 #ifndef MAINMENUBAR_H
 #define MAINMENUBAR_H
 
-#include "Editor/IEditorWindow.inl"
+#include <Editor/IEditorWindow.inl>
 
 class MainMenuBar : public IEditorWindow
 {

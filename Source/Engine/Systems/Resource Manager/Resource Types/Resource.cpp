@@ -1,4 +1,4 @@
-#include "Resource.h"
+#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
 #include <unordered_map>
 
 #pragma region UTILITY MAPS

@@ -1,8 +1,8 @@
 #ifndef GEOMETRYSYSTEM_H
 #define GEOMETRYSYSTEM_H
 
-#include "Engine/Renderer/RendererTypes.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h"
+#include <Engine/Renderer/RendererTypes.h>
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
 
 struct GeometrySystemConfig
 {

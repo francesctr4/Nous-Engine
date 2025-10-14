@@ -1,4 +1,4 @@
-#include "ResourceTexture.h"
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
 
 ResourceTexture::ResourceTexture(UID uid) : Resource(uid, ResourceType::TEXTURE)
 {

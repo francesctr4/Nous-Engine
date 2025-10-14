@@ -1,7 +1,7 @@
 #ifndef VULKANMULTITHREADING_H
 #define VULKANMULTITHREADING_H
 
-#include "VulkanTypes.inl"
+#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 
 namespace NOUS_VulkanMultithreading 
 {

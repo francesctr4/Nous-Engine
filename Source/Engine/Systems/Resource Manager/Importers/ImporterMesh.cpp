@@ -1,25 +1,25 @@
-#include "ImporterMesh.h"
-#include "Engine/Systems/File System/FileHandle.h"
+#include <Engine/Systems/Resource Manager/Importers/ImporterMesh.h>
+#include <Engine/Systems/File System/FileHandle.h>
 
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h"
-#include "Engine/Systems/Resource Manager/MetaFileData.inl"
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
+#include <Engine/Systems/Resource Manager/MetaFileData.inl>
 
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
 
-#include "Engine/Core/Modules/ModuleRenderer3D.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Core/Modules/ModuleResourceManager.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
+#include <Engine/Core/Modules/ModuleRenderer3D.h>
+#include <Engine/Renderer/Frontend/RendererFrontend.h>
+#include <Engine/Core/Modules/ModuleResourceManager.h>
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
 
-#include "Engine/Core/Application.h"
-#include "Engine/Utils/Logger.h"
+#include <Engine/Core/Application.h>
+#include <Engine/Utils/Logger.h>
 
 // Assimp
 #define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace)
-#include "assimp/scene.h"
-#include "assimp/cimport.h"
-#include "assimp/postprocess.h"
+#include <assimp/scene.h>
+#include <assimp/cimport.h>
+#include <assimp/postprocess.h>
 
 void ProcessNode(aiNode* node, const aiScene* scene, Resource*& outMesh);
 void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh);

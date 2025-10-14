@@ -1,9 +1,9 @@
-#include "Globals.h"
-#include "Application.h"
-#include "Engine/Utils/Logger.h"
-#include "Engine/Multithreading/NOUS_Multithreading.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Systems/Time Management/Timer.h"
+#include <Engine/Core/Globals.h>
+#include <Engine/Core/Application.h>
+#include <Engine/Utils/Logger.h>
+#include <Engine/Multithreading/NOUS_Multithreading.h>
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include <Engine/Systems/Time Management/Timer.h>
 
 typedef enum MainState
 {

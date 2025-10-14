@@ -1,20 +1,20 @@
-#include "Application.h"
-#include "Engine/Core/Modules/ModuleWindow.h"
-#include "Engine/Core/Modules/ModuleInput.h"
-#include "Engine/Core/Modules/ModuleFileSystem.h"
-#include "Engine/Core/Modules/ModuleCamera3D.h"
-#include "Engine/Core/Modules/ModuleResourceManager.h"
-#include "Engine/Core/Modules/ModuleScene.h"
-#include "Engine/Core/Modules/ModuleRenderer3D.h"
-#include "Engine/Core/Modules/ModuleEditor.h"
+#include <Engine/Core/Application.h>
+#include <Engine/Core/Modules/ModuleWindow.h>
+#include <Engine/Core/Modules/ModuleInput.h>
+#include <Engine/Core/Modules/ModuleFileSystem.h>
+#include <Engine/Core/Modules/ModuleCamera3D.h>
+#include <Engine/Core/Modules/ModuleResourceManager.h>
+#include <Engine/Core/Modules/ModuleScene.h>
+#include <Engine/Core/Modules/ModuleRenderer3D.h>
+#include <Engine/Core/Modules/ModuleEditor.h>
 
-#include "Engine/Utils/Logger.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
+#include <Engine/Utils/Logger.h>
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
 
-#include "SDL3/SDL.h"
+#include <SDL3/SDL.h>
 
-#include "Engine/Systems/Time Management/TimeManager.h"
-#include "Engine/Multithreading/NOUS_JobSystem.h"
+#include <Engine/Systems/Time Management/TimeManager.h>
+#include <Engine/Multithreading/NOUS_JobSystem.h>
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

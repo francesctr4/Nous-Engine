@@ -8,11 +8,11 @@
 #include <typeindex>
 #include <algorithm>
 
-#include "Component.h"
-#include "Engine/ECS/Components/ComponentTransform.h"
+#include <Engine/ECS/Component.h>
+#include <Engine/ECS/Components/ComponentTransform.h>
 // Parson
-#include "parson.h"
-#include "Engine/Utils/Logger.h"
+#include <parson.h>
+#include <Engine/Utils/Logger.h>
 
 // Forward declarations
 class Scene;

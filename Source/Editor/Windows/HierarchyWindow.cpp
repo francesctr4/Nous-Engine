@@ -1,10 +1,10 @@
-#include "HierarchyWindow.h"
+#include <Editor/Windows/HierarchyWindow.h>
 
-#include "Engine/ECS/Scene.h"
-#include "Engine/ECS/GameObject.h"
+#include <Engine/ECS/Scene.h>
+#include <Engine/ECS/GameObject.h>
 
-#include "Engine/Core/Application.h"
-#include "Engine/Core/Modules/ModuleScene.h"
+#include <Engine/Core/Application.h>
+#include <Engine/Core/Modules/ModuleScene.h>
 
 #include <imgui.h>
 

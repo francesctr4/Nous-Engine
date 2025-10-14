@@ -1,7 +1,7 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 #include <vector>
 #include <string>
 #include <functional>

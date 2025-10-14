@@ -1,9 +1,9 @@
-#include "Component.h"
-#include "Engine/ECS/Components/ComponentTransform.h"
-#include "Engine/ECS/Components/ComponentMaterial.h"
-#include "Engine/ECS/Components/ComponentMesh.h"
+#include <Engine/ECS/Component.h>
+#include <Engine/ECS/Components/ComponentTransform.h>
+#include <Engine/ECS/Components/ComponentMaterial.h>
+#include <Engine/ECS/Components/ComponentMesh.h>
 
-#include "Engine/Utils/Logger.h"
+#include <Engine/Utils/Logger.h>
 
 std::unique_ptr<Component> Component::CreateComponent(const std::string& type) {
     if (type == "CTransform") {

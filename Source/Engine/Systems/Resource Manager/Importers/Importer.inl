@@ -1,7 +1,7 @@
 #ifndef IMPORTER_INL
 #define IMPORTER_INL
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 
 class Resource;
 struct MetaFileData;

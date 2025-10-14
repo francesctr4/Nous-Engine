@@ -1,7 +1,7 @@
 #ifndef IMPORTERTEXTURE_H
 #define IMPORTERTEXTURE_H
 
-#include "Importer.inl"
+#include <Engine/Systems/Resource Manager/Importers/Importer.inl>
 
 struct ImporterTexture : Importer
 {

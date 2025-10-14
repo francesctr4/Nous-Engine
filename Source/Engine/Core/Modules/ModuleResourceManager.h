@@ -1,8 +1,8 @@
 #ifndef MODULERESOURCEMANAGER_H
 #define MODULERESOURCEMANAGER_H
 
-#include "Engine/Core/Module.h"
-#include "Engine/Systems/Resource Manager/Resource Types/Resource.h"
+#include <Engine/Core/Module.h>
+#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
 #include <mutex>
 #include <unordered_map>
 

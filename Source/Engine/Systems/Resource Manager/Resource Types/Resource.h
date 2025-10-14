@@ -1,7 +1,7 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#include "Engine/Core/Globals.h"
+#include <Engine/Core/Globals.h>
 
 using UID = uint32;
 

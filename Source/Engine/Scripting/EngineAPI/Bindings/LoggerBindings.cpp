@@ -1,6 +1,6 @@
-#include "LoggerBindings.h"
+#include <Engine/Scripting/EngineAPI/Bindings/LoggerBindings.h>
 
-#include "Engine/Utils/Logger.h"
+#include <Engine/Utils/Logger.h>
 #include <cstdarg>
 
 void SetupLoggerBindings(LoggerAPI &logger)

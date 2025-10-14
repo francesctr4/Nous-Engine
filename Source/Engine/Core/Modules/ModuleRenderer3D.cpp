@@ -1,26 +1,26 @@
-#include "ModuleRenderer3D.h"
-#include "ModuleCamera3D.h"
+#include <Engine/Core/Modules/ModuleRenderer3D.h>
+#include <Engine/Core/Modules/ModuleCamera3D.h>
 
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Renderer/RendererTypes.h"
+#include <Engine/Renderer/Frontend/RendererFrontend.h>
+#include <Engine/Renderer/RendererTypes.h>
 
-#include "Engine/ECS/Scene.h"
-#include "Engine/ECS/Components/ComponentMesh.h"
-#include "Engine/ECS/Components/ComponentTransform.h"
-#include "Engine/ECS/Components/ComponentMaterial.h"
+#include <Engine/ECS/Scene.h>
+#include <Engine/ECS/Components/ComponentMesh.h>
+#include <Engine/ECS/Components/ComponentTransform.h>
+#include <Engine/ECS/Components/ComponentMaterial.h>
 
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Utils/Logger.h"
-#include "Engine/Systems/Event System/EventSystem.h"
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include <Engine/Utils/Logger.h>
+#include <Engine/Systems/Event System/EventSystem.h>
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>
 #endif
 
 // TODO: TEMP
-#include "Engine/Systems/Texture System/TextureSystem.h"
-#include "Engine/Systems/Material System/MaterialSystem.h"
-#include "Engine/Systems/Geometry System/GeometrySystem.h"
+#include <Engine/Systems/Texture System/TextureSystem.h>
+#include <Engine/Systems/Material System/MaterialSystem.h>
+#include <Engine/Systems/Geometry System/GeometrySystem.h>
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
 {

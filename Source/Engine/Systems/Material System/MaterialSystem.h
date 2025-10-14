@@ -1,11 +1,11 @@
 #ifndef MATERIALSYSTEM_H
 #define MATERIALSYSTEM_H
 
-#include "Engine/Renderer/RendererTypes.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
-#include "Engine/Core/Globals.h"
+#include <Engine/Renderer/RendererTypes.h>
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
+#include <Engine/Core/Globals.h>
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 namespace NOUS_MaterialSystem
 {

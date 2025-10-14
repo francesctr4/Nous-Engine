@@ -1,15 +1,15 @@
 #ifndef NOUS_ENGINE_SCENE_H
 #define NOUS_ENGINE_SCENE_H
 
-#include "GameObject.h"
-#include "Engine/ECS/Components/ComponentTransform.h"
-#include "Engine/Core/Application.h"
-#include "Engine/Core/Modules/ModuleScene.h"
-#include "Engine/Utils/Random.h"
+#include <Engine/ECS/GameObject.h>
+#include <Engine/ECS/Components/ComponentTransform.h>
+#include <Engine/Core/Application.h>
+#include <Engine/Core/Modules/ModuleScene.h>
+#include <Engine/Utils/Random.h>
 #include <unordered_set>
 #include <mutex>
 #include <queue>
-#include "Engine/Utils/Logger.h"
+#include <Engine/Utils/Logger.h>
 
 class Scene {
 public:

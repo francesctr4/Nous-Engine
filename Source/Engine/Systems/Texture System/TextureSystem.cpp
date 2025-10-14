@@ -1,10 +1,10 @@
-#include "TextureSystem.h"
+#include <Engine/Systems/Texture System/TextureSystem.h>
 
-#include "Engine/Utils/Logger.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Core/Application.h"
-#include "Engine/Core/Modules/ModuleRenderer3D.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include <Engine/Utils/Logger.h>
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include <Engine/Core/Application.h>
+#include <Engine/Core/Modules/ModuleRenderer3D.h>
+#include <Engine/Renderer/Frontend/RendererFrontend.h>
 
 #include <array>
 

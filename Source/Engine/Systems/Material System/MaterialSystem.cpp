@@ -1,12 +1,12 @@
-#include "MaterialSystem.h"
+#include <Engine/Systems/Material System/MaterialSystem.h>
 
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
 
-#include "Engine/Core/Modules/ModuleRenderer3D.h"
-#include "Engine/Systems/Texture System/TextureSystem.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Core/Application.h"
-#include "Engine/Utils/Logger.h"
+#include <Engine/Core/Modules/ModuleRenderer3D.h>
+#include <Engine/Systems/Texture System/TextureSystem.h>
+#include <Engine/Renderer/Frontend/RendererFrontend.h>
+#include <Engine/Core/Application.h>
+#include <Engine/Utils/Logger.h>
 
 bool NOUS_MaterialSystem::Initialize()
 {

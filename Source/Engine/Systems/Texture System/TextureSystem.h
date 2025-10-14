@@ -1,9 +1,9 @@
 #ifndef TEXTURESYSTEM_H
 #define TEXTURESYSTEM_H
 
-#include "Engine/Renderer/RendererTypes.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
-#include "Engine/Core/Globals.h"
+#include <Engine/Renderer/RendererTypes.h>
+#include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
+#include <Engine/Core/Globals.h>
 
 namespace NOUS_TextureSystem 
 {

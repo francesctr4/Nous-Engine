@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_HIERARCHYWINDOW_H
 #define NOUS_ENGINE_HIERARCHYWINDOW_H
 
-#include "Editor/IEditorWindow.inl"
+#include <Editor/IEditorWindow.inl>
 
 class Scene;
 class GameObject;
