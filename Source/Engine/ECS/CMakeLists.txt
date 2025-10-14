@@ -15,8 +15,7 @@ set(ECS_SOURCES
         Components/ComponentMesh.cpp
 )
 
-add_library(ECS STATIC ${ECS_SOURCES})
-add_library(NousEngine::ECS ALIAS ECS)
+add_library(ECS OBJECT ${ECS_SOURCES})
 
 set_target_properties(ECS PROPERTIES
         CXX_STANDARD 23

@@ -21,8 +21,7 @@ set(SCRIPTING_SOURCES
         EngineAPI/Bindings/GameObjectBindings.h
 )
 
-add_library(Scripting STATIC ${SCRIPTING_SOURCES})
-add_library(NousEngine::Scripting ALIAS Scripting)
+add_library(Scripting OBJECT ${SCRIPTING_SOURCES})
 
 # Include root source so "Scripting/..." includes work
 target_include_directories(Scripting PUBLIC ../..)

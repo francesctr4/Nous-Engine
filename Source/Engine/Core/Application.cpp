@@ -6,7 +6,7 @@
 #include <Engine/Core/Modules/ModuleResourceManager.h>
 #include <Engine/Core/Modules/ModuleScene.h>
 #include <Engine/Core/Modules/ModuleRenderer3D.h>
-#include <Engine/Core/Modules/ModuleEditor.h>
+#include "Editor/ModuleEditor.h"
 
 #include <Engine/Utils/Logger.h>
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
@@ -112,8 +112,6 @@ bool Application::Awake()
     TimeManager::graphicsTimer.Start();
 
     updateTitleTimer->Start();
-
-    NOUS_DEBUG(" -------------- ENGINE START UP TIME: %.3f seconds --------------\n", startupTimer.ReadSec());
 
     return ret;
 }

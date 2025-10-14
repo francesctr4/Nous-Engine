@@ -1,6 +1,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
+#include <Engine/Core/Export.h>
 #include <Engine/Core/UpdateStatus.h>
 
 // Forward declarations
@@ -24,21 +25,21 @@ class Application
 {
 public:
 
-	Application();
-	~Application();
+	NOUS_API Application();
+	NOUS_API ~Application();
 
-	bool Awake();
-	UpdateStatus Update();
-	bool CleanUp();
+	NOUS_API bool Awake();
+	NOUS_API UpdateStatus Update();
+	NOUS_API bool CleanUp();
 
-	void BroadcastEvent(const Event& event);
+	NOUS_API void BroadcastEvent(const Event& event);
 
-	void SetTargetFPS(float FPS);
-	float GetTargetFPS();
+	NOUS_API void SetTargetFPS(float FPS);
+	NOUS_API float GetTargetFPS();
 
-	float GetFPS();
-	float GetDT();
-	float GetMS();
+	NOUS_API float GetFPS();
+	NOUS_API float GetDT();
+	NOUS_API float GetMS();
 
 private:
 
@@ -72,6 +73,6 @@ private:
 	Timer* updateTitleTimer;
 };
 
-extern Application* External;
+extern NOUS_API Application* External;
 
 #endif // APPLICATION_H

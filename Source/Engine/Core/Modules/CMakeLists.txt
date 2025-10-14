@@ -5,8 +5,8 @@
 set(MODULES_SOURCES
         ModuleCamera3D.cpp
         ModuleCamera3D.h
-        ModuleEditor.cpp
-        ModuleEditor.h
+        ../../../Editor/ModuleEditor.cpp
+        ../../../Editor/ModuleEditor.h
         ModuleFileSystem.cpp
         ModuleFileSystem.h
         ModuleInput.cpp
@@ -21,8 +21,7 @@ set(MODULES_SOURCES
         ModuleWindow.h
 )
 
-add_library(Modules STATIC ${MODULES_SOURCES})
-add_library(NousEngine::Modules ALIAS Modules)
+add_library(Modules OBJECT ${MODULES_SOURCES})
 
 set_target_properties(Modules PROPERTIES
         CXX_STANDARD 23

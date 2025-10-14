@@ -13,8 +13,7 @@ set(UTILS_SOURCES
         Random.h
 )
 
-add_library(Utils STATIC ${UTILS_SOURCES})
-add_library(NousEngine::Utils ALIAS Utils)
+add_library(Utils OBJECT ${UTILS_SOURCES})
 
 set_target_properties(Utils PROPERTIES
         CXX_STANDARD 23

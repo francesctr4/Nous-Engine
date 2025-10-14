@@ -91,7 +91,7 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     UnloadScriptLibrary();
 
     // Build the scripts
-    int result = std::system("\"..\\..\\Source\\Engine\\Scripting\\rebuildscripts.bat\"");
+    int result = std::system("Scripts\\rebuildscripts.bat");
 
     if (result == 0) {
         NOUS_INFO("Scripts recompiled successfully!");
@@ -187,8 +187,8 @@ void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
 
 bool ScriptManager::GenerateScript(const std::string& className)
 {
-    const std::string& templatePath = "../../Source/Engine/Scripting/Internal/ScriptTemplate.inl";
-    const std::string& outputPath = "../../Assets/Scripts/" + className + ".cpp";
+    const std::string& templatePath = "Scripts/ScriptTemplate.inl";
+    const std::string& outputPath = "../../../Assets/Scripts/" + className + ".cpp";
 
     // Read the template file
     std::ifstream templateFile(templatePath);

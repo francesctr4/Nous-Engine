@@ -53,8 +53,7 @@ set(RENDERER_SOURCES
         Backend/Vulkan/VulkanUtils.h
 )
 
-add_library(Renderer STATIC ${RENDERER_SOURCES})
-add_library(NousEngine::Renderer ALIAS Renderer)
+add_library(Renderer OBJECT ${RENDERER_SOURCES})
 
 set_target_properties(Renderer PROPERTIES
         CXX_STANDARD 23

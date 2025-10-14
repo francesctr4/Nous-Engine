@@ -15,8 +15,7 @@ set(MULTITHREADING_SOURCES
         NOUS_ThreadPool.h
 )
 
-add_library(Multithreading STATIC ${MULTITHREADING_SOURCES})
-add_library(NousEngine::Multithreading ALIAS Multithreading)
+add_library(Multithreading OBJECT ${MULTITHREADING_SOURCES})
 
 set_target_properties(Multithreading PROPERTIES
         CXX_STANDARD 23

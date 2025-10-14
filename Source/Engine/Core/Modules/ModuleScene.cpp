@@ -113,7 +113,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
     if (App->input->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
     {
-        SaveScene("../../Assets/Scenes/LagiacrusScene.nous");
+        SaveScene("../../../Assets/Scenes/LagiacrusScene.nous");
     }
 
 	if (App->input->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
@@ -123,7 +123,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
 	if (App->input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN)
 	{
-		LoadScene("../../Assets/Scenes/LagiacrusScene.nous");
+		LoadScene("../../../Assets/Scenes/LagiacrusScene.nous");
 	}
 
     if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
@@ -305,7 +305,7 @@ void ModuleScene::CreateScriptInstances() {
     CleanupScripts();
 
     // Define the scripts directory path
-    std::string scriptsPath = "../../Assets/Scripts/";
+    std::string scriptsPath = "../../../Assets/Scripts/";
 
     // Vector to store script names
     std::vector<std::string> scriptNames;

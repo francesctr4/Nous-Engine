@@ -3,7 +3,7 @@
 
 #include <Engine/Core/Globals.h>
 #include <Engine/Systems/Time Management/Timer.h>
-
+#include <Engine/Core/Export.h>
 #include <Engine/Multithreading/NOUS_Job.h>
 
 #include <thread>
@@ -75,7 +75,7 @@ namespace NOUS_Multithreading
 		static const std::string GetStringFromState(const ThreadState& state);
 
 		/// @brief Sleep the current thread for an amount of time (ms).
-		static const void SleepMS(const uint32& ms);
+		NOUS_API static const void SleepMS(const uint32& ms);
 
 	private:
 

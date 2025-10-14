@@ -59,8 +59,7 @@ set(SYSTEMS_SOURCES
         "Time Management/Timer.h"
 )
 
-add_library(Systems STATIC ${SYSTEMS_SOURCES})
-add_library(NousEngine::Systems ALIAS Systems)
+add_library(Systems OBJECT ${SYSTEMS_SOURCES})
 
 set_target_properties(Systems PROPERTIES
         CXX_STANDARD 23

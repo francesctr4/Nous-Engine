@@ -1,0 +1,1 @@
+extern "C" __declspec(dllexport) const char* NousEngine_Version = "0.4.0";

@@ -5,6 +5,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include <Engine/Core/Export.h>
+
 class IScript;
 struct EngineAPI;
 class ScriptRegistry;

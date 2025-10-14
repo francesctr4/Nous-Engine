@@ -2,8 +2,9 @@
 #define MEMORYMANAGER_H
 
 #include <Engine/Core/Globals.h>
+#include <Engine/Core/Export.h>
 
-namespace MemoryManager 
+namespace MemoryManager
 {
 	enum class MemoryTag
 	{
@@ -36,23 +37,23 @@ namespace MemoryManager
 		MAX
 	};
 
-	void InitializeMemory(uint64 preAllocatedMemorySize);
+    NOUS_API void InitializeMemory(uint64 preAllocatedMemorySize);
 
-	void ShutdownMemory();
+    NOUS_API void ShutdownMemory();
 
-	void* Allocate(uint64 size, MemoryTag tag);
+    NOUS_API void* Allocate(uint64 size, MemoryTag tag);
 
-	void Free(void* block, uint64 size, MemoryTag tag);
+    NOUS_API void Free(void* block, uint64 size, MemoryTag tag);
 
-	void* ZeroMemory(void* block, uint64 size);
+    NOUS_API void* ZeroMemory(void* block, uint64 size);
 
-	void* CopyMemory(void* destination, const void* source, uint64 size);
+    NOUS_API void* CopyMemory(void* destination, const void* source, uint64 size);
 
-	void* SetMemory(void* destination, int32 value, uint64 size);
+    NOUS_API void* SetMemory(void* destination, int32 value, uint64 size);
 
-	char* GetMemoryUsageStats();
+    NOUS_API char* GetMemoryUsageStats();
 
-	uint64 GetMemoryAllocationCount();
+    NOUS_API uint64 GetMemoryAllocationCount();
 }
 
 // Custom Memory Management Macros to monitorize allocations

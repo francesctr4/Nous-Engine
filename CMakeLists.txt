@@ -26,10 +26,9 @@ project(${PROJECT_NAME}
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Global Debug/Release definitions
+# Build config macros
 add_compile_definitions(
         $$<CONFIG:Debug>:_DEBUG>
         $$<CONFIG:Release>:_RELEASE;NDEBUG>
@@ -66,27 +65,33 @@ add_subdirectory(Source/Engine/ECS)
 add_subdirectory(Source/Engine/Systems)
 
 # ==============================
-# Main Executable
+# NousEngine DLL (Shared Library)
 # ==============================
-add_executable(${PROJECT_NAME} Source/Engine/Core/Main.cpp)
 
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Source
-        ${STB_INCLUDE_PATH}
+add_library(${PROJECT_NAME} SHARED Source/Engine/MainEngine.cpp)
+add_library(NousEngine::Engine ALIAS ${PROJECT_NAME})
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
+
+# Include directories
+target_include_directories(${PROJECT_NAME}
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Source
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
-        # Engine Modules
-        NousEngine::Core
-        NousEngine::Editor
-        NousEngine::Multithreading
-        NousEngine::Utils
-        NousEngine::Renderer
-        NousEngine::ECS
-        NousEngine::Systems
-        NousEngine::Scripting
+target_sources(${PROJECT_NAME} PRIVATE
+        $<TARGET_OBJECTS:Core>
+        $<TARGET_OBJECTS:Modules>
+        $<TARGET_OBJECTS:Utils>
+        $<TARGET_OBJECTS:Systems>
+        $<TARGET_OBJECTS:Multithreading>
+        $<TARGET_OBJECTS:Renderer>
+        $<TARGET_OBJECTS:ECS>
+        $<TARGET_OBJECTS:Editor>
+        $<TARGET_OBJECTS:Scripting>
+)
 
-        # Third-party Libraries
+# Link engine modules + dependencies
+target_link_libraries(${PROJECT_NAME} PRIVATE
         SDL3::SDL3
         Vulkan::Vulkan
         assimp::assimp
@@ -97,8 +102,46 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+        FOLDER "Engine"
+)
+
+# ==============================
+# Editor Executable
+# ==============================
+add_executable(EditorApp Source/Editor/MainEditor.cpp)
+
+target_include_directories(EditorApp PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        ${STB_INCLUDE_PATH}
+)
+
+target_link_libraries(EditorApp PRIVATE
+        NousEngine::Engine
+)
+
+set_target_properties(EditorApp PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
         VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        FOLDER "Executable"
+        FOLDER "Applications"
+)
+
+# =========================================================
+# Game Runtime Executable
+# =========================================================
+add_executable(GameApp
+        Source/Game/MainGame.cpp
+)
+
+target_link_libraries(GameApp PRIVATE
+        NousEngine::Engine
+)
+
+# Output to the same bin folder for consistency
+set_target_properties(GameApp PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
 # ==============================
@@ -116,7 +159,7 @@ else()
     message(STATUS "Found glslc: ${GLSLC_EXECUTABLE}")
 
     set(SHADER_SOURCE_DIR "${CMAKE_SOURCE_DIR}/Assets/Shaders")
-    set(SHADER_BUILD_DIR "${CMAKE_BINARY_DIR}/Library/Shaders")
+    set(SHADER_BUILD_DIR "${CMAKE_BINARY_DIR}/bin/Library/Shaders")
 
     file(GLOB_RECURSE SHADER_FILES CONFIGURE_DEPENDS
             "${SHADER_SOURCE_DIR}/*.glsl"
@@ -165,7 +208,7 @@ else()
                 DEPENDS ${COMPILED_SHADERS}
                 COMMENT "Compiling all shaders"
         )
-        add_dependencies(${PROJECT_NAME} CompileShaders)
+        add_dependencies(EditorApp CompileShaders)
     endif()
 endif()
 
@@ -176,16 +219,16 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/Assets)
     add_custom_target(CopyAssets ALL
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/Assets
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>/Assets
+            ${CMAKE_BINARY_DIR}/bin/Assets
             COMMENT "Copying Assets directory"
     )
-    add_dependencies(${PROJECT_NAME} CopyAssets)
+    add_dependencies(EditorApp CopyAssets)
 endif()
 
 # ==============================
 # Scripts DLL Dependency
 # ==============================
-add_dependencies(${PROJECT_NAME} Scripts)
+add_dependencies(EditorApp Scripts)
 
 # ==============================
 # Output Configuration Summary
@@ -194,9 +237,10 @@ message(STATUS "")
 message(STATUS "==============================")
 message(STATUS " Nous Engine Build Configuration")
 message(STATUS "==============================")
-message(STATUS " Project:          ${PROJECT_NAME}")
+message(STATUS " Engine DLL:       NousEngine.dll")
+message(STATUS " Editor Executable:EditorApp.exe")
 message(STATUS " C++ Standard:     ${CMAKE_CXX_STANDARD}")
 message(STATUS " Build Type:       ${CMAKE_BUILD_TYPE}")
-message(STATUS " Output Directory: ${CMAKE_BINARY_DIR}")
+message(STATUS " Output Directory: ${CMAKE_BINARY_DIR}/bin")
 message(STATUS "==============================")
 message(STATUS "")

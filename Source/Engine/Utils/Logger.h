@@ -2,6 +2,8 @@
 #define LOGGER_H
 
 #include <Engine/Core/Globals.h>
+#include <Engine/Core/Export.h>
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -35,12 +37,12 @@ typedef enum LogLevel {
 
 } LogLevel;
 
-bool InitializeLogging();
-void ShutdownLogging();
+NOUS_API bool InitializeLogging();
+NOUS_API void ShutdownLogging();
 
 void AppendToLogFile(const char* message);
 
-void LogOutput(LogLevel level, const char* message, ...);
+NOUS_API void LogOutput(LogLevel level, const char* message, ...);
 
 void SetLogCallback(std::function<void(LogLevel, const char*)> callback);
 const std::deque<std::pair<LogLevel, std::string>>& GetLogHistory();

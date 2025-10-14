@@ -30,8 +30,7 @@ set(EDITOR_SOURCES
         IEditorWindow.inl
 )
 
-add_library(Editor STATIC ${EDITOR_SOURCES})
-add_library(NousEngine::Editor ALIAS Editor)
+add_library(Editor OBJECT ${EDITOR_SOURCES})
 
 # Include the root source dir for headers like "Core/Application.h"
 target_include_directories(Editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

@@ -1,7 +1,7 @@
 #ifndef MODULEEDITOR_H
 #define MODULEEDITOR_H
 
-#include <Engine/Core/Module.h>
+#include "Engine/Core/Module.h"
 
 #include <vector>
 #include <memory>

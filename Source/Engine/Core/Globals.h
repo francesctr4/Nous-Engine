@@ -6,19 +6,10 @@
 #include <stdexcept>
 #include <limits>
 
-#ifdef NOUS_ENGINE_EXPORTS
-#define NOUS_API __declspec(dllexport)
-#else
-#define NOUS_API __declspec(dllimport)
-#endif
-
 constexpr const char* TITLE = "Nous Engine";
 constexpr int WINDOW_WIDTH = 800;
 constexpr int WINDOW_HEIGHT = 600;
 constexpr float DEFAULT_TARGET_FPS = 144.00f;
-
-class Timer;
-extern Timer startupTimer;
 
 // ---------- Type Definitions ---------- \\
 
