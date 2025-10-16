@@ -60,6 +60,7 @@ set(SYSTEMS_SOURCES
         "Event System/IEventListener.h"
         "Event System/Event.h"
         "Event System/EventSystem.cpp"
+        "Event System/Event.cpp"
 )
 
 add_library(Systems OBJECT ${SYSTEMS_SOURCES})
