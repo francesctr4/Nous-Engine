@@ -14,6 +14,8 @@
 
 #include <Engine/Systems/Time Management/TimeManager.h>
 #include <Engine/Multithreading/NOUS_JobSystem.h>
+#include <Engine/Systems/Event System/EventSystem.h>
+#include <Engine/Systems/Event System/Event.h>
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>
@@ -29,6 +31,8 @@ Application::Application()
 
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
+
+    eventSystem = NOUS_NEW<EventSystem>(MemoryManager::MemoryTag::APPLICATION);
 
     msTimer = NOUS_NEW<Timer>(MemoryManager::MemoryTag::APPLICATION);
     updateTitleTimer = NOUS_NEW<Timer>(MemoryManager::MemoryTag::APPLICATION);
@@ -74,6 +78,8 @@ Application::~Application()
 
     ModuleWindow* window = static_cast<ModuleWindow*>(listModules[0]);
     NOUS_DELETE<ModuleWindow>(window, MemoryManager::MemoryTag::APPLICATION);
+
+    NOUS_DELETE<EventSystem>(eventSystem, MemoryManager::MemoryTag::APPLICATION);
 }
 
 bool Application::Awake()
@@ -188,6 +194,8 @@ void Application::FinishUpdate()
 {
     NOUS_TRACE("%s()", __FUNCTION__);
 
+    eventSystem->DispatchQueued();
+
     // Set Window Title with Debug Info
 
     static float cachedDt = 0.0f;
@@ -234,23 +242,6 @@ bool Application::CleanUp()
     return ret;
 }
 
-void Application::BroadcastEvent(const Event& event)
-{
-    // 1. Send to internal modules
-    for (int i = 0; i < NUM_MODULES; ++i)
-    {
-        if (listModules[i] != nullptr)
-            listModules[i]->ReceiveEvent(event);
-    }
-
-    // 2. Send to external listeners (like the editor)
-    for (auto* listener : m_ExternalListeners)
-    {
-        if (listener)
-            listener->OnEvent(event);
-    }
-}
-
 void Application::SetTargetFPS(float FPS)
 {
     targetFPS = FPS;
@@ -276,12 +267,12 @@ float Application::GetMS()
     return dt * 1000;
 }
 
-void Application::RegisterEventListener(IEventListener* listener)
+void Application::QueueEvent(const Event &evt)
 {
-    m_ExternalListeners.push_back(listener);
+    eventSystem->Queue(evt);
 }
 
-void Application::UnregisterEventListener(IEventListener* listener)
+void Application::BroadcastEvent(const Event &evt)
 {
-    std::erase(m_ExternalListeners, listener);
+    eventSystem->Broadcast(evt);
 }

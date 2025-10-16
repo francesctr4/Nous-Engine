@@ -4,11 +4,11 @@
 #include "Engine/Core/Modules/ModuleCamera3D.h"
 #include "Engine/Core/Modules/ModuleWindow.h"
 #include "Engine/Core/Application.h"
+#include "Engine/Systems/Event System/EventSystem.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
 #include "Engine/Renderer/Backend/Vulkan/VulkanUtils.h"
 #include "Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h"
-#include "Engine/Systems/Event System/EventSystem.h"
 
 #include "Editor/UI/IEditorWindow.inl"
 #include "Editor/UI/ImGuiConfig/ImGuiCustom.h"
@@ -41,13 +41,14 @@ ModuleEditor::ModuleEditor(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 	currentBackendType = RendererBackendType::UNKNOWN;
-	App->RegisterEventListener(this);
+
+    App->eventSystem->Subscribe(EventType::INPUT_EVENT, this);
+    App->eventSystem->Subscribe(EventType::IMGUI_RECREATION, this);
 }
 
 ModuleEditor::~ModuleEditor()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-	App->UnregisterEventListener(this);
 }
 
 // Array to store ImFont pointers
@@ -185,11 +186,6 @@ bool ModuleEditor::CleanUp()
 	ImGui::DestroyContext();
 
 	return true;
-}
-
-void ModuleEditor::ProcessInputEvent(const SDL_Event* event)
-{
-	ImGui_ImplSDL3_ProcessEvent(event);
 }
 
 void ModuleEditor::InitFrame(RendererBackendType backendType)
@@ -330,8 +326,8 @@ void ModuleEditor::OnEvent(const Event &event)
 	{
 		case EventType::INPUT_EVENT:
 		{
-			SDL_Event* sdlEvent = reinterpret_cast<SDL_Event*>(event.context._u64[0]);
-			ProcessInputEvent(sdlEvent);
+			auto* sdlEvent = reinterpret_cast<SDL_Event*>(event.ctx.u64[0]);
+            ImGui_ImplSDL3_ProcessEvent(sdlEvent);
 			break;
 		}
 		case EventType::IMGUI_RECREATION:

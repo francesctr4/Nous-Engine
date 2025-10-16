@@ -3,8 +3,9 @@
 
 #include <Engine/Core/Module.h>
 #include <string>
+#include "Engine/Systems/Event System/IEventListener.h"
 
-class ModuleFileSystem : public Module
+class ModuleFileSystem : public Module, public IEventListener
 {
 public:
 
@@ -17,6 +18,8 @@ public:
 	bool Awake() override;
 	bool Start() override;
 	bool CleanUp() override;
+
+    void OnEvent(const Event& event) override;
 
 	bool CreateLibraryFolder();
 	bool ImportDirectory(const std::string& directory);

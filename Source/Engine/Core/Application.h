@@ -3,11 +3,11 @@
 
 #include <Engine/Core/EngineExport.h>
 #include <Engine/Core/UpdateStatus.h>
-#include <Engine/Systems/Event System/EventSystem.h>
 #include <vector>
 
 // Forward declarations
 struct Event;
+class EventSystem;
 class Timer;
 namespace NOUS_Multithreading { class NOUS_JobSystem; }
 
@@ -34,8 +34,6 @@ public:
 	NOUS_ENGINE_API UpdateStatus Update();
 	NOUS_ENGINE_API bool CleanUp();
 
-	NOUS_ENGINE_API void BroadcastEvent(const Event& event);
-
 	NOUS_ENGINE_API void SetTargetFPS(float FPS);
 	NOUS_ENGINE_API float GetTargetFPS();
 
@@ -43,9 +41,9 @@ public:
 	NOUS_ENGINE_API float GetDT();
 	NOUS_ENGINE_API float GetMS();
 
-	// New
-	NOUS_ENGINE_API void RegisterEventListener(IEventListener* listener);
-	NOUS_ENGINE_API void UnregisterEventListener(IEventListener* listener);
+    // Event System
+    NOUS_ENGINE_API void QueueEvent(const Event& event);
+    NOUS_ENGINE_API void BroadcastEvent(const Event& event);
 
 private:
 
@@ -64,12 +62,12 @@ public:
 
 	bool isMinimized;
 
+    EventSystem* eventSystem;
+
 	// ------------- MULTITHREADING ------------- //
 	NOUS_Multithreading::NOUS_JobSystem* jobSystem;
 
 private:
-
-	std::vector<IEventListener*> m_ExternalListeners;
 
 	Module* listModules[NUM_MODULES];
 

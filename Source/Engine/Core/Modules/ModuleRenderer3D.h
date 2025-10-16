@@ -17,6 +17,7 @@
 
 #include <Engine/Core/Module.h>
 #include <Engine/Core/EngineExport.h>
+#include "Engine/Systems/Event System/IEventListener.h"
 
 // ---------------------------------------------------------------------
 // Forward Declarations
@@ -24,7 +25,7 @@
 struct RenderPacket;
 class RendererFrontend;
 
-class ModuleRenderer3D : public Module
+class ModuleRenderer3D : public Module, public IEventListener
 {
 public:
 	// ---------------------------------------------------------------------
@@ -48,7 +49,7 @@ public:
 	// ---------------------------------------------------------------------
 	// Events
 	// ---------------------------------------------------------------------
-	void ReceiveEvent(const Event& event) override;
+	void OnEvent(const Event& event) override;
 
 	// ---------------------------------------------------------------------
 	// Accessors

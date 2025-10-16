@@ -19,6 +19,8 @@
 ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	App->eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
 
 ModuleResourceManager::~ModuleResourceManager()
@@ -69,7 +71,7 @@ bool ModuleResourceManager::CleanUp()
 	return true;
 }
 
-void ModuleResourceManager::ReceiveEvent(const Event& event)
+void ModuleResourceManager::OnEvent(const Event& event)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
@@ -77,7 +79,7 @@ void ModuleResourceManager::ReceiveEvent(const Event& event)
 	{
 		case EventType::DROP_FILE:
 		{
-			ImportFile(event.context.c);
+			ImportFile(event.ctx.c);
 
 			break;
 		}

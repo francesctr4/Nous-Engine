@@ -189,3 +189,12 @@ bool ModuleFileSystem::CompileShaders()
 
     return success;
 }
+
+void ModuleFileSystem::OnEvent(const Event &event)
+{
+    switch (event.type)
+    {
+        default:
+            break;
+    }
+}

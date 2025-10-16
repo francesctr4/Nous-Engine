@@ -75,6 +75,15 @@ bool ModuleWindow::CleanUp()
 	return true;
 }
 
+void ModuleWindow::OnEvent(const Event &event)
+{
+    switch (event.type)
+    {
+        default:
+            break;
+    }
+}
+
 void ModuleWindow::SetTitle(const char* title)
 {
     SDL_SetWindowTitle(window, title);

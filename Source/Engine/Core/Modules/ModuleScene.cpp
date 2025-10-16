@@ -37,6 +37,8 @@ ModuleScene::ModuleScene(Application* app) : Module(app)
 
 	// Create script instances
 	CreateScriptInstances();
+
+	App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
 ModuleScene::~ModuleScene()
@@ -284,16 +286,16 @@ bool ModuleScene::CleanUp()
 	return true;
 }
 
-void ModuleScene::ReceiveEvent(const Event& event)
+void ModuleScene::OnEvent(const Event& event)
 {
 	switch (event.type)
 	{
 		case EventType::WINDOW_RESIZED:
 		{
 			NOUS_DEBUG("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
-			NOUS_DEBUG("Received context: %d, %d", event.context._i64[0], event.context._i64[1]);
+			NOUS_DEBUG("Received context: %d, %d", event.ctx.i32[0], event.ctx.i32[1]);
 
-			gameCamera->SetAspectRatio((float)event.context._i64[0] / (float)event.context._i64[1]);
+			gameCamera->SetAspectRatio((float)event.ctx.i32[0] / (float)event.ctx.i32[1]);
 
 			break;
 		}

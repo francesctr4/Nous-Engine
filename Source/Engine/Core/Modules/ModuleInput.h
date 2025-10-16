@@ -3,6 +3,7 @@
 
 #include <Engine/Core/Module.h>
 #include <Engine/Core/Globals.h>
+#include "Engine/Systems/Event System/IEventListener.h"
 
 #define MAX_KEYBOARD_KEYS 300
 #define MAX_MOUSE_BUTTONS 5
@@ -15,7 +16,7 @@ enum class KeyState
 	UP
 };
 
-class ModuleInput : public Module 
+class ModuleInput : public Module, public IEventListener
 {
 public: 
 
@@ -27,7 +28,7 @@ public:
 	UpdateStatus PreUpdate(float dt) override;
 	bool CleanUp() override;
 
-	void ReceiveEvent(const Event& event) override;
+	void OnEvent(const Event& event) override;
 
 	KeyState GetKey(int id) const;
 	KeyState GetMouseButton(int id) const;

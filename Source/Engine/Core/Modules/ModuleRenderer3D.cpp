@@ -27,6 +27,8 @@ ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryManager::MemoryTag::RENDERER);
+
+	App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
 ModuleRenderer3D::~ModuleRenderer3D()
@@ -129,7 +131,7 @@ bool ModuleRenderer3D::CleanUp()
 	return true;
 }
 
-void ModuleRenderer3D::ReceiveEvent(const Event& event)
+void ModuleRenderer3D::OnEvent(const Event& event)
 {
 	switch (event.type)
 	{
@@ -138,22 +140,10 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 			NOUS_INFO("[%s] Event Received: WINDOW_RESIZED (%d) - Context: %d, %d",
 					  __FUNCTION__,
 					  static_cast<int>(event.type),
-					  event.context._i64[0],
-					  event.context._i64[1]);
+					  event.ctx.i32[0],
+					  event.ctx.i32[1]);
 
-			mRendererFrontend->OnResized(event.context._i64[0], event.context._i64[1]);
-
-			break;
-		}
-		case EventType::INPUT_EVENT:
-		{
-			break;
-		}
-		default:
-		{
-			NOUS_WARN("[%s] Default case. Unhandled event received! (%d)",
-					  __FUNCTION__,
-					  static_cast<int>(event.type));
+			mRendererFrontend->OnResized(event.ctx.i32[0], event.ctx.i32[1]);
 
 			break;
 		}

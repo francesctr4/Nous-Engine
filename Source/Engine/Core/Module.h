@@ -23,8 +23,6 @@ public:
 
 	NOUS_ENGINE_API virtual bool CleanUp();
 
-	NOUS_ENGINE_API virtual void ReceiveEvent(const Event& event);
-
 public:
 
 	Application* App;

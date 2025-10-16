@@ -5,6 +5,7 @@
 #include <Engine/Core/EngineExport.h>
 #include <string>
 #include <vector>
+#include "Engine/Systems/Event System/IEventListener.h"
 
 class Scene;
 class GameObject;
@@ -12,7 +13,7 @@ class Camera;
 class IScript;
 class ScriptManager;
 
-class ModuleScene : public Module
+class ModuleScene : public Module, public IEventListener
 {
 public:
 
@@ -31,7 +32,7 @@ public:
 
 	bool CleanUp() override;
 
-	void ReceiveEvent(const Event& event) override;
+	void OnEvent(const Event& event) override;
 
 	NOUS_ENGINE_API void SaveScene(const std::string& path);
 	NOUS_ENGINE_API void LoadScene(const std::string& path);

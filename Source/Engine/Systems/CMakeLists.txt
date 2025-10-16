@@ -57,6 +57,9 @@ set(SYSTEMS_SOURCES
         "Time Management/TimeManager.h"
         "Time Management/Timer.cpp"
         "Time Management/Timer.h"
+        "Event System/IEventListener.h"
+        "Event System/Event.h"
+        "Event System/EventSystem.cpp"
 )
 
 add_library(Systems OBJECT ${SYSTEMS_SOURCES})

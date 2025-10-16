@@ -132,9 +132,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
 	{
-		EventContext ctx{};
-		ctx._u64[0] = reinterpret_cast<uint64>(&e);
-		App->BroadcastEvent(Event(EventType::INPUT_EVENT, ctx));
+        App->BroadcastEvent(Event(EventType::INPUT_EVENT, SendContext(&e)));
 
 		switch (e.type)
 		{
@@ -198,7 +196,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 					cachedFramebufferWidth = width;
 					cachedFramebufferHeight = height;
 
-                    App->BroadcastEvent(Event(EventType::WINDOW_RESIZED, { ._i64 = { cachedFramebufferWidth, cachedFramebufferHeight } }));
+					App->BroadcastEvent(Event(EventType::WINDOW_RESIZED, SendContext(cachedFramebufferWidth, cachedFramebufferHeight)));
                 }
 
                 break;
@@ -216,7 +214,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			case SDL_EVENT_DROP_FILE:
 			{ 
 				const char* droppedFileDirectory = e.drop.data;
-				App->BroadcastEvent(Event(EventType::DROP_FILE, { .c = e.drop.data }));
+				App->BroadcastEvent(Event(EventType::DROP_FILE, SendContext(e.drop.data)));
 				SDL_free(&droppedFileDirectory);
 
 				break;
@@ -242,7 +240,7 @@ bool ModuleInput::CleanUp()
 	return true;
 }
 
-void ModuleInput::ReceiveEvent(const Event& event)
+void ModuleInput::OnEvent(const Event& event)
 {
 	switch (event.type)
 	{

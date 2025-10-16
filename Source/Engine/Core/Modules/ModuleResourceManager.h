@@ -4,13 +4,14 @@
 #include <Engine/Core/Module.h>
 #include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
 #include <Engine/Core/EngineExport.h>
+#include "Engine/Systems/Event System/IEventListener.h"
 #include <mutex>
 #include <unordered_map>
 
 using UID = uint32;
 struct MetaFileData;
 
-class ModuleResourceManager : public Module
+class ModuleResourceManager : public Module, public IEventListener
 {
 public:
 
@@ -29,7 +30,7 @@ public:
 
 	bool CleanUp() override;
 
-	void ReceiveEvent(const Event& event) override;
+	void OnEvent(const Event& event) override;
 
 	// ------------------------------------------------------------------------ //
 

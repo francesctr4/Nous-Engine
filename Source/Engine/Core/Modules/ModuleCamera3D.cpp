@@ -15,6 +15,8 @@ ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 	sceneViewportHovered = false;
+
+    App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
 ModuleCamera3D::~ModuleCamera3D()
@@ -98,27 +100,19 @@ bool ModuleCamera3D::CleanUp()
 	return true;
 }
 
-void ModuleCamera3D::ReceiveEvent(const Event& event)
+void ModuleCamera3D::OnEvent(const Event& event)
 {
 	switch (event.type)
 	{
 		case EventType::WINDOW_RESIZED:
 		{
 			NOUS_DEBUG("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
-			NOUS_DEBUG("Received context: %d, %d", event.context._i64[0], event.context._i64[1]);
+			NOUS_DEBUG("Received context: %d, %d", event.ctx.i32[0], event.ctx.i32[1]);
 
-			camera.SetAspectRatio((float)event.context._i64[0] / (float)event.context._i64[1]);
+			camera.SetAspectRatio((float)event.ctx.i32[0] / (float)event.ctx.i32[1]);
 
 			break;
 		}
-        case EventType::TEST:
-            break;
-        case EventType::KEY_PRESSED:
-            break;
-        case EventType::SWAP_TEXTURE:
-            break;
-        case EventType::DROP_FILE:
-            break;
     }
 }
 

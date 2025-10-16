@@ -4,7 +4,7 @@
 #include "Editor/EditorExport.h"
 
 #include "Engine/Core/Module.h"
-#include "Engine/Systems/Event System/EventSystem.h"
+#include "Engine/Systems/Event System/IEventListener.h"
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"
 
 #include <vector>
@@ -33,8 +33,6 @@ public:
 	NOUS_EDITOR_API bool CleanUp() override;
 	NOUS_EDITOR_API void DrawEditor() override;
 	NOUS_EDITOR_API void OnEvent(const Event& event) override;
-
-	NOUS_EDITOR_API void ProcessInputEvent(const SDL_Event* event);
 
 	// Array to store ImFont pointers
 	static std::vector<ImFont*> fonts;

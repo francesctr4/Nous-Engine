@@ -33,8 +33,3 @@ bool Module::CleanUp()
 {
 	return true;
 }
-
-void Module::ReceiveEvent(const Event& event)
-{
-
-}

@@ -1,57 +1,100 @@
-#ifndef EVENTSYSTEM_H
-#define EVENTSYSTEM_H
+#ifndef NOUS_ENGINE_EVENTSYSTEM_H
+#define NOUS_ENGINE_EVENTSYSTEM_H
 
-#include <Engine/Core/Globals.h>
-#include <cstring>
+#include "Event.h"
+#include "IEventListener.h"
 
-enum class EventType
-{
-	TEST,
-	KEY_PRESSED,
-	WINDOW_RESIZED,
-	SWAP_TEXTURE,
-	DROP_FILE,
-	INPUT_EVENT,
-    IMGUI_RECREATION
-};
+#include <unordered_map>
+#include <vector>
+#include <queue>
+#include <mutex>
+#include <algorithm>
 
-union EventContext
-{
-	int64 _i64[2];
-	uint64 _u64[2];
-	double _f64[2];
-
-	int32 _i32[4];
-	uint32 _u32[4];
-	float _f32[4];
-
-	int16 _i16[8];
-	uint16 _u16[8];
-
-	int8 _i8[16];
-	uint8 _u8[16];
-
-	const char* c;
-};
-
-struct Event 
-{
-	EventType type;
-	EventContext context;
-	
-	Event(EventType type) : type(type) 
-	{
-		memset(&context, 0, sizeof(EventContext));
-	}
-
-	Event(EventType type, const EventContext& ctx) : type(type), context(ctx) {}
-};
-
-class IEventListener
+class EventSystem
 {
 public:
-    virtual ~IEventListener() = default;
-    virtual void OnEvent(const Event& evt) = 0;
+    EventSystem() = default;
+    ~EventSystem() = default;
+
+    // Prevent copying
+    EventSystem(const EventSystem&) = delete;
+    EventSystem& operator=(const EventSystem&) = delete;
+
+    // ------------------------------------------
+    // 📥 Subscription Management
+    // ------------------------------------------
+    void Subscribe(EventType type, IEventListener* listener)
+    {
+        std::scoped_lock lock(m_Mutex);
+        m_Listeners[type].push_back(listener);
+    }
+
+    void Unsubscribe(EventType type, IEventListener* listener)
+    {
+        std::scoped_lock lock{};
+        auto& vec = m_Listeners[type];
+        vec.erase(std::remove(vec.begin(), vec.end(), listener), vec.end());
+    }
+
+    // ------------------------------------------
+    // 🚀 Event Broadcasting
+    // ------------------------------------------
+    // Immediate (synchronous)
+    void Broadcast(const Event& evt)
+    {
+        std::scoped_lock lock(m_Mutex);
+
+        auto it = m_Listeners.find(evt.type);
+        if (it != m_Listeners.end())
+        {
+            for (IEventListener* listener : it->second)
+            {
+                if (listener)
+                    listener->OnEvent(evt);
+            }
+        }
+    }
+
+    // Queued (asynchronous / deferred)
+    void Queue(const Event& evt)
+    {
+        std::scoped_lock lock(m_Mutex);
+        m_Queue.push(evt);
+    }
+
+    // ------------------------------------------
+    // 🌀 Dispatch queued events (called each frame)
+    // ------------------------------------------
+    void DispatchQueued()
+    {
+        std::queue<Event> tempQueue;
+
+        { // swap under lock
+            std::scoped_lock lock(m_Mutex);
+            std::swap(tempQueue, m_Queue);
+        }
+
+        while (!tempQueue.empty())
+        {
+            Broadcast(tempQueue.front());
+            tempQueue.pop();
+        }
+    }
+
+    // ------------------------------------------
+    // 🔧 Utilities
+    // ------------------------------------------
+    void Clear()
+    {
+        std::scoped_lock lock(m_Mutex);
+        m_Listeners.clear();
+        while (!m_Queue.empty()) m_Queue.pop();
+    }
+
+private:
+    std::unordered_map<EventType, std::vector<IEventListener*>> m_Listeners;
+    std::queue<Event> m_Queue;
+    std::mutex m_Mutex;
 };
 
-#endif // EVENTSYSTEM_H
+#endif //NOUS_ENGINE_EVENTSYSTEM_H

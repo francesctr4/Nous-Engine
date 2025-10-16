@@ -5,8 +5,9 @@
 #include <Engine/Systems/Camera System/Camera.h>
 
 #include <glm/glm.hpp>
+#include "Engine/Systems/Event System/IEventListener.h"
 
-class ModuleCamera3D : public Module
+class ModuleCamera3D : public Module, public IEventListener
 {
 public:
 
@@ -22,7 +23,7 @@ public:
 
 	bool CleanUp() override;
 
-	void ReceiveEvent(const Event& event) override;
+	void OnEvent(const Event& event) override;
 
 	Camera* GetCamera();
 
