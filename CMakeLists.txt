@@ -13,6 +13,7 @@ cmake_policy(SET CMP0111 NEW)
 # Project Metadata
 # ==============================
 set(PROJECT_NAME "Nous-Engine")
+set(EDITOR_NAME "Nous-Editor")
 
 project(${PROJECT_NAME}
         VERSION 0.4.0
@@ -48,7 +49,6 @@ endif()
 find_package(SDL3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(assimp CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
 find_package(parson CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
 find_package(glm REQUIRED)
@@ -97,7 +97,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         SDL3::SDL3
         Vulkan::Vulkan
         assimp::assimp
-        imgui::imgui
         parson::parson
         Tracy::TracyClient
         glm::glm

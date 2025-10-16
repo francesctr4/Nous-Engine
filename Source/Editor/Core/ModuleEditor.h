@@ -1,22 +1,22 @@
 #ifndef MODULEEDITOR_H
 #define MODULEEDITOR_H
 
-#include <Engine/Core/Module.h>
-#include <Engine/Renderer/Frontend/IEditorOverlay.h>
-#include <Editor/IEditorWindow.inl>
+#include "Editor/EditorExport.h"
+
+#include "Engine/Core/Module.h"
+#include "Engine/Systems/Event System/EventSystem.h"
+#include "Engine/Renderer/Frontend/IEditorOverlay.h"
 
 #include <vector>
 #include <memory>
 #include <string>
-
-#include <Editor/EditorExport.h>
-#include <Engine/Systems/Event System/EventSystem.h>
 
 union SDL_Event;
 struct VulkanContext;
 enum class RendererBackendType;
 struct ImGuiIO;
 struct ImFont;
+class IEditorWindow;
 
 class ModuleEditor : public Module, public IEditorOverlay, public IEventListener
 {

@@ -3,76 +3,67 @@
 # ==============================
 
 set(EDITOR_SOURCES
-        ModuleEditor.cpp
-        ModuleEditor.h
+        Core/ModuleEditor.cpp
+        Core/ModuleEditor.h
 
-        ImGuiConfig/ImGuiCustom.cpp
-        ImGuiConfig/ImGuiCustom.h
+        UI/ImGuiConfig/ImGuiCustom.cpp
+        UI/ImGuiConfig/ImGuiCustom.h
 
-        Windows/AssetsBrowser.cpp
-        Windows/AssetsBrowser.h
-        Windows/GameViewport.cpp
-        Windows/GameViewport.h
-        Windows/JobQueueWindow.cpp
-        Windows/JobQueueWindow.h
-        Windows/MainMenuBar.cpp
-        Windows/MainMenuBar.h
-        Windows/MultithreadingWindow.cpp
-        Windows/MultithreadingWindow.h
-        Windows/ResourcesWindow.cpp
-        Windows/ResourcesWindow.h
-        Windows/SceneViewport.cpp
-        Windows/SceneViewport.h
-        Windows/HierarchyWindow.cpp
-        Windows/HierarchyWindow.h
-        Windows/InspectorWindow.cpp
-        Windows/InspectorWindow.h
-        Windows/ConsoleWindow.cpp
-        Windows/ConsoleWindow.h
+        UI/Windows/AssetsBrowser.cpp
+        UI/Windows/AssetsBrowser.h
+        UI/Windows/GameViewport.cpp
+        UI/Windows/GameViewport.h
+        UI/Windows/JobQueueWindow.cpp
+        UI/Windows/JobQueueWindow.h
+        UI/Windows/MainMenuBar.cpp
+        UI/Windows/MainMenuBar.h
+        UI/Windows/MultithreadingWindow.cpp
+        UI/Windows/MultithreadingWindow.h
+        UI/Windows/ResourcesWindow.cpp
+        UI/Windows/ResourcesWindow.h
+        UI/Windows/SceneViewport.cpp
+        UI/Windows/SceneViewport.h
+        UI/Windows/HierarchyWindow.cpp
+        UI/Windows/HierarchyWindow.h
+        UI/Windows/InspectorWindow.cpp
+        UI/Windows/InspectorWindow.h
+        UI/Windows/ConsoleWindow.cpp
+        UI/Windows/ConsoleWindow.h
 
-        IEditorWindow.inl
+        UI/IEditorWindow.inl
 
         EditorExport.h
 )
 
-add_library(Nous-Editor SHARED ${EDITOR_SOURCES})
-add_library(NousEngine::Editor ALIAS Nous-Editor)
+add_library(${EDITOR_NAME} SHARED ${EDITOR_SOURCES})
+add_library(NousEngine::Editor ALIAS ${EDITOR_NAME})
 
-target_compile_definitions(Nous-Editor PRIVATE NOUS_EDITOR_EXPORTS)
+target_compile_definitions(${EDITOR_NAME} PRIVATE NOUS_EDITOR_EXPORTS)
 
 # Include the root source dir for headers like "Core/Application.h"
-target_include_directories(Nous-Editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(${EDITOR_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 # Find dependencies
 find_package(SDL3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
-find_package(assimp CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
-find_package(parson CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
-find_package(glm REQUIRED)
 
 # Link editor dependencies
-target_link_libraries(Nous-Editor PUBLIC
+target_link_libraries(${EDITOR_NAME} PUBLIC
         NousEngine::Engine
         SDL3::SDL3
         Vulkan::Vulkan
-        assimp::assimp
         imgui::imgui
-        parson::parson
         Tracy::TracyClient
-        glm::glm
 )
 
-add_dependencies(Nous-Editor ${PROJECT_NAME})
+add_dependencies(${EDITOR_NAME} ${PROJECT_NAME})
 
-set_target_properties(Nous-Editor PROPERTIES
+set_target_properties(${EDITOR_NAME} PROPERTIES
         CXX_STANDARD 23
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS OFF
-)
-
-set_target_properties(Nous-Editor PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"

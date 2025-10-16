@@ -1,7 +1,7 @@
 #ifndef MULTITHREADINGWINDOW_H
 #define MULTITHREADINGWINDOW_H
 
-#include <Editor/IEditorWindow.inl>
+#include "Editor/UI/IEditorWindow.inl"
 
 class Multithreading : public IEditorWindow
 {

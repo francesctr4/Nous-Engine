@@ -1,22 +1,22 @@
-#include <Editor/Windows/SceneViewport.h>
+#include "SceneViewport.h"
 
-#include <Engine/Core/Modules/ModuleResourceManager.h>
-#include <Engine/Core/Modules/ModuleCamera3D.h>
+#include "Engine/Core/Modules/ModuleResourceManager.h"
+#include "Engine/Core/Modules/ModuleCamera3D.h"
 
-#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
-#include <Engine/Renderer/Backend/Vulkan/VulkanBackend.h>
+#include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
+#include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
 
-#include <Engine/Core/Application.h>
+#include "Engine/Core/Application.h"
 
-#include <Engine/ECS/Components/ComponentTransform.h>
-#include <Engine/Core/Modules/ModuleScene.h>
-#include <Engine/Core/Modules/ModuleInput.h>
-#include <Engine/ECS/GameObject.h>
-#include <Engine/Multithreading/NOUS_JobSystem.h>
+#include "Engine/ECS/Components/ComponentTransform.h"
+#include "Engine/Core/Modules/ModuleScene.h"
+#include "Engine/Core/Modules/ModuleInput.h"
+#include "Engine/ECS/GameObject.h"
+#include "Engine/Multithreading/NOUS_JobSystem.h"
+#include "Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h"
 
-#include <imgui.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanImGuiBridge.h>
-#include <imgui_impl_vulkan.h>
+#include "imgui.h"
+#include "imgui_impl_vulkan.h"
 
 SceneViewport::SceneViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
@@ -84,7 +84,7 @@ void SceneViewport::Draw()
             {
                 ImGui::Image(
                         static_cast<ImTextureID>(
-                                Engine_GetViewportTexture(
+                                NOUS_ImGuiVulkanResources::GetViewportTexture(
                                         vkContext->imGuiResources.m_ViewportDescriptorSets[vkContext->imageIndex])),
                         squareSize, uvMin, uvMax);
             }

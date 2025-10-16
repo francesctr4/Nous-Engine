@@ -1,12 +1,12 @@
-#include <Editor/Windows/ResourcesWindow.h>
+#include "ResourcesWindow.h"
 
-#include <Engine/Core/Modules/ModuleResourceManager.h>
-#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
-#include <Engine/Core/Application.h>
+#include "Engine/Core/Modules/ModuleResourceManager.h"
+#include "Engine/Systems/Resource Manager/Resource Types/Resource.h"
+#include "Engine/Core/Application.h"
 
 #include <unordered_map>
 
-#include <imgui.h>
+#include "imgui.h"
 
 Resources::Resources(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)

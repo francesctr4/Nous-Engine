@@ -1,8 +1,8 @@
 #ifndef CONSOLEWINDOW_H
 #define CONSOLEWINDOW_H
 
-#include <Editor/IEditorWindow.inl>
-#include <Engine/Utils/Logger.h>
+#include "Editor/UI/IEditorWindow.inl"
+#include "Engine/Utils/Logger.h"
 #include <vector>
 #include <string>
 #include <functional>

@@ -1,8 +1,9 @@
 #ifndef SCENEVIEWPORT_H
 #define SCENEVIEWPORT_H
 
-#include <Editor/IEditorWindow.inl>
-#include <Editor/EditorExport.h>
+#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/EditorExport.h"
+#include <string>
 
 struct VulkanContext;
 

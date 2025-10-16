@@ -4,8 +4,6 @@
 #include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 #include <Engine/Core/EngineExport.h>
 
-typedef unsigned long long ImTextureID;
-
 namespace NOUS_ImGuiVulkanResources
 {
 	NOUS_ENGINE_API void CreateImGuiVulkanResources(VulkanContext* vkContext);
@@ -23,13 +21,7 @@ namespace NOUS_ImGuiVulkanResources
 
 	// ----------------------------------------------------------------------------------- //
 
-	NOUS_ENGINE_API void CreateSceneViewportDescriptorSets(VulkanContext* vkContext);
-	NOUS_ENGINE_API void DestroySceneViewportDescriptorSets(VulkanContext* vkContext);
-
-	NOUS_ENGINE_API void CreateGameViewportDescriptorSets(VulkanContext* vkContext);
-	NOUS_ENGINE_API void DestroyGameViewportDescriptorSets(VulkanContext* vkContext);
-
-	NOUS_ENGINE_API ImTextureID GetViewportTexture(VkDescriptorSet descriptorSet);
+	NOUS_ENGINE_API unsigned long long GetViewportTexture(VkDescriptorSet descriptorSet);
 
 }
 

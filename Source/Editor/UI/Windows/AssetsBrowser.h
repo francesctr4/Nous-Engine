@@ -1,8 +1,9 @@
 #ifndef ASSETSBROWSER_H
 #define ASSETSBROWSER_H
 
-#include <Editor/IEditorWindow.inl>
-#include <Engine/Utils/MathUtils.h>
+#include "Editor/UI/IEditorWindow.inl"
+#include "Engine/Utils/MathUtils.h"
+#include "Engine/Core/Globals.h"
 
 #include <unordered_map>
 #include <stack>
@@ -10,7 +11,7 @@
 #include <memory>
 
 // ImGui
-#include <imgui.h>
+#include "imgui.h"
 
 // Extra functions to add deletion support to ImGuiSelectionBasicStorage
 struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage

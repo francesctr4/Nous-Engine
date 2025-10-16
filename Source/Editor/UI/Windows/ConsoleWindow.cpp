@@ -1,7 +1,8 @@
-#include <Editor/Windows/ConsoleWindow.h>
+#include "ConsoleWindow.h"
 #include <algorithm>
+#include "Engine/Utils/Logger.h"
 
-#include <imgui.h>
+#include "imgui.h"
 
 // Colors for different log levels
 ImVec4 levelColors[6] = {

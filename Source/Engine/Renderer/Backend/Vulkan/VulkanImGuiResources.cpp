@@ -3,10 +3,6 @@
 #include <Engine/Renderer/Backend/Vulkan/VulkanUtils.h>
 #include <Engine/Renderer/Backend/Vulkan/VulkanDevice.h>
 
-#include <imgui.h>
-#include <imgui_stdlib.h>
-#include <imgui_impl_vulkan.h>
-
 void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkContext)
 {
 	CreateImGuiDescriptorPool(vkContext);
@@ -232,47 +228,7 @@ void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkCo
 	);
 }
 
-// ------------------------------------------------------------------------------------------- //
-
-void NOUS_ImGuiVulkanResources::CreateSceneViewportDescriptorSets(VulkanContext* vkContext)
+unsigned long long int NOUS_ImGuiVulkanResources::GetViewportTexture(VkDescriptorSet descriptorSet)
 {
-	for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
-	{
-		vkContext->imGuiResources.m_ViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(
-			vkContext->imGuiResources.m_ViewportTextureSampler,
-			vkContext->imGuiResources.m_ViewportImages[i].view,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	}
-}
-
-void NOUS_ImGuiVulkanResources::DestroySceneViewportDescriptorSets(VulkanContext* vkContext)
-{
-	for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
-	{
-		ImGui_ImplVulkan_RemoveTexture(vkContext->imGuiResources.m_ViewportDescriptorSets[i]);
-	}
-}
-
-void NOUS_ImGuiVulkanResources::CreateGameViewportDescriptorSets(VulkanContext* vkContext)
-{
-	for (uint32 i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
-	{
-		vkContext->imGuiResources.m_GameViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(
-			vkContext->imGuiResources.m_GameViewportTextureSampler,
-			vkContext->imGuiResources.m_GameViewportImages[i].view,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	}
-}
-
-void NOUS_ImGuiVulkanResources::DestroyGameViewportDescriptorSets(VulkanContext* vkContext)
-{
-	for (uint32 i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
-	{
-		ImGui_ImplVulkan_RemoveTexture(vkContext->imGuiResources.m_GameViewportDescriptorSets[i]);
-	}
-}
-
-ImTextureID NOUS_ImGuiVulkanResources::GetViewportTexture(VkDescriptorSet descriptorSet)
-{
-	return reinterpret_cast<ImTextureID>(descriptorSet);
+	return reinterpret_cast<unsigned long long int>(descriptorSet);
 }

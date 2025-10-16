@@ -1,10 +1,10 @@
-#include <Editor/Windows/JobQueueWindow.h>
+#include "JobQueueWindow.h"
 
-#include <Engine/Core/Application.h>
-#include <Engine/Multithreading/NOUS_JobSystem.h>
-#include <Engine/Multithreading/NOUS_Multithreading.h>
+#include "Engine/Core/Application.h"
+#include "Engine/Multithreading/NOUS_JobSystem.h"
+#include "Engine/Multithreading/NOUS_Multithreading.h"
 
-#include <imgui.h>
+#include "imgui.h"
 
 JobQueue::JobQueue(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)

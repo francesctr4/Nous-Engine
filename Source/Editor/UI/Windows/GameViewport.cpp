@@ -1,11 +1,11 @@
-#include <Editor/Windows/GameViewport.h>
+#include "GameViewport.h"
 
-#include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
-#include <Engine/Renderer/Backend/Vulkan/VulkanImGuiBridge.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanBackend.h>
+#include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
+#include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
+#include "Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h"
 
-#include <imgui.h>
-#include <imgui_impl_vulkan.h>
+#include "imgui.h"
+#include "imgui_impl_vulkan.h"
 
 GameViewport::GameViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
@@ -69,7 +69,7 @@ void GameViewport::Draw()
 
             ImGui::Image(
                     static_cast<ImTextureID>(
-                            Engine_GetViewportTexture(
+                            NOUS_ImGuiVulkanResources::GetViewportTexture(
                                     vkContext->imGuiResources.m_GameViewportDescriptorSets[vkContext->imageIndex])),
                     squareSize, uvMin, uvMax);
 

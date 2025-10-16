@@ -1,8 +1,8 @@
 #ifndef GAMEVIEWPORT_H
 #define GAMEVIEWPORT_H
 
-#include <Editor/IEditorWindow.inl>
-#include <Editor/EditorExport.h>
+#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/EditorExport.h"
 
 class GameViewport : public IEditorWindow
 {

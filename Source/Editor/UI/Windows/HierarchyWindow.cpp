@@ -1,12 +1,12 @@
-#include <Editor/Windows/HierarchyWindow.h>
+#include "HierarchyWindow.h"
 
-#include <Engine/ECS/Scene.h>
-#include <Engine/ECS/GameObject.h>
+#include "Engine/ECS/Scene.h"
+#include "Engine/ECS/GameObject.h"
 
-#include <Engine/Core/Application.h>
-#include <Engine/Core/Modules/ModuleScene.h>
+#include "Engine/Core/Application.h"
+#include "Engine/Core/Modules/ModuleScene.h"
 
-#include <imgui.h>
+#include "imgui.h"
 
 HierarchyWindow::HierarchyWindow(const char* title, bool start_open)
         : IEditorWindow(title, nullptr, start_open) {
