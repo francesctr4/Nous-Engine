@@ -267,12 +267,12 @@ float Application::GetMS()
     return dt * 1000;
 }
 
-void Application::QueueEvent(const Event &evt)
+void Application::QueueEvent(const Event &event)
 {
-    eventSystem->Queue(evt);
+    eventSystem->Queue(event);
 }
 
-void Application::BroadcastEvent(const Event &evt)
+void Application::BroadcastEvent(const Event &event)
 {
-    eventSystem->Broadcast(evt);
+    eventSystem->Broadcast(event);
 }

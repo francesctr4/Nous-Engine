@@ -62,6 +62,7 @@ public:
 
 	bool isMinimized;
 
+    // ------------- EVENT SYSTEM ------------- //
     EventSystem* eventSystem;
 
 	// ------------- MULTITHREADING ------------- //
