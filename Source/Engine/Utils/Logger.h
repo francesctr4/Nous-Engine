@@ -2,7 +2,7 @@
 #define LOGGER_H
 
 #include <Engine/Core/Globals.h>
-#include <Engine/Core/Export.h>
+#include <Engine/Core/EngineExport.h>
 
 #include <vector>
 #include <string>
@@ -37,22 +37,22 @@ typedef enum LogLevel {
 
 } LogLevel;
 
-NOUS_API bool InitializeLogging();
-NOUS_API void ShutdownLogging();
+NOUS_ENGINE_API bool InitializeLogging();
+NOUS_ENGINE_API void ShutdownLogging();
 
-void AppendToLogFile(const char* message);
+NOUS_ENGINE_API void AppendToLogFile(const char* message);
 
-NOUS_API void LogOutput(LogLevel level, const char* message, ...);
+NOUS_ENGINE_API void LogOutput(LogLevel level, const char* message, ...);
 
-void SetLogCallback(std::function<void(LogLevel, const char*)> callback);
-const std::deque<std::pair<LogLevel, std::string>>& GetLogHistory();
-void ClearLogHistory();
+NOUS_ENGINE_API void SetLogCallback(std::function<void(LogLevel, const char*)> callback);
+NOUS_ENGINE_API const std::deque<std::pair<LogLevel, std::string>>& GetLogHistory();
+NOUS_ENGINE_API void ClearLogHistory();
 
-void SetLogLevelEnabled(LogLevel level, bool enabled);
-bool IsLogLevelEnabled(LogLevel level);
+NOUS_ENGINE_API void SetLogLevelEnabled(LogLevel level, bool enabled);
+NOUS_ENGINE_API bool IsLogLevelEnabled(LogLevel level);
 
-void SetLoggingPaused(bool paused);
-bool IsLoggingPaused();
+NOUS_ENGINE_API void SetLoggingPaused(bool paused);
+NOUS_ENGINE_API bool IsLoggingPaused();
 
 #ifndef NOUS_FATAL
 // Logs a fatal-level message.

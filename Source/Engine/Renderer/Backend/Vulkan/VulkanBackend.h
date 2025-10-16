@@ -2,6 +2,7 @@
 #define VULKANBACKEND_H
 
 #include <Engine/Renderer/Backend/RendererBackend.h>
+#include <Engine/Core/EngineExport.h>
 
 class ResourceMesh;
 class ResourceMaterial;
@@ -57,7 +58,7 @@ public:
 	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry) override;
     void DestroyGeometry(ResourceMesh* geometry) noexcept override;
 
-	static VulkanContext* GetVulkanContext();
+	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 
 	void ProcessPendingSubmissions();
 

@@ -6,6 +6,8 @@
 
 #include <unordered_map>
 #include <stack>
+#include <vector>
+#include <memory>
 
 // ImGui
 #include <imgui.h>

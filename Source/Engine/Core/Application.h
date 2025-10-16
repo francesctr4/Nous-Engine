@@ -1,15 +1,17 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include <Engine/Core/Export.h>
+#include <Engine/Core/EngineExport.h>
 #include <Engine/Core/UpdateStatus.h>
+#include <Engine/Systems/Event System/EventSystem.h>
+#include <vector>
 
 // Forward declarations
 struct Event;
 class Timer;
 namespace NOUS_Multithreading { class NOUS_JobSystem; }
 
-constexpr uint8_t NUM_MODULES = 8;
+constexpr uint8_t NUM_MODULES = 7;
 
 class Module;
 class ModuleWindow;
@@ -19,27 +21,31 @@ class ModuleCamera3D;
 class ModuleResourceManager;
 class ModuleScene;
 class ModuleRenderer3D;
-class ModuleEditor;
 
 class Application
 {
 public:
 
-	NOUS_API Application();
-	NOUS_API ~Application();
+	NOUS_ENGINE_API Application();
+	NOUS_ENGINE_API ~Application();
 
-	NOUS_API bool Awake();
-	NOUS_API UpdateStatus Update();
-	NOUS_API bool CleanUp();
+	NOUS_ENGINE_API bool Awake();
+	NOUS_ENGINE_API bool Start();
+	NOUS_ENGINE_API UpdateStatus Update();
+	NOUS_ENGINE_API bool CleanUp();
 
-	NOUS_API void BroadcastEvent(const Event& event);
+	NOUS_ENGINE_API void BroadcastEvent(const Event& event);
 
-	NOUS_API void SetTargetFPS(float FPS);
-	NOUS_API float GetTargetFPS();
+	NOUS_ENGINE_API void SetTargetFPS(float FPS);
+	NOUS_ENGINE_API float GetTargetFPS();
 
-	NOUS_API float GetFPS();
-	NOUS_API float GetDT();
-	NOUS_API float GetMS();
+	NOUS_ENGINE_API float GetFPS();
+	NOUS_ENGINE_API float GetDT();
+	NOUS_ENGINE_API float GetMS();
+
+	// New
+	NOUS_ENGINE_API void RegisterEventListener(IEventListener* listener);
+	NOUS_ENGINE_API void UnregisterEventListener(IEventListener* listener);
 
 private:
 
@@ -55,7 +61,6 @@ public:
 	ModuleResourceManager* resourceManager;
 	ModuleScene* scene;
 	ModuleRenderer3D* renderer;
-	ModuleEditor* editor;
 
 	bool isMinimized;
 
@@ -63,6 +68,8 @@ public:
 	NOUS_Multithreading::NOUS_JobSystem* jobSystem;
 
 private:
+
+	std::vector<IEventListener*> m_ExternalListeners;
 
 	Module* listModules[NUM_MODULES];
 
@@ -73,6 +80,6 @@ private:
 	Timer* updateTitleTimer;
 };
 
-extern NOUS_API Application* External;
+extern NOUS_ENGINE_API Application* External;
 
 #endif // APPLICATION_H

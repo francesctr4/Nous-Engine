@@ -4,8 +4,6 @@
 #include <Engine/Core/Globals.h>
 #include <Engine/Renderer/RendererTypes.h>
 #include <Engine/Core/UpdateStatus.h>
-#include <vector>
-#include <memory>
 
 // Editor Window Interface
 
@@ -35,56 +33,20 @@ protected:
     bool* p_open;       // Pointer to the open/close state
 };
 
-static IEditorWindow* FindWindowByTitle(const std::vector<std::unique_ptr<IEditorWindow>>& windows, const char* title) {
-    auto it = std::find_if(windows.begin(), windows.end(), [&title](const std::unique_ptr<IEditorWindow>& window) {
-        return (strcmp(window->GetTitle(), title) == 0);
-        });
-    return it != windows.end() ? it->get() : nullptr;
-}
+//static IEditorWindow* FindWindowByTitle(const std::vector<std::unique_ptr<IEditorWindow>>& windows, const char* title) {
+//    auto it = std::find_if(windows.begin(), windows.end(), [&title](const std::unique_ptr<IEditorWindow>& window) {
+//        return (strcmp(window->GetTitle(), title) == 0);
+//        });
+//    return it != windows.end() ? it->get() : nullptr;
+//}
 
-static void ToggleWindowState(std::vector<std::unique_ptr<IEditorWindow>>& windows, const char* title)
-{
-    IEditorWindow* window_ptr = FindWindowByTitle(windows, title);
-    if (window_ptr && !(window_ptr)->IsOpen()) 
-    {
-        (window_ptr)->Open();
-    }
-}
-
-#ifdef _WIN32
-#include <Windows.h>
-#include <shellapi.h>
-#elif defined(__APPLE__)
-#include <cstdlib>
-    #include <unistd.h>
-#elif defined(__linux__)
-    #include <cstdlib>
-    #include <unistd.h>
-    #include <sys/wait.h>
-#endif
-
-static bool RequestBrowser(const char* url)
-{
-#ifdef _WIN32
-    HINSTANCE result = ShellExecuteA(nullptr, "open", url, nullptr, nullptr, SW_SHOWNORMAL);
-    return (INT_PTR)result > 32; // ShellExecute devuelve > 32 si es exitoso
-#elif defined(__APPLE__)
-    pid_t pid = fork();
-    if (pid == 0) {
-        execl("/usr/bin/open", "open", url, nullptr);
-        exit(1);
-    }
-    return pid > 0;
-#elif defined(__linux__)
-    pid_t pid = fork();
-    if (pid == 0) {
-        execl("/usr/bin/xdg-open", "xdg-open", url, nullptr);
-        exit(1);
-    }
-    return pid > 0;
-#else
-    return false; // Plataforma no soportada
-#endif
-}
+//static void ToggleWindowState(std::vector<std::unique_ptr<IEditorWindow>>& windows, const char* title)
+//{
+//    IEditorWindow* window_ptr = FindWindowByTitle(windows, title);
+//    if (window_ptr && !(window_ptr)->IsOpen())
+//    {
+//        (window_ptr)->Open();
+//    }
+//}
 
 #endif // IEDITORWINDOW_INL

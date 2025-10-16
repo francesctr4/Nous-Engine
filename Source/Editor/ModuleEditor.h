@@ -1,34 +1,40 @@
 #ifndef MODULEEDITOR_H
 #define MODULEEDITOR_H
 
-#include "Engine/Core/Module.h"
+#include <Engine/Core/Module.h>
+#include <Engine/Renderer/Frontend/IEditorOverlay.h>
+#include <Editor/IEditorWindow.inl>
 
 #include <vector>
 #include <memory>
 #include <string>
 
+#include <Editor/EditorExport.h>
+#include <Engine/Systems/Event System/EventSystem.h>
+
 union SDL_Event;
 struct VulkanContext;
 enum class RendererBackendType;
-class IEditorWindow;
 struct ImGuiIO;
 struct ImFont;
 
-class ModuleEditor : public Module
+class ModuleEditor : public Module, public IEditorOverlay, public IEventListener
 {
 public:
 
 	// Constructor
-	ModuleEditor(Application* app);
+	NOUS_EDITOR_API ModuleEditor(Application* app);
 
 	// Destructor
-	virtual ~ModuleEditor();
+	NOUS_EDITOR_API virtual ~ModuleEditor();
 
-	bool Awake() override;
-	bool CleanUp() override;
+	NOUS_EDITOR_API bool Awake() override;
+    NOUS_EDITOR_API bool Start() override;
+	NOUS_EDITOR_API bool CleanUp() override;
+	NOUS_EDITOR_API void DrawEditor() override;
+	NOUS_EDITOR_API void OnEvent(const Event& event) override;
 
-	void ProcessInputEvent(const SDL_Event* event);
-	void DrawEditor();
+	NOUS_EDITOR_API void ProcessInputEvent(const SDL_Event* event);
 
 	// Array to store ImFont pointers
 	static std::vector<ImFont*> fonts;

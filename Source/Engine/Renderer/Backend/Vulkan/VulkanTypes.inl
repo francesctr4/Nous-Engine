@@ -10,6 +10,7 @@
 
 #include <vulkan/vulkan.h>
 #include <Engine/Systems/Memory Manager/Custom Allocators/FreeList.h>
+#include <Engine/Core/EngineExport.h>
 
 #include <future>
 #include <array>
@@ -380,7 +381,7 @@ struct VulkanSubmitTask {
 /**
  * @brief Stores all the Vulkan Context variables
  */
-struct VulkanContext 
+struct VulkanContext
 {
     float frameDeltaTime;
 

@@ -1,48 +1,54 @@
-#include "Editor/ModuleEditor.h"
-#include "Engine/Core/Modules/ModuleRenderer3D.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Core/Modules/ModuleCamera3D.h"
-#include "Engine/Core/Application.h"
+#include <Editor/ModuleEditor.h>
+#include <Engine/Core/Modules/ModuleRenderer3D.h>
+#include <Engine/Renderer/Frontend/RendererFrontend.h>
+#include <Engine/Core/Modules/ModuleCamera3D.h>
+#include <Engine/Core/Modules/ModuleWindow.h>
+#include <Engine/Core/Application.h>
 
-#include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanExternal.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanUtils.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h"
+#include <Engine/Renderer/Backend/Vulkan/VulkanBackend.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanExternal.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanUtils.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h>
+#include <Engine/Systems/Event System/EventSystem.h>
 
-#include "IEditorWindow.inl"
-#include "Editor/ImGuiConfig/ImGuiCustom.h"
+#include <Editor/IEditorWindow.inl>
+#include <Editor/ImGuiConfig/ImGuiCustom.h>
 
 // ImGui
-#include "imgui.h"
-#include "imgui_stdlib.h"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_vulkan.h"
+#include <imgui.h>
+#include <imgui_stdlib.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_vulkan.h>
 
 #pragma region EDITOR WINDOWS
 
-#include "Editor/Windows/MainMenuBar.h"
-#include "Editor/Windows/AssetsBrowser.h"
-#include "Editor/Windows/ResourcesWindow.h"
-#include "Editor/Windows/MultithreadingWindow.h"
-#include "Editor/Windows/JobQueueWindow.h"
-#include "Editor/Windows/SceneViewport.h"
-#include "Editor/Windows/GameViewport.h"
-#include "Editor/Windows/HierarchyWindow.h"
-#include "Editor/Windows/InspectorWindow.h"
-#include "Editor/Windows/ConsoleWindow.h"
+#include <Editor/Windows/MainMenuBar.h>
+#include <Editor/Windows/AssetsBrowser.h>
+#include <Editor/Windows/ResourcesWindow.h>
+#include <Editor/Windows/MultithreadingWindow.h>
+#include <Editor/Windows/JobQueueWindow.h>
+#include <Editor/Windows/SceneViewport.h>
+#include <Editor/Windows/GameViewport.h>
+#include <Editor/Windows/HierarchyWindow.h>
+#include <Editor/Windows/InspectorWindow.h>
+#include <Editor/Windows/ConsoleWindow.h>
 
 #pragma endregion
+
+#include <vector>
+#include <memory>
 
 ModuleEditor::ModuleEditor(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
 	currentBackendType = RendererBackendType::UNKNOWN;
+	App->RegisterEventListener(this);
 }
 
 ModuleEditor::~ModuleEditor()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+	App->UnregisterEventListener(this);
 }
 
 // Array to store ImFont pointers
@@ -52,6 +58,7 @@ bool ModuleEditor::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	App->renderer->GetRendererFrontend()->SetEditorOverlay(this);
 	currentBackendType = App->renderer->GetRendererFrontend()->GetBackendType();
 
 	// Setup Dear ImGui context
@@ -76,7 +83,7 @@ bool ModuleEditor::Awake()
 			VulkanContext* vkContext = GetVulkanContext();
 
 			// Setup Platform/Renderer backends
-			ImGui_ImplSDL3_InitForVulkan(GetSDLWindowData());
+			ImGui_ImplSDL3_InitForVulkan(App->window->window);
 
 			ImGui_ImplVulkan_InitInfo imGuiVulkanInitInfo{};
 
@@ -122,8 +129,15 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(std::make_unique<GameViewport>("Game"));
 	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
 	AddEditorWindow(std::make_unique<HierarchyWindow>("Hierarchy"));
-    AddEditorWindow(std::make_unique<InspectorWindow>("Inspector"));
-    AddEditorWindow(std::make_unique<ConsoleWindow>("Console"));
+	AddEditorWindow(std::make_unique<InspectorWindow>("Inspector"));
+	AddEditorWindow(std::make_unique<ConsoleWindow>("Console"));
+
+	return true;
+}
+
+bool ModuleEditor::Start()
+{
+	NOUS_TRACE("%s()", __FUNCTION__);
 
 	return true;
 }
@@ -309,4 +323,31 @@ IEditorWindow* ModuleEditor::GetEditorWindowByName(std::string name)
 	}
 
 	return window;
+}
+
+void ModuleEditor::OnEvent(const Event &event)
+{
+	switch (event.type)
+	{
+		case EventType::INPUT_EVENT:
+		{
+			SDL_Event* sdlEvent = reinterpret_cast<SDL_Event*>(event.context._u64[0]);
+			ProcessInputEvent(sdlEvent);
+			break;
+		}
+		case EventType::IMGUI_RECREATION:
+		{
+			VulkanContext* vkContext = GetVulkanContext();
+
+			GameViewport::DestroyGameViewportDescriptorSets();
+			SceneViewport::DestroySceneViewportDescriptorSets();
+
+			NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(vkContext);
+
+			SceneViewport::CreateSceneViewportDescriptorSets();
+			GameViewport::CreateGameViewportDescriptorSets();
+
+			break;
+		}
+	}
 }

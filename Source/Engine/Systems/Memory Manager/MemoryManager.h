@@ -2,7 +2,7 @@
 #define MEMORYMANAGER_H
 
 #include <Engine/Core/Globals.h>
-#include <Engine/Core/Export.h>
+#include <Engine/Core/EngineExport.h>
 
 namespace MemoryManager
 {
@@ -37,23 +37,23 @@ namespace MemoryManager
 		MAX
 	};
 
-    NOUS_API void InitializeMemory(uint64 preAllocatedMemorySize);
+    NOUS_ENGINE_API void InitializeMemory(uint64 preAllocatedMemorySize);
 
-    NOUS_API void ShutdownMemory();
+    NOUS_ENGINE_API void ShutdownMemory();
 
-    NOUS_API void* Allocate(uint64 size, MemoryTag tag);
+    NOUS_ENGINE_API void* Allocate(uint64 size, MemoryTag tag);
 
-    NOUS_API void Free(void* block, uint64 size, MemoryTag tag);
+    NOUS_ENGINE_API void Free(void* block, uint64 size, MemoryTag tag);
 
-    NOUS_API void* ZeroMemory(void* block, uint64 size);
+    NOUS_ENGINE_API void* ZeroMemory(void* block, uint64 size);
 
-    NOUS_API void* CopyMemory(void* destination, const void* source, uint64 size);
+    NOUS_ENGINE_API void* CopyMemory(void* destination, const void* source, uint64 size);
 
-    NOUS_API void* SetMemory(void* destination, int32 value, uint64 size);
+    NOUS_ENGINE_API void* SetMemory(void* destination, int32 value, uint64 size);
 
-    NOUS_API char* GetMemoryUsageStats();
+    NOUS_ENGINE_API char* GetMemoryUsageStats();
 
-    NOUS_API uint64 GetMemoryAllocationCount();
+    NOUS_ENGINE_API uint64 GetMemoryAllocationCount();
 }
 
 // Custom Memory Management Macros to monitorize allocations

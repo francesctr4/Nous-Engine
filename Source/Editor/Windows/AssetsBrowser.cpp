@@ -1,5 +1,5 @@
 #include <Editor/Windows/AssetsBrowser.h>
-#include "Editor/ModuleEditor.h"
+#include <Editor/ModuleEditor.h>
 
 #include <Engine/Systems/File System/FileManager.h>
 #include <Engine/Core/Modules/ModuleFileSystem.h>

@@ -48,8 +48,10 @@ void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkCo
 {
 	// Destroy all
 
-	// Game
-	DestroyGameViewportDescriptorSets(vkContext);
+	//DestroyGameViewportDescriptorSets(vkContext);
+	//DestroySceneViewportDescriptorSets(vkContext);
+
+	// --------------------------
 
 	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
 
@@ -58,9 +60,6 @@ void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkCo
 		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportImages[i]);
 	}
 
-	// Scene
-	DestroySceneViewportDescriptorSets(vkContext);
-
 	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
 
 	for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
@@ -68,13 +67,13 @@ void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkCo
 		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportImages[i]);
 	}
 
-	// Recreate all
-
 	CreateViewportImages(vkContext);
 	CreateViewportDepthResources(vkContext);
 
-	CreateSceneViewportDescriptorSets(vkContext);
-	CreateGameViewportDescriptorSets(vkContext);
+	// ------------------------
+
+	//CreateSceneViewportDescriptorSets(vkContext);
+	//CreateGameViewportDescriptorSets(vkContext);
 }
 
 // ----------------------------------------------------------------------------------- //
@@ -240,8 +239,8 @@ void NOUS_ImGuiVulkanResources::CreateSceneViewportDescriptorSets(VulkanContext*
 	for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
 	{
 		vkContext->imGuiResources.m_ViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(
-			vkContext->imGuiResources.m_ViewportTextureSampler, 
-			vkContext->imGuiResources.m_ViewportImages[i].view, 
+			vkContext->imGuiResources.m_ViewportTextureSampler,
+			vkContext->imGuiResources.m_ViewportImages[i].view,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 }

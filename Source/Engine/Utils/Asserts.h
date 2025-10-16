@@ -2,6 +2,7 @@
 #define ASSERTS_H
 
 #include <Engine/Core/Globals.h>
+#include <Engine/Core/EngineExport.h>
 
 // Disable assertions by commenting out the below line.
 #define NOUS_ASSERTIONS_ENABLED
@@ -21,7 +22,7 @@
 
 #include <cstdint>
 
-void ReportAssertionFailure(const char* expression, const char* message, const char* file, int32_t line);
+NOUS_ENGINE_API void ReportAssertionFailure(const char* expression, const char* message, const char* file, int32_t line);
 
 #define NOUS_ASSERT(expr)                                                \
     {                                                                    \

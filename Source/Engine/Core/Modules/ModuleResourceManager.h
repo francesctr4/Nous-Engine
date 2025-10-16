@@ -3,6 +3,7 @@
 
 #include <Engine/Core/Module.h>
 #include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
+#include <Engine/Core/EngineExport.h>
 #include <mutex>
 #include <unordered_map>
 
@@ -32,15 +33,15 @@ public:
 
 	// ------------------------------------------------------------------------ //
 
-	bool ImportFile(const std::string& path);
+	NOUS_ENGINE_API bool ImportFile(const std::string& path);
 
-	bool ResourceExists(const UID& uid);
-	Resource* CreateResource(const std::string& assetsPath);
-	bool UnloadResource(const UID& UID);
+	NOUS_ENGINE_API bool ResourceExists(const UID& uid);
+	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath);
+	NOUS_ENGINE_API bool UnloadResource(const UID& UID);
 
-	const std::unordered_map<UID, Resource*>& GetResourcesMap() const;
+	NOUS_ENGINE_API const std::unordered_map<UID, Resource*>& GetResourcesMap() const;
 
-	void ClearResources();
+	NOUS_ENGINE_API void ClearResources();
 
 private:
 

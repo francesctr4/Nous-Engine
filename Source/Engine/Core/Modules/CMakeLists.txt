@@ -5,8 +5,6 @@
 set(MODULES_SOURCES
         ModuleCamera3D.cpp
         ModuleCamera3D.h
-        ../../../Editor/ModuleEditor.cpp
-        ../../../Editor/ModuleEditor.h
         ModuleFileSystem.cpp
         ModuleFileSystem.h
         ModuleInput.cpp

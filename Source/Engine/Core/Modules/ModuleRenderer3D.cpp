@@ -145,7 +145,11 @@ void ModuleRenderer3D::ReceiveEvent(const Event& event)
 
 			break;
 		}
-		default: 
+		case EventType::INPUT_EVENT:
+		{
+			break;
+		}
+		default:
 		{
 			NOUS_WARN("[%s] Default case. Unhandled event received! (%d)",
 					  __FUNCTION__,

@@ -2,16 +2,18 @@
 #include <Engine/Renderer/Backend/RendererBackend.h>
 
 #include <Engine/Core/Application.h>
-#include "Editor/ModuleEditor.h"
 
 #include <Engine/Systems/Camera System/Camera.h>
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 #include <Engine/Utils/Logger.h>
+#include <Engine/Renderer/Frontend/IEditorOverlay.h>
 
 RendererFrontend::RendererFrontend()
 {
 	mBackendType = RendererBackendType::UNKNOWN;
 	mBackend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
+
+    mEditorOverlay = nullptr;
 }
 
 RendererFrontend::~RendererFrontend()
@@ -188,7 +190,10 @@ bool RendererFrontend::ExecuteRenderpass(RenderpassType type, const std::functio
 
 void RendererFrontend::DrawEditor()
 {
-	External->editor->DrawEditor();
+    if (mEditorOverlay)
+    {
+        mEditorOverlay->DrawEditor();
+    }
 }
 
 bool RendererFrontend::CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture)
@@ -219,4 +224,19 @@ bool RendererFrontend::CreateGeometry(uint32_t vertexCount, const Vertex3D* vert
 void RendererFrontend::DestroyGeometry(ResourceMesh* geometry)
 {
 	mBackend->DestroyGeometry(geometry);
+}
+
+void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)
+{
+    mEditorOverlay = overlay;
+}
+
+RendererBackendType RendererFrontend::GetBackendType() const noexcept
+{
+    return mBackendType;
+}
+
+void RendererFrontend::SetBackendType(RendererBackendType backendType) noexcept
+{
+    mBackendType = backendType;
 }

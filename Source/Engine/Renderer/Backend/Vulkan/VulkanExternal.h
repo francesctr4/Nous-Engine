@@ -2,12 +2,13 @@
 #define VULKANEXTERNAL_H
 
 #include <Engine/Core/Globals.h>
+#include <Engine/Core/EngineExport.h>
 
 void ExecuteBatchFile(const char* batchFilePath);
 
 // External: ModuleWindow.h
 struct SDL_Window;
-SDL_Window* GetSDLWindowData();
-void GetFramebufferSize(int32* width, int32* height);
+NOUS_ENGINE_API SDL_Window* GetSDLWindowData();
+NOUS_ENGINE_API void GetFramebufferSize(int32* width, int32* height);
 
 #endif // VULKANEXTERNAL_H

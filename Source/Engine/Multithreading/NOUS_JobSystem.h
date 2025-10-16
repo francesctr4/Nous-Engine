@@ -26,32 +26,32 @@ namespace NOUS_Multithreading
 		/// @brief NOUS_JobSystem constructor.
 		/// @param size: Number of worker threads available inside the thread pool.
 		/// @note If size is not specified, c_MAX_HARDWARE_THREADS is used.
-		NOUS_JobSystem(const uint8 size = c_MAX_HARDWARE_THREADS);
+		NOUS_ENGINE_API NOUS_JobSystem(const uint8 size = c_MAX_HARDWARE_THREADS);
 
 		/// @brief NOUS_JobSystem destructor.
 		/// @note Wait until all threads have finished their work and then delete the thread pool.
-		~NOUS_JobSystem();
+		NOUS_ENGINE_API ~NOUS_JobSystem();
 
 		/// @brief Submits a job to the thread pool, to be executed by a free worker thread.
 		/// @note Job executes immediately if thread pool size is 0 (running on Main Thread).
 		/// @param userJob: The function to execute.
 		/// @param jobName: Optional name identifier.
-		void SubmitJob(std::function<void()> userJob, const std::string& jobName = "Unnamed");
+		NOUS_ENGINE_API void SubmitJob(std::function<void()> userJob, const std::string& jobName = "Unnamed");
 
 		/// @brief Blocks until all submitted jobs complete.
-		void WaitForPendingJobs();
+		NOUS_ENGINE_API void WaitForPendingJobs();
 
 		/// @brief Resizes the thread pool to the specified number of threads.
 		/// @param newSize: The new number of worker threads in the pool.
 		/// @note If the size passed is 0, the program becomes single-threaded.
 		/// @note Ensures all current jobs finish before resizing.
-		void Resize(uint8 newSize);
+		NOUS_ENGINE_API void Resize(uint8 newSize);
 
 		/// @return Reference to the underlying thread pool.
-		const NOUS_ThreadPool& GetThreadPool() const;
+		NOUS_ENGINE_API const NOUS_ThreadPool& GetThreadPool() const;
 
 		/// @return Number of pending unprocessed jobs.
-		int GetPendingJobs() const;
+		NOUS_ENGINE_API int GetPendingJobs() const;
 
 	private:
 

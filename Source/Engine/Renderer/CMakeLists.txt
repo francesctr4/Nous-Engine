@@ -51,6 +51,9 @@ set(RENDERER_SOURCES
         Backend/Vulkan/VulkanTypes.inl
         Backend/Vulkan/VulkanUtils.cpp
         Backend/Vulkan/VulkanUtils.h
+        Frontend/IEditorOverlay.h
+        Backend/Vulkan/VulkanImGuiBridge.h
+        Backend/Vulkan/VulkanImGuiBridge.cpp
 )
 
 add_library(Renderer OBJECT ${RENDERER_SOURCES})

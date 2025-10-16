@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_RENDERER_FRONTEND_H
 
 #include <Engine/Renderer/RendererTypes.h>
+#include <Engine/Core/EngineExport.h>
 #include <functional>
 
 // Forward declarations
@@ -9,6 +10,7 @@ class RendererBackend;
 class ResourceMesh;
 class ResourceMaterial;
 class ResourceTexture;
+struct IEditorOverlay;
 
 /**
  * @brief High-level rendering controller.
@@ -18,40 +20,42 @@ class ResourceTexture;
 class RendererFrontend
 {
 public:
-	RendererFrontend();
-	~RendererFrontend();
-
-	// ---------------------------------------------------------------------
-	// Accessors
-	// ---------------------------------------------------------------------
-	void SetBackendType(RendererBackendType backendType) noexcept { mBackendType = backendType; }
-	[[nodiscard]] RendererBackendType GetBackendType() const noexcept { return mBackendType; }
+    NOUS_ENGINE_API RendererFrontend();
+	NOUS_ENGINE_API ~RendererFrontend();
 
 	// ---------------------------------------------------------------------
 	// Lifecycle
 	// ---------------------------------------------------------------------
-	[[nodiscard]] bool Initialize(RendererBackendType backendType);
-	void Shutdown();
-	void OnResized(uint16_t width, uint16_t height);
+	[[nodiscard]] NOUS_ENGINE_API bool Initialize(RendererBackendType backendType);
+	NOUS_ENGINE_API void Shutdown();
+	NOUS_ENGINE_API void OnResized(uint16_t width, uint16_t height);
 
 	// ---------------------------------------------------------------------
 	// Rendering
 	// ---------------------------------------------------------------------
-	[[nodiscard]] FrameResult DrawFrame(RenderPacket* packet);
+	[[nodiscard]] NOUS_ENGINE_API enum FrameResult DrawFrame(RenderPacket* packet);
 
 	// ---------------------------------------------------------------------
 	// GPU Resource Management
 	// ---------------------------------------------------------------------
-	[[nodiscard]] bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture);
-	void DestroyTexture(ResourceTexture* texture);
+	[[nodiscard]] NOUS_ENGINE_API bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture);
+	NOUS_ENGINE_API void DestroyTexture(ResourceTexture* texture);
 
-	[[nodiscard]] bool CreateMaterial(ResourceMaterial* material);
-	void DestroyMaterial(ResourceMaterial* material);
+	[[nodiscard]] NOUS_ENGINE_API bool CreateMaterial(ResourceMaterial* material);
+	NOUS_ENGINE_API void DestroyMaterial(ResourceMaterial* material);
 
-	[[nodiscard]] bool CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices,
+	[[nodiscard]] NOUS_ENGINE_API bool CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices,
 									  uint32_t indexCount, const uint32_t* indices,
 									  ResourceMesh* outGeometry);
-	void DestroyGeometry(ResourceMesh* geometry);
+	NOUS_ENGINE_API void DestroyGeometry(ResourceMesh* geometry);
+
+	// ---------------------------------------------------------------------
+	// Accessors
+	// ---------------------------------------------------------------------
+	NOUS_ENGINE_API void SetBackendType(RendererBackendType backendType) noexcept;
+	[[nodiscard]] NOUS_ENGINE_API enum RendererBackendType GetBackendType() const noexcept;
+
+	NOUS_ENGINE_API void SetEditorOverlay(IEditorOverlay* overlay);
 
 private:
 	// ---------------------------------------------------------------------
@@ -68,6 +72,8 @@ private:
 
 	RendererBackend* mBackend;
 	RendererBackendType mBackendType;
+
+	IEditorOverlay* mEditorOverlay;
 
 };
 

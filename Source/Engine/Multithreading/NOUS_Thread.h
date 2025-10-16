@@ -3,7 +3,7 @@
 
 #include <Engine/Core/Globals.h>
 #include <Engine/Systems/Time Management/Timer.h>
-#include <Engine/Core/Export.h>
+#include <Engine/Core/EngineExport.h>
 #include <Engine/Multithreading/NOUS_Job.h>
 
 #include <thread>
@@ -28,10 +28,10 @@ namespace NOUS_Multithreading
 	public:
 
 		/// @brief NOUS_Thread constructor.
-		NOUS_Thread();
+		NOUS_ENGINE_API NOUS_Thread();
 
 		/// @brief NOUS_Thread destructor.
-		~NOUS_Thread();
+		NOUS_ENGINE_API ~NOUS_Thread();
 
 		/// @brief NOUS_Thread move semantics definition.
 		NOUS_Thread(NOUS_Thread&& other) noexcept = delete;
@@ -43,39 +43,39 @@ namespace NOUS_Multithreading
 
 		/// @brief Starts the thread with a given function.
 		/// @param func The function to execute in the thread.
-		void Start(std::function<void()> func);
+		NOUS_ENGINE_API void Start(std::function<void()> func);
 
 		/// @brief Joins the thread if joinable.
-		void Join();
+		NOUS_ENGINE_API void Join();
 
 		/// @brief Setters and getters.
-		void SetName(const std::string& name);
-		const std::string& GetName() const;
-		void SetThreadState(ThreadState state);
-		ThreadState GetThreadState() const;
-		void SetCurrentJob(NOUS_Job* job);
-		NOUS_Job* GetCurrentJob() const;
-		bool IsRunning() const;
-		uint32 GetID() const;
+		NOUS_ENGINE_API void SetName(const std::string& name);
+		NOUS_ENGINE_API const std::string& GetName() const;
+		NOUS_ENGINE_API void SetThreadState(ThreadState state);
+		NOUS_ENGINE_API ThreadState GetThreadState() const;
+		NOUS_ENGINE_API void SetCurrentJob(NOUS_Job* job);
+		NOUS_ENGINE_API NOUS_Job* GetCurrentJob() const;
+		NOUS_ENGINE_API bool IsRunning() const;
+		NOUS_ENGINE_API uint32 GetID() const;
 
 		/// @brief Job execution time tracking.
-		void StartExecutionTimer();
-		void StopExecutionTimer();
-		double GetExecutionTimeMS() const;
+		NOUS_ENGINE_API void StartExecutionTimer();
+		NOUS_ENGINE_API void StopExecutionTimer();
+		NOUS_ENGINE_API double GetExecutionTimeMS() const;
 
 		/// @brief Sets a std::thread::id to this NOUS_Thread.
 		/// @note Used mainly for registering main thread.
-		void SetThreadID(std::thread::id id);
+		NOUS_ENGINE_API void SetThreadID(std::thread::id id);
 
 		/// @brief Converts a std::thread::id to a numeric uint32.
 		/// @note Relies on string conversion; platform-dependent.
-		static uint32 GetThreadID(std::thread::id id);
+		NOUS_ENGINE_API static uint32 GetThreadID(std::thread::id id);
 
 		/// @return std::string representation of the passed thread state.
-		static const std::string GetStringFromState(const ThreadState& state);
+		NOUS_ENGINE_API static const std::string GetStringFromState(const ThreadState& state);
 
 		/// @brief Sleep the current thread for an amount of time (ms).
-		NOUS_API static const void SleepMS(const uint32& ms);
+		NOUS_ENGINE_API static const void SleepMS(const uint32& ms);
 
 	private:
 

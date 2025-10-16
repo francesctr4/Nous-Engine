@@ -10,7 +10,9 @@ enum class EventType
 	KEY_PRESSED,
 	WINDOW_RESIZED,
 	SWAP_TEXTURE,
-	DROP_FILE
+	DROP_FILE,
+	INPUT_EVENT,
+    IMGUI_RECREATION
 };
 
 union EventContext
@@ -43,6 +45,13 @@ struct Event
 	}
 
 	Event(EventType type, const EventContext& ctx) : type(type), context(ctx) {}
+};
+
+class IEventListener
+{
+public:
+    virtual ~IEventListener() = default;
+    virtual void OnEvent(const Event& evt) = 0;
 };
 
 #endif // EVENTSYSTEM_H

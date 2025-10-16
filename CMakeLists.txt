@@ -30,8 +30,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Build config macros
 add_compile_definitions(
-        $$<CONFIG:Debug>:_DEBUG>
-        $$<CONFIG:Release>:_RELEASE;NDEBUG>
+        $<$<CONFIG:Debug>:_DEBUG>
+        $<$<CONFIG:Release>:_RELEASE>
+        $<$<CONFIG:Release>:NDEBUG>
 )
 
 option(ENABLE_PROFILING "Enable profiling instrumentation (Tracy, etc.)" OFF)
@@ -56,13 +57,15 @@ find_package(glm REQUIRED)
 # Engine Modules
 # ==============================
 add_subdirectory(Source/Engine/Core)
-add_subdirectory(Source/Editor)
 add_subdirectory(Source/Engine/Scripting)
 add_subdirectory(Source/Engine/Multithreading)
 add_subdirectory(Source/Engine/Utils)
 add_subdirectory(Source/Engine/Renderer)
 add_subdirectory(Source/Engine/ECS)
 add_subdirectory(Source/Engine/Systems)
+
+add_subdirectory(Source/Editor)
+add_dependencies(Nous-Editor ${PROJECT_NAME})
 
 # ==============================
 # NousEngine DLL (Shared Library)
@@ -86,7 +89,6 @@ target_sources(${PROJECT_NAME} PRIVATE
         $<TARGET_OBJECTS:Multithreading>
         $<TARGET_OBJECTS:Renderer>
         $<TARGET_OBJECTS:ECS>
-        $<TARGET_OBJECTS:Editor>
         $<TARGET_OBJECTS:Scripting>
 )
 
@@ -120,6 +122,7 @@ target_include_directories(EditorApp PRIVATE
 
 target_link_libraries(EditorApp PRIVATE
         NousEngine::Engine
+        NousEngine::Editor
 )
 
 set_target_properties(EditorApp PROPERTIES

@@ -4,6 +4,7 @@
 #include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 #include <Engine/Utils/Asserts.h>
 #include <Engine/Utils/Logger.h>
+#include <Engine/Core/EngineExport.h>
 
 /**
  * Returns the string representation of result.
@@ -11,13 +12,13 @@
  * @param extended Indicates whether to also return an extended result.
  * @returns The error code and/or extended error message in string form. Defaults to success for unknown result types.
  */
-std::string VkResultMessage(VkResult result, bool extended);
+NOUS_ENGINE_API std::string VkResultMessage(VkResult result, bool extended);
 
 /**
  * Inticates if the passed result is a success or an error as defined by the Vulkan spec.
  * @returns True if success; otherwise false. Defaults to true for unknown result types.
  */
-bool VkResultIsSuccess(VkResult result);
+NOUS_ENGINE_API bool VkResultIsSuccess(VkResult result);
 
 /**
  * @brief Checks the given expression's return value against VK_SUCCESS.

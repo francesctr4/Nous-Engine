@@ -16,6 +16,7 @@
 // -----------------------------------------------------------------------------
 
 #include <Engine/Core/Module.h>
+#include <Engine/Core/EngineExport.h>
 
 // ---------------------------------------------------------------------
 // Forward Declarations
@@ -52,7 +53,7 @@ public:
 	// ---------------------------------------------------------------------
 	// Accessors
 	// ---------------------------------------------------------------------
-	[[nodiscard]] RendererFrontend* GetRendererFrontend() const;
+	[[nodiscard]] NOUS_ENGINE_API RendererFrontend* GetRendererFrontend() const;
 
 private:
 	// ---------------------------------------------------------------------

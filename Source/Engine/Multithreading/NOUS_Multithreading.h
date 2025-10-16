@@ -2,7 +2,7 @@
 #define NOUSMULTITHREADING_H
 
 #include <Engine/Multithreading/NOUS_Thread.h>
-#include <Engine/Core/Export.h>
+#include <Engine/Core/EngineExport.h>
 
 namespace NOUS_Multithreading
 {
@@ -12,15 +12,15 @@ namespace NOUS_Multithreading
 
 	/// @brief Initializes the main thread tracking.
 	/// @note Must be paired with UnregisterMainThread() to prevent memory leaks.
-	NOUS_API void RegisterMainThread();
+	NOUS_ENGINE_API void RegisterMainThread();
 
 	/// @brief Deletes the main thread instance if it exists.
 	/// @note Should be called during application shutdown.
-	NOUS_API void UnregisterMainThread();
+	NOUS_ENGINE_API void UnregisterMainThread();
 
 	/// @brief Retrieves the main thread instance.
 	/// @return Pointer to the main thread object, or nullptr if not registered.
-	NOUS_Thread* GetMainThread();
+	NOUS_ENGINE_API NOUS_Thread* GetMainThread();
 }
 
 #endif // NOUSMULTITHREADING_H

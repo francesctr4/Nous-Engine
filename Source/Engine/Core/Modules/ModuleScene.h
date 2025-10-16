@@ -2,6 +2,7 @@
 #define MODULESCENE_H
 
 #include <Engine/Core/Module.h>
+#include <Engine/Core/EngineExport.h>
 #include <string>
 #include <vector>
 
@@ -32,9 +33,9 @@ public:
 
 	void ReceiveEvent(const Event& event) override;
 
-    void SaveScene(const std::string& path);
-    void LoadScene(const std::string& path);
-    void ClearScene();
+	NOUS_ENGINE_API void SaveScene(const std::string& path);
+	NOUS_ENGINE_API void LoadScene(const std::string& path);
+	NOUS_ENGINE_API void ClearScene();
 
 public:
 

@@ -1,5 +1,5 @@
 #include <Engine/Core/Modules/ModuleInput.h>
-#include "Editor/ModuleEditor.h"
+#include <Editor/ModuleEditor.h>
 #include <Engine/Core/Application.h>
 #include <Engine/Systems/Event System/EventSystem.h>
 #include <Engine/Utils/Logger.h>
@@ -132,7 +132,9 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
 	{
-		App->editor->ProcessInputEvent(&e);
+		EventContext ctx{};
+		ctx._u64[0] = reinterpret_cast<uint64>(&e);
+		App->BroadcastEvent(Event(EventType::INPUT_EVENT, ctx));
 
 		switch (e.type)
 		{

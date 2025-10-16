@@ -1,6 +1,6 @@
-#include "Engine/Utils/Logger.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Multithreading/NOUS_Multithreading.h"
+#include <Engine/Utils/Logger.h>
+#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include <Engine/Multithreading/NOUS_Multithreading.h>
 
 int main(int argc, char** argv)
 {

@@ -30,6 +30,8 @@
 #include <Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h>
 
 #include <Engine/Multithreading/NOUS_Thread.h>
+#include <Engine/Core/Application.h>
+#include <Engine/Systems/Event System/EventSystem.h>
 
 VulkanContext* VulkanBackend::vkContext = nullptr;
 
@@ -713,7 +715,7 @@ bool VulkanBackend::RecreateResources()
     vkContext->framebufferWidth = cachedFramebufferWidth;
     vkContext->framebufferHeight = cachedFramebufferHeight;
 
-    NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(vkContext);
+    External->BroadcastEvent(Event(EventType::IMGUI_RECREATION, {}));
 
     vkContext->sceneRenderpass.renderArea.z = vkContext->framebufferWidth;
     vkContext->sceneRenderpass.renderArea.w = vkContext->framebufferHeight;

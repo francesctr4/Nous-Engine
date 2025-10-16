@@ -1,9 +1,42 @@
 #include <Editor/Windows/MainMenuBar.h>
 
-#include "Editor/ModuleEditor.h"
-#include <Engine/Core/Application.h>
-
 #include <imgui.h>
+
+#ifdef _WIN32
+#include <Windows.h>
+#include <shellapi.h>
+#elif defined(__APPLE__)
+#include <cstdlib>
+    #include <unistd.h>
+#elif defined(__linux__)
+    #include <cstdlib>
+    #include <unistd.h>
+    #include <sys/wait.h>
+#endif
+
+static bool RequestBrowser(const char* url)
+{
+#ifdef _WIN32
+	HINSTANCE result = ShellExecuteA(nullptr, "open", url, nullptr, nullptr, SW_SHOWNORMAL);
+	return (INT_PTR)result > 32; // ShellExecute devuelve > 32 si es exitoso
+#elif defined(__APPLE__)
+	pid_t pid = fork();
+    if (pid == 0) {
+        execl("/usr/bin/open", "open", url, nullptr);
+        exit(1);
+    }
+    return pid > 0;
+#elif defined(__linux__)
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/usr/bin/xdg-open", "xdg-open", url, nullptr);
+        exit(1);
+    }
+    return pid > 0;
+#else
+    return false; // Plataforma no soportada
+#endif
+}
 
 MainMenuBar::MainMenuBar(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open) 
@@ -214,12 +247,12 @@ void MainMenuBar::Draw()
 
 			if (ImGui::MenuItem("Scene")) 
 			{
-				External->editor->GetEditorWindowByName("Scene")->Open();
+				//External->editor->GetEditorWindowByName("Scene")->Open();
 			}
 
 			if (ImGui::MenuItem("Game")) 
 			{
-				External->editor->GetEditorWindowByName("Game")->Open();
+				//External->editor->GetEditorWindowByName("Game")->Open();
 			}
 
 			if (ImGui::MenuItem("Resources")) {

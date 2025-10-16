@@ -2,33 +2,34 @@
 #define VULKANIMGUIRESOURCES_H
 
 #include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
+#include <Engine/Core/EngineExport.h>
 
 typedef unsigned long long ImTextureID;
 
 namespace NOUS_ImGuiVulkanResources
 {
-	void CreateImGuiVulkanResources(VulkanContext* vkContext);
-	void DestroyImGuiVulkanResources(VulkanContext* vkContext);
+	NOUS_ENGINE_API void CreateImGuiVulkanResources(VulkanContext* vkContext);
+	NOUS_ENGINE_API void DestroyImGuiVulkanResources(VulkanContext* vkContext);
 
-	void RecreateImGuiVulkanResources(VulkanContext* vkContext);
-
-	// ----------------------------------------------------------------------------------- //
-
-	void CreateImGuiDescriptorPool(VulkanContext* vkContext);
-	void CreateViewportTextureSampler(VulkanContext* vkContext, VkSampler* sampler);
-
-	void CreateViewportImages(VulkanContext* vkContext);
-	void CreateViewportDepthResources(VulkanContext* vkContext);
+	NOUS_ENGINE_API void RecreateImGuiVulkanResources(VulkanContext* vkContext);
 
 	// ----------------------------------------------------------------------------------- //
 
-	void CreateSceneViewportDescriptorSets(VulkanContext* vkContext);
-	void DestroySceneViewportDescriptorSets(VulkanContext* vkContext);
+	NOUS_ENGINE_API void CreateImGuiDescriptorPool(VulkanContext* vkContext);
+	NOUS_ENGINE_API void CreateViewportTextureSampler(VulkanContext* vkContext, VkSampler* sampler);
 
-	void CreateGameViewportDescriptorSets(VulkanContext* vkContext);
-	void DestroyGameViewportDescriptorSets(VulkanContext* vkContext);
+	NOUS_ENGINE_API void CreateViewportImages(VulkanContext* vkContext);
+	NOUS_ENGINE_API void CreateViewportDepthResources(VulkanContext* vkContext);
 
-	ImTextureID GetViewportTexture(VkDescriptorSet descriptorSet);
+	// ----------------------------------------------------------------------------------- //
+
+	NOUS_ENGINE_API void CreateSceneViewportDescriptorSets(VulkanContext* vkContext);
+	NOUS_ENGINE_API void DestroySceneViewportDescriptorSets(VulkanContext* vkContext);
+
+	NOUS_ENGINE_API void CreateGameViewportDescriptorSets(VulkanContext* vkContext);
+	NOUS_ENGINE_API void DestroyGameViewportDescriptorSets(VulkanContext* vkContext);
+
+	NOUS_ENGINE_API ImTextureID GetViewportTexture(VkDescriptorSet descriptorSet);
 
 }
 

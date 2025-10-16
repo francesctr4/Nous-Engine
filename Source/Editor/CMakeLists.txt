@@ -3,6 +3,9 @@
 # ==============================
 
 set(EDITOR_SOURCES
+        ModuleEditor.cpp
+        ModuleEditor.h
+
         ImGuiConfig/ImGuiCustom.cpp
         ImGuiConfig/ImGuiCustom.h
 
@@ -28,12 +31,17 @@ set(EDITOR_SOURCES
         Windows/ConsoleWindow.h
 
         IEditorWindow.inl
+
+        EditorExport.h
 )
 
-add_library(Editor OBJECT ${EDITOR_SOURCES})
+add_library(Nous-Editor SHARED ${EDITOR_SOURCES})
+add_library(NousEngine::Editor ALIAS Nous-Editor)
+
+target_compile_definitions(Nous-Editor PRIVATE NOUS_EDITOR_EXPORTS)
 
 # Include the root source dir for headers like "Core/Application.h"
-target_include_directories(Editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(Nous-Editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 # Find dependencies
 find_package(SDL3 CONFIG REQUIRED)
@@ -45,7 +53,8 @@ find_package(Tracy CONFIG REQUIRED)
 find_package(glm REQUIRED)
 
 # Link editor dependencies
-target_link_libraries(Editor PUBLIC
+target_link_libraries(Nous-Editor PUBLIC
+        NousEngine::Engine
         SDL3::SDL3
         Vulkan::Vulkan
         assimp::assimp
@@ -55,8 +64,17 @@ target_link_libraries(Editor PUBLIC
         glm::glm
 )
 
-set_target_properties(Editor PROPERTIES
+add_dependencies(Nous-Editor ${PROJECT_NAME})
+
+set_target_properties(Nous-Editor PROPERTIES
         CXX_STANDARD 23
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS OFF
+)
+
+set_target_properties(Nous-Editor PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+        FOLDER "Editor"
 )

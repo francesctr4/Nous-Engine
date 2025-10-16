@@ -2,15 +2,19 @@
 #define GAMEVIEWPORT_H
 
 #include <Editor/IEditorWindow.inl>
+#include <Editor/EditorExport.h>
 
 class GameViewport : public IEditorWindow
 {
 public:
 
-    explicit GameViewport(const char* title, bool start_open = true);
+    NOUS_EDITOR_API explicit GameViewport(const char* title, bool start_open = true);
 
-    void Init() override;
-    void Draw() override;
+    NOUS_EDITOR_API void Init() override;
+    NOUS_EDITOR_API void Draw() override;
+
+    static void CreateGameViewportDescriptorSets();
+    static void DestroyGameViewportDescriptorSets();
 
 };
 

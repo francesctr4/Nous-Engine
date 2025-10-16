@@ -4,6 +4,9 @@
 #include <Engine/Multithreading/NOUS_Multithreading.h>
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 
+// Editor
+#include <Editor/ModuleEditor.h>
+
 typedef enum MainState
 {
     MAIN_CREATION,
@@ -28,6 +31,7 @@ int main(int argc, char** argv)
     int mainReturn = EXIT_FAILURE;
     MainState nousState = MAIN_CREATION;
     Application* App = nullptr;
+    ModuleEditor* Editor = nullptr;
 
     while (nousState != MAIN_EXIT)
     {
@@ -37,6 +41,7 @@ int main(int argc, char** argv)
 
                 NOUS_INFO("-------------- Application Creation --------------");
                 App = NOUS_NEW<Application>(MemoryManager::MemoryTag::APPLICATION);
+                Editor = NOUS_NEW<ModuleEditor>(MemoryManager::MemoryTag::APPLICATION, App);
 
                 nousState = MAIN_START;
 
@@ -45,15 +50,33 @@ int main(int argc, char** argv)
             case MAIN_START:
 
                 NOUS_INFO("-------------- Application Awake --------------");
+
                 if (App && !App->Awake())
                 {
-                    NOUS_INFO("[ERROR] Application Awake exits with ERROR");
+                    NOUS_ERROR("[ERROR] Application Awake exits with ERROR");
                     nousState = MAIN_EXIT;
                 }
                 else
                 {
-                    nousState = MAIN_UPDATE;
-                    NOUS_INFO("-------------- Application Update --------------");
+                    // Run Editor Awake (optional)
+                    if (Editor)
+                        Editor->Awake();
+
+                    NOUS_INFO("-------------- Application Start --------------");
+
+                    if (App && !App->Start())
+                    {
+                        NOUS_ERROR("[ERROR] Application Start exits with ERROR");
+                        nousState = MAIN_EXIT;
+                    }
+                    else
+                    {
+                        if (Editor)
+                            Editor->Start();
+
+                        nousState = MAIN_UPDATE;
+                        NOUS_INFO("-------------- Application Update --------------");
+                    }
                 }
 
                 break;
@@ -78,6 +101,12 @@ int main(int argc, char** argv)
             case MAIN_FINISH:
 
                 NOUS_INFO("-------------- Application CleanUp --------------");
+
+                if (Editor)
+                {
+                    Editor->CleanUp();
+                }
+
                 if (App->CleanUp() == false)
                 {
                     NOUS_INFO("[ERROR] Application CleanUp exits with ERROR");
@@ -97,6 +126,7 @@ int main(int argc, char** argv)
     External = nullptr;
 
     NOUS_INFO("-------------- Application Destruction --------------");
+    NOUS_DELETE(Editor, MemoryManager::MemoryTag::APPLICATION);
     NOUS_DELETE(App, MemoryManager::MemoryTag::APPLICATION);
 
     NOUS_INFO("Exiting engine '%s'...\n", TITLE);

@@ -3,6 +3,7 @@
 
 #include <Engine/ECS/Component.h>
 #include <glm/glm.hpp>
+#include <Engine/Core/EngineExport.h>
 
 typedef struct json_object_t JSON_Object;
 typedef struct json_value_t  JSON_Value;
@@ -39,7 +40,7 @@ public:
     // Up vector based on rotation
     glm::vec3 GetUp() const;
 
-    void UpdateMatrix();
+    NOUS_ENGINE_API void UpdateMatrix();
 
     // ---------- JSON Serialization ----------
     JSON_Value* Serialize() const override;

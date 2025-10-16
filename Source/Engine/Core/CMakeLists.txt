@@ -9,7 +9,7 @@ set(CORE_SOURCES
         UpdateStatus.h
         Module.cpp
         Module.h
-        Export.h
+        EngineExport.h
 )
 
 add_library(Core OBJECT ${CORE_SOURCES})

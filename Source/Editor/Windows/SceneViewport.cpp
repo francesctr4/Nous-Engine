@@ -6,7 +6,6 @@
 #include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 #include <Engine/Renderer/Backend/Vulkan/VulkanBackend.h>
 
-#include <Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h>
 #include <Engine/Core/Application.h>
 
 #include <Engine/ECS/Components/ComponentTransform.h>
@@ -16,6 +15,8 @@
 #include <Engine/Multithreading/NOUS_JobSystem.h>
 
 #include <imgui.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanImGuiBridge.h>
+#include <imgui_impl_vulkan.h>
 
 SceneViewport::SceneViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
@@ -25,9 +26,7 @@ SceneViewport::SceneViewport(const char* title, bool start_open)
 
 void SceneViewport::Init()
 {
-    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
-
-    NOUS_ImGuiVulkanResources::CreateSceneViewportDescriptorSets(vkContext);
+    CreateSceneViewportDescriptorSets();
 }
 
 void SceneViewport::Draw()
@@ -83,9 +82,11 @@ void SceneViewport::Draw()
 
             if (squareSize.x > 0.0f && squareSize.y > 0.0f)
             {
-                ImGui::Image(NOUS_ImGuiVulkanResources::GetViewportTexture(
-                        vkContext->imGuiResources.m_ViewportDescriptorSets[vkContext->imageIndex]),
-                             squareSize, uvMin, uvMax);
+                ImGui::Image(
+                        static_cast<ImTextureID>(
+                                Engine_GetViewportTexture(
+                                        vkContext->imGuiResources.m_ViewportDescriptorSets[vkContext->imageIndex])),
+                        squareSize, uvMin, uvMax);
             }
 
             // Draw white border on top
@@ -174,4 +175,27 @@ bool SceneViewport::IsValidASCII(const std::string& str)
         }
     }
     return true;
+}
+
+void SceneViewport::CreateSceneViewportDescriptorSets()
+{
+    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+
+    for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
+    {
+        vkContext->imGuiResources.m_ViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(
+                vkContext->imGuiResources.m_ViewportTextureSampler,
+                vkContext->imGuiResources.m_ViewportImages[i].view,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+}
+
+void SceneViewport::DestroySceneViewportDescriptorSets()
+{
+    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+
+    for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
+    {
+        ImGui_ImplVulkan_RemoveTexture(vkContext->imGuiResources.m_ViewportDescriptorSets[i]);
+    }
 }

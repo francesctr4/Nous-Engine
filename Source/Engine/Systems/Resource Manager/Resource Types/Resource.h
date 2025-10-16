@@ -2,6 +2,7 @@
 #define RESOURCE_H
 
 #include <Engine/Core/Globals.h>
+#include <Engine/Core/EngineExport.h>
 
 using UID = uint32;
 
@@ -20,37 +21,37 @@ class Resource
 {
 public:
 
-	Resource();
-	Resource(UID uID, ResourceType type);
-	virtual ~Resource();
+	NOUS_ENGINE_API Resource();
+	NOUS_ENGINE_API Resource(UID uID, ResourceType type);
+	NOUS_ENGINE_API virtual ~Resource();
 
-	void SetName(const std::string& name);
-	void SetUID(const UID& uid);
-	void SetType(const ResourceType& rType);
+	NOUS_ENGINE_API void SetName(const std::string& name);
+	NOUS_ENGINE_API void SetUID(const UID& uid);
+	NOUS_ENGINE_API void SetType(const ResourceType& rType);
 
-	void SetAssetsPath(const std::string& assetsFilePath);
-	void SetLibraryPath(const std::string& libraryFilePath);
+	NOUS_ENGINE_API void SetAssetsPath(const std::string& assetsFilePath);
+	NOUS_ENGINE_API void SetLibraryPath(const std::string& libraryFilePath);
 
-	std::string GetName() const;
-	UID GetUID() const;
-	ResourceType GetType() const;
+	NOUS_ENGINE_API std::string GetName() const;
+	NOUS_ENGINE_API UID GetUID() const;
+	NOUS_ENGINE_API ResourceType GetType() const;
 
-	std::string GetAssetsPath() const;
-	std::string GetLibraryPath() const;
+	NOUS_ENGINE_API std::string GetAssetsPath() const;
+	NOUS_ENGINE_API std::string GetLibraryPath() const;
 
-	uint32 GetReferenceCount() const;
-	void IncreaseReferenceCount();
-	void DecreaseReferenceCount();
+	NOUS_ENGINE_API uint32 GetReferenceCount() const;
+	NOUS_ENGINE_API void IncreaseReferenceCount();
+	NOUS_ENGINE_API void DecreaseReferenceCount();
 
-	bool IsValid() const;
-	void Validate();
-	void Invalidate();
+	NOUS_ENGINE_API bool IsValid() const;
+	NOUS_ENGINE_API void Validate();
+	NOUS_ENGINE_API void Invalidate();
 
-	static int16 GetIndexFromType(const ResourceType& type);
-	static std::string GetLibraryExtensionFromType(ResourceType type);
-	static ResourceType GetTypeFromExtension(const std::string& extension);
-	static std::string GetAssetsDirectoryFromType(ResourceType type);
-	static std::string GetLibraryDirectoryFromType(ResourceType type);
+	NOUS_ENGINE_API static int16 GetIndexFromType(const ResourceType& type);
+	NOUS_ENGINE_API static std::string GetLibraryExtensionFromType(ResourceType type);
+	NOUS_ENGINE_API static ResourceType GetTypeFromExtension(const std::string& extension);
+	NOUS_ENGINE_API static std::string GetAssetsDirectoryFromType(ResourceType type);
+	NOUS_ENGINE_API static std::string GetLibraryDirectoryFromType(ResourceType type);
 
 private:
 

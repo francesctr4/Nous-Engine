@@ -2,15 +2,21 @@
 #define SCENEVIEWPORT_H
 
 #include <Editor/IEditorWindow.inl>
+#include <Editor/EditorExport.h>
+
+struct VulkanContext;
 
 class SceneViewport : public IEditorWindow
 {
 public:
 
-    explicit SceneViewport(const char* title, bool start_open = true);
+    NOUS_EDITOR_API explicit SceneViewport(const char* title, bool start_open = true);
 
-    void Init() override;
-    void Draw() override;
+    NOUS_EDITOR_API void Init() override;
+    NOUS_EDITOR_API void Draw() override;
+
+    static void CreateSceneViewportDescriptorSets();
+    static void DestroySceneViewportDescriptorSets();
 
 private:
 

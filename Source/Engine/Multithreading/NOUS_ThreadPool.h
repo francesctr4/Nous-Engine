@@ -10,6 +10,7 @@
 
 #include <Engine/Multithreading/NOUS_Job.h>
 #include <Engine/Multithreading/NOUS_Thread.h>
+#include <Engine/Core/EngineExport.h>
 
 namespace NOUS_Multithreading
 {
@@ -22,23 +23,23 @@ namespace NOUS_Multithreading
 
 		/// @brief NOUS_ThreadPool constructor.
 		/// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
-		explicit NOUS_ThreadPool(uint8 numThreads);
+		NOUS_ENGINE_API explicit NOUS_ThreadPool(uint8 numThreads);
 
 		/// @brief NOUS_ThreadPool destructor.
-		~NOUS_ThreadPool();
+		NOUS_ENGINE_API ~NOUS_ThreadPool();
 
 		/// @brief Adds a job to the queue and notifies a worker.
 		/// @param job The job to be executed.
-		void SubmitJob(NOUS_Job* job);
+		NOUS_ENGINE_API void SubmitJob(NOUS_Job* job);
 
 		/// @brief Deletes pending jobs, joins all threads and cleans up resources afterwards.
-		void Shutdown();
+		NOUS_ENGINE_API void Shutdown();
 
 		/// @return A vector of NOUS_Thread contained inside the thread pool.
-		const std::vector<NOUS_Thread*>& GetThreads() const;
+		NOUS_ENGINE_API const std::vector<NOUS_Thread*>& GetThreads() const;
 
 		/// @return A queue of NOUS_Job to be executed by the thread pool.
-		const std::queue<NOUS_Job*>& GetJobQueue() const;
+		NOUS_ENGINE_API const std::queue<NOUS_Job*>& GetJobQueue() const;
 
 	private:
 

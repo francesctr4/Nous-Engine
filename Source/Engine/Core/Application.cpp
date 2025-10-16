@@ -6,7 +6,6 @@
 #include <Engine/Core/Modules/ModuleResourceManager.h>
 #include <Engine/Core/Modules/ModuleScene.h>
 #include <Engine/Core/Modules/ModuleRenderer3D.h>
-#include "Editor/ModuleEditor.h"
 
 #include <Engine/Utils/Logger.h>
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
@@ -41,7 +40,6 @@ Application::Application()
     listModules[4] = resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryManager::MemoryTag::APPLICATION, this);
     listModules[5] = scene = NOUS_NEW<ModuleScene>(MemoryManager::MemoryTag::APPLICATION, this);
     listModules[6] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryManager::MemoryTag::APPLICATION, this);
-    listModules[7] = editor = NOUS_NEW<ModuleEditor>(MemoryManager::MemoryTag::APPLICATION, this);
 
     // ------------- MULTITHREADING ------------- //
     jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryManager::MemoryTag::THREAD);
@@ -55,9 +53,6 @@ Application::~Application()
     // ------------- MULTITHREADING ------------- //
     jobSystem->WaitForPendingJobs();
     NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
-
-    ModuleEditor* editor = static_cast<ModuleEditor*>(listModules[7]);
-    NOUS_DELETE<ModuleEditor>(editor, MemoryManager::MemoryTag::APPLICATION);
 
     ModuleRenderer3D* renderer = static_cast<ModuleRenderer3D*>(listModules[6]);
     NOUS_DELETE<ModuleRenderer3D>(renderer, MemoryManager::MemoryTag::APPLICATION);
@@ -94,11 +89,18 @@ bool Application::Awake()
         }
     }
 
+    return ret;
+}
+
+bool Application::Start()
+{
+    bool ret = true;
+
     // After all Awake calls we call Start() in all modules
     NOUS_INFO("-------------- Application Start --------------");
     for (int i = 0; i < NUM_MODULES && ret; ++i)
     {
-        if (listModules[i] != nullptr) 
+        if (listModules[i] != nullptr)
         {
             ret = listModules[i]->Start();
         }
@@ -234,12 +236,18 @@ bool Application::CleanUp()
 
 void Application::BroadcastEvent(const Event& event)
 {
+    // 1. Send to internal modules
     for (int i = 0; i < NUM_MODULES; ++i)
     {
-        if (listModules[i] != nullptr) 
-        {
+        if (listModules[i] != nullptr)
             listModules[i]->ReceiveEvent(event);
-        }
+    }
+
+    // 2. Send to external listeners (like the editor)
+    for (auto* listener : m_ExternalListeners)
+    {
+        if (listener)
+            listener->OnEvent(event);
     }
 }
 
@@ -266,4 +274,14 @@ float Application::GetDT()
 float Application::GetMS()
 {
     return dt * 1000;
+}
+
+void Application::RegisterEventListener(IEventListener* listener)
+{
+    m_ExternalListeners.push_back(listener);
+}
+
+void Application::UnregisterEventListener(IEventListener* listener)
+{
+    std::erase(m_ExternalListeners, listener);
 }

@@ -1,10 +1,11 @@
 #include <Editor/Windows/GameViewport.h>
 
 #include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
-#include <Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h>
+#include <Engine/Renderer/Backend/Vulkan/VulkanImGuiBridge.h>
 #include <Engine/Renderer/Backend/Vulkan/VulkanBackend.h>
 
 #include <imgui.h>
+#include <imgui_impl_vulkan.h>
 
 GameViewport::GameViewport(const char* title, bool start_open)
     : IEditorWindow(title, nullptr, start_open)
@@ -14,9 +15,7 @@ GameViewport::GameViewport(const char* title, bool start_open)
 
 void GameViewport::Init()
 {
-    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
-
-    NOUS_ImGuiVulkanResources::CreateGameViewportDescriptorSets(vkContext);
+    CreateGameViewportDescriptorSets();
 }
 
 void GameViewport::Draw()
@@ -68,13 +67,38 @@ void GameViewport::Draw()
 
             VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 
-            ImGui::Image(NOUS_ImGuiVulkanResources::GetViewportTexture(
-                vkContext->imGuiResources.m_GameViewportDescriptorSets[vkContext->imageIndex]),
-                squareSize, uvMin, uvMax);
+            ImGui::Image(
+                    static_cast<ImTextureID>(
+                            Engine_GetViewportTexture(
+                                    vkContext->imGuiResources.m_GameViewportDescriptorSets[vkContext->imageIndex])),
+                    squareSize, uvMin, uvMax);
 
             // Draw white border on top
             drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
         }
         ImGui::End();
+    }
+}
+
+void GameViewport::CreateGameViewportDescriptorSets()
+{
+    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+
+    for (uint32 i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
+    {
+        vkContext->imGuiResources.m_GameViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(
+                vkContext->imGuiResources.m_GameViewportTextureSampler,
+                vkContext->imGuiResources.m_GameViewportImages[i].view,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+}
+
+void GameViewport::DestroyGameViewportDescriptorSets()
+{
+    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+
+    for (uint32 i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
+    {
+        ImGui_ImplVulkan_RemoveTexture(vkContext->imGuiResources.m_GameViewportDescriptorSets[i]);
     }
 }

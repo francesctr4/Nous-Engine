@@ -5,7 +5,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include <Engine/Core/Export.h>
+#include <Engine/Core/EngineExport.h>
 
 class IScript;
 struct EngineAPI;
@@ -27,7 +27,7 @@ public:
     IScript* CreateScriptInstance(const std::string& scriptName);
 
     // Script generation
-    static bool GenerateScript(const std::string& className);
+    NOUS_ENGINE_API static bool GenerateScript(const std::string& className);
 
 private:
 
