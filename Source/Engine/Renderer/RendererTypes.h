@@ -14,6 +14,23 @@ class ResourceMaterial;
 class ResourceTexture;
 
 // -----------------------------------------------------------------------------
+// Texture Maps
+// -----------------------------------------------------------------------------
+enum class TextureMapType
+{
+    UNKNOWN = -1,
+    DIFFUSE
+};
+
+struct TextureMap
+{
+    TextureMap() : type(TextureMapType::UNKNOWN), texture(nullptr) {}
+
+    TextureMapType type;
+    ResourceTexture* texture;
+};
+
+// -----------------------------------------------------------------------------
 // Core rendering data
 // -----------------------------------------------------------------------------
 enum class FrameResult : uint8_t

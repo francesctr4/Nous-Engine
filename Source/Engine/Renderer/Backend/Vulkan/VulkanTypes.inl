@@ -1,20 +1,16 @@
 #ifndef VULKANTYPES_INL
 #define VULKANTYPES_INL
 
-#include <Engine/Core/Globals.h>
-#include <Engine/Renderer/RendererTypes.h>
-
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
+#include "Engine/Core/Globals.h"
+#include "Engine/Renderer/RendererTypes.h"
 
 #include <vulkan/vulkan.h>
-#include <Engine/Systems/Memory Manager/Custom Allocators/FreeList.h>
 
 #include <future>
 #include <array>
 #include <deque>
-#include <unordered_map>
+
+class Freelist;
 
 struct VulkanImage
 {

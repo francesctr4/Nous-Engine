@@ -3,25 +3,12 @@
 
 #include <Engine/Core/Globals.h>
 #include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
+#include <Engine/Renderer/RendererTypes.h>
 #include <Engine/Utils/MathUtils.h>
 
 #include <glm/glm.hpp>
 
 class ResourceTexture;
-
-enum class TextureMapType
-{
-    UNKNOWN = -1,
-    DIFFUSE
-};
-
-struct TextureMap
-{
-    TextureMap() : type(TextureMapType::UNKNOWN), texture(nullptr) {}
-
-    TextureMapType type;
-    ResourceTexture* texture;
-};
 
 class ResourceMaterial : public Resource
 {

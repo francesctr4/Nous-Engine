@@ -3,6 +3,7 @@
 
 #include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 #include <Engine/Utils/MathUtils.h>
+#include "Engine/Systems/Geometry System/Vertex.inl"
 
 static VkVertexInputBindingDescription GetVertex3DBindingDescription()
 {
