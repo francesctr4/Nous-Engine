@@ -147,8 +147,24 @@ set_target_properties(GameApp PROPERTIES
 )
 
 # ==============================
+# Shader Copy Step (Pre-build) [COMMENTED BECAUSE IT LEADS TO AN ERROR WITH CMAKE]
+# ==============================
+
+# set(SHADER_SOURCE_DIR "${CMAKE_SOURCE_DIR}/Source/Engine/Renderer/Backend/Vulkan/Shaders/BuiltIn/GLSL/")
+# set(SHADER_ASSETS_DIR "${CMAKE_SOURCE_DIR}/Assets/Shaders/")
+
+# add_custom_target(CopyBuiltInShaders ALL
+#         COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_ASSETS_DIR}"
+#         COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHADER_SOURCE_DIR}" "${SHADER_ASSETS_DIR}"
+#         COMMENT "🟦 Copying built-in shaders to Assets/Shaders/"
+# )
+
+# add_dependencies(EditorApp CopyBuiltInShaders)
+
+# ==============================
 # Shader Compilation (Cross-platform)
 # ==============================
+
 find_program(GLSLC_EXECUTABLE
         NAMES glslc
         HINTS ${Vulkan_GLSLC_EXECUTABLE}

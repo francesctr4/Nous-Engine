@@ -10,7 +10,7 @@
 #include <vector>
 #include <memory>
 
-// ImGui
+// ImGui_Temp
 #include "imgui.h"
 
 // Extra functions to add deletion support to ImGuiSelectionBasicStorage
@@ -19,7 +19,7 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
     // Find which item should be Focused after deletion.
     // Call _before_ item submission. Retunr an index in the before-deletion item list, your item loop should call SetKeyboardFocusHere() on it.
     // The subsequent ApplyDeletionPostLoop() code will use it to apply Selection.
-    // - We cannot provide this logic in core Dear ImGui because we don't have access to selection data.
+    // - We cannot provide this logic in core Dear ImGui_Temp because we don't have access to selection data.
     // - We don't actually manipulate the ImVector<> here, only in ApplyDeletionPostLoop(), but using similar API for consistency and flexibility.
     // - Important: Deletion only works if the underlying ImGuiID for your items are stable: aka not depend on their index, but on e.g. item id/ptr.
     // FIXME-MULTISELECT: Doesn't take account of the possibility focus target will be moved during deletion. Need refocus or scroll offset.
@@ -51,7 +51,7 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
 
     // Rewrite item list (delete items) + update selection.
     // - Call after EndMultiSelect()
-    // - We cannot provide this logic in core Dear ImGui because we don't have access to your items, nor to selection data.
+    // - We cannot provide this logic in core Dear ImGui_Temp because we don't have access to your items, nor to selection data.
     template<typename ITEM_TYPE>
     void ApplyDeletionPostLoop(ImGuiMultiSelectIO* ms_io, std::vector<ITEM_TYPE>& items, int item_curr_idx_to_select)
     {

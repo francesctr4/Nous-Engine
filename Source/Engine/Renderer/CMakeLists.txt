@@ -11,46 +11,43 @@ set(RENDERER_SOURCES
         Backend/RendererBackend.cpp
         Backend/RendererBackend.h
 
-        Backend/Vulkan/Shaders/VulkanMaterialShader.cpp
-        Backend/Vulkan/Shaders/VulkanMaterialShader.h
+        Backend/Vulkan/Shaders/BuiltIn/MaterialShader/VulkanMaterialShader.cpp
+        Backend/Vulkan/Shaders/BuiltIn/MaterialShader/VulkanMaterialShader.h
         Backend/Vulkan/Shaders/VulkanShaderUtils.cpp
         Backend/Vulkan/Shaders/VulkanShaderUtils.h
-        Backend/Vulkan/Shaders/VulkanUIShader.cpp
-        Backend/Vulkan/Shaders/VulkanUIShader.h
+        Backend/Vulkan/Shaders/BuiltIn/UIShader/VulkanUIShader.cpp
+        Backend/Vulkan/Shaders/BuiltIn/UIShader/VulkanUIShader.h
         Backend/Vulkan/VulkanBackend.cpp
         Backend/Vulkan/VulkanBackend.h
-        Backend/Vulkan/VulkanBuffer.cpp
-        Backend/Vulkan/VulkanBuffer.h
-        Backend/Vulkan/VulkanCommandBuffer.cpp
-        Backend/Vulkan/VulkanCommandBuffer.h
-        Backend/Vulkan/VulkanDebugMessenger.cpp
-        Backend/Vulkan/VulkanDebugMessenger.h
-        Backend/Vulkan/VulkanDevice.cpp
-        Backend/Vulkan/VulkanDevice.h
-        Backend/Vulkan/VulkanExternal.cpp
-        Backend/Vulkan/VulkanExternal.h
-        Backend/Vulkan/VulkanFramebuffer.cpp
-        Backend/Vulkan/VulkanFramebuffer.h
-        Backend/Vulkan/VulkanGlobals.h
-        Backend/Vulkan/VulkanGraphicsPipeline.cpp
-        Backend/Vulkan/VulkanGraphicsPipeline.h
-        Backend/Vulkan/VulkanImage.cpp
-        Backend/Vulkan/VulkanImage.h
-        Backend/Vulkan/VulkanImGuiResources.cpp
-        Backend/Vulkan/VulkanImGuiResources.h
-        Backend/Vulkan/VulkanInstance.cpp
-        Backend/Vulkan/VulkanInstance.h
-        Backend/Vulkan/VulkanMultithreading.cpp
-        Backend/Vulkan/VulkanMultithreading.h
-        Backend/Vulkan/VulkanRenderpass.cpp
-        Backend/Vulkan/VulkanRenderpass.h
-        Backend/Vulkan/VulkanSwapchain.cpp
-        Backend/Vulkan/VulkanSwapchain.h
-        Backend/Vulkan/VulkanSyncObjects.cpp
-        Backend/Vulkan/VulkanSyncObjects.h
+        Backend/Vulkan/Resources/Buffer/VulkanBuffer.cpp
+        Backend/Vulkan/Resources/Buffer/VulkanBuffer.h
+        Backend/Vulkan/Rendering/CommandBuffer/VulkanCommandBuffer.cpp
+        Backend/Vulkan/Rendering/CommandBuffer/VulkanCommandBuffer.h
+        Backend/Vulkan/Core/DebugMessenger/VulkanDebugMessenger.cpp
+        Backend/Vulkan/Core/DebugMessenger/VulkanDebugMessenger.h
+        Backend/Vulkan/Core/Device/VulkanDevice.cpp
+        Backend/Vulkan/Core/Device/VulkanDevice.h
+        Backend/Vulkan/Rendering/Framebuffer/VulkanFramebuffer.cpp
+        Backend/Vulkan/Rendering/Framebuffer/VulkanFramebuffer.h
+        Backend/Vulkan/Resources/GraphicsPipeline/VulkanGraphicsPipeline.cpp
+        Backend/Vulkan/Resources/GraphicsPipeline/VulkanGraphicsPipeline.h
+        Backend/Vulkan/Resources/Image/VulkanImage.cpp
+        Backend/Vulkan/Resources/Image/VulkanImage.h
+        Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.cpp
+        Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h
+        Backend/Vulkan/Core/Instance/VulkanInstance.cpp
+        Backend/Vulkan/Core/Instance/VulkanInstance.h
+        Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.cpp
+        Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h
+        Backend/Vulkan/Rendering/Renderpass/VulkanRenderpass.cpp
+        Backend/Vulkan/Rendering/Renderpass/VulkanRenderpass.h
+        Backend/Vulkan/Core/Swapchain/VulkanSwapchain.cpp
+        Backend/Vulkan/Core/Swapchain/VulkanSwapchain.h
+        Backend/Vulkan/Rendering/SyncObjects/VulkanSyncObjects.cpp
+        Backend/Vulkan/Rendering/SyncObjects/VulkanSyncObjects.h
         Backend/Vulkan/VulkanTypes.inl
-        Backend/Vulkan/VulkanUtils.cpp
-        Backend/Vulkan/VulkanUtils.h
+        Backend/Vulkan/Utils/VulkanUtils.cpp
+        Backend/Vulkan/Utils/VulkanUtils.h
         Frontend/IEditorOverlay.h
 )
 

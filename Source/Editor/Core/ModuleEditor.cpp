@@ -7,13 +7,13 @@
 #include "Engine/Systems/Event System/EventSystem.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanUtils.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h"
+#include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
+#include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
 #include "Editor/UI/IEditorWindow.inl"
 #include "Editor/UI/ImGuiConfig/ImGuiCustom.h"
 
-// ImGui
+// ImGui_Temp
 #include "imgui.h"
 #include "imgui_stdlib.h"
 #include "imgui_impl_sdl3.h"
@@ -61,7 +61,7 @@ bool ModuleEditor::Awake()
 	App->renderer->GetRendererFrontend()->SetEditorOverlay(this);
 	currentBackendType = App->renderer->GetRendererFrontend()->GetBackendType();
 
-	// Setup Dear ImGui context
+	// Setup Dear ImGui_Temp context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
@@ -83,7 +83,7 @@ bool ModuleEditor::Awake()
 			VulkanContext* vkContext = GetVulkanContext();
 
 			// Setup Platform/Renderer backends
-			ImGui_ImplSDL3_InitForVulkan(App->window->window);
+			ImGui_ImplSDL3_InitForVulkan(App->window->GetSDL_Window());
 
 			ImGui_ImplVulkan_InitInfo imGuiVulkanInitInfo{};
 
@@ -254,9 +254,9 @@ void ModuleEditor::InternalDrawEditor()
 
 	ImGui::ShowDemoWindow();
 
-	//ImGui::Begin("camerapos");
-	//ImGui::Text("%f,%f,%f", App->camera->GetCamera()->GetPos().x, App->camera->GetCamera()->GetPos().y, App->camera->GetCamera()->GetPos().z);
-	//ImGui::End();
+	//ImGui_Temp::Begin("camerapos");
+	//ImGui_Temp::Text("%f,%f,%f", App->camera->GetCamera()->GetPos().x, App->camera->GetCamera()->GetPos().y, App->camera->GetCamera()->GetPos().z);
+	//ImGui_Temp::End();
 
 	for (auto& win : editorWindows)
 	{

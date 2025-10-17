@@ -241,7 +241,7 @@ void AssetsBrowser::Draw()
             //{
             //    if (item.fileType == FileType::FOLDER) 
             //    { // Directory
-            //        if (ImGui::Button(item.name.c_str()))
+            //        if (ImGui_Temp::Button(item.name.c_str()))
             //        {
             //            directory_stack.push(current_directory);
             //            current_directory = current_directory + "/" + item.name;
@@ -250,15 +250,15 @@ void AssetsBrowser::Draw()
             //    }
             //    else 
             //    { // File
-            //        ImGui::Text(item.name.c_str());
+            //        ImGui_Temp::Text(item.name.c_str());
             //    }
             //}
 
             //// Create space before the "Regenerate Library" button to align it to the right
-            //ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - 113, 0)); // Push dummy space
-            //if (ImGui::Button("Regenerate Library"))
+            //ImGui_Temp::Dummy(ImVec2(ImGui_Temp::GetContentRegionAvail().x - 113, 0)); // Push dummy space
+            //if (ImGui_Temp::Button("Regenerate Library"))
             //{
-            //    //ImGui::PushItemWidth(ImGui::GetFontSize() * 10);
+            //    //ImGui_Temp::PushItemWidth(ImGui_Temp::GetFontSize() * 10);
             //}
 
             ImGui::EndMenuBar();
@@ -358,7 +358,7 @@ void AssetsBrowser::Draw()
 
             // - Enable keyboard wrapping on X axis
             // (FIXME-MULTISELECT: We haven't designed/exposed a general nav wrapping api yet, so this flag is provided as a courtesy to avoid doing:
-            //    ImGui::NavMoveRequestTryWrapping(ImGui::GetCurrentWindow(), ImGuiNavMoveFlags_WrapX);
+            //    ImGui_Temp::NavMoveRequestTryWrapping(ImGui_Temp::GetCurrentWindow(), ImGuiNavMoveFlags_WrapX);
             // When we finish implementing a more general API for this, we will obsolete this flag in favor of the new system)
             ms_flags |= ImGuiMultiSelectFlags_NavWrapX;
 
@@ -442,15 +442,15 @@ void AssetsBrowser::Draw()
                         // Drag and drop
                         if (ImGui::BeginDragDropSource())
                         {
-                            //ImGui::SetDragDropPayload("ASSETS_BROWSER_ITEMS", item_data->path.data(), sizeof(item_data->path));
+                            //ImGui_Temp::SetDragDropPayload("ASSETS_BROWSER_ITEMS", item_data->path.data(), sizeof(item_data->path));
 
-                            //ImGui::Text("Create Resource: %s", item_data->name.c_str());
+                            //ImGui_Temp::Text("Create Resource: %s", item_data->name.c_str());
 
-                            //ImGui::EndDragDropSource();
+                            //ImGui_Temp::EndDragDropSource();
 
                             // Create payload with full selection OR single unselected item.
                             // (the later is only possible when using ImGuiMultiSelectFlags_SelectOnClickRelease)
-                            //if (ImGui::GetDragDropPayload() == NULL)
+                            //if (ImGui_Temp::GetDragDropPayload() == NULL)
                             //{
                             //    ImVector<std::string> payload_items;
                             //    void* it = NULL;
@@ -460,17 +460,17 @@ void AssetsBrowser::Draw()
                             //    else
                             //        while (Selection.GetNextSelectedItem(&it, &id))
                             //            payload_items.push_back(item_data->name);
-                            //    ImGui::SetDragDropPayload("ASSETS_BROWSER_ITEMS", payload_items.Data, (size_t)payload_items.size_in_bytes());
+                            //    ImGui_Temp::SetDragDropPayload("ASSETS_BROWSER_ITEMS", payload_items.Data, (size_t)payload_items.size_in_bytes());
                             //}
 
                             // Display payload content in tooltip, by extracting it from the payload data
                             // (we could read from selection, but it is more correct and reusable to read from payload)
-                            //const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+                            //const ImGuiPayload* payload = ImGui_Temp::GetDragDropPayload();
                             //const int payload_count = (int)payload->DataSize / (int)sizeof(std::string);
-                            ////ImGui::Text("%d assets", payload_count);
-                            //ImGui::Text("%s", item_data->name.c_str());
+                            ////ImGui_Temp::Text("%d assets", payload_count);
+                            //ImGui_Temp::Text("%s", item_data->name.c_str());
 
-                            //ImGui::EndDragDropSource();
+                            //ImGui_Temp::EndDragDropSource();
 
                             std::vector<std::string> payload_items;
 
@@ -716,7 +716,7 @@ void AssetsBrowser::Draw()
                     const float hovered_item_nx = (io.MousePos.x - start_pos.x + LayoutItemSpacing * 0.5f) / LayoutItemStep.x;
                     const float hovered_item_ny = (io.MousePos.y - start_pos.y + LayoutItemSpacing * 0.5f) / LayoutItemStep.y;
                     const int hovered_item_idx = ((int)hovered_item_ny * LayoutColumnCount) + (int)hovered_item_nx;
-                    //ImGui::SetTooltip("%f,%f -> item %d", hovered_item_nx, hovered_item_ny, hovered_item_idx); // Move those 4 lines in block above for easy debugging
+                    //ImGui_Temp::SetTooltip("%f,%f -> item %d", hovered_item_nx, hovered_item_ny, hovered_item_idx); // Move those 4 lines in block above for easy debugging
 
                     // Zoom
                     IconSize *= powf(1.1f, (float)(int)ZoomWheelAccum);
@@ -726,7 +726,7 @@ void AssetsBrowser::Draw()
 
                     // Manipulate scroll to that we will land at the same Y location of currently hovered item.
                     // - Calculate next frame position of item under mouse
-                    // - Set new scroll position to be used in next ImGui::BeginChild() call.
+                    // - Set new scroll position to be used in next ImGui_Temp::BeginChild() call.
                     float hovered_item_rel_pos_y = ((float)(hovered_item_idx / LayoutColumnCount) + fmodf(hovered_item_ny, 1.0f)) * LayoutItemStep.y;
                     hovered_item_rel_pos_y += ImGui::GetStyle().WindowPadding.y;
                     float mouse_local_y = io.MousePos.y - ImGui::GetWindowPos().y;

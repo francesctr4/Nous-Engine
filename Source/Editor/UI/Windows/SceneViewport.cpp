@@ -13,7 +13,7 @@
 #include "Engine/Core/Modules/ModuleInput.h"
 #include "Engine/ECS/GameObject.h"
 #include "Engine/Multithreading/NOUS_JobSystem.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h"
+#include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
@@ -114,7 +114,7 @@ void SceneViewport::Draw()
                     //// For example, print the dropped item IDs
                     //for (int i = 0; i < item_count; ++i)
                     //{
-                    //    ImGui::Text("Dropped item ID: %d", payload_items[i]);
+                    //    ImGui_Temp::Text("Dropped item ID: %d", payload_items[i]);
                     //    External->resourceManager->CreateResource(assetsFilePathDrop);
                     //}
 

@@ -89,12 +89,12 @@ void ModuleWindow::SetTitle(const char* title)
     SDL_SetWindowTitle(window, title);
 }
 
-SDL_Window* GetSDLWindowData()
+SDL_Window* ModuleWindow::GetSDL_Window()
 {
-    return External->window->window;
+    return window;
 }
 
-void GetFramebufferSize(int32* width, int32* height)
+void ModuleWindow::GetFramebufferSize(int32* width, int32* height)
 {
-    SDL_GetWindowSizeInPixels(GetSDLWindowData(), width, height);
+    SDL_GetWindowSizeInPixels(window, width, height);
 }

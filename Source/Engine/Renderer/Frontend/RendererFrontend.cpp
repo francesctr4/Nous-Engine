@@ -1,8 +1,6 @@
 #include <Engine/Renderer/Frontend/RendererFrontend.h>
 #include <Engine/Renderer/Backend/RendererBackend.h>
 
-#include <Engine/Core/Application.h>
-
 #include <Engine/Systems/Camera System/Camera.h>
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 #include <Engine/Utils/Logger.h>

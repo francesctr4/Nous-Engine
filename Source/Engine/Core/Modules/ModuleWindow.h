@@ -1,8 +1,10 @@
 #ifndef MODULEWINDOW_H
 #define MODULEWINDOW_H
 
-#include <Engine/Core/Module.h>
+#include "Engine/Core/Module.h"
 #include "Engine/Systems/Event System/IEventListener.h"
+#include "Engine/Core/Globals.h"
+#include "Engine/Core/EngineExport.h"
 
 struct SDL_Window;
 
@@ -25,6 +27,11 @@ public:
 	// ---------------------------------------- \\
 
 	void SetTitle(const char* title);
+
+    NOUS_ENGINE_API SDL_Window* GetSDL_Window();
+    void GetFramebufferSize(int32* width, int32* height);
+
+private:
 
 	SDL_Window* window;
 

@@ -1,5 +1,5 @@
 #include <Engine/Renderer/Backend/Vulkan/Shaders/VulkanShaderUtils.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanUtils.h>
+#include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 #include <Engine/Systems/File System/FileHandle.h>

@@ -1,22 +1,21 @@
 #include <Engine/Renderer/Backend/Vulkan/VulkanBackend.h>
 #include <Engine/Renderer/Backend/Vulkan/VulkanTypes.inl>
 
-#include <Engine/Renderer/Backend/Vulkan/VulkanExternal.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanDevice.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanSwapchain.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanRenderpass.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanCommandBuffer.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanFramebuffer.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanSyncObjects.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanUtils.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanDebugMessenger.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanInstance.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanBuffer.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanImage.h>
+#include "Engine/Renderer/Backend/Vulkan/Core/Device/VulkanDevice.h"
+#include "Engine/Renderer/Backend/Vulkan/Core/Swapchain/VulkanSwapchain.h"
+#include "Engine/Renderer/Backend/Vulkan/Rendering/Renderpass/VulkanRenderpass.h"
+#include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanCommandBuffer.h"
+#include "Engine/Renderer/Backend/Vulkan/Rendering/Framebuffer/VulkanFramebuffer.h"
+#include "Engine/Renderer/Backend/Vulkan/Rendering/SyncObjects/VulkanSyncObjects.h"
+#include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
+#include "Engine/Renderer/Backend/Vulkan/Core/DebugMessenger/VulkanDebugMessenger.h"
+#include "Engine/Renderer/Backend/Vulkan/Core/Instance/VulkanInstance.h"
+#include "Engine/Renderer/Backend/Vulkan/Resources/Buffer/VulkanBuffer.h"
+#include "Engine/Renderer/Backend/Vulkan/Resources/Image/VulkanImage.h"
 #include <Engine/Renderer/Backend/Vulkan/Shaders/VulkanShaderUtils.h>
-#include <Engine/Renderer/Backend/Vulkan/Shaders/VulkanMaterialShader.h>
-#include <Engine/Renderer/Backend/Vulkan/Shaders/VulkanUIShader.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanMultithreading.h>
+#include "Engine/Renderer/Backend/Vulkan/Shaders/BuiltIn/MaterialShader/VulkanMaterialShader.h"
+#include "Engine/Renderer/Backend/Vulkan/Shaders/BuiltIn/UIShader/VulkanUIShader.h"
+#include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
 
 #include <Engine/Systems/Material System/MaterialSystem.h>
 #include <Engine/Systems/File System/FileManager.h>
@@ -27,11 +26,12 @@
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanImGuiResources.h>
+#include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
 #include <Engine/Multithreading/NOUS_Thread.h>
 #include <Engine/Core/Application.h>
 #include <Engine/Systems/Event System/EventSystem.h>
+#include "Engine/Core/Modules/ModuleWindow.h"
 
 VulkanContext* VulkanBackend::vkContext = nullptr;
 
@@ -55,7 +55,7 @@ bool VulkanBackend::Initialize()
     vkContext->allocator = 0;
 
     // Get Framebuffer Size
-    GetFramebufferSize(&cachedFramebufferWidth, &cachedFramebufferHeight);
+    External->window->GetFramebufferSize(&cachedFramebufferWidth, &cachedFramebufferHeight);
 
     vkContext->framebufferWidth = (cachedFramebufferWidth != 0) ? cachedFramebufferWidth : WINDOW_WIDTH;
     vkContext->framebufferHeight = (cachedFramebufferHeight != 0) ? cachedFramebufferHeight : WINDOW_HEIGHT;
