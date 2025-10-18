@@ -3,6 +3,9 @@
 #include "Engine/Utils/Logging System/Logger.h"
 #include "imgui.h"
 
+#include <mutex>
+static std::mutex consoleMutex;
+
 // Colors for different log levels
 ImVec4 levelColors[6] = {
         ImVec4(1.0f, 0.0f, 0.0f, 1.0f),        // FATAL - Red
@@ -36,9 +39,9 @@ void ConsoleWindow::Init()
         logBuffer.emplace_back(level, channel, msg);
 
     SetLogCallback([this](LogLevel level, LogChannel channel, const char* message) {
-        if (freezeConsole)
-            return;
+        if (freezeConsole) return;
 
+        std::scoped_lock lock(consoleMutex); // ✅ lock for multi-threaded logging
         logBuffer.emplace_back(level, channel, message);
 
         if (logBuffer.size() > 10000)
@@ -137,11 +140,14 @@ void ConsoleWindow::DrawMenuBar()
 
 // Collect which channels are actually present in the log
         std::vector<bool> channelUsed((int)LogChannel::MAX_CHANNELS, false);
-        for (const auto& [lvl, ch, msg] : logBuffer)
         {
-            int idx = static_cast<int>(ch);
-            if (idx >= 0 && idx < (int)LogChannel::MAX_CHANNELS)
-                channelUsed[idx] = true;
+            std::scoped_lock lock(consoleMutex); // ✅ protect iteration
+            for (const auto& [lvl, ch, msg] : logBuffer)
+            {
+                int idx = static_cast<int>(ch);
+                if (idx >= 0 && idx < (int)LogChannel::MAX_CHANNELS)
+                    channelUsed[idx] = true;
+            }
         }
 
 // Build a human-readable summary

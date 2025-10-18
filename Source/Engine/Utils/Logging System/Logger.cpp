@@ -34,8 +34,10 @@ void SetLogCallback(std::function<void(LogLevel, LogChannel, const char*)> callb
     logCallback = std::move(callback);
 }
 
-const std::deque<std::tuple<LogLevel, LogChannel, std::string>>& GetLogHistory() {
-    return logHistory;
+std::deque<std::tuple<LogLevel, LogChannel, std::string>> GetLogHistory()
+{
+    std::scoped_lock lock(logMutex);
+    return logHistory; // ✅ safe copy
 }
 
 void ClearLogHistory() {

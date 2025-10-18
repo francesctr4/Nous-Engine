@@ -47,7 +47,7 @@ NOUS_ENGINE_API void LogOutput(LogLevel level, const char* message, ...);
 NOUS_ENGINE_API void LogOutput(LogLevel level, LogChannel channel, const char* message, ...);
 
 NOUS_ENGINE_API void SetLogCallback(std::function<void(LogLevel, LogChannel, const char*)> callback);
-NOUS_ENGINE_API const std::deque<std::tuple<LogLevel, LogChannel, std::string>>& GetLogHistory();
+NOUS_ENGINE_API std::deque<std::tuple<LogLevel, LogChannel, std::string>> GetLogHistory();
 NOUS_ENGINE_API void ClearLogHistory();
 
 NOUS_ENGINE_API void SetLogLevelEnabled(LogLevel level, bool enabled);
