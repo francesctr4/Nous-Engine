@@ -4,8 +4,8 @@
 #include "Editor/EditorExport.h"
 
 #include "Engine/Core/Module.h"
-#include "Engine/Systems/Event System/IEventListener.h"
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"
+#include "Engine/Systems/Event System/IEventListener.h"
 
 #include <vector>
 #include <memory>
@@ -53,7 +53,6 @@ private:
 private:
 
 	RendererBackendType currentBackendType;
-
 	std::vector<std::unique_ptr<IEditorWindow>> editorWindows;
 
 };

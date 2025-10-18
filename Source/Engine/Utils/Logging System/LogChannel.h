@@ -13,6 +13,7 @@
     X(NOUS_ENGINE_RENDERER_BACKEND_VULKAN_BACKEND, "VulkanBackend.cpp") \
     X(NOUSENGINE_SYSTEMS_MEMORYMANAGER, "MemoryManager.cpp") \
     X(NOUSENGINE_SYSTEMS_EVENTSYSTEM, "EventSystem.cpp") \
+    X(NOUSEDITOR_CORE_MODULEEDITOR, "ModuleEditor.cpp") \
 
 // ------------------------------------------------------------
 // Enum generation
@@ -37,7 +38,7 @@ constexpr std::array<const char*, static_cast<size_t>(LogChannel::MAX_CHANNELS)>
 // ------------------------------------------------------------
 // Helper
 // ------------------------------------------------------------
-constexpr std::string_view GetChannelName(LogChannel channel)
+constexpr const char* GetChannelName(LogChannel channel)
 {
     size_t idx = static_cast<size_t>(channel);
     if (idx < LOG_CHANNEL_NAMES.size())

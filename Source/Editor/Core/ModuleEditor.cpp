@@ -37,9 +37,13 @@
 #include <vector>
 #include <memory>
 
+#include "Engine/Utils/Logging System/Logger.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUSEDITOR_CORE_MODULEEDITOR;
+
 ModuleEditor::ModuleEditor(Application* app) : Module(app)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 	currentBackendType = RendererBackendType::UNKNOWN;
 
     App->eventSystem->Subscribe(EventType::INPUT_EVENT, this);
@@ -48,7 +52,7 @@ ModuleEditor::ModuleEditor(Application* app) : Module(app)
 
 ModuleEditor::~ModuleEditor()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 }
 
 // Array to store ImFont pointers
@@ -80,6 +84,7 @@ bool ModuleEditor::Awake()
 	{
 		case RendererBackendType::VULKAN:
 		{
+            NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Using Renderer Backend: %d (Vulkan)", __FUNCTION__, currentBackendType);
 			VulkanContext* vkContext = GetVulkanContext();
 
 			// Setup Platform/Renderer backends
@@ -144,6 +149,8 @@ bool ModuleEditor::Start()
 
 void ModuleEditor::DrawEditor()
 {
+    NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
+
 	InitFrame(currentBackendType);
 
 	InternalDrawEditor();
@@ -192,12 +199,12 @@ void ModuleEditor::InitFrame(RendererBackendType backendType)
 {
 	switch (backendType)
 	{
-		case RendererBackendType::VULKAN: 
+		case RendererBackendType::VULKAN:
 		{
 			ImGui_ImplVulkan_NewFrame();
 			break;
 		}
-		
+
 		case RendererBackendType::OPENGL:
 		{
 
@@ -309,7 +316,7 @@ IEditorWindow* ModuleEditor::GetEditorWindowByName(std::string name)
 {
 	IEditorWindow* window = nullptr;
 
-	for (auto& w : editorWindows) 
+	for (auto& w : editorWindows)
 	{
 		if (strcmp(w->GetTitle(), name.c_str()) == 0)
 		{
