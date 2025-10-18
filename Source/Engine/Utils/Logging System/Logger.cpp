@@ -1,6 +1,6 @@
-#include <Engine/Utils/Logger.h>
-#include <Engine/Utils/Asserts.h>
-#include <Engine/Systems/File System/FileHandle.h>
+#include "Logger.h"
+#include "Engine/Utils/Asserts.h"
+#include "Engine/Systems/File System/FileHandle.h"
 
 #include <cstdio>
 #include <deque>
@@ -23,18 +23,18 @@ static bool logLevelEnabled[LOG_LEVEL_MAX] = {
 };
 
 static FileHandle logFile;
-static std::deque<std::pair<LogLevel, std::string>> logHistory;
+static std::deque<std::tuple<LogLevel, LogChannel, std::string>> logHistory;
 static const size_t MAX_LOG_HISTORY = 10000;
 
-static std::function<void(LogLevel, const char*)> logCallback = nullptr;
+static std::function<void(LogLevel, LogChannel, const char*)> logCallback = nullptr;
 static std::mutex logMutex; // protect log history (in case of multithreaded logging)
 
-void SetLogCallback(std::function<void(LogLevel, const char*)> callback) {
+void SetLogCallback(std::function<void(LogLevel, LogChannel, const char*)> callback) {
     std::scoped_lock lock(logMutex);
     logCallback = std::move(callback);
 }
 
-const std::deque<std::pair<LogLevel, std::string>>& GetLogHistory() {
+const std::deque<std::tuple<LogLevel, LogChannel, std::string>>& GetLogHistory() {
     return logHistory;
 }
 
@@ -122,8 +122,27 @@ bool IsLogLevelEnabled(LogLevel level)
     return (level >= 0 && level < LOG_LEVEL_MAX) ? logLevelEnabled[level] : false;
 }
 
-void LogOutput(LogLevel level, const char* message, ...) {
+// -----------------------------------------------------------------------------
+// 🧩 Compatibility overload (keeps older code working)
+// -----------------------------------------------------------------------------
+void LogOutput(LogLevel level, const char* message, ...)
+{
+    if (IsLoggingPaused()) return;
+    if (!IsLogLevelEnabled(level)) return;
 
+    constexpr int BUFFER_SIZE = 16384;
+    char formatBuffer[BUFFER_SIZE];
+
+    va_list arg_ptr;
+            va_start(arg_ptr, message);
+    vsnprintf(formatBuffer, BUFFER_SIZE, message, arg_ptr);
+            va_end(arg_ptr);
+
+    // Call main function with default channel
+    LogOutput(level, LogChannel::DEFAULT, "%s", formatBuffer);
+}
+
+void LogOutput(LogLevel level, LogChannel channel, const char* message, ...) {
     if (IsLoggingPaused()) return;
     if (!IsLogLevelEnabled(level)) return;
 
@@ -142,18 +161,21 @@ void LogOutput(LogLevel level, const char* message, ...) {
     vsnprintf(formatBuffer, BUFFER_SIZE, message, arg_ptr);
             va_end(arg_ptr);
 
-    snprintf(finalBuffer, BUFFER_SIZE, "%s%s\n", levelStrings[level], formatBuffer);
+    snprintf(finalBuffer, BUFFER_SIZE, "%s%s\n",
+             levelStrings[level], formatBuffer);
 
     PrintToConsoleColor(finalBuffer, levelColor[level]);
     AppendToLogFile(finalBuffer);
 
-    // Add to history (automatically drops oldest entries)
-    if (logHistory.size() >= MAX_LOG_HISTORY)
-        logHistory.pop_front();
-    logHistory.emplace_back(level, std::string(levelStrings[level]) + formatBuffer);
+    {
+        std::scoped_lock lock(logMutex);
+        if (logHistory.size() >= MAX_LOG_HISTORY)
+            logHistory.pop_front();
+        logHistory.emplace_back(level, channel, std::string(finalBuffer));
+    }
 
     if (logCallback)
-        logCallback(level, logHistory.back().second.c_str());
+        logCallback(level, channel, finalBuffer);
 }
 
 void SetLoggingPaused(bool paused) { loggingPaused = paused; }

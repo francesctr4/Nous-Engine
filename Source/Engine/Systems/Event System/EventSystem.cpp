@@ -1,13 +1,15 @@
 #include "EventSystem.h"
-#include <Engine/Utils/Logger.h>   // uses your NOUS_INFO / NOUS_WARN macros
+#include "Engine/Utils/Logging System/Logger.h"   // uses your NOUS_INFO / NOUS_WARN macros
 #include <algorithm>
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUSENGINE_SYSTEMS_EVENTSYSTEM;
 
 // --------------------------------------------------
 // Constructor / Destructor
 // --------------------------------------------------
 EventSystem::EventSystem()
 {
-    NOUS_INFO("[%s] Initialized", __FUNCTION__);
+    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Initialized", __FUNCTION__);
 }
 
 EventSystem::~EventSystem()

@@ -3,7 +3,7 @@
 #include <Engine/ECS/Components/ComponentMaterial.h>
 #include <Engine/ECS/Components/ComponentMesh.h>
 
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 
 std::unique_ptr<Component> Component::CreateComponent(const std::string& type) {
     if (type == "CTransform") {
@@ -19,7 +19,7 @@ std::unique_ptr<Component> Component::CreateComponent(const std::string& type) {
     }
 
     NOUS_WARN("[%s] Unable to create component. "
-              "Unknown component type: %s. \n", type.c_str());
+              "Unknown component type: %s.", type.c_str());
 
     return nullptr;
 }

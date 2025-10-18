@@ -2,7 +2,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
 #include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Utils/Logger.h"
+#include "Engine/Utils/Logging System/Logger.h"
 
 bool NOUS_VulkanGraphicsPipeline::CreateGraphicsPipeline(VulkanContext* vkContext, VulkanRenderpass* renderpass,
     VkVertexInputBindingDescription bindingDescription, uint32 attributeDescriptionCount,

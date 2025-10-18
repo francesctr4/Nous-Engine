@@ -1,7 +1,6 @@
 #include "ConsoleWindow.h"
 #include <algorithm>
-#include "Engine/Utils/Logger.h"
-
+#include "Engine/Utils/Logging System/Logger.h"
 #include "imgui.h"
 
 // Colors for different log levels
@@ -17,27 +16,30 @@ ImVec4 levelColors[6] = {
 ConsoleWindow::ConsoleWindow(const char* title, bool start_open)
         : IEditorWindow(title, nullptr, start_open)
 {
+    for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i)
+        showChannel[i] = true;
+
     Init();
 }
 
 ConsoleWindow::~ConsoleWindow()
 {
-    // Unregister the callback when the window is destroyed
     SetLogCallback(nullptr);
 }
 
 void ConsoleWindow::Init()
 {
-    // Initialize the log buffer with existing logs
+    // 🔧 updated for tuple-based history
     const auto& history = GetLogHistory();
-    logBuffer.assign(history.begin(), history.end());
+    logBuffer.clear();
+    for (const auto& [level, channel, msg] : history)
+        logBuffer.emplace_back(level, channel, msg);
 
-    // Register callback to receive new logs in real-time
-    SetLogCallback([this](LogLevel level, const char* message) {
+    SetLogCallback([this](LogLevel level, LogChannel channel, const char* message) {
         if (freezeConsole)
             return;
 
-        logBuffer.emplace_back(level, message);
+        logBuffer.emplace_back(level, channel, message);
 
         if (logBuffer.size() > 10000)
             logBuffer.pop_front();
@@ -64,45 +66,131 @@ void ConsoleWindow::DrawMenuBar()
 {
     if (ImGui::BeginMenuBar())
     {
-        // 🧹 Clear logs button
         if (ImGui::Button("Clear")) {
             logBuffer.clear();
             ClearLogHistory();
         }
 
-        // Add some spacing between groups
         ImGui::SameLine(0, 50);
-
-        // ⚙️ Behavior toggles
         ImGui::Checkbox("Auto-scroll", &autoScroll);
         ImGui::SameLine();
-        if (ImGui::Checkbox("Freeze", &freezeConsole)) {
+        if (ImGui::Checkbox("Freeze", &freezeConsole))
             SetLoggingPaused(freezeConsole);
-        }
 
         ImGui::SameLine(0, 50);
+        ImGui::Text("Levels:");
+        ImGui::SameLine();
 
-        // 🧩 Channels
+// Build summary text (selected levels)
+        std::string selectedLevels;
+        int activeLevels = 0;
+        for (int i = 0; i < (int)LogLevel::LOG_LEVEL_MAX; ++i)
+        {
+            if (showLevel[i]) {
+                if (!selectedLevels.empty()) selectedLevels += ", ";
+                selectedLevels += levelNames[i];
+                activeLevels++;
+            }
+        }
+
+        if (activeLevels == (int)LogLevel::LOG_LEVEL_MAX)
+            selectedLevels = "All Levels";
+        else if (activeLevels == 0)
+            selectedLevels = "No Level Selected";
+
+        ImGui::SetNextItemWidth(240);
+        if (ImGui::BeginCombo("##LevelFilter", selectedLevels.c_str()))
+        {
+            // “Select All” / “Deselect All” options
+            if (ImGui::Selectable("Select All", false)) {
+                for (int i = 0; i < (int)LogLevel::LOG_LEVEL_MAX; ++i) {
+                    showLevel[i] = true;
+                    SetLogLevelEnabled((LogLevel)i, true);
+                }
+            }
+
+            if (ImGui::Selectable("Deselect All", false)) {
+                for (int i = 0; i < (int)LogLevel::LOG_LEVEL_MAX; ++i) {
+                    showLevel[i] = false;
+                    SetLogLevelEnabled((LogLevel)i, false);
+                }
+            }
+
+            ImGui::Separator();
+
+            // Individual level toggles
+            for (int i = 0; i < (int)LogLevel::LOG_LEVEL_MAX; ++i)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, levelColors[i]);
+                if (ImGui::Selectable(levelNames[i], &showLevel[i], ImGuiSelectableFlags_DontClosePopups))
+                    SetLogLevelEnabled((LogLevel)i, showLevel[i]);
+                ImGui::PopStyleColor();
+            }
+
+            ImGui::EndCombo();
+        }
+
+        // 🧩 NEW: Channel filtering
+        ImGui::SameLine(0, 50);
         ImGui::Text("Channels:");
         ImGui::SameLine();
 
-        for (int i = 0; i < 6; i++) {
-            if (i > 0) ImGui::SameLine();
-            ImGui::PushStyleColor(ImGuiCol_Text, levelColors[i]);
-            if (ImGui::Checkbox(levelNames[i], &showLevel[i])) {
-                SetLogLevelEnabled((LogLevel)i, showLevel[i]);
-            }
-            ImGui::PopStyleColor();
+// Collect which channels are actually present in the log
+        std::vector<bool> channelUsed((int)LogChannel::MAX_CHANNELS, false);
+        for (const auto& [lvl, ch, msg] : logBuffer)
+        {
+            int idx = static_cast<int>(ch);
+            if (idx >= 0 && idx < (int)LogChannel::MAX_CHANNELS)
+                channelUsed[idx] = true;
         }
 
-        // 🔍 Search bar aligned to the right
+// Build a human-readable summary
+        std::string selectedChannels;
+        int activeCount = 0;
+        for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i) {
+            if (showChannel[i]) {
+                if (!selectedChannels.empty()) selectedChannels += ", ";
+                selectedChannels += LOG_CHANNEL_NAMES[i];
+                activeCount++;
+            }
+        }
+        if (activeCount == (int)LogChannel::MAX_CHANNELS)
+            selectedChannels = "All Channels";
+        else if (activeCount == 0)
+            selectedChannels = "No Channel Selected";
+
+// Dropdown combo
+        ImGui::SetNextItemWidth(360);
+        if (ImGui::BeginCombo("##ChannelFilter", selectedChannels.c_str(), ImGuiComboFlags_HeightLargest)) // combo label
+        {
+            // Optional: Select/Deselect All
+            if (ImGui::Selectable("Select All", false)) {
+                for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i)
+                    if (channelUsed[i]) showChannel[i] = true;
+            }
+            if (ImGui::Selectable("Deselect All", false)) {
+                for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i)
+                    showChannel[i] = false;
+            }
+
+            ImGui::Separator();
+
+            // Show only channels that actually appeared in logs
+            for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i) {
+                if (!channelUsed[i])
+                    continue; // skip unused channels
+                ImGui::Selectable(LOG_CHANNEL_NAMES[i], &showChannel[i], ImGuiSelectableFlags_DontClosePopups);
+            }
+
+            ImGui::EndCombo();
+        }
+
         ImGui::SameLine();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 350);
         ImGui::PushItemWidth(250);
         ImGui::InputTextWithHint("##Search", "Search logs...", searchBuffer, IM_ARRAYSIZE(searchBuffer));
         ImGui::PopItemWidth();
 
-        // 🧾 Log count
         ImGui::SameLine();
         ImGui::TextDisabled("%zu logs", logBuffer.size());
 
@@ -113,8 +201,7 @@ void ConsoleWindow::DrawMenuBar()
 void ConsoleWindow::DrawLogPanel()
 {
     const float footer_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
-    ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height), false,
-                      ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height), false, ImGuiWindowFlags_HorizontalScrollbar);
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
 
@@ -126,30 +213,25 @@ void ConsoleWindow::DrawLogPanel()
         std::transform(searchLower.begin(), searchLower.end(), searchLower.begin(), ::tolower);
     }
 
-    for (const auto& log : logBuffer)
+    for (const auto& [level, channel, text] : logBuffer)
     {
-        if (!showLevel[log.first])
-            continue;
+        if (!showLevel[(int)level]) continue;
+        if (!showChannel[(int)channel]) continue;
 
-        const std::string& logText = log.second;
-
-        // Case-insensitive search
+        // 🔍 Case-insensitive search
         if (hasSearch)
         {
-            std::string logLower = logText;
-            std::transform(logLower.begin(), logLower.end(), logLower.begin(), ::tolower);
-
-            if (logLower.find(searchLower) == std::string::npos)
+            std::string textLower = text;
+            std::transform(textLower.begin(), textLower.end(), textLower.begin(), ::tolower);
+            if (textLower.find(searchLower) == std::string::npos)
                 continue;
         }
 
-        // Display log normally
-        ImGui::PushStyleColor(ImGuiCol_Text, levelColors[log.first]);
-        ImGui::TextUnformatted(logText.c_str());
+        ImGui::PushStyleColor(ImGuiCol_Text, levelColors[(int)level]);
+        ImGui::Text("[%s] %s", LOG_CHANNEL_NAMES[(int)channel], text.c_str());
         ImGui::PopStyleColor();
     }
 
-    // Auto-scroll
     if (scrollToBottom && (autoScroll || ImGui::GetScrollY() >= ImGui::GetScrollMaxY())) {
         ImGui::SetScrollHereY(1.0f);
         scrollToBottom = false;
@@ -163,7 +245,6 @@ void ConsoleWindow::DrawCommandLine()
 {
     ImGui::Separator();
 
-    // Command-line input
     bool reclaimFocus = false;
     ImGuiInputTextFlags inputFlags = ImGuiInputTextFlags_EnterReturnsTrue;
 
@@ -171,7 +252,6 @@ void ConsoleWindow::DrawCommandLine()
     if (ImGui::InputText("##Input", inputBuffer, IM_ARRAYSIZE(inputBuffer), inputFlags))
     {
         char* input = inputBuffer;
-        // Trim whitespace
         char* start = input;
         while (*start && (*start == ' ' || *start == '\t')) start++;
         char* end = start + strlen(start) - 1;
@@ -186,30 +266,23 @@ void ConsoleWindow::DrawCommandLine()
     }
     ImGui::PopItemWidth();
 
-    // Add a help hint
     ImGui::SameLine();
     ImGui::TextDisabled("(type 'help' for commands)");
 
-    // Auto-focus on window apparition
     ImGui::SetItemDefaultFocus();
-    if (reclaimFocus) {
-        ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
-    }
+    if (reclaimFocus)
+        ImGui::SetKeyboardFocusHere(-1);
 }
 
 void ConsoleWindow::ExecuteCommand(const std::string& command)
 {
-    // Add command to history
     commandHistory.push_back(command);
-    if (commandHistory.size() > 100) {
+    if (commandHistory.size() > 100)
         commandHistory.erase(commandHistory.begin());
-    }
     historyPos = -1;
 
-    // Log the command
     LogOutput(LOG_LEVEL_INFO, "> %s", command.c_str());
 
-    // Process commands
     if (command == "clear" || command == "cls") {
         logBuffer.clear();
         ClearLogHistory();
@@ -223,8 +296,8 @@ void ConsoleWindow::ExecuteCommand(const std::string& command)
     else if (command == "log_test") {
         LogOutput(LOG_LEVEL_FATAL, "This is a fatal message");
         LogOutput(LOG_LEVEL_ERROR, "This is an error message");
-        LogOutput(LOG_LEVEL_WARN, "This is a warning message");
-        LogOutput(LOG_LEVEL_INFO, "This is an info message");
+        LogOutput(LOG_LEVEL_WARN,  "This is a warning message");
+        LogOutput(LOG_LEVEL_INFO,  "This is an info message");
         LogOutput(LOG_LEVEL_DEBUG, "This is a debug message");
         LogOutput(LOG_LEVEL_TRACE, "This is a trace message");
     }

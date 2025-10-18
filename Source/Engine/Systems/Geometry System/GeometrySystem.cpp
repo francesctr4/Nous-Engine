@@ -4,7 +4,7 @@
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
 #include <array>
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 
 bool NOUS_GeometrySystem::Initialize()
 {

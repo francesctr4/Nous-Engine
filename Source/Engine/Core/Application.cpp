@@ -7,7 +7,6 @@
 #include <Engine/Core/Modules/ModuleScene.h>
 #include <Engine/Core/Modules/ModuleRenderer3D.h>
 
-#include <Engine/Utils/Logger.h>
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 
 #include <SDL3/SDL.h>
@@ -16,6 +15,7 @@
 #include <Engine/Multithreading/NOUS_JobSystem.h>
 #include <Engine/Systems/Event System/EventSystem.h>
 #include <Engine/Systems/Event System/Event.h>
+#include "Engine/Utils/Logging System/Logger.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

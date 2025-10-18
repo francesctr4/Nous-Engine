@@ -25,7 +25,7 @@ public:
 
     void Register(const std::string& name, Factory factory) {
         factories[name] = factory;
-        printf("[ScriptRegistry] Registered: %s\n", name.c_str());
+        printf("[ScriptRegistry] Registered: %s", name.c_str());
     }
 
     IScript* Create(const std::string& name) const {

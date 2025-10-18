@@ -2,7 +2,7 @@
 #define CONSOLEWINDOW_H
 
 #include "Editor/UI/IEditorWindow.inl"
-#include "Engine/Utils/Logger.h"
+#include "Engine/Utils/Logging System/Logger.h"
 #include <vector>
 #include <string>
 #include <functional>
@@ -23,13 +23,15 @@ private:
     void DrawCommandLine();
     void ExecuteCommand(const std::string& command);
 
-    // Use deque instead of vector for efficient front removal
-    std::deque<std::pair<LogLevel, std::string>> logBuffer;
+    // Updated buffer to store channel info
+    std::deque<std::tuple<LogLevel, LogChannel, std::string>> logBuffer;
+
     bool autoScroll = true;
     bool scrollToBottom = false;
 
     // Filtering
-    bool showLevel[6] = { true, true, true, true, true, false }; // FATAL, ERROR, WARN, INFO, DEBUG, TRACE
+    bool showLevel[(int)LogLevel::LOG_LEVEL_MAX] = { true, true, true, true, true, false };
+    bool showChannel[(int)LogChannel::MAX_CHANNELS] = { true }; // new!
 
     // Command history
     std::vector<std::string> commandHistory;

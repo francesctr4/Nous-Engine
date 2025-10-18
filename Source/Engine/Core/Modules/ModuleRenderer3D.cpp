@@ -10,7 +10,7 @@
 #include <Engine/ECS/Components/ComponentMaterial.h>
 
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 #include <Engine/Systems/Event System/EventSystem.h>
 
 #ifdef _PROFILING

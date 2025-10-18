@@ -16,7 +16,7 @@
 #define STBI_THREAD_LOCAL
 #include <stb_image.h>
 
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 
 bool ImporterTexture::Import(const MetaFileData& metaFileData)
 {

@@ -1,6 +1,6 @@
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 #include <Engine/Utils/Asserts.h>
 #include <Engine/Systems/Memory Manager/Custom Allocators/DynamicAllocator.h>
 
@@ -10,6 +10,8 @@
 
 #include <mutex>
 #include <cstring>
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUSENGINE_SYSTEMS_MEMORYMANAGER;
 
 static std::mutex memoryMutex;
 
@@ -75,7 +77,7 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 
 	if (!config.allocatorBlock) 
 	{
-		NOUS_FATAL("[%s] Memory system allocation failed", __FUNCTION__);
+		NOUS_FATAL_C(CURRENT_CHANNEL, "[%s] Memory system allocation failed", __FUNCTION__);
 		return;
 	}
 
@@ -85,7 +87,7 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 		config.allocatorBlock
 	);
 
-	NOUS_DEBUG("[%s] Memory system initialized with %llu bytes",
+	NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Memory system initialized with %llu bytes",
 			   __FUNCTION__, config.totalAllocationSize);
 }
 
@@ -126,7 +128,7 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 
 	if (tag == MemoryTag::UNKNOWN) 
 	{
-		NOUS_WARN("Memory Allocation called using MEMORY_TAG_UNKNOWN.");
+		NOUS_WARN_C(CURRENT_CHANNEL, "[%s] Memory Allocation called using MEMORY_TAG_UNKNOWN.", __FUNCTION__);
 	}
 
 	config.stats.totalAllocated += size;

@@ -3,7 +3,7 @@
 
 #include <Engine/Systems/Camera System/Camera.h>
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 #include <Engine/Renderer/Frontend/IEditorOverlay.h>
 
 RendererFrontend::RendererFrontend()

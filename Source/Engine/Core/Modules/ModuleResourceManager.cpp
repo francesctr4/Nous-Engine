@@ -7,7 +7,7 @@
 #include <Engine/Core/Application.h>
 #include <Engine/Core/Modules/ModuleInput.h>
 #include <Engine/Systems/File System/FileManager.h>
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 
 #include <Engine/Utils/Random.h>

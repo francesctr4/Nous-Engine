@@ -1,6 +1,6 @@
 #include <Engine/Multithreading/NOUS_JobSystem.h>
 #include <Engine/Multithreading/NOUS_Job.h>
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 

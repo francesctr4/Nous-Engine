@@ -12,7 +12,7 @@
 #include <Engine/ECS/Components/ComponentTransform.h>
 // Parson
 #include <parson.h>
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 
 // Forward declarations
 class Scene;
@@ -191,7 +191,7 @@ public:
         uint32_t parentID = m_Parent ? m_Parent->GetID() : 0;
         json_object_set_number(obj, "parent", parentID);
 
-        NOUS_INFO("Serializing: %s (ID: %u) -> Parent ID: %u\n",
+        NOUS_INFO("Serializing: %s (ID: %u) -> Parent ID: %u",
                m_Name.c_str(), m_ID, parentID);
 
         // Serialize components
@@ -216,7 +216,7 @@ public:
         // Store the parent ID for later resolution
         go->m_ParentID = parentID;
 
-        NOUS_INFO("Deserializing: %s (ID: %u) -> Parent ID: %u\n",
+        NOUS_INFO("Deserializing: %s (ID: %u) -> Parent ID: %u",
                name ? name : "", uid, parentID);
 
         // Deserialize components

@@ -21,7 +21,7 @@
 #include <Engine/Systems/File System/FileManager.h>
 
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
@@ -32,6 +32,8 @@
 #include <Engine/Core/Application.h>
 #include <Engine/Systems/Event System/EventSystem.h>
 #include "Engine/Core/Modules/ModuleWindow.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_BACKEND_VULKAN_BACKEND;
 
 VulkanContext* VulkanBackend::vkContext = nullptr;
 
@@ -49,7 +51,7 @@ bool VulkanBackend::Initialize()
 {
     bool ret = true;
 
-    NOUS_INFO(" ----------------------- USING VULKAN BACKEND ----------------------- ");
+    NOUS_INFO_C(CURRENT_CHANNEL, " ----------------------- USING VULKAN BACKEND ----------------------- ");
 
     // TODO: Custom allocator
     vkContext->allocator = 0;
@@ -64,81 +66,81 @@ bool VulkanBackend::Initialize()
     cachedFramebufferWidth = 0;
 
     // Instance
-    NOUS_DEBUG("[%s][VULKAN] Creating Vulkan instance...", __FUNCTION__);
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s][VULKAN] Creating Vulkan instance...", __FUNCTION__);
     if (!NOUS_VulkanInstance::CreateInstance(vkContext)) 
     {
-        NOUS_ERROR("Failed to create Vulkan Instance. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Instance. Shutting the Application.");
         ret = false;
     }
     else 
     {
-        NOUS_DEBUG("Vulkan Instance created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Instance created successfully!");
     }
 
     // Debugger
-    NOUS_DEBUG("Creating Vulkan Debugger...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Debugger...");
     if (!NOUS_VulkanDebugMessenger::SetupDebugMessenger(vkContext)) 
     {
-        NOUS_ERROR("Failed to create Vulkan Debugger. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Debugger. Shutting the Application.");
         ret = false;
     }
     else 
     {
-        NOUS_DEBUG("Vulkan Debugger created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Debugger created successfully!");
     }
 
     // Surface
-    NOUS_DEBUG("Creating Vulkan surface...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan surface...");
     if (!NOUS_VulkanInstance::CreateSurface(vkContext))
     {
-        NOUS_ERROR("Failed to create Vulkan Surface. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Surface. Shutting the Application.");
         ret = false;
     }
     else 
     {
-        NOUS_DEBUG("Vulkan Surface created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Surface created successfully!");
     }
 
     // Physical Device
-    NOUS_DEBUG("Searching for a suitable Physical Device...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Searching for a suitable Physical Device...");
     if (!NOUS_VulkanDevice::PickPhysicalDevice(vkContext))
     {
-        NOUS_ERROR("Failed to find a suitable GPU!");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to find a suitable GPU!");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Suitable GPU found!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Suitable GPU found!");
     }
 
     // Logical Device
-    NOUS_DEBUG("Creating Vulkan Logical Device...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Logical Device...");
     if (!NOUS_VulkanDevice::CreateLogicalDevice(vkContext))
     {
-        NOUS_ERROR("Failed to create Vulkan Logical Device. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Logical Device. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan Logical Device created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Logical Device created successfully!");
     }
 
     // Swap Chain
-    NOUS_DEBUG("Creating Vulkan Swap Chain...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Swap Chain...");
     if (!NOUS_VulkanSwapChain::CreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, &vkContext->swapChain))
     {
-        NOUS_ERROR("Failed to create Vulkan Swap Chain. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Swap Chain. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan Swap Chain created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Swap Chain created successfully!");
     }
 
     NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(vkContext);
 
     // Scene Render Pass
-    NOUS_DEBUG("Creating Vulkan Scene Render Pass...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Scene Render Pass...");
     if (!NOUS_VulkanRenderpass::CreateOffscreenRenderpass(vkContext, &vkContext->sceneRenderpass, 
         glm::vec4(0.0f, 0.0f, vkContext->framebufferWidth, vkContext->framebufferHeight),
         glm::vec4(0.1f, 0.0f, 0.0f, 1.0f),
@@ -146,16 +148,16 @@ bool VulkanBackend::Initialize()
         0, 
         RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER))
     {
-        NOUS_ERROR("Failed to create Vulkan Scene Render Pass. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Scene Render Pass. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan Scene Render Pass created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Scene Render Pass created successfully!");
     }
 
     // Game Render Pass
-    NOUS_DEBUG("Creating Vulkan Game Render Pass...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Game Render Pass...");
     if (!NOUS_VulkanRenderpass::CreateOffscreenRenderpass(vkContext, &vkContext->gameRenderpass,
         glm::vec4(0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight),
         glm::vec4(0.0f, 0.0f, 0.1f, 1.0f),
@@ -163,16 +165,16 @@ bool VulkanBackend::Initialize()
         0,
         RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER))
     {
-        NOUS_ERROR("Failed to create Vulkan Game Render Pass. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Game Render Pass. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan Game Render Pass created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Game Render Pass created successfully!");
     }
 
     // UI Render Pass
-    NOUS_DEBUG("Creating Vulkan UI Render Pass...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan UI Render Pass...");
     if (!NOUS_VulkanRenderpass::CreateRenderpass(vkContext, &vkContext->uiRenderpass,
         glm::vec4(0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight),
         glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
@@ -181,109 +183,109 @@ bool VulkanBackend::Initialize()
         RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER,
         false, false))
     {
-        NOUS_ERROR("Failed to create Vulkan UI Render Pass. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan UI Render Pass. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan UI Render Pass created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan UI Render Pass created successfully!");
     }
 
     // Swapchain Framebuffers
-    NOUS_DEBUG("Creating Vulkan Swapchain Framebuffers...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Swapchain Framebuffers...");
     if (!NOUS_VulkanFramebuffer::CreateFramebuffers(vkContext))
     {
-        NOUS_ERROR("Failed to create Vulkan Swapchain Framebuffers. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Swapchain Framebuffers. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan Swapchain Framebuffers created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Swapchain Framebuffers created successfully!");
     }
 
     // Create Command Buffers
-    NOUS_DEBUG("Creating Vulkan Command Buffers...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Command Buffers...");
     if (!NOUS_VulkanCommandBuffer::CreateCommandBuffers(vkContext))
     {
-        NOUS_ERROR("Failed to create Vulkan Command Buffers. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Command Buffers. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan Command Buffers created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Command Buffers created successfully!");
     }
 
     // MULTITHREADING
     // Create Vulkan Worker Command Pools
-    NOUS_DEBUG("Creating Vulkan Worker Command Pools...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Worker Command Pools...");
     if (!NOUS_VulkanMultithreading::CreateWorkerCommandPools(vkContext))
     {
-        NOUS_ERROR("Failed to create Vulkan Worker Command Pools. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Worker Command Pools. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan Worker Command Pools created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Worker Command Pools created successfully!");
     }
 
     // Create Sync Objects
-    NOUS_DEBUG("Creating Vulkan Sync Objects...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Sync Objects...");
     if (!NOUS_VulkanSyncObjects::CreateSyncObjects(vkContext))
     {
-        NOUS_ERROR("Failed to create Vulkan Sync Objects. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Sync Objects. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan Sync Objects created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Sync Objects created successfully!");
     }
 
     // Create Vulkan Material Shader
-    NOUS_DEBUG("Creating Nous Material Shader...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Nous Material Shader...");
     if (!NOUS_VulkanMaterialShader::CreateMaterialShader(vkContext, &vkContext->sceneRenderpass, &vkContext->materialShader))
     {
-        NOUS_ERROR("Failed to create Nous Material Shader. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Nous Material Shader. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Nous Material Shader created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Nous Material Shader created successfully!");
     }
 
     // Create Vulkan Game Shader
-    NOUS_DEBUG("Creating Nous Game Shader...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Nous Game Shader...");
     if (!NOUS_VulkanMaterialShader::CreateMaterialShader(vkContext, &vkContext->gameRenderpass, &vkContext->gameShader))
     {
-        NOUS_ERROR("Failed to create Nous Game Shader. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Nous Game Shader. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Nous Game Shader created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Nous Game Shader created successfully!");
     }
 
     // Create Vulkan UI Shader
-    NOUS_DEBUG("Creating Nous UI Shader...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Nous UI Shader...");
     if (!NOUS_VulkanUIShader::CreateUIShader(vkContext, &vkContext->uiShader))
     {
-        NOUS_ERROR("Failed to create Nous UI Shader. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Nous UI Shader. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Nous UI Shader created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Nous UI Shader created successfully!");
     }
 
     // Create Vulkan Buffers
-    NOUS_DEBUG("Creating Vulkan Buffers...");
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Buffers...");
     if (!NOUS_VulkanBuffer::CreateBuffers(vkContext))
     {
-        NOUS_ERROR("Failed to create Vulkan Buffers. Shutting the Application.");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Buffers. Shutting the Application.");
         ret = false;
     }
     else
     {
-        NOUS_DEBUG("Vulkan Buffers created successfully!");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Buffers created successfully!");
     }
 
     // Mark all geometries as invalid
@@ -339,7 +341,7 @@ void VulkanBackend::Resized(uint16 width, uint16 height) noexcept
 
     vkContext->framebufferSizeGeneration++;
 
-    NOUS_INFO("Vulkan Renderer Backend --> Resized: W / H / GEN: %i / %i / %llu", width, height, vkContext->framebufferSizeGeneration);
+    NOUS_INFO_C(CURRENT_CHANNEL, "Vulkan Renderer Backend --> Resized: W / H / GEN: %i / %i / %llu", width, height, vkContext->framebufferSizeGeneration);
 }
 
 FrameResult VulkanBackend::BeginFrame(float dt)
@@ -355,7 +357,7 @@ FrameResult VulkanBackend::BeginFrame(float dt)
         VkResult waitRes = vkDeviceWaitIdle(device->logicalDevice);
         if (!VkResultIsSuccess(waitRes))
         {
-            NOUS_ERROR("VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (recreate) failed: '%s'",
+            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (recreate) failed: '%s'",
                        VkResultMessage(waitRes, true).c_str());
             return FrameResult::ERROR;
         }
@@ -363,11 +365,11 @@ FrameResult VulkanBackend::BeginFrame(float dt)
         // Try to rebuild swapchain-dependent resources. If this fails, skip again (e.g., minimized).
         if (!RecreateResources())
         {
-            NOUS_INFO("Swapchain recreation still pending (likely minimized). Skipping frame.");
+            NOUS_INFO_C(CURRENT_CHANNEL, "Swapchain recreation still pending (likely minimized). Skipping frame.");
             return FrameResult::SKIPPED;
         }
 
-        NOUS_INFO("Swapchain recreated. Skipping frame to complete transition.");
+        NOUS_INFO_C(CURRENT_CHANNEL, "Swapchain recreated. Skipping frame to complete transition.");
         return FrameResult::SKIPPED;
     }
 
@@ -377,18 +379,18 @@ FrameResult VulkanBackend::BeginFrame(float dt)
         VkResult waitRes = vkDeviceWaitIdle(device->logicalDevice);
         if (!VkResultIsSuccess(waitRes))
         {
-            NOUS_ERROR("VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (resize) failed: '%s'",
+            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (resize) failed: '%s'",
                        VkResultMessage(waitRes, true).c_str());
             return FrameResult::ERROR;
         }
 
         if (!RecreateResources())
         {
-            NOUS_INFO("Resize detected but resources not ready (likely minimized). Skipping frame.");
+            NOUS_INFO_C(CURRENT_CHANNEL, "Resize detected but resources not ready (likely minimized). Skipping frame.");
             return FrameResult::SKIPPED;
         }
 
-        NOUS_INFO("Resize handled. Skipping this frame.");
+        NOUS_INFO_C(CURRENT_CHANNEL, "Resize handled. Skipping this frame.");
         return FrameResult::SKIPPED;
     }
 
@@ -398,7 +400,7 @@ FrameResult VulkanBackend::BeginFrame(float dt)
         VkResult fenceRes = vkWaitForFences(device->logicalDevice, 1, &inFlight, VK_TRUE, UINT64_MAX);
         if (!VkResultIsSuccess(fenceRes))
         {
-            NOUS_FATAL("In-flight fence wait failure! Error: %s", VkResultMessage(fenceRes, true).c_str());
+            NOUS_FATAL_C(CURRENT_CHANNEL, "In-flight fence wait failure! Error: %s", VkResultMessage(fenceRes, true).c_str());
             return FrameResult::ERROR;
         }
     }
@@ -418,14 +420,14 @@ FrameResult VulkanBackend::BeginFrame(float dt)
         {
             // Trigger recreation on next frame; skip now.
             vkContext->recreatingSwapchain = true;
-            NOUS_INFO("Swapchain acquire returned %s. Scheduling recreation, skipping frame.",
+            NOUS_INFO_C(CURRENT_CHANNEL, "Swapchain acquire returned %s. Scheduling recreation, skipping frame.",
                       VkResultMessage(acquireRes, true).c_str());
             return FrameResult::SKIPPED;
         }
 
         if (!VkResultIsSuccess(acquireRes))
         {
-            NOUS_FATAL("Failed to acquire next image index: %s", VkResultMessage(acquireRes, true).c_str());
+            NOUS_FATAL_C(CURRENT_CHANNEL, "Failed to acquire next image index: %s", VkResultMessage(acquireRes, true).c_str());
             return FrameResult::ERROR;
         }
     }
@@ -442,7 +444,7 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
         VkResult waitRes = vkWaitForFences(vkContext->device.logicalDevice, 1, &imgFence, VK_TRUE, UINT64_MAX);
         if (!VkResultIsSuccess(waitRes))
         {
-            NOUS_FATAL("Image fence wait failure! Error: %s", VkResultMessage(waitRes, true).c_str());
+            NOUS_FATAL_C(CURRENT_CHANNEL, "Image fence wait failure! Error: %s", VkResultMessage(waitRes, true).c_str());
             return FrameResult::ERROR;
         }
     }
@@ -455,7 +457,7 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
         VkResult resetRes = vkResetFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame]);
         if (!VkResultIsSuccess(resetRes))
         {
-            NOUS_ERROR("vkResetFences failed: %s", VkResultMessage(resetRes, true).c_str());
+            NOUS_ERROR_C(CURRENT_CHANNEL, "vkResetFences failed: %s", VkResultMessage(resetRes, true).c_str());
             return FrameResult::ERROR;
         }
     }
@@ -494,7 +496,7 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
 
     if (!VkResultIsSuccess(submitRes))
     {
-        NOUS_ERROR("vkQueueSubmit failed: %s", VkResultMessage(submitRes, true).c_str());
+        NOUS_ERROR_C(CURRENT_CHANNEL, "vkQueueSubmit failed: %s", VkResultMessage(submitRes, true).c_str());
         return FrameResult::ERROR;
     }
 
@@ -521,14 +523,14 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
     {
         // Trigger recreation path and skip this frame; not fatal.
         vkContext->recreatingSwapchain = true;
-        NOUS_INFO("Queue present returned %s. Scheduling recreation; skipping frame.",
+        NOUS_INFO_C(CURRENT_CHANNEL, "Queue present returned %s. Scheduling recreation; skipping frame.",
                   VkResultMessage(presentRes, true).c_str());
         return FrameResult::SKIPPED;
     }
 
     if (!VkResultIsSuccess(presentRes))
     {
-        NOUS_ERROR("Queue present failed: %s", VkResultMessage(presentRes, true).c_str());
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Queue present failed: %s", VkResultMessage(presentRes, true).c_str());
         return FrameResult::ERROR;
     }
 
@@ -570,7 +572,7 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
         }
         default:
         {
-            NOUS_ERROR("Vulkan Renderpass called on an unrecognized renderpass ID.");
+            NOUS_ERROR_C(CURRENT_CHANNEL, "Vulkan Renderpass called on an unrecognized renderpass ID.");
             return false;
         }
     }
@@ -663,7 +665,7 @@ bool VulkanBackend::EndRenderpass(RenderpassType renderpassID)
         }
         default:
         {
-            NOUS_ERROR("Vulkan Renderpass called on an unrecognized renderpass ID.");
+            NOUS_ERROR_C(CURRENT_CHANNEL, "Vulkan Renderpass called on an unrecognized renderpass ID.");
             return false;
         }
     }
@@ -682,14 +684,14 @@ bool VulkanBackend::RecreateResources()
     // If already being recreated, do not try again.
     if (vkContext->recreatingSwapchain)
     {
-        NOUS_DEBUG("Recreate Swapchain called when already recreating. Booting.");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Recreate Swapchain called when already recreating. Booting.");
         return false;
     }
 
     // Detect if the window is too small to be drawn to.
     if (vkContext->framebufferWidth == 0 || vkContext->framebufferHeight == 0)
     {
-        NOUS_DEBUG("Recreate Swapchain called when window is < 1 in a dimension. Booting.");
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Recreate Swapchain called when window is < 1 in a dimension. Booting.");
         return false;
     }
 
@@ -843,7 +845,7 @@ VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(RenderpassTyp
         }
         default:
         {
-            NOUS_ERROR("Vulkan Renderpass called on an unrecognized renderpass ID.");
+            NOUS_ERROR_C(CURRENT_CHANNEL, "Vulkan Renderpass called on an unrecognized renderpass ID.");
         }
     }
 
@@ -998,11 +1000,11 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     
     if (!VkResultIsSuccess(result)) 
     {
-        NOUS_ERROR("[%s][VULKAN] Error creating texture sampler: %s", VkResultMessage(result, true).c_str());
+        NOUS_ERROR_C(CURRENT_CHANNEL, "[%s][VULKAN] Error creating texture sampler: %s", VkResultMessage(result, true).c_str());
         return false;
     }
 
-    NOUS_INFO("[%s][VULKAN] Texture Created Successfully: %s",
+    NOUS_INFO_C(CURRENT_CHANNEL, "[%s][VULKAN] Texture Created Successfully: %s",
               __FUNCTION__, VkResultMessage(result, true).c_str());
     return true;
 }
@@ -1029,21 +1031,21 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
     {
         if (!NOUS_VulkanMaterialShader::AcquireMaterialShaderResources(vkContext, &vkContext->materialShader, material))
         {
-            NOUS_ERROR("VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
+            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
             return false;
         }
 
         if (!NOUS_VulkanMaterialShader::AcquireMaterialShaderResources(vkContext, &vkContext->gameShader, material))
         {
-            NOUS_ERROR("VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
+            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
             return false;
         }
 
-        NOUS_INFO("[%s] Material created.", __FUNCTION__);
+        NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Material created.", __FUNCTION__);
         return true;
     }
 
-    NOUS_ERROR("VulkanBackend::CreateMaterial() called with nullptr. Creation failed.");
+    NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() called with nullptr. Creation failed.");
     return false;
 }
 
@@ -1058,12 +1060,12 @@ void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
         }
         else 
         {
-            NOUS_WARN("VulkanBackend::DestroyMaterial() called with internal_id = INVALID_ID. Nothing was done.");
+            NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with internal_id = INVALID_ID. Nothing was done.");
         }
     }
     else 
     {
-        NOUS_WARN("VulkanBackend::DestroyMaterial() called with nullptr. Nothing was done.");
+        NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with nullptr. Nothing was done.");
     }
 }
 
@@ -1071,7 +1073,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
 {
     if (!vertexCount || !vertices) 
     {
-        NOUS_ERROR("VulkanBackend::CreateGeometry() requires vertex data, and none was supplied. vertexCount=%d, vertices=%p", vertexCount, vertices);
+        NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateGeometry() requires vertex data, and none was supplied. vertexCount=%d, vertices=%p", vertexCount, vertices);
         return false;
     }
 
@@ -1114,7 +1116,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
 
     if (!internalData) 
     {
-        NOUS_FATAL("VulkanBackend::CreateGeometry() failed to find a free index for a new geometry upload. Adjust config to allow for more.");
+        NOUS_FATAL_C(CURRENT_CHANNEL, "VulkanBackend::CreateGeometry() failed to find a free index for a new geometry upload. Adjust config to allow for more.");
         return false;
     }
 
@@ -1128,7 +1130,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectVertexBuffer,
         &internalData->vertexBufferOffset, internalData->vertexSize, vertices))
     {
-        NOUS_ERROR("VulkanBackend::CreateGeometry() failed to upload to the vertex buffer!");
+        NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateGeometry() failed to upload to the vertex buffer!");
         return false;
     }
 
@@ -1141,7 +1143,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
         if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectIndexBuffer,
             &internalData->indexBufferOffset, internalData->indexSize, indices))
         {
-            NOUS_ERROR("VulkanBackend::CreateGeometry() failed to upload to the index buffer!");
+            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateGeometry() failed to upload to the index buffer!");
             return false;
         }
     }

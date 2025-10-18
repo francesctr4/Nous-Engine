@@ -1,6 +1,6 @@
 #include <Engine/Systems/Texture System/TextureSystem.h>
 
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 #include <Engine/Core/Application.h>
 #include <Engine/Core/Modules/ModuleRenderer3D.h>

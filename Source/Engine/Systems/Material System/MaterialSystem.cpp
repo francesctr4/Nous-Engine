@@ -6,7 +6,7 @@
 #include <Engine/Systems/Texture System/TextureSystem.h>
 #include <Engine/Renderer/Frontend/RendererFrontend.h>
 #include <Engine/Core/Application.h>
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 
 bool NOUS_MaterialSystem::Initialize()
 {

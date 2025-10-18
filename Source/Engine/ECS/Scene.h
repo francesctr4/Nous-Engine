@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <mutex>
 #include <queue>
-#include <Engine/Utils/Logger.h>
+#include "Engine/Utils/Logging System/Logger.h"
 
 class Scene {
 public:
@@ -129,7 +129,7 @@ public:
         json_serialize_to_file_pretty(root, filepath.c_str());
         json_value_free(root);
 
-        NOUS_INFO("Scene saved: %s with %zu objects\n", filepath.c_str(), m_GameObjects.size());
+        NOUS_INFO("Scene saved: %s with %zu objects", filepath.c_str(), m_GameObjects.size());
     }
 
     void Deserialize(const std::string& filepath) {
@@ -138,7 +138,7 @@ public:
 
         JSON_Value* root = json_parse_file(filepath.c_str());
         if (!root) {
-            NOUS_ERROR("Failed to parse scene file: %s\n", filepath.c_str());
+            NOUS_ERROR("Failed to parse scene file: %s", filepath.c_str());
             return;
         }
 
@@ -153,7 +153,7 @@ public:
         JSON_Array* arr = json_object_get_array(rootObj, "GameObjects");
         if (!arr) {
             json_value_free(root);
-            NOUS_WARN("No GameObjects array found in scene file\n");
+            NOUS_WARN("No GameObjects array found in scene file");
             return;
         }
 
@@ -183,18 +183,18 @@ public:
                 GameObject* parent = FindGameObjectByID_NoLock(parentID);
                 if (parent) {
                     parent->AddChild(gameObject.get());
-                    NOUS_INFO("Set parent: %s (ID: %u) -> %s (ID: %u)\n",
+                    NOUS_INFO("Set parent: %s (ID: %u) -> %s (ID: %u)",
                            gameObject->GetName().c_str(), gameObject->GetID(),
                            parent->GetName().c_str(), parentID);
                 } else {
-                    NOUS_WARN("Warning: Parent with ID %u not found for GameObject %s. It will be a root object.\n",
+                    NOUS_WARN("Warning: Parent with ID %u not found for GameObject %s. It will be a root object.",
                            parentID, gameObject->GetName().c_str());
                 }
             }
         }
 
         json_value_free(root);
-        NOUS_WARN("[%s] Successfully loaded scene: %s with %zu objects\n", __FUNCTION__, filepath.c_str(), m_GameObjects.size());
+        NOUS_WARN("[%s] Successfully loaded scene: %s with %zu objects", __FUNCTION__, filepath.c_str(), m_GameObjects.size());
     }
 
     void Clear() {

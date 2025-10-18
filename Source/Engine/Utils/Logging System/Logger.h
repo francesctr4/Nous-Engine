@@ -1,8 +1,9 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <Engine/Core/Globals.h>
-#include <Engine/Core/EngineExport.h>
+#include "Engine/Core/Globals.h"
+#include "Engine/Core/EngineExport.h"
+#include "Engine/Utils/Logging System/LogChannel.h"
 
 #include <vector>
 #include <string>
@@ -43,9 +44,10 @@ NOUS_ENGINE_API void ShutdownLogging();
 NOUS_ENGINE_API void AppendToLogFile(const char* message);
 
 NOUS_ENGINE_API void LogOutput(LogLevel level, const char* message, ...);
+NOUS_ENGINE_API void LogOutput(LogLevel level, LogChannel channel, const char* message, ...);
 
-NOUS_ENGINE_API void SetLogCallback(std::function<void(LogLevel, const char*)> callback);
-NOUS_ENGINE_API const std::deque<std::pair<LogLevel, std::string>>& GetLogHistory();
+NOUS_ENGINE_API void SetLogCallback(std::function<void(LogLevel, LogChannel, const char*)> callback);
+NOUS_ENGINE_API const std::deque<std::tuple<LogLevel, LogChannel, std::string>>& GetLogHistory();
 NOUS_ENGINE_API void ClearLogHistory();
 
 NOUS_ENGINE_API void SetLogLevelEnabled(LogLevel level, bool enabled);
@@ -95,5 +97,15 @@ NOUS_ENGINE_API bool IsLoggingPaused();
 // Does nothing when LOG_TRACE_ENABLED != 1
 #define NOUS_TRACE(message, ...)
 #endif
+
+#define NOUS_LOG_CHANNEL(CHANNEL, LEVEL, message, ...) \
+    LogOutput(LEVEL, CHANNEL, message, ##__VA_ARGS__)
+
+#define NOUS_TRACE_C(CHANNEL, message, ...) NOUS_LOG_CHANNEL(CHANNEL, LogLevel::LOG_LEVEL_TRACE, message, ##__VA_ARGS__)
+#define NOUS_DEBUG_C(CHANNEL, message, ...) NOUS_LOG_CHANNEL(CHANNEL, LogLevel::LOG_LEVEL_DEBUG, message, ##__VA_ARGS__)
+#define NOUS_INFO_C(CHANNEL, message, ...)  NOUS_LOG_CHANNEL(CHANNEL, LogLevel::LOG_LEVEL_INFO,  message, ##__VA_ARGS__)
+#define NOUS_WARN_C(CHANNEL, message, ...)  NOUS_LOG_CHANNEL(CHANNEL, LogLevel::LOG_LEVEL_WARN,  message, ##__VA_ARGS__)
+#define NOUS_ERROR_C(CHANNEL, message, ...) NOUS_LOG_CHANNEL(CHANNEL, LogLevel::LOG_LEVEL_ERROR, message, ##__VA_ARGS__)
+#define NOUS_FATAL_C(CHANNEL, message, ...) NOUS_LOG_CHANNEL(CHANNEL, LogLevel::LOG_LEVEL_FATAL, message, ##__VA_ARGS__)
 
 #endif // LOGGER_H
