@@ -30,6 +30,8 @@ set_target_properties(Modules PROPERTIES
 # Public include directory (so "Core/Modules/..." works)
 target_include_directories(Modules PUBLIC ../../..)
 
+target_compile_definitions(Modules PRIVATE NOUS_ENGINE_EXPORTS)
+
 # =====================================================
 # External dependencies
 # =====================================================

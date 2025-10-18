@@ -26,6 +26,8 @@ add_library(Scripting OBJECT ${SCRIPTING_SOURCES})
 # Include root source so "Scripting/..." includes work
 target_include_directories(Scripting PUBLIC ../..)
 
+target_compile_definitions(Scripting PRIVATE NOUS_ENGINE_EXPORTS)
+
 find_package(glm REQUIRED)
 target_link_libraries(Scripting PUBLIC glm::glm)
 

@@ -25,5 +25,7 @@ set_target_properties(ECS PROPERTIES
 
 target_include_directories(ECS PUBLIC ../..)
 
+target_compile_definitions(ECS PRIVATE NOUS_ENGINE_EXPORTS)
+
 find_package(glm REQUIRED)
 target_link_libraries(ECS PUBLIC glm::glm)

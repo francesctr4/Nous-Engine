@@ -24,5 +24,7 @@ set_target_properties(Utils PROPERTIES
 
 target_include_directories(Utils PUBLIC ../..)
 
+target_compile_definitions(Utils PRIVATE NOUS_ENGINE_EXPORTS)
+
 find_package(glm REQUIRED)
 target_link_libraries(Utils PUBLIC glm::glm)

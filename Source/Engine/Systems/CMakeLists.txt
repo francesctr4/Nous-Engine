@@ -73,5 +73,7 @@ set_target_properties(Systems PROPERTIES
 
 target_include_directories(Systems PUBLIC ../..)
 
+target_compile_definitions(Systems PRIVATE NOUS_ENGINE_EXPORTS)
+
 find_package(glm REQUIRED)
 target_link_libraries(Systems PUBLIC glm::glm)

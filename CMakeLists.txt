@@ -64,9 +64,6 @@ add_subdirectory(Source/Engine/Renderer)
 add_subdirectory(Source/Engine/ECS)
 add_subdirectory(Source/Engine/Systems)
 
-add_subdirectory(Source/Editor)
-add_dependencies(Nous-Editor ${PROJECT_NAME})
-
 # ==============================
 # NousEngine DLL (Shared Library)
 # ==============================
@@ -112,6 +109,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # ==============================
 # Editor Executable
 # ==============================
+
+add_subdirectory(Source/Editor)
+add_dependencies(Nous-Editor ${PROJECT_NAME})
+
 add_executable(EditorApp Source/Editor/MainEditor.cpp)
 
 target_include_directories(EditorApp PRIVATE

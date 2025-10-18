@@ -25,6 +25,8 @@ set_target_properties(Multithreading PROPERTIES
 
 target_include_directories(Multithreading PUBLIC ../..)
 
+target_compile_definitions(Multithreading PRIVATE NOUS_ENGINE_EXPORTS)
+
 if(ENABLE_PROFILING)
     find_package(Tracy CONFIG REQUIRED)
     target_link_libraries(Multithreading PUBLIC Tracy::TracyClient)

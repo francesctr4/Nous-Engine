@@ -61,5 +61,7 @@ set_target_properties(Renderer PROPERTIES
 
 target_include_directories(Renderer PUBLIC ../..)
 
+target_compile_definitions(Renderer PRIVATE NOUS_ENGINE_EXPORTS)
+
 find_package(glm REQUIRED)
 target_link_libraries(Renderer PUBLIC glm::glm)
