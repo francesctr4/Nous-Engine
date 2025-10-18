@@ -3,6 +3,7 @@
 
 #include <Engine/Renderer/Backend/RendererBackend.h>
 #include <Engine/Core/EngineExport.h>
+#include "Engine/Core/Globals.h"
 
 class ResourceMesh;
 class ResourceMaterial;

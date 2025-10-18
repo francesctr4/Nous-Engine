@@ -1,8 +1,12 @@
-#include <Engine/Renderer/Backend/RendererBackend.h>
-#include <Engine/Renderer/Backend/Vulkan/VulkanBackend.h>
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include "Engine/Renderer/Backend/RendererBackend.h"
+#include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
+#include "Engine/Systems/Memory Manager/MemoryManager.h"
+#include "Engine/Utils/Logging System/LogChannel.h"
+#include "Engine/Utils/Logging System/Logger.h"
 
-RendererBackend::RendererBackend() : backendInterface(nullptr), frameNumber(0)
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_BACKEND;
+
+RendererBackend::RendererBackend() : mBackendInterface(nullptr), mFrameNumber(0), mBackendType(RendererBackendType::UNKNOWN)
 {
 
 }
@@ -12,182 +16,155 @@ RendererBackend::~RendererBackend()
     Destroy();
 }
 
+// ─────────────────────────────── Lifecycle ───────────────────────────────
 bool RendererBackend::Create(RendererBackendType bType)
 {
-	bool ret = false;
+    mBackendType = bType;
 
-    switch (bType) 
+    switch (bType)
     {
         case RendererBackendType::VULKAN:
-        {
-            backendInterface = NOUS_NEW<VulkanBackend>(MemoryManager::MemoryTag::RENDERER);
-            ret = true;
+            mBackendInterface = NOUS_NEW<VulkanBackend>(MemoryManager::MemoryTag::RENDERER);
             break;
-        } 
-        case RendererBackendType::OPENGL: 
-        {
-            //backendInterface = NOUS_NEW<OpenGLBackend>(MemoryManager::MemoryTag::RENDERER);
-            ret = true;
+        case RendererBackendType::OPENGL:
+            // backendInterface = NOUS_NEW<OpenGLBackend>(MemoryManager::MemoryTag::RENDERER);
             break;
-        }
-        case RendererBackendType::DIRECTX: 
-        {
-            //backendInterface = new DirectXBackend();
-            ret = true;
+        case RendererBackendType::DIRECTX:
+            // backendInterface = NOUS_NEW<DirectXBackend>(MemoryManager::MemoryTag::RENDERER);
             break;
-        }
+        default:
+            NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Unknown backend type: %d", __FUNCTION__, static_cast<int>(bType));
+            return false;
     }
 
-	return ret;
+    if (!mBackendInterface)
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Failed to create backend interface.", __FUNCTION__);
+        return false;
+    }
+
+    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Created backend type (%d) successfully.", __FUNCTION__, static_cast<int>(bType));
+    return true;
 }
 
 void RendererBackend::Destroy()
 {
-    NOUS_DELETE(backendInterface, MemoryManager::MemoryTag::RENDERER);
+    if (mBackendInterface)
+    {
+        NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Destroying renderer backend...", __FUNCTION__);
+        NOUS_DELETE(mBackendInterface, MemoryManager::MemoryTag::RENDERER);
+    }
 }
 
 bool RendererBackend::Initialize()
 {
-    if (backendInterface != nullptr) 
+    if (!mBackendInterface)
     {
-        return backendInterface->Initialize();
+        NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Initialize() called with no backend.", __FUNCTION__);
+        return false;
     }
-
-    return false;
+    return mBackendInterface->Initialize();
 }
 
 void RendererBackend::Shutdown()
 {
-    if (backendInterface != nullptr)
+    if (mBackendInterface)
     {
-        backendInterface->Shutdown();
+        mBackendInterface->Shutdown();
     }
 }
 
-void RendererBackend::Resized(uint16 width, uint16 height)
+void RendererBackend::Resized(uint16_t width, uint16_t height)
 {
-    if (backendInterface != nullptr)
+    if (mBackendInterface)
     {
-        backendInterface->Resized(width, height);
+        mBackendInterface->Resized(width, height);
     }
 }
 
+// ─────────────────────────────── Frame Lifecycle ─────────────────────────
 FrameResult RendererBackend::BeginFrame(float dt)
 {
-    if (backendInterface)
-        return backendInterface->BeginFrame(dt);
-
-    return FrameResult::ERROR;
+    return mBackendInterface ? mBackendInterface->BeginFrame(dt) : FrameResult::ERROR;
 }
 
 FrameResult RendererBackend::EndFrame(float dt)
 {
-    if (backendInterface)
-        return backendInterface->EndFrame(dt);
-
-    return FrameResult::ERROR;
+    return mBackendInterface ? mBackendInterface->EndFrame(dt) : FrameResult::ERROR;
 }
 
+// ─────────────────────────────── Renderpasses ────────────────────────────
 bool RendererBackend::BeginRenderpass(RenderpassType renderpassID)
 {
-    if (backendInterface != nullptr)
-    {
-        return backendInterface->BeginRenderpass(renderpassID);
-    }
-
-    return false;
+    return mBackendInterface && mBackendInterface->BeginRenderpass(renderpassID);
 }
 
 bool RendererBackend::EndRenderpass(RenderpassType renderpassID)
 {
-    if (backendInterface != nullptr)
-    {
-        return backendInterface->EndRenderpass(renderpassID);
-    }
-
-    return false;
+    return mBackendInterface && mBackendInterface->EndRenderpass(renderpassID);
 }
 
-bool RendererBackend::UpdateGlobalWorldState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode)
+// ─────────────────────────────── Global State ────────────────────────────
+bool RendererBackend::UpdateGlobalWorldState(RenderpassType renderpassID,
+                                             const glm::mat4& projection, const glm::mat4& view,
+                                             const glm::vec3& viewPosition, const glm::vec4& ambientColor,
+                                             int32 mode)
 {
-    if (backendInterface != nullptr)
-    {
-        return backendInterface->UpdateGlobalWorldState(renderpassID, projection, view, viewPosition, ambientColor, mode);
-    }
-
-    return false;
+    return mBackendInterface && mBackendInterface->UpdateGlobalWorldState(renderpassID, projection, view, viewPosition, ambientColor, mode);
 }
 
-bool RendererBackend::UpdateGlobalUIState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode)
+bool RendererBackend::UpdateGlobalUIState(RenderpassType renderpassID,
+                                          const glm::mat4& projection, const glm::mat4& view,
+                                          int32 mode)
 {
-    if (backendInterface != nullptr)
-    {
-        return backendInterface->UpdateGlobalUIState(renderpassID, projection, view, mode);
-    }
-
-    return false;
+    return mBackendInterface && mBackendInterface->UpdateGlobalUIState(renderpassID, projection, view, mode);
 }
 
-bool RendererBackend::DrawGeometry(RenderpassType renderpassID, GeometryRenderData renderData)
+
+// ─────────────────────────────── Drawing ─────────────────────────────────
+bool RendererBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData)
 {
-    if (backendInterface != nullptr)
-    {
-        return backendInterface->DrawGeometry(renderpassID, renderData);
-    }
-
-    return false;
+    return mBackendInterface && mBackendInterface->DrawGeometry(renderpassID, renderData);
 }
 
+// ─────────────────────────────── Resources ───────────────────────────────
 bool RendererBackend::CreateTexture(const uint8* pixels, ResourceTexture* outTexture)
 {
-    if (backendInterface != nullptr)
-    {
-        return backendInterface->CreateTexture(pixels, outTexture);
-    }
-
-    return false;
+    return mBackendInterface && mBackendInterface->CreateTexture(pixels, outTexture);
 }
 
 void RendererBackend::DestroyTexture(ResourceTexture* texture)
 {
-    if (backendInterface != nullptr)
+    if (mBackendInterface)
     {
-        return backendInterface->DestroyTexture(texture);
+        mBackendInterface->DestroyTexture(texture);
     }
 }
 
 bool RendererBackend::CreateMaterial(ResourceMaterial* material)
 {
-    if (backendInterface != nullptr)
-    {
-        return backendInterface->CreateMaterial(material);
-    }
-
-    return false;
+    return mBackendInterface && mBackendInterface->CreateMaterial(material);
 }
 
 void RendererBackend::DestroyMaterial(ResourceMaterial* material)
 {
-    if (backendInterface != nullptr)
+    if (mBackendInterface)
     {
-        return backendInterface->DestroyMaterial(material);
+        mBackendInterface->DestroyMaterial(material);
     }
 }
 
-bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry)
+bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
+                                     uint32 indexCount, const uint32* indices,
+                                     ResourceMesh* outGeometry)
 {
-    if (backendInterface != nullptr)
-    {
-        return backendInterface->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
-    }
-
-    return false;
+    return mBackendInterface && mBackendInterface->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
 }
 
 void RendererBackend::DestroyGeometry(ResourceMesh* geometry)
 {
-    if (backendInterface != nullptr)
+    if (mBackendInterface)
     {
-        return backendInterface->DestroyGeometry(geometry);
+        mBackendInterface->DestroyGeometry(geometry);
     }
 }

@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <cstdint>
 
 // -----------------------------------------------------------------------------
 // Forward declarations
@@ -42,11 +43,13 @@ enum class FrameResult : uint8_t
 
 struct GeometryRenderData
 {
-    GeometryRenderData() : model(1.0f), geometry(nullptr), material(nullptr) {}
+    GeometryRenderData() : objectUID(0), model(1.0f), geometry(nullptr), material(nullptr), color(1.0f) {}
 
+    uint32_t objectUID;
     glm::mat4 model;
     ResourceMesh* geometry;
     ResourceMaterial* material;
+    glm::vec4 color;
 };
 
 enum class RenderpassType
@@ -94,20 +97,19 @@ struct IRendererBackend
 {
     virtual ~IRendererBackend() noexcept = default;
 
-    // Lifecycle
+    // ─────────────────────────────── Lifecycle ───────────────────────────────
     [[nodiscard]] virtual bool Initialize() = 0;
     virtual void Shutdown() noexcept = 0;
     virtual void Resized(uint16_t width, uint16_t height) noexcept = 0;
 
-    // Frame lifecycle
+    // ─────────────────────────────── Frame Lifecycle ─────────────────────────
     [[nodiscard]] virtual FrameResult BeginFrame(float dt) = 0;
     [[nodiscard]] virtual FrameResult EndFrame(float dt) = 0;
 
-    // Render passes
+    // ─────────────────────────────── Rendering ───────────────────────────────
     [[nodiscard]] virtual bool BeginRenderpass(RenderpassType renderpassID) = 0;
     [[nodiscard]] virtual bool EndRenderpass(RenderpassType renderpassID) = 0;
 
-    // Global states
     [[nodiscard]] virtual bool UpdateGlobalWorldState(
             RenderpassType renderpassID,
             const glm::mat4& projection, const glm::mat4& view,
@@ -119,20 +121,17 @@ struct IRendererBackend
             const glm::mat4& projection, const glm::mat4& view,
             int32_t mode) = 0;
 
-    // Drawing
     [[nodiscard]] virtual bool DrawGeometry(
             RenderpassType renderpassID,
             const GeometryRenderData& renderData) = 0;
 
-    // Textures
+    // ─────────────────────────────── Resources ───────────────────────────────
     [[nodiscard]] virtual bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture) = 0;
     virtual void DestroyTexture(ResourceTexture* texture) noexcept = 0;
 
-    // Materials
     [[nodiscard]] virtual bool CreateMaterial(ResourceMaterial* material) = 0;
     virtual void DestroyMaterial(ResourceMaterial* material) noexcept = 0;
 
-    // Geometry
     [[nodiscard]] virtual bool CreateGeometry(
             uint32_t vertexCount, const Vertex3D* vertices,
             uint32_t indexCount, const uint32_t* indices,

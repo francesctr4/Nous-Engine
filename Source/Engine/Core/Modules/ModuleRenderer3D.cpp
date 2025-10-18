@@ -1,52 +1,51 @@
-#include <Engine/Core/Modules/ModuleRenderer3D.h>
-#include <Engine/Core/Modules/ModuleCamera3D.h>
+#include "Engine/Core/Modules/ModuleRenderer3D.h"
+#include "Engine/Core/Modules/ModuleCamera3D.h"
 
-#include <Engine/Renderer/Frontend/RendererFrontend.h>
-#include <Engine/Renderer/RendererTypes.h>
+#include "Engine/Renderer/Frontend/RendererFrontend.h"
 
-#include <Engine/ECS/Scene.h>
-#include <Engine/ECS/Components/ComponentMesh.h>
-#include <Engine/ECS/Components/ComponentTransform.h>
-#include <Engine/ECS/Components/ComponentMaterial.h>
+#include "Engine/ECS/Scene.h"
+#include "Engine/ECS/Components/ComponentMesh.h"
+#include "Engine/ECS/Components/ComponentMaterial.h"
 
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
-#include "Engine/Utils/Logging System/Logger.h"
-#include <Engine/Systems/Event System/EventSystem.h>
+#include "Engine/Systems/Memory Manager/MemoryManager.h"
+#include "Engine/Systems/Event System/EventSystem.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>
 #endif
 
 // TODO: TEMP
-#include <Engine/Systems/Texture System/TextureSystem.h>
-#include <Engine/Systems/Material System/MaterialSystem.h>
-#include <Engine/Systems/Geometry System/GeometrySystem.h>
+#include "Engine/Systems/Texture System/TextureSystem.h"
+#include "Engine/Systems/Material System/MaterialSystem.h"
+#include "Engine/Systems/Geometry System/GeometrySystem.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RENDERER3D;
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
-	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryManager::MemoryTag::RENDERER);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
 	App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
+
+	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryManager::MemoryTag::RENDERER);
 }
 
 ModuleRenderer3D::~ModuleRenderer3D()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
 	NOUS_DELETE(mRendererFrontend, MemoryManager::MemoryTag::RENDERER);
 }
 
 bool ModuleRenderer3D::Awake()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
 	mRendererFrontend->SetBackendType(RendererBackendType::VULKAN);
 
 	if (!mRendererFrontend->Initialize(mRendererFrontend->GetBackendType()))
 	{
-		NOUS_FATAL("[%s] Failed to initialize renderer frontend with backend of type (%d). Aborting application.",
+		NOUS_FATAL_C(CURRENT_CHANNEL, "[%s] Failed to initialize renderer frontend with backend of type (%d). Aborting application.",
 				   __FUNCTION__, static_cast<int>(mRendererFrontend->GetBackendType()));
 		return false;
 	}
@@ -56,7 +55,7 @@ bool ModuleRenderer3D::Awake()
 
 bool ModuleRenderer3D::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
 	// TODO: This should be done in a different way.
 	NOUS_TextureSystem::Initialize();
@@ -68,21 +67,21 @@ bool ModuleRenderer3D::Start()
 
 UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
 	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleRenderer3D::Update(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
 	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
 #ifdef _PROFILING
 	ZoneScoped;
@@ -103,11 +102,11 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 				break;
 
 			case FrameResult::SKIPPED:
-				NOUS_INFO("[%s] Frame skipped (window resize or swapchain recreation).", __FUNCTION__);
+				NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Frame skipped (window resize or swapchain recreation).", __FUNCTION__);
 				break;
 
 			case FrameResult::ERROR:
-				NOUS_FATAL("[%s] Fatal rendering error. Aborting application.", __FUNCTION__);
+				NOUS_FATAL_C(CURRENT_CHANNEL, "[%s] Fatal rendering error. Aborting application.", __FUNCTION__);
 				return UpdateStatus::ERROR;
 		}
 	}
@@ -117,7 +116,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 bool ModuleRenderer3D::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
 	// TODO: This should be done in a different way.
 	NOUS_GeometrySystem::Shutdown();
@@ -126,7 +125,7 @@ bool ModuleRenderer3D::CleanUp()
 
 	mRendererFrontend->Shutdown();
 
-	NOUS_INFO("[%s] Renderer Frontend shutdown was successful.", __FUNCTION__);
+	NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Renderer Frontend shutdown was successful.", __FUNCTION__);
 
 	return true;
 }
@@ -137,7 +136,7 @@ void ModuleRenderer3D::OnEvent(const Event& event)
 	{
 		case EventType::WINDOW_RESIZED:
 		{
-			NOUS_INFO("[%s] Event Received: WINDOW_RESIZED (%d) - Context: %d, %d",
+			NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Event Received: WINDOW_RESIZED (%d) - Context: %d, %d",
 					  __FUNCTION__,
 					  static_cast<int>(event.type),
 					  event.ctx.i32[0],
@@ -147,7 +146,23 @@ void ModuleRenderer3D::OnEvent(const Event& event)
 
 			break;
 		}
-	}
+        case EventType::NONE:
+        case EventType::TEST:
+        case EventType::KEY_PRESSED:
+        case EventType::SWAP_TEXTURE:
+        case EventType::DROP_FILE:
+        case EventType::INPUT_EVENT:
+        case EventType::IMGUI_RECREATION:
+        case EventType::WINDOW_MINIMIZED:
+        case EventType::KEY_RELEASED:
+        case EventType::MOUSE_BUTTON:
+        case EventType::MOUSE_MOVED:
+        case EventType::FILE_DROPPED:
+        case EventType::ENGINE_SHUTDOWN:
+        case EventType::IMGUI_RECREATE:
+        case EventType::CUSTOM:
+            break;
+    }
 }
 
 RendererFrontend *ModuleRenderer3D::GetRendererFrontend() const
@@ -159,7 +174,7 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
 {
 	if (!App->scene->activeScene)
 	{
-		NOUS_ERROR("[%s] Active scene is not defined. Render packet will not be built.", __FUNCTION__);
+		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Active scene is not defined. Render packet will not be built.", __FUNCTION__);
 		return false;
 	}
 

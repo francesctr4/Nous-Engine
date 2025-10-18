@@ -1,13 +1,18 @@
-#ifndef RENDERERBACKEND_H
-#define RENDERERBACKEND_H
+#ifndef NOUS_ENGINE_RENDERER_BACKEND_H
+#define NOUS_ENGINE_RENDERER_BACKEND_H
 
-#include <Engine/Renderer/RendererTypes.h>
-#include <Engine/Core/Globals.h>
+#include "Engine/Renderer/RendererTypes.h"
 
 class ResourceMesh;
 class ResourceMaterial;
 class ResourceTexture;
 
+/**
+ * @brief Bridge layer between RendererFrontend and the active renderer implementation.
+ *
+ * Delegates all rendering operations to the selected backend (Vulkan, OpenGL, etc.)
+ * through the IRendererBackend interface.
+ */
 class RendererBackend
 {
 public:
@@ -15,42 +20,55 @@ public:
 	RendererBackend();
 	virtual ~RendererBackend();
 
-	bool Create(RendererBackendType bType);
+	// ─────────────────────────────── Lifecycle ───────────────────────────────
+	[[nodiscard]] bool Create(RendererBackendType type);
 	void Destroy();
 
-	bool Initialize();
+	[[nodiscard]] bool Initialize();
 	void Shutdown();
 
-	void Resized(uint16 width, uint16 height);
+	void Resized(uint16_t width, uint16_t height);
 
-	FrameResult BeginFrame(float dt);
-	FrameResult EndFrame(float dt);
+	// ─────────────────────────────── Frame Lifecycle ─────────────────────────
+	[[nodiscard]] FrameResult BeginFrame(float dt);
+	[[nodiscard]] FrameResult EndFrame(float dt);
 
-	bool BeginRenderpass(RenderpassType renderpassID);
-	bool EndRenderpass(RenderpassType renderpassID);
+	// ─────────────────────────────── Renderpasses ────────────────────────────
+	[[nodiscard]] bool BeginRenderpass(RenderpassType renderpassID);
+	[[nodiscard]] bool EndRenderpass(RenderpassType renderpassID);
 
-	bool UpdateGlobalWorldState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, glm::vec3 viewPosition, glm::vec4 ambientColor, int32 mode);
-	bool UpdateGlobalUIState(RenderpassType renderpassID, glm::mat4x4 projection, glm::mat4x4 view, int32 mode);
+	// ─────────────────────────────── Global State ────────────────────────────
+	[[nodiscard]] bool UpdateGlobalWorldState(RenderpassType renderpassID,
+											  const glm::mat4& projection, const glm::mat4& view,
+											  const glm::vec3& viewPosition, const glm::vec4& ambientColor, int32_t mode);
 
-	bool DrawGeometry(RenderpassType renderpassID, GeometryRenderData renderData);
+	[[nodiscard]] bool UpdateGlobalUIState(RenderpassType renderpassID,
+										   const glm::mat4& projection, const glm::mat4& view, int32_t mode);
 
-	bool CreateTexture(const uint8* pixels, ResourceTexture* outTexture);
+	// ─────────────────────────────── Drawing ─────────────────────────────────
+	[[nodiscard]] bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData);
+
+	// ─────────────────────────────── Resources ───────────────────────────────
+	[[nodiscard]] bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture);
 	void DestroyTexture(ResourceTexture* texture);
 
-	bool CreateMaterial(ResourceMaterial* material);
-    void DestroyMaterial(ResourceMaterial* material);
+	[[nodiscard]] bool CreateMaterial(ResourceMaterial* material);
+	void DestroyMaterial(ResourceMaterial* material);
 
-	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* outGeometry);
-    void DestroyGeometry(ResourceMesh* geometry);
+	[[nodiscard]] bool CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices,
+									  uint32_t indexCount, const uint32_t* indices,
+									  ResourceMesh* outGeometry);
+	void DestroyGeometry(ResourceMesh* geometry);
 
-	// -------------------------------------- \\
+public:
 
-	uint64 frameNumber;
+	uint64_t mFrameNumber;
 
 private:
-	
-	IRendererBackend* backendInterface;
+
+	IRendererBackend* mBackendInterface;
+	RendererBackendType mBackendType;
 
 };
 
-#endif // RENDERERBACKEND_H
+#endif // NOUS_ENGINE_RENDERER_BACKEND_H

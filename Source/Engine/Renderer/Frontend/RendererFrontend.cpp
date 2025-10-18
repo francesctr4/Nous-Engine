@@ -1,10 +1,12 @@
-#include <Engine/Renderer/Frontend/RendererFrontend.h>
-#include <Engine/Renderer/Backend/RendererBackend.h>
+#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include "Engine/Renderer/Backend/RendererBackend.h"
 
-#include <Engine/Systems/Camera System/Camera.h>
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include "Engine/Systems/Camera System/Camera.h"
+#include "Engine/Systems/Memory Manager/MemoryManager.h"
 #include "Engine/Utils/Logging System/Logger.h"
-#include <Engine/Renderer/Frontend/IEditorOverlay.h>
+#include "Engine/Renderer/Frontend/IEditorOverlay.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_FRONTEND;
 
 RendererFrontend::RendererFrontend()
 {
@@ -25,13 +27,13 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 
 	if(!mBackend->Create(backendType))
 	{
-		NOUS_ERROR("[%s] Renderer backend failed to create. Aborting application...", __FUNCTION__);
+		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Renderer backend failed to create. Aborting application...", __FUNCTION__);
 		return false;
 	}
 
 	if (!mBackend->Initialize())
 	{
-		NOUS_ERROR("[%s] Renderer backend initialization failed. Aborting application...", __FUNCTION__);
+		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Renderer backend initialization failed. Aborting application...", __FUNCTION__);
 
 		Shutdown();
 		return false;
@@ -64,7 +66,7 @@ FrameResult RendererFrontend::EndFrame(float dt)
 
 	if (result == FrameResult::SUCCESS)
 	{
-		mBackend->frameNumber++;
+		mBackend->mFrameNumber++;
 	}
 
 	return result;
@@ -74,7 +76,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 {
 	if (!packet || !packet->editorCamera || !packet->gameCamera)
 	{
-		NOUS_WARN("[%s] Missing render packet or cameras; skipping frame.", __FUNCTION__);
+		NOUS_WARN_C(CURRENT_CHANNEL, "[%s] Missing render packet or cameras; skipping frame.", __FUNCTION__);
 		return FrameResult::SKIPPED;
 	}
 
@@ -87,11 +89,11 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 			break;
 
 		case FrameResult::SKIPPED:
-			NOUS_DEBUG("[%s] Frame skipped (swapchain recreation/minimized).", __FUNCTION__);
+			NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Frame skipped (swapchain recreation/minimized).", __FUNCTION__);
 			return FrameResult::SKIPPED;
 
 		case FrameResult::ERROR:
-			NOUS_ERROR("[%s] BeginFrame() failed.", __FUNCTION__);
+			NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] BeginFrame() failed.", __FUNCTION__);
 			return FrameResult::ERROR;
 	}
 
@@ -101,7 +103,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 	RenderpassType sceneRenderpass = RenderpassType::SCENE;
 	success &= ExecuteRenderpass(sceneRenderpass, [&]()
 	{
-		mBackend->UpdateGlobalWorldState(
+        success &= mBackend->UpdateGlobalWorldState(
 				sceneRenderpass,
 				packet->editorCamera->GetProjectionMatrix(),
 				packet->editorCamera->GetViewMatrix(),
@@ -110,7 +112,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 
 		for (auto& geometry : packet->geometries)
 		{
-			mBackend->DrawGeometry(sceneRenderpass, geometry);
+            success &= mBackend->DrawGeometry(sceneRenderpass, geometry);
 		}
 	});
 
@@ -118,7 +120,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 	RenderpassType gameRenderpass = RenderpassType::GAME;
 	success &= ExecuteRenderpass(gameRenderpass, [&]()
 	{
-		mBackend->UpdateGlobalWorldState(
+        success &= mBackend->UpdateGlobalWorldState(
 				gameRenderpass,
 				packet->gameCamera->GetProjectionMatrix(),
 				packet->gameCamera->GetViewMatrix(),
@@ -127,7 +129,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 
 		for (auto& geometry : packet->geometries)
 		{
-			mBackend->DrawGeometry(gameRenderpass, geometry);
+            success &= mBackend->DrawGeometry(gameRenderpass, geometry);
 		}
 	});
 
@@ -135,7 +137,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 	RenderpassType uiRenderpass = RenderpassType::UI;
 	success &= ExecuteRenderpass(uiRenderpass, [&]()
 	{
-		mBackend->UpdateGlobalUIState(
+        success &= mBackend->UpdateGlobalUIState(
 				uiRenderpass,
 				packet->editorCamera->GetProjectionMatrix(),
 				packet->editorCamera->GetViewMatrix(), 0);
@@ -148,19 +150,19 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 
 	if (endResult == FrameResult::ERROR)
 	{
-		NOUS_ERROR("[%s] EndFrame() failed.", __FUNCTION__);
+		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] EndFrame() failed.", __FUNCTION__);
 		return FrameResult::ERROR;
 	}
 
 	if (endResult == FrameResult::SKIPPED)
 	{
-		NOUS_DEBUG("[%s] Frame skipped during EndFrame (likely swapchain reset).", __FUNCTION__);
+		NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Frame skipped during EndFrame (likely swapchain reset).", __FUNCTION__);
 		return FrameResult::SKIPPED;
 	}
 
 	if (!success)
 	{
-		NOUS_ERROR("[%s] One or more render passes failed.", __FUNCTION__);
+		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] One or more render passes failed.", __FUNCTION__);
 		return FrameResult::ERROR;
 	}
 
@@ -171,7 +173,7 @@ bool RendererFrontend::ExecuteRenderpass(RenderpassType type, const std::functio
 {
 	if (!mBackend->BeginRenderpass(type))
 	{
-		NOUS_ERROR("[%s] Begin Renderpass with type (%d) failed!", __FUNCTION__, static_cast<int>(type));
+		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Begin Renderpass with type (%d) failed!", __FUNCTION__, static_cast<int>(type));
 		return false;
 	}
 
@@ -179,7 +181,7 @@ bool RendererFrontend::ExecuteRenderpass(RenderpassType type, const std::functio
 
 	if (!mBackend->EndRenderpass(type))
 	{
-		NOUS_ERROR("[%s] End Renderpass with type (%d) failed!", __FUNCTION__, static_cast<int>(type));
+		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] End Renderpass with type (%d) failed!", __FUNCTION__, static_cast<int>(type));
 		return false;
 	}
 
