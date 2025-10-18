@@ -1,6 +1,6 @@
 #include "ConsoleWindow.h"
 #include <algorithm>
-#include "Engine/Utils/Logging System/Logger.h"
+#include "Engine/Systems/Time Management/TimeManager.h"
 #include "imgui.h"
 
 #include <mutex>
@@ -19,8 +19,8 @@ ImVec4 levelColors[6] = {
 ConsoleWindow::ConsoleWindow(const char* title, bool start_open)
         : IEditorWindow(title, nullptr, start_open)
 {
-    for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i)
-        showChannel[i] = true;
+    for (bool & i : showChannel)
+        i = true;
 
     Init();
 }
@@ -35,14 +35,14 @@ void ConsoleWindow::Init()
     // 🔧 updated for tuple-based history
     const auto& history = GetLogHistory();
     logBuffer.clear();
-    for (const auto& [level, channel, msg] : history)
-        logBuffer.emplace_back(level, channel, msg);
+    for (const auto& [level, channel, time, msg] : history)
+        logBuffer.emplace_back(level, channel, time, msg);
 
-    SetLogCallback([this](LogLevel level, LogChannel channel, const char* message) {
+    SetLogCallback([this](LogLevel level, LogChannel channel, double time, const char* message) {
         if (freezeConsole) return;
 
         std::scoped_lock lock(consoleMutex); // ✅ lock for multi-threaded logging
-        logBuffer.emplace_back(level, channel, message);
+        logBuffer.emplace_back(level, channel, time, message);
 
         if (logBuffer.size() > 10000)
             logBuffer.pop_front();
@@ -142,7 +142,7 @@ void ConsoleWindow::DrawMenuBar()
         std::vector<bool> channelUsed((int)LogChannel::MAX_CHANNELS, false);
         {
             std::scoped_lock lock(consoleMutex); // ✅ protect iteration
-            for (const auto& [lvl, ch, msg] : logBuffer)
+            for (const auto& [lvl, ch, time, msg] : logBuffer)
             {
                 int idx = static_cast<int>(ch);
                 if (idx >= 0 && idx < (int)LogChannel::MAX_CHANNELS)
@@ -175,8 +175,8 @@ void ConsoleWindow::DrawMenuBar()
                     if (channelUsed[i]) showChannel[i] = true;
             }
             if (ImGui::Selectable("Deselect All", false)) {
-                for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i)
-                    showChannel[i] = false;
+                for (bool & i : showChannel)
+                    i = false;
             }
 
             ImGui::Separator();
@@ -219,7 +219,7 @@ void ConsoleWindow::DrawLogPanel()
         std::transform(searchLower.begin(), searchLower.end(), searchLower.begin(), ::tolower);
     }
 
-    for (const auto& [level, channel, text] : logBuffer)
+    for (const auto& [level, channel, time, text] : logBuffer)
     {
         if (!showLevel[(int)level]) continue;
         if (!showChannel[(int)channel]) continue;
@@ -233,8 +233,17 @@ void ConsoleWindow::DrawLogPanel()
                 continue;
         }
 
+        // Convert seconds (double) → MM:SS:MMM
+        int totalMs = static_cast<int>(time * 1000.0);
+        int minutes = (totalMs / 1000) / 60;
+        int seconds = (totalMs / 1000) % 60;
+        int millis  = totalMs % 1000;
+
+        char timeBuffer[16];
+        snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d:%03d", minutes, seconds, millis);
+
         ImGui::PushStyleColor(ImGuiCol_Text, levelColors[(int)level]);
-        ImGui::Text("[%s] %s", LOG_CHANNEL_NAMES[(int)channel], text.c_str());
+        ImGui::Text("[%s] [%s] %s", timeBuffer, LOG_CHANNEL_NAMES[(int)channel], text.c_str());
         ImGui::PopStyleColor();
     }
 
@@ -267,7 +276,7 @@ void ConsoleWindow::DrawCommandLine()
         if (start[0]) {
             ExecuteCommand(start);
         }
-        strcpy(inputBuffer, "");
+        strcpy_s(inputBuffer, "");
         reclaimFocus = true;
     }
     ImGui::PopItemWidth();

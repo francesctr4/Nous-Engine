@@ -12,7 +12,7 @@ class ConsoleWindow : public IEditorWindow
 {
 public:
     explicit ConsoleWindow(const char* title, bool start_open = true);
-    virtual ~ConsoleWindow();
+    ~ConsoleWindow() override;
 
     void Init() override;
     void Draw() override;
@@ -23,8 +23,7 @@ private:
     void DrawCommandLine();
     void ExecuteCommand(const std::string& command);
 
-    // Updated buffer to store channel info
-    std::deque<std::tuple<LogLevel, LogChannel, std::string>> logBuffer;
+    std::deque<std::tuple<LogLevel, LogChannel, double, std::string>> logBuffer;
 
     bool autoScroll = true;
     bool scrollToBottom = false;

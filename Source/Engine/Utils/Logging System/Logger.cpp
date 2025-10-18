@@ -1,6 +1,7 @@
 #include "Logger.h"
 #include "Engine/Utils/Asserts.h"
 #include "Engine/Systems/File System/FileHandle.h"
+#include "Engine/Systems/Time Management/TimeManager.h"
 
 #include <cstdio>
 #include <deque>
@@ -23,18 +24,18 @@ static bool logLevelEnabled[LOG_LEVEL_MAX] = {
 };
 
 static FileHandle logFile;
-static std::deque<std::tuple<LogLevel, LogChannel, std::string>> logHistory;
+static std::deque<std::tuple<LogLevel, LogChannel, double, std::string>> logHistory;
 static const size_t MAX_LOG_HISTORY = 10000;
 
-static std::function<void(LogLevel, LogChannel, const char*)> logCallback = nullptr;
+static std::function<void(LogLevel, LogChannel, double, const char*)> logCallback = nullptr;
 static std::mutex logMutex; // protect log history (in case of multithreaded logging)
 
-void SetLogCallback(std::function<void(LogLevel, LogChannel, const char*)> callback) {
+void SetLogCallback(std::function<void(LogLevel, LogChannel, double, const char*)> callback) {
     std::scoped_lock lock(logMutex);
     logCallback = std::move(callback);
 }
 
-std::deque<std::tuple<LogLevel, LogChannel, std::string>> GetLogHistory()
+std::deque<std::tuple<LogLevel, LogChannel, double, std::string>> GetLogHistory()
 {
     std::scoped_lock lock(logMutex);
     return logHistory; // ✅ safe copy
@@ -105,7 +106,7 @@ void ShutdownLogging() {
 
 void AppendToLogFile(const char* message) {
     if (logFile.IsOpen()) {
-        const uint64 length = static_cast<uint64>(std::strlen(message));
+        const auto length = static_cast<uint64>(std::strlen(message));
         uint64 written = 0;
         if (!logFile.Write(length, message, &written)) {
             LogOutput(LOG_LEVEL_ERROR, "Error writing to console.log.");
@@ -121,7 +122,7 @@ void SetLogLevelEnabled(LogLevel level, bool enabled)
 
 bool IsLogLevelEnabled(LogLevel level)
 {
-    return (level >= 0 && level < LOG_LEVEL_MAX) ? logLevelEnabled[level] : false;
+    return (level >= 0 && level < LOG_LEVEL_MAX) && logLevelEnabled[level];
 }
 
 // -----------------------------------------------------------------------------
@@ -173,11 +174,11 @@ void LogOutput(LogLevel level, LogChannel channel, const char* message, ...) {
         std::scoped_lock lock(logMutex);
         if (logHistory.size() >= MAX_LOG_HISTORY)
             logHistory.pop_front();
-        logHistory.emplace_back(level, channel, std::string(finalBuffer));
+        logHistory.emplace_back(level, channel, TimeManager::graphicsTimer.ReadSec(), std::string(finalBuffer));
     }
 
     if (logCallback)
-        logCallback(level, channel, finalBuffer);
+        logCallback(level, channel, TimeManager::graphicsTimer.ReadSec(), finalBuffer);
 }
 
 void SetLoggingPaused(bool paused) { loggingPaused = paused; }
