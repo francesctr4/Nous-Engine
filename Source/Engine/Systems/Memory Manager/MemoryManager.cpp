@@ -11,7 +11,7 @@
 #include <mutex>
 #include <cstring>
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUSENGINE_SYSTEMS_MEMORYMANAGER;
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_MEMORYMANAGER;
 
 static std::mutex memoryMutex;
 

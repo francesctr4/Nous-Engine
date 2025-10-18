@@ -2,7 +2,7 @@
 #include "Engine/Utils/Logging System/Logger.h"   // uses your NOUS_INFO / NOUS_WARN macros
 #include <algorithm>
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUSENGINE_SYSTEMS_EVENTSYSTEM;
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_EVENTSYSTEM;
 
 // --------------------------------------------------
 // Constructor / Destructor
