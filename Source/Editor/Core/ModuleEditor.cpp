@@ -60,7 +60,7 @@ std::vector<ImFont*> ModuleEditor::fonts;
 
 bool ModuleEditor::Awake()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
 	App->renderer->GetRendererFrontend()->SetEditorOverlay(this);
 	currentBackendType = App->renderer->GetRendererFrontend()->GetBackendType();
@@ -339,16 +339,22 @@ void ModuleEditor::OnEvent(const Event &event)
 		}
 		case EventType::IMGUI_RECREATION:
 		{
-			VulkanContext* vkContext = GetVulkanContext();
+            switch (currentBackendType)
+            {
+                case RendererBackendType::VULKAN:
+                {
+                    VulkanContext* vkContext = GetVulkanContext();
 
-			GameViewport::DestroyGameViewportDescriptorSets();
-			SceneViewport::DestroySceneViewportDescriptorSets();
+                    GameViewport::DestroyGameViewportDescriptorSets();
+                    SceneViewport::DestroySceneViewportDescriptorSets();
 
-			NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(vkContext);
+                    NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(vkContext);
 
-			SceneViewport::CreateSceneViewportDescriptorSets();
-			GameViewport::CreateGameViewportDescriptorSets();
-
+                    SceneViewport::CreateSceneViewportDescriptorSets();
+                    GameViewport::CreateGameViewportDescriptorSets();
+                    break;
+                }
+            }
 			break;
 		}
 	}
