@@ -1,5 +1,5 @@
 #include "Logger.h"
-#include "Engine/Utils/Asserts.h"
+#include "Asserts.h"
 #include "Engine/Systems/File System/FileHandle.h"
 #include "Engine/Systems/Time Management/TimeManager.h"
 

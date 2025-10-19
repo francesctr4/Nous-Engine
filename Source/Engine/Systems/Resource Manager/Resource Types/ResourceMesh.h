@@ -4,7 +4,7 @@
 #include <Engine/Core/Globals.h>
 #include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
 #include <Engine/Renderer/RendererTypes.h>
-#include <Engine/Systems/Geometry System/Vertex.inl>
+#include "Engine/Utils/Vertex.inl"
 
 class ResourceMaterial;
 

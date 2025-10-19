@@ -37,7 +37,7 @@
 #include <vector>
 #include <memory>
 
-#include "Engine/Utils/Logging System/Logger.h"
+#include "Engine/Systems/Logging System/Logger.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_CORE_MODULE_EDITOR;
 

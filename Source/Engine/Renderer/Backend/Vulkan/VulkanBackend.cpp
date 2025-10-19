@@ -17,11 +17,10 @@
 #include "Engine/Renderer/Backend/Vulkan/Shaders/BuiltIn/UIShader/VulkanUIShader.h"
 #include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
 
-#include <Engine/Systems/Material System/MaterialSystem.h>
 #include <Engine/Systems/File System/FileManager.h>
 
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
-#include "Engine/Utils/Logging System/Logger.h"
+#include "Engine/Systems/Logging System/Logger.h"
 
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
@@ -32,6 +31,7 @@
 #include <Engine/Core/Application.h>
 #include <Engine/Systems/Event System/EventSystem.h>
 #include "Engine/Core/Modules/ModuleWindow.h"
+#include "Engine/Core/Modules/ModuleResourceManager.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_BACKEND_VULKAN_BACKEND;
 
@@ -887,7 +887,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     }
     else 
     {
-        material = NOUS_MaterialSystem::GetDefaultMaterial();
+        material = External->resourceManager->GetDefaultMaterial();
     }
 
     NOUS_VulkanMaterialShader::MaterialShaderApplyMaterial(vkContext, commandBuffer, shader, material);

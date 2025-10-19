@@ -3,7 +3,7 @@
 #include <Engine/ECS/Components/ComponentMaterial.h>
 #include <Engine/ECS/Components/ComponentMesh.h>
 
-#include "Engine/Utils/Logging System/Logger.h"
+#include "Engine/Systems/Logging System/Logger.h"
 
 std::unique_ptr<Component> Component::CreateComponent(const std::string& type) {
     if (type == "CTransform") {

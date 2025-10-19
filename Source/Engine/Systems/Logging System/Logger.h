@@ -3,7 +3,7 @@
 
 #include "Engine/Core/Globals.h"
 #include "Engine/Core/EngineExport.h"
-#include "Engine/Utils/Logging System/LogChannel.h"
+#include "LogChannel.h"
 
 #include <vector>
 #include <string>

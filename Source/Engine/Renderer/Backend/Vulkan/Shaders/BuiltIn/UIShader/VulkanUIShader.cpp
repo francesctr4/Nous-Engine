@@ -4,12 +4,13 @@
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/Buffer/VulkanBuffer.h"
 
-#include "Engine/Utils/Logging System/Logger.h"
+#include "Engine/Systems/Logging System/Logger.h"
 #include "Engine/Systems/Memory Manager/MemoryManager.h"
 
-#include "Engine/Systems/Texture System/TextureSystem.h"
 #include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
+#include "Engine/Core/Application.h"
+#include "Engine/Core/Modules/ModuleResourceManager.h"
 
 constexpr const char* BUILTIN_UI_SHADER_NAME = "BuiltIn.UIShader";
 
@@ -376,7 +377,7 @@ void NOUS_VulkanUIShader::UIShaderApplyMaterial(VulkanContext* vkContext, Vulkan
             // If the texture hasn't been loaded yet, use the default.
             if (texture->generation == INVALID_ID)
             {
-                texture = NOUS_TextureSystem::GetDefaultTexture();
+                texture = External->resourceManager->GetDefaultTexture();
 
                 // Reset the descriptor generation if using the default texture.
                 *descriptorGeneration = INVALID_ID;

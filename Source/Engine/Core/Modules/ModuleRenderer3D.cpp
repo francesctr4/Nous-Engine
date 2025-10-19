@@ -14,11 +14,6 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-// TODO: TEMP
-#include "Engine/Systems/Texture System/TextureSystem.h"
-#include "Engine/Systems/Material System/MaterialSystem.h"
-#include "Engine/Systems/Geometry System/GeometrySystem.h"
-
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RENDERER3D;
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
@@ -56,11 +51,6 @@ bool ModuleRenderer3D::Awake()
 bool ModuleRenderer3D::Start()
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
-
-	// TODO: This should be done in a different way.
-	NOUS_TextureSystem::Initialize();
-	NOUS_MaterialSystem::Initialize();
-	NOUS_GeometrySystem::Initialize();
 
 	return true;
 }
@@ -118,10 +108,7 @@ bool ModuleRenderer3D::CleanUp()
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
-	// TODO: This should be done in a different way.
-	NOUS_GeometrySystem::Shutdown();
-	NOUS_MaterialSystem::Shutdown();
-	NOUS_TextureSystem::Shutdown();
+    App->resourceManager->ClearResources();
 
 	mRendererFrontend->Shutdown();
 

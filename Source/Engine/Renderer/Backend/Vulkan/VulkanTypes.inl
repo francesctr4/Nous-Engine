@@ -431,6 +431,8 @@ struct VulkanContext
     std::deque<VulkanSubmitTask> submitQueue;
     std::mutex submitQueueMutex;
     std::condition_variable submitQueueCV;
+
+    bool isShuttingDown = false;
 };
 
 struct VulkanTextureData 

@@ -11,6 +11,9 @@
 using UID = uint32;
 struct MetaFileData;
 
+class ResourceTexture;
+class ResourceMaterial;
+
 class ModuleResourceManager : public Module, public IEventListener
 {
 public:
@@ -44,6 +47,9 @@ public:
 
 	NOUS_ENGINE_API void ClearResources();
 
+    ResourceTexture* GetDefaultTexture() const { return mDefaultTexture; }
+    ResourceMaterial* GetDefaultMaterial() const { return mDefaultMaterial; }
+
 private:
 
 	bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
@@ -61,6 +67,9 @@ private:
 
 	std::mutex resourcesMutex;  // Mutex to protect resources map from race conditions
 	std::unordered_map<UID, Resource*> resources;
+
+	ResourceTexture* mDefaultTexture = nullptr;
+	ResourceMaterial* mDefaultMaterial = nullptr;
 };
 
 #endif // MODULERESOURCEMANAGER_H

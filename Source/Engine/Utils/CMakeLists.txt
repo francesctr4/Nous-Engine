@@ -3,15 +3,12 @@
 # ==============================
 
 set(UTILS_SOURCES
-        Asserts.h
         JsonFile.cpp
         JsonFile.h
-        "Logging System/Logger.cpp"
-        "Logging System/Logger.h"
         MathUtils.h
         Random.cpp
         Random.h
-        "Logging System/LogChannel.h"
+        Vertex.inl
 )
 
 add_library(Utils OBJECT ${UTILS_SOURCES})

@@ -5,9 +5,11 @@
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
 #include <Engine/Core/Application.h>
+#include <Engine/Core/Modules/ModuleRenderer3D.h>
+#include <Engine/Renderer/Frontend/RendererFrontend.h>
 #include <Engine/Core/Modules/ModuleInput.h>
 #include <Engine/Systems/File System/FileManager.h>
-#include "Engine/Utils/Logging System/Logger.h"
+#include "Engine/Systems/Logging System/Logger.h"
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 
 #include <Engine/Utils/Random.h>
@@ -39,6 +41,66 @@ bool ModuleResourceManager::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	// -----------------------
+	// Default Texture
+	// -----------------------
+	NOUS_INFO("Creating default checkerboard texture...");
+
+	const uint32 texDimension = 256;
+	const uint32 channels = 4;
+	const uint32 pixelCount = texDimension * texDimension;
+	const uint32 squareSize = 16;
+
+	std::vector<uint8_t> pixels(pixelCount * channels, 255);
+	for (uint32_t row = 0; row < texDimension; ++row)
+	{
+		for (uint32_t col = 0; col < texDimension; ++col)
+		{
+			uint32_t index = (row * texDimension) + col;
+			uint32_t indexBpp = index * channels;
+
+			bool isWhite = ((row / squareSize) % 2 == (col / squareSize) % 2);
+
+			if (isWhite) {
+				pixels[indexBpp + 0] = 255;
+				pixels[indexBpp + 1] = 255;
+				pixels[indexBpp + 2] = 255;
+			} else {
+				pixels[indexBpp + 0] = 0;
+				pixels[indexBpp + 1] = 0;
+				pixels[indexBpp + 2] = 255;
+			}
+			pixels[indexBpp + 3] = 255;
+		}
+	}
+
+	mDefaultTexture = NOUS_NEW<ResourceTexture>(MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+	mDefaultTexture->SetName("DefaultTexture");
+	mDefaultTexture->width = texDimension;
+	mDefaultTexture->height = texDimension;
+	mDefaultTexture->channelCount = channels;
+
+	if (!App->renderer->GetRendererFrontend()->CreateTexture(pixels.data(), mDefaultTexture))
+	{
+		NOUS_FATAL("Failed to create default texture.");
+		return false;
+	}
+
+	// -----------------------
+	// Default Material
+	// -----------------------
+	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+	mDefaultMaterial->SetName("DefaultMaterial");
+	mDefaultMaterial->diffuseColor = glm::vec4(1.0f);
+	mDefaultMaterial->diffuseMap.type = TextureMapType::DIFFUSE;
+	mDefaultMaterial->diffuseMap.texture = mDefaultTexture;
+
+	if (!App->renderer->GetRendererFrontend()->CreateMaterial(mDefaultMaterial))
+	{
+		NOUS_FATAL("Failed to create default material.");
+		return false;
+	}
+
 	return true;
 }
 
@@ -65,8 +127,6 @@ UpdateStatus ModuleResourceManager::PostUpdate(float dt)
 bool ModuleResourceManager::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
-	ClearResources();
 
 	return true;
 }
@@ -620,6 +680,20 @@ void ModuleResourceManager::ClearResources()
 	}
 
 	resources.clear();
+
+    if (mDefaultTexture)
+    {
+        App->renderer->GetRendererFrontend()->DestroyTexture(mDefaultTexture);
+        NOUS_DELETE(mDefaultTexture, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+        mDefaultTexture = nullptr;
+    }
+
+    if (mDefaultMaterial)
+    {
+        App->renderer->GetRendererFrontend()->DestroyMaterial(mDefaultMaterial);
+        NOUS_DELETE(mDefaultMaterial, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+        mDefaultMaterial = nullptr;
+    }
 }
 
 //std::string ModuleResourceManager::GetLibraryPath(const std::string& assetsPath)

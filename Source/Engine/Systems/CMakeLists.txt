@@ -13,13 +13,6 @@ set(SYSTEMS_SOURCES
         "File System/FileManager.cpp"
         "File System/FileManager.h"
 
-        "Geometry System/GeometrySystem.cpp"
-        "Geometry System/GeometrySystem.h"
-        "Geometry System/Vertex.inl"
-
-        "Material System/MaterialSystem.cpp"
-        "Material System/MaterialSystem.h"
-
         "Memory Manager/MemoryManager.cpp"
         "Memory Manager/MemoryManager.h"
 
@@ -51,9 +44,6 @@ set(SYSTEMS_SOURCES
         "Resource Manager/Resource Types/ResourceTexture.cpp"
         "Resource Manager/Resource Types/ResourceTexture.h"
 
-        "Texture System/TextureSystem.cpp"
-        "Texture System/TextureSystem.h"
-
         "Time Management/TimeManager.h"
         "Time Management/Timer.cpp"
         "Time Management/Timer.h"
@@ -61,6 +51,11 @@ set(SYSTEMS_SOURCES
         "Event System/Event.h"
         "Event System/EventSystem.cpp"
         "Event System/Event.cpp"
+
+        "Logging System/Asserts.h"
+        "Logging System/Logger.cpp"
+        "Logging System/Logger.h"
+        "Logging System/LogChannel.h"
 )
 
 add_library(Systems OBJECT ${SYSTEMS_SOURCES})

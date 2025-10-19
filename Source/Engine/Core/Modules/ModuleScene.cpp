@@ -219,7 +219,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
 	if (App->input->GetKey(SDL_SCANCODE_F6) == KeyState::DOWN)
 	{
-		App->resourceManager->ClearResources();
+		ClearScene();
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
