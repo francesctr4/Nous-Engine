@@ -696,6 +696,16 @@ void ModuleResourceManager::ClearResources()
     }
 }
 
+ResourceTexture *ModuleResourceManager::GetDefaultTexture() const
+{
+    return mDefaultTexture;
+}
+
+ResourceMaterial *ModuleResourceManager::GetDefaultMaterial() const
+{
+    return mDefaultMaterial;
+}
+
 //std::string ModuleResourceManager::GetLibraryPath(const std::string& assetsPath)
 //{
 //	JsonFile metaFile;

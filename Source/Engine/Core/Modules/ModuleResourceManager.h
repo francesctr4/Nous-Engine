@@ -47,8 +47,8 @@ public:
 
 	NOUS_ENGINE_API void ClearResources();
 
-    ResourceTexture* GetDefaultTexture() const { return mDefaultTexture; }
-    ResourceMaterial* GetDefaultMaterial() const { return mDefaultMaterial; }
+    [[nodiscard]] ResourceTexture* GetDefaultTexture() const;
+    [[nodiscard]] ResourceMaterial* GetDefaultMaterial() const;
 
 private:
 
