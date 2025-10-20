@@ -44,6 +44,8 @@ include(Messages)
 
 setup_shader_compilation(EditorApp)
 copy_assets(EditorApp)
+
+# Optional: If we want to ensure scripts compile before run
 add_dependencies(EditorApp Scripts)
 
 # ==============================
