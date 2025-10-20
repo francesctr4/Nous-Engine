@@ -373,22 +373,6 @@ struct VulkanSubmitTask {
     std::promise<bool> resultPromise;
 };
 
-// VulkanTypes.inl (or similar)
-enum class DeferredKind { ImageView, Image, Sampler, DescriptorSets };
-
-struct DeferredFree {
-    DeferredKind kind;
-    uint64_t fenceFrame;                // frame index whose fence must be signaled
-    union {
-        VkImageView imageView;
-        VkImage     image;
-        VkSampler   sampler;
-    } h{};
-    // for descriptor sets:
-    VkDescriptorPool pool = VK_NULL_HANDLE;
-    std::vector<VkDescriptorSet> sets;
-};
-
 /**
  * @brief Stores all the Vulkan Context variables
  */
@@ -449,8 +433,6 @@ struct VulkanContext
     std::condition_variable submitQueueCV;
 
     bool isShuttingDown = false;
-
-    std::vector<DeferredFree> deferredFrees;
 };
 
 struct VulkanTextureData 
