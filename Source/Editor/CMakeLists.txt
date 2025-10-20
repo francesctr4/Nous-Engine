@@ -2,6 +2,12 @@
 # Nous Engine - Editor Module
 # ==============================
 
+# ----------------------------------------
+# Editor Library Target
+# ----------------------------------------
+
+set(EDITOR_NAME "Nous-Editor")
+
 set(EDITOR_SOURCES
         Core/ModuleEditor.cpp
         Core/ModuleEditor.h
@@ -29,7 +35,6 @@ set(EDITOR_SOURCES
         UI/Windows/InspectorWindow.h
         UI/Windows/ConsoleWindow.cpp
         UI/Windows/ConsoleWindow.h
-
         UI/IEditorWindow.inl
 
         EditorExport.h
@@ -40,17 +45,21 @@ add_library(NousEngine::Editor ALIAS ${EDITOR_NAME})
 
 target_compile_definitions(${EDITOR_NAME} PRIVATE NOUS_EDITOR_EXPORTS)
 
-# Include the root source dir for headers like "Core/Application.h"
-target_include_directories(${EDITOR_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+# Includes
+target_include_directories(${EDITOR_NAME}
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/..
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+)
 
-# Find dependencies
+# Dependencies
 find_package(SDL3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
 
-# Link editor dependencies
-target_link_libraries(${EDITOR_NAME} PUBLIC
+target_link_libraries(${EDITOR_NAME}
+        PUBLIC
         NousEngine::Engine
         SDL3::SDL3
         Vulkan::Vulkan
@@ -69,3 +78,29 @@ set_target_properties(${EDITOR_NAME} PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
         FOLDER "Editor"
 )
+
+# ----------------------------------------
+# Editor Executable Target
+# ----------------------------------------
+
+add_executable(EditorApp MainEditor.cpp)
+
+target_include_directories(EditorApp
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        ${STB_INCLUDE_PATH}
+)
+
+target_link_libraries(EditorApp
+        PRIVATE
+        NousEngine::Engine
+        NousEngine::Editor
+)
+
+set_target_properties(EditorApp PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        FOLDER "Applications"
+)
+
+add_dependencies(EditorApp ${EDITOR_NAME})
