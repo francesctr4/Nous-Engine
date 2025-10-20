@@ -489,6 +489,34 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.pWaitDstStageMask = waitStages;
 
+    auto it = vkContext->deferredFrees.begin();
+    while (it != vkContext->deferredFrees.end()) {
+        if (it->fenceFrame == vkContext->currentFrame) {
+            switch (it->kind) {
+                case DeferredKind::ImageView:
+                    if (it->h.imageView)
+                        vkDestroyImageView(vkContext->device.logicalDevice, it->h.imageView, vkContext->allocator);
+                    break;
+                case DeferredKind::Image:
+                    if (it->h.image)
+                        vkDestroyImage(vkContext->device.logicalDevice, it->h.image, vkContext->allocator);
+                    break;
+                case DeferredKind::Sampler:
+                    if (it->h.sampler)
+                        vkDestroySampler(vkContext->device.logicalDevice, it->h.sampler, vkContext->allocator);
+                    break;
+                case DeferredKind::DescriptorSets:
+                    if (!it->sets.empty())
+                        vkFreeDescriptorSets(vkContext->device.logicalDevice, it->pool,
+                                             (uint32)it->sets.size(), it->sets.data());
+                    break;
+            }
+            it = vkContext->deferredFrees.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
     VkResult submitRes = vkQueueSubmit(
             vkContext->device.graphicsQueue,
             1, &submitInfo,
@@ -1015,11 +1043,21 @@ void VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
 
     if (textureData) 
     {
-        NOUS_VulkanImage::DestroyVulkanImage(vkContext, &textureData->image);
-        MemoryManager::ZeroMemory(&textureData->image, sizeof(VulkanImage));
-
-        vkDestroySampler(vkContext->device.logicalDevice, textureData->sampler, vkContext->allocator);
-        textureData->sampler = 0;
+        if (!vkContext->isShuttingDown) {
+            vkContext->deferredFrees.push_back({DeferredKind::ImageView, vkContext->currentFrame, {.imageView = textureData->image.view}});
+            vkContext->deferredFrees.push_back({DeferredKind::Image,     vkContext->currentFrame, {.image     = textureData->image.handle}});
+            if (textureData->sampler != VK_NULL_HANDLE)
+                vkContext->deferredFrees.push_back({DeferredKind::Sampler,   vkContext->currentFrame, {.sampler   = textureData->sampler}});
+            // Null local handles so you don’t double-free later
+            textureData->image.view   = VK_NULL_HANDLE;
+            textureData->image.handle = VK_NULL_HANDLE;
+            textureData->sampler      = VK_NULL_HANDLE;
+        } else {
+            // shutdown path: OK to destroy immediately (you already device-wait idle)
+            NOUS_VulkanImage::DestroyVulkanImage(vkContext, &textureData->image);
+            if (textureData->sampler)
+                vkDestroySampler(vkContext->device.logicalDevice, textureData->sampler, vkContext->allocator);
+        }
 
         MemoryManager::Free(textureData, sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE);
     }
@@ -1051,19 +1089,19 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
 
 void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
 {
-    if (material) 
+    if (material)
     {
-        if (material->internalID != INVALID_ID) 
+        if (material->internalID != INVALID_ID)
         {
             NOUS_VulkanMaterialShader::ReleaseMaterialShaderResources(vkContext, &vkContext->materialShader, material);
             //ReleaseMaterialShaderResources(vkContext, &vkContext->gameShader, material);
         }
-        else 
+        else
         {
             NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with internal_id = INVALID_ID. Nothing was done.");
         }
     }
-    else 
+    else
     {
         NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with nullptr. Nothing was done.");
     }

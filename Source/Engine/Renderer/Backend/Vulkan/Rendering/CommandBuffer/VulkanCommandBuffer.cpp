@@ -188,6 +188,7 @@ void NOUS_VulkanCommandBuffer::CommandBufferUpdateSubmitted(VulkanCommandBuffer*
 
 void NOUS_VulkanCommandBuffer::CommandBufferReset(VulkanCommandBuffer* commandBuffer)
 {
+    vkResetCommandBuffer(commandBuffer->handle, 0);
     commandBuffer->state = VulkanCommandBufferState::READY;
 }
 
@@ -198,21 +199,32 @@ void NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(VulkanCon
     CommandBufferBegin(outCommandBuffer, true, false, false);
 }
 
-void NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(VulkanContext* vkContext, VkCommandPool commandPool,
-	VulkanCommandBuffer* commandBuffer, VkQueue queue)
+void NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(
+        VulkanContext* vkContext, VkCommandPool commandPool,
+        VulkanCommandBuffer* commandBuffer, VkQueue queue)
 {
-    // End the command buffer.
+    // 1) End recording
     CommandBufferEnd(commandBuffer);
 
-    // Submit the queue
-    VkSubmitInfo queueSubmitInfo{};
-    queueSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    // 2) Create a fence to wait on
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
-    queueSubmitInfo.commandBufferCount = 1;
-    queueSubmitInfo.pCommandBuffers = &commandBuffer->handle;
+    VkFence fence = VK_NULL_HANDLE;
+    VK_CHECK(vkCreateFence(vkContext->device.logicalDevice, &fenceInfo, vkContext->allocator, &fence));
 
-    NOUS_VulkanMultithreading::CreateQueueSubmitTask(vkContext, queue, 1, &queueSubmitInfo, 0, true);
+    // 3) Submit once with that fence
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers    = &commandBuffer->handle;
 
-    // Free the command buffer.
+    VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, fence));
+
+    // 4) Wait for GPU to finish this tiny job
+    VK_CHECK(vkWaitForFences(vkContext->device.logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX));
+
+    // 5) Clean up fence and command buffer
+    vkDestroyFence(vkContext->device.logicalDevice, fence, vkContext->allocator);
     CommandBufferFree(vkContext, commandPool, commandBuffer);
 }
