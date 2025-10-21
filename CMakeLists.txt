@@ -30,6 +30,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Functions")
 include(GlobalSettings)
 include(ProfilingOptions)
 
+option(NOUS_BUILD_TESTS "Build Nous Engine module tests" ON)
+
+if (NOUS_BUILD_TESTS)
+    enable_testing()
+endif()
+
 # ==============================
 # Add Engine Sources
 # ==============================

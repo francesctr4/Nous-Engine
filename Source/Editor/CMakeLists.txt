@@ -8,10 +8,9 @@
 
 set(EDITOR_NAME "Nous-Editor")
 
-set(EDITOR_SOURCES
-        Core/ModuleEditor.cpp
-        Core/ModuleEditor.h
+add_subdirectory(Core/ModuleEditor)
 
+set(EDITOR_SOURCES
         UI/ImGuiConfig/ImGuiCustom.cpp
         UI/ImGuiConfig/ImGuiCustom.h
 
@@ -65,6 +64,7 @@ target_link_libraries(${EDITOR_NAME}
         Vulkan::Vulkan
         imgui::imgui
         Tracy::TracyClient
+        ModuleEditor
 )
 
 add_dependencies(${EDITOR_NAME} ${PROJECT_NAME})

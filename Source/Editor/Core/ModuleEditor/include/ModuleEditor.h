@@ -37,18 +37,18 @@ public:
 	// Array to store ImFont pointers
 	static std::vector<ImFont*> fonts;
 
-	IEditorWindow* GetEditorWindowByName(std::string name);
+    NOUS_EDITOR_API IEditorWindow* GetEditorWindowByName(std::string name);
+
+    NOUS_EDITOR_API void AddEditorWindow(std::unique_ptr<IEditorWindow> editorWindow);
+
+    // Vulkan Specific
+    NOUS_EDITOR_API static VulkanContext* GetVulkanContext();
 
 private:
 
 	void InitFrame(RendererBackendType backendType);
 	void InternalDrawEditor();
 	void EndFrame(RendererBackendType backendType);
-
-	// Vulkan Specific
-	static VulkanContext* GetVulkanContext();
-
-	void AddEditorWindow(std::unique_ptr<IEditorWindow> editorWindow);
 
 private:
 

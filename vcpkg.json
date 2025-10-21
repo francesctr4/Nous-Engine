@@ -29,6 +29,9 @@
     },
     {
       "name" : "glm"
+    },
+    {
+      "name" : "gtest"
     }
   ]
 }

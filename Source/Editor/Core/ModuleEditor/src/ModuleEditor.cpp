@@ -1,4 +1,4 @@
-#include "Editor/Core/ModuleEditor.h"
+#include "Editor/Core/ModuleEditor/include/ModuleEditor.h"
 #include "Engine/Core/Modules/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Core/Modules/ModuleCamera3D.h"
