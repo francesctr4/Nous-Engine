@@ -2,13 +2,14 @@
 #define MODULERESOURCEMANAGER_H
 
 #include <Engine/Core/Module.h>
-#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
 #include <Engine/Core/EngineExport.h>
 #include "Engine/Systems/Event System/IEventListener.h"
+#include "Engine/Systems/Resource Manager/Resource Types/Resource.h"
+
 #include <mutex>
 #include <unordered_map>
 
-using UID = uint32;
+using UID = uint32_t;
 struct MetaFileData;
 
 class ResourceTexture;

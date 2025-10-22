@@ -2,7 +2,7 @@
 #include <Engine/Scripting/Internal/ScriptRegistry.inl>
 #include "Engine/Systems/Logging System/Logger.h"
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
-#include <Engine/Multithreading/NOUS_Multithreading.h>
+#include "Engine/Multithreading/NOUS_Multithreading/NOUS_Multithreading.h"
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>
 #include <Engine/Scripting/EngineAPI/ScriptBindings.h>
 

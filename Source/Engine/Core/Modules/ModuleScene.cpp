@@ -17,7 +17,7 @@
 
 #include <Engine/ECS/Components/ComponentMesh.h>
 #include <Engine/ECS/Components/ComponentMaterial.h>
-#include <Engine/Multithreading/NOUS_JobSystem.h>
+#include "Engine/Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
 #include <SDL3/SDL.h>
 #include <filesystem>

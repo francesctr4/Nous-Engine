@@ -5,7 +5,7 @@
 // =====================================================
 
 // This fixture provides a clean setup/teardown structure
-class t_ModuleEditor : public ::testing::Test {
+class t_NOUS_Job : public ::testing::Test {
 protected:
     // Called before each test
     void SetUp() override {
@@ -27,6 +27,6 @@ protected:
 // =====================================================
 
 // Sanity test to check fixture setup
-TEST_F(t_ModuleEditor, TEST) {
+TEST_F(t_NOUS_Job, TEST) {
     EXPECT_TRUE(initialized);
 }

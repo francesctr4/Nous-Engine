@@ -5,7 +5,7 @@
 #include "Engine/Core/Modules/ModuleFileSystem.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Scripting/ScriptManager.h"
-#include "Engine/Multithreading/NOUS_JobSystem.h"
+#include "Engine/Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Systems/Logging System/Logger.h"
 
 static void HelpMarker(const char* desc)

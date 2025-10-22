@@ -12,7 +12,7 @@
 #include <SDL3/SDL.h>
 
 #include <Engine/Systems/Time Management/TimeManager.h>
-#include <Engine/Multithreading/NOUS_JobSystem.h>
+#include "Engine/Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include <Engine/Systems/Event System/EventSystem.h>
 #include <Engine/Systems/Event System/Event.h>
 #include "Engine/Systems/Logging System/Logger.h"

@@ -1,9 +1,9 @@
 #ifndef NOUSJOBSYSTEM_H
 #define NOUSJOBSYSTEM_H
 
-#include <Engine/Core/Globals.h>
+#include "Engine/Core/Globals.h"
 #include <functional>
-#include <Engine/Multithreading/NOUS_ThreadPool.h>
+#include "Engine/Multithreading/NOUS_ThreadPool/NOUS_ThreadPool.h"
 
 namespace NOUS_Multithreading
 {

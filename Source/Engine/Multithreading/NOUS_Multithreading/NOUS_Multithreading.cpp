@@ -1,5 +1,5 @@
-#include <Engine/Multithreading/NOUS_Multithreading.h>
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include "NOUS_Multithreading.h"
+#include "Engine/Systems/Memory Manager/MemoryManager.h"
 
 /// @brief Initializes the main thread tracking.
 /// @note Must be paired with UnregisterMainThread() to prevent memory leaks.

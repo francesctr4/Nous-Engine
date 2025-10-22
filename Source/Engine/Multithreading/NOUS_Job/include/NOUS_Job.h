@@ -1,9 +1,10 @@
 #ifndef NOUSJOB_H
 #define NOUSJOB_H
 
-#include <Engine/Core/Globals.h>
-#include <Engine/Core/EngineExport.h>
+#include "Engine/Core/EngineExport.h"
+
 #include <functional>
+#include <string>
 
 namespace NOUS_Multithreading
 {

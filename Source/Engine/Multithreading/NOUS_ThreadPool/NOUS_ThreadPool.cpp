@@ -1,6 +1,6 @@
-#include <Engine/Multithreading/NOUS_ThreadPool.h>
+#include "NOUS_ThreadPool.h"
 
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include "Engine/Systems/Memory Manager/MemoryManager.h"
 #include "Engine/Systems/Logging System/Logger.h"
 
 #ifdef _PROFILING

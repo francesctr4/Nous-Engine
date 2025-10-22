@@ -1,4 +1,4 @@
-#include <Engine/Multithreading/NOUS_Thread.h>
+#include "NOUS_Thread.h"
 
 /// @brief NOUS_Thread constructor.
 NOUS_Multithreading::NOUS_Thread::NOUS_Thread() :

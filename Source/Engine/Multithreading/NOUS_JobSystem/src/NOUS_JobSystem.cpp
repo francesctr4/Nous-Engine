@@ -1,8 +1,8 @@
-#include <Engine/Multithreading/NOUS_JobSystem.h>
-#include <Engine/Multithreading/NOUS_Job.h>
+#include "Engine/Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include "Engine/Multithreading/NOUS_Job/include/NOUS_Job.h"
 #include "Engine/Systems/Logging System/Logger.h"
 
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include "Engine/Systems/Memory Manager/MemoryManager.h"
 
 /// @brief NOUS_JobSystem constructor.
 /// @param size: Number of worker threads available inside the thread pool.

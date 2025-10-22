@@ -1,8 +1,8 @@
 #include "JobQueueWindow.h"
 
 #include "Engine/Core/Application.h"
-#include "Engine/Multithreading/NOUS_JobSystem.h"
-#include "Engine/Multithreading/NOUS_Multithreading.h"
+#include "Engine/Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include "Engine/Multithreading/NOUS_Multithreading/NOUS_Multithreading.h"
 
 #include "imgui.h"
 

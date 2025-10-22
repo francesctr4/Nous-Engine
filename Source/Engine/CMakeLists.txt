@@ -38,7 +38,6 @@ target_sources(${PROJECT_NAME} PRIVATE
         $<TARGET_OBJECTS:Modules>
         $<TARGET_OBJECTS:Utils>
         $<TARGET_OBJECTS:Systems>
-        $<TARGET_OBJECTS:Multithreading>
         $<TARGET_OBJECTS:Renderer>
         $<TARGET_OBJECTS:ECS>
         $<TARGET_OBJECTS:Scripting>
@@ -52,6 +51,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         parson::parson
         Tracy::TracyClient
         glm::glm
+        Multithreading
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
