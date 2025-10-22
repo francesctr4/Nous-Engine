@@ -1,9 +1,5 @@
 #include "Engine/Multithreading/NOUS_Job/include/NOUS_Job.h"
 
-#ifdef _PROFILING
-#include <tracy/Tracy.hpp>
-#endif
-
 /// @brief NOUS_Job constructor.
 NOUS_Multithreading::NOUS_Job::NOUS_Job(const std::string& name, std::function<void()> func) :
 	mName(name), mFunction(func) 
