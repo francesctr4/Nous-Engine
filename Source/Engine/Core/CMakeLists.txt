@@ -7,8 +7,6 @@ set(CORE_SOURCES
         Application.h
         Globals.h
         UpdateStatus.h
-        Module.cpp
-        Module.h
         EngineExport.h
 )
 

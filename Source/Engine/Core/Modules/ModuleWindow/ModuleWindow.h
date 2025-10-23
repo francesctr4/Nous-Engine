@@ -1,7 +1,7 @@
 #ifndef MODULEWINDOW_H
 #define MODULEWINDOW_H
 
-#include "Engine/Core/Module.h"
+#include "Engine/Core/Modules/Module.h"
 #include "Engine/Systems/Event System/IEventListener.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Core/EngineExport.h"

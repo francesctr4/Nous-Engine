@@ -1,9 +1,9 @@
-#include <Engine/Core/Modules/ModuleFileSystem.h>
-#include <Engine/Core/Modules/ModuleResourceManager.h>
+#include "ModuleFileSystem.h"
+#include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
 
-#include <Engine/Systems/File System/FileManager.h>
+#include "Engine/Systems/File System/FileManager.h"
 #include <filesystem>
-#include <Engine/Core/Application.h>
+#include "Engine/Core/Application.h"
 #include "Engine/Systems/Logging System/Logger.h"
 
 ModuleFileSystem::ModuleFileSystem(Application* app) : Module(app)

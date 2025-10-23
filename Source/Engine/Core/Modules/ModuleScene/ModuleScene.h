@@ -1,8 +1,8 @@
 #ifndef MODULESCENE_H
 #define MODULESCENE_H
 
-#include <Engine/Core/Module.h>
-#include <Engine/Core/EngineExport.h>
+#include "Engine/Core/Modules/Module.h"
+#include "Engine/Core/EngineExport.h"
 #include <string>
 #include <vector>
 #include "Engine/Systems/Event System/IEventListener.h"

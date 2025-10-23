@@ -1,6 +1,6 @@
 #include "ResourcesWindow.h"
 
-#include "Engine/Core/Modules/ModuleResourceManager.h"
+#include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
 #include "Engine/Systems/Resource Manager/Resource Types/Resource.h"
 #include "Engine/Core/Application.h"
 

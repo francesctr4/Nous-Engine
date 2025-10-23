@@ -6,7 +6,7 @@
 #include "SDL3/SDL_vulkan.h"
 
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Modules/ModuleWindow.h"
+#include "Engine/Core/Modules/ModuleWindow/ModuleWindow.h"
 
 bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 {

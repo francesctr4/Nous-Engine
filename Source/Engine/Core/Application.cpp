@@ -1,11 +1,11 @@
 #include <Engine/Core/Application.h>
-#include <Engine/Core/Modules/ModuleWindow.h>
-#include <Engine/Core/Modules/ModuleInput.h>
-#include <Engine/Core/Modules/ModuleFileSystem.h>
-#include <Engine/Core/Modules/ModuleCamera3D.h>
-#include <Engine/Core/Modules/ModuleResourceManager.h>
-#include <Engine/Core/Modules/ModuleScene.h>
-#include <Engine/Core/Modules/ModuleRenderer3D.h>
+#include "Engine/Core/Modules/ModuleWindow/ModuleWindow.h"
+#include "Engine/Core/Modules/ModuleInput/ModuleInput.h"
+#include "Engine/Core/Modules/ModuleFileSystem/ModuleFileSystem.h"
+#include "Engine/Core/Modules/ModuleCamera3D/ModuleCamera3D.h"
+#include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
+#include "Engine/Core/Modules/ModuleScene/ModuleScene.h"
+#include "Engine/Core/Modules/ModuleRenderer3D/ModuleRenderer3D.h"
 
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 

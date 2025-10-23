@@ -3,20 +3,22 @@
 # ==============================
 
 set(MODULES_SOURCES
-        ModuleCamera3D.cpp
-        ModuleCamera3D.h
-        ModuleFileSystem.cpp
-        ModuleFileSystem.h
-        ModuleInput.cpp
-        ModuleInput.h
-        ModuleRenderer3D.cpp
-        ModuleRenderer3D.h
-        ModuleResourceManager.cpp
-        ModuleResourceManager.h
-        ModuleScene.cpp
-        ModuleScene.h
-        ModuleWindow.cpp
-        ModuleWindow.h
+        ModuleCamera3D/ModuleCamera3D.cpp
+        ModuleCamera3D/ModuleCamera3D.h
+        ModuleFileSystem/ModuleFileSystem.cpp
+        ModuleFileSystem/ModuleFileSystem.h
+        ModuleInput/ModuleInput.cpp
+        ModuleInput/ModuleInput.h
+        ModuleRenderer3D/ModuleRenderer3D.cpp
+        ModuleRenderer3D/ModuleRenderer3D.h
+        ModuleResourceManager/ModuleResourceManager.cpp
+        ModuleResourceManager/ModuleResourceManager.h
+        ModuleScene/ModuleScene.cpp
+        ModuleScene/ModuleScene.h
+        ModuleWindow/ModuleWindow.cpp
+        ModuleWindow/ModuleWindow.h
+        Module.cpp
+        Module.h
 )
 
 add_library(Modules OBJECT ${MODULES_SOURCES})

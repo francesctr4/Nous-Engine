@@ -1,7 +1,7 @@
 #ifndef MODULEFILESYSTEM_H
 #define MODULEFILESYSTEM_H
 
-#include <Engine/Core/Module.h>
+#include "Engine/Core/Modules/Module.h"
 #include <string>
 #include "Engine/Systems/Event System/IEventListener.h"
 

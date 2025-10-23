@@ -15,7 +15,7 @@
 //  - Handle window resize and other render-related events.
 // -----------------------------------------------------------------------------
 
-#include "Engine/Core/Module.h"
+#include "Engine/Core/Modules/Module.h"
 #include "Engine/Systems/Event System/IEventListener.h"
 #include "Engine/Core/EngineExport.h"
 

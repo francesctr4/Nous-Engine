@@ -4,7 +4,7 @@
 #include "Engine/ECS/GameObject.h"
 
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Modules/ModuleScene.h"
+#include "Engine/Core/Modules/ModuleScene/ModuleScene.h"
 
 #include "imgui.h"
 

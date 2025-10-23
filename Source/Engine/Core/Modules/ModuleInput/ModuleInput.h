@@ -1,8 +1,8 @@
 #ifndef MODULEINPUT_H
 #define MODULEINPUT_H
 
-#include <Engine/Core/Module.h>
-#include <Engine/Core/Globals.h>
+#include "Engine/Core/Modules/Module.h"
+#include "Engine/Core/Globals.h"
 #include "Engine/Systems/Event System/IEventListener.h"
 
 #define MAX_KEYBOARD_KEYS 300

@@ -30,8 +30,8 @@
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include <Engine/Core/Application.h>
 #include <Engine/Systems/Event System/EventSystem.h>
-#include "Engine/Core/Modules/ModuleWindow.h"
-#include "Engine/Core/Modules/ModuleResourceManager.h"
+#include "Engine/Core/Modules/ModuleWindow/ModuleWindow.h"
+#include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_BACKEND_VULKAN_BACKEND;
 

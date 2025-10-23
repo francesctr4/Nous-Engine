@@ -1,22 +1,22 @@
-#include <Engine/Core/Modules/ModuleResourceManager.h>
-#include <Engine/Systems/Resource Manager/Resource Types/Resource.h>
-#include <Engine/Systems/Event System/EventSystem.h>
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
-#include <Engine/Core/Application.h>
-#include <Engine/Core/Modules/ModuleRenderer3D.h>
-#include <Engine/Renderer/Frontend/RendererFrontend.h>
-#include <Engine/Core/Modules/ModuleInput.h>
-#include <Engine/Systems/File System/FileManager.h>
+#include "ModuleResourceManager.h"
+#include "Engine/Systems/Resource Manager/Resource Types/Resource.h"
+#include "Engine/Systems/Event System/EventSystem.h"
+#include "Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h"
+#include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
+#include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
+#include "Engine/Core/Application.h"
+#include "Engine/Core/Modules/ModuleRenderer3D/ModuleRenderer3D.h"
+#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include "Engine/Core/Modules/ModuleInput/ModuleInput.h"
+#include "Engine/Systems/File System/FileManager.h"
 #include "Engine/Systems/Logging System/Logger.h"
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include "Engine/Systems/Memory Manager/MemoryManager.h"
 
-#include <Engine/Utils/Random.h>
-#include <Engine/Utils/JsonFile.h>
-#include <Engine/Systems/Resource Manager/MetaFileData.inl>
+#include "Engine/Utils/Random.h"
+#include "Engine/Utils/JsonFile.h"
+#include "Engine/Systems/Resource Manager/MetaFileData.inl"
 
-#include <Engine/Systems/Resource Manager/Importers/ImporterManager.h>
+#include "Engine/Systems/Resource Manager/Importers/ImporterManager.h"
 
 ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
 {

@@ -1,7 +1,7 @@
 #include <Engine/Scripting/EngineAPI/Bindings/GameObjectBindings.h>
 
 #include <Engine/Core/Application.h>
-#include <Engine/Core/Modules/ModuleScene.h>
+#include "Engine/Core/Modules/ModuleScene/ModuleScene.h"
 
 #include <Engine/ECS/Scene.h>
 #include <Engine/ECS/GameObject.h>

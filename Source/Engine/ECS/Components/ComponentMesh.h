@@ -2,7 +2,7 @@
 #define NOUS_ENGINE_COMPONENTMESH_H
 
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
-#include <Engine/Core/Modules/ModuleResourceManager.h>
+#include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
 #include <Engine/ECS/Component.h>
 
 class CMesh : public Component {

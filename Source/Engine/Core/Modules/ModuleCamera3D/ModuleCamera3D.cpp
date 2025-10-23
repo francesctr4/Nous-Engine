@@ -1,15 +1,15 @@
-#include <Engine/Core/Modules/ModuleCamera3D.h>
-#include <Engine/Core/Modules/ModuleInput.h>
+#include "ModuleCamera3D.h"
+#include "Engine/Core/Modules/ModuleInput/ModuleInput.h"
 #include "Engine/Systems/Logging System/Logger.h"
-#include <Engine/Core/Application.h>
+#include "Engine/Core/Application.h"
 #include <algorithm>
 
 // SDL3
-#include <SDL3/SDL.h>
+#include "SDL3/SDL.h"
 
-#include <Engine/Systems/Event System/EventSystem.h>
+#include "Engine/Systems/Event System/EventSystem.h"
 
-#include <glm/gtc/quaternion.hpp>
+#include "glm/gtc/quaternion.hpp"
 
 ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 {

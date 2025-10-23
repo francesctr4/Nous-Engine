@@ -6,9 +6,9 @@
 
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 
-#include <Engine/Core/Modules/ModuleRenderer3D.h>
+#include "Engine/Core/Modules/ModuleRenderer3D/ModuleRenderer3D.h"
 #include <Engine/Renderer/Frontend/RendererFrontend.h>
-#include <Engine/Core/Modules/ModuleResourceManager.h>
+#include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
 

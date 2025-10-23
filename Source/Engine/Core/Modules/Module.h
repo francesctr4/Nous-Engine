@@ -1,8 +1,8 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include <Engine/Core/UpdateStatus.h>
-#include <Engine/Core/EngineExport.h>
+#include "Engine/Core/UpdateStatus.h"
+#include "Engine/Core/EngineExport.h"
 
 struct Event;
 class Application;
