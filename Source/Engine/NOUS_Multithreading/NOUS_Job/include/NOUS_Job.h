@@ -1,5 +1,5 @@
-#ifndef NOUSJOB_H
-#define NOUSJOB_H
+#ifndef NOUS_JOB_H
+#define NOUS_JOB_H
 
 #include "Engine/Core/EngineExport.h"
 
@@ -16,13 +16,13 @@ namespace NOUS_Multithreading
 	public:
 
 		/// @brief NOUS_Job constructor.
-		NOUS_ENGINE_API NOUS_Job(const std::string& name, std::function<void()> func);
+		NOUS_ENGINE_API NOUS_Job(std::string  name, std::function<void()> func);
 
 		/// @brief Executes the stored function inside the job.
 		NOUS_ENGINE_API void Execute();
 
 		/// @return std::string with the NOUS_Job name identifier.
-		NOUS_ENGINE_API const std::string& GetName() const;
+		[[nodiscard]] NOUS_ENGINE_API const std::string& GetName() const;
 
 	private:
 
@@ -32,4 +32,4 @@ namespace NOUS_Multithreading
 	};
 }
 
-#endif // NOUSJOB_H
+#endif // NOUS_JOB_H

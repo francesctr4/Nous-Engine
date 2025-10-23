@@ -1,8 +1,9 @@
-#include "NOUS_Thread.h"
+#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
 /// @brief NOUS_Thread constructor.
 NOUS_Multithreading::NOUS_Thread::NOUS_Thread() :
-	mThreadID(0), mIsRunning(false), mCurrentJob(nullptr), mThreadState(ThreadState::READY) 
+	mThreadID(0), mIsRunning(false), mCurrentJob(nullptr),
+    mThreadState(ThreadState::READY), mTimerRunning(false)
 {
 
 }
@@ -10,12 +11,12 @@ NOUS_Multithreading::NOUS_Thread::NOUS_Thread() :
 /// @brief NOUS_Thread destructor.
 NOUS_Multithreading::NOUS_Thread::~NOUS_Thread() 
 { 
-	if (mIsRunning) Join(); 
+	if (mIsRunning) Join();
 }
 
 /// @brief Starts the thread with a given function.
 /// @param func The function to execute in the thread.
-void NOUS_Multithreading::NOUS_Thread::Start(std::function<void()> func)
+void NOUS_Multithreading::NOUS_Thread::Start(const std::function<void()>& func)
 {
 	if (mIsRunning) return;
 
@@ -77,7 +78,7 @@ bool NOUS_Multithreading::NOUS_Thread::IsRunning() const
 	return mIsRunning; 
 }
 
-uint32 NOUS_Multithreading::NOUS_Thread::GetID() const 
+uint32_t NOUS_Multithreading::NOUS_Thread::GetID() const
 { 
 	return mThreadID; 
 }
@@ -85,18 +86,27 @@ uint32 NOUS_Multithreading::NOUS_Thread::GetID() const
 /// @brief Job execution time tracking.
 
 void NOUS_Multithreading::NOUS_Thread::StartExecutionTimer() 
-{ 
-	mExecutionTime.Start(); 
+{
+    mStartTime = std::chrono::steady_clock::now();
+    mTimerRunning = true;
 }
 
 void NOUS_Multithreading::NOUS_Thread::StopExecutionTimer() 
-{ 
-	mExecutionTime.Stop(); 
+{
+    mEndTime = std::chrono::steady_clock::now();
+    mTimerRunning = false;
 }
 
 double NOUS_Multithreading::NOUS_Thread::GetExecutionTimeMS() const 
-{ 
-	return mExecutionTime.ReadMS(); 
+{
+    if (mTimerRunning)
+    {
+        return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(std::chrono::steady_clock::now() - mStartTime).count();
+    }
+    else
+    {
+        return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(mEndTime - mStartTime).count();
+    }
 }
 
 /// @brief Sets a std::thread::id to this NOUS_Thread.
@@ -105,20 +115,20 @@ void NOUS_Multithreading::NOUS_Thread::SetThreadID(std::thread::id id)
 {
 	std::stringstream ss;
 	ss << id;
-	mThreadID = static_cast<uint32>(std::stoul(ss.str()));
+	mThreadID = static_cast<uint32_t>(std::stoul(ss.str()));
 }
 
-/// @brief Converts a std::thread::id to a numeric uint32.
+/// @brief Converts a std::thread::id to a numeric uint32_t.
 /// @note Relies on string conversion; platform-dependent.
-uint32 NOUS_Multithreading::NOUS_Thread::GetThreadID(std::thread::id id)
+uint32_t NOUS_Multithreading::NOUS_Thread::GetThreadID(std::thread::id id)
 {
 	std::stringstream ss;
 	ss << id;
-	return static_cast<uint32>(std::stoul(ss.str()));
+	return static_cast<uint32_t>(std::stoul(ss.str()));
 }
 
 /// @return std::string representation of the passed thread state.
-const std::string NOUS_Multithreading::NOUS_Thread::GetStringFromState(const ThreadState& state)
+std::string NOUS_Multithreading::NOUS_Thread::GetStringFromState(const ThreadState& state)
 {
 	switch (state)
 	{
@@ -129,7 +139,7 @@ const std::string NOUS_Multithreading::NOUS_Thread::GetStringFromState(const Thr
 }
 
 /// @brief Sleep the current thread for an amount of time (ms).
-const void NOUS_Multithreading::NOUS_Thread::SleepMS(const uint32& ms)
+void NOUS_Multithreading::NOUS_Thread::SleepMS(const uint32_t& ms)
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }

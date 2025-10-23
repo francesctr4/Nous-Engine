@@ -13,7 +13,7 @@ find_package(glm REQUIRED)
 # ==============================
 add_subdirectory(Core)
 add_subdirectory(Scripting)
-add_subdirectory(Multithreading)
+add_subdirectory(NOUS_Multithreading)
 add_subdirectory(Utils)
 add_subdirectory(Renderer)
 add_subdirectory(ECS)
@@ -45,13 +45,15 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 # Link engine modules + dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE
+        # Third-Party
         SDL3::SDL3
         Vulkan::Vulkan
         assimp::assimp
         parson::parson
         Tracy::TracyClient
         glm::glm
-        Multithreading
+        # Engine
+        NOUS_Multithreading
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

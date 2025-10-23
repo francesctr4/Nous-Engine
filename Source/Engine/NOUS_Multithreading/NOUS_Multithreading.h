@@ -1,0 +1,28 @@
+#ifndef NOUS_MULTITHREADING_H
+#define NOUS_MULTITHREADING_H
+
+#include "Engine/Core/EngineExport.h"
+
+namespace NOUS_Multithreading
+{
+    // Forward declaration.
+    class NOUS_Thread;
+
+    /// @brief Global pointer to the main thread instance.
+    /// @note Initialized by RegisterMainThread() and cleaned up by UnregisterMainThread().
+    extern NOUS_Thread* sMainThread;
+
+    /// @brief Initializes the main thread tracking.
+    /// @note Must be paired with UnregisterMainThread() to prevent leaks.
+    NOUS_ENGINE_API void RegisterMainThread();
+
+    /// @brief Deletes the main thread instance if it exists.
+    /// @note Should be called during application shutdown.
+    NOUS_ENGINE_API void UnregisterMainThread();
+
+    /// @brief Retrieves the main thread instance.
+    /// @return Pointer to the main thread object, or nullptr if not registered.
+    NOUS_ENGINE_API NOUS_Thread* GetMainThread();
+}
+
+#endif // NOUS_MULTITHREADING_H

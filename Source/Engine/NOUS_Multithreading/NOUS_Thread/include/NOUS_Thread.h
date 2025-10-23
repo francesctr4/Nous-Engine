@@ -1,16 +1,18 @@
-#ifndef NOUSTHREAD_H
-#define NOUSTHREAD_H
+#ifndef NOUS_THREAD_H
+#define NOUS_THREAD_H
 
-#include "Engine/Core/Globals.h"
-#include "Engine/Systems/Time Management/Timer.h"
 #include "Engine/Core/EngineExport.h"
-#include "Engine/Multithreading/NOUS_Job/include/NOUS_Job.h"
 
 #include <thread>
 #include <functional>
+#include <string>
+#include <chrono>
 
 namespace NOUS_Multithreading
 {
+    // Forward declarations
+	class NOUS_Job;
+
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Available thread states during its lifecycle.
 	///////////////////////////////////////////////////////////////////////////
@@ -43,7 +45,7 @@ namespace NOUS_Multithreading
 
 		/// @brief Starts the thread with a given function.
 		/// @param func The function to execute in the thread.
-		NOUS_ENGINE_API void Start(std::function<void()> func);
+		NOUS_ENGINE_API void Start(const std::function<void()>& func);
 
 		/// @brief Joins the thread if joinable.
 		NOUS_ENGINE_API void Join();
@@ -56,7 +58,7 @@ namespace NOUS_Multithreading
 		NOUS_ENGINE_API void SetCurrentJob(NOUS_Job* job);
 		NOUS_ENGINE_API NOUS_Job* GetCurrentJob() const;
 		NOUS_ENGINE_API bool IsRunning() const;
-		NOUS_ENGINE_API uint32 GetID() const;
+		NOUS_ENGINE_API uint32_t GetID() const;
 
 		/// @brief Job execution time tracking.
 		NOUS_ENGINE_API void StartExecutionTimer();
@@ -69,26 +71,29 @@ namespace NOUS_Multithreading
 
 		/// @brief Converts a std::thread::id to a numeric uint32.
 		/// @note Relies on string conversion; platform-dependent.
-		NOUS_ENGINE_API static uint32 GetThreadID(std::thread::id id);
+		NOUS_ENGINE_API static uint32_t GetThreadID(std::thread::id id);
 
 		/// @return std::string representation of the passed thread state.
-		NOUS_ENGINE_API static const std::string GetStringFromState(const ThreadState& state);
+		NOUS_ENGINE_API static std::string GetStringFromState(const ThreadState& state);
 
 		/// @brief Sleep the current thread for an amount of time (ms).
-		NOUS_ENGINE_API static const void SleepMS(const uint32& ms);
+		NOUS_ENGINE_API static void SleepMS(const uint32_t& ms);
 
 	private:
 
 		std::string					mThreadName;
 		std::thread					mThreadHandle;
-		uint32						mThreadID;
+		uint32_t					mThreadID;
 		std::atomic<ThreadState>	mThreadState;
 
 		std::atomic<bool>			mIsRunning;
 		NOUS_Job*					mCurrentJob;
-		Timer						mExecutionTime;
+
+        std::chrono::time_point<std::chrono::steady_clock>	mStartTime;
+        std::chrono::time_point<std::chrono::steady_clock>	mEndTime;
+        bool												mTimerRunning;
 
 	};
 }
 
-#endif // NOUSTHREAD_H
+#endif // NOUS_THREAD_H

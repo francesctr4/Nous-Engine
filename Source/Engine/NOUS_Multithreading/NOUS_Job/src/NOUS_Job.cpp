@@ -1,8 +1,8 @@
-#include "Engine/Multithreading/NOUS_Job/include/NOUS_Job.h"
+#include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
 
 /// @brief NOUS_Job constructor.
-NOUS_Multithreading::NOUS_Job::NOUS_Job(const std::string& name, std::function<void()> func) :
-	mName(name), mFunction(func) 
+NOUS_Multithreading::NOUS_Job::NOUS_Job(std::string name, std::function<void()> func) :
+	mName(std::move(name)), mFunction(std::move(func))
 {
 
 }

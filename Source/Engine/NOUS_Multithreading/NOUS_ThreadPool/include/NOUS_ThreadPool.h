@@ -1,19 +1,19 @@
-#ifndef NOUSTHREADPOOL_H
-#define NOUSTHREADPOOL_H
+#ifndef NOUS_THREAD_POOL_H
+#define NOUS_THREAD_POOL_H
 
-#include "Engine/Core/Globals.h"
+#include "Engine/Core/EngineExport.h"
 
 #include <vector>
 #include <queue>
 #include <mutex>
 #include <condition_variable>
 
-#include "Engine/Multithreading/NOUS_Job/include/NOUS_Job.h"
-#include "Engine/Multithreading/NOUS_Thread/NOUS_Thread.h"
-#include "Engine/Core/EngineExport.h"
-
 namespace NOUS_Multithreading
 {
+	// Forward declarations
+	class NOUS_Job;
+	class NOUS_Thread;
+
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Manages a pool of worker threads and job distribution between them.
 	///////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,7 @@ namespace NOUS_Multithreading
 
 		/// @brief NOUS_ThreadPool constructor.
 		/// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
-		NOUS_ENGINE_API explicit NOUS_ThreadPool(uint8 numThreads);
+		NOUS_ENGINE_API explicit NOUS_ThreadPool(uint8_t numThreads);
 
 		/// @brief NOUS_ThreadPool destructor.
 		NOUS_ENGINE_API ~NOUS_ThreadPool();
@@ -57,4 +57,4 @@ namespace NOUS_Multithreading
 	};
 }
 
-#endif // NOUSTHREADPOOL_H
+#endif // NOUS_THREAD_POOL_H

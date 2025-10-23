@@ -1,4 +1,6 @@
-#include "NOUS_ThreadPool.h"
+#include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
+#include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
+#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
 #include "Engine/Systems/Memory Manager/MemoryManager.h"
 #include "Engine/Systems/Logging System/Logger.h"
@@ -9,13 +11,13 @@
 
 /// @brief NOUS_ThreadPool constructor.
 /// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
-NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8 numThreads) :
+NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8_t numThreads) :
 	mShutdown(false)
 {
-	numThreads = std::max<uint8>(0, numThreads);
+	numThreads = std::max<uint8_t>(0, numThreads);
 	mThreads.reserve(numThreads);
 
-	for (uint8 i = 0; i < numThreads; ++i)
+	for (uint8_t i = 0; i < numThreads; ++i)
 	{
 		mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
 
@@ -38,7 +40,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::SubmitJob(NOUS_Job* job)
 {
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
-		mJobQueue.push(std::move(job));
+		mJobQueue.push(job);
 	}
 	mConditionVar.notify_one();
 }
@@ -108,7 +110,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 
 			if (mShutdown && mJobQueue.empty()) break;
 
-			job = std::move(mJobQueue.front());
+			job = mJobQueue.front();
 			mJobQueue.pop();
 		}
 

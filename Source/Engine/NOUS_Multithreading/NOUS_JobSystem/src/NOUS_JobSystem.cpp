@@ -1,13 +1,14 @@
-#include "Engine/Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
-#include "Engine/Multithreading/NOUS_Job/include/NOUS_Job.h"
-#include "Engine/Systems/Logging System/Logger.h"
+#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
+#include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
 
+#include "Engine/Systems/Logging System/Logger.h"
 #include "Engine/Systems/Memory Manager/MemoryManager.h"
 
 /// @brief NOUS_JobSystem constructor.
 /// @param size: Number of worker threads available inside the thread pool.
 /// @note If size is not specified, c_MAX_HARDWARE_THREADS is used.
-NOUS_Multithreading::NOUS_JobSystem::NOUS_JobSystem(const uint8 size)
+NOUS_Multithreading::NOUS_JobSystem::NOUS_JobSystem(const uint8_t size)
 {
 	mPendingJobs = 0;
 	mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, size);
@@ -26,7 +27,7 @@ NOUS_Multithreading::NOUS_JobSystem::~NOUS_JobSystem()
 /// @note Job executes immediately if thread pool size is 0 (running on Main Thread).
 /// @param userJob: The function to execute.
 /// @param jobName: Optional name identifier.
-void NOUS_Multithreading::NOUS_JobSystem::SubmitJob(std::function<void()> userJob, const std::string& jobName)
+void NOUS_Multithreading::NOUS_JobSystem::SubmitJob(const std::function<void()>& userJob, const std::string& jobName)
 {
 	mPendingJobs++;
 
@@ -41,7 +42,7 @@ void NOUS_Multithreading::NOUS_JobSystem::SubmitJob(std::function<void()> userJo
 
 		};
 
-	NOUS_Job* job = NOUS_NEW<NOUS_Job>(MemoryManager::MemoryTag::THREAD, jobName, wrappedJob);
+	auto* job = NOUS_NEW<NOUS_Job>(MemoryManager::MemoryTag::THREAD, jobName, wrappedJob);
 
 	if (mThreadPool->GetThreads().empty()) // Running on Main Thread (sequentially)
 	{
@@ -66,7 +67,7 @@ void NOUS_Multithreading::NOUS_JobSystem::WaitForPendingJobs()
 /// @param newSize: The new number of worker threads in the pool.
 /// @note If the size passed is 0, the program becomes single-threaded.
 /// @note Ensures all current jobs finish before resizing.
-void NOUS_Multithreading::NOUS_JobSystem::Resize(uint8 newSize)
+void NOUS_Multithreading::NOUS_JobSystem::Resize(uint8_t newSize)
 {
 	WaitForPendingJobs();
 

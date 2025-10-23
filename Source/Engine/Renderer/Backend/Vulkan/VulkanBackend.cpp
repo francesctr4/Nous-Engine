@@ -27,7 +27,7 @@
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
-#include "Engine/Multithreading/NOUS_Thread/NOUS_Thread.h"
+#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include <Engine/Core/Application.h>
 #include <Engine/Systems/Event System/EventSystem.h>
 #include "Engine/Core/Modules/ModuleWindow.h"

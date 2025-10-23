@@ -12,7 +12,7 @@
 #include "Engine/Core/Modules/ModuleScene.h"
 #include "Engine/Core/Modules/ModuleInput.h"
 #include "Engine/ECS/GameObject.h"
-#include "Engine/Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
 #include "imgui.h"
