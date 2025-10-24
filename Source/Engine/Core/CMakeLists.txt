@@ -10,7 +10,7 @@ set(CORE_SOURCES
         EngineExport.h
 )
 
-add_library(Core OBJECT ${CORE_SOURCES})
+add_library(Core STATIC ${CORE_SOURCES})
 
 set_target_properties(Core PROPERTIES
         CXX_STANDARD 23

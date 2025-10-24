@@ -34,8 +34,6 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_sources(${PROJECT_NAME} PRIVATE
-        $<TARGET_OBJECTS:Core>
-        $<TARGET_OBJECTS:Modules>
         $<TARGET_OBJECTS:Utils>
         $<TARGET_OBJECTS:Systems>
         $<TARGET_OBJECTS:Renderer>
@@ -54,6 +52,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         glm::glm
         # Engine
         NOUS_Multithreading
+        Core
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
