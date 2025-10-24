@@ -2,7 +2,7 @@
 #include "Engine/Core/Modules/ModuleWindow/ModuleWindow.h"
 #include "Engine/Core/Modules/ModuleInput/ModuleInput.h"
 #include "Engine/Core/Modules/ModuleFileSystem/ModuleFileSystem.h"
-#include "Engine/Core/Modules/ModuleCamera3D/ModuleCamera3D.h"
+#include "Engine/Core/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
 #include "Engine/Core/Modules/ModuleScene/ModuleScene.h"
 #include "Engine/Core/Modules/ModuleRenderer3D/ModuleRenderer3D.h"

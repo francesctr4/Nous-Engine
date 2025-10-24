@@ -2,9 +2,9 @@
 # Nous Engine - Modules
 # ==============================
 
+add_subdirectory(ModuleCamera3D)
+
 set(MODULES_SOURCES
-        ModuleCamera3D/ModuleCamera3D.cpp
-        ModuleCamera3D/ModuleCamera3D.h
         ModuleFileSystem/ModuleFileSystem.cpp
         ModuleFileSystem/ModuleFileSystem.h
         ModuleInput/ModuleInput.cpp
@@ -39,4 +39,7 @@ target_compile_definitions(Modules PRIVATE NOUS_ENGINE_EXPORTS)
 # =====================================================
 
 find_package(SDL3 CONFIG REQUIRED)
-target_link_libraries(Modules PUBLIC SDL3::SDL3)
+target_link_libraries(Modules PUBLIC
+        SDL3::SDL3
+        ModuleCamera3D
+)
