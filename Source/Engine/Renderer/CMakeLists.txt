@@ -51,7 +51,7 @@ set(RENDERER_SOURCES
         Frontend/IEditorOverlay.h
 )
 
-add_library(Renderer OBJECT ${RENDERER_SOURCES})
+add_library(Renderer STATIC ${RENDERER_SOURCES})
 
 set_target_properties(Renderer PROPERTIES
         CXX_STANDARD 23

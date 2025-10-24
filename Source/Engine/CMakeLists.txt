@@ -35,7 +35,6 @@ target_include_directories(${PROJECT_NAME}
 
 target_sources(${PROJECT_NAME} PRIVATE
         $<TARGET_OBJECTS:Systems>
-        $<TARGET_OBJECTS:Renderer>
 )
 
 # Link engine modules + dependencies
@@ -53,6 +52,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ECS
         Utils
         Scripting
+        Renderer
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
