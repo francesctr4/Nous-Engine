@@ -34,7 +34,6 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_sources(${PROJECT_NAME} PRIVATE
-        $<TARGET_OBJECTS:Utils>
         $<TARGET_OBJECTS:Systems>
         $<TARGET_OBJECTS:Renderer>
         $<TARGET_OBJECTS:Scripting>
@@ -53,6 +52,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         NOUS_Multithreading
         Core
         ECS
+        Utils
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
