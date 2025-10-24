@@ -1,7 +1,7 @@
 #ifndef NOUS_JOB_SYSTEM_H
 #define NOUS_JOB_SYSTEM_H
 
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 
 #include <functional>
 #include <thread>

@@ -1,7 +1,7 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include <Engine/Core/EngineExport.h>
+#include "Engine/EngineExport.h"
 #include <chrono>
 
 enum class TimerState

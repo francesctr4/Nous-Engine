@@ -23,7 +23,7 @@ add_subdirectory(Systems)
 # NousEngine DLL (Shared Library)
 # ==============================
 
-add_library(${PROJECT_NAME} SHARED MainEngine.cpp)
+add_library(${PROJECT_NAME} SHARED EngineExport.h MainEngine.cpp)
 add_library(NousEngine::Engine ALIAS ${PROJECT_NAME})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
@@ -33,26 +33,33 @@ target_include_directories(${PROJECT_NAME}
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Source
 )
 
-target_sources(${PROJECT_NAME} PRIVATE
-        $<TARGET_OBJECTS:Systems>
-)
-
 # Link engine modules + dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        # Third-Party
+        # --- Third-Party ---
         SDL3::SDL3
         Vulkan::Vulkan
         assimp::assimp
         parson::parson
         Tracy::TracyClient
         glm::glm
-        # Engine
-        NOUS_Multithreading
+        # --- Engine Modules ---
         Core
         ECS
-        Utils
-        Scripting
+        NOUS_Multithreading
         Renderer
+        Scripting
+        Systems
+        Utils
+)
+
+target_link_options(${PROJECT_NAME} PRIVATE
+        "/WHOLEARCHIVE:$<TARGET_FILE:Core>"
+        "/WHOLEARCHIVE:$<TARGET_FILE:ECS>"
+        "/WHOLEARCHIVE:$<TARGET_FILE:NOUS_Multithreading>"
+        "/WHOLEARCHIVE:$<TARGET_FILE:Renderer>"
+        "/WHOLEARCHIVE:$<TARGET_FILE:Scripting>"
+        "/WHOLEARCHIVE:$<TARGET_FILE:Systems>"
+        "/WHOLEARCHIVE:$<TARGET_FILE:Utils>"
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

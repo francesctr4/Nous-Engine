@@ -2,7 +2,7 @@
 #define RESOURCE_H
 
 #include <Engine/Core/Globals.h>
-#include <Engine/Core/EngineExport.h>
+#include "Engine/EngineExport.h"
 
 using UID = uint32;
 

@@ -1,7 +1,7 @@
 #ifndef NOUS_MULTITHREADING_H
 #define NOUS_MULTITHREADING_H
 
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 
 namespace NOUS_Multithreading
 {

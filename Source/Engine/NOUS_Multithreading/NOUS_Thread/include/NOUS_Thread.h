@@ -1,7 +1,7 @@
 #ifndef NOUS_THREAD_H
 #define NOUS_THREAD_H
 
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 
 #include <thread>
 #include <functional>

@@ -7,7 +7,6 @@ set(CORE_SOURCES
         Application.h
         Globals.h
         UpdateStatus.h
-        EngineExport.h
 )
 
 add_library(Core STATIC ${CORE_SOURCES})

@@ -2,7 +2,7 @@
 #define NOUS_ENGINE_RENDERER_FRONTEND_H
 
 #include "Engine/Renderer/RendererTypes.h"
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 
 #include <functional>
 

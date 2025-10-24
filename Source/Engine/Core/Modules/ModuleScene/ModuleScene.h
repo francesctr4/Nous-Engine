@@ -2,7 +2,7 @@
 #define MODULESCENE_H
 
 #include "Engine/Core/Modules/Module.h"
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 #include <string>
 #include <vector>
 #include "Engine/Systems/Event System/IEventListener.h"

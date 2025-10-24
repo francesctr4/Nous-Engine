@@ -2,7 +2,7 @@
 #define MODULE_H
 
 #include "Engine/Core/UpdateStatus.h"
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 
 struct Event;
 class Application;

@@ -2,7 +2,7 @@
 #define ASSERTS_H
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 
 // Disable assertions by commenting out the below line.
 #define NOUS_ASSERTIONS_ENABLED

@@ -21,7 +21,7 @@ set(MODULES_SOURCES
         Module.h
 )
 
-add_library(Modules OBJECT ${MODULES_SOURCES})
+add_library(Modules STATIC ${MODULES_SOURCES})
 
 set_target_properties(Modules PROPERTIES
         CXX_STANDARD 23

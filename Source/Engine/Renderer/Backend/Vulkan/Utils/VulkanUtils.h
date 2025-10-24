@@ -4,7 +4,7 @@
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
 #include "Engine/Systems/Logging System/Asserts.h"
 #include "Engine/Systems/Logging System/Logger.h"
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 
 /**
  * Returns the string representation of result.

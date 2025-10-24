@@ -17,7 +17,7 @@
 
 #include "Engine/Core/Modules/Module.h"
 #include "Engine/Systems/Event System/IEventListener.h"
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 
 // ---------------------------------------------------------------------
 // Forward Declarations

@@ -58,7 +58,7 @@ set(SYSTEMS_SOURCES
         "Logging System/LogChannel.h"
 )
 
-add_library(Systems OBJECT ${SYSTEMS_SOURCES})
+add_library(Systems STATIC ${SYSTEMS_SOURCES})
 
 set_target_properties(Systems PROPERTIES
         CXX_STANDARD 23

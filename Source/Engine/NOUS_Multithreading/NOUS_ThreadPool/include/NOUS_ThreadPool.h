@@ -1,7 +1,7 @@
 #ifndef NOUS_THREAD_POOL_H
 #define NOUS_THREAD_POOL_H
 
-#include "Engine/Core/EngineExport.h"
+#include "Engine/EngineExport.h"
 
 #include <vector>
 #include <queue>

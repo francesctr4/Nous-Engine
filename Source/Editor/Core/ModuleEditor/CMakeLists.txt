@@ -3,7 +3,7 @@
 # ===========================================
 
 # Object library — compiled objects are linked into Nous-Editor
-add_library(ModuleEditor OBJECT
+add_library(ModuleEditor STATIC
         include/ModuleEditor.h
         src/ModuleEditor.cpp
 )
