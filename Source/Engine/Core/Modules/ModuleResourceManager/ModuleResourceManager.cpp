@@ -5,7 +5,7 @@
 #include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Modules/ModuleRenderer3D/ModuleRenderer3D.h"
+#include "Engine/Core/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Core/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Systems/File System/FileManager.h"

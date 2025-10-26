@@ -5,10 +5,9 @@
 add_subdirectory(ModuleCamera3D)
 add_subdirectory(ModuleFileSystem)
 add_subdirectory(ModuleInput)
+add_subdirectory(ModuleRenderer3D)
 
 set(MODULES_SOURCES
-        ModuleRenderer3D/ModuleRenderer3D.cpp
-        ModuleRenderer3D/ModuleRenderer3D.h
         ModuleResourceManager/ModuleResourceManager.cpp
         ModuleResourceManager/ModuleResourceManager.h
         ModuleScene/ModuleScene.cpp
@@ -42,4 +41,5 @@ target_link_libraries(Modules PUBLIC
         ModuleCamera3D
         ModuleFileSystem
         ModuleInput
+        ModuleRenderer3D
 )

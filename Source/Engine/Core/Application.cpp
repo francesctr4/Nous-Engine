@@ -5,7 +5,7 @@
 #include "Engine/Core/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
 #include "Engine/Core/Modules/ModuleScene/ModuleScene.h"
-#include "Engine/Core/Modules/ModuleRenderer3D/ModuleRenderer3D.h"
+#include "Engine/Core/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 
