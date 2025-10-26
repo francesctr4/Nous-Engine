@@ -2,7 +2,7 @@
 #include "Editor/Core/ModuleEditor/include/ModuleEditor.h"
 
 #include "Engine/Systems/File System/FileManager.h"
-#include "Engine/Core/Modules/ModuleFileSystem/ModuleFileSystem.h"
+#include "Engine/Core/Modules/ModuleFileSystem/include/ModuleFileSystem.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Scripting/ScriptManager.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"

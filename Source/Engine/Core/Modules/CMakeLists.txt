@@ -3,10 +3,9 @@
 # ==============================
 
 add_subdirectory(ModuleCamera3D)
+add_subdirectory(ModuleFileSystem)
 
 set(MODULES_SOURCES
-        ModuleFileSystem/ModuleFileSystem.cpp
-        ModuleFileSystem/ModuleFileSystem.h
         ModuleInput/ModuleInput.cpp
         ModuleInput/ModuleInput.h
         ModuleRenderer3D/ModuleRenderer3D.cpp
@@ -42,4 +41,5 @@ find_package(SDL3 CONFIG REQUIRED)
 target_link_libraries(Modules PUBLIC
         SDL3::SDL3
         ModuleCamera3D
+        ModuleFileSystem
 )

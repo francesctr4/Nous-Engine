@@ -1,4 +1,4 @@
-#include "ModuleFileSystem.h"
+#include "Engine/Core/Modules/ModuleFileSystem/include/ModuleFileSystem.h"
 #include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
 
 #include "Engine/Systems/File System/FileManager.h"
