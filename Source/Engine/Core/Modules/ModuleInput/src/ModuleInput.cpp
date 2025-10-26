@@ -3,7 +3,7 @@
 #include "Engine/Systems/Event System/EventSystem.h"
 #include "Engine/Systems/Logging System/Logger.h"
 #include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Core/Modules/ModuleWindow/ModuleWindow.h"
+#include "Engine/Core/Modules/ModuleWindow/include/ModuleWindow.h"
 
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"

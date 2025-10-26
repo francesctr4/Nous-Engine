@@ -2,7 +2,7 @@
 #include "Engine/Core/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Core/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
-#include "Engine/Core/Modules/ModuleWindow/ModuleWindow.h"
+#include "Engine/Core/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Systems/Event System/EventSystem.h"
 

@@ -18,7 +18,9 @@ set_target_properties(Core PROPERTIES
 )
 
 # Include parent for "Core/..."
-target_include_directories(Core PUBLIC ../..)
+target_include_directories(Core PUBLIC
+        ${CMAKE_SOURCE_DIR}/Source
+)
 
 target_compile_definitions(Core PRIVATE NOUS_ENGINE_EXPORTS)
 

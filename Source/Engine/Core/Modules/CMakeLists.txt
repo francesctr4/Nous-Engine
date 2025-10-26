@@ -8,15 +8,12 @@ add_subdirectory(ModuleInput)
 add_subdirectory(ModuleRenderer3D)
 add_subdirectory(ModuleResourceManager)
 add_subdirectory(ModuleScene)
+add_subdirectory(ModuleWindow)
 
-set(MODULES_SOURCES
-        ModuleWindow/ModuleWindow.cpp
-        ModuleWindow/ModuleWindow.h
-        Module.cpp
+add_library(Modules STATIC
         Module.h
+        Module.cpp
 )
-
-add_library(Modules STATIC ${MODULES_SOURCES})
 
 set_target_properties(Modules PROPERTIES
         CXX_STANDARD 23
@@ -24,22 +21,18 @@ set_target_properties(Modules PROPERTIES
         CXX_EXTENSIONS OFF
 )
 
-# Public include directory (so "Core/Modules/..." works)
-target_include_directories(Modules PUBLIC ../../..)
-
 target_compile_definitions(Modules PRIVATE NOUS_ENGINE_EXPORTS)
 
 # =====================================================
 # External dependencies
 # =====================================================
 
-find_package(SDL3 CONFIG REQUIRED)
 target_link_libraries(Modules PUBLIC
-        SDL3::SDL3
         ModuleCamera3D
         ModuleFileSystem
         ModuleInput
         ModuleRenderer3D
         ModuleResourceManager
         ModuleScene
+        ModuleWindow
 )
