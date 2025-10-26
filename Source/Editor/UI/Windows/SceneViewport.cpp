@@ -1,6 +1,6 @@
 #include "SceneViewport.h"
 
-#include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
+#include "Engine/Core/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"

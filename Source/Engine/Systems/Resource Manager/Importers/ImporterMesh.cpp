@@ -8,7 +8,7 @@
 
 #include "Engine/Core/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include <Engine/Renderer/Frontend/RendererFrontend.h>
-#include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
+#include "Engine/Core/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
 

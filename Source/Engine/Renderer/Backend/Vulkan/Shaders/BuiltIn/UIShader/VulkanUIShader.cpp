@@ -10,7 +10,7 @@
 #include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
+#include "Engine/Core/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
 constexpr const char* BUILTIN_UI_SHADER_NAME = "BuiltIn.UIShader";
 
