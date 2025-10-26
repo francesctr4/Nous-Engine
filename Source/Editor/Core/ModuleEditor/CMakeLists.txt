@@ -1,26 +1,18 @@
-# ===========================================
-# ModuleEditor Submodule
-# ===========================================
+set(CLASS_NAME "ModuleEditor")
 
-# Object library — compiled objects are linked into Nous-Editor
-add_library(ModuleEditor STATIC
-        include/ModuleEditor.h
-        src/ModuleEditor.cpp
+add_library(${CLASS_NAME} STATIC
+        include/${CLASS_NAME}.h
+        src/${CLASS_NAME}.cpp
 )
 
-# Dependencies
-find_package(glm REQUIRED)
-
-target_link_libraries(ModuleEditor PUBLIC
-        NousEngine::Engine
-        glm::glm
-)
-
-target_include_directories(ModuleEditor PUBLIC
+target_include_directories(${CLASS_NAME} PUBLIC
         ${CMAKE_SOURCE_DIR}/Source
 )
 
-target_compile_definitions(ModuleEditor PRIVATE NOUS_EDITOR_EXPORTS)
+target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_EDITOR_EXPORTS)
+
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(${CLASS_NAME} PUBLIC glm::glm)
 
 if (NOUS_BUILD_TESTS)
     add_subdirectory(test)

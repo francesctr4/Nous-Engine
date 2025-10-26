@@ -14,4 +14,6 @@ set_target_properties(GameApp PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-target_include_directories(GameApp PUBLIC ../)
+target_include_directories(GameApp PUBLIC
+        ${CMAKE_SOURCE_DIR}/Source
+)

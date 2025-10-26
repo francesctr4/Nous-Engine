@@ -8,7 +8,7 @@
 
 set(EDITOR_NAME "Nous-Editor")
 
-add_subdirectory(Core/ModuleEditor)
+add_subdirectory(Core)
 
 set(EDITOR_SOURCES
         UI/ImGuiConfig/ImGuiCustom.cpp
