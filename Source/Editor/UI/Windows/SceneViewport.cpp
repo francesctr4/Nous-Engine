@@ -10,7 +10,7 @@
 
 #include "Engine/ECS/Components/ComponentTransform.h"
 #include "Engine/Core/Modules/ModuleScene/ModuleScene.h"
-#include "Engine/Core/Modules/ModuleInput/ModuleInput.h"
+#include "Engine/Core/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/ECS/GameObject.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"

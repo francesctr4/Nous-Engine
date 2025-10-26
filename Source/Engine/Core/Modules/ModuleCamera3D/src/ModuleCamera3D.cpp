@@ -1,5 +1,5 @@
 #include "Engine/Core/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
-#include "Engine/Core/Modules/ModuleInput/ModuleInput.h"
+#include "Engine/Core/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Systems/Logging System/Logger.h"
 #include "Engine/Core/Application.h"
 #include <algorithm>

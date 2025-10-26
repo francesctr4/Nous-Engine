@@ -1,5 +1,5 @@
 #include "ModuleScene.h"
-#include "Engine/Core/Modules/ModuleInput/ModuleInput.h"
+#include "Engine/Core/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/Modules/ModuleResourceManager/ModuleResourceManager.h"
 #include "Engine/Systems/Event System/EventSystem.h"
 
