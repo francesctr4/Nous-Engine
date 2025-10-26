@@ -1,4 +1,4 @@
-set(CLASS_NAME "ModuleResourceManager")
+set(CLASS_NAME "ModuleScene")
 
 add_library(${CLASS_NAME} STATIC
         include/${CLASS_NAME}.h

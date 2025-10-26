@@ -9,7 +9,7 @@
 #include "Engine/Core/Application.h"
 
 #include "Engine/ECS/Components/ComponentTransform.h"
-#include "Engine/Core/Modules/ModuleScene/ModuleScene.h"
+#include "Engine/Core/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Core/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/ECS/GameObject.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
