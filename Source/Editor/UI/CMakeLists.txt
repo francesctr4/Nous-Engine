@@ -2,10 +2,9 @@
 # Nous Engine - EDITOR UI
 # ==============================
 
-set(EDITOR_UI_SOURCES
-        ImGuiConfig/ImGuiCustom.cpp
-        ImGuiConfig/ImGuiCustom.h
+add_subdirectory(ImGuiCustom)
 
+set(EDITOR_UI_SOURCES
         Windows/AssetsBrowser.cpp
         Windows/AssetsBrowser.h
         Windows/GameViewport.cpp
@@ -45,4 +44,8 @@ target_include_directories(EditorUI PUBLIC
 target_compile_definitions(EditorUI PRIVATE NOUS_EDITOR_EXPORTS)
 
 find_package(imgui CONFIG REQUIRED)
-target_link_libraries(EditorUI PUBLIC imgui::imgui)
+
+target_link_libraries(EditorUI PUBLIC
+        imgui::imgui
+        ImGuiCustom
+)
