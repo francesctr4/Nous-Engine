@@ -5,26 +5,26 @@
 add_subdirectory(ImGuiCustom)
 
 set(EDITOR_UI_SOURCES
-        Windows/AssetsBrowser.cpp
-        Windows/AssetsBrowser.h
-        Windows/GameViewport.cpp
-        Windows/GameViewport.h
-        Windows/JobQueueWindow.cpp
-        Windows/JobQueueWindow.h
-        Windows/MainMenuBar.cpp
-        Windows/MainMenuBar.h
-        Windows/MultithreadingWindow.cpp
-        Windows/MultithreadingWindow.h
-        Windows/ResourcesWindow.cpp
-        Windows/ResourcesWindow.h
-        Windows/SceneViewport.cpp
-        Windows/SceneViewport.h
-        Windows/HierarchyWindow.cpp
-        Windows/HierarchyWindow.h
-        Windows/InspectorWindow.cpp
-        Windows/InspectorWindow.h
-        Windows/ConsoleWindow.cpp
-        Windows/ConsoleWindow.h
+        Windows/AssetsBrowser/AssetsBrowser.cpp
+        Windows/AssetsBrowser/AssetsBrowser.h
+        Windows/GameViewport/GameViewport.cpp
+        Windows/GameViewport/GameViewport.h
+        Windows/JobQueueWindow/JobQueueWindow.cpp
+        Windows/JobQueueWindow/JobQueueWindow.h
+        Windows/MainMenuBar/MainMenuBar.cpp
+        Windows/MainMenuBar/MainMenuBar.h
+        Windows/MultithreadingWindow/MultithreadingWindow.cpp
+        Windows/MultithreadingWindow/MultithreadingWindow.h
+        Windows/ResourcesWindow/ResourcesWindow.cpp
+        Windows/ResourcesWindow/ResourcesWindow.h
+        Windows/SceneViewport/SceneViewport.cpp
+        Windows/SceneViewport/SceneViewport.h
+        Windows/HierarchyWindow/HierarchyWindow.cpp
+        Windows/HierarchyWindow/HierarchyWindow.h
+        Windows/InspectorWindow/InspectorWindow.cpp
+        Windows/InspectorWindow/InspectorWindow.h
+        Windows/ConsoleWindow/ConsoleWindow.cpp
+        Windows/ConsoleWindow/ConsoleWindow.h
 
         IEditorWindow.inl
 )
