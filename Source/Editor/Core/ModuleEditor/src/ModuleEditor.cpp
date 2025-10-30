@@ -30,7 +30,7 @@
 #include "Editor/UI/Windows/GameViewport/GameViewport.h"
 #include "Editor/UI/Windows/HierarchyWindow/HierarchyWindow.h"
 #include "Editor/UI/Windows/InspectorWindow/InspectorWindow.h"
-#include "Editor/UI/Windows/ConsoleWindow/ConsoleWindow.h"
+#include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
 
 #pragma endregion
 

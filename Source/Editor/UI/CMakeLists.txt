@@ -21,8 +21,6 @@ set(EDITOR_UI_SOURCES
         Windows/HierarchyWindow/HierarchyWindow.h
         Windows/InspectorWindow/InspectorWindow.cpp
         Windows/InspectorWindow/InspectorWindow.h
-        Windows/ConsoleWindow/ConsoleWindow.cpp
-        Windows/ConsoleWindow/ConsoleWindow.h
 
         IEditorWindow.inl
 )
@@ -30,6 +28,7 @@ set(EDITOR_UI_SOURCES
 add_library(EditorUI STATIC ${EDITOR_UI_SOURCES})
 
 add_subdirectory(Windows/AssetsBrowser)
+add_subdirectory(Windows/ConsoleWindow)
 
 set_target_properties(EditorUI PROPERTIES
         CXX_STANDARD 23

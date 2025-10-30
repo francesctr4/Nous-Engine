@@ -1,4 +1,4 @@
-#include "ConsoleWindow.h"
+#include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
 #include <algorithm>
 #include "Engine/Systems/Time Management/TimeManager.h"
 #include "imgui.h"
