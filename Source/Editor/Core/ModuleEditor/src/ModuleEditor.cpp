@@ -22,7 +22,7 @@
 #pragma region EDITOR WINDOWS
 
 #include "Editor/UI/Windows/MainMenuBar/MainMenuBar.h"
-#include "Editor/UI/Windows/AssetsBrowser/AssetsBrowser.h"
+#include "Editor/UI/Windows/AssetsBrowser/include/AssetsBrowser.h"
 #include "Editor/UI/Windows/ResourcesWindow/ResourcesWindow.h"
 #include "Editor/UI/Windows/MultithreadingWindow/MultithreadingWindow.h"
 #include "Editor/UI/Windows/JobQueueWindow/JobQueueWindow.h"

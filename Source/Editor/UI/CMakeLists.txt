@@ -5,8 +5,6 @@
 add_subdirectory(ImGuiCustom)
 
 set(EDITOR_UI_SOURCES
-        Windows/AssetsBrowser/AssetsBrowser.cpp
-        Windows/AssetsBrowser/AssetsBrowser.h
         Windows/GameViewport/GameViewport.cpp
         Windows/GameViewport/GameViewport.h
         Windows/JobQueueWindow/JobQueueWindow.cpp
@@ -30,6 +28,8 @@ set(EDITOR_UI_SOURCES
 )
 
 add_library(EditorUI STATIC ${EDITOR_UI_SOURCES})
+
+add_subdirectory(Windows/AssetsBrowser)
 
 set_target_properties(EditorUI PROPERTIES
         CXX_STANDARD 23
