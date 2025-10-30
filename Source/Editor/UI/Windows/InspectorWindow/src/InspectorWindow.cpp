@@ -1,4 +1,4 @@
-#include "InspectorWindow.h"
+#include "Editor/UI/Windows/InspectorWindow/include/InspectorWindow.h"
 
 #include "Engine/Core/Application.h"
 #include "Engine/Core/Modules/ModuleScene/include/ModuleScene.h"

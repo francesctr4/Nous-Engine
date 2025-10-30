@@ -2,33 +2,10 @@
 # Nous Engine - EDITOR UI
 # ==============================
 
+add_library(EditorUI STATIC IEditorWindow.inl)
+
 add_subdirectory(ImGuiCustom)
-
-set(EDITOR_UI_SOURCES
-        Windows/GameViewport/GameViewport.cpp
-        Windows/GameViewport/GameViewport.h
-        Windows/JobQueueWindow/JobQueueWindow.cpp
-        Windows/JobQueueWindow/JobQueueWindow.h
-        Windows/MainMenuBar/MainMenuBar.cpp
-        Windows/MainMenuBar/MainMenuBar.h
-        Windows/MultithreadingWindow/MultithreadingWindow.cpp
-        Windows/MultithreadingWindow/MultithreadingWindow.h
-        Windows/ResourcesWindow/ResourcesWindow.cpp
-        Windows/ResourcesWindow/ResourcesWindow.h
-        Windows/SceneViewport/SceneViewport.cpp
-        Windows/SceneViewport/SceneViewport.h
-        Windows/HierarchyWindow/HierarchyWindow.cpp
-        Windows/HierarchyWindow/HierarchyWindow.h
-        Windows/InspectorWindow/InspectorWindow.cpp
-        Windows/InspectorWindow/InspectorWindow.h
-
-        IEditorWindow.inl
-)
-
-add_library(EditorUI STATIC ${EDITOR_UI_SOURCES})
-
-add_subdirectory(Windows/AssetsBrowser)
-add_subdirectory(Windows/ConsoleWindow)
+add_subdirectory(Windows)
 
 set_target_properties(EditorUI PROPERTIES
         CXX_STANDARD 23

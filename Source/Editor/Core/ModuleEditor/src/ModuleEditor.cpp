@@ -21,15 +21,15 @@
 
 #pragma region EDITOR WINDOWS
 
-#include "Editor/UI/Windows/MainMenuBar/MainMenuBar.h"
+#include "Editor/UI/Windows/MainMenuBar/include/MainMenuBar.h"
 #include "Editor/UI/Windows/AssetsBrowser/include/AssetsBrowser.h"
-#include "Editor/UI/Windows/ResourcesWindow/ResourcesWindow.h"
-#include "Editor/UI/Windows/MultithreadingWindow/MultithreadingWindow.h"
-#include "Editor/UI/Windows/JobQueueWindow/JobQueueWindow.h"
-#include "Editor/UI/Windows/SceneViewport/SceneViewport.h"
-#include "Editor/UI/Windows/GameViewport/GameViewport.h"
-#include "Editor/UI/Windows/HierarchyWindow/HierarchyWindow.h"
-#include "Editor/UI/Windows/InspectorWindow/InspectorWindow.h"
+#include "Editor/UI/Windows/ResourcesWindow/include/ResourcesWindow.h"
+#include "Editor/UI/Windows/MultithreadingWindow/include/MultithreadingWindow.h"
+#include "Editor/UI/Windows/JobQueueWindow/include/JobQueueWindow.h"
+#include "Editor/UI/Windows/SceneViewport/include/SceneViewport.h"
+#include "Editor/UI/Windows/GameViewport/include/GameViewport.h"
+#include "Editor/UI/Windows/HierarchyWindow/include/HierarchyWindow.h"
+#include "Editor/UI/Windows/InspectorWindow/include/InspectorWindow.h"
 #include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
 
 #pragma endregion

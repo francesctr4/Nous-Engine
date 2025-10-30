@@ -1,4 +1,4 @@
-#include "GameViewport.h"
+#include "Editor/UI/Windows/GameViewport/include/GameViewport.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"

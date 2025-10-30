@@ -1,4 +1,4 @@
-#include "JobQueueWindow.h"
+#include "Editor/UI/Windows/JobQueueWindow/include/JobQueueWindow.h"
 
 #include "Engine/Core/Application.h"
 #include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"

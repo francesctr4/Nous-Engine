@@ -1,4 +1,4 @@
-#include "HierarchyWindow.h"
+#include "Editor/UI/Windows/HierarchyWindow/include/HierarchyWindow.h"
 
 #include "Engine/ECS/Scene.h"
 #include "Engine/ECS/GameObject.h"

@@ -1,4 +1,4 @@
-#include "ResourcesWindow.h"
+#include "Editor/UI/Windows/ResourcesWindow/include/ResourcesWindow.h"
 
 #include "Engine/Core/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/Resource Manager/Resource Types/Resource.h"

@@ -1,4 +1,4 @@
-#include "SceneViewport.h"
+#include "Editor/UI/Windows/SceneViewport/include/SceneViewport.h"
 
 #include "Engine/Core/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
