@@ -2,8 +2,8 @@
 # Nous Engine - Renderer
 # ==============================
 
-add_subdirectory(Frontend)
 add_subdirectory(Backend)
+add_subdirectory(Frontend)
 
 add_library(Renderer STATIC
         RendererTypes.h
