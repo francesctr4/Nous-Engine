@@ -1,0 +1,4 @@
+add_subdirectory(DebugMessenger)
+add_subdirectory(Device)
+add_subdirectory(Instance)
+add_subdirectory(Swapchain)
