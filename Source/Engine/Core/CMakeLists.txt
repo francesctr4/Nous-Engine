@@ -24,8 +24,7 @@ target_include_directories(Core PUBLIC
 
 target_compile_definitions(Core PRIVATE NOUS_ENGINE_EXPORTS)
 
-# Add Modules subdirectory
-add_subdirectory(Modules)
-
-# Link Modules into Core (so any project linking Core automatically gets Modules)
-target_link_libraries(Core PUBLIC Modules)
+target_link_libraries(Core
+        PUBLIC
+        glm::glm            # 👈 exported publicly
+)

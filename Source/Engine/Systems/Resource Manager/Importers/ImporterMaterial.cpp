@@ -3,7 +3,7 @@
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
 #include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
 #include <Engine/Core/Application.h>
-#include "Engine/Core/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
 #include <Engine/Systems/File System/FileManager.h>
 #include <Engine/Utils/JsonFile.h>
@@ -11,7 +11,7 @@
 
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 
-#include "Engine/Core/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
+#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Systems/Logging System/Logger.h"
 #include <Engine/Renderer/Frontend/RendererFrontend.h>
 

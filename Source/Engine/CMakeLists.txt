@@ -12,6 +12,7 @@ find_package(glm REQUIRED)
 # Engine Modules
 # ==============================
 add_subdirectory(Core)
+add_subdirectory(Modules)
 add_subdirectory(Scripting)
 add_subdirectory(NOUS_Multithreading)
 add_subdirectory(Utils)
@@ -44,6 +45,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         glm::glm
         # --- Engine Modules ---
         Core
+        Modules
         ECS
         NOUS_Multithreading
         Renderer
@@ -54,6 +56,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 target_link_options(${PROJECT_NAME} PRIVATE
         "/WHOLEARCHIVE:$<TARGET_FILE:Core>"
+        "/WHOLEARCHIVE:$<TARGET_FILE:Modules>"
         "/WHOLEARCHIVE:$<TARGET_FILE:ECS>"
         "/WHOLEARCHIVE:$<TARGET_FILE:NOUS_Multithreading>"
         "/WHOLEARCHIVE:$<TARGET_FILE:Renderer>"

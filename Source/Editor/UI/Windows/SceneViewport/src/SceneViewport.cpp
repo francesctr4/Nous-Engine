@@ -1,7 +1,7 @@
 #include "Editor/UI/Windows/SceneViewport/include/SceneViewport.h"
 
-#include "Engine/Core/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Core/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
@@ -9,8 +9,8 @@
 #include "Engine/Core/Application.h"
 
 #include "Engine/ECS/Components/ComponentTransform.h"
-#include "Engine/Core/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Core/Modules/ModuleInput/include/ModuleInput.h"
+#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/ECS/GameObject.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"

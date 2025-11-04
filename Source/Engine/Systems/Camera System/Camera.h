@@ -1,9 +1,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <Engine/Core/Globals.h>
-#include <Engine/Utils/MathUtils.h>
-
 #include <glm/glm.hpp>
 
 class Camera

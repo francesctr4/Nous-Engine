@@ -5,7 +5,7 @@
 
 #include "Engine/Systems/Logging System/Logger.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Modules/ModuleWindow/include/ModuleWindow.h"
+#include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include <algorithm>  // Required for std::clamp
 
 bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain)
