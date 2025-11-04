@@ -8,7 +8,7 @@
 
 set(EDITOR_NAME "Nous-Editor")
 
-add_subdirectory(Core)
+add_subdirectory(ModuleEditor)
 add_subdirectory(UI)
 
 add_library(${EDITOR_NAME} SHARED EditorExport.h)

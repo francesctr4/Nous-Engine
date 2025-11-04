@@ -10,7 +10,7 @@ add_executable(${TEST_NAME}
 
 target_include_directories(${TEST_NAME}
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+        ../include
         ${CMAKE_SOURCE_DIR}/Source
 )
 

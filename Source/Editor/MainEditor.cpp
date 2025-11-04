@@ -5,7 +5,7 @@
 #include <Engine/Systems/Memory Manager/MemoryManager.h>
 
 // Editor
-#include "Editor/Core/ModuleEditor/include/ModuleEditor.h"
+#include "Editor/ModuleEditor/include/ModuleEditor.h"
 
 typedef enum MainState
 {
