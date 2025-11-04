@@ -1,7 +1,7 @@
-#include <Engine/ECS/Component.h>
-#include <Engine/ECS/Components/ComponentTransform.h>
-#include <Engine/ECS/Components/ComponentMaterial.h>
-#include <Engine/ECS/Components/ComponentMesh.h>
+#include "Component.h"
+#include "Engine/Systems/ECS/Components/ComponentTransform.h"
+#include "Engine/Systems/ECS/Components/ComponentMaterial.h"
+#include "Engine/Systems/ECS/Components/ComponentMesh.h"
 
 #include "Engine/Systems/Logging System/Logger.h"
 

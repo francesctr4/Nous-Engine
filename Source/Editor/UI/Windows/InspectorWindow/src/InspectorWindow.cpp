@@ -3,10 +3,10 @@
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 
-#include "Engine/ECS/GameObject.h"
-#include "Engine/ECS/Components/ComponentTransform.h"
-#include "Engine/ECS/Components/ComponentMesh.h"
-#include "Engine/ECS/Components/ComponentMaterial.h"
+#include "Engine/Systems/ECS/GameObject.h"
+#include "Engine/Systems/ECS/Components/ComponentTransform.h"
+#include "Engine/Systems/ECS/Components/ComponentMesh.h"
+#include "Engine/Systems/ECS/Components/ComponentMaterial.h"
 #include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
 
 #include "imgui.h"

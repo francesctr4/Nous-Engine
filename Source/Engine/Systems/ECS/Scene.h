@@ -1,11 +1,11 @@
 #ifndef NOUS_ENGINE_SCENE_H
 #define NOUS_ENGINE_SCENE_H
 
-#include <Engine/ECS/GameObject.h>
-#include <Engine/ECS/Components/ComponentTransform.h>
-#include <Engine/Core/Application.h>
+#include "GameObject.h"
+#include "Engine/Systems/ECS/Components/ComponentTransform.h"
+#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include <Engine/Utils/Random.h>
+#include "Engine/Utils/Random.h"
 #include <unordered_set>
 #include <mutex>
 #include <queue>

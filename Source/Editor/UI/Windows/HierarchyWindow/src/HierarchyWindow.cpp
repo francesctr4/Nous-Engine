@@ -1,7 +1,7 @@
 #include "Editor/UI/Windows/HierarchyWindow/include/HierarchyWindow.h"
 
-#include "Engine/ECS/Scene.h"
-#include "Engine/ECS/GameObject.h"
+#include "Engine/Systems/ECS/Scene.h"
+#include "Engine/Systems/ECS/GameObject.h"
 
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"

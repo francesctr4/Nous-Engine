@@ -1,9 +1,9 @@
 #ifndef NOUS_ENGINE_COMPONENTMESH_H
 #define NOUS_ENGINE_COMPONENTMESH_H
 
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
+#include "Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include <Engine/ECS/Component.h>
+#include "Engine/Systems/ECS/Component.h"
 
 class CMesh : public Component {
 public:

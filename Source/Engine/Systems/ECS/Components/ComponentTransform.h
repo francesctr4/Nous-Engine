@@ -1,8 +1,8 @@
 #ifndef NOUS_ENGINE_COMPONENTTRANSFORM_H
 #define NOUS_ENGINE_COMPONENTTRANSFORM_H
 
-#include <Engine/ECS/Component.h>
-#include <glm/glm.hpp>
+#include "Engine/Systems/ECS/Component.h"
+#include "glm/glm.hpp"
 #include "Engine/EngineExport.h"
 
 typedef struct json_object_t JSON_Object;

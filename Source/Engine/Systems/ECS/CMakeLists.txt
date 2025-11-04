@@ -23,7 +23,7 @@ set_target_properties(ECS PROPERTIES
         CXX_EXTENSIONS OFF
 )
 
-target_include_directories(ECS PUBLIC ../..)
+target_include_directories(ECS PUBLIC ../../..)
 
 target_compile_definitions(ECS PRIVATE NOUS_ENGINE_EXPORTS)
 

@@ -2,6 +2,8 @@
 # Nous Engine - Systems
 # ==============================
 
+add_subdirectory(ECS)
+
 set(SYSTEMS_SOURCES
         "Camera System/Camera.cpp"
         "Camera System/Camera.h"
@@ -73,4 +75,7 @@ target_include_directories(Systems PUBLIC
 target_compile_definitions(Systems PRIVATE NOUS_ENGINE_EXPORTS)
 
 find_package(glm REQUIRED)  # 👈 must come before add_library
-target_link_libraries(Systems PUBLIC glm::glm)
+target_link_libraries(Systems PUBLIC
+        glm::glm
+        ECS
+)

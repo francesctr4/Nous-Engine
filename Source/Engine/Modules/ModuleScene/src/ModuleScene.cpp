@@ -12,11 +12,11 @@
 #include "Engine/Scripting/ScriptManager.h"
 #include "Engine/Scripting/Internal/IScript.inl"
 
-#include "Engine/ECS/Scene.h"
-#include "Engine/ECS/GameObject.h"
+#include "Engine/Systems/ECS/Scene.h"
+#include "Engine/Systems/ECS/GameObject.h"
 
-#include "Engine/ECS/Components/ComponentMesh.h"
-#include "Engine/ECS/Components/ComponentMaterial.h"
+#include "Engine/Systems/ECS/Components/ComponentMesh.h"
+#include "Engine/Systems/ECS/Components/ComponentMaterial.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 

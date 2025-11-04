@@ -3,9 +3,9 @@
 
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 
-#include "Engine/ECS/Scene.h"
-#include "Engine/ECS/Components/ComponentMesh.h"
-#include "Engine/ECS/Components/ComponentMaterial.h"
+#include "Engine/Systems/ECS/Scene.h"
+#include "Engine/Systems/ECS/Components/ComponentMesh.h"
+#include "Engine/Systems/ECS/Components/ComponentMaterial.h"
 
 #include "Engine/Systems/Memory Manager/MemoryManager.h"
 #include "Engine/Systems/Event System/EventSystem.h"

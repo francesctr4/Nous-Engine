@@ -8,10 +8,10 @@
 #include <typeindex>
 #include <algorithm>
 
-#include <Engine/ECS/Component.h>
-#include <Engine/ECS/Components/ComponentTransform.h>
+#include "Component.h"
+#include "Engine/Systems/ECS/Components/ComponentTransform.h"
 // Parson
-#include <parson.h>
+#include "parson.h"
 #include "Engine/Systems/Logging System/Logger.h"
 
 // Forward declarations

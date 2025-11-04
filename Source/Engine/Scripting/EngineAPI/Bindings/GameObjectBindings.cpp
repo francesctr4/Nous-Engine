@@ -3,9 +3,9 @@
 #include <Engine/Core/Application.h>
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 
-#include <Engine/ECS/Scene.h>
-#include <Engine/ECS/GameObject.h>
-#include <Engine/ECS/Components/ComponentTransform.h>
+#include "Engine/Systems/ECS/Scene.h"
+#include "Engine/Systems/ECS/GameObject.h"
+#include "Engine/Systems/ECS/Components/ComponentTransform.h"
 
 void SetupGameObjectBindings(GameObjectAPI &gameObject)
 {
