@@ -49,7 +49,6 @@ target_include_directories(EditorApp
 )
 
 target_link_libraries(EditorApp PRIVATE
-        NousEngine::Engine
         NousEngine::Editor
 )
 
