@@ -19,7 +19,9 @@ set_target_properties(Utils PROPERTIES
         CXX_EXTENSIONS OFF
 )
 
-target_include_directories(Utils PUBLIC ../..)
+target_include_directories(Utils PUBLIC
+        ${CMAKE_SOURCE_DIR}/Source
+)
 
 target_compile_definitions(Utils PRIVATE NOUS_ENGINE_EXPORTS)
 

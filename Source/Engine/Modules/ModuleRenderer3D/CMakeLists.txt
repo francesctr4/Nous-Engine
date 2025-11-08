@@ -11,7 +11,6 @@ target_include_directories(${CLASS_NAME} PUBLIC
 
 target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
-find_package(SDL3 CONFIG REQUIRED)
 target_link_libraries(${CLASS_NAME} PUBLIC SDL3::SDL3)
 
 if (NOUS_BUILD_TESTS)
