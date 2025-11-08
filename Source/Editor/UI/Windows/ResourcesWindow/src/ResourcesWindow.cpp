@@ -1,7 +1,7 @@
 #include "Editor/UI/Windows/ResourcesWindow/include/ResourcesWindow.h"
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/Resource Manager/Resource Types/Resource.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource.h"
 #include "Engine/Core/Application.h"
 
 #include <unordered_map>

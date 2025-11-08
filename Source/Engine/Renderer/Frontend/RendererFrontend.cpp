@@ -1,7 +1,7 @@
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Renderer/Backend/RendererBackend.h"
 
-#include "Engine/Systems/Camera System/Camera.h"
+#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include "Engine/Core/Memory Manager/MemoryManager.h"
 #include "Engine/Core/Logging System/Logger.h"
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"

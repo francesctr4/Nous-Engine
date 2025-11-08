@@ -22,9 +22,9 @@
 #include <Engine/Core/Memory Manager/MemoryManager.h>
 #include "Engine/Core/Logging System/Logger.h"
 
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h>
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h>
-#include <Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h>
+#include <Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h>
+#include <Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture.h>
+#include <Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial.h>
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
@@ -1078,7 +1078,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     }
 
     // Check if this is a re-upload. If it is, need to free old data afterward.
-    // TODO: Resource Manager needs to take care of reuploads, not here.
+    // TODO: ResourceManager needs to take care of reuploads, not here.
     
     //bool isReupload = false;
     bool isReupload = geometry->internalID != INVALID_ID;

@@ -4,7 +4,7 @@
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Core/Event System/IEventListener.h"
-#include "Engine/Systems/Resource Manager/Resource Types/Resource.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource.h"
 
 #include <mutex>
 #include <unordered_map>

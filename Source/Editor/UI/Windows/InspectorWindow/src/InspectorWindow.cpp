@@ -3,11 +3,11 @@
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 
-#include "Engine/Systems/ECS/GameObject.h"
-#include "Engine/Systems/ECS/Components/ComponentTransform.h"
-#include "Engine/Systems/ECS/Components/ComponentMesh.h"
-#include "Engine/Systems/ECS/Components/ComponentMaterial.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
+#include "Engine/Systems/ECS/GameObject/GameObject.h"
+#include "Engine/Systems/ECS/Component/CTransform/ComponentTransform.h"
+#include "Engine/Systems/ECS/Component/CMesh/ComponentMesh.h"
+#include "Engine/Systems/ECS/Component/CMaterial/ComponentMaterial.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture.h"
 
 #include "imgui.h"
 

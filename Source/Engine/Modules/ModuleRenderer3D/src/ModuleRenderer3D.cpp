@@ -1,14 +1,20 @@
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
+#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 
-#include "Engine/Systems/ECS/Scene.h"
-#include "Engine/Systems/ECS/Components/ComponentMesh.h"
-#include "Engine/Systems/ECS/Components/ComponentMaterial.h"
+#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/GameObject/GameObject.h"
+#include "Engine/Systems/ECS/Component/CMesh/ComponentMesh.h"
+#include "Engine/Systems/ECS/Component/CMaterial/ComponentMaterial.h"
+#include "Engine/Systems/ECS/Component/CTransform/ComponentTransform.h"
 
 #include "Engine/Core/Memory Manager/MemoryManager.h"
 #include "Engine/Core/Event System/EventSystem.h"
+#include "Engine/Core/Logging System/LogChannel.h"
+#include "Engine/Core/Logging System/Logger.h"
+
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

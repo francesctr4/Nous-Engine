@@ -2,20 +2,21 @@
 # Nous Engine - ECS
 # ==============================
 
-set(ECS_SOURCES
-        GameObject.h
-        Scene.h
-        Components/ComponentTransform.h
-        Components/ComponentMesh.h
-        Components/ComponentMaterial.h
-        Components/ComponentScript.h
-        Component.h
-        Component.cpp
-        Components/ComponentTransform.cpp
-        Components/ComponentMesh.cpp
-)
+add_library(ECS STATIC)
 
-add_library(ECS STATIC ${ECS_SOURCES})
+add_subdirectory(Scene)
+
+target_sources(ECS PRIVATE
+        GameObject/GameObject.h
+        Component/CTransform/ComponentTransform.h
+        Component/CMesh/ComponentMesh.h
+        Component/CMaterial/ComponentMaterial.h
+        Component/CScript/ComponentScript.h
+        Component/Component.h
+        Component/Component.cpp
+        Component/CTransform/ComponentTransform.cpp
+        Component/CMesh/ComponentMesh.cpp
+)
 
 set_target_properties(ECS PROPERTIES
         CXX_STANDARD 23

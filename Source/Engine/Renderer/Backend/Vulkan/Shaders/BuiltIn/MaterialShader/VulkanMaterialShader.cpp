@@ -8,8 +8,8 @@
 #include "Engine/Core/Logging System/Logger.h"
 #include "Engine/Core/Memory Manager/MemoryManager.h"
 
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture.h"
 
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"

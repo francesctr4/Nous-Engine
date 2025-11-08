@@ -3,20 +3,20 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/Event System/EventSystem.h"
 
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMesh.h"
-#include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Core/Memory Manager/MemoryManager.h"
-#include "Engine/Systems/Camera System/Camera.h"
+#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
 #include "Engine/Scripting/ScriptManager.h"
 #include "Engine/Scripting/Internal/IScript.inl"
 
-#include "Engine/Systems/ECS/Scene.h"
-#include "Engine/Systems/ECS/GameObject.h"
+#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/GameObject/GameObject.h"
 
-#include "Engine/Systems/ECS/Components/ComponentMesh.h"
-#include "Engine/Systems/ECS/Components/ComponentMaterial.h"
+#include "Engine/Systems/ECS/Component/CMesh/ComponentMesh.h"
+#include "Engine/Systems/ECS/Component/CMaterial/ComponentMaterial.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 

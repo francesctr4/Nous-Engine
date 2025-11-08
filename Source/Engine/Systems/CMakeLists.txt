@@ -2,35 +2,35 @@
 # Nous Engine - Systems
 # ==============================
 
+add_subdirectory(CameraSystem)
 add_subdirectory(ECS)
 
 set(SYSTEMS_SOURCES
-        "Camera System/Camera.cpp"
-        "Camera System/Camera.h"
+        "ResourceManager/MetaFileData.inl"
 
-        "Resource Manager/MetaFileData.inl"
+        "ResourceManager/Importers/Importer.inl"
+        "ResourceManager/Importers/ImporterManager.cpp"
+        "ResourceManager/Importers/ImporterManager.h"
+        "ResourceManager/Importers/ImporterMaterial.cpp"
+        "ResourceManager/Importers/ImporterMaterial.h"
+        "ResourceManager/Importers/ImporterMesh.cpp"
+        "ResourceManager/Importers/ImporterMesh.h"
+        "ResourceManager/Importers/ImporterTexture.cpp"
+        "ResourceManager/Importers/ImporterTexture.h"
 
-        "Resource Manager/Importers/Importer.inl"
-        "Resource Manager/Importers/ImporterManager.cpp"
-        "Resource Manager/Importers/ImporterManager.h"
-        "Resource Manager/Importers/ImporterMaterial.cpp"
-        "Resource Manager/Importers/ImporterMaterial.h"
-        "Resource Manager/Importers/ImporterMesh.cpp"
-        "Resource Manager/Importers/ImporterMesh.h"
-        "Resource Manager/Importers/ImporterTexture.cpp"
-        "Resource Manager/Importers/ImporterTexture.h"
-
-        "Resource Manager/Resource Types/Resource.cpp"
-        "Resource Manager/Resource Types/Resource.h"
-        "Resource Manager/Resource Types/ResourceMaterial.cpp"
-        "Resource Manager/Resource Types/ResourceMaterial.h"
-        "Resource Manager/Resource Types/ResourceMesh.cpp"
-        "Resource Manager/Resource Types/ResourceMesh.h"
-        "Resource Manager/Resource Types/ResourceTexture.cpp"
-        "Resource Manager/Resource Types/ResourceTexture.h"
+        "ResourceManager/ResourceTypes/Resource.cpp"
+        "ResourceManager/ResourceTypes/Resource.h"
+        "ResourceManager/ResourceTypes/ResourceMaterial.cpp"
+        "ResourceManager/ResourceTypes/ResourceMaterial.h"
+        "ResourceManager/ResourceTypes/ResourceMesh.cpp"
+        "ResourceManager/ResourceTypes/ResourceMesh.h"
+        "ResourceManager/ResourceTypes/ResourceTexture.cpp"
+        "ResourceManager/ResourceTypes/ResourceTexture.h"
 )
 
-add_library(Systems STATIC ${SYSTEMS_SOURCES})
+add_library(Systems STATIC
+        ${SYSTEMS_SOURCES}
+)
 
 set_target_properties(Systems PROPERTIES
         CXX_STANDARD 23
@@ -42,10 +42,12 @@ target_include_directories(Systems PUBLIC
         ${CMAKE_SOURCE_DIR}/Source
 )
 
-target_compile_definitions(Systems PRIVATE NOUS_ENGINE_EXPORTS)
+target_compile_definitions(Systems PRIVATE
+        NOUS_ENGINE_EXPORTS
+)
 
-find_package(glm REQUIRED)  # 👈 must come before add_library
 target_link_libraries(Systems PUBLIC
         glm::glm
+        Camera
         ECS
 )
