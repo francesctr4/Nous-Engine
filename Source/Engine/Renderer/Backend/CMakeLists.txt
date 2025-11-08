@@ -23,7 +23,6 @@ target_compile_definitions(RendererBackend PRIVATE
         NOUS_ENGINE_EXPORTS
 )
 
-find_package(glm REQUIRED)
 target_link_libraries(RendererBackend PUBLIC
         glm::glm
         VulkanBackend

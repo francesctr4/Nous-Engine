@@ -26,7 +26,6 @@ target_include_directories(VulkanBackend PUBLIC
 
 target_compile_definitions(VulkanBackend PRIVATE NOUS_ENGINE_EXPORTS)
 
-find_package(glm REQUIRED)
 target_link_libraries(VulkanBackend PUBLIC
         glm::glm
 )

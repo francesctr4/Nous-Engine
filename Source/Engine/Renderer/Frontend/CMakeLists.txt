@@ -20,7 +20,6 @@ target_include_directories(RendererFrontend PUBLIC
 
 target_compile_definitions(RendererFrontend PRIVATE NOUS_ENGINE_EXPORTS)
 
-find_package(glm REQUIRED)
 target_link_libraries(RendererFrontend PUBLIC
         glm::glm
 )
