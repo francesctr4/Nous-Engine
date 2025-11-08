@@ -25,8 +25,6 @@ target_link_options(${EDITOR_NAME} PRIVATE
         "/WHOLEARCHIVE:$<TARGET_FILE:EditorUI>"
 )
 
-add_dependencies(${EDITOR_NAME} ${PROJECT_NAME})
-
 set_target_properties(${EDITOR_NAME} PROPERTIES
         CXX_STANDARD 23
         CXX_STANDARD_REQUIRED ON
@@ -41,11 +39,8 @@ set_target_properties(${EDITOR_NAME} PROPERTIES
 # Editor Executable Target
 # ----------------------------------------
 
-add_executable(EditorApp MainEditor.cpp)
-
-target_include_directories(EditorApp
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+add_executable(EditorApp
+        MainEditor.cpp
 )
 
 target_link_libraries(EditorApp PRIVATE
@@ -54,8 +49,8 @@ target_link_libraries(EditorApp PRIVATE
 
 set_target_properties(EditorApp PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        FOLDER "Applications"
 )
 
-add_dependencies(EditorApp ${EDITOR_NAME})
+target_include_directories(EditorApp PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+)
