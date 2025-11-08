@@ -2,6 +2,7 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/Event System/EventSystem.h"
+#include "Engine/Core/Logging System/Logger.h"
 
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial.h"
@@ -13,14 +14,14 @@
 #include "Engine/Scripting/Internal/IScript.inl"
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/GameObject/GameObject.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 
 #include "Engine/Systems/ECS/Component/CMesh/ComponentMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/ComponentMaterial.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
-#include "SDL3/SDL.h"
+#include <SDL3/SDL.h>
 #include <filesystem>
 
 ModuleScene::ModuleScene(Application* app) : Module(app)

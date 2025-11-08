@@ -11,7 +11,7 @@
 #include "Engine/Systems/ECS/Component/CTransform/ComponentTransform.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Systems/ECS/GameObject/GameObject.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 

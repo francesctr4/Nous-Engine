@@ -3,7 +3,7 @@
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 
-#include "Engine/Systems/ECS/GameObject/GameObject.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/CTransform/ComponentTransform.h"
 #include "Engine/Systems/ECS/Component/CMesh/ComponentMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/ComponentMaterial.h"

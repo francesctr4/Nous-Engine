@@ -5,9 +5,9 @@
 add_library(ECS STATIC)
 
 add_subdirectory(Scene)
+add_subdirectory(GameObject)
 
 target_sources(ECS PRIVATE
-        GameObject/GameObject.h
         Component/CTransform/ComponentTransform.h
         Component/CMesh/ComponentMesh.h
         Component/CMaterial/ComponentMaterial.h
