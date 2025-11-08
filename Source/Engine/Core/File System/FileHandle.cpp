@@ -1,7 +1,7 @@
-#include <Engine/Systems/File System/FileHandle.h>
+#include "FileHandle.h"
 
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
-#include "Engine/Systems/Logging System/Logger.h"
+#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/Logging System/Logger.h"
 
 FileHandle::FileHandle() : fileStream(nullptr), mode(FileMode::UNKNOWN)
 {

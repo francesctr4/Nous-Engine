@@ -12,7 +12,7 @@
 #include "Engine/Systems/ECS/Components/ComponentTransform.h"
 // Parson
 #include "parson.h"
-#include "Engine/Systems/Logging System/Logger.h"
+#include "Engine/Core/Logging System/Logger.h"
 
 // Forward declarations
 class Scene;

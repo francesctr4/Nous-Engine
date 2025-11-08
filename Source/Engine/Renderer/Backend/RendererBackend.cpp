@@ -1,8 +1,8 @@
 #include "Engine/Renderer/Backend/RendererBackend.h"
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Systems/Logging System/LogChannel.h"
-#include "Engine/Systems/Logging System/Logger.h"
+#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/Logging System/LogChannel.h"
+#include "Engine/Core/Logging System/Logger.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_BACKEND;
 

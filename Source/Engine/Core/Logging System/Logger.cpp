@@ -1,7 +1,7 @@
 #include "Logger.h"
 #include "Asserts.h"
-#include "Engine/Systems/File System/FileHandle.h"
-#include "Engine/Systems/Time Management/TimeManager.h"
+#include "Engine/Core/File System/FileHandle.h"
+#include "Engine/Core/Time Management/TimeManager.h"
 
 #include <cstdio>
 #include <deque>

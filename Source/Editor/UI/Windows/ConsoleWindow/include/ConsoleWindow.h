@@ -2,7 +2,7 @@
 #define CONSOLEWINDOW_H
 
 #include "Editor/UI/IEditorWindow.inl"
-#include "Engine/Systems/Logging System/Logger.h"
+#include "Engine/Core/Logging System/Logger.h"
 #include <vector>
 #include <string>
 #include <functional>

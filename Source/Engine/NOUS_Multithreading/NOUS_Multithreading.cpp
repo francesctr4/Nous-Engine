@@ -1,7 +1,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
+#include "Engine/Core/Memory Manager/MemoryManager.h"
 
 namespace NOUS_Multithreading
 {

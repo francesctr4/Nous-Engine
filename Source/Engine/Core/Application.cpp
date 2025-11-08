@@ -7,15 +7,15 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include <Engine/Core/Memory Manager/MemoryManager.h>
 
 #include <SDL3/SDL.h>
 
-#include <Engine/Systems/Time Management/TimeManager.h>
+#include <Engine/Core/Time Management/TimeManager.h>
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
-#include <Engine/Systems/Event System/EventSystem.h>
-#include <Engine/Systems/Event System/Event.h>
-#include "Engine/Systems/Logging System/Logger.h"
+#include <Engine/Core/Event System/EventSystem.h>
+#include <Engine/Core/Event System/Event.h>
+#include "Engine/Core/Logging System/Logger.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

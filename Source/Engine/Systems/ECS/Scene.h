@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <mutex>
 #include <queue>
-#include "Engine/Systems/Logging System/Logger.h"
+#include "Engine/Core/Logging System/Logger.h"
 
 class Scene {
 public:

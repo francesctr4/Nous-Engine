@@ -1,7 +1,7 @@
 #include <Engine/Scripting/ScriptManager.h>
 #include <Engine/Scripting/Internal/ScriptRegistry.inl>
-#include "Engine/Systems/Logging System/Logger.h"
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include "Engine/Core/Logging System/Logger.h"
+#include <Engine/Core/Memory Manager/MemoryManager.h>
 #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>

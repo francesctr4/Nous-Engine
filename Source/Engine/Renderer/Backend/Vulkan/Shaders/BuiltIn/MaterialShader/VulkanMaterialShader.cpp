@@ -4,9 +4,9 @@
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/Buffer/VulkanBuffer.h"
 
-#include "Engine/Systems/Logging System/Asserts.h"
-#include "Engine/Systems/Logging System/Logger.h"
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
+#include "Engine/Core/Logging System/Asserts.h"
+#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/Memory Manager/MemoryManager.h"
 
 #include "Engine/Systems/Resource Manager/Resource Types/ResourceMaterial.h"
 #include "Engine/Systems/Resource Manager/Resource Types/ResourceTexture.h"

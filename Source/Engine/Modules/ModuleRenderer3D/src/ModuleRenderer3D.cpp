@@ -7,8 +7,8 @@
 #include "Engine/Systems/ECS/Components/ComponentMesh.h"
 #include "Engine/Systems/ECS/Components/ComponentMaterial.h"
 
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Systems/Event System/EventSystem.h"
+#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/Event System/EventSystem.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

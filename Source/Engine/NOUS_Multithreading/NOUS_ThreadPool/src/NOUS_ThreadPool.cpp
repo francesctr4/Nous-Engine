@@ -2,8 +2,8 @@
 #include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
-#include "Engine/Systems/Memory Manager/MemoryManager.h"
-#include "Engine/Systems/Logging System/Logger.h"
+#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/Logging System/Logger.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

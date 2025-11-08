@@ -1,7 +1,7 @@
-#include <Engine/Systems/Memory Manager/Custom Allocators/FreeList.h>
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include "FreeList.h"
+#include "Engine/Core/Memory Manager/MemoryManager.h"
 
-#include "Engine/Systems/Logging System/Logger.h"
+#include "Engine/Core/Logging System/Logger.h"
 
 uint64 Freelist::GetMemoryRequirement(uint64 totalSize) 
 {

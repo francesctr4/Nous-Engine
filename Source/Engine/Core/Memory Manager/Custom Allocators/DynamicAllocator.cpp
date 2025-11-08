@@ -1,8 +1,8 @@
-#include <Engine/Systems/Memory Manager/Custom Allocators/DynamicAllocator.h>
-#include <Engine/Systems/Memory Manager/MemoryManager.h>
+#include "DynamicAllocator.h"
+#include "Engine/Core/Memory Manager/MemoryManager.h"
 
-#include "Engine/Systems/Logging System/Logger.h"
-#include "Engine/Systems/Logging System/Asserts.h"
+#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/Logging System/Asserts.h"
 
  uint64 DynamicAllocator::GetMemoryRequirement(uint64 totalSize)
 {
