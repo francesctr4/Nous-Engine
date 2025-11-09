@@ -11,22 +11,11 @@ set(CORE_SOURCES
         "TimeManager/TimeManager.h"
         "TimeManager/Timer.cpp"
         "TimeManager/Timer.h"
-        "EventSystem/IEventListener.h"
-        "EventSystem/Event/Event.h"
-        "EventSystem/EventSystem.cpp"
-        "EventSystem/Event/Event.cpp"
 
         "LoggingSystem/Asserts.h"
         "LoggingSystem/Logger.cpp"
         "LoggingSystem/Logger.h"
         "LoggingSystem/LogChannel.h"
-
-        "EventSystem/EventSystem.h"
-
-        "FileSystem/FileHandle.cpp"
-        "FileSystem/FileHandle.h"
-        "FileSystem/FileManager.cpp"
-        "FileSystem/FileManager.h"
 
         "MemoryManager/MemoryManager.cpp"
         "MemoryManager/MemoryManager.h"
@@ -38,6 +27,9 @@ set(CORE_SOURCES
         "MemoryManager/CustomAllocators/LinearAllocator.cpp"
         "MemoryManager/CustomAllocators/LinearAllocator.h"
 )
+
+add_subdirectory(EventSystem)
+add_subdirectory(FileSystem)
 
 add_library(Core STATIC ${CORE_SOURCES})
 
@@ -57,4 +49,6 @@ target_compile_definitions(Core PRIVATE NOUS_ENGINE_EXPORTS)
 # Necessary
 target_link_libraries(Core PUBLIC
         glm::glm
+        EventSystem
+        FileSystem
 )

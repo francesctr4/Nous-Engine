@@ -17,7 +17,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Shaders/BuiltIn/UIShader/VulkanUIShader.h"
 #include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
 
-#include <Engine/Core/FileSystem/FileManager.h>
+#include <Engine/Core/FileSystem/FileSystem.h>
 
 #include <Engine/Core/MemoryManager/MemoryManager.h>
 #include "Engine/Core/LoggingSystem/Logger.h"

@@ -14,7 +14,7 @@
 #include <Engine/Core/TimeManager/TimeManager.h>
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include <Engine/Core/EventSystem/EventSystem.h>
-#include <Engine/Core/EventSystem/Event/Event.h>
+#include <Engine/Core/EventSystem/Event/include/Event.h>
 #include "Engine/Core/LoggingSystem/Logger.h"
 
 #ifdef _PROFILING

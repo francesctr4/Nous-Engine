@@ -1,7 +1,7 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterTexture/include/ImporterTexture.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Core/FileSystem/FileHandle.h"
-#include "Engine/Core/FileSystem/FileManager.h"
+#include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
+#include "Engine/Core/FileSystem/FileSystem.h"
 
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"

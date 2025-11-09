@@ -1,6 +1,6 @@
 #include "Logger.h"
 #include "Asserts.h"
-#include "Engine/Core/FileSystem/FileHandle.h"
+#include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
 #include "Engine/Core/TimeManager/TimeManager.h"
 
 #include <cstdio>

@@ -1,7 +1,7 @@
 #include "Editor/UI/Windows/AssetsBrowser/include/AssetsBrowser.h"
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
 
-#include "Engine/Core/FileSystem/FileManager.h"
+#include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleFileSystem/include/ModuleFileSystem.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Scripting/ScriptManager.h"

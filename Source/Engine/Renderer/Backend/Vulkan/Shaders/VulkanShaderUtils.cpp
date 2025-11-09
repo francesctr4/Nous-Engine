@@ -2,7 +2,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
 #include <Engine/Core/MemoryManager/MemoryManager.h>
-#include <Engine/Core/FileSystem/FileHandle.h>
+#include <Engine/Core/FileSystem/FileHandle/include/FileHandle.h>
 
 #include <format>
 

@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_EVENTSYSTEM_H
 #define NOUS_ENGINE_EVENTSYSTEM_H
 
-#include "Event/Event.h"
+#include "Event/include/Event.h"
 #include "IEventListener.h"
 #include "Engine/EngineExport.h"
 

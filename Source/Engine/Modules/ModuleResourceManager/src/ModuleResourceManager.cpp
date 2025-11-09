@@ -8,7 +8,7 @@
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Core/FileSystem/FileManager.h"
+#include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Core/LoggingSystem/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
