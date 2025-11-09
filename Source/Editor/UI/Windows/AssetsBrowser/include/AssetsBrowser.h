@@ -2,7 +2,7 @@
 #define ASSETSBROWSER_H
 
 #include "Editor/UI/IEditorWindow.inl"
-#include "Engine/Utils/MathUtils.h"
+#include "Engine/Utils/Math/MathUtils.h"
 #include "Engine/Core/Globals.h"
 
 #include <unordered_map>

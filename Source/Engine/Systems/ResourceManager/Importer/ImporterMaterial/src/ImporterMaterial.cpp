@@ -6,7 +6,7 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
 #include "Engine/Core/File System/FileManager.h"
-#include "Engine/Utils/JsonFile.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 #include "Engine/Core/Memory Manager/MemoryManager.h"

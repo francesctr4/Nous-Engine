@@ -1,9 +1,7 @@
 #ifndef VERTEX_INL
 #define VERTEX_INL
 
-#include "Engine/Core/Globals.h"
-
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 // --------------- Vertex Struct --------------- //
 
@@ -13,7 +11,7 @@ struct Vertex3D
     glm::vec3 color;
     glm::vec2 texCoord;
 
-    static const uint16 ATTRIBUTE_COUNT = 3;
+    static const uint16_t ATTRIBUTE_COUNT = 3;
 
     bool operator==(const Vertex3D& other) const
     {
@@ -29,7 +27,7 @@ struct Vertex2D
     glm::vec3 color;
     glm::vec2 texCoord;
 
-    static const uint16 ATTRIBUTE_COUNT = 3;
+    static const uint16_t ATTRIBUTE_COUNT = 3;
 
     bool operator==(const Vertex2D& other) const
     {

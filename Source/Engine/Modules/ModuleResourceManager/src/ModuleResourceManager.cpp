@@ -12,8 +12,8 @@
 #include "Engine/Core/Logging System/Logger.h"
 #include "Engine/Core/Memory Manager/MemoryManager.h"
 
-#include "Engine/Utils/Random.h"
-#include "Engine/Utils/JsonFile.h"
+#include "Engine/Utils/Serialization/Random/Random.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"

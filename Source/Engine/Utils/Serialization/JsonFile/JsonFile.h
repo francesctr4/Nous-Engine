@@ -2,7 +2,7 @@
 #define JSONFILE_H
 
 #include <Engine/Core/Globals.h>
-#include <Engine/Utils/MathUtils.h>
+#include <Engine/Utils/Math/MathUtils.h>
 
 #include <glm/glm.hpp>
 
