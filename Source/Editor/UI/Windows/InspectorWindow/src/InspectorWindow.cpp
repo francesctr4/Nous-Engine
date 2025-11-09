@@ -4,10 +4,12 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/CTransform/ComponentTransform.h"
-#include "Engine/Systems/ECS/Component/CMesh/ComponentMesh.h"
-#include "Engine/Systems/ECS/Component/CMaterial/ComponentMaterial.h"
+#include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
+#include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial.h"
 
 #include "imgui.h"
 

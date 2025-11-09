@@ -1,5 +1,5 @@
-#ifndef NOUS_ENGINE_COMPONENTSCRIPT_H
-#define NOUS_ENGINE_COMPONENTSCRIPT_H
+#ifndef NOUS_ENGINE_CSCRIPT_H
+#define NOUS_ENGINE_CSCRIPT_H
 
 #include "Engine/Scripting/Internal/IScript.inl"
 #include "Engine/Systems/ECS/Component/Component.h"
@@ -36,4 +36,4 @@ public:
     }
 };
 
-#endif //NOUS_ENGINE_COMPONENTSCRIPT_H
+#endif //NOUS_ENGINE_CSCRIPT_H

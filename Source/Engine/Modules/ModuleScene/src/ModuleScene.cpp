@@ -16,8 +16,8 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 
-#include "Engine/Systems/ECS/Component/CMesh/ComponentMesh.h"
-#include "Engine/Systems/ECS/Component/CMaterial/ComponentMaterial.h"
+#include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
+#include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 

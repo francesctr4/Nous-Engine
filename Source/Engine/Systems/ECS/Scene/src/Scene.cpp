@@ -1,7 +1,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/CTransform/ComponentTransform.h"
+#include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Utils/Random.h"

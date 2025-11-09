@@ -1,8 +1,10 @@
-#include "ComponentMesh.h"
+#include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Core/Application.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h"
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
 // Parson
-#include "parson.h"
+#include <parson.h>
 
 JSON_Value *CMesh::Serialize() const {
     JSON_Value* objVal = json_value_init_object();

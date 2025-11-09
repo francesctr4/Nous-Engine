@@ -8,7 +8,7 @@
 
 #include "Engine/Core/Application.h"
 
-#include "Engine/Systems/ECS/Component/CTransform/ComponentTransform.h"
+#include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"

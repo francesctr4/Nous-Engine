@@ -1,10 +1,10 @@
-#include "ComponentTransform.h"
+#include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
-#include "glm/gtx/quaternion.hpp"
+#include <glm/gtx/quaternion.hpp>
 
 // Parson
-#include "parson.h"
+#include <parson.h>
 
 glm::mat4 CTransform::GetLocalMatrix() const {
     glm::mat4 transform = glm::translate(glm::mat4(1.0f), position);

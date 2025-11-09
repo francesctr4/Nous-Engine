@@ -1,9 +1,9 @@
-#ifndef NOUS_ENGINE_COMPONENTMESH_H
-#define NOUS_ENGINE_COMPONENTMESH_H
+#ifndef NOUS_ENGINE_CMESH_H
+#define NOUS_ENGINE_CMESH_H
 
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ECS/Component/Component.h"
+
+class ResourceMesh;
 
 class CMesh : public Component {
 public:
@@ -19,4 +19,4 @@ public:
     void OnDestroy() override;
 };
 
-#endif // NOUS_ENGINE_COMPONENTMESH_H
+#endif // NOUS_ENGINE_CMESH_H

@@ -1,8 +1,8 @@
-#ifndef NOUS_ENGINE_COMPONENTTRANSFORM_H
-#define NOUS_ENGINE_COMPONENTTRANSFORM_H
+#ifndef NOUS_ENGINE_CTRANSFORM_H
+#define NOUS_ENGINE_CTRANSFORM_H
 
 #include "Engine/Systems/ECS/Component/Component.h"
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 #include "Engine/EngineExport.h"
 
 typedef struct json_object_t JSON_Object;
@@ -48,4 +48,4 @@ public:
     void Deserialize(JSON_Object* obj) override;
 };
 
-#endif //NOUS_ENGINE_COMPONENTTRANSFORM_H
+#endif //NOUS_ENGINE_CTRANSFORM_H

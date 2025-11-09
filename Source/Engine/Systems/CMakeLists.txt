@@ -2,10 +2,12 @@
 # Nous Engine - Systems
 # ==============================
 
+add_library(Systems STATIC)
+
 add_subdirectory(CameraSystem)
 add_subdirectory(ECS)
 
-set(SYSTEMS_SOURCES
+target_sources(Systems PRIVATE
         "ResourceManager/MetaFileData.inl"
 
         "ResourceManager/Importers/Importer.inl"
@@ -28,10 +30,6 @@ set(SYSTEMS_SOURCES
         "ResourceManager/ResourceTypes/ResourceTexture.h"
 )
 
-add_library(Systems STATIC
-        ${SYSTEMS_SOURCES}
-)
-
 set_target_properties(Systems PROPERTIES
         CXX_STANDARD 23
         CXX_STANDARD_REQUIRED ON
@@ -47,7 +45,6 @@ target_compile_definitions(Systems PRIVATE
 )
 
 target_link_libraries(Systems PUBLIC
-        glm::glm
         Camera
         ECS
 )
