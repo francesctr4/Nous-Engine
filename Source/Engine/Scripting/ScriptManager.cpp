@@ -5,7 +5,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>
-#include <Engine/Scripting/EngineAPI/ScriptBindings.h>
+#include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
 
 #include <fstream>
 #include <sstream>
@@ -93,7 +93,7 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     UnloadScriptLibrary();
 
     // Build the scripts
-    int result = std::system("Scripts\\rebuildscripts.bat");
+    int result = std::system("Scripts\\RebuildScripts.bat");
 
     if (result == 0) {
         NOUS_INFO("Scripts recompiled successfully!");

@@ -1,4 +1,4 @@
-#include <Engine/Scripting/EngineAPI/Bindings/LoggerBindings.h>
+#include <Engine/Scripting/EngineAPI/Bindings/Logger/LoggerBindings.h>
 
 #include "Engine/Core/Logging System/Logger.h"
 #include <cstdarg>

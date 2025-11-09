@@ -2,9 +2,9 @@
 #define NOUS_ENGINE_SCRIPTBINDINGS_H
 
 // Include all subsystem API headers
-#include <Engine/Scripting/EngineAPI/Bindings/LoggerBindings.h>
-#include <Engine/Scripting/EngineAPI/Bindings/InputBindings.h>
-#include <Engine/Scripting/EngineAPI/Bindings/GameObjectBindings.h>
+#include <Engine/Scripting/EngineAPI/Bindings/Logger/LoggerBindings.h>
+#include <Engine/Scripting/EngineAPI/Bindings/Input/InputBindings.h>
+#include <Engine/Scripting/EngineAPI/Bindings/GameObject/GameObjectBindings.h>
 
 struct EngineAPI;
 

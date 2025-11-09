@@ -1,4 +1,4 @@
-#include <Engine/Scripting/EngineAPI/ScriptBindings.h>
+#include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
 
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>
 #include <Engine/Core/Memory Manager/MemoryManager.h>

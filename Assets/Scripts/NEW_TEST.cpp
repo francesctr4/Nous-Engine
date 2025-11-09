@@ -10,7 +10,7 @@
 #include <Engine/Scripting/Internal/IScript.inl>
 #include <Engine/Scripting/Internal/ScriptRegistry.inl>
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>
-#include <Engine/Scripting/EngineAPI/ScriptBindings.h>
+#include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
 
 // ----- HEADER FILES ----- //
 /*coding_start::NEW_TEST*/

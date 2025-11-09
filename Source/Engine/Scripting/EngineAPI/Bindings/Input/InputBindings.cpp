@@ -1,4 +1,4 @@
-#include <Engine/Scripting/EngineAPI/Bindings/InputBindings.h>
+#include <Engine/Scripting/EngineAPI/Bindings/Input/InputBindings.h>
 
 #include <Engine/Core/Application.h>
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"

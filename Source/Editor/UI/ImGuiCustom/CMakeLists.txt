@@ -1,8 +1,8 @@
 set(CLASS_NAME "ImGuiCustom")
 
 add_library(${CLASS_NAME} STATIC
-        include/${CLASS_NAME}.h
-        src/${CLASS_NAME}.cpp
+        ${CLASS_NAME}.h
+        ${CLASS_NAME}.cpp
 )
 
 target_include_directories(${CLASS_NAME} PUBLIC

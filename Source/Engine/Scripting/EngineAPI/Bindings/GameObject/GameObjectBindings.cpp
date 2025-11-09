@@ -1,4 +1,4 @@
-#include "Engine/Scripting/EngineAPI/Bindings/GameObjectBindings.h"
+#include "Engine/Scripting/EngineAPI/Bindings/GameObject/GameObjectBindings.h"
 
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"

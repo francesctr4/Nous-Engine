@@ -4,7 +4,7 @@
 
 set(SCRIPTS_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Scripts")
 
-file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/rebuildscripts.bat" DESTINATION "${SCRIPTS_OUTPUT_DIR}")
+file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.bat" DESTINATION "${SCRIPTS_OUTPUT_DIR}")
 file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.inl" DESTINATION "${SCRIPTS_OUTPUT_DIR}")
 
 file(GLOB_RECURSE SCRIPT_SOURCES
