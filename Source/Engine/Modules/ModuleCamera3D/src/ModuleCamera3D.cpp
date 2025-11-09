@@ -1,6 +1,6 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include <algorithm>
@@ -8,10 +8,10 @@
 // SDL3
 #include "SDL3/SDL.h"
 
-#include "Engine/Core/Event System/EventSystem.h"
+#include "Engine/Core/EventSystem/EventSystem.h"
 
 #include "glm/gtc/quaternion.hpp"
-#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 
 ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 {

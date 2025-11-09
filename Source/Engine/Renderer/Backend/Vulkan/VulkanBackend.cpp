@@ -17,10 +17,10 @@
 #include "Engine/Renderer/Backend/Vulkan/Shaders/BuiltIn/UIShader/VulkanUIShader.h"
 #include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
 
-#include <Engine/Core/File System/FileManager.h>
+#include <Engine/Core/FileSystem/FileManager.h>
 
-#include <Engine/Core/Memory Manager/MemoryManager.h>
-#include "Engine/Core/Logging System/Logger.h"
+#include <Engine/Core/MemoryManager/MemoryManager.h>
+#include "Engine/Core/LoggingSystem/Logger.h"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
@@ -29,7 +29,7 @@
 
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include <Engine/Core/Application.h>
-#include <Engine/Core/Event System/EventSystem.h>
+#include <Engine/Core/EventSystem/EventSystem.h>
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 

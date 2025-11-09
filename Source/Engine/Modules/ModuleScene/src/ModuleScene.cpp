@@ -1,13 +1,13 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Core/Event System/EventSystem.h"
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/EventSystem/EventSystem.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
 #include "Engine/Scripting/ScriptManager.h"

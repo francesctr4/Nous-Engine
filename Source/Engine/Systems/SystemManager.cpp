@@ -1,6 +1,6 @@
 #include "SystemManager.h"
 
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 
 SystemManager::SystemManager()
 {

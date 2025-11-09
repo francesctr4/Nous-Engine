@@ -1,8 +1,8 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Event System/EventSystem.h"
-#include "Engine/Core/Logging System/Logger.h"
-#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/EventSystem/EventSystem.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 
 #include "SDL3/SDL.h"

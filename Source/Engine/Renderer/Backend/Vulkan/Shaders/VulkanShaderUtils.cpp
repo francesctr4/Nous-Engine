@@ -1,8 +1,8 @@
 #include <Engine/Renderer/Backend/Vulkan/Shaders/VulkanShaderUtils.h>
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
-#include <Engine/Core/Memory Manager/MemoryManager.h>
-#include <Engine/Core/File System/FileHandle.h>
+#include <Engine/Core/MemoryManager/MemoryManager.h>
+#include <Engine/Core/FileSystem/FileHandle.h>
 
 #include <format>
 

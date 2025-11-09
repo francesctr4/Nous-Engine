@@ -1,8 +1,8 @@
 #include "MemoryManager.h"
 
-#include "Engine/Core/Logging System/Logger.h"
-#include "Engine/Core/Logging System/Asserts.h"
-#include "Engine/Core/Memory Manager/Custom Allocators/DynamicAllocator.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/LoggingSystem/Asserts.h"
+#include "Engine/Core/MemoryManager/CustomAllocators/DynamicAllocator.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

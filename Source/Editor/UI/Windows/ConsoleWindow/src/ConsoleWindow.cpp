@@ -1,6 +1,6 @@
 #include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
 #include <algorithm>
-#include "Engine/Core/Time Management/TimeManager.h"
+#include "Engine/Core/TimeManager/TimeManager.h"
 #include "imgui.h"
 
 #include <mutex>

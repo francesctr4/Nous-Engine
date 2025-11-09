@@ -1,6 +1,6 @@
 #include "FileManager.h"
 
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 
 // Wrapper around std::filesystem
 #include <filesystem>

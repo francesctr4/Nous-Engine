@@ -5,7 +5,7 @@
 
 #include "Engine/Modules/Module.h"
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"
-#include "Engine/Core/Event System/IEventListener.h"
+#include "Engine/Core/EventSystem/IEventListener.h"
 
 #include <vector>
 #include <memory>

@@ -1,7 +1,7 @@
 #include "VulkanCommandBuffer.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
-#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "VulkanMultithreading.h"
 
 bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)

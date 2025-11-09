@@ -5,14 +5,14 @@
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
-#include "Engine/Core/File System/FileManager.h"
+#include "Engine/Core/FileSystem/FileManager.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
-#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 
 bool ImporterMaterial::Import(const MetaFileData& metaFileData)

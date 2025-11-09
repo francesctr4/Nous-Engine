@@ -6,7 +6,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 
 void SetupGameObjectBindings(GameObjectAPI &gameObject)
 {

@@ -4,7 +4,7 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Event System/EventSystem.h"
+#include "Engine/Core/EventSystem/EventSystem.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
@@ -38,7 +38,7 @@
 #include <vector>
 #include <memory>
 
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_CORE_MODULE_EDITOR;
 

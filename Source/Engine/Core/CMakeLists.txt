@@ -8,35 +8,35 @@ set(CORE_SOURCES
         Globals.h
         UpdateStatus.h
 
-        "Time Management/TimeManager.h"
-        "Time Management/Timer.cpp"
-        "Time Management/Timer.h"
-        "Event System/IEventListener.h"
-        "Event System/Event.h"
-        "Event System/EventSystem.cpp"
-        "Event System/Event.cpp"
+        "TimeManager/TimeManager.h"
+        "TimeManager/Timer.cpp"
+        "TimeManager/Timer.h"
+        "EventSystem/IEventListener.h"
+        "EventSystem/Event/Event.h"
+        "EventSystem/EventSystem.cpp"
+        "EventSystem/Event/Event.cpp"
 
-        "Logging System/Asserts.h"
-        "Logging System/Logger.cpp"
-        "Logging System/Logger.h"
-        "Logging System/LogChannel.h"
+        "LoggingSystem/Asserts.h"
+        "LoggingSystem/Logger.cpp"
+        "LoggingSystem/Logger.h"
+        "LoggingSystem/LogChannel.h"
 
-        "Event System/EventSystem.h"
+        "EventSystem/EventSystem.h"
 
-        "File System/FileHandle.cpp"
-        "File System/FileHandle.h"
-        "File System/FileManager.cpp"
-        "File System/FileManager.h"
+        "FileSystem/FileHandle.cpp"
+        "FileSystem/FileHandle.h"
+        "FileSystem/FileManager.cpp"
+        "FileSystem/FileManager.h"
 
-        "Memory Manager/MemoryManager.cpp"
-        "Memory Manager/MemoryManager.h"
+        "MemoryManager/MemoryManager.cpp"
+        "MemoryManager/MemoryManager.h"
 
-        "Memory Manager/Custom Allocators/DynamicAllocator.cpp"
-        "Memory Manager/Custom Allocators/DynamicAllocator.h"
-        "Memory Manager/Custom Allocators/FreeList.cpp"
-        "Memory Manager/Custom Allocators/FreeList.h"
-        "Memory Manager/Custom Allocators/LinearAllocator.cpp"
-        "Memory Manager/Custom Allocators/LinearAllocator.h"
+        "MemoryManager/CustomAllocators/DynamicAllocator.cpp"
+        "MemoryManager/CustomAllocators/DynamicAllocator.h"
+        "MemoryManager/CustomAllocators/FreeList.cpp"
+        "MemoryManager/CustomAllocators/FreeList.h"
+        "MemoryManager/CustomAllocators/LinearAllocator.cpp"
+        "MemoryManager/CustomAllocators/LinearAllocator.h"
 )
 
 add_library(Core STATIC ${CORE_SOURCES})
@@ -54,7 +54,7 @@ target_include_directories(Core PUBLIC
 
 target_compile_definitions(Core PRIVATE NOUS_ENGINE_EXPORTS)
 
-target_link_libraries(Core
-        PUBLIC
-        glm::glm            # 👈 exported publicly
+# Necessary
+target_link_libraries(Core PUBLIC
+        glm::glm
 )

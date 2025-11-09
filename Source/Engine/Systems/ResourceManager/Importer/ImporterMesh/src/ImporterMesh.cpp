@@ -1,10 +1,10 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
-#include "Engine/Core/File System/FileHandle.h"
+#include "Engine/Core/FileSystem/FileHandle.h"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
-#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
@@ -13,7 +13,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 
 // Assimp
 #define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace)

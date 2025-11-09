@@ -2,7 +2,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Core/Device/VulkanDevice.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
-#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 
 // glmath
 #include "glm/glm.hpp"

@@ -1,13 +1,13 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterTexture/include/ImporterTexture.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Core/File System/FileHandle.h"
-#include "Engine/Core/File System/FileManager.h"
+#include "Engine/Core/FileSystem/FileHandle.h"
+#include "Engine/Core/FileSystem/FileManager.h"
 
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Core/Memory Manager/MemoryManager.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Application.h"
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -16,7 +16,7 @@
 #define STBI_THREAD_LOCAL
 #include "stb_image.h"
 
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 
 bool ImporterTexture::Import(const MetaFileData& metaFileData)
 {

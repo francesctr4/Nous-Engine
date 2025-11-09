@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_IEVENTLISTENER_H
 #define NOUS_ENGINE_IEVENTLISTENER_H
 
-#include "Event.h"
+#include "Event/Event.h"
 
 class IEventListener
 {

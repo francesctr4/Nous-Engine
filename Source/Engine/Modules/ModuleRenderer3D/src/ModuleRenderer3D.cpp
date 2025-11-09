@@ -13,10 +13,10 @@
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 
-#include "Engine/Core/Memory Manager/MemoryManager.h"
-#include "Engine/Core/Event System/EventSystem.h"
-#include "Engine/Core/Logging System/LogChannel.h"
-#include "Engine/Core/Logging System/Logger.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include "Engine/Core/EventSystem/EventSystem.h"
+#include "Engine/Core/LoggingSystem/LogChannel.h"
+#include "Engine/Core/LoggingSystem/Logger.h"
 
 
 #ifdef _PROFILING
