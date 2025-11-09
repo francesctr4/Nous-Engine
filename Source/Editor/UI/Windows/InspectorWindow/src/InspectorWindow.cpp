@@ -7,9 +7,9 @@
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 
 #include "imgui.h"
 

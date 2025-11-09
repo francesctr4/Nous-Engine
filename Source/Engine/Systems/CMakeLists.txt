@@ -2,32 +2,13 @@
 # Nous Engine - Systems
 # ==============================
 
-add_library(Systems STATIC)
-
 add_subdirectory(CameraSystem)
 add_subdirectory(ECS)
+add_subdirectory(ResourceManager)
 
-target_sources(Systems PRIVATE
-        "ResourceManager/MetaFileData.inl"
-
-        "ResourceManager/Importers/Importer.inl"
-        "ResourceManager/Importers/ImporterManager.cpp"
-        "ResourceManager/Importers/ImporterManager.h"
-        "ResourceManager/Importers/ImporterMaterial.cpp"
-        "ResourceManager/Importers/ImporterMaterial.h"
-        "ResourceManager/Importers/ImporterMesh.cpp"
-        "ResourceManager/Importers/ImporterMesh.h"
-        "ResourceManager/Importers/ImporterTexture.cpp"
-        "ResourceManager/Importers/ImporterTexture.h"
-
-        "ResourceManager/ResourceTypes/Resource.cpp"
-        "ResourceManager/ResourceTypes/Resource.h"
-        "ResourceManager/ResourceTypes/ResourceMaterial.cpp"
-        "ResourceManager/ResourceTypes/ResourceMaterial.h"
-        "ResourceManager/ResourceTypes/ResourceMesh.cpp"
-        "ResourceManager/ResourceTypes/ResourceMesh.h"
-        "ResourceManager/ResourceTypes/ResourceTexture.cpp"
-        "ResourceManager/ResourceTypes/ResourceTexture.h"
+add_library(Systems STATIC
+        SystemManager.cpp
+        SystemManager.h
 )
 
 set_target_properties(Systems PROPERTIES
@@ -47,4 +28,5 @@ target_compile_definitions(Systems PRIVATE
 target_link_libraries(Systems PUBLIC
         Camera
         ECS
+        ResourceManager
 )

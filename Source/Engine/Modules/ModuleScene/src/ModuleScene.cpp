@@ -4,8 +4,8 @@
 #include "Engine/Core/Event System/EventSystem.h"
 #include "Engine/Core/Logging System/Logger.h"
 
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Core/Memory Manager/MemoryManager.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"

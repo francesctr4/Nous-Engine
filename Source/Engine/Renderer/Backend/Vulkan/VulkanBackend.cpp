@@ -22,9 +22,9 @@
 #include <Engine/Core/Memory Manager/MemoryManager.h>
 #include "Engine/Core/Logging System/Logger.h"
 
-#include <Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h>
-#include <Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture.h>
-#include <Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial.h>
+#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"

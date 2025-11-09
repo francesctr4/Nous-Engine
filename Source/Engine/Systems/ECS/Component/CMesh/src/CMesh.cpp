@@ -1,6 +1,6 @@
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
 // Parson

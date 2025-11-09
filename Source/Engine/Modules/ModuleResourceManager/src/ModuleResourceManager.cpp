@@ -1,9 +1,9 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource.h"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Core/Event System/EventSystem.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
@@ -14,9 +14,9 @@
 
 #include "Engine/Utils/Random.h"
 #include "Engine/Utils/JsonFile.h"
-#include "Engine/Systems/ResourceManager/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
-#include "Engine/Systems/ResourceManager/Importers/ImporterManager.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
 
 ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
 {
