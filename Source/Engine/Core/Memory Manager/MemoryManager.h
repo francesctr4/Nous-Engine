@@ -54,6 +54,24 @@ namespace MemoryManager
     NOUS_ENGINE_API char* GetMemoryUsageStats();
 
     NOUS_ENGINE_API uint64 GetMemoryAllocationCount();
+
+	struct MemoryStatsSnapshot
+	{
+		uint64 totalAllocated;
+		uint64 totalAllocations;
+		uint64 taggedAllocations[static_cast<uint64>(MemoryManager::MemoryTag::MAX)];
+	};
+
+	NOUS_ENGINE_API MemoryStatsSnapshot GetMemoryStats();
+	NOUS_ENGINE_API const char** GetMemoryTagNames();
+
+	struct MemoryConfigSnapshot
+	{
+		uint64 totalAllocationSize;
+		uint64 allocatorRequirement;
+	};
+
+	NOUS_ENGINE_API MemoryConfigSnapshot GetMemoryConfig();
 }
 
 // Custom Memory Management Macros to monitorize allocations

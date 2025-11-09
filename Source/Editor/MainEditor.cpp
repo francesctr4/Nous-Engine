@@ -20,7 +20,7 @@ typedef enum MainState
 int main(int argc, char** argv)
 {
     // Specify the amount of memory available for the project
-    MemoryManager::InitializeMemory(MiB(300));
+    MemoryManager::InitializeMemory(MiB(20));
 
     NOUS_Multithreading::RegisterMainThread();
 

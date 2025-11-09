@@ -31,6 +31,7 @@
 #include "Editor/UI/Windows/HierarchyWindow/include/HierarchyWindow.h"
 #include "Editor/UI/Windows/InspectorWindow/include/InspectorWindow.h"
 #include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
+#include "Editor/UI/Windows/MemoryWindow/include/MemoryWindow.h"
 
 #pragma endregion
 
@@ -136,6 +137,7 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(std::make_unique<HierarchyWindow>("Hierarchy"));
 	AddEditorWindow(std::make_unique<InspectorWindow>("Inspector"));
 	AddEditorWindow(std::make_unique<ConsoleWindow>("Console"));
+	AddEditorWindow(std::make_unique<MemoryWindow>("Memory Manager"));
 
 	return true;
 }

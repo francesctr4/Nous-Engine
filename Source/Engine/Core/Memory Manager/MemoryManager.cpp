@@ -273,3 +273,30 @@ uint64 MemoryManager::GetMemoryAllocationCount()
 {
 	return config.stats.totalAllocations;
 }
+
+MemoryManager::MemoryStatsSnapshot MemoryManager::GetMemoryStats()
+{
+	std::lock_guard<std::mutex> lock(memoryMutex);
+	MemoryStatsSnapshot snapshot{};
+	snapshot.totalAllocated = config.stats.totalAllocated;
+	snapshot.totalAllocations = config.stats.totalAllocations;
+
+	for (uint64 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
+		snapshot.taggedAllocations[i] = config.stats.taggedAllocations[i];
+
+	return snapshot;
+}
+
+const char** MemoryManager::GetMemoryTagNames()
+{
+	return memoryTagStrings;
+}
+
+MemoryManager::MemoryConfigSnapshot MemoryManager::GetMemoryConfig()
+{
+	std::lock_guard<std::mutex> lock(memoryMutex);
+	MemoryConfigSnapshot snapshot{};
+	snapshot.totalAllocationSize = config.totalAllocationSize;
+	snapshot.allocatorRequirement = config.allocatorRequirement;
+	return snapshot;
+}
