@@ -1,7 +1,7 @@
 #include "MemoryManager.h"
 
-#include "Engine/Core/LoggingSystem/Logger.h"
-#include "Engine/Core/LoggingSystem/Asserts.h"
+#include "Engine/Core/Logger/Logger.h"
+#include "Engine/Core/Logger/Asserts.h"
 #include "Engine/Core/MemoryManager/CustomAllocators/DynamicAllocator.h"
 
 #ifdef _PROFILING

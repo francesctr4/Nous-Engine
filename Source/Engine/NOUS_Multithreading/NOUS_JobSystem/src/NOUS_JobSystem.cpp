@@ -2,7 +2,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
 #include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
 
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 /// @brief NOUS_JobSystem constructor.

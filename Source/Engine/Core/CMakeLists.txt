@@ -8,18 +8,8 @@ set(CORE_SOURCES
         Globals.h
         UpdateStatus.h
 
-        "TimeManager/TimeManager.h"
-        "TimeManager/Timer.cpp"
-        "TimeManager/Timer.h"
-
-        "LoggingSystem/Asserts.h"
-        "LoggingSystem/Logger.cpp"
-        "LoggingSystem/Logger.h"
-        "LoggingSystem/LogChannel.h"
-
         "MemoryManager/MemoryManager.cpp"
         "MemoryManager/MemoryManager.h"
-
         "MemoryManager/CustomAllocators/DynamicAllocator.cpp"
         "MemoryManager/CustomAllocators/DynamicAllocator.h"
         "MemoryManager/CustomAllocators/FreeList.cpp"
@@ -30,6 +20,8 @@ set(CORE_SOURCES
 
 add_subdirectory(EventSystem)
 add_subdirectory(FileSystem)
+add_subdirectory(TimeManager)
+add_subdirectory(Logger)
 
 add_library(Core STATIC ${CORE_SOURCES})
 
@@ -46,9 +38,9 @@ target_include_directories(Core PUBLIC
 
 target_compile_definitions(Core PRIVATE NOUS_ENGINE_EXPORTS)
 
-# Necessary
 target_link_libraries(Core PUBLIC
-        glm::glm
         EventSystem
         FileSystem
+        TimeManager
+        Logger
 )

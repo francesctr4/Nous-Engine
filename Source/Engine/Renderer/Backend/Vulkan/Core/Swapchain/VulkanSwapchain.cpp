@@ -3,7 +3,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Resources/Image/VulkanImage.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include <algorithm>  // Required for std::clamp

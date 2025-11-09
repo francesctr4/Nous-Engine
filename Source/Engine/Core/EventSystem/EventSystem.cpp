@@ -1,5 +1,5 @@
 #include "EventSystem.h"
-#include "Engine/Core/LoggingSystem/Logger.h"   // uses your NOUS_INFO / NOUS_WARN macros
+#include "Engine/Core/Logger/Logger.h"   // uses your NOUS_INFO / NOUS_WARN macros
 #include <algorithm>
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_EVENTSYSTEM;

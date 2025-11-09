@@ -4,7 +4,7 @@
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include <filesystem>
 #include "Engine/Core/Application.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 ModuleFileSystem::ModuleFileSystem(Application* app) : Module(app)
 {

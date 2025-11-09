@@ -1,7 +1,7 @@
 #ifndef TIMEMANAGER_H
 #define TIMEMANAGER_H
 
-#include "Timer.h"
+#include "Timer/include/Timer.h"
 
 namespace TimeManager 
 {

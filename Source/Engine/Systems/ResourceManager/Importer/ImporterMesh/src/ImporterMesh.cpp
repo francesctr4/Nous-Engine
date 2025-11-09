@@ -13,7 +13,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 
 #include "Engine/Core/Application.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 // Assimp
 #define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace)

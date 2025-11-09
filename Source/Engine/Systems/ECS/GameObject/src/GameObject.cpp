@@ -1,5 +1,5 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 #include <parson.h>
 

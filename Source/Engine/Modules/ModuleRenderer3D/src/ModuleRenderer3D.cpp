@@ -15,8 +15,8 @@
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/Core/LoggingSystem/LogChannel.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/LogChannel.h"
+#include "Engine/Core/Logger/Logger.h"
 
 
 #ifdef _PROFILING

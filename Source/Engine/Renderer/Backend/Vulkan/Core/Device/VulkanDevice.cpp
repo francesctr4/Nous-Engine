@@ -2,7 +2,7 @@
 #include "VulkanDevice.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 // ----------------------------------------------------------- //
 // --------------------- Physical Device --------------------- //

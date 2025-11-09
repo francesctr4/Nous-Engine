@@ -20,7 +20,7 @@
 #include <Engine/Core/FileSystem/FileSystem.h>
 
 #include <Engine/Core/MemoryManager/MemoryManager.h>
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"

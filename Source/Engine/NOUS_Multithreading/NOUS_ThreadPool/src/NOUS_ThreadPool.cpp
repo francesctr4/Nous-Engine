@@ -3,7 +3,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

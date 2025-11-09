@@ -1,6 +1,6 @@
 #include <Engine/Core/Globals.h>
 #include <Engine/Core/Application.h>
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
 #include <Engine/Core/MemoryManager/MemoryManager.h>
 

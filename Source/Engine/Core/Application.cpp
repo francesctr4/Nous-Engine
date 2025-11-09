@@ -15,7 +15,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include <Engine/Core/EventSystem/EventSystem.h>
 #include <Engine/Core/EventSystem/Event/include/Event.h>
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

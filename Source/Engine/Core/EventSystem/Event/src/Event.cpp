@@ -1,5 +1,5 @@
 #include "Engine/Core/EventSystem/Event/include/Event.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 // ============================================================
 // EventContext Helper Implementations

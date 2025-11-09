@@ -5,7 +5,7 @@
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 #include <queue>
 #include <parson.h>

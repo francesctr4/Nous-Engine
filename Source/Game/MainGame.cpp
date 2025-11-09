@@ -1,4 +1,4 @@
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"

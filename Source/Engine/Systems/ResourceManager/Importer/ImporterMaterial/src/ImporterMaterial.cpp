@@ -12,7 +12,7 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 
 bool ImporterMaterial::Import(const MetaFileData& metaFileData)

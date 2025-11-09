@@ -2,7 +2,7 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"

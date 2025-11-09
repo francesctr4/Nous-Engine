@@ -2,7 +2,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Core/Device/VulkanDevice.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 void NOUS_VulkanImage::CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32 width, uint32 height,

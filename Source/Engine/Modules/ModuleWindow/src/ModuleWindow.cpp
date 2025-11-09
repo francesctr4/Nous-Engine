@@ -4,7 +4,7 @@
 #include "SDL3/SDL_vulkan.h"
 
 #include "Engine/Core/Application.h"
-#include "Engine/Core/LoggingSystem/Logger.h"
+#include "Engine/Core/Logger/Logger.h"
 
 ModuleWindow::ModuleWindow(Application* app) : Module(app)
 {
