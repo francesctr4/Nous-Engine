@@ -4,7 +4,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Core/Device/VulkanDevice.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Core/MemoryManager/CustomAllocators/FreeList.h"
+#include "Engine/Core/MemoryManager/CustomAllocators/FreeList/include/FreeList.h"
 #include "Engine/Utils/Math/Vertex.inl"
 
 void CleanupFreelist(VulkanBuffer* buffer) 

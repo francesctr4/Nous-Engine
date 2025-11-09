@@ -2,7 +2,7 @@
 
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/Logger/Asserts.h"
-#include "Engine/Core/MemoryManager/CustomAllocators/DynamicAllocator.h"
+#include "Engine/Core/MemoryManager/CustomAllocators/DynamicAllocator/include/DynamicAllocator.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>
