@@ -6,6 +6,7 @@
 #include "Engine/Modules/Module.h"
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
+#include "Engine/Core/MemoryManager/CustomAllocators/NOUS_STLAllocator/include/NOUS_STLAllocator.h"
 
 #include <vector>
 #include <memory>
@@ -53,7 +54,10 @@ private:
 private:
 
 	RendererBackendType currentBackendType;
-	std::vector<std::unique_ptr<IEditorWindow>> editorWindows;
+
+	// Custom allocator vector for editor windows
+	std::vector<std::unique_ptr<IEditorWindow>,
+	NOUS_STLAllocator<std::unique_ptr<IEditorWindow>>> editorWindows;
 
 };
 

@@ -58,7 +58,8 @@ static const char* memoryTagStrings[static_cast<uint64>(MemoryManager::MemoryTag
 	"FILE			",
 	"RESOURCE_MESH		",
 	"RESOURCE_TEXTURE	",
-	"RESOURCE_MATERIAL	"
+	"RESOURCE_MATERIAL	",
+    "EDITOR	                "
 };
 
 static struct MemorySystemConfig config;

@@ -33,6 +33,7 @@ namespace MemoryManager
 		RESOURCE_MESH,
 		RESOURCE_TEXTURE,
 		RESOURCE_MATERIAL,
+		EDITOR,
 
 		MAX
 	};

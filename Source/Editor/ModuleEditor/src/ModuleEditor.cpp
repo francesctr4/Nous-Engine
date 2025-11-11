@@ -42,7 +42,8 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_CORE_MODULE_EDITOR;
 
-ModuleEditor::ModuleEditor(Application* app) : Module(app)
+ModuleEditor::ModuleEditor(Application* app) : Module(app),
+	editorWindows(NOUS_STLAllocator<std::unique_ptr<IEditorWindow>>(MemoryManager::MemoryTag::EDITOR))
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 	currentBackendType = RendererBackendType::UNKNOWN;
