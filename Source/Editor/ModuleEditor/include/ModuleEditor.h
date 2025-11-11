@@ -46,7 +46,7 @@ private:
 
     IEditorWindow* GetEditorWindowByName(std::string name);
 
-    void AddEditorWindow(std::unique_ptr<IEditorWindow> editorWindow);
+    void AddEditorWindow(IEditorWindow* editorWindow);
 
     // Vulkan Specific
     static VulkanContext* GetVulkanContext();
@@ -56,8 +56,8 @@ private:
 	RendererBackendType currentBackendType;
 
 	// Custom allocator vector for editor windows
-	std::vector<std::unique_ptr<IEditorWindow>,
-	NOUS_STLAllocator<std::unique_ptr<IEditorWindow>>> editorWindows;
+	std::vector<IEditorWindow*,
+		NOUS_STLAllocator<IEditorWindow*>> editorWindows;
 
 };
 

@@ -43,7 +43,7 @@
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_CORE_MODULE_EDITOR;
 
 ModuleEditor::ModuleEditor(Application* app) : Module(app),
-	editorWindows(NOUS_STLAllocator<std::unique_ptr<IEditorWindow>>(MemoryManager::MemoryTag::EDITOR))
+	editorWindows(NOUS_STLAllocator<IEditorWindow*>(MemoryManager::MemoryTag::EDITOR))
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 	currentBackendType = RendererBackendType::UNKNOWN;
@@ -128,17 +128,17 @@ bool ModuleEditor::Awake()
 		}
 	}
 
-	AddEditorWindow(std::make_unique<MainMenuBar>("MainMenuBar"));
-	AddEditorWindow(std::make_unique<AssetsBrowser>("Assets"));
-	AddEditorWindow(std::make_unique<Resources>("Resources"));
-	AddEditorWindow(std::make_unique<Multithreading>("Multithreading"));
-	AddEditorWindow(std::make_unique<JobQueue>("Job Queue"));
-	AddEditorWindow(std::make_unique<GameViewport>("Game"));
-	AddEditorWindow(std::make_unique<SceneViewport>("Scene"));
-	AddEditorWindow(std::make_unique<HierarchyWindow>("Hierarchy"));
-	AddEditorWindow(std::make_unique<InspectorWindow>("Inspector"));
-	AddEditorWindow(std::make_unique<ConsoleWindow>("Console"));
-	AddEditorWindow(std::make_unique<MemoryWindow>("Memory Manager"));
+	AddEditorWindow(NOUS_NEW<MainMenuBar>(MemoryManager::MemoryTag::EDITOR, "MainMenuBar"));
+	AddEditorWindow(NOUS_NEW<AssetsBrowser>(MemoryManager::MemoryTag::EDITOR, "Assets"));
+	AddEditorWindow(NOUS_NEW<Resources>(MemoryManager::MemoryTag::EDITOR, "Resources"));
+	AddEditorWindow(NOUS_NEW<Multithreading>(MemoryManager::MemoryTag::EDITOR, "Multithreading"));
+	AddEditorWindow(NOUS_NEW<JobQueue>(MemoryManager::MemoryTag::EDITOR, "Job Queue"));
+	AddEditorWindow(NOUS_NEW<GameViewport>(MemoryManager::MemoryTag::EDITOR, "Game"));
+	AddEditorWindow(NOUS_NEW<SceneViewport>(MemoryManager::MemoryTag::EDITOR, "Scene"));
+	AddEditorWindow(NOUS_NEW<HierarchyWindow>(MemoryManager::MemoryTag::EDITOR, "Hierarchy"));
+	AddEditorWindow(NOUS_NEW<InspectorWindow>(MemoryManager::MemoryTag::EDITOR, "Inspector"));
+	AddEditorWindow(NOUS_NEW<ConsoleWindow>(MemoryManager::MemoryTag::EDITOR, "Console"));
+	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryManager::MemoryTag::EDITOR, "Memory Manager"));
 
 	return true;
 }
@@ -194,6 +194,30 @@ bool ModuleEditor::CleanUp()
 
 	ImGui_ImplSDL3_Shutdown();
 	ImGui::DestroyContext();
+
+	// --------------------------------------------------------------------
+	// Destroy all editor windows using correct derived type
+	// --------------------------------------------------------------------
+	for (auto* win : editorWindows)
+	{
+		if (auto* p = dynamic_cast<MainMenuBar*>(win))         { NOUS_DELETE<MainMenuBar>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<AssetsBrowser*>(win))  { NOUS_DELETE<AssetsBrowser>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<Resources*>(win))      { NOUS_DELETE<Resources>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<Multithreading*>(win)) { NOUS_DELETE<Multithreading>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<JobQueue*>(win))       { NOUS_DELETE<JobQueue>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<GameViewport*>(win))   { NOUS_DELETE<GameViewport>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<SceneViewport*>(win))  { NOUS_DELETE<SceneViewport>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<HierarchyWindow*>(win)){ NOUS_DELETE<HierarchyWindow>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<InspectorWindow*>(win)){ NOUS_DELETE<InspectorWindow>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<ConsoleWindow*>(win))  { NOUS_DELETE<ConsoleWindow>(p, MemoryManager::MemoryTag::EDITOR); }
+		else if (auto* p = dynamic_cast<MemoryWindow*>(win))   { NOUS_DELETE<MemoryWindow>(p, MemoryManager::MemoryTag::EDITOR); }
+		else
+		{
+			NOUS_WARN("Unknown EditorWindow type during cleanup!");
+		}
+	}
+
+	editorWindows.clear();
 
 	return true;
 }
@@ -310,24 +334,19 @@ VulkanContext* ModuleEditor::GetVulkanContext()
 	return VulkanBackend::GetVulkanContext();
 }
 
-void ModuleEditor::AddEditorWindow(std::unique_ptr<IEditorWindow> editorWindow)
+void ModuleEditor::AddEditorWindow(IEditorWindow* editorWindow)
 {
-	editorWindows.emplace_back(std::move(editorWindow));
+	editorWindows.push_back(editorWindow);
 }
 
 IEditorWindow* ModuleEditor::GetEditorWindowByName(std::string name)
 {
-	IEditorWindow* window = nullptr;
-
-	for (auto& w : editorWindows)
+	for (auto* w : editorWindows)
 	{
 		if (strcmp(w->GetTitle(), name.c_str()) == 0)
-		{
-			window = w.get();
-		}
+			return w;
 	}
-
-	return window;
+	return nullptr;
 }
 
 void ModuleEditor::OnEvent(const Event &event)
