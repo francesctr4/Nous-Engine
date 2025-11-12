@@ -4,12 +4,16 @@
 #include "Engine/Core/Logger/Asserts.h"
 #include "Engine/Core/MemoryManager/CustomAllocators/DynamicAllocator/include/DynamicAllocator.h"
 
+#include <magic_enum/magic_enum.hpp>
+
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>
 #endif // _PROFILING
 
 #include <mutex>
 #include <cstring>
+#include <sstream>
+#include <iomanip>
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_MEMORYMANAGER;
 
@@ -222,81 +226,65 @@ void* MemoryManager::SetMemory(void* destination, int32 value, uint64 size)
 	return std::memset(destination, value, size);
 }
 
-char* MemoryManager::GetMemoryUsageStats()
+std::string MemoryManager::GetMemoryUsageStats()
 {
-	const uint64 GiB = 1024 * 1024 * 1024;
-	const uint64 MiB = 1024 * 1024;
-	const uint64 KiB = 1024;
+	std::ostringstream out;
+	bool anyUsed = false;
 
-	char buffer[8000] = "System memory use (tagged):\n";
-	uint64 offset = strlen(buffer);
+	out << "Memory Usage by Tag:\n";
 
-	// Log total size allocated in appropriate units
-	char totalUnit[4] = "XiB";
-	float totalAmount = 1.0f;
-
-	if (config.stats.totalAllocated >= GiB)
+	for (auto [tag, name] : magic_enum::enum_entries<MemoryTag>())
 	{
-		totalUnit[0] = 'G';
-		totalAmount = config.stats.totalAllocated / static_cast<float>(GiB);
-	}
-	else if (config.stats.totalAllocated >= MiB)
-	{
-		totalUnit[0] = 'M';
-		totalAmount = config.stats.totalAllocated / static_cast<float>(MiB);
-	}
-	else if (config.stats.totalAllocated >= KiB)
-	{
-		totalUnit[0] = 'K';
-		totalAmount = config.stats.totalAllocated / static_cast<float>(KiB);
-	}
-	else
-	{
-		totalUnit[0] = 'B';
-		totalUnit[1] = 0;
-		totalAmount = static_cast<float>(config.stats.totalAllocated);
-	}
+		if (tag == MemoryTag::MAX)
+			continue;
 
-	snprintf(buffer + offset, 8000 - offset, "\nTotal size allocated: %.2f %s\n", totalAmount, totalUnit);
-	offset += strlen(buffer + offset);
+		uint64 bytes = config.stats.taggedAllocations[static_cast<uint64>(tag)];
+		if (bytes == 0)
+			continue;
 
-	// Log total allocations
-	snprintf(buffer + offset, 8000 - offset, "Total allocations: %llu\n\n", config.stats.totalAllocations);
-	offset += strlen(buffer + offset);
+		anyUsed = true;
 
-	// Log allocations by tag
-	for (uint32 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
-	{
-		char unit[4] = "XiB";
-		float amount = 1.0f;
+		// --------------------------------------------------------
+		// Convert units dynamically (B / KiB / MiB / GiB)
+		// --------------------------------------------------------
+		const char* unit = "B";
+		double amount = static_cast<double>(bytes);
 
-		if (config.stats.taggedAllocations[i] >= GiB)
+		if (bytes >= GiB(1))
 		{
-			unit[0] = 'G';
-			amount = config.stats.taggedAllocations[i] / static_cast<float>(GiB);
+			unit = "GiB";
+			amount = static_cast<double>(bytes) / static_cast<double>(GiB(1));
 		}
-		else if (config.stats.taggedAllocations[i] >= MiB)
+		else if (bytes >= MiB(1))
 		{
-			unit[0] = 'M';
-			amount = config.stats.taggedAllocations[i] / static_cast<float>(MiB);
+			unit = "MiB";
+			amount = static_cast<double>(bytes) / static_cast<double>(MiB(1));
 		}
-		else if (config.stats.taggedAllocations[i] >= KiB)
+		else if (bytes >= KiB(1))
 		{
-			unit[0] = 'K';
-			amount = config.stats.taggedAllocations[i] / static_cast<float>(KiB);
-		}
-		else 
-		{
-			unit[0] = 'B';
-			unit[1] = 0;
-			amount = static_cast<float>(config.stats.taggedAllocations[i]);
+			unit = "KiB";
+			amount = static_cast<double>(bytes) / static_cast<double>(KiB(1));
 		}
 
-		int32 length = snprintf(buffer + offset, 8000, "%s: %.2f %s\n", memoryTagStrings[i], amount, unit);
-		offset += length;
- 	}
+		// --------------------------------------------------------
+		// Print formatted row
+		// --------------------------------------------------------
+		out << std::setw(24) << std::left << name
+			<< ": " << std::fixed << std::setprecision(2)
+			<< amount << " " << unit << "\n";
+	}
 
-	return strdup(buffer);
+	// --------------------------------------------------------
+	// If nothing allocated → print friendly message
+	// --------------------------------------------------------
+	if (!anyUsed)
+	{
+		out.str("");
+		out.clear();
+		out << "[MemoryManager] No memory leaks detected.";
+	}
+
+	return out.str();
 }
 
 uint64 MemoryManager::GetMemoryAllocationCount()
@@ -319,7 +307,11 @@ MemoryManager::MemoryStatsSnapshot MemoryManager::GetMemoryStats()
 
 const char** MemoryManager::GetMemoryTagNames()
 {
-	return memoryTagStrings;
+	static std::vector<const char*> names;
+	names.clear();
+	for (auto name : magic_enum::enum_names<MemoryTag>())
+		names.push_back(name.data());
+	return names.data();
 }
 
 MemoryManager::MemoryConfigSnapshot MemoryManager::GetMemoryConfig()

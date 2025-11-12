@@ -7,6 +7,7 @@ find_package(assimp CONFIG REQUIRED)
 find_package(parson CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
 find_package(glm REQUIRED)
+find_package(magic_enum CONFIG REQUIRED)
 
 # ==============================
 # Engine Modules
@@ -42,6 +43,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         parson::parson
         Tracy::TracyClient
         glm::glm
+
         # --- Engine Modules ---
         Core
         Modules

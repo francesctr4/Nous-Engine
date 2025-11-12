@@ -15,6 +15,8 @@ target_compile_definitions(${CLASS_NAME} PRIVATE
         NOUS_ENGINE_EXPORTS
 )
 
+target_link_libraries(${CLASS_NAME} PRIVATE magic_enum::magic_enum)
+
 if (ENABLE_PROFILING)
     find_package(Tracy CONFIG REQUIRED)
     target_link_libraries(${CLASS_NAME} PRIVATE Tracy::TracyClient)

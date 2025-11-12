@@ -129,11 +129,11 @@ int main(int argc, char** argv)
     NOUS_DELETE(Editor, MemoryManager::MemoryTag::APPLICATION);
     NOUS_DELETE(App, MemoryManager::MemoryTag::APPLICATION);
 
-    NOUS_INFO("Exiting engine '%s'...\n", TITLE);
+    NOUS_INFO("Exiting engine '%s'...", TITLE);
 
     NOUS_Multithreading::UnregisterMainThread();
 
-    NOUS_INFO(MemoryManager::GetMemoryUsageStats());
+    NOUS_INFO(MemoryManager::GetMemoryUsageStats().c_str());
 
     NOUS_INFO("[%s] Successfully exited Nous Engine. See you soon!", __FUNCTION__);
 

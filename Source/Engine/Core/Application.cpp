@@ -93,7 +93,7 @@ bool Application::Start()
         }
     }
 
-    NOUS_INFO(MemoryManager::GetMemoryUsageStats());
+    NOUS_INFO(MemoryManager::GetMemoryUsageStats().c_str());
 
     msTimer->Start();
 

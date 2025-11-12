@@ -53,7 +53,7 @@ namespace MemoryManager
 
     NOUS_ENGINE_API void* SetMemory(void* destination, int32 value, uint64 size);
 
-    NOUS_ENGINE_API char* GetMemoryUsageStats();
+    NOUS_ENGINE_API std::string GetMemoryUsageStats();
 
     NOUS_ENGINE_API uint64 GetMemoryAllocationCount();
 
