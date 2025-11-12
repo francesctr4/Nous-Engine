@@ -44,6 +44,7 @@ namespace MemoryManager
 
     NOUS_ENGINE_API void* Allocate(uint64 size, MemoryTag tag);
 
+    NOUS_ENGINE_API void Free(void* block, MemoryTag tag);
     NOUS_ENGINE_API void Free(void* block, uint64 size, MemoryTag tag);
 
     NOUS_ENGINE_API void* ZeroMemory(void* block, uint64 size);
@@ -121,12 +122,12 @@ CUSTOM_NEW_ARRAY(NOUS_NEW_ARRAY)
 
 #define CUSTOM_DELETE(name) \
 template<typename T> \
-void name(T*& ptr, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) \
+inline void name(T*& ptr, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) noexcept \
 { \
     if (ptr != nullptr) \
     { \
         ptr->~T(); \
-        MemoryManager::Free(ptr, sizeof(*ptr), tag); \
+        MemoryManager::Free(static_cast<void*>(ptr), tag); \
         ptr = nullptr; \
     } \
 }

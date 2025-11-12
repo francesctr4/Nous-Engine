@@ -26,8 +26,7 @@ bool ImporterTexture::Import(const MetaFileData& metaFileData)
 
 bool ImporterTexture::Save(const MetaFileData& metaFileData, Resource*& inResource)
 {
-    ResourceTexture* texture = down_cast<ResourceTexture*>(inResource);
-    NOUS_DELETE<ResourceTexture>(texture, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+    NOUS_DELETE(inResource, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
 
     bool ret = NOUS_FileManager::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
 

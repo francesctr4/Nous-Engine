@@ -23,8 +23,7 @@ bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 
 bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResource)
 {
-	ResourceMaterial* material = down_cast<ResourceMaterial*>(inResource);
-    NOUS_DELETE<ResourceMaterial>(material, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+    NOUS_DELETE(inResource, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
 
     bool ret = NOUS_FileManager::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
 

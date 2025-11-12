@@ -93,7 +93,7 @@ bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
 
     fileHandle.Close();
 
-    NOUS_DELETE<ResourceMesh>(mesh, MemoryManager::MemoryTag::RESOURCE_MESH);
+    NOUS_DELETE(mesh, MemoryManager::MemoryTag::RESOURCE_MESH);
 
     return ret;
 }

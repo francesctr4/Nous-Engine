@@ -51,35 +51,16 @@ Application::Application()
 
 Application::~Application()
 {
+    if (jobSystem)
+        jobSystem->WaitForPendingJobs();
+
+    for (auto* mod : listModules)
+        NOUS_DELETE(mod, MemoryManager::MemoryTag::APPLICATION);
+
+    NOUS_DELETE(jobSystem, MemoryManager::MemoryTag::THREAD);
+    NOUS_DELETE(eventSystem, MemoryManager::MemoryTag::APPLICATION);
     NOUS_DELETE(msTimer, MemoryManager::MemoryTag::APPLICATION);
     NOUS_DELETE(updateTitleTimer, MemoryManager::MemoryTag::APPLICATION);
-
-    // ------------- MULTITHREADING ------------- //
-    jobSystem->WaitForPendingJobs();
-    NOUS_DELETE<NOUS_Multithreading::NOUS_JobSystem>(jobSystem, MemoryManager::MemoryTag::THREAD);
-
-    ModuleRenderer3D* renderer = static_cast<ModuleRenderer3D*>(listModules[6]);
-    NOUS_DELETE<ModuleRenderer3D>(renderer, MemoryManager::MemoryTag::APPLICATION);
-
-    ModuleScene* scene = static_cast<ModuleScene*>(listModules[5]);
-    NOUS_DELETE<ModuleScene>(scene, MemoryManager::MemoryTag::APPLICATION);
-
-    ModuleResourceManager* resourceManager = static_cast<ModuleResourceManager*>(listModules[4]);
-    NOUS_DELETE<ModuleResourceManager>(resourceManager, MemoryManager::MemoryTag::APPLICATION);
-
-    ModuleCamera3D* camera = static_cast<ModuleCamera3D*>(listModules[3]);
-    NOUS_DELETE<ModuleCamera3D>(camera, MemoryManager::MemoryTag::APPLICATION);
-
-    ModuleFileSystem* fileSystem = static_cast<ModuleFileSystem*>(listModules[2]);
-    NOUS_DELETE<ModuleFileSystem>(fileSystem, MemoryManager::MemoryTag::APPLICATION);
-
-    ModuleInput* input = static_cast<ModuleInput*>(listModules[1]);
-    NOUS_DELETE<ModuleInput>(input, MemoryManager::MemoryTag::APPLICATION);
-
-    ModuleWindow* window = static_cast<ModuleWindow*>(listModules[0]);
-    NOUS_DELETE<ModuleWindow>(window, MemoryManager::MemoryTag::APPLICATION);
-
-    NOUS_DELETE<EventSystem>(eventSystem, MemoryManager::MemoryTag::APPLICATION);
 }
 
 bool Application::Awake()

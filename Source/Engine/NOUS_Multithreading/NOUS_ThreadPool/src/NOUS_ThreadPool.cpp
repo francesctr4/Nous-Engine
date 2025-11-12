@@ -56,7 +56,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::Shutdown()
 	while (!mJobQueue.empty())
 	{
 		NOUS_Job* job = mJobQueue.front();
-		NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
+		NOUS_DELETE(job, MemoryManager::MemoryTag::THREAD);
 		mJobQueue.pop();
 	}
 
@@ -65,7 +65,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::Shutdown()
 	for (NOUS_Thread* thread : mThreads)
 	{
 		thread->Join();
-		NOUS_DELETE<NOUS_Thread>(thread, MemoryManager::MemoryTag::THREAD);
+		NOUS_DELETE(thread, MemoryManager::MemoryTag::THREAD);
 	}
 
 	mThreads.clear();
@@ -134,7 +134,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 				   job->GetName().c_str(), thread->GetName().c_str(),
 				   thread->GetID(), (thread->GetExecutionTimeMS() / 1000.0f));
 
-		NOUS_DELETE<NOUS_Job>(job, MemoryManager::MemoryTag::THREAD);
+		NOUS_DELETE(job, MemoryManager::MemoryTag::THREAD);
 
 		thread->StopExecutionTimer();
 		thread->SetCurrentJob(nullptr);

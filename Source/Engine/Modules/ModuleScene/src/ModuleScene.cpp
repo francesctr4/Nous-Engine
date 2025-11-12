@@ -52,9 +52,9 @@ ModuleScene::~ModuleScene()
 	// Clean up scripts before destroying script manager
 	CleanupScripts();
 
-	NOUS_DELETE<Camera>(gameCamera, MemoryManager::MemoryTag::GAME);
-	NOUS_DELETE<ScriptManager>(scriptManager, MemoryManager::MemoryTag::GAME);
-	NOUS_DELETE<Scene>(activeScene, MemoryManager::MemoryTag::GAME);
+	NOUS_DELETE(gameCamera, MemoryManager::MemoryTag::GAME);
+	NOUS_DELETE(scriptManager, MemoryManager::MemoryTag::GAME);
+	NOUS_DELETE(activeScene, MemoryManager::MemoryTag::GAME);
 }
 
 bool ModuleScene::Awake()

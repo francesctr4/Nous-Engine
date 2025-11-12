@@ -84,8 +84,8 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 
 	// 3. Construct allocator using placement new
 	config.allocator = new (&config.allocatorBlock) DynamicAllocator(
-		config.totalAllocationSize,
-		config.allocatorBlock
+			config.totalAllocationSize,
+			config.allocatorBlock
 	);
 
 	NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Memory system initialized with %llu bytes",
@@ -94,6 +94,11 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 
 void MemoryManager::ShutdownMemory()
 {
+	if (config.allocator->GetFreeSpace() != config.totalAllocationSize)
+	{
+		NOUS_WARN_C(CURRENT_CHANNEL, "Possible leaks detected: not all memory returned to allocator!");
+	}
+
 	if (config.allocator) 
 	{
 		// Explicit destructor call
@@ -136,21 +141,49 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 	config.stats.totalAllocations++;
 	config.stats.taggedAllocations[static_cast<uint64>(tag)] += size;
 
-	//void* block = malloc(size);
-	
-	// ----------------- Memory Alignment ----------------- //
-	// Add 16-byte alignment
-	const uint64 alignment = 16;
-	const uint64 alignedSize = (size + (alignment - 1)) & ~(alignment - 1);
-
-	void* block = config.allocator->Allocate(alignedSize);
-	ZeroMemory(block, size);
+	void* block = config.allocator->Allocate(size); // allocator aligns internally
+	ZeroMemory(block, size);                         // zero raw bytes (fine)
 
 #ifdef _PROFILING
 	TracyAlloc(block, size);
 #endif // _PROFILING
 
 	return block;
+}
+
+void MemoryManager::Free(void* block, MemoryTag tag)
+{
+	if (!block) return;
+	std::lock_guard<std::mutex> lock(memoryMutex);
+
+#ifdef _PROFILING
+	TracyFree(block);
+#endif
+
+	const uint64 raw = config.allocator->GetRecordedSize(block);
+	if (raw == 0)
+	{
+		// Not tracked by allocator: do not touch stats to avoid underflow
+		NOUS_WARN_C(CURRENT_CHANNEL,
+					"Free(void*, tag=%d): block %p not recorded — skipping stats",
+					static_cast<int>(tag), block);
+
+		// Try to free anyway — allocator will warn/return false if unknown
+		(void)config.allocator->Free(block);
+		return;
+	}
+
+	config.stats.totalAllocated -= raw;
+	config.stats.totalAllocations--;
+	config.stats.taggedAllocations[static_cast<uint64>(tag)] -= raw;
+
+	const bool ok = config.allocator->Free(block);
+	if (!ok)
+	{
+		NOUS_WARN_C(CURRENT_CHANNEL,
+					"MemoryManager::Free(void*, tag=%d): allocator failed to free %p",
+					static_cast<int>(tag), block);
+	}
 }
 
 void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
@@ -170,12 +203,8 @@ void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UN
 	TracyFree(block);
 #endif // _PROFILING
 
-	//free(block);
-
-	// ----------------- Memory Alignment ----------------- //
-	const uint64 alignment = 16;
-	const uint64 alignedSize = (size + (alignment - 1)) & ~(alignment - 1);
-	config.allocator->Free(block, alignedSize);
+	// Allocator aligns internally
+	config.allocator->Free(block, size);
 }
 
 void* MemoryManager::ZeroMemory(void* block, uint64 size)

@@ -195,28 +195,10 @@ bool ModuleEditor::CleanUp()
 	ImGui_ImplSDL3_Shutdown();
 	ImGui::DestroyContext();
 
-	// --------------------------------------------------------------------
-	// Destroy all editor windows using correct derived type
-	// --------------------------------------------------------------------
-	for (auto* win : editorWindows)
-	{
-		if (auto* p = dynamic_cast<MainMenuBar*>(win))         { NOUS_DELETE<MainMenuBar>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<AssetsBrowser*>(win))  { NOUS_DELETE<AssetsBrowser>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<Resources*>(win))      { NOUS_DELETE<Resources>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<Multithreading*>(win)) { NOUS_DELETE<Multithreading>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<JobQueue*>(win))       { NOUS_DELETE<JobQueue>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<GameViewport*>(win))   { NOUS_DELETE<GameViewport>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<SceneViewport*>(win))  { NOUS_DELETE<SceneViewport>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<HierarchyWindow*>(win)){ NOUS_DELETE<HierarchyWindow>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<InspectorWindow*>(win)){ NOUS_DELETE<InspectorWindow>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<ConsoleWindow*>(win))  { NOUS_DELETE<ConsoleWindow>(p, MemoryManager::MemoryTag::EDITOR); }
-		else if (auto* p = dynamic_cast<MemoryWindow*>(win))   { NOUS_DELETE<MemoryWindow>(p, MemoryManager::MemoryTag::EDITOR); }
-		else
-		{
-			NOUS_WARN("Unknown EditorWindow type during cleanup!");
-		}
-	}
-
+    for (auto* win : editorWindows)
+    {
+        NOUS_DELETE(win, MemoryManager::MemoryTag::EDITOR);
+    }
 	editorWindows.clear();
 
 	return true;

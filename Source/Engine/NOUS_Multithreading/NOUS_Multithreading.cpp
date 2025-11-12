@@ -28,7 +28,7 @@ namespace NOUS_Multithreading
     {
         if (sMainThread)
         {
-            NOUS_DELETE<NOUS_Thread>(sMainThread, MemoryManager::MemoryTag::THREAD);
+            NOUS_DELETE(sMainThread, MemoryManager::MemoryTag::THREAD);
         }
     }
 
