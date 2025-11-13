@@ -5,11 +5,11 @@
 
 void ScriptBindings::InitializeBindings(EngineAPI*& api)
 {
-    api = NOUS_NEW<EngineAPI>(MemoryManager::MemoryTag::GAME);
+    api = NOUS_NEW<EngineAPI>(MemoryTag::GAME);
     // Allocate each subsystem API
-    api->Logger = NOUS_NEW<LoggerAPI>(MemoryManager::MemoryTag::GAME);
-    api->Input = NOUS_NEW<InputAPI>(MemoryManager::MemoryTag::GAME);
-    api->GameObject = NOUS_NEW<GameObjectAPI>(MemoryManager::MemoryTag::GAME);
+    api->Logger = NOUS_NEW<LoggerAPI>(MemoryTag::GAME);
+    api->Input = NOUS_NEW<InputAPI>(MemoryTag::GAME);
+    api->GameObject = NOUS_NEW<GameObjectAPI>(MemoryTag::GAME);
 }
 
 void ScriptBindings::SetupAllBindings(EngineAPI& api)
@@ -23,10 +23,10 @@ void ScriptBindings::SetupAllBindings(EngineAPI& api)
 void ScriptBindings::DeleteBindings(EngineAPI*& api)
 {
     // Delete in reverse order
-    NOUS_DELETE(api->GameObject, MemoryManager::MemoryTag::GAME);
-    NOUS_DELETE(api->Input, MemoryManager::MemoryTag::GAME);
-    NOUS_DELETE(api->Logger, MemoryManager::MemoryTag::GAME);
-    NOUS_DELETE(api, MemoryManager::MemoryTag::GAME);
+    NOUS_DELETE(api->GameObject, MemoryTag::GAME);
+    NOUS_DELETE(api->Input, MemoryTag::GAME);
+    NOUS_DELETE(api->Logger, MemoryTag::GAME);
+    NOUS_DELETE(api, MemoryTag::GAME);
 }
 
 

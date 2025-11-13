@@ -20,13 +20,13 @@
 
 bool ImporterTexture::Import(const MetaFileData& metaFileData)
 {
-    Resource* tempTexture = NOUS_NEW<ResourceTexture>(MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+    Resource* tempTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
     return Save(metaFileData, tempTexture);
 }
 
 bool ImporterTexture::Save(const MetaFileData& metaFileData, Resource*& inResource)
 {
-    NOUS_DELETE(inResource, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+    NOUS_DELETE(inResource, MemoryTag::RESOURCE_TEXTURE);
 
     bool ret = NOUS_FileManager::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
 
@@ -72,7 +72,7 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
     );
 
     // Clean up file buffer using your memory manager
-    NOUS_DELETE_ARRAY(fileBuffer, static_cast<uint64>(fileSize), MemoryManager::MemoryTag::FILE);
+    NOUS_DELETE_ARRAY(fileBuffer, static_cast<uint64>(fileSize), MemoryTag::FILE);
     fileHandle.Close();
 
     if (data)

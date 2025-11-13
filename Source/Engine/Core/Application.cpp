@@ -32,21 +32,21 @@ Application::Application()
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
 
-    eventSystem = NOUS_NEW<EventSystem>(MemoryManager::MemoryTag::APPLICATION);
+    eventSystem = NOUS_NEW<EventSystem>(MemoryTag::APPLICATION);
 
-    msTimer = NOUS_NEW<Timer>(MemoryManager::MemoryTag::APPLICATION);
-    updateTitleTimer = NOUS_NEW<Timer>(MemoryManager::MemoryTag::APPLICATION);
+    msTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
+    updateTitleTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
 
-    listModules[0] = window = NOUS_NEW<ModuleWindow>(MemoryManager::MemoryTag::APPLICATION, this);
-    listModules[1] = input = NOUS_NEW<ModuleInput>(MemoryManager::MemoryTag::APPLICATION, this);
-    listModules[2] = fileSystem = NOUS_NEW<ModuleFileSystem>(MemoryManager::MemoryTag::APPLICATION, this);
-    listModules[3] = camera = NOUS_NEW<ModuleCamera3D>(MemoryManager::MemoryTag::APPLICATION, this);
-    listModules[4] = resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryManager::MemoryTag::APPLICATION, this);
-    listModules[5] = scene = NOUS_NEW<ModuleScene>(MemoryManager::MemoryTag::APPLICATION, this);
-    listModules[6] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryManager::MemoryTag::APPLICATION, this);
+    listModules[0] = window = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION, this);
+    listModules[1] = input = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION, this);
+    listModules[2] = fileSystem = NOUS_NEW<ModuleFileSystem>(MemoryTag::APPLICATION, this);
+    listModules[3] = camera = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION, this);
+    listModules[4] = resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION, this);
+    listModules[5] = scene = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this);
+    listModules[6] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this);
 
     // ------------- MULTITHREADING ------------- //
-    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryManager::MemoryTag::THREAD);
+    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
 }
 
 Application::~Application()
@@ -55,12 +55,12 @@ Application::~Application()
         jobSystem->WaitForPendingJobs();
 
     for (auto* mod : listModules)
-        NOUS_DELETE(mod, MemoryManager::MemoryTag::APPLICATION);
+        NOUS_DELETE(mod, MemoryTag::APPLICATION);
 
-    NOUS_DELETE(jobSystem, MemoryManager::MemoryTag::THREAD);
-    NOUS_DELETE(eventSystem, MemoryManager::MemoryTag::APPLICATION);
-    NOUS_DELETE(msTimer, MemoryManager::MemoryTag::APPLICATION);
-    NOUS_DELETE(updateTitleTimer, MemoryManager::MemoryTag::APPLICATION);
+    NOUS_DELETE(jobSystem, MemoryTag::THREAD);
+    NOUS_DELETE(eventSystem, MemoryTag::APPLICATION);
+    NOUS_DELETE(msTimer, MemoryTag::APPLICATION);
+    NOUS_DELETE(updateTitleTimer, MemoryTag::APPLICATION);
 }
 
 bool Application::Awake()

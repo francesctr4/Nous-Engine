@@ -28,9 +28,9 @@ ModuleScene::ModuleScene(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	activeScene = NOUS_NEW<Scene>(MemoryManager::MemoryTag::GAME);
-	gameCamera = NOUS_NEW<Camera>(MemoryManager::MemoryTag::GAME);
-	scriptManager = NOUS_NEW<ScriptManager>(MemoryManager::MemoryTag::GAME);
+	activeScene = NOUS_NEW<Scene>(MemoryTag::GAME);
+	gameCamera = NOUS_NEW<Camera>(MemoryTag::GAME);
+	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::GAME);
 
 	// Load the script library
 	if (!scriptManager->LoadScriptLibrary("Scripts/Scripts.dll")) {
@@ -52,9 +52,9 @@ ModuleScene::~ModuleScene()
 	// Clean up scripts before destroying script manager
 	CleanupScripts();
 
-	NOUS_DELETE(gameCamera, MemoryManager::MemoryTag::GAME);
-	NOUS_DELETE(scriptManager, MemoryManager::MemoryTag::GAME);
-	NOUS_DELETE(activeScene, MemoryManager::MemoryTag::GAME);
+	NOUS_DELETE(gameCamera, MemoryTag::GAME);
+	NOUS_DELETE(scriptManager, MemoryTag::GAME);
+	NOUS_DELETE(activeScene, MemoryTag::GAME);
 }
 
 bool ModuleScene::Awake()

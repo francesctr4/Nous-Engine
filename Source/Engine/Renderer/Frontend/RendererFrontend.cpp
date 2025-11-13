@@ -11,14 +11,14 @@ constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_FRONTEND
 RendererFrontend::RendererFrontend()
 {
 	mBackendType = RendererBackendType::UNKNOWN;
-	mBackend = NOUS_NEW<RendererBackend>(MemoryManager::MemoryTag::RENDERER);
+	mBackend = NOUS_NEW<RendererBackend>(MemoryTag::RENDERER);
 
     mEditorOverlay = nullptr;
 }
 
 RendererFrontend::~RendererFrontend()
 {
-	NOUS_DELETE(mBackend, MemoryManager::MemoryTag::RENDERER);
+	NOUS_DELETE(mBackend, MemoryTag::RENDERER);
 }
 
 bool RendererFrontend::Initialize(RendererBackendType backendType)

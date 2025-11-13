@@ -54,7 +54,7 @@ bool NOUS_VulkanShaderUtils::CreateShaderModule(VulkanContext* vkContext, std::s
 
     if (fileBuffer) 
     {
-        NOUS_DELETE_ARRAY(fileBuffer, size, MemoryManager::MemoryTag::FILE);
+        NOUS_DELETE_ARRAY(fileBuffer, size, MemoryTag::FILE);
     }
 
     return true;

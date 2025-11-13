@@ -4,40 +4,32 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
 
+enum class MemoryTag : uint8_t
+{
+	UNKNOWN = 0,
+
+	THREAD,
+	ARRAY,
+	DICT,
+	APPLICATION,
+	RENDERER,
+	GAME,
+	GAMEOBJECT,
+	SCRIPTING_SYSTEM,
+	CAMERA,
+	INPUT,
+	LINEAR_ALLOCATOR,
+	FILE,
+	RESOURCE_MESH,
+	RESOURCE_TEXTURE,
+	RESOURCE_MATERIAL,
+	EDITOR,
+
+	MAX
+};
+
 namespace MemoryManager
 {
-	enum class MemoryTag
-	{
-		UNKNOWN = 0,
-
-		THREAD,
-		ARRAY,
-		DARRAY,
-		DICT,
-		RING_QUEUE,
-		BST,
-		STRING,
-		APPLICATION,
-		JOB,
-		TEXTURE,
-		MATERIAL_INSTANCE,
-		RENDERER,
-		GAME,
-		TRANSFORM,
-		ENTITY,
-		ENTITY_NODE,
-		SCENE,
-		INPUT,
-		LINEAR_ALLOCATOR,
-		FILE,
-		RESOURCE_MESH,
-		RESOURCE_TEXTURE,
-		RESOURCE_MATERIAL,
-		EDITOR,
-
-		MAX
-	};
-
     NOUS_ENGINE_API void InitializeMemory(uint64 preAllocatedMemorySize);
 
     NOUS_ENGINE_API void ShutdownMemory();
@@ -61,7 +53,7 @@ namespace MemoryManager
 	{
 		uint64 totalAllocated;
 		uint64 totalAllocations;
-		uint64 taggedAllocations[static_cast<uint64>(MemoryManager::MemoryTag::MAX)];
+		uint64 taggedAllocations[static_cast<uint64>(MemoryTag::MAX)];
 	};
 
 	NOUS_ENGINE_API MemoryStatsSnapshot GetMemoryStats();
@@ -80,7 +72,7 @@ namespace MemoryManager
 
 #define CUSTOM_NEW(name) \
 template<typename T, typename... Args> \
-T* name(MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN, Args&&... args) \
+T* name(MemoryTag tag = MemoryTag::UNKNOWN, Args&&... args) \
 { \
     void* memory = MemoryManager::Allocate(sizeof(T), tag); \
     auto ptr = new(memory) T(std::forward<Args>(args)...); \
@@ -99,7 +91,7 @@ CUSTOM_NEW(NOUS_NEW)
 
 #define CUSTOM_NEW_ARRAY(name) \
 template<typename T> \
-T* name(size_t count, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) \
+T* name(size_t count, MemoryTag tag = MemoryTag::UNKNOWN) \
 { \
     void* memory = MemoryManager::Allocate(sizeof(T) * count, tag); \
     auto ptr = static_cast<T*>(memory); \
@@ -122,7 +114,7 @@ CUSTOM_NEW_ARRAY(NOUS_NEW_ARRAY)
 
 #define CUSTOM_DELETE(name) \
 template<typename T> \
-inline void name(T*& ptr, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) noexcept \
+inline void name(T*& ptr, MemoryTag tag = MemoryTag::UNKNOWN) noexcept \
 { \
     if (ptr != nullptr) \
     { \
@@ -142,7 +134,7 @@ CUSTOM_DELETE(NOUS_DELETE)
 
 #define CUSTOM_DELETE_ARRAY(name) \
 template<typename T> \
-void name(T*& ptr, size_t count, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN) \
+void name(T*& ptr, size_t count, MemoryTag tag = MemoryTag::UNKNOWN) \
 { \
     if (ptr != nullptr) \
     { \

@@ -13,7 +13,7 @@ namespace NOUS_Multithreading
     {
         if (!sMainThread)
         {
-            sMainThread = NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD);
+            sMainThread = NOUS_NEW<NOUS_Thread>(MemoryTag::THREAD);
 
             sMainThread->SetName("Main Thread");
             sMainThread->SetThreadID(std::this_thread::get_id());
@@ -28,7 +28,7 @@ namespace NOUS_Multithreading
     {
         if (sMainThread)
         {
-            NOUS_DELETE(sMainThread, MemoryManager::MemoryTag::THREAD);
+            NOUS_DELETE(sMainThread, MemoryTag::THREAD);
         }
     }
 

@@ -11,7 +11,7 @@
 NOUS_Multithreading::NOUS_JobSystem::NOUS_JobSystem(const uint8_t size)
 {
 	mPendingJobs = 0;
-	mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, size);
+	mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryTag::THREAD, size);
 }
 
 /// @brief NOUS_JobSystem destructor.
@@ -20,7 +20,7 @@ NOUS_Multithreading::NOUS_JobSystem::~NOUS_JobSystem()
 {
 	WaitForPendingJobs();
 
-	NOUS_DELETE(mThreadPool, MemoryManager::MemoryTag::THREAD);
+	NOUS_DELETE(mThreadPool, MemoryTag::THREAD);
 }
 
 /// @brief Submits a job to the thread pool, to be executed by a free worker thread.
@@ -42,12 +42,12 @@ void NOUS_Multithreading::NOUS_JobSystem::SubmitJob(const std::function<void()>&
 
 		};
 
-	auto* job = NOUS_NEW<NOUS_Job>(MemoryManager::MemoryTag::THREAD, jobName, wrappedJob);
+	auto* job = NOUS_NEW<NOUS_Job>(MemoryTag::THREAD, jobName, wrappedJob);
 
 	if (mThreadPool->GetThreads().empty()) // Running on Main Thread (sequentially)
 	{
 		job->Execute();
-		NOUS_DELETE(job, MemoryManager::MemoryTag::THREAD);
+		NOUS_DELETE(job, MemoryTag::THREAD);
 	}
 	else
 	{
@@ -71,8 +71,8 @@ void NOUS_Multithreading::NOUS_JobSystem::Resize(uint8_t newSize)
 {
 	WaitForPendingJobs();
 
-	NOUS_DELETE(mThreadPool, MemoryManager::MemoryTag::THREAD);
-	mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryManager::MemoryTag::THREAD, newSize);
+	NOUS_DELETE(mThreadPool, MemoryTag::THREAD);
+	mThreadPool = NOUS_NEW<NOUS_ThreadPool>(MemoryTag::THREAD, newSize);
 }
 
 /// @return Reference to the underlying thread pool.

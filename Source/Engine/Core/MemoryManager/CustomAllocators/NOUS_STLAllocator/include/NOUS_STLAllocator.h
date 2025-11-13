@@ -39,9 +39,9 @@ public:
 
     // Constructors
     constexpr NOUS_STLAllocator() noexcept
-            : tag_(MemoryManager::MemoryTag::UNKNOWN) {}
+            : tag_(MemoryTag::UNKNOWN) {}
 
-    constexpr explicit NOUS_STLAllocator(MemoryManager::MemoryTag tag) noexcept
+    constexpr explicit NOUS_STLAllocator(MemoryTag tag) noexcept
             : tag_(tag) {}
 
     template<class U>
@@ -70,7 +70,7 @@ public:
     }
 
     // Access / change tag
-    constexpr MemoryManager::MemoryTag tag() const noexcept { return tag_; }
+    constexpr MemoryTag tag() const noexcept { return tag_; }
 
     // Allocators compare equal if they use the same tag
     friend bool operator==(const NOUS_STLAllocator& a, const NOUS_STLAllocator& b) noexcept {
@@ -82,7 +82,7 @@ public:
 
 private:
     template<class U> friend class NOUS_STLAllocator;
-    MemoryManager::MemoryTag tag_;
+    MemoryTag tag_;
 };
 
 #endif // NOUS_ENGINE_NOUS_STL_ALLOCATOR_H

@@ -17,13 +17,13 @@
 
 bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 {
-    Resource* tempMaterial = NOUS_NEW<ResourceMaterial>(MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+    Resource* tempMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
     return Save(metaFileData, tempMaterial);
 }
 
 bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResource)
 {
-    NOUS_DELETE(inResource, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+    NOUS_DELETE(inResource, MemoryTag::RESOURCE_MATERIAL);
 
     bool ret = NOUS_FileManager::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
 

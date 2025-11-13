@@ -125,7 +125,7 @@ void MemoryWindow::Draw()
 
             uint64 totalBytes = 0;
 
-            for (uint32 i = 0; i < static_cast<uint64>(MemoryManager::MemoryTag::MAX); ++i)
+            for (uint32 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
             {
                 uint64 bytes = stats.taggedAllocations[i];
                 if (bytes == 0) continue;

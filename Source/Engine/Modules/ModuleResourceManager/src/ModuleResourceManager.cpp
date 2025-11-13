@@ -74,7 +74,7 @@ bool ModuleResourceManager::Start()
 		}
 	}
 
-	mDefaultTexture = NOUS_NEW<ResourceTexture>(MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+	mDefaultTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
 	mDefaultTexture->SetName("DefaultTexture");
 	mDefaultTexture->width = texDimension;
 	mDefaultTexture->height = texDimension;
@@ -89,7 +89,7 @@ bool ModuleResourceManager::Start()
 	// -----------------------
 	// Default Material
 	// -----------------------
-	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
 	mDefaultMaterial->SetName("DefaultMaterial");
 	mDefaultMaterial->diffuseColor = glm::vec4(1.0f);
 	mDefaultMaterial->diffuseMap.type = TextureMapType::DIFFUSE;
@@ -478,17 +478,17 @@ Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
 	{
 		case ResourceType::MESH:
 		{
-			resource = NOUS_NEW<ResourceMesh>(MemoryManager::MemoryTag::RESOURCE_MESH);
+			resource = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
 			break;
 		}
 		case ResourceType::MATERIAL:
 		{
-			resource = NOUS_NEW<ResourceMaterial>(MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+			resource = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
 			break;
 		}
 		case ResourceType::TEXTURE:
 		{
-			resource = NOUS_NEW<ResourceTexture>(MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+			resource = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
 			break;
 		}
 	}
@@ -504,17 +504,17 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 	{
 		case ResourceType::MESH:
 		{
-			NOUS_DELETE(resource, MemoryManager::MemoryTag::RESOURCE_MESH);
+			NOUS_DELETE(resource, MemoryTag::RESOURCE_MESH);
 			break;
 		}
 		case ResourceType::MATERIAL:
 		{
-			NOUS_DELETE(resource, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+			NOUS_DELETE(resource, MemoryTag::RESOURCE_MATERIAL);
 			break;
 		}
 		case ResourceType::TEXTURE:
 		{
-			NOUS_DELETE(resource, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+			NOUS_DELETE(resource, MemoryTag::RESOURCE_TEXTURE);
 			break;
 		}
 	}
@@ -657,17 +657,17 @@ void ModuleResourceManager::ClearResources()
 		{
 			case ResourceType::MESH:
 			{
-				NOUS_DELETE(Resource, MemoryManager::MemoryTag::RESOURCE_MESH);
+				NOUS_DELETE(Resource, MemoryTag::RESOURCE_MESH);
 				break;
 			}
 			case ResourceType::MATERIAL:
 			{
-				NOUS_DELETE(Resource, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+				NOUS_DELETE(Resource, MemoryTag::RESOURCE_MATERIAL);
 				break;
 			}
 			case ResourceType::TEXTURE:
 			{
-				NOUS_DELETE(Resource, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+				NOUS_DELETE(Resource, MemoryTag::RESOURCE_TEXTURE);
 				break;
 			}
 		}
@@ -678,14 +678,14 @@ void ModuleResourceManager::ClearResources()
     if (mDefaultTexture)
     {
         App->renderer->GetRendererFrontend()->DestroyTexture(mDefaultTexture);
-        NOUS_DELETE(mDefaultTexture, MemoryManager::MemoryTag::RESOURCE_TEXTURE);
+        NOUS_DELETE(mDefaultTexture, MemoryTag::RESOURCE_TEXTURE);
         mDefaultTexture = nullptr;
     }
 
     if (mDefaultMaterial)
     {
         App->renderer->GetRendererFrontend()->DestroyMaterial(mDefaultMaterial);
-        NOUS_DELETE(mDefaultMaterial, MemoryManager::MemoryTag::RESOURCE_MATERIAL);
+        NOUS_DELETE(mDefaultMaterial, MemoryTag::RESOURCE_MATERIAL);
         mDefaultMaterial = nullptr;
     }
 }

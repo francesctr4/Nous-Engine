@@ -12,7 +12,7 @@ ModuleInput::ModuleInput(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryManager::MemoryTag::INPUT);
+	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 
 	MemoryManager::SetMemory(keyboard, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_KEYBOARD_KEYS);
 	MemoryManager::SetMemory(mouseButtons, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_MOUSE_BUTTONS);
@@ -29,7 +29,7 @@ ModuleInput::~ModuleInput()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	NOUS_DELETE_ARRAY(keyboard, MAX_KEYBOARD_KEYS, MemoryManager::MemoryTag::INPUT);
+	NOUS_DELETE_ARRAY(keyboard, MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 }
 
 bool ModuleInput::Awake()

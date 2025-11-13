@@ -24,13 +24,13 @@ bool RendererBackend::Create(RendererBackendType bType)
     switch (bType)
     {
         case RendererBackendType::VULKAN:
-            mBackendInterface = NOUS_NEW<VulkanBackend>(MemoryManager::MemoryTag::RENDERER);
+            mBackendInterface = NOUS_NEW<VulkanBackend>(MemoryTag::RENDERER);
             break;
         case RendererBackendType::OPENGL:
-            // backendInterface = NOUS_NEW<OpenGLBackend>(MemoryManager::MemoryTag::RENDERER);
+            // backendInterface = NOUS_NEW<OpenGLBackend>(MemoryTag::RENDERER);
             break;
         case RendererBackendType::DIRECTX:
-            // backendInterface = NOUS_NEW<DirectXBackend>(MemoryManager::MemoryTag::RENDERER);
+            // backendInterface = NOUS_NEW<DirectXBackend>(MemoryTag::RENDERER);
             break;
         default:
             NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Unknown backend type: %d", __FUNCTION__, static_cast<int>(bType));
@@ -52,7 +52,7 @@ void RendererBackend::Destroy()
     if (mBackendInterface)
     {
         NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Destroying renderer backend...", __FUNCTION__);
-        NOUS_DELETE(mBackendInterface, MemoryManager::MemoryTag::RENDERER);
+        NOUS_DELETE(mBackendInterface, MemoryTag::RENDERER);
     }
 }
 

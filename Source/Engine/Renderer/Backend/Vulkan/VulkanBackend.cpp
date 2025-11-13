@@ -39,12 +39,12 @@ VulkanContext* VulkanBackend::vkContext = nullptr;
 
 VulkanBackend::VulkanBackend()
 {
-    vkContext = NOUS_NEW<VulkanContext>(MemoryManager::MemoryTag::RENDERER);
+    vkContext = NOUS_NEW<VulkanContext>(MemoryTag::RENDERER);
 }
 
 VulkanBackend::~VulkanBackend()
 {
-    NOUS_DELETE(vkContext, MemoryManager::MemoryTag::RENDERER);
+    NOUS_DELETE(vkContext, MemoryTag::RENDERER);
 }
 
 bool VulkanBackend::Initialize()
@@ -921,7 +921,7 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     // Internal data creation.
     // TODO: Use an allocator for this.
     texture->internalData = reinterpret_cast<VulkanTextureData*>(
-        MemoryManager::Allocate(sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE));
+            NOUS_NEW<VulkanTextureData>(MemoryTag::RESOURCE_TEXTURE));
 
     VulkanTextureData* textureData = (VulkanTextureData*)texture->internalData;
     VkDeviceSize imageSize = texture->width * texture->height * texture->channelCount;
@@ -1021,7 +1021,7 @@ void VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
         vkDestroySampler(vkContext->device.logicalDevice, textureData->sampler, vkContext->allocator);
         textureData->sampler = 0;
 
-        MemoryManager::Free(textureData, sizeof(VulkanTextureData), MemoryManager::MemoryTag::TEXTURE);
+        NOUS_DELETE(textureData, MemoryTag::RESOURCE_TEXTURE);
     }
 }
 

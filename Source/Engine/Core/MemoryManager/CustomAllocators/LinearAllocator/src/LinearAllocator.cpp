@@ -10,7 +10,7 @@ LinearAllocator::LinearAllocator(uint64 capacity, void* preAllocatedMemory)
 {
     if (memory == nullptr) 
     {
-        memory = MemoryManager::Allocate(capacity, MemoryManager::MemoryTag::LINEAR_ALLOCATOR);
+        memory = MemoryManager::Allocate(capacity, MemoryTag::LINEAR_ALLOCATOR);
 
         if (memory == nullptr)
         {
@@ -43,7 +43,7 @@ void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
 
     if (memory == nullptr)
     {
-        memory = MemoryManager::Allocate(capacity, MemoryManager::MemoryTag::LINEAR_ALLOCATOR);
+        memory = MemoryManager::Allocate(capacity, MemoryTag::LINEAR_ALLOCATOR);
 
         if (memory == nullptr)
         {
@@ -74,7 +74,7 @@ void* LinearAllocator::Allocate(uint64 size)
 
 void LinearAllocator::FreeAll()
 {
-    MemoryManager::Free(memory, capacity, MemoryManager::MemoryTag::LINEAR_ALLOCATOR);
+    MemoryManager::Free(memory, capacity, MemoryTag::LINEAR_ALLOCATOR);
 
     memory = nullptr;
     offset = 0;

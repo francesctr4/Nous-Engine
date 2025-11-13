@@ -23,7 +23,7 @@ struct MemoryStats
 {
 	uint64 totalAllocated;
 	uint64 totalAllocations;
-	uint64 taggedAllocations[static_cast<uint64>(MemoryManager::MemoryTag::MAX)];
+	uint64 taggedAllocations[static_cast<uint64>(MemoryTag::MAX)];
 };
 
 struct MemorySystemConfig 
@@ -35,35 +35,6 @@ struct MemorySystemConfig
 
 	DynamicAllocator* allocator;
 	void* allocatorBlock;
-};
-
-static const char* memoryTagStrings[static_cast<uint64>(MemoryManager::MemoryTag::MAX)] = 
-{
-	"UNKNOWN			",
-	"THREAD			",
-	"ARRAY			",
-	"DARRAY			",
-	"DICT			",
-	"RING_QUEUE		",
-	"BST			",
-	"STRING			",
-	"APPLICATION		",
-	"JOB			",
-	"TEXTURE			",
-	"MATERIAL_INSTANCE	",
-	"RENDERER		",
-	"GAME			",
-	"TRANSFORM		",
-	"ENTITY			",
-	"ENTITY_NODE		",
-	"SCENE			",
-	"INPUT			",
-	"LINEAR_ALLOC		",
-	"FILE			",
-	"RESOURCE_MESH		",
-	"RESOURCE_TEXTURE	",
-	"RESOURCE_MATERIAL	",
-    "EDITOR	                "
 };
 
 static struct MemorySystemConfig config;

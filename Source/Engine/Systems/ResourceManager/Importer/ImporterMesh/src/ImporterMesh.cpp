@@ -26,7 +26,7 @@ void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh);
 
 bool ImporterMesh::Import(const MetaFileData& metaFileData)
 {
-    Resource* tempMesh = NOUS_NEW<ResourceMesh>(MemoryManager::MemoryTag::RESOURCE_MESH);
+    Resource* tempMesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
 
     const aiScene* scene = aiImportFile(metaFileData.assetsPath.c_str(), ASSIMP_LOAD_FLAGS);
 
@@ -93,7 +93,7 @@ bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
 
     fileHandle.Close();
 
-    NOUS_DELETE(mesh, MemoryManager::MemoryTag::RESOURCE_MESH);
+    NOUS_DELETE(mesh, MemoryTag::RESOURCE_MESH);
 
     return ret;
 }

@@ -29,7 +29,7 @@ protected:
 TEST_F(t_NOUS_STLAllocator, VectorAllocationAndFree)
 {
     using Alloc = NOUS_STLAllocator<int>;
-    Alloc alloc(MemoryManager::MemoryTag::ARRAY);
+    Alloc alloc(MemoryTag::ARRAY);
 
     const auto before = MemoryManager::GetMemoryStats();
 
@@ -52,7 +52,7 @@ TEST_F(t_NOUS_STLAllocator, VectorAllocationAndFree)
 TEST_F(t_NOUS_STLAllocator, TagAccountingIsAccurate)
 {
     using Alloc = NOUS_STLAllocator<float>;
-    Alloc alloc(MemoryManager::MemoryTag::ARRAY);
+    Alloc alloc(MemoryTag::ARRAY);
 
     const auto before = MemoryManager::GetMemoryStats();
 
@@ -65,7 +65,7 @@ TEST_F(t_NOUS_STLAllocator, TagAccountingIsAccurate)
     const auto after = MemoryManager::GetMemoryStats();
 
     // Ensure ARRAY tag usage returns to zero
-    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryManager::MemoryTag::ARRAY], 0)
+    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::ARRAY], 0)
                         << "ARRAY tag should be zero after destruction.";
     EXPECT_EQ(after.totalAllocations, before.totalAllocations);
 }
@@ -77,7 +77,7 @@ TEST_F(t_NOUS_STLAllocator, UnorderedMapAllocAndFree)
 {
     using Pair = std::pair<const int, double>;
     using Alloc = NOUS_STLAllocator<Pair>;
-    Alloc alloc(MemoryManager::MemoryTag::DICT);
+    Alloc alloc(MemoryTag::DICT);
 
     const auto before = MemoryManager::GetMemoryStats();
 
@@ -102,8 +102,8 @@ TEST_F(t_NOUS_STLAllocator, IndependentContainersTrackSeparateTags)
     using VecAlloc = NOUS_STLAllocator<int>;
     using MapAlloc = NOUS_STLAllocator<std::pair<const int, int>>;
 
-    VecAlloc vecAlloc(MemoryManager::MemoryTag::ARRAY);
-    MapAlloc mapAlloc(MemoryManager::MemoryTag::DICT);
+    VecAlloc vecAlloc(MemoryTag::ARRAY);
+    MapAlloc mapAlloc(MemoryTag::DICT);
 
     const auto before = MemoryManager::GetMemoryStats();
 
@@ -120,6 +120,6 @@ TEST_F(t_NOUS_STLAllocator, IndependentContainersTrackSeparateTags)
     const auto after = MemoryManager::GetMemoryStats();
 
     EXPECT_EQ(after.totalAllocations, before.totalAllocations);
-    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryManager::MemoryTag::ARRAY], 0);
-    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryManager::MemoryTag::DICT], 0);
+    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::ARRAY], 0);
+    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::DICT], 0);
 }

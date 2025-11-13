@@ -21,18 +21,18 @@ public:
 public:
     // Default constructor -> uses UNKNOWN tag
     NOUS_Vector()
-            : internal_(allocator_type(MemoryManager::MemoryTag::UNKNOWN))
+            : internal_(allocator_type(MemoryTag::UNKNOWN))
     {
     }
 
     // Constructor with tag
-    explicit NOUS_Vector(MemoryManager::MemoryTag tag)
+    explicit NOUS_Vector(MemoryTag tag)
             : internal_(allocator_type(tag))
     {
     }
 
     // Size constructor
-    explicit NOUS_Vector(size_t count, MemoryManager::MemoryTag tag = MemoryManager::MemoryTag::UNKNOWN)
+    explicit NOUS_Vector(size_t count, MemoryTag tag = MemoryTag::UNKNOWN)
             : internal_(count, T{}, allocator_type(tag))
     {
     }

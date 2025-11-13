@@ -43,8 +43,8 @@
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_CORE_MODULE_EDITOR;
 
 ModuleEditor::ModuleEditor(Application* app) : Module(app),
-    editorWindows(MemoryManager::MemoryTag::EDITOR),
-    fonts(MemoryManager::MemoryTag::EDITOR)
+    editorWindows(MemoryTag::EDITOR),
+    fonts(MemoryTag::EDITOR)
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 	currentBackendType = RendererBackendType::UNKNOWN;
@@ -126,17 +126,17 @@ bool ModuleEditor::Awake()
 		}
 	}
 
-	AddEditorWindow(NOUS_NEW<MainMenuBar>(MemoryManager::MemoryTag::EDITOR, "MainMenuBar", this));
-	AddEditorWindow(NOUS_NEW<AssetsBrowser>(MemoryManager::MemoryTag::EDITOR, "Assets", this));
-	AddEditorWindow(NOUS_NEW<Resources>(MemoryManager::MemoryTag::EDITOR, "Resources", this));
-	AddEditorWindow(NOUS_NEW<Multithreading>(MemoryManager::MemoryTag::EDITOR, "Multithreading", this));
-	AddEditorWindow(NOUS_NEW<JobQueue>(MemoryManager::MemoryTag::EDITOR, "Job Queue", this));
-	AddEditorWindow(NOUS_NEW<GameViewport>(MemoryManager::MemoryTag::EDITOR, "Game", this));
-	AddEditorWindow(NOUS_NEW<SceneViewport>(MemoryManager::MemoryTag::EDITOR, "Scene", this));
-	AddEditorWindow(NOUS_NEW<HierarchyWindow>(MemoryManager::MemoryTag::EDITOR, "Hierarchy", this));
-	AddEditorWindow(NOUS_NEW<InspectorWindow>(MemoryManager::MemoryTag::EDITOR, "Inspector", this));
-	AddEditorWindow(NOUS_NEW<ConsoleWindow>(MemoryManager::MemoryTag::EDITOR, "Console", this));
-	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryManager::MemoryTag::EDITOR, "Memory Manager", this));
+	AddEditorWindow(NOUS_NEW<MainMenuBar>(MemoryTag::EDITOR, "MainMenuBar", this));
+	AddEditorWindow(NOUS_NEW<AssetsBrowser>(MemoryTag::EDITOR, "Assets", this));
+	AddEditorWindow(NOUS_NEW<Resources>(MemoryTag::EDITOR, "Resources", this));
+	AddEditorWindow(NOUS_NEW<Multithreading>(MemoryTag::EDITOR, "Multithreading", this));
+	AddEditorWindow(NOUS_NEW<JobQueue>(MemoryTag::EDITOR, "Job Queue", this));
+	AddEditorWindow(NOUS_NEW<GameViewport>(MemoryTag::EDITOR, "Game", this));
+	AddEditorWindow(NOUS_NEW<SceneViewport>(MemoryTag::EDITOR, "Scene", this));
+	AddEditorWindow(NOUS_NEW<HierarchyWindow>(MemoryTag::EDITOR, "Hierarchy", this));
+	AddEditorWindow(NOUS_NEW<InspectorWindow>(MemoryTag::EDITOR, "Inspector", this));
+	AddEditorWindow(NOUS_NEW<ConsoleWindow>(MemoryTag::EDITOR, "Console", this));
+	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryTag::EDITOR, "Memory Manager", this));
 
 	return true;
 }
@@ -195,7 +195,7 @@ bool ModuleEditor::CleanUp()
 
     for (auto* win : editorWindows)
     {
-        NOUS_DELETE(win, MemoryManager::MemoryTag::EDITOR);
+        NOUS_DELETE(win, MemoryTag::EDITOR);
     }
 	editorWindows.clear();
 

@@ -11,7 +11,7 @@ void CleanupFreelist(VulkanBuffer* buffer)
 {
     // ----- FREE LIST ----- //
     buffer->bufferFreelist->~Freelist();
-    MemoryManager::Free(buffer->freelistBlock, buffer->freelistMemoryRequirement, MemoryManager::MemoryTag::RENDERER);
+    MemoryManager::Free(buffer->freelistBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
 
     buffer->freelistMemoryRequirement = 0;
     buffer->freelistBlock = nullptr;
@@ -69,7 +69,7 @@ bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64 size, VkBu
 
     // ----- FREE LIST ----- //
     outBuffer->freelistMemoryRequirement = Freelist::GetMemoryRequirement(size);
-    outBuffer->freelistBlock = MemoryManager::Allocate(outBuffer->freelistMemoryRequirement, MemoryManager::MemoryTag::RENDERER);
+    outBuffer->freelistBlock = MemoryManager::Allocate(outBuffer->freelistMemoryRequirement, MemoryTag::RENDERER);
     outBuffer->bufferFreelist = new (&outBuffer->freelistBlock) Freelist(size, outBuffer->freelistBlock);
 
     VkBufferCreateInfo bufferCreateInfo{};
@@ -170,19 +170,19 @@ bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64 newSize,
     }
 
     // Allocate new memory block
-    void* newBlock = MemoryManager::Allocate(newMemoryRequirement, MemoryManager::MemoryTag::RENDERER);
+    void* newBlock = MemoryManager::Allocate(newMemoryRequirement, MemoryTag::RENDERER);
     void* oldBlock = nullptr;
 
     // Second call: Perform actual resize
     if (!buffer->bufferFreelist->Resize(newSize, &newMemoryRequirement, newBlock, &oldBlock)) 
     {
         NOUS_ERROR("NOUS_VulkanBuffer::ResizeBuffer(): Failed to resize freelist.");
-        MemoryManager::Free(newBlock, newMemoryRequirement, MemoryManager::MemoryTag::RENDERER);
+        MemoryManager::Free(newBlock, newMemoryRequirement, MemoryTag::RENDERER);
         return false;
     }
 
     // Cleanup old memory and update buffer properties
-    MemoryManager::Free(oldBlock, buffer->freelistMemoryRequirement, MemoryManager::MemoryTag::RENDERER);
+    MemoryManager::Free(oldBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
 
     buffer->freelistMemoryRequirement = newMemoryRequirement;
     buffer->freelistBlock = newBlock;

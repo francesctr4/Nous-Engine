@@ -31,14 +31,14 @@ ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
 
 	App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 
-	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryManager::MemoryTag::RENDERER);
+	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryTag::RENDERER);
 }
 
 ModuleRenderer3D::~ModuleRenderer3D()
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
-	NOUS_DELETE(mRendererFrontend, MemoryManager::MemoryTag::RENDERER);
+	NOUS_DELETE(mRendererFrontend, MemoryTag::RENDERER);
 }
 
 bool ModuleRenderer3D::Awake()

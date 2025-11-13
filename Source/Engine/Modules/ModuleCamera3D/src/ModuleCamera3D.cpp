@@ -18,7 +18,7 @@ ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 	NOUS_TRACE("%s()", __FUNCTION__);
 	sceneViewportHovered = false;
 
-	camera = NOUS_NEW<Camera>(MemoryManager::MemoryTag::ENTITY);
+	camera = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 
     App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
@@ -26,7 +26,7 @@ ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 ModuleCamera3D::~ModuleCamera3D()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-	NOUS_DELETE(camera, MemoryManager::MemoryTag::ENTITY);
+	NOUS_DELETE(camera, MemoryTag::CAMERA);
 }
 
 bool ModuleCamera3D::Awake()

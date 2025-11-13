@@ -40,8 +40,8 @@ int main(int argc, char** argv)
             case MAIN_CREATION:
 
                 NOUS_INFO("-------------- Application Creation --------------");
-                App = NOUS_NEW<Application>(MemoryManager::MemoryTag::APPLICATION);
-                Editor = NOUS_NEW<ModuleEditor>(MemoryManager::MemoryTag::EDITOR, App);
+                App = NOUS_NEW<Application>(MemoryTag::APPLICATION);
+                Editor = NOUS_NEW<ModuleEditor>(MemoryTag::EDITOR, App);
 
                 nousState = MAIN_START;
 
@@ -126,8 +126,8 @@ int main(int argc, char** argv)
     External = nullptr;
 
     NOUS_INFO("-------------- Application Destruction --------------");
-    NOUS_DELETE(Editor, MemoryManager::MemoryTag::EDITOR);
-    NOUS_DELETE(App, MemoryManager::MemoryTag::APPLICATION);
+    NOUS_DELETE(Editor, MemoryTag::EDITOR);
+    NOUS_DELETE(App, MemoryTag::APPLICATION);
 
     NOUS_INFO("Exiting engine '%s'...", TITLE);
 

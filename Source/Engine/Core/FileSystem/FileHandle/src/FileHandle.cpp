@@ -155,7 +155,7 @@ bool FileHandle::ReadAllBytes(char** outBytes, uint64* outBytesRead)
     }
 
     // Allocate memory for the file content
-    *outBytes = NOUS_NEW_ARRAY<char>(static_cast<uint64>(fileSize), MemoryManager::MemoryTag::FILE);
+    *outBytes = NOUS_NEW_ARRAY<char>(static_cast<uint64>(fileSize), MemoryTag::FILE);
 
     if (!(*outBytes))
     {

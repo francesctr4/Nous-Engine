@@ -19,7 +19,7 @@ NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8_t numThreads) :
 
 	for (uint8_t i = 0; i < numThreads; ++i)
 	{
-		mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryManager::MemoryTag::THREAD));
+		mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryTag::THREAD));
 
 		mThreads[i]->Start([this, i]() {
 			mThreads[i]->SetName("Worker Thread " + std::to_string(i + 1));
@@ -56,7 +56,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::Shutdown()
 	while (!mJobQueue.empty())
 	{
 		NOUS_Job* job = mJobQueue.front();
-		NOUS_DELETE(job, MemoryManager::MemoryTag::THREAD);
+		NOUS_DELETE(job, MemoryTag::THREAD);
 		mJobQueue.pop();
 	}
 
@@ -65,7 +65,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::Shutdown()
 	for (NOUS_Thread* thread : mThreads)
 	{
 		thread->Join();
-		NOUS_DELETE(thread, MemoryManager::MemoryTag::THREAD);
+		NOUS_DELETE(thread, MemoryTag::THREAD);
 	}
 
 	mThreads.clear();
@@ -134,7 +134,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 				   job->GetName().c_str(), thread->GetName().c_str(),
 				   thread->GetID(), (thread->GetExecutionTimeMS() / 1000.0f));
 
-		NOUS_DELETE(job, MemoryManager::MemoryTag::THREAD);
+		NOUS_DELETE(job, MemoryTag::THREAD);
 
 		thread->StopExecutionTimer();
 		thread->SetCurrentJob(nullptr);
