@@ -4,6 +4,7 @@
 
 add_library(Utils STATIC)
 
+add_subdirectory(DataStructures)
 add_subdirectory(Math)
 add_subdirectory(Serialization)
 

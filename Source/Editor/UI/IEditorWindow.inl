@@ -3,12 +3,14 @@
 
 // Editor Window Interface
 
-class IEditorWindow 
+#include "Editor/EditorContext.h"
+
+class IEditorWindow
 {
 public:
 
-    explicit IEditorWindow(const char* title, bool* p_open = nullptr, bool start_open = true)
-        : title(title), internal_open(start_open), p_open(p_open ? p_open : &internal_open) {}
+    explicit IEditorWindow(const char* title, EditorContext* context, bool* p_open = nullptr, bool start_open = true)
+        : title(title), context(context), internal_open(start_open), p_open(p_open ? p_open : &internal_open) {}
 
     virtual ~IEditorWindow() = default;
 
@@ -24,6 +26,7 @@ public:
 protected:
 
     const char* title;
+    EditorContext* context;
 
     bool internal_open; // Internal state if `p_open` isn't provided
     bool* p_open;       // Pointer to the open/close state

@@ -16,8 +16,8 @@ ImVec4 levelColors[6] = {
         ImVec4(0.5f, 0.5f, 0.5f, 1.0f)         // TRACE - Gray
 };
 
-ConsoleWindow::ConsoleWindow(const char* title, bool start_open)
-        : IEditorWindow(title, nullptr, start_open)
+ConsoleWindow::ConsoleWindow(const char* title, EditorContext* context, bool start_open)
+        : IEditorWindow(title, context, nullptr, start_open)
 {
     for (bool & i : showChannel)
         i = true;

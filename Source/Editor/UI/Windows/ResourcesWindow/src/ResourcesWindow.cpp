@@ -8,8 +8,8 @@
 
 #include "imgui.h"
 
-Resources::Resources(const char* title, bool start_open)
-    : IEditorWindow(title, nullptr, start_open)
+Resources::Resources(const char* title, EditorContext* context, bool start_open)
+    : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
 }

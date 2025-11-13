@@ -43,7 +43,8 @@
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_CORE_MODULE_EDITOR;
 
 ModuleEditor::ModuleEditor(Application* app) : Module(app),
-	editorWindows(NOUS_STLAllocator<IEditorWindow*>(MemoryManager::MemoryTag::EDITOR))
+    editorWindows(MemoryManager::MemoryTag::EDITOR),
+    fonts(MemoryManager::MemoryTag::EDITOR)
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 	currentBackendType = RendererBackendType::UNKNOWN;
@@ -56,9 +57,6 @@ ModuleEditor::~ModuleEditor()
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 }
-
-// Array to store ImFont pointers
-std::vector<ImFont*> ModuleEditor::fonts;
 
 bool ModuleEditor::Awake()
 {
@@ -128,17 +126,17 @@ bool ModuleEditor::Awake()
 		}
 	}
 
-	AddEditorWindow(NOUS_NEW<MainMenuBar>(MemoryManager::MemoryTag::EDITOR, "MainMenuBar"));
-	AddEditorWindow(NOUS_NEW<AssetsBrowser>(MemoryManager::MemoryTag::EDITOR, "Assets"));
-	AddEditorWindow(NOUS_NEW<Resources>(MemoryManager::MemoryTag::EDITOR, "Resources"));
-	AddEditorWindow(NOUS_NEW<Multithreading>(MemoryManager::MemoryTag::EDITOR, "Multithreading"));
-	AddEditorWindow(NOUS_NEW<JobQueue>(MemoryManager::MemoryTag::EDITOR, "Job Queue"));
-	AddEditorWindow(NOUS_NEW<GameViewport>(MemoryManager::MemoryTag::EDITOR, "Game"));
-	AddEditorWindow(NOUS_NEW<SceneViewport>(MemoryManager::MemoryTag::EDITOR, "Scene"));
-	AddEditorWindow(NOUS_NEW<HierarchyWindow>(MemoryManager::MemoryTag::EDITOR, "Hierarchy"));
-	AddEditorWindow(NOUS_NEW<InspectorWindow>(MemoryManager::MemoryTag::EDITOR, "Inspector"));
-	AddEditorWindow(NOUS_NEW<ConsoleWindow>(MemoryManager::MemoryTag::EDITOR, "Console"));
-	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryManager::MemoryTag::EDITOR, "Memory Manager"));
+	AddEditorWindow(NOUS_NEW<MainMenuBar>(MemoryManager::MemoryTag::EDITOR, "MainMenuBar", this));
+	AddEditorWindow(NOUS_NEW<AssetsBrowser>(MemoryManager::MemoryTag::EDITOR, "Assets", this));
+	AddEditorWindow(NOUS_NEW<Resources>(MemoryManager::MemoryTag::EDITOR, "Resources", this));
+	AddEditorWindow(NOUS_NEW<Multithreading>(MemoryManager::MemoryTag::EDITOR, "Multithreading", this));
+	AddEditorWindow(NOUS_NEW<JobQueue>(MemoryManager::MemoryTag::EDITOR, "Job Queue", this));
+	AddEditorWindow(NOUS_NEW<GameViewport>(MemoryManager::MemoryTag::EDITOR, "Game", this));
+	AddEditorWindow(NOUS_NEW<SceneViewport>(MemoryManager::MemoryTag::EDITOR, "Scene", this));
+	AddEditorWindow(NOUS_NEW<HierarchyWindow>(MemoryManager::MemoryTag::EDITOR, "Hierarchy", this));
+	AddEditorWindow(NOUS_NEW<InspectorWindow>(MemoryManager::MemoryTag::EDITOR, "Inspector", this));
+	AddEditorWindow(NOUS_NEW<ConsoleWindow>(MemoryManager::MemoryTag::EDITOR, "Console", this));
+	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryManager::MemoryTag::EDITOR, "Memory Manager", this));
 
 	return true;
 }
@@ -362,4 +360,15 @@ void ModuleEditor::OnEvent(const Event &event)
 			break;
 		}
 	}
+}
+
+ImFont *ModuleEditor::GetFont(size_t index) const
+{
+    if (index >= fonts.size())
+    {
+        NOUS_ERROR("ModuleEditor::GetFont called with out-of-range index: %zu", index);
+        return nullptr;
+    }
+
+    return fonts[index];
 }

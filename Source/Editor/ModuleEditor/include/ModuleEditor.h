@@ -6,9 +6,10 @@
 #include "Engine/Modules/Module.h"
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
-#include "Engine/Core/MemoryManager/CustomAllocators/NOUS_STLAllocator/include/NOUS_STLAllocator.h"
+#include "Editor/EditorContext.h"
 
-#include <vector>
+#include "Engine/Utils/DataStructures/NOUS_Vector.h"
+
 #include <memory>
 #include <string>
 
@@ -19,7 +20,7 @@ struct ImGuiIO;
 struct ImFont;
 class IEditorWindow;
 
-class ModuleEditor : public Module, public IEditorOverlay, public IEventListener
+class ModuleEditor : public Module, public IEditorOverlay, public IEventListener, public EditorContext
 {
 public:
 
@@ -35,8 +36,7 @@ public:
 	NOUS_EDITOR_API void DrawEditor() override;
 	NOUS_EDITOR_API void OnEvent(const Event& event) override;
 
-	// Array to store ImFont pointers
-	static std::vector<ImFont*> fonts;
+    ImFont* GetFont(size_t index) const override;
 
 private:
 
@@ -56,8 +56,10 @@ private:
 	RendererBackendType currentBackendType;
 
 	// Custom allocator vector for editor windows
-	std::vector<IEditorWindow*,
-		NOUS_STLAllocator<IEditorWindow*>> editorWindows;
+	NOUS_Vector<IEditorWindow*> editorWindows;
+
+    // Array to store ImFont pointers
+    NOUS_Vector<ImFont*> fonts;
 
 };
 

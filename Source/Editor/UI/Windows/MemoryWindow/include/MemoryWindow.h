@@ -7,7 +7,7 @@ class MemoryWindow : public IEditorWindow
 {
 public:
 
-    explicit MemoryWindow(const char* title, bool start_open = true);
+    explicit MemoryWindow(const char* title, EditorContext* context, bool start_open = true);
 
     void Init() override;
     void Draw() override;

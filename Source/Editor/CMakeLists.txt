@@ -11,7 +11,7 @@ set(EDITOR_NAME "Nous-Editor")
 add_subdirectory(ModuleEditor)
 add_subdirectory(UI)
 
-add_library(${EDITOR_NAME} SHARED EditorExport.h)
+add_library(${EDITOR_NAME} SHARED EditorExport.h EditorContext.h)
 add_library(NousEngine::Editor ALIAS ${EDITOR_NAME})
 
 target_link_libraries(${EDITOR_NAME} PUBLIC

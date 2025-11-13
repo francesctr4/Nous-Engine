@@ -11,8 +11,8 @@
 #include <format>
 #include <queue>
 
-JobQueue::JobQueue(const char* title, bool start_open)
-    : IEditorWindow(title, nullptr, start_open)
+JobQueue::JobQueue(const char* title, EditorContext* context, bool start_open)
+    : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
 }

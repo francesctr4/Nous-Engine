@@ -11,7 +11,7 @@ class SceneViewport : public IEditorWindow
 {
 public:
 
-    NOUS_EDITOR_API explicit SceneViewport(const char* title, bool start_open = true);
+    NOUS_EDITOR_API explicit SceneViewport(const char* title, EditorContext* context, bool start_open = true);
 
     NOUS_EDITOR_API void Init() override;
     NOUS_EDITOR_API void Draw() override;

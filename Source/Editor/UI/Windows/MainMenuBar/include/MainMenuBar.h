@@ -7,7 +7,7 @@ class MainMenuBar : public IEditorWindow
 {
 public:
 
-    explicit MainMenuBar(const char* title, bool start_open = true);
+    explicit MainMenuBar(const char* title, EditorContext* context, bool start_open = true);
 
     void Init() override;
     void Draw() override;

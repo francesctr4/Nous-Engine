@@ -18,8 +18,8 @@
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
-SceneViewport::SceneViewport(const char* title, bool start_open)
-    : IEditorWindow(title, nullptr, start_open)
+SceneViewport::SceneViewport(const char* title, EditorContext* context, bool start_open)
+    : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
 }
