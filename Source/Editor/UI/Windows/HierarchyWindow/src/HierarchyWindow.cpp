@@ -53,9 +53,9 @@ void HierarchyWindow::Draw() {
                     // Draw only root-level objects
                     for (auto& goPtr : m_Scene->GetGameObjects())
                     {
-                        GameObject* obj = goPtr.get();
-                        if (!obj->GetParent()) {
-                            DrawGameObjectNode(obj);
+                        if (!goPtr->GetParent())
+                        {
+                            DrawGameObjectNode(goPtr);
                         }
                     }
                     ImGui::TreePop();

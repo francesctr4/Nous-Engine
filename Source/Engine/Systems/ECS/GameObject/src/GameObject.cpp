@@ -1,5 +1,6 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include <parson.h>
 
@@ -9,11 +10,15 @@
 GameObject::GameObject() = default;
 
 GameObject::GameObject(uint32_t id, const std::string& name)
-        : m_ID(id), m_Name(name) {}
+        : m_ID(id), m_Name(name), m_Children(MemoryTag::GAMEOBJECT) {}
 
-GameObject::~GameObject() {
+GameObject::~GameObject()
+{
     for (auto& [type, component] : m_Components)
+    {
         component->OnDestroy();
+        NOUS_DELETE(component, MemoryTag::COMPONENT);
+    }
 
     m_Components.clear();
     ClearChildren();
@@ -22,15 +27,25 @@ GameObject::~GameObject() {
 // -----------------------------------------------------------------------------
 // Component Management (non-template)
 // -----------------------------------------------------------------------------
-void GameObject::AddComponent(std::unique_ptr<Component> component) {
+void GameObject::AddComponent(Component* component) {
     if (!component) return;
 
     component->m_GameObject = this;
     auto type = std::type_index(typeid(*component));
-    Component* ptr = component.get();
 
-    m_Components[type] = std::move(component);
-    ptr->OnStart();
+    auto it = m_Components.find(type);
+    if (it != m_Components.end()) {
+        Component* old = it->second;
+        if (old) {
+            old->OnDestroy();
+            NOUS_DELETE(old, MemoryTag::COMPONENT);
+        }
+        it->second = component;
+    } else {
+        m_Components[type] = component;
+    }
+
+    component->OnStart();
 }
 
 void GameObject::UpdateComponents(float deltaTime) {
@@ -38,10 +53,10 @@ void GameObject::UpdateComponents(float deltaTime) {
         component->OnUpdate(deltaTime);
 }
 
-std::vector<Component*> GameObject::GetAllComponents() {
-    std::vector<Component*> components;
+NOUS_Vector<Component*> GameObject::GetAllComponents() {
+    NOUS_Vector<Component*> components(MemoryTag::COMPONENT);
     for (auto& [type, component] : m_Components)
-        components.push_back(component.get());
+        components.push_back(component);
     return components;
 }
 
@@ -56,7 +71,7 @@ const std::string& GameObject::GetName() const { return m_Name; }
 // Hierarchy
 // -----------------------------------------------------------------------------
 GameObject* GameObject::GetParent() const { return m_Parent; }
-const std::vector<GameObject*>& GameObject::GetChildren() const { return m_Children; }
+const NOUS_Vector<GameObject*>& GameObject::GetChildren() const { return m_Children; }
 
 void GameObject::SetParent(GameObject* parent) {
     if (m_Parent == parent) return;
@@ -130,12 +145,12 @@ JSON_Value* GameObject::Serialize() const {
     return objVal;
 }
 
-std::unique_ptr<GameObject> GameObject::Deserialize(JSON_Object* obj) {
+GameObject* GameObject::Deserialize(JSON_Object* obj) {
     uint32_t uid = static_cast<uint32_t>(json_object_get_number(obj, "uid"));
     const char* name = json_object_get_string(obj, "name");
     uint32_t parentID = static_cast<uint32_t>(json_object_get_number(obj, "parent"));
 
-    auto go = std::make_unique<GameObject>(uid, name ? name : "");
+    GameObject* go = NOUS_NEW<GameObject>(MemoryTag::GAMEOBJECT, uid, name ? name : "");
     go->m_ParentID = parentID;
 
     NOUS_INFO("Deserializing: %s (ID: %u) -> Parent ID: %u", name ? name : "", uid, parentID);

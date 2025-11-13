@@ -14,7 +14,7 @@
 // Constructor / Destructor
 // -----------------------------------------------------------------------------
 Scene::Scene(const std::string& name)
-        : m_Name(name) {}
+        : m_Name(name), m_GameObjects(MemoryTag::GAMEOBJECT) {}
 
 Scene::~Scene() {
     Clear();
@@ -26,28 +26,29 @@ Scene::~Scene() {
 GameObject* Scene::CreateGameObject(const std::string& name, GameObject* parent) {
     std::lock_guard<std::mutex> lock(m_Mutex);
     auto id = GenerateUniqueID();
-    auto go = std::make_unique<GameObject>(id, name);
-    GameObject* ptr = go.get();
+    auto* go = NOUS_NEW<GameObject>(MemoryTag::GAMEOBJECT, id, name);
 
-    ptr->AddComponent<CTransform>();
+    go->AddComponent<CTransform>();
 
-    if (parent) {
-        parent->AddChild(ptr);
+    if (parent)
+    {
+        parent->AddChild(go);
     }
 
-    m_GameObjects.push_back(std::move(go));
-    return ptr;
+    m_GameObjects.push_back(go);
+    return go;
 }
 
 void Scene::DestroyGameObject(GameObject* go) {
     if (!go) return;
 
-    std::vector<GameObject*> toDestroy;
+    NOUS_Vector<GameObject*> toDestroy(MemoryTag::GAMEOBJECT);
     CollectGameObjectTree(go, toDestroy);
 
     std::lock_guard<std::mutex> lock(m_Mutex);
 
-    for (auto it = toDestroy.rbegin(); it != toDestroy.rend(); ++it) {
+    for (auto it = toDestroy.rbegin(); it != toDestroy.rend(); ++it)
+    {
         DestroySingleGameObject(*it);
     }
 }
@@ -70,12 +71,12 @@ GameObject* Scene::FindGameObjectByID(uint32_t id) {
     return FindGameObjectByID_NoLock(id);
 }
 
-std::vector<GameObject*> Scene::FindGameObjectsByName(const std::string& name) {
+NOUS_Vector<GameObject*> Scene::FindGameObjectsByName(const std::string& name) {
     std::lock_guard<std::mutex> lock(m_Mutex);
-    std::vector<GameObject*> result;
+    NOUS_Vector<GameObject*> result(MemoryTag::GAMEOBJECT);
     for (auto& gameObject : m_GameObjects) {
         if (gameObject->GetName() == name) {
-            result.push_back(gameObject.get());
+            result.push_back(gameObject);
         }
     }
     return result;
@@ -104,7 +105,7 @@ void Scene::DestroyGameObjectByID(uint32_t id) {
 const std::string& Scene::GetName() const { return m_Name; }
 void Scene::SetName(const std::string& name) { m_Name = name; }
 
-std::vector<std::unique_ptr<GameObject>>& Scene::GetGameObjects() { return m_GameObjects; }
+NOUS_Vector<GameObject*>& Scene::GetGameObjects() { return m_GameObjects; }
 
 // -----------------------------------------------------------------------------
 // Serialization
@@ -155,26 +156,26 @@ void Scene::Deserialize(const std::string& filepath) {
     }
 
     size_t count = json_array_get_count(arr);
-    std::vector<std::pair<std::unique_ptr<GameObject>, uint32_t>> gameObjectsWithParents;
+    NOUS_Vector<std::pair<GameObject*, uint32_t>> gameObjectsWithParents(MemoryTag::GAMEOBJECT);
 
     for (size_t i = 0; i < count; ++i) {
         JSON_Object* obj = json_array_get_object(arr, i);
-        auto gameObject = GameObject::Deserialize(obj);
+        auto* gameObject = GameObject::Deserialize(obj);
         if (gameObject) {
             uint32_t parentID = gameObject->GetParentID();
-            gameObjectsWithParents.emplace_back(std::move(gameObject), parentID);
+            gameObjectsWithParents.push_back({gameObject, parentID});
         }
     }
 
     for (auto& [gameObject, parentID] : gameObjectsWithParents)
-        m_GameObjects.push_back(std::move(gameObject));
+        m_GameObjects.push_back(gameObject);
 
     for (auto& gameObject : m_GameObjects) {
         uint32_t parentID = gameObject->GetParentID();
         if (parentID != 0) {
             GameObject* parent = FindGameObjectByID_NoLock(parentID);
             if (parent) {
-                parent->AddChild(gameObject.get());
+                parent->AddChild(gameObject);
                 NOUS_INFO("Set parent: %s (ID: %u) -> %s (ID: %u)",
                           gameObject->GetName().c_str(), gameObject->GetID(),
                           parent->GetName().c_str(), parentID);
@@ -191,21 +192,26 @@ void Scene::Deserialize(const std::string& filepath) {
 // -----------------------------------------------------------------------------
 // Clear
 // -----------------------------------------------------------------------------
-void Scene::Clear() {
-    for (auto& gameObject : m_GameObjects) {
-        auto children = gameObject->GetChildren();
+void Scene::Clear()
+{
+    for (GameObject* go : m_GameObjects)
+    {
+        auto children = go->GetChildren();
         for (auto* child : children)
-            gameObject->RemoveChild(child);
+            go->RemoveChild(child);
 
-        gameObject->SetParent(nullptr);
+        go->SetParent(nullptr);
+
+        NOUS_DELETE(go, MemoryTag::GAMEOBJECT);
     }
+
     m_GameObjects.clear();
 }
 
 // -----------------------------------------------------------------------------
 // Private Helpers
 // -----------------------------------------------------------------------------
-void Scene::CollectGameObjectTree(GameObject* root, std::vector<GameObject*>& collection) {
+void Scene::CollectGameObjectTree(GameObject* root, NOUS_Vector<GameObject*>& collection) {
     if (!root) return;
 
     std::queue<GameObject*> queue;
@@ -235,20 +241,20 @@ void Scene::DestroySingleGameObject(GameObject* go) {
     for (auto* child : go->GetChildren())
         go->RemoveChild(child);
 
-    auto it = std::find_if(m_GameObjects.begin(), m_GameObjects.end(),
-                           [go](const std::unique_ptr<GameObject>& obj) {
-                               return obj.get() == go;
-                           });
+    auto it = std::find(m_GameObjects.begin(), m_GameObjects.end(), go);
     if (it != m_GameObjects.end())
-        m_GameObjects.erase(it);
+    {
+        m_GameObjects.EraseAt(it - m_GameObjects.begin());
+    }
+    NOUS_DELETE(go, MemoryTag::GAMEOBJECT);
 }
 
 GameObject* Scene::FindGameObjectByID_NoLock(uint32_t id) {
     auto it = std::find_if(m_GameObjects.begin(), m_GameObjects.end(),
-                           [id](const std::unique_ptr<GameObject>& obj) {
+                           [id](const GameObject* obj) {
                                return obj->GetID() == id;
                            });
-    return it != m_GameObjects.end() ? it->get() : nullptr;
+    return it != m_GameObjects.end() ? *it : nullptr;
 }
 
 uint32_t Scene::GenerateUniqueID() {

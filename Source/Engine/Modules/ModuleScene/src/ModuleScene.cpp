@@ -24,13 +24,13 @@
 #include <SDL3/SDL.h>
 #include <filesystem>
 
-ModuleScene::ModuleScene(Application* app) : Module(app)
+ModuleScene::ModuleScene(Application* app) : Module(app), scripts(MemoryTag::SCRIPTING_SYSTEM)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	activeScene = NOUS_NEW<Scene>(MemoryTag::GAME);
-	gameCamera = NOUS_NEW<Camera>(MemoryTag::GAME);
-	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::GAME);
+	activeScene = NOUS_NEW<Scene>(MemoryTag::SCENE);
+	gameCamera = NOUS_NEW<Camera>(MemoryTag::CAMERA);
+	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM);
 
 	// Load the script library
 	if (!scriptManager->LoadScriptLibrary("Scripts/Scripts.dll")) {
@@ -52,9 +52,9 @@ ModuleScene::~ModuleScene()
 	// Clean up scripts before destroying script manager
 	CleanupScripts();
 
-	NOUS_DELETE(gameCamera, MemoryTag::GAME);
-	NOUS_DELETE(scriptManager, MemoryTag::GAME);
-	NOUS_DELETE(activeScene, MemoryTag::GAME);
+	NOUS_DELETE(gameCamera, MemoryTag::CAMERA);
+	NOUS_DELETE(scriptManager, MemoryTag::SCRIPTING_SYSTEM);
+	NOUS_DELETE(activeScene, MemoryTag::SCENE);
 }
 
 bool ModuleScene::Awake()

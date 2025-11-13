@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include "Engine/Core/EventSystem/IEventListener.h"
+#include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
 class Scene;
 class GameObject;
@@ -46,7 +47,7 @@ public:
 
 	// Scripting
 	ScriptManager* scriptManager;
-	std::vector<IScript*> scripts;
+	NOUS_Vector<IScript*> scripts;
 
 	void CreateScriptInstances();
 	void RecompileScripts();

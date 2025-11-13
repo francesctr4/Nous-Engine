@@ -2,8 +2,8 @@
 #define NOUS_ENGINE_SCENE_H
 
 #include "Engine/EngineExport.h"
+#include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
-#include <vector>
 #include <memory>
 #include <mutex>
 
@@ -11,7 +11,7 @@ class GameObject;
 
 class Scene {
 public:
-    Scene(const std::string& name = "Untitled Scene");
+    explicit Scene(const std::string& name = "Untitled Scene");
     ~Scene();
 
     NOUS_ENGINE_API GameObject* CreateGameObject(const std::string& name = "GameObject", GameObject* parent = nullptr);
@@ -19,7 +19,7 @@ public:
     void Update(float deltaTime);
 
     GameObject* FindGameObjectByID(uint32_t id);
-    std::vector<GameObject*> FindGameObjectsByName(const std::string& name);
+    NOUS_Vector<GameObject*> FindGameObjectsByName(const std::string& name);
     GameObject* GetGameObjectByID(uint32_t id);
 
     uint32_t CreateGameObjectID(const std::string& name = "GameObject", GameObject* parent = nullptr);
@@ -28,21 +28,21 @@ public:
     NOUS_ENGINE_API const std::string& GetName() const;
     void SetName(const std::string& name);
 
-    NOUS_ENGINE_API std::vector<std::unique_ptr<GameObject>>& GetGameObjects();
+    NOUS_ENGINE_API NOUS_Vector<GameObject*>& GetGameObjects();
 
     void Serialize(const std::string& filepath) const;
     void Deserialize(const std::string& filepath);
     void Clear();
 
 private:
-    void CollectGameObjectTree(GameObject* root, std::vector<GameObject*>& collection);
+    void CollectGameObjectTree(GameObject* root, NOUS_Vector<GameObject*>& collection);
     void DestroySingleGameObject(GameObject* go);
     GameObject* FindGameObjectByID_NoLock(uint32_t id);
     uint32_t GenerateUniqueID();
 
 private:
     std::string m_Name;
-    std::vector<std::unique_ptr<GameObject>> m_GameObjects;
+    NOUS_Vector<GameObject*> m_GameObjects;
     mutable std::mutex m_Mutex;
 };
 

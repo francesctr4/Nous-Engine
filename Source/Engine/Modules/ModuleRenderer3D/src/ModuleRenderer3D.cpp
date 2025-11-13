@@ -181,18 +181,17 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
 
 	for (const auto& goPtr : gameObjects)
 	{
-		GameObject* go = goPtr.get();
-		if (!go->HasComponent<CMesh>()) continue;
+		if (!goPtr->HasComponent<CMesh>()) continue;
 
 		GeometryRenderData data{};
 
-		if (auto* transform = go->TryGetComponent<CTransform>())
+		if (auto* transform = goPtr->TryGetComponent<CTransform>())
 			data.model = transform->worldMatrix;
 
-		if (auto* mesh = go->TryGetComponent<CMesh>())
+		if (auto* mesh = goPtr->TryGetComponent<CMesh>())
 			data.geometry = mesh->mesh;
 
-		if (auto* material = go->TryGetComponent<CMaterial>())
+		if (auto* material = goPtr->TryGetComponent<CMaterial>())
 			data.material = material->material;
 
 		packet->geometries.emplace_back(data);

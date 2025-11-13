@@ -2,7 +2,6 @@
 #define NOUS_ENGINE_COMPONENT_H
 
 #include <string>
-#include <memory>
 
 // Forward declaration
 class GameObject;
@@ -29,7 +28,7 @@ public:
     virtual void Deserialize(JSON_Object* obj) = 0;
 
     // Static method for component creation during deserialization
-    static std::unique_ptr<Component> CreateComponent(const std::string& type);
+    static Component* CreateComponent(const std::string& type);
 
 protected:
     friend class GameObject;

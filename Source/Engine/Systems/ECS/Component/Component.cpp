@@ -4,18 +4,19 @@
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 
-std::unique_ptr<Component> Component::CreateComponent(const std::string& type) {
+Component* Component::CreateComponent(const std::string& type) {
     if (type == "CTransform") {
-        return std::make_unique<CTransform>();
+        return NOUS_NEW<CTransform>(MemoryTag::COMPONENT);
     }
 
     if (type == "CMesh") {
-        return std::make_unique<CMesh>();
+        return NOUS_NEW<CMesh>(MemoryTag::COMPONENT);
     }
 
     if (type == "CMaterial") {
-        return std::make_unique<CMaterial>();
+        return NOUS_NEW<CMaterial>(MemoryTag::COMPONENT);
     }
 
     NOUS_WARN("[%s] Unable to create component. "

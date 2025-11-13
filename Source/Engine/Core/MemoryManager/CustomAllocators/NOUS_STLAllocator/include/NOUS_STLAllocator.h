@@ -5,13 +5,16 @@
 #include <limits>
 #include <type_traits>
 #include <new>
+
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 // A standard-conforming STL allocator that routes to your MemoryManager.
-// Notes:
-//  - MemoryManager::Allocate() currently zeroes memory; STL expects "raw" memory,
-//    but zeroing is still valid (just a tiny perf cost). If you later add a
-//    non-zeroing path, you can toggle it here. [uses Allocate/Free + 16B align + ZeroMemory].
+//
+//  - Uses MemoryManager::Allocate(size, tag) which internally records the size
+//    in DynamicAllocator's map.
+//  - Uses the new size-less MemoryManager::Free(void* block, MemoryTag tag),
+//    which looks up the original size via DynamicAllocator::GetRecordedSize
+//    and keeps stats correct.
 //
 //  - We store a MemoryTag inside the allocator so stats are correct per container.
 //    The allocator is trivially copyable and default-constructible (UNKNOWN tag).
@@ -50,18 +53,30 @@ public:
 
     // Allocate n elements of T (byte size = n * sizeof(T))
     [[nodiscard]] pointer allocate(size_type n) {
-        if (n > max_size()) throw std::bad_array_new_length();
+        if (n > max_size()) {
+            throw std::bad_array_new_length();
+        }
+
         const std::size_t bytes = n * sizeof(T);
         void* p = MemoryManager::Allocate(static_cast<uint64>(bytes), tag_);
-        if (!p) throw std::bad_alloc();
+        if (!p) {
+            throw std::bad_alloc();
+        }
         return static_cast<pointer>(p);
     }
 
-    // Deallocate n elements of T (must pass the same byte size)
-    void deallocate(pointer p, size_type n) noexcept {
-        const std::size_t bytes = n * sizeof(T);
-        // MemoryManager::Free requires the size again for its accounting.
-        MemoryManager::Free(static_cast<void*>(p), bytes, tag_);
+    // Deallocate n elements of T.
+    //
+    // We ignore n and route to the new size-less free path:
+    //   MemoryManager::Free(void* block, MemoryTag tag)
+    //
+    // That function uses DynamicAllocator::GetRecordedSize(block) to:
+    //   - look up the original requested size
+    //   - update stats correctly
+    //   - free via DynamicAllocator::Free(void*)
+    void deallocate(pointer p, size_type /*n*/) noexcept {
+        // MemoryManager::Free already early-outs if p == nullptr.
+        MemoryManager::Free(static_cast<void*>(p), tag_);
     }
 
     // Max elements we can allocate

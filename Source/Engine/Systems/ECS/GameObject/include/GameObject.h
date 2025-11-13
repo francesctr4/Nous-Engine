@@ -3,6 +3,7 @@
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/EngineExport.h"
+#include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
 #include <vector>
 #include <unordered_map>
@@ -27,7 +28,7 @@ public:
     template<typename T, typename... Args>
     T& AddComponent(Args&&... args);
 
-    void AddComponent(std::unique_ptr<Component> component);
+    void AddComponent(Component* component);
 
     template<typename T> bool HasComponent() const;
     template<typename T> T& GetComponent();
@@ -35,7 +36,7 @@ public:
     template<typename T> void RemoveComponent();
 
     void UpdateComponents(float deltaTime);
-    std::vector<Component*> GetAllComponents();
+    NOUS_Vector<Component*> GetAllComponents();
 
     // ---------- Basic Info ----------
     NOUS_ENGINE_API uint32_t GetID() const;
@@ -44,7 +45,7 @@ public:
 
     // ---------- Hierarchy ----------
     NOUS_ENGINE_API GameObject* GetParent() const;
-    NOUS_ENGINE_API const std::vector<GameObject*>& GetChildren() const;
+    NOUS_ENGINE_API const NOUS_Vector<GameObject*>& GetChildren() const;
     NOUS_ENGINE_API void SetParent(GameObject* parent);
 
     void AddChild(GameObject* child);
@@ -54,7 +55,7 @@ public:
 
     // ---------- Serialization ----------
     JSON_Value* Serialize() const;
-    static std::unique_ptr<GameObject> Deserialize(JSON_Object* obj);
+    static GameObject* Deserialize(JSON_Object* obj);
 
     // For deserialization parent resolution
     uint32_t GetParentID() const;
@@ -63,8 +64,8 @@ private:
     uint32_t m_ID = 0;
     std::string m_Name;
     GameObject* m_Parent = nullptr;
-    std::vector<GameObject*> m_Children;
-    std::unordered_map<std::type_index, std::unique_ptr<Component>> m_Components;
+    NOUS_Vector<GameObject*> m_Children;
+    std::unordered_map<std::type_index, Component*> m_Components;
     uint32_t m_ParentID = 0;
 };
 
@@ -74,12 +75,13 @@ private:
 template<typename T, typename... Args>
 T& GameObject::AddComponent(Args&&... args) {
     static_assert(std::is_base_of<Component, T>::value, "T must inherit from Component");
-    auto component = std::make_unique<T>(std::forward<Args>(args)...);
+
+    T* component = NOUS_NEW<T>(MemoryTag::COMPONENT, std::forward<Args>(args)...);
     component->m_GameObject = this;
-    T* ptr = component.get();
-    m_Components[typeid(T)] = std::move(component);
-    ptr->OnStart();
-    return *ptr;
+
+    m_Components[typeid(T)] = component;
+    component->OnStart();
+    return *component;
 }
 
 template<typename T>
@@ -95,7 +97,7 @@ T& GameObject::GetComponent() {
     if (it == m_Components.end()) {
         throw std::runtime_error("Component not found: " + std::string(typeid(T).name()));
     }
-    return *static_cast<T*>(it->second.get());
+    return *static_cast<T*>(it->second);
 }
 
 template<typename T>
@@ -105,7 +107,7 @@ T* GameObject::TryGetComponent() {
     if (it == m_Components.end()) {
         return nullptr;
     }
-    return static_cast<T*>(it->second.get());
+    return static_cast<T*>(it->second);
 }
 
 template<typename T>
@@ -113,7 +115,11 @@ void GameObject::RemoveComponent() {
     static_assert(std::is_base_of<Component, T>::value, "T must inherit from Component");
     auto it = m_Components.find(typeid(T));
     if (it != m_Components.end()) {
-        it->second->OnDestroy();
+        Component* comp = it->second;
+        if (comp) {
+            comp->OnDestroy();
+            NOUS_DELETE(comp, MemoryTag::COMPONENT);
+        }
         m_Components.erase(it);
     }
 }

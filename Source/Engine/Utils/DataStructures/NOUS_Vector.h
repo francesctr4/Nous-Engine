@@ -17,6 +17,8 @@ public:
     using vector_type = std::vector<T, allocator_type>;
     using iterator = typename vector_type::iterator;
     using const_iterator = typename vector_type::const_iterator;
+    using reverse_iterator = typename vector_type::reverse_iterator;
+    using const_reverse_iterator = typename vector_type::const_reverse_iterator;
 
 public:
     // Default constructor -> uses UNKNOWN tag
@@ -69,6 +71,25 @@ public:
 
     vector_type& raw() { return internal_; }
     const vector_type& raw() const { return internal_; }
+
+    iterator erase(const_iterator pos) {
+        return internal_.erase(pos);
+    }
+
+    iterator erase(const_iterator first, const_iterator last) {
+        return internal_.erase(first, last);
+    }
+
+    reverse_iterator rbegin() { return internal_.rbegin(); }
+    reverse_iterator rend() { return internal_.rend(); }
+
+    const_reverse_iterator rbegin() const { return internal_.rbegin(); }
+    const_reverse_iterator rend() const { return internal_.rend(); }
+
+    void EraseAt(size_t index) {
+        if (index < internal_.size())
+            internal_.erase(internal_.begin() + index);
+    }
 
 private:
     vector_type internal_;
