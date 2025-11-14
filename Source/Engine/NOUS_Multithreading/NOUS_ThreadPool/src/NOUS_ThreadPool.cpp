@@ -9,6 +9,8 @@
 #include <tracy/Tracy.hpp>
 #endif
 
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING_THREADPOOL;
+
 /// @brief NOUS_ThreadPool constructor.
 /// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
 NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8_t numThreads) :
@@ -118,7 +120,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 		thread->SetCurrentJob(job);
 		thread->StartExecutionTimer();
 
-		NOUS_DEBUG("Executing job '%s' on thread '%s' (%u)",
+		NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Executing job '%s' on thread '%s' (%u)", __FUNCTION__,
 				   job->GetName().c_str(), thread->GetName().c_str(), thread->GetID());
 
 		try
@@ -127,10 +129,10 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 		}
 		catch (const std::exception& e)
 		{
-			NOUS_ERROR(("Job '" + job->GetName() + "' failed: " + e.what()).c_str());
+			NOUS_ERROR_C(CURRENT_CHANNEL, ("[%s] Job '" + job->GetName() + "' failed: " + e.what()).c_str(), __FUNCTION__);
 		}
 
-		NOUS_DEBUG("Job '%s' completed successfully on thread '%s' (%u) in %.3f s",
+		NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Job '%s' completed successfully on thread '%s' (%u) in %.3f s", __FUNCTION__,
 				   job->GetName().c_str(), thread->GetName().c_str(),
 				   thread->GetID(), (thread->GetExecutionTimeMS() / 1000.0f));
 

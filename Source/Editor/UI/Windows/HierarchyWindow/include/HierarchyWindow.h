@@ -2,7 +2,7 @@
 #define NOUS_ENGINE_HIERARCHYWINDOW_H
 
 #include "Editor/UI/IEditorWindow.inl"
-#include <vector>
+#include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
 class Scene;
 class GameObject;
@@ -29,8 +29,8 @@ private:
 
     Scene* m_Scene = nullptr;
     GameObject* m_Selected = nullptr;
-    std::vector<GameObject*> m_ToDelete; // objects pending deletion
-    std::vector<ReparentRequest> m_ToReparent;
+    NOUS_Vector<GameObject*> m_ToDelete; // objects pending deletion
+    NOUS_Vector<ReparentRequest> m_ToReparent;
     bool IsChildOf(GameObject *parent, GameObject *child);
 };
 

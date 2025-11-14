@@ -17,6 +17,8 @@ typedef enum MainState
 
 } MainState;
 
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MAIN;
+
 int main(int argc, char** argv)
 {
     // Specify the amount of memory available for the project
@@ -26,7 +28,7 @@ int main(int argc, char** argv)
 
     InitializeLogging();
 
-    NOUS_INFO("Starting engine '%s'....", TITLE);
+    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Starting engine '%s'....", __FUNCTION__, TITLE);
 
     int mainReturn = EXIT_FAILURE;
     MainState nousState = MAIN_CREATION;
@@ -39,7 +41,7 @@ int main(int argc, char** argv)
         {
             case MAIN_CREATION:
 
-                NOUS_INFO("-------------- Application Creation --------------");
+                NOUS_INFO_C(CURRENT_CHANNEL, "[%s] -------------- Application Creation --------------", __FUNCTION__);
                 App = NOUS_NEW<Application>(MemoryTag::APPLICATION);
                 Editor = NOUS_NEW<ModuleEditor>(MemoryTag::EDITOR, App);
 
@@ -49,11 +51,11 @@ int main(int argc, char** argv)
 
             case MAIN_START:
 
-                NOUS_INFO("-------------- Application Awake --------------");
+                NOUS_INFO_C(CURRENT_CHANNEL, "[%s] -------------- Application Awake --------------", __FUNCTION__);
 
                 if (App && !App->Awake())
                 {
-                    NOUS_ERROR("[ERROR] Application Awake exits with ERROR");
+                    NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Application Awake exits with ERROR", __FUNCTION__);
                     nousState = MAIN_EXIT;
                 }
                 else
@@ -62,11 +64,11 @@ int main(int argc, char** argv)
                     if (Editor)
                         Editor->Awake();
 
-                    NOUS_INFO("-------------- Application Start --------------");
+                    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] -------------- Application Start --------------", __FUNCTION__);
 
                     if (App && !App->Start())
                     {
-                        NOUS_ERROR("[ERROR] Application Start exits with ERROR");
+                        NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Application Start exits with ERROR", __FUNCTION__);
                         nousState = MAIN_EXIT;
                     }
                     else
@@ -75,7 +77,7 @@ int main(int argc, char** argv)
                             Editor->Start();
 
                         nousState = MAIN_UPDATE;
-                        NOUS_INFO("-------------- Application Update --------------");
+                        NOUS_INFO_C(CURRENT_CHANNEL, "[%s] -------------- Application Update --------------", __FUNCTION__);
                     }
                 }
 
@@ -87,7 +89,7 @@ int main(int argc, char** argv)
 
                 if (updateReturn == UpdateStatus::ERROR)
                 {
-                    NOUS_INFO("[ERROR] Application Update exits with ERROR");
+                    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Application Update exits with ERROR", __FUNCTION__);
                     nousState = MAIN_EXIT;
                 }
                 else if (updateReturn == UpdateStatus::STOP)
@@ -100,7 +102,7 @@ int main(int argc, char** argv)
 
             case MAIN_FINISH:
 
-                NOUS_INFO("-------------- Application CleanUp --------------");
+                NOUS_INFO_C(CURRENT_CHANNEL, "[%s] -------------- Application CleanUp --------------", __FUNCTION__);
 
                 if (Editor)
                 {
@@ -109,7 +111,7 @@ int main(int argc, char** argv)
 
                 if (App->CleanUp() == false)
                 {
-                    NOUS_INFO("[ERROR] Application CleanUp exits with ERROR");
+                    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Application CleanUp exits with ERROR", __FUNCTION__);
                 }
                 else
                 {
@@ -125,17 +127,17 @@ int main(int argc, char** argv)
 
     External = nullptr;
 
-    NOUS_INFO("-------------- Application Destruction --------------");
+    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] -------------- Application Destruction --------------", __FUNCTION__);
     NOUS_DELETE(Editor, MemoryTag::EDITOR);
     NOUS_DELETE(App, MemoryTag::APPLICATION);
 
-    NOUS_INFO("Exiting engine '%s'...", TITLE);
+    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Exiting engine '%s'...", __FUNCTION__, TITLE);
 
     NOUS_Multithreading::UnregisterMainThread();
 
-    NOUS_INFO(MemoryManager::GetMemoryUsageStats().c_str());
+    NOUS_INFO_C(CURRENT_CHANNEL, (std::string("[%s] ") + MemoryManager::GetMemoryUsageStats()).c_str(), __FUNCTION__);
 
-    NOUS_INFO("[%s] Successfully exited Nous Engine. See you soon!", __FUNCTION__);
+    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Successfully exited Nous Engine. See you soon!", __FUNCTION__);
 
     ShutdownLogging();
 

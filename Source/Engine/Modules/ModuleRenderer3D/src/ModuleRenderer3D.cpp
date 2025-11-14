@@ -23,7 +23,7 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RENDERER3D;
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_RENDERER3D;
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
 {

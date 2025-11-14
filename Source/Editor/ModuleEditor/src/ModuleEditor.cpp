@@ -40,7 +40,7 @@
 
 #include "Engine/Core/Logger/Logger.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_CORE_MODULE_EDITOR;
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
 
 ModuleEditor::ModuleEditor(Application* app) : Module(app),
     editorWindows(MemoryTag::EDITOR),
@@ -366,7 +366,7 @@ ImFont *ModuleEditor::GetFont(size_t index) const
 {
     if (index >= fonts.size())
     {
-        NOUS_ERROR("ModuleEditor::GetFont called with out-of-range index: %zu", index);
+        NOUS_ERROR_C(CURRENT_CHANNEL, "ModuleEditor::GetFont called with out-of-range index: %zu", index);
         return nullptr;
     }
 

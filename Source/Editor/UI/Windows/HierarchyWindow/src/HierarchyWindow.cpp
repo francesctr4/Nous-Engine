@@ -9,7 +9,9 @@
 #include "imgui.h"
 
 HierarchyWindow::HierarchyWindow(const char* title, EditorContext* context, bool start_open)
-        : IEditorWindow(title, context, nullptr, start_open) {
+        : IEditorWindow(title, context, nullptr, start_open),
+        m_ToDelete(MemoryTag::SCENE), m_ToReparent(MemoryTag::SCENE)
+{
     Init();
 }
 

@@ -14,7 +14,7 @@
     \
     /* ============================ EDITOR ============================ */ \
     X(NOUS_EDITOR_MAIN, "MainEditor.cpp") \
-    X(NOUS_EDITOR_CORE_MODULE_EDITOR, "ModuleEditor.cpp") \
+    X(NOUS_EDITOR_MODULE_EDITOR, "ModuleEditor.cpp") \
     X(NOUS_EDITOR_UI_WINDOW_MAINMENUBAR, "MainMenuBar.cpp") \
     X(NOUS_EDITOR_UI_WINDOW_ASSETSBROWSER, "AssetsBrowser.cpp") \
     X(NOUS_EDITOR_UI_WINDOW_RESOURCESWINDOW, "ResourcesWindow.cpp") \
@@ -29,7 +29,7 @@
     /* ============================ CORE ============================ */   \
     X(NOUS_ENGINE_MAIN, "MainEngine.cpp") \
     X(NOUS_ENGINE_CORE_APPLICATION, "Application.cpp") \
-    X(NOUS_ENGINE_CORE_MODULE_RENDERER3D, "ModuleRenderer3D.cpp") \
+    X(NOUS_ENGINE_MODULE_RENDERER3D, "ModuleRenderer3D.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_CAMERA3D, "ModuleCamera3D.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_WINDOW, "ModuleWindow.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_SCENE, "ModuleScene.cpp") \
