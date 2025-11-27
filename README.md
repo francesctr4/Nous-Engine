@@ -66,7 +66,26 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ### **Changelog**
 
-#### Version 0.4 - After Bachelor's Thesis Delivery (Current)
+#### Version 0.5 - Work in Progress (Current)
+- Scripting System (dll, engineAPI, hot reload, jobified, bindings)
+- Project Files reestructuration
+- Divided project into multiple CMakeLists.txt recursive structure
+- DLL + LIBs internal engine reestructuration (EditorApp.exe / GameApp.exe), static and dynamic libraries enseñar esquema lucidchart en el linkedin
+- separate concerns editor vs engine
+- Editor and Game separated from engine core
+- Console Window + Logger improvements (log channels)
+- Memory Window + Memory Manager improvements. Stl allocator for nous vector. see tagged allocations in real time
+- Rework to MemoryManager and DynamicAllocator -> now works with polymorphic types!
+- MemoryTag refactor using magic_enum library, now reflective!
+- Event System major upgrade
+- ECS
+- Scene Serialization
+- Scene Save/Loading (Jobified)
+- hierarchy and inspector windows
+- unit testing with gtest + run ctests
+- Nous Engine documentation generation with Doxygen!
+
+#### Version 0.4 - After Bachelor's Thesis Delivery
 - **Development Environment**: Migrated project to **CLion** for improved cross-platform IDE support.
 - **Build System**: Rebuilt the project using **CMake** with support for **vcpkg** (manifest mode) and **CMake presets**.
 - **Dependency Management**: All third-party libraries are now handled through **vcpkg**, simplifying setup and updates.
