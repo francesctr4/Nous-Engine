@@ -70,8 +70,7 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 - Scripting System (dll, engineAPI, hot reload, jobified, bindings)
 - Project Files reestructuration
 - Divided project into multiple CMakeLists.txt recursive structure
-- DLL + LIBs internal engine reestructuration (EditorApp.exe / GameApp.exe), static and dynamic libraries enseñar esquema lucidchart en el linkedin
-- separate concerns editor vs engine
+- DLL + LIBs internal engine reestructuration (EditorApp.exe / GameApp.exe), static and dynamic libraries (esquema lucidchart)
 - Editor and Game separated from engine core
 - Console Window + Logger improvements (log channels)
 - Memory Window + Memory Manager improvements. Stl allocator for nous vector. see tagged allocations in real time
