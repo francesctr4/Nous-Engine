@@ -66,7 +66,44 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ### **Changelog**
 
-#### Version 0.5 - Work in Progress (Current)
+#### Version 0.5 - Scripting System and Major Improvements (Current)
+The v0.5 release introduces major architectural improvements, new subsystems, and powerful tooling upgrades across the entire engine:
+
+#### 🔥 Scripting System
+- Dynamic scripting using DLLs with an exposed EngineAPI
+- Hot Reload support for instant iteration
+- Jobified script updating for performance
+- Automatic C++ ↔ Script bindings
+
+#### 📁 Project Structure & Build System
+- Complete project file reorganization
+- Modularized into multiple CMakeLists.txt using a clean recursive structure
+- Engine split into DLL + LIB layers (EditorApp.exe / GameApp.exe)
+- Clear separation between Editor, Game, and Engine Core
+- Updated internal structure documented with Lucidchart diagrams
+
+#### 🛠️ Editor & Tools
+- Improved Console Window with new log channels
+- Expanded Logger system with channel-based filtering
+- Enhanced Hierarchy and Inspector windows
+- Full Scene Serialization, Save/Load pipeline (now jobified)
+
+#### 🧠 Memory System Improvements
+- Upgraded Memory Manager and DynamicAllocator → now fully supports polymorphic types
+- Memory Window to monitor allocations in real time
+- Custom STL allocator integrated with NousVector
+- MemoryTag refactor using magic_enum for reflective memory tagging
+
+#### ⚡ Core Systems
+- Major upgrade to the Event System
+- ECS improvements and integration with inspector/hierarchy
+- Scene loading/saving threaded for performance
+
+#### 🧪 Testing & Documentation
+- Added unit tests with GoogleTest
+- Integrated ctest for automated test execution
+- Doxygen documentation generation for the entire engine
+
 - Scripting System (dll, engineAPI, hot reload, jobified, bindings)
 - Project Files reestructuration
 - Divided project into multiple CMakeLists.txt recursive structure
