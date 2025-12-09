@@ -154,10 +154,12 @@ The v0.5 release introduces major architectural improvements, new Scripting Syst
 > - **Parson** (Lightweight JSON library)
 > - **Tracy** (Profiling tool)
 > - **GLM** (Mathematics library for graphics)
+> - **gtest** (Unit testing framework)
+> - **magic-enum** (Header-only enum reflection library)
 >
 > To install all required dependencies in classic mode:
 > ```
-> vcpkg install vulkan sdl3[vulkan] assimp imgui[docking-experimental,sdl3-binding,sdl3-renderer-binding,vulkan-binding] stb parson tracy glm
+> vcpkg install vulkan sdl3[vulkan] assimp imgui[docking-experimental,sdl3-binding,sdl3-renderer-binding,vulkan-binding] stb parson tracy glm gtest magic-enum
 > ```
 
 ---
