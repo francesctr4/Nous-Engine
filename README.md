@@ -84,7 +84,7 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 - unit testing with gtest + run ctests
 - Nous Engine documentation generation with Doxygen!
 
-<img width="486" height="727" alt="image" src="https://github.com/user-attachments/assets/25950053-8ad8-4bb2-8ab0-f4fe5bf22066" />
+<img width="484" height="726" alt="image" src="https://github.com/user-attachments/assets/56cd6a5c-f617-4d05-a2a1-52a66d011e79" />
 <img width="1447" height="438" alt="image" src="https://github.com/user-attachments/assets/79714723-08fa-4677-8ec5-e45d97e7e52c" />
 <img width="484" height="338" alt="image" src="https://github.com/user-attachments/assets/23f8dd0c-fc80-48ea-a3ca-702bf379c540" />
 <img width="867" height="569" alt="image" src="https://github.com/user-attachments/assets/6c4f352f-8cdf-4cdd-a29f-45f99708741d" />
