@@ -100,6 +100,8 @@ The v0.5 release introduces major architectural improvements, new Scripting Syst
 - Integrated CTest target for automated test execution.
 - Doxygen script for automated documentation generation.
 
+<img width="4964" height="4823" alt="524456215-10bad943-3cfd-486b-b90c-26f49455ecc9" src="https://github.com/user-attachments/assets/210d0ecc-6df3-4452-bc9a-1621d5fbaa03" />
+
 ---
 
 #### Version 0.4 - After Bachelor's Thesis Delivery
