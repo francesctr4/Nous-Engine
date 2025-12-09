@@ -67,59 +67,38 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 ### **Changelog**
 
 #### Version 0.5 - Scripting System and Major Improvements (Current)
-The v0.5 release introduces major architectural improvements, new subsystems, and powerful tooling upgrades across the entire engine:
+The v0.5 release introduces major architectural improvements, new Scripting System, and powerful tooling upgrades across the entire engine:
 
-#### 🔥 Scripting System
-- Dynamic scripting using DLLs with an exposed EngineAPI
-- Hot Reload support for instant iteration
-- Jobified script updating for performance
-- Automatic C++ ↔ Script bindings
+#### Scripting System
+- Dynamic scripting using DLLs with an exposed EngineAPI (create, edit and recompile scripts on engine runtime).
+- Hot reload support for instant iteration.
+- Jobified script dynamic library recompilation.
+- Engine bindings for function usage on scripting.
 
-#### 📁 Project Structure & Build System
-- Complete project file reorganization
-- Modularized into multiple CMakeLists.txt using a clean recursive structure
-- Engine split into DLL + LIB layers (EditorApp.exe / GameApp.exe)
-- Clear separation between Editor, Game, and Engine Core
-- Updated internal structure documented with Lucidchart diagrams
+#### Project Structure & Build System
+- Project files and folders reorganization.
+- Modularized into multiple CMakeLists.txt using a clean recursive structure.
+- Engine executable split into, editor executable and game executable with DLL + LIB layers (EditorApp.exe / GameApp.exe).
+- Clear separation between Editor, Game, and Engine Core.
+- Updated internal structure documented with a Lucidchart diagram.
 
-#### 🛠️ Editor & Tools
-- Improved Console Window with new log channels
-- Expanded Logger system with channel-based filtering
-- Enhanced Hierarchy and Inspector windows
-- Full Scene Serialization, Save/Load pipeline (now jobified)
+#### Editor & Tools
+- Expanded Logger system with channel-based filtering.
+- Complete refactor and improvements to the Event System.
+- New console window with new log channels and multiple ways to filter logs.
+- Scene serialization supporting Save/Load (jobified).
+- New hierarchy and inspector windows for ECS (Scene, GameObjects and Components).
 
-#### 🧠 Memory System Improvements
-- Upgraded Memory Manager and DynamicAllocator → now fully supports polymorphic types
-- Memory Window to monitor allocations in real time
-- Custom STL allocator integrated with NousVector
-- MemoryTag refactor using magic_enum for reflective memory tagging
+#### Custom Memory Manager Improvements
+- Upgraded Memory Manager and DynamicAllocator to fully support polymorphic types.
+- New Memory Window to monitor tagged allocations in real time.
+- New STL allocator integrated inside STL containters (e.g. NOUS_Vector).
+- MemoryTag refactor using magic_enum library for reflective memory tagging.
 
-#### ⚡ Core Systems
-- Major upgrade to the Event System
-- ECS improvements and integration with inspector/hierarchy
-- Scene loading/saving threaded for performance
-
-#### 🧪 Testing & Documentation
-- Added unit tests with GoogleTest
-- Integrated ctest for automated test execution
-- Doxygen documentation generation for the entire engine
-
-- Scripting System (dll, engineAPI, hot reload, jobified, bindings)
-- Project Files reestructuration
-- Divided project into multiple CMakeLists.txt recursive structure
-- DLL + LIBs internal engine reestructuration (EditorApp.exe / GameApp.exe), static and dynamic libraries (esquema lucidchart)
-- Editor and Game separated from engine core
-- Console Window + Logger improvements (log channels)
-- Memory Window + Memory Manager improvements. Stl allocator for nous vector. see tagged allocations in real time
-- Rework to MemoryManager and DynamicAllocator -> now works with polymorphic types!
-- MemoryTag refactor using magic_enum library, now reflective!
-- Event System major upgrade
-- ECS
-- Scene Serialization
-- Scene Save/Loading (Jobified)
-- hierarchy and inspector windows
-- unit testing with gtest + run ctests
-- Nous Engine documentation generation with Doxygen!
+#### Testing & Documentation
+- Added unit testing support with GoogleTest.
+- Integrated CTest target for automated test execution.
+- Doxygen script for automated documentation generation.
 
 <img width="484" height="726" alt="image" src="https://github.com/user-attachments/assets/56cd6a5c-f617-4d05-a2a1-52a66d011e79" />
 <img width="1447" height="438" alt="image" src="https://github.com/user-attachments/assets/79714723-08fa-4677-8ec5-e45d97e7e52c" />
