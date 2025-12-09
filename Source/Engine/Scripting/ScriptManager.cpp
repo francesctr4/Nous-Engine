@@ -190,7 +190,7 @@ void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
 bool ScriptManager::GenerateScript(const std::string& className)
 {
     const std::string& templatePath = "Scripts/ScriptTemplate.inl";
-    const std::string& outputPath = "../../../Assets/Scripts/" + className + ".cpp";
+    const std::string& outputPath = "Assets/Scripts/" + className + ".cpp";
 
     // Read the template file
     std::ifstream templateFile(templatePath);
