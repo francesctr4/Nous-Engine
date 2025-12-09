@@ -100,6 +100,8 @@ The v0.5 release introduces major architectural improvements, new Scripting Syst
 - Integrated CTest target for automated test execution.
 - Doxygen script for automated documentation generation.
 
+---
+
 #### Version 0.4 - After Bachelor's Thesis Delivery
 - **Development Environment**: Migrated project to **CLion** for improved cross-platform IDE support.
 - **Build System**: Rebuilt the project using **CMake** with support for **vcpkg** (manifest mode) and **CMake presets**.
@@ -109,6 +111,8 @@ The v0.5 release introduces major architectural improvements, new Scripting Syst
   - Upgraded from **SDL2 → SDL3**
   - Replaced **MathGeoLib → glmath** for math utilities
 - **CMake Minimum Version**: Now requires **CMake 3.21 or higher**
+
+---
 
 #### Version 0.3
 - **Bachelor's Thesis**: Final Delivery.
