@@ -100,13 +100,6 @@ The v0.5 release introduces major architectural improvements, new Scripting Syst
 - Integrated CTest target for automated test execution.
 - Doxygen script for automated documentation generation.
 
-<img width="484" height="726" alt="image" src="https://github.com/user-attachments/assets/56cd6a5c-f617-4d05-a2a1-52a66d011e79" />
-<img width="1447" height="438" alt="image" src="https://github.com/user-attachments/assets/79714723-08fa-4677-8ec5-e45d97e7e52c" />
-<img width="484" height="338" alt="image" src="https://github.com/user-attachments/assets/23f8dd0c-fc80-48ea-a3ca-702bf379c540" />
-<img width="867" height="569" alt="image" src="https://github.com/user-attachments/assets/6c4f352f-8cdf-4cdd-a29f-45f99708741d" />
-<img width="4964" height="4823" alt="Frame 31" src="https://github.com/user-attachments/assets/10bad943-3cfd-486b-b90c-26f49455ecc9" />
-<img width="242" height="364" alt="image" src="https://github.com/user-attachments/assets/7a6521c8-6506-431a-ad21-b05dd4872f2b" />
-
 #### Version 0.4 - After Bachelor's Thesis Delivery
 - **Development Environment**: Migrated project to **CLion** for improved cross-platform IDE support.
 - **Build System**: Rebuilt the project using **CMake** with support for **vcpkg** (manifest mode) and **CMake presets**.
