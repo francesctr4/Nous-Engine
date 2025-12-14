@@ -16,6 +16,149 @@
 #include <dlfcn.h>
 #endif
 
+#ifdef _WIN32
+
+static std::wstring ToWide(const std::string& s)
+{
+    if (s.empty()) return {};
+    const int size = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), nullptr, 0);
+    std::wstring w(size, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), w.data(), size);
+    return w;
+}
+
+// Runs: cmd.exe /c "<commandLine>"
+// Captures stdout+stderr live (merged) and returns process exit code.
+// onLine: called for every line (without \r\n)
+static bool RunProcessCaptureLive(const std::wstring& commandLine, DWORD& outExitCode,
+                                  const std::function<void(const std::string&)>& onLine)
+{
+    outExitCode = (DWORD)-1;
+
+    SECURITY_ATTRIBUTES sa{};
+    sa.nLength = sizeof(sa);
+    sa.bInheritHandle = TRUE;
+
+    HANDLE readPipe = nullptr;
+    HANDLE writePipe = nullptr;
+
+    if (!CreatePipe(&readPipe, &writePipe, &sa, 0))
+        return false;
+
+    // Ensure the read end is not inherited.
+    SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
+
+    STARTUPINFOW si{};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdOutput = writePipe;
+    si.hStdError  = writePipe;
+    si.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
+
+    PROCESS_INFORMATION pi{};
+
+    // Use cmd.exe so .bat works
+    std::wstring full = L"cmd.exe /c \"" + commandLine + L"\"";
+
+    // CreateProcessW requires a mutable buffer
+    std::vector<wchar_t> cmdBuf(full.begin(), full.end());
+    cmdBuf.push_back(L'\0');
+
+    const BOOL ok = CreateProcessW(
+            nullptr,
+            cmdBuf.data(),
+            nullptr,
+            nullptr,
+            TRUE,                // inherit handles (so child gets writePipe)
+            CREATE_NO_WINDOW,    // no extra console window
+            nullptr,
+            nullptr,
+            &si,
+            &pi
+    );
+
+    // Parent no longer needs write end
+    CloseHandle(writePipe);
+
+    if (!ok)
+    {
+        CloseHandle(readPipe);
+        return false;
+    }
+
+    std::string pending;
+    char buffer[4096];
+
+    // Read until process exits and pipe drains
+    while (true)
+    {
+        DWORD bytesAvail = 0;
+        if (PeekNamedPipe(readPipe, nullptr, 0, nullptr, &bytesAvail, nullptr) && bytesAvail > 0)
+        {
+            DWORD bytesRead = 0;
+            if (ReadFile(readPipe, buffer, sizeof(buffer) - 1, &bytesRead, nullptr) && bytesRead > 0)
+            {
+                buffer[bytesRead] = 0;
+                pending.append(buffer, bytesRead);
+
+                // Emit complete lines
+                for (;;)
+                {
+                    const size_t pos = pending.find('\n');
+                    if (pos == std::string::npos) break;
+
+                    std::string line = pending.substr(0, pos);
+                    if (!line.empty() && line.back() == '\r') line.pop_back();
+                    pending.erase(0, pos + 1);
+
+                    if (onLine) onLine(line);
+                }
+            }
+        }
+
+        // Check if process ended
+        DWORD wait = WaitForSingleObject(pi.hProcess, 15);
+        if (wait == WAIT_OBJECT_0)
+            break;
+    }
+
+    // Drain remaining output
+    for (;;)
+    {
+        DWORD bytesRead = 0;
+        if (!ReadFile(readPipe, buffer, sizeof(buffer) - 1, &bytesRead, nullptr) || bytesRead == 0)
+            break;
+
+        buffer[bytesRead] = 0;
+        pending.append(buffer, bytesRead);
+
+        for (;;)
+        {
+            const size_t pos = pending.find('\n');
+            if (pos == std::string::npos) break;
+
+            std::string line = pending.substr(0, pos);
+            if (!line.empty() && line.back() == '\r') line.pop_back();
+            pending.erase(0, pos + 1);
+
+            if (onLine) onLine(line);
+        }
+    }
+
+    if (!pending.empty() && onLine)
+        onLine(pending);
+
+    GetExitCodeProcess(pi.hProcess, &outExitCode);
+
+    CloseHandle(readPipe);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+
+    return true;
+}
+
+#endif // _WIN32
+
 ScriptManager::ScriptManager() : m_libraryHandle(nullptr), m_scriptRegistry(nullptr)
 {
     ScriptBindings::InitializeBindings(api);
@@ -92,21 +235,44 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     // Unload current library first
     UnloadScriptLibrary();
 
-    int result = 0;
-
-    // Build the scripts
+#ifdef _WIN32
+    std::wstring cmd;
 #ifdef _DEBUG
-    result = std::system("Scripts\\RebuildScripts.bat Debug");
+    cmd = L"Scripts\\RebuildScripts.bat Debug";
 #else
-    result = std::system("Scripts\\RebuildScripts.bat Release");
+    cmd = L"Scripts\\RebuildScripts.bat Release";
 #endif
 
-    if (result == 0) {
-        NOUS_INFO("Scripts recompiled successfully!");
-    } else {
-        NOUS_ERROR("Scripts recompilation failed!");
+    DWORD exitCode = 0;
+    bool ran = RunProcessCaptureLive(cmd, exitCode, [](const std::string& line)
+    {
+        // Route to your engine console:
+        // Use INFO for normal lines, ERROR if it looks like an error.
+        // (Simple heuristic; feel free to tighten.)
+        if (line.find("error") != std::string::npos || line.find("fatal") != std::string::npos)
+            NOUS_ERROR("[ScriptManager::ReloadScriptLibrary] %s", line.c_str());
+        else
+            NOUS_INFO("[ScriptManager::ReloadScriptLibrary] %s", line.c_str());
+    });
+
+    if (!ran)
+    {
+        NOUS_ERROR("Failed to launch script build process (CreateProcess failed).");
         return false;
     }
+
+    if (exitCode != 0)
+    {
+        NOUS_ERROR("Scripts recompilation failed! ExitCode=%lu", (unsigned long)exitCode);
+        return false;
+    }
+
+    NOUS_INFO("Scripts recompiled successfully!");
+#else
+    // Keep your old path or implement posix_spawn + pipe on Linux
+    int result = std::system("./Scripts/RebuildScripts.sh");
+    if (result != 0) return false;
+#endif
 
     // Wait for file system and ensure DLL can be loaded
     if (!WaitForDLLUnload(dllPath)) {
