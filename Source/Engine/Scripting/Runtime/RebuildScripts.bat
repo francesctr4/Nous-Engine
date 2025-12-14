@@ -2,7 +2,13 @@
 setlocal EnableDelayedExpansion
 
 REM ============================================================
-REM Nous Engine - RebuildScripts.bat (mimic Scripts CMake target)
+REM Nous Engine - RebuildScripts.bat (SDK-only, no engine source)
+REM Requirements:
+REM   <bin>\Scripts\SDK\include\Engine\...\IScript.inl
+REM   <bin>\Scripts\SDK\src\EngineAPI.cpp
+REM   <bin>\Assets\Scripts\*.cpp
+REM Output:
+REM   <bin>\Scripts\Scripts.dll
 REM ============================================================
 
 REM -----------------------------
@@ -30,7 +36,10 @@ if not exist "%VCVARS64%" (
 )
 
 call "%VCVARS64%"
-if errorlevel 1 exit /b 1
+if errorlevel 1 (
+    echo [ERROR] Failed to initialize MSVC environment
+    exit /b 1
+)
 
 REM -----------------------------
 REM 2) Resolve bin dirs
@@ -56,42 +65,48 @@ if /I "%BUILD_MODE%"=="Debug" goto :MODE_OK
 if /I "%BUILD_MODE%"=="Release" goto :MODE_OK
 
 REM Auto-detect from path
-set BUILD_MODE=Release
+set BUILD_MODE=Debug
 echo %BIN_DIR% | findstr /I "Debug" >nul && set BUILD_MODE=Debug
 
 :MODE_OK
 echo [INFO] BUILD_MODE           = %BUILD_MODE%
 
 REM -----------------------------
-REM 3) Find repo root (Source/)
+REM 3) SDK paths (required)
 REM -----------------------------
-set SEARCH_DIR=%SCRIPT_DIR%
-set ENGINE_ROOT=
+set SDK_DIR=%SCRIPTS_OUTPUT_DIR%\SDK
+set SDK_INCLUDE=%SDK_DIR%\include
+set SDK_ENGINE_API_CPP=%SDK_DIR%\src\EngineAPI.cpp
 
-for /L %%i in (1,1,12) do (
-    if exist "!SEARCH_DIR!\Source\Engine\Scripting\EngineAPI\EngineAPI.cpp" (
-        set ENGINE_ROOT=!SEARCH_DIR!
-        goto :FOUND_ROOT
-    )
-    set SEARCH_DIR=!SEARCH_DIR!..\
-)
-
-:FOUND_ROOT
-if "%ENGINE_ROOT%"=="" (
-    echo [ERROR] Could not find Source\Engine
+REM Validate SDK exists
+if not exist "%SDK_INCLUDE%\Engine\Scripting\Internal\IScript.inl" (
+    echo [ERROR] Script SDK headers missing.
+    echo         Expected: "%SDK_INCLUDE%\Engine\Scripting\Internal\IScript.inl"
     exit /b 1
 )
 
-set ENGINE_SOURCE_DIR=%ENGINE_ROOT%Source
-set ENGINE_API_CPP=%ENGINE_SOURCE_DIR%\Engine\Scripting\EngineAPI\EngineAPI.cpp
+if not exist "%SDK_ENGINE_API_CPP%" (
+    echo [ERROR] Script SDK EngineAPI.cpp missing.
+    echo         Expected: "%SDK_ENGINE_API_CPP%"
+    exit /b 1
+)
+
+REM Validate scripts exist
+if not exist "%SCRIPTS_ASSETS_BIN_DIR%" (
+    echo [ERROR] Scripts source folder missing:
+    echo         "%SCRIPTS_ASSETS_BIN_DIR%"
+    exit /b 1
+)
 
 REM -----------------------------
 REM 4) Diagnostics
 REM -----------------------------
 echo ============================================================
 echo [INFO] BIN_DIR              = %BIN_DIR%
-echo [INFO] ENGINE_SOURCE_DIR    = %ENGINE_SOURCE_DIR%
-echo [INFO] ENGINE_API_CPP       = %ENGINE_API_CPP%
+echo [INFO] SCRIPTS_OUTPUT_DIR   = %SCRIPTS_OUTPUT_DIR%
+echo [INFO] SCRIPTS_ASSETS_BIN_DIR= %SCRIPTS_ASSETS_BIN_DIR%
+echo [INFO] SDK_INCLUDE          = %SDK_INCLUDE%
+echo [INFO] SDK_ENGINE_API_CPP   = %SDK_ENGINE_API_CPP%
 echo ============================================================
 
 REM -----------------------------
@@ -106,7 +121,7 @@ break > "%RSP%"
 >>"%RSP%" echo /LD
 >>"%RSP%" echo /DSCRIPTS_EXPORTS
 
-REM ----- Config-specific flags -----
+REM Config-specific flags
 if /I "%BUILD_MODE%"=="Debug" (
     >>"%RSP%" echo /MDd
     >>"%RSP%" echo /Od
@@ -118,20 +133,16 @@ if /I "%BUILD_MODE%"=="Debug" (
     >>"%RSP%" echo /DNDEBUG
 )
 
-REM Includes
->>"%RSP%" echo /I"%ENGINE_SOURCE_DIR%"
->>"%RSP%" echo /I"%SCRIPTS_ASSETS_BIN_DIR%"
+REM SDK includes + SDK EngineAPI.cpp (compiled into Scripts.dll)
+>>"%RSP%" echo /I"%SDK_INCLUDE%"
+>>"%RSP%" echo "%SDK_ENGINE_API_CPP%"
 
 REM Output
 >>"%RSP%" echo /Fe:"%SCRIPTS_OUTPUT_DIR%\Scripts.dll"
 
-REM Sources
->>"%RSP%" echo "%ENGINE_API_CPP%"
-
-if exist "%SCRIPTS_ASSETS_BIN_DIR%" (
-    for /R "%SCRIPTS_ASSETS_BIN_DIR%" %%F in (*.cpp) do (
-        >>"%RSP%" echo "%%F"
-    )
+REM Script sources (recursive)
+for /R "%SCRIPTS_ASSETS_BIN_DIR%" %%F in (*.cpp) do (
+    >>"%RSP%" echo "%%F"
 )
 
 REM -----------------------------
@@ -143,5 +154,5 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [OK] Scripts compiled successfully
+echo [OK] Scripts compiled successfully: "%SCRIPTS_OUTPUT_DIR%\Scripts.dll"
 exit /b 0

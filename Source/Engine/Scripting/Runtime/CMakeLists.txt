@@ -14,6 +14,7 @@ file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.i
 
 set(SCRIPTS_SDK_DIR "${SCRIPTS_OUTPUT_DIR}/SDK")
 set(SCRIPTS_SDK_INCLUDE_DIR "${SCRIPTS_SDK_DIR}/include")
+set(SCRIPTS_SDK_SRC_DIR "${SCRIPTS_SDK_DIR}/src")
 
 file(MAKE_DIRECTORY
         "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/Internal"
@@ -36,8 +37,21 @@ file(COPY
 file(COPY
         "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.cpp"
         DESTINATION
-        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/EngineAPI"
+        "${SCRIPTS_SDK_SRC_DIR}"
 )
+
+# Copy ALL headers under EngineAPI/Bindings preserving folders
+file(GLOB_RECURSE SDK_BINDINGS_HEADERS
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/Bindings/*.h"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/Bindings/*.inl"
+)
+
+foreach(hdr IN LISTS SDK_BINDINGS_HEADERS)
+    file(RELATIVE_PATH rel "${CMAKE_SOURCE_DIR}/Source" "${hdr}")
+    get_filename_component(rel_dir "${rel}" DIRECTORY)
+    file(MAKE_DIRECTORY "${SCRIPTS_SDK_INCLUDE_DIR}/${rel_dir}")
+    file(COPY "${hdr}" DESTINATION "${SCRIPTS_SDK_INCLUDE_DIR}/${rel_dir}")
+endforeach()
 
 # Ensure bin/Assets/Scripts exists (it should, if you stage assets on configure)
 if(NOT EXISTS "${SCRIPTS_ASSETS_BIN_DIR}")

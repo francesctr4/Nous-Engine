@@ -92,8 +92,14 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     // Unload current library first
     UnloadScriptLibrary();
 
+    int result = 0;
+
     // Build the scripts
-    int result = std::system("Scripts\\RebuildScripts.bat");
+#ifdef _DEBUG
+    result = std::system("Scripts\\RebuildScripts.bat Debug");
+#else
+    result = std::system("Scripts\\RebuildScripts.bat Release");
+#endif
 
     if (result == 0) {
         NOUS_INFO("Scripts recompiled successfully!");
