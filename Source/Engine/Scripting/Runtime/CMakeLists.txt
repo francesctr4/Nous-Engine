@@ -2,15 +2,27 @@
 # Nous Engine - Scripts DLL (Hot Reload)
 # ==============================
 
-set(SCRIPTS_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Scripts")
+set(SCRIPTS_OUTPUT_DIR     "${CMAKE_BINARY_DIR}/bin/Scripts")
+set(SCRIPTS_ASSETS_BIN_DIR "${CMAKE_BINARY_DIR}/bin/Assets/Scripts")
 
-file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.bat" DESTINATION "${SCRIPTS_OUTPUT_DIR}")
-file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.inl" DESTINATION "${SCRIPTS_OUTPUT_DIR}")
+# Tools/templates copied next to the scripts output
+file(MAKE_DIRECTORY "${SCRIPTS_OUTPUT_DIR}")
+file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.bat"
+        DESTINATION "${SCRIPTS_OUTPUT_DIR}")
+file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.inl"
+        DESTINATION "${SCRIPTS_OUTPUT_DIR}")
 
+# Ensure bin/Assets/Scripts exists (it should, if you stage assets on configure)
+if(NOT EXISTS "${SCRIPTS_ASSETS_BIN_DIR}")
+    message(WARNING "Binary scripts assets directory not found: ${SCRIPTS_ASSETS_BIN_DIR}")
+    message(WARNING "Make sure your configure-time asset replication stages Assets/Scripts into bin/Assets/Scripts.")
+endif()
+
+# Discover script sources ONLY from binary assets path
 file(GLOB_RECURSE SCRIPT_SOURCES
         CONFIGURE_DEPENDS
-        "${CMAKE_SOURCE_DIR}/Assets/Scripts/*.cpp"
-        "../EngineAPI/EngineAPI.cpp"
+        "${SCRIPTS_ASSETS_BIN_DIR}/*.cpp"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.cpp"
 )
 
 add_library(Scripts SHARED ${SCRIPT_SOURCES})
@@ -28,10 +40,10 @@ set_target_properties(Scripts PROPERTIES
         CXX_EXTENSIONS OFF
 )
 
-# Include engine headers so scripts can use Engine API
+# Include engine headers + binary scripts include dir
 target_include_directories(Scripts PUBLIC
         "${CMAKE_SOURCE_DIR}/Source/"
-        "${CMAKE_SOURCE_DIR}/Assets/Scripts/"
+        "${SCRIPTS_ASSETS_BIN_DIR}"
 )
 
 # Platform specifics

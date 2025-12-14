@@ -35,6 +35,9 @@
     },
     {
       "name" : "magic-enum"
+    },
+    {
+      "name" : "shaderc"
     }
   ]
 }

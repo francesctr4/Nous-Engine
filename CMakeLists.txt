@@ -30,24 +30,22 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Functions")
 include(GlobalSettings)
 include(ProfilingOptions)
 include(UnitTests)
+include(Messages)
+
+# ==============================
+# Post-Build Tasks
+# ==============================
+include(AssetsCopy)
+copy_assets()
 
 # ==============================
 # Add Engine Sources
 # ==============================
 add_subdirectory(Source)
 
-# ==============================
-# Post-Build Tasks
-# ==============================
-include(ShaderCompilation)
-include(AssetsCopy)
-include(Messages)
-
-setup_shader_compilation(EditorApp)
-copy_assets(EditorApp)
-
-# Optional: If we want to ensure scripts compile before run
-add_dependencies(EditorApp Scripts)
+if(TARGET EditorApp)
+    add_dependencies(EditorApp Scripts) # Optional: If we want to ensure scripts compile before run
+endif()
 
 # ==============================
 # Summary

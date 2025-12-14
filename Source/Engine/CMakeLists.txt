@@ -8,6 +8,7 @@ find_package(parson CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
 find_package(glm REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
+find_package(unofficial-shaderc CONFIG REQUIRED)
 
 # ==============================
 # Engine Modules

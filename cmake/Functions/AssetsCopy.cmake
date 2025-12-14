@@ -1,17 +1,37 @@
 # ============================================
-# AssetCopy.cmake — Copies project assets
+# AssetsCopy.cmake — Configure-time asset staging
 # ============================================
 
-function(copy_assets TARGET_NAME)
-    if(EXISTS ${CMAKE_SOURCE_DIR}/Assets)
-        add_custom_target(CopyAssets ALL
-                COMMAND ${CMAKE_COMMAND} -E copy_directory
-                ${CMAKE_SOURCE_DIR}/Assets
-                ${CMAKE_BINARY_DIR}/bin/Assets
-                COMMENT "Copying Assets directory"
-        )
-        add_dependencies(${TARGET_NAME} CopyAssets)
-    else()
-        message(WARNING "Assets directory not found — skipping copy step.")
+function(copy_assets)
+    set(ASSETS_SRC_DIR "${CMAKE_SOURCE_DIR}/Assets")
+    set(ASSETS_BIN_DIR "${CMAKE_BINARY_DIR}/bin/Assets")
+
+    if(NOT EXISTS "${ASSETS_SRC_DIR}")
+        message(WARNING "Assets directory not found: ${ASSETS_SRC_DIR}")
+        return()
     endif()
+
+    # Ensure destination exists
+    file(MAKE_DIRECTORY "${ASSETS_BIN_DIR}")
+
+    # Optional: stage only specific subfolders (recommended)
+    set(_ASSET_SUBDIRS
+            Fonts
+            Materials
+            Meshes
+            Scenes
+            Scripts
+            Settings
+            Shaders
+            Textures
+    )
+
+    foreach(_dir IN LISTS _ASSET_SUBDIRS)
+        if(EXISTS "${ASSETS_SRC_DIR}/${_dir}")
+            file(COPY "${ASSETS_SRC_DIR}/${_dir}"
+                    DESTINATION "${ASSETS_BIN_DIR}")
+        endif()
+    endforeach()
+
+    message(STATUS "Staged Assets -> ${ASSETS_BIN_DIR} (configure-time)")
 endfunction()

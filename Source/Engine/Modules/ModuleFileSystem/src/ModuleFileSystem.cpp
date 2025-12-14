@@ -1,10 +1,13 @@
 #include "Engine/Modules/ModuleFileSystem/include/ModuleFileSystem.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-
+#include <string>
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include <filesystem>
 #include "Engine/Core/Application.h"
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_FILESYSTEM;
 
 ModuleFileSystem::ModuleFileSystem(Application* app) : Module(app)
 {
@@ -29,6 +32,7 @@ bool ModuleFileSystem::Awake()
         !NOUS_FileManager::Exists("Library/Textures"))
 	{
 		CreateLibraryFolder();
+        CompileShaders();
 		ImportDirectory("Assets");
 	}
 
@@ -71,6 +75,7 @@ bool ModuleFileSystem::ImportDirectory(const std::string& directory)
 	{
 		if (std::filesystem::is_regular_file(entry))
 		{
+
 			App->resourceManager->ImportFile(entry.path().string());
 		}
 	}
@@ -78,116 +83,75 @@ bool ModuleFileSystem::ImportDirectory(const std::string& directory)
 	return true;
 }
 
-// Add this method to ModuleFileSystem.cpp
+// Handle on resource manager -> manage shaders as a resource.
 bool ModuleFileSystem::CompileShaders()
 {
-    NOUS_TRACE("%s()", __FUNCTION__);
+	NOUS_TRACE("%s()", __FUNCTION__);
 
-    // Find glslc executable
-    std::string glslc_path;
+	namespace fs = std::filesystem;
 
-#ifdef _WIN32
-    // Try common Windows locations
-    std::vector<std::string> windows_paths = {
-            "C:/VulkanSDK/1.3.268.0/Bin/glslc.exe",
-            "C:/VulkanSDK/1.3.275.0/Bin/glslc.exe", // Add more versions as needed
-            "glslc.exe" // Try PATH
-    };
+	const fs::path inRoot  = fs::path("Assets/Shaders");
+	const fs::path outRoot = fs::path("Library/Shaders");
 
-    for (const auto& path : windows_paths) {
-        if (NOUS_FileManager::Exists(path) || path == "glslc.exe") {
-            glslc_path = path;
-            break;
-        }
-    }
-#else
-    // Try common Unix/Linux/macOS locations
-    std::vector<std::string> unix_paths = {
-        "/usr/bin/glslc",
-        "/usr/local/bin/glslc",
-        "glslc" // Try PATH
-    };
+	if (!fs::exists(inRoot)) {
+		NOUS_ERROR("Shader input directory not found: %s", inRoot.string().c_str());
+		return false;
+	}
 
-    for (const auto& path : unix_paths) {
-        if (NOUS_FileManager::Exists(path) || path == "glslc") {
-            glslc_path = path;
-            break;
-        }
-    }
-#endif
+	bool allOk = true;
+	uint32_t compiledCount = 0;
+	uint32_t skippedCount  = 0;
 
-    if (glslc_path.empty()) {
-        NOUS_ERROR("glslc compiler not found!");
-        return false;
-    }
+	auto isShaderStageFile = [](const fs::path& p) -> bool {
+		const std::string s = p.string();
+		return
+				(s.size() >= 10 && s.ends_with(".vert.glsl")) ||
+				(s.size() >= 10 && s.ends_with(".frag.glsl")) ||
+				(s.size() >= 10 && s.ends_with(".comp.glsl")) ||
+				(s.size() >= 10 && s.ends_with(".geom.glsl")) ||
+				(s.size() >= 10 && s.ends_with(".tesc.glsl")) ||
+				(s.size() >= 10 && s.ends_with(".tese.glsl"));
+	};
 
-    // Ensure Library/Shaders directory exists
-    if (!NOUS_FileManager::CreateDirectory("Library/Shaders")) {
-        NOUS_ERROR("Failed to create Library/Shaders directory");
-        return false;
-    }
+	for (const auto& entry : fs::recursive_directory_iterator(inRoot)) {
+		if (!entry.is_regular_file())
+			continue;
 
-    // Find all .glsl files in Assets/Shaders
-    if (!NOUS_FileManager::Exists("Assets/Shaders")) {
-        NOUS_WARN("Assets/Shaders directory not found");
-        return true; // Not an error if no shaders exist
-    }
+		const fs::path inPath = entry.path();
 
-    bool success = true;
-    for (const auto& entry : std::filesystem::recursive_directory_iterator("Assets/Shaders")) {
-        if (std::filesystem::is_regular_file(entry) && entry.path().extension() == ".glsl") {
-            std::string input_file = entry.path().string();
-            std::string relative_path = std::filesystem::relative(entry.path(), "Assets/Shaders").string();
+		// Only compile files matching your stage pattern (*.vert.glsl, *.frag.glsl, etc.)
+		if (!isShaderStageFile(inPath)) {
+			++skippedCount;
+			continue;
+		}
 
-            // Replace .glsl with .spv
-            std::string output_file = "Library/Shaders/" + relative_path;
-            size_t pos = output_file.find_last_of('.');
-            if (pos != std::string::npos) {
-                output_file = output_file.substr(0, pos) + ".spv";
-            }
+		// Build output path: Library/Shaders/<relative_path>.spv
+		fs::path rel = fs::relative(inPath, inRoot);      // e.g. BuiltIn/UI.vert.glsl
+		fs::path outPath = outRoot / rel;                 // e.g. Library/Shaders/BuiltIn/UI.vert.glsl
+		outPath.replace_extension(".spv");                // becomes .../UI.vert.spv (NOTE: only replaces ".glsl")
 
-            // Ensure output directory exists
-            std::filesystem::path output_path(output_file);
-            if (!NOUS_FileManager::CreateDirectory(output_path.parent_path().string())) {
-                NOUS_ERROR("Failed to create directory: %s", output_path.parent_path().string().c_str());
-                success = false;
-                continue;
-            }
+		// If you want ".vert.glsl" -> ".vert.spv" exactly:
+		// replace_extension(".spv") turns ".glsl" into ".spv" which is what you want.
 
-            // Determine shader stage
-            std::string shader_stage;
-            if (relative_path.find(".vert.") != std::string::npos) {
-                shader_stage = "vertex";
-            } else if (relative_path.find(".frag.") != std::string::npos) {
-                shader_stage = "fragment";
-            } else if (relative_path.find(".comp.") != std::string::npos) {
-                shader_stage = "compute";
-            } else if (relative_path.find(".geom.") != std::string::npos) {
-                shader_stage = "geometry";
-            } else if (relative_path.find(".tesc.") != std::string::npos) {
-                shader_stage = "tesscontrol";
-            } else if (relative_path.find(".tese.") != std::string::npos) {
-                shader_stage = "tesseval";
-            } else {
-                NOUS_WARN("Unknown shader stage for: %s", relative_path.c_str());
-                continue;
-            }
+		const bool ok = NOUS_ShaderSystem::CompileGlslFileToSpirvFile(inPath.string(), outPath.string(),
+				/*optimize=*/true,
+				/*debugInfo=*/false);
 
-            // Build command
-            std::string command = "\"" + glslc_path + "\" -fshader-stage=" + shader_stage +
-                                  " \"" + input_file + "\" -o \"" + output_file + "\"";
+		if (!ok) {
+			NOUS_ERROR("Shader compilation failed: %s -> %s",
+					   inPath.string().c_str(), outPath.string().c_str());
+			allOk = false;
+		} else {
+			NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Shader compiled: %s -> %s", __FUNCTION__,
+					  inPath.string().c_str(), outPath.string().c_str());
+			++compiledCount;
+		}
+	}
 
-            NOUS_DEBUG("Compiling shader: %s -> %s", input_file.c_str(), output_file.c_str());
+	NOUS_INFO("Shader compilation finished. Compiled=%u, Skipped=%u, Success=%s",
+			  compiledCount, skippedCount, allOk ? "true" : "false");
 
-            int result = std::system(command.c_str());
-            if (result != 0) {
-                NOUS_ERROR("Failed to compile shader: %s", input_file.c_str());
-                success = false;
-            }
-        }
-    }
-
-    return success;
+	return allOk;
 }
 
 void ModuleFileSystem::OnEvent(const Event &event)

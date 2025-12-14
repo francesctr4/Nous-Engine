@@ -18,6 +18,8 @@
 
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
 
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
+
 ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -152,6 +154,8 @@ void ModuleResourceManager::OnEvent(const Event& event)
 
 bool ModuleResourceManager::ImportFile(const std::string& path)
 {
+	NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Importing file: %s", __FUNCTION__, path.c_str());
+
 	if (!NOUS_FileManager::Exists(path))
 	{
 		NOUS_ERROR("Import File ERROR: General --> Couldn't find file: %s", path.c_str());

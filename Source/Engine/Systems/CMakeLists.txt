@@ -5,6 +5,7 @@
 add_subdirectory(CameraSystem)
 add_subdirectory(ECS)
 add_subdirectory(ResourceManager)
+add_subdirectory(ShaderSystem)
 
 add_library(Systems STATIC
         SystemManager.cpp
@@ -29,4 +30,5 @@ target_link_libraries(Systems PUBLIC
         Camera
         ECS
         ResourceManager
+        ShaderSystem
 )
