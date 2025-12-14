@@ -12,6 +12,33 @@ file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.ba
 file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.inl"
         DESTINATION "${SCRIPTS_OUTPUT_DIR}")
 
+set(SCRIPTS_SDK_DIR "${SCRIPTS_OUTPUT_DIR}/SDK")
+set(SCRIPTS_SDK_INCLUDE_DIR "${SCRIPTS_SDK_DIR}/include")
+
+file(MAKE_DIRECTORY
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/Internal"
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/EngineAPI"
+)
+
+file(COPY
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/IScript.inl"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptRegistry.inl"
+        DESTINATION
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/Internal"
+)
+
+file(COPY
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.h"
+        DESTINATION
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/EngineAPI"
+)
+
+file(COPY
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.cpp"
+        DESTINATION
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/EngineAPI"
+)
+
 # Ensure bin/Assets/Scripts exists (it should, if you stage assets on configure)
 if(NOT EXISTS "${SCRIPTS_ASSETS_BIN_DIR}")
     message(WARNING "Binary scripts assets directory not found: ${SCRIPTS_ASSETS_BIN_DIR}")
