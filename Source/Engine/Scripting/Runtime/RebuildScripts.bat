@@ -52,6 +52,10 @@ set SCRIPTS_ASSETS_BIN_DIR=%BIN_DIR%Assets\Scripts
 
 if not exist "%SCRIPTS_OUTPUT_DIR%" mkdir "%SCRIPTS_OUTPUT_DIR%" >nul 2>&1
 
+set SCRIPTS_OBJ_DIR=%SCRIPTS_OUTPUT_DIR%\obj
+
+if not exist "%SCRIPTS_OBJ_DIR%" mkdir "%SCRIPTS_OBJ_DIR%"
+
 REM -----------------------------
 REM 2.5) Build configuration (auto-detect + override)
 REM Usage:
@@ -120,6 +124,8 @@ break > "%RSP%"
 >>"%RSP%" echo /EHsc
 >>"%RSP%" echo /LD
 >>"%RSP%" echo /DSCRIPTS_EXPORTS
+
+>>"%RSP%" echo /Fo"%SCRIPTS_OBJ_DIR%\\"
 
 REM Config-specific flags
 if /I "%BUILD_MODE%"=="Debug" (
