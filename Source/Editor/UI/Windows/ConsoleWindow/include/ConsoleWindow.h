@@ -7,6 +7,7 @@
 #include <string>
 #include <functional>
 #include <deque>
+#include <mutex>
 
 class ConsoleWindow : public IEditorWindow
 {
@@ -23,6 +24,7 @@ private:
     void DrawCommandLine();
     void ExecuteCommand(const std::string& command);
 
+    std::mutex logMutex;
     std::deque<std::tuple<LogLevel, LogChannel, double, std::string>> logBuffer;
 
     bool autoScroll = true;

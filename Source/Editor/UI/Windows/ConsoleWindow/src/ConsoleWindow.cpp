@@ -206,29 +206,52 @@ void ConsoleWindow::DrawMenuBar()
 
 void ConsoleWindow::DrawLogPanel()
 {
-    const float footer_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
-    ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height), false, ImGuiWindowFlags_HorizontalScrollbar);
+    // Snapshot copy (type-safe without knowing element type)
+    decltype(logBuffer) snapshot;
+    {
+        std::scoped_lock lock(logMutex);
+        snapshot = logBuffer;
+    }
+
+    const float footer_height =
+        ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+
+    ImGui::BeginChild("ScrollingRegion",
+        ImVec2(0, -footer_height),
+        false,
+        ImGuiWindowFlags_HorizontalScrollbar);
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
 
     const bool hasSearch = searchBuffer[0] != '\0';
     std::string searchLower;
+
     if (hasSearch)
     {
         searchLower = searchBuffer;
-        std::transform(searchLower.begin(), searchLower.end(), searchLower.begin(), ::tolower);
+        std::transform(
+            searchLower.begin(),
+            searchLower.end(),
+            searchLower.begin(),
+            [](unsigned char c) { return (char)std::tolower(c); });
     }
 
-    for (const auto& [level, channel, time, text] : logBuffer)
+    // Iterate over snapshot (safe from concurrent modification)
+    for (const auto& [level, channel, time, text] : snapshot)
     {
         if (!showLevel[(int)level]) continue;
         if (!showChannel[(int)channel]) continue;
 
-        // 🔍 Case-insensitive search
+        // Case-insensitive search
         if (hasSearch)
         {
             std::string textLower = text;
-            std::transform(textLower.begin(), textLower.end(), textLower.begin(), ::tolower);
+            std::transform(
+                textLower.begin(),
+                textLower.end(),
+                textLower.begin(),
+                [](unsigned char c) { return (char)std::tolower(c); });
+
             if (textLower.find(searchLower) == std::string::npos)
                 continue;
         }
@@ -240,14 +263,24 @@ void ConsoleWindow::DrawLogPanel()
         int millis  = totalMs % 1000;
 
         char timeBuffer[16];
-        snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d:%03d", minutes, seconds, millis);
+        snprintf(timeBuffer, sizeof(timeBuffer),
+                 "%02d:%02d:%03d",
+                 minutes, seconds, millis);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, levelColors[(int)level]);
-        ImGui::Text("[%s] [%s] %s", timeBuffer, LOG_CHANNEL_NAMES[(int)channel], text.c_str());
+        ImGui::PushStyleColor(ImGuiCol_Text,
+                              levelColors[(int)level]);
+
+        ImGui::Text("[%s] [%s] %s",
+                    timeBuffer,
+                    LOG_CHANNEL_NAMES[(int)channel],
+                    text.c_str());
+
         ImGui::PopStyleColor();
     }
 
-    if (scrollToBottom && (autoScroll || ImGui::GetScrollY() >= ImGui::GetScrollMaxY())) {
+    if (scrollToBottom &&
+        (autoScroll || ImGui::GetScrollY() >= ImGui::GetScrollMaxY()))
+    {
         ImGui::SetScrollHereY(1.0f);
         scrollToBottom = false;
     }

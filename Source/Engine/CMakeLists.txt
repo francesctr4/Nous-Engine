@@ -55,15 +55,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         Utils
 )
 
-target_link_options(${PROJECT_NAME} PRIVATE
-        "/WHOLEARCHIVE:$<TARGET_FILE:Core>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Modules>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:NOUS_Multithreading>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Renderer>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Scripting>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Systems>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Utils>"
-)
+if (WIN32)
+  target_link_options(${PROJECT_NAME} PRIVATE
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Core>"
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Modules>"
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:NOUS_Multithreading>"
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Renderer>"
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Scripting>"
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Systems>"
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Utils>"
+  )
+endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

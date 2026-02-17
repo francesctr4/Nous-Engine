@@ -20,10 +20,12 @@ target_link_libraries(${EDITOR_NAME} PUBLIC
         EditorUI
 )
 
-target_link_options(${EDITOR_NAME} PRIVATE
-        "/WHOLEARCHIVE:$<TARGET_FILE:ModuleEditor>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:EditorUI>"
-)
+if (WIN32)
+  target_link_options(${EDITOR_NAME} PRIVATE
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:ModuleEditor>"
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:EditorUI>"
+  )
+endif()
 
 set_target_properties(${EDITOR_NAME} PROPERTIES
         CXX_STANDARD 23
