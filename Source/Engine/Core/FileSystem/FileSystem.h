@@ -1,6 +1,7 @@
 #ifndef FILEMANAGER_H
 #define FILEMANAGER_H
 
+#include <filesystem>
 #include <string>
 
 namespace NOUS_FileManager 
@@ -17,8 +18,8 @@ namespace NOUS_FileManager
 	std::string GetExtension(const std::string& path);
 
 	// Directory operations
-	bool CreateDirectory(const std::string& path);
-	bool DeleteDirectory(const std::string& path);
+	bool CreateDirectory(const std::filesystem::path& path);
+	bool DeleteDirectory(const std::filesystem::path& path);
 
 	// File operations
 	bool CopyFile(const std::string& source, const std::string& destination);

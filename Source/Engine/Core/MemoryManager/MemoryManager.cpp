@@ -163,7 +163,7 @@ void MemoryManager::Free(void* block, MemoryTag tag)
 
 void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
-	std::lock_guard<std::mutex> lock(memoryMutex);
+	std::scoped_lock lock(memoryMutex);
 
 	if (tag == MemoryTag::UNKNOWN)
 	{

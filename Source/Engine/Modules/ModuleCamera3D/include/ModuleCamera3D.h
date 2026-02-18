@@ -12,8 +12,8 @@ class ModuleCamera3D : public Module, public IEventListener
 {
 public:
 
-	ModuleCamera3D(Application* app);
-	virtual ~ModuleCamera3D();
+	explicit ModuleCamera3D(Application* app);
+	~ModuleCamera3D() override;
 
 	bool Awake() override;
 	bool Start() override;
@@ -37,8 +37,6 @@ private:
 	void HandleCameraZoom(glm::vec3& newPos, const float& speed);
 	void HandleCameraPan(glm::vec3& newPos, const float& speed, const float& sensitivity, const float& dt);
 	void HandleCameraOrbit(const float& sensitivity, const float& dt, const glm::vec3& lookAt);
-
-private:
 
 	Camera* camera;
 

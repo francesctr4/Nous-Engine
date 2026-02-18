@@ -56,9 +56,9 @@ std::string NOUS_FileManager::GetExtension(const std::string& path)
 	return std::filesystem::path(path).extension().string();
 }
 
-bool NOUS_FileManager::CreateDirectory(const std::string& path)
+bool NOUS_FileManager::CreateDirectory(const std::filesystem::path& path)
 {
-	if (!Exists(path)) 
+	if (!Exists(path.string()))
 	{
 		try
 		{
@@ -74,9 +74,9 @@ bool NOUS_FileManager::CreateDirectory(const std::string& path)
 	return true;
 }
 
-bool NOUS_FileManager::DeleteDirectory(const std::string& path)
+bool NOUS_FileManager::DeleteDirectory(const std::filesystem::path& path)
 {
-	if (Exists(path))
+	if (Exists(path.string()))
 	{
 		// Try to remove the directory
 		try
@@ -99,9 +99,9 @@ bool NOUS_FileManager::DeleteDirectory(const std::string& path)
 			// Remove the empty directory after cleaning it up
 			std::filesystem::remove(path);
 		}
-		catch (...)
+		catch (const std::filesystem::filesystem_error& e)
 		{
-			// Handle any errors that occur during the process
+			NOUS_ERROR("Failed to delete directory: %s", e.what());
 			return false;
 		}
 	}

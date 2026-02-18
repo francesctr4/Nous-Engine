@@ -2,8 +2,9 @@
 #define APPLICATION_H
 
 #include "Engine/EngineExport.h"
-#include <Engine/Core/UpdateStatus.h>
-#include <vector>
+#include "Engine/Core/UpdateStatus.h"
+
+#include <array>
 
 // Forward declarations
 struct Event;
@@ -29,26 +30,26 @@ public:
 	NOUS_ENGINE_API Application();
 	NOUS_ENGINE_API ~Application();
 
-	NOUS_ENGINE_API bool Awake();
-	NOUS_ENGINE_API bool Start();
+	NOUS_ENGINE_API bool Awake() const;
+	NOUS_ENGINE_API bool Start() const;
 	NOUS_ENGINE_API UpdateStatus Update();
 	NOUS_ENGINE_API bool CleanUp();
 
 	NOUS_ENGINE_API void SetTargetFPS(float FPS);
-	NOUS_ENGINE_API float GetTargetFPS();
+	NOUS_ENGINE_API float GetTargetFPS() const;
 
-	NOUS_ENGINE_API float GetFPS();
-	NOUS_ENGINE_API float GetDT();
-	NOUS_ENGINE_API float GetMS();
+	NOUS_ENGINE_API float GetFPS() const;
+	NOUS_ENGINE_API float GetDT() const;
+	NOUS_ENGINE_API float GetMS() const;
 
     // Event System
-    NOUS_ENGINE_API void QueueEvent(const Event& event);
-    NOUS_ENGINE_API void BroadcastEvent(const Event& event);
+    NOUS_ENGINE_API void QueueEvent(const Event& event) const;
+    NOUS_ENGINE_API void BroadcastEvent(const Event& event) const;
 
 private:
 
 	UpdateStatus PrepareUpdate();
-	void FinishUpdate();
+	void FinishUpdate() const;
 
 public:
 
@@ -70,7 +71,7 @@ public:
 
 private:
 
-	Module* listModules[NUM_MODULES];
+	std::array<Module*, NUM_MODULES> listModules;
 
 	Timer* msTimer;
 	float dt;

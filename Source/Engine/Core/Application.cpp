@@ -14,14 +14,13 @@
 #include <Engine/Core/TimeManager/TimeManager.h>
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include <Engine/Core/EventSystem/EventSystem.h>
-#include <Engine/Core/EventSystem/Event/include/Event.h>
 #include "Engine/Core/Logger/Logger.h"
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>
 #endif
 
-extern Application* External = nullptr;
+NOUS_ENGINE_API Application* External = nullptr;
 
 Application::Application()
 {
@@ -63,7 +62,7 @@ Application::~Application()
     NOUS_DELETE(updateTitleTimer, MemoryTag::APPLICATION);
 }
 
-bool Application::Awake()
+bool Application::Awake() const
 {
     bool ret = true;
 
@@ -79,7 +78,7 @@ bool Application::Awake()
     return ret;
 }
 
-bool Application::Start()
+bool Application::Start() const
 {
     bool ret = true;
 
@@ -171,7 +170,7 @@ UpdateStatus Application::Update()
     return ret;
 }
 
-void Application::FinishUpdate()
+void Application::FinishUpdate() const
 {
     NOUS_TRACE("%s()", __FUNCTION__);
 
@@ -228,32 +227,32 @@ void Application::SetTargetFPS(float FPS)
     targetFPS = FPS;
 }
 
-float Application::GetTargetFPS()
+float Application::GetTargetFPS() const
 {
     return targetFPS;
 }
 
-float Application::GetFPS()
+float Application::GetFPS() const
 {
     return 1 / dt;
 }
 
-float Application::GetDT()
+float Application::GetDT() const
 {
     return dt;
 }
 
-float Application::GetMS()
+float Application::GetMS() const
 {
     return dt * 1000;
 }
 
-void Application::QueueEvent(const Event &event)
+void Application::QueueEvent(const Event &event) const
 {
     eventSystem->Queue(event);
 }
 
-void Application::BroadcastEvent(const Event &event)
+void Application::BroadcastEvent(const Event &event) const
 {
     eventSystem->Broadcast(event);
 }

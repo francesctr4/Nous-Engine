@@ -6,7 +6,11 @@ class ImFont;
 class EditorContext
 {
 public:
-    virtual ImFont* GetFont(size_t index) const = 0;
+
+    virtual ~EditorContext() = default;
+
+    [[nodiscard]] virtual ImFont* GetFont(size_t index) const = 0;
+
 };
 
 #endif //NOUS_ENGINE_EDITORCONTEXT_H
