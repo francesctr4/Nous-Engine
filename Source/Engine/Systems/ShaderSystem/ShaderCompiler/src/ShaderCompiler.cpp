@@ -30,6 +30,31 @@ namespace
         return f.good();
     }
 
+    shaderc_shader_kind ToShadercKind(ShaderStage stage)
+    {
+        switch (stage)
+        {
+            case ShaderStage::Vertex:         return shaderc_vertex_shader;
+            case ShaderStage::Fragment:       return shaderc_fragment_shader;
+            case ShaderStage::Compute:        return shaderc_compute_shader;
+            case ShaderStage::Geometry:       return shaderc_geometry_shader;
+            case ShaderStage::TessControl:    return shaderc_tess_control_shader;
+            case ShaderStage::TessEvaluation: return shaderc_tess_evaluation_shader;
+            default:                          return shaderc_glsl_infer_from_source;
+        }
+    }
+
+    shaderc_optimization_level ToShadercOpt(ShaderOptimizationLevel opt)
+    {
+        switch (opt)
+        {
+            case ShaderOptimizationLevel::Zero:        return shaderc_optimization_level_zero;
+            case ShaderOptimizationLevel::Size:        return shaderc_optimization_level_size;
+            case ShaderOptimizationLevel::Performance: return shaderc_optimization_level_performance;
+            default:                                   return shaderc_optimization_level_performance;
+        }
+    }
+
     shaderc_shader_kind InferKindFromExtension(const std::string& path)
     {
         if (path.ends_with(".vert.glsl")) return shaderc_vertex_shader;
@@ -97,5 +122,72 @@ namespace NOUS_ShaderSystem
         }
 
         return true;
+    }
+
+    ShaderCompileResult CompileGlslStringToSpirv(std::string_view glsl, ShaderStage stage,
+    const ShaderCompilerConfig &config, std::string_view virtualPath)
+    {
+        ShaderCompileResult out{};
+        out.success = false;
+
+        // Build ShaderSource inside the result (as you requested)
+        out.shaderSource.virtualPath = virtualPath;
+        out.shaderSource.stage = stage;
+        out.shaderSource.entryPoint = config.entryPoint;
+        out.shaderSource.glslSource.assign(glsl.begin(), glsl.end());
+
+        if (glsl.empty())
+        {
+            out.errorMessage = "ShaderCompiler: GLSL source is empty.";
+            return out;
+        }
+
+        if (stage == ShaderStage::Unknown)
+        {
+            out.errorMessage = "ShaderCompiler: ShaderStage is Unknown.";
+            return out;
+        }
+
+        shaderc::Compiler compiler;
+        shaderc::CompileOptions options;
+
+        options.SetTargetEnvironment(shaderc_target_env_vulkan,
+                                     shaderc_env_version_vulkan_1_2);
+        options.SetTargetSpirv(shaderc_spirv_version_1_5);
+
+        options.SetOptimizationLevel(ToShadercOpt(config.optimization));
+
+        if (config.generateDebugInfo)
+            options.SetGenerateDebugInfo();
+
+        if (config.warningsAsErrors)
+            options.SetWarningsAsErrors();
+
+        const shaderc_shader_kind kind = ToShadercKind(stage);
+
+        shaderc::SpvCompilationResult result =
+                compiler.CompileGlslToSpv(
+                    out.shaderSource.glslSource,                 // must be std::string
+                    kind,
+                    out.shaderSource.virtualPath.c_str(),
+                    out.shaderSource.entryPoint.c_str(),
+                    options
+                );
+
+        out.errorMessage = result.GetErrorMessage();
+
+        if (result.GetCompilationStatus() != shaderc_compilation_status_success)
+        {
+            out.success = false;
+            return out;
+        }
+
+        out.shaderSource.spirvBinary.assign(result.cbegin(), result.cend());
+        out.success = !out.shaderSource.spirvBinary.empty();
+
+        if (!out.success && out.errorMessage.empty())
+            out.errorMessage = "ShaderCompiler: compilation succeeded but SPIR-V output is empty (unexpected).";
+
+        return out;
     }
 }

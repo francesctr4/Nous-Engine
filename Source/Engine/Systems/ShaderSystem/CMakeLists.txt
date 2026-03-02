@@ -5,6 +5,8 @@
 add_library(ShaderSystem STATIC)
 
 add_subdirectory(ShaderCompiler)
+add_subdirectory(ShaderReflection)
+add_subdirectory(Tests)
 
 set_target_properties(ShaderSystem PROPERTIES
         CXX_STANDARD 23
@@ -20,4 +22,5 @@ target_compile_definitions(ShaderSystem PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(ShaderSystem PUBLIC
         unofficial::shaderc::shaderc
+        unofficial::spirv-reflect
 )

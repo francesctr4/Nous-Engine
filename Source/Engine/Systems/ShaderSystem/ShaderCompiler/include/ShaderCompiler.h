@@ -5,6 +5,8 @@
 
 #include <string>
 
+#include "Engine/Systems/ShaderSystem/ShaderTypes.h"
+
 namespace NOUS_ShaderSystem
 {
     /**
@@ -20,6 +22,11 @@ namespace NOUS_ShaderSystem
                                     const std::string& spvPath,
                                     bool optimize = true,
                                     bool debugInfo = true);
+
+    ShaderCompileResult CompileGlslStringToSpirv(std::string_view glsl,
+                                                 ShaderStage stage,
+                                                 const ShaderCompilerConfig& config,
+                                                 std::string_view virtualPath);
 }
 
 #endif //NOUS_ENGINE_SHADERCOMPILATOR_H
