@@ -7,3 +7,4 @@ target_sources(ResourceManager PRIVATE
 add_subdirectory(ImporterMaterial)
 add_subdirectory(ImporterMesh)
 add_subdirectory(ImporterTexture)
+add_subdirectory(ImporterShader)

@@ -13,6 +13,7 @@ enum class ResourceType
 	MESH,
 	MATERIAL,
 	TEXTURE,
+	SHADER,
 
 	ALL_TYPES
 };

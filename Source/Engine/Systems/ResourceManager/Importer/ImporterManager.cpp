@@ -6,6 +6,7 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterMaterial/include/ImporterMaterial.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterTexture/include/ImporterTexture.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterShader/include/ImporterShader.h"
 
 #include <array>
 
@@ -14,7 +15,8 @@ const std::array<std::unique_ptr<Importer>, c_NUM_IMPORTERS> ImporterManager::im
 {
     std::make_unique<ImporterMesh>(),
     std::make_unique<ImporterMaterial>(),
-    std::make_unique<ImporterTexture>()
+    std::make_unique<ImporterTexture>(),
+    std::make_unique<ImporterShader>()
 };
 
 bool ImporterManager::Import(const ResourceType& type, const MetaFileData& metaFileData)

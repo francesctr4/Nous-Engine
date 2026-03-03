@@ -10,7 +10,7 @@ enum class ResourceType;
 struct Importer;
 struct MetaFileData;
 
-constexpr int16 c_NUM_IMPORTERS = 3;
+constexpr int16 c_NUM_IMPORTERS = 4;
 
 class ImporterManager
 {

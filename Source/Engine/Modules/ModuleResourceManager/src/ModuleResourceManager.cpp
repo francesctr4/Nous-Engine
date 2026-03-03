@@ -17,6 +17,7 @@
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
@@ -495,6 +496,11 @@ Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
 			resource = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
 			break;
 		}
+		case ResourceType::SHADER:
+		{
+			resource = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+			break;
+		}
 	}
 
 	return resource;
@@ -519,6 +525,11 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 		case ResourceType::TEXTURE:
 		{
 			NOUS_DELETE(resource, MemoryTag::RESOURCE_TEXTURE);
+			break;
+		}
+		case ResourceType::SHADER:
+		{
+			NOUS_DELETE(resource, MemoryTag::RESOURCE_SHADER);
 			break;
 		}
 	}
@@ -672,6 +683,11 @@ void ModuleResourceManager::ClearResources()
 			case ResourceType::TEXTURE:
 			{
 				NOUS_DELETE(Resource, MemoryTag::RESOURCE_TEXTURE);
+				break;
+			}
+			case ResourceType::SHADER:
+			{
+				NOUS_DELETE(Resource, MemoryTag::RESOURCE_SHADER);
 				break;
 			}
 		}

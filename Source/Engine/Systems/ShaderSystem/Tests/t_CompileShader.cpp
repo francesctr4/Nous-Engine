@@ -6,7 +6,11 @@
 #include <algorithm> // std::any_of, std::find_if
 #include <iostream>
 
+#include "Engine/Core/Application.h"
 #include "Engine/Core/Logger/Asserts.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
 // More strict helpers
 
@@ -345,5 +349,27 @@ void Test_CompileShader()
     // RESOURCE SHADER CREATION
     // -----------------------
 
+    auto* rShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
 
+    rShader->reflection = pipe;
+    rShader->stagesData.push_back(vert.shaderSource);
+    rShader->stagesData.push_back(frag.shaderSource);
+
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "TEST SHADERS RESOURCE CREATION SUCCESS");
+
+    NOUS_DELETE(rShader, MemoryTag::RESOURCE_SHADER);
+
+    // TODO: In the end we will need to create our own default shaders like this at the start of the program.
+    // TODO: After doing this, defaultShader pointer should have all the info about
+    // TODO: ShaderSource, ShaderReflection and IBackendShader, with all the resources already created for Vulkan.
+    // TODO: Also, shaders must be being saved in library like any other asset.
+    // ResourceShader* defaultMaterialShader =
+    //     down_cast<ResourceShader*>(
+    //         External->resourceManager->CreateResource(
+    //             "Assets/Shaders/BuiltIn.MaterialShader.glsl"));
+    //
+    // ResourceShader* defaultUIShader =
+    //     down_cast<ResourceShader*>(
+    //         External->resourceManager->CreateResource(
+    //             "Assets/Shaders/BuiltIn.MaterialShader.glsl"));
 }

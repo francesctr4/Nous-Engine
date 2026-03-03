@@ -7,7 +7,8 @@ static const std::unordered_map<ResourceType, std::string> resourceTypeToLibrary
 {
 	{ResourceType::MESH, "nmesh"},
 	{ResourceType::MATERIAL, "nmat"},
-	{ResourceType::TEXTURE, "png"}
+	{ResourceType::TEXTURE, "png"},
+	{ResourceType::SHADER, "spv"}
 };
 
 static const std::unordered_map<std::string_view, ResourceType> extensionToResourceType
@@ -18,7 +19,9 @@ static const std::unordered_map<std::string_view, ResourceType> extensionToResou
 
 	{"nmat", ResourceType::MATERIAL},
 
-	{"png", ResourceType::TEXTURE}
+	{"png", ResourceType::TEXTURE},
+
+	{"spv", ResourceType::SHADER},
 };
 
 static const std::unordered_map<ResourceType, std::string> resourceTypeToAssetsFolder
@@ -26,6 +29,7 @@ static const std::unordered_map<ResourceType, std::string> resourceTypeToAssetsF
 	{ResourceType::MESH, "Assets\\Meshes\\"},
 	{ResourceType::MATERIAL, "Assets\\Materials\\"},
 	{ResourceType::TEXTURE, "Assets\\Textures\\"},
+	{ResourceType::SHADER, "Assets\\Shaders\\"},
 };
 
 static const std::unordered_map<ResourceType, std::string> resourceTypeToLibraryFolder
@@ -33,6 +37,7 @@ static const std::unordered_map<ResourceType, std::string> resourceTypeToLibrary
 	{ResourceType::MESH, "Library\\Meshes\\"},
 	{ResourceType::MATERIAL, "Library\\Materials\\"},
 	{ResourceType::TEXTURE, "Library\\Textures\\"},
+	{ResourceType::SHADER, "Library\\Shaders\\"},
 };
 
 #pragma endregion
