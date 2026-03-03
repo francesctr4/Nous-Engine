@@ -16,11 +16,24 @@ enum class DescriptorType : uint8_t
     StorageImage
 };
 
-struct ReflectedMember
-{
+enum class DataType : uint8_t {
+    Unknown,
+    // scalars
+    Bool, Int, UInt, Float,
+    // vectors
+    Vec2, Vec3, Vec4,
+    IVec2, IVec3, IVec4,
+    UVec2, UVec3, UVec4,
+    // matrices
+    Mat2, Mat3, Mat4,
+  };
+
+struct ReflectedMember {
     std::string name;
-    uint32_t offset = 0;
-    uint32_t size = 0;
+    DataType type;
+    uint32_t offset;
+    uint32_t size;      // bytes
+    uint32_t arrayCount; // 1 if not array
 };
 
 struct ReflectedBinding
@@ -30,6 +43,10 @@ struct ReflectedBinding
     DescriptorType type = DescriptorType::Unknown;
     uint32_t count = 1;             // arrays: e.g., sampler2D tex[4]
     std::string name;               // "CameraUBO", "uAlbedo", etc.
+    uint32_t stageMask;
+    uint32_t blockSize;
+
+    std::vector<ReflectedMember> members; // only for UBO/SSBO
 };
 
 struct ReflectedPushConstant
@@ -37,9 +54,12 @@ struct ReflectedPushConstant
     uint32_t offset = 0;
     uint32_t size = 0;
     std::string name;
+    uint32_t stageMask;
 
     std::vector<ReflectedMember> members;   // opcional pero potente
 };
+
+enum class ScalarType : uint8_t { Unknown, Bool, Int, UInt, Float };
 
 struct ReflectedInput
 {
@@ -49,6 +69,8 @@ struct ReflectedInput
     uint8_t     components = 0;               // 1..4 (vecN)
     uint8_t     bitWidth = 0;                 // 8/16/32/64 (normalmente 32)
     uint32_t    sizeBytes = 0;
+    ScalarType scalarType;
+    uint32_t binding;
 };
 
 struct ShaderReflectionResult

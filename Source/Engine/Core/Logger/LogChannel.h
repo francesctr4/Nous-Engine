@@ -81,6 +81,7 @@
     X(NOUS_ENGINE_SYSTEM_TIMEMANAGER, "TimeManager.cpp") \
     X(NOUS_ENGINE_SYSTEM_FILESYSTEM, "FileManager.cpp") \
     X(NOUS_ENGINE_SYSTEM_RESOURCEMANAGER, "ResourceManager.cpp") \
+    X(NOUS_ENGINE_SYSTEM_SHADERSYSTEM, "ShaderSystem.cpp") \
     \
     /* ============================ UTILS ============================ */ \
     X(NOUS_ENGINE_UTILS_LOGGER, "Logger.cpp") \
