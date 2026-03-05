@@ -7,6 +7,10 @@
 namespace NOUS_ShaderSystem
 {
     ShaderReflectionResult ReflectSpirV(const ShaderSource& source);
+
+    // ShaderReflection.h — añadir
+    PipelineReflectionResult MergeReflections(
+        const std::vector<ShaderReflectionResult>& stages);
 }
 
 #endif //NOUS_ENGINE_SHADERREFLECTION_H

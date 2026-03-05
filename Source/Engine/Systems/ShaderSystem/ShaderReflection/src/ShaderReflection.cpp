@@ -129,6 +129,55 @@ static uint32_t GetArrayCount(const SpvReflectBlockVariable& m)
     return m.array.dims[0];
 }
 
+PipelineReflectionResult NOUS_ShaderSystem::MergeReflections(
+    const std::vector<ShaderReflectionResult>& stages)
+{
+    PipelineReflectionResult out;
+
+    for (const auto& stage : stages)
+    {
+        // Vertex inputs: solo del stage vertex
+        if (!stage.vertexInputs.empty())
+            out.vertexInputs = stage.vertexInputs;
+
+        // Fragment outputs: solo del stage fragment
+        if (!stage.fragmentOutputs.empty())
+            out.fragmentOutputs = stage.fragmentOutputs;
+
+        // Merge bindings por set
+        for (const auto& b : stage.bindings)
+        {
+            auto& setBindings = out.descriptorSets[b.set];
+
+            auto it = std::find_if(setBindings.begin(), setBindings.end(),
+                [&](const ReflectedBinding& existing) {
+                    return existing.binding == b.binding;
+                });
+
+            if (it != setBindings.end())
+                it->stageMask |= b.stageMask; // mismo binding en otro stage
+            else
+                setBindings.push_back(b);
+        }
+
+        // Merge push constants
+        for (const auto& pc : stage.pushConstants)
+        {
+            auto it = std::find_if(out.pushConstants.begin(), out.pushConstants.end(),
+                [&](const ReflectedPushConstant& existing) {
+                    return existing.offset == pc.offset && existing.size == pc.size;
+                });
+
+            if (it != out.pushConstants.end())
+                it->stageMask |= pc.stageMask;
+            else
+                out.pushConstants.push_back(pc);
+        }
+    }
+
+    return out;
+}
+
 ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& source)
 {
     ShaderReflectionResult out{};
@@ -283,11 +332,35 @@ ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& sourc
             // Scalar kind (float/int/uint/bool)
             in.scalarType = ToScalarType(v->type_description);
 
-            // Binding index: reflection doesn’t know your vertex buffer slot. Default to 0.
-            // Your mesh/vertex-layout system can override this later.
-            in.binding = 0;
-
             out.vertexInputs.push_back(std::move(in));
+        }
+    }
+
+    if (source.stage == ShaderStage::Fragment)
+    {
+        uint32_t outputCount = 0;
+        spvReflectEnumerateOutputVariables(&module, &outputCount, nullptr);
+        std::vector<SpvReflectInterfaceVariable*> outputs(outputCount);
+        spvReflectEnumerateOutputVariables(&module, &outputCount, outputs.data());
+
+        for (SpvReflectInterfaceVariable* v : outputs)
+        {
+            if (!v) continue;
+            if (v->decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) continue;
+
+            ReflectedOutput ro{};
+            ro.location   = v->location;
+            ro.name       = v->name ? v->name : "";
+            ro.bitWidth   = static_cast<uint8_t>(v->numeric.scalar.width);
+            ro.scalarType = ToScalarType(v->type_description);
+
+            uint32_t comps = 1;
+            if (v->type_description &&
+                v->type_description->type_flags & SPV_REFLECT_TYPE_FLAG_VECTOR)
+                comps = v->type_description->traits.numeric.vector.component_count;
+            ro.components = static_cast<uint8_t>(comps);
+
+            out.fragmentOutputs.push_back(std::move(ro));
         }
     }
 

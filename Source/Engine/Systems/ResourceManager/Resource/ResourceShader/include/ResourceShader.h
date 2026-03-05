@@ -22,7 +22,7 @@ public:
     uint32 generation;
 
     std::vector<ShaderSource> stagesData;
-    ShaderReflectionResult reflection;     // merged interface (pipeline-level)
+    PipelineReflectionResult reflection;     // merged interface (pipeline-level)
     // uint64_t interfaceHash = 0;
     //IBackendShader* internalData = nullptr; // e.g. VulkanBackendShader*
 

@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 enum class DescriptorType : uint8_t
@@ -70,7 +71,50 @@ struct ReflectedInput
     uint8_t     bitWidth = 0;                 // 8/16/32/64 (normalmente 32)
     uint32_t    sizeBytes = 0;
     ScalarType scalarType;
-    uint32_t binding;
+
+    // Convenience: misma semántica que ReflectedMember::type
+    DataType ToDataType() const
+    {
+        if (scalarType == ScalarType::Float)
+        {
+            switch (components) {
+                case 1: return DataType::Float;
+                case 2: return DataType::Vec2;
+                case 3: return DataType::Vec3;
+                case 4: return DataType::Vec4;
+            }
+        }
+        if (scalarType == ScalarType::Int)
+        {
+            switch (components) {
+                case 1: return DataType::Int;
+                case 2: return DataType::IVec2;
+                case 3: return DataType::IVec3;
+                case 4: return DataType::IVec4;
+            }
+        }
+        if (scalarType == ScalarType::UInt)
+        {
+            switch (components) {
+                case 1: return DataType::UInt;
+                case 2: return DataType::UVec2;
+                case 3: return DataType::UVec3;
+                case 4: return DataType::UVec4;
+            }
+        }
+        if (scalarType == ScalarType::Bool)  return DataType::Bool;
+
+        return DataType::Unknown;
+    }
+};
+
+struct ReflectedOutput
+{
+    uint32_t   location = 0;
+    std::string name;
+    uint8_t    components = 0;
+    uint8_t    bitWidth   = 0;
+    ScalarType scalarType = ScalarType::Unknown;
 };
 
 struct ShaderReflectionResult
@@ -81,6 +125,17 @@ struct ShaderReflectionResult
     std::vector<ReflectedBinding> bindings;
     std::vector<ReflectedPushConstant> pushConstants;
     std::vector<ReflectedInput> vertexInputs;
+    std::vector<ReflectedOutput> fragmentOutputs;
+};
+
+struct PipelineReflectionResult
+{
+    // set → bindings (con stageMask ya combinado)
+    std::unordered_map<uint32_t, std::vector<ReflectedBinding>> descriptorSets;
+
+    std::vector<ReflectedPushConstant> pushConstants; // también merged
+    std::vector<ReflectedInput>        vertexInputs;
+    std::vector<ReflectedOutput>       fragmentOutputs; // ver punto 2
 };
 
 #endif //NOUS_ENGINE_SHADERREFLECTIONTYPES_H
