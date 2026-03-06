@@ -21,4 +21,5 @@ target_compile_definitions(ResourceManager PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(ResourceManager PUBLIC
         glm::glm
+        ShaderSystem
 )

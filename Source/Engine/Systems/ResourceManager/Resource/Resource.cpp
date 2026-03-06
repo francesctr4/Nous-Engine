@@ -8,7 +8,7 @@ static const std::unordered_map<ResourceType, std::string> resourceTypeToLibrary
 	{ResourceType::MESH, "nmesh"},
 	{ResourceType::MATERIAL, "nmat"},
 	{ResourceType::TEXTURE, "png"},
-	{ResourceType::SHADER, "spv"}
+	{ResourceType::SHADER, ""}     // Shaders are stored as a directory of .spv stage files
 };
 
 static const std::unordered_map<std::string_view, ResourceType> extensionToResourceType
@@ -21,6 +21,7 @@ static const std::unordered_map<std::string_view, ResourceType> extensionToResou
 
 	{"png", ResourceType::TEXTURE},
 
+	{"glsl", ResourceType::SHADER},
 	{"spv", ResourceType::SHADER},
 };
 

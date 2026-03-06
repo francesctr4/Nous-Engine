@@ -24,6 +24,8 @@
 #include <SDL3/SDL.h>
 #include <filesystem>
 
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+
 ModuleScene::ModuleScene(Application* app) : Module(app), scripts(MemoryTag::SCRIPTING_SYSTEM)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
@@ -83,6 +85,11 @@ bool ModuleScene::Start()
 			script->Start();
 		}
 	}
+
+	ResourceShader* mockShader =
+		  down_cast<ResourceShader*>(
+			  External->resourceManager->CreateResource(
+				  "Assets/Shaders/temp_MockShader.glsl"));
 
     LoadScene("Assets/Scenes/LagiacrusScene.nous");
 

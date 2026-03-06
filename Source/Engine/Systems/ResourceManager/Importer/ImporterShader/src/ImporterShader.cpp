@@ -1,7 +1,62 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterShader/include/ImporterShader.h"
 
+#include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
+#include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
+#include "Engine/Core/FileSystem/FileSystem.h"
+
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+
+// ShaderSystem — using Parser + Compiler + Reflection directly to avoid
+// a circular CMake dependency (ShaderLoader returns ResourceShader*).
+#include "Engine/Systems/ShaderSystem/ShaderParser/include/ShaderParser.h"
+#include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
+#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflection.h"
+#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionSerializer.h"
+
+#include <filesystem>
+#include <cstring>
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+static const char* StageToFilename(ShaderStage stage)
+{
+    switch (stage)
+    {
+        case ShaderStage::Vertex:         return "vertex";
+        case ShaderStage::TessControl:    return "tessControl";
+        case ShaderStage::TessEvaluation: return "tessEvaluation";
+        case ShaderStage::Geometry:       return "geometry";
+        case ShaderStage::Fragment:       return "fragment";
+        case ShaderStage::Compute:        return "compute";
+        default:                          return nullptr;
+    }
+}
+
+static ShaderStage FilenameToStage(const std::string& stem)
+{
+    if (stem == "vertex")          return ShaderStage::Vertex;
+    if (stem == "tessControl")     return ShaderStage::TessControl;
+    if (stem == "tessEvaluation")  return ShaderStage::TessEvaluation;
+    if (stem == "geometry")        return ShaderStage::Geometry;
+    if (stem == "fragment")        return ShaderStage::Fragment;
+    if (stem == "compute")         return ShaderStage::Compute;
+    return ShaderStage::Unknown;
+}
+
+// libraryPath is "Library\Shaders\<uid>" — the path IS the stage directory.
+// replace_extension("") is kept for backward compat with old meta files that stored "<uid>.spv".
+static std::string GetShaderDirectory(const std::string& libraryPath)
+{
+    return std::filesystem::path(libraryPath).replace_extension("").string();
+}
+
+// ---------------------------------------------------------------------------
+// ImporterShader
+// ---------------------------------------------------------------------------
 
 bool ImporterShader::Import(const MetaFileData& metaFileData)
 {
@@ -13,19 +68,219 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
 {
     NOUS_DELETE(inResource, MemoryTag::RESOURCE_SHADER);
 
-    return true;
+    // 1. Read the unified .glsl source file
+    FileHandle glslFile;
+    if (!glslFile.Open(metaFileData.assetsPath, FileMode::READ, false))
+    {
+        NOUS_ERROR("[ImporterShader] Cannot open source '%s'.", metaFileData.assetsPath.c_str());
+        return false;
+    }
+
+    char*  rawSource = nullptr;
+    uint64 bytesRead = 0;
+    if (!glslFile.ReadAllBytes(&rawSource, &bytesRead))
+    {
+        NOUS_ERROR("[ImporterShader] Failed to read '%s'.", metaFileData.assetsPath.c_str());
+        glslFile.Close();
+        return false;
+    }
+    glslFile.Close();
+
+    std::string source(rawSource, bytesRead);
+    NOUS_DELETE(rawSource, MemoryTag::FILE);
+
+    // 2. Parse into per-stage GLSL blocks
+    NOUS_ShaderSystem::ParseResult parsed = NOUS_ShaderSystem::ParseShaderStages(source);
+    if (!parsed.success)
+    {
+        NOUS_ERROR("[ImporterShader] Parse failed for '%s': %s",
+                   metaFileData.assetsPath.c_str(), parsed.errorMessage.c_str());
+        return false;
+    }
+
+    // 3. Create the per-shader directory: Library\Shaders\<uid>
+    const std::string shaderDir = GetShaderDirectory(metaFileData.libraryPath);
+    if (!NOUS_FileManager::CreateDirectory(shaderDir))
+    {
+        NOUS_ERROR("[ImporterShader] Failed to create directory: %s", shaderDir.c_str());
+        return false;
+    }
+
+    // 4. Compile each stage, write its SPIR-V, and collect for reflection
+    const ShaderCompilerConfig compilerConfig{};
+    bool ret = true;
+
+    std::vector<ShaderSource>           compiledSources;
+    std::vector<ShaderReflectionResult> reflections;
+
+    for (const RawStage& raw : parsed.stages)
+    {
+        const char* stageName = StageToFilename(raw.stage);
+        if (!stageName)
+        {
+            NOUS_WARN("[ImporterShader] Skipping stage with unrecognized type.");
+            continue;
+        }
+
+        ShaderCompileResult compiled = NOUS_ShaderSystem::CompileGlslStringToSpirv(
+            raw.glslSource, raw.stage, compilerConfig, metaFileData.assetsPath);
+
+        if (!compiled.success)
+        {
+            NOUS_ERROR("[ImporterShader] Compile failed for stage '%s': %s",
+                       stageName, compiled.errorMessage.c_str());
+            ret = false;
+            continue;
+        }
+
+        const std::string spvPath = shaderDir + "\\" + stageName + ".spv";
+        const uint64 byteSize = static_cast<uint64>(
+            compiled.shaderSource.spirvBinary.size() * sizeof(uint32_t));
+
+        FileHandle spvFile;
+        if (!spvFile.Open(spvPath, FileMode::WRITE, true))
+        {
+            NOUS_ERROR("[ImporterShader] Cannot open '%s' for writing.", spvPath.c_str());
+            ret = false;
+            continue;
+        }
+
+        uint64 bytesWritten = 0;
+        if (!spvFile.Write(byteSize, compiled.shaderSource.spirvBinary.data(), &bytesWritten))
+        {
+            NOUS_ERROR("[ImporterShader] Failed to write SPIR-V for stage '%s'.", stageName);
+            ret = false;
+        }
+
+        spvFile.Close();
+
+        NOUS_INFO("[ImporterShader] Saved stage '%s' -> '%s' (%llu bytes)",
+                  stageName, spvPath.c_str(), bytesWritten);
+
+        compiledSources.push_back(compiled.shaderSource);
+    }
+
+    if (!ret) return false;
+
+    // 5. Reflect all stages, merge, and cache to reflection.json
+    reflections.reserve(compiledSources.size());
+    for (const ShaderSource& src : compiledSources)
+    {
+        ShaderReflectionResult reflected = NOUS_ShaderSystem::ReflectSpirV(src);
+        if (!reflected.success)
+        {
+            NOUS_WARN("[ImporterShader] Reflection failed for a stage: %s",
+                      reflected.errorMessage.c_str());
+        }
+        reflections.push_back(std::move(reflected));
+    }
+
+    PipelineReflectionResult pipeline = NOUS_ShaderSystem::MergeReflections(reflections);
+
+    const std::string reflectionJsonPath = shaderDir + "\\reflection.json";
+    if (!NOUS_ShaderSystem::SerializeReflection(pipeline, reflectionJsonPath))
+    {
+        NOUS_WARN("[ImporterShader] Failed to write reflection.json to '%s'.",
+                  reflectionJsonPath.c_str());
+    }
+
+    return ret;
 }
 
 bool ImporterShader::Load(const std::string& libraryPath, Resource* outResource)
 {
-    ResourceShader* material = down_cast<ResourceShader*>(outResource);
+    ResourceShader* shader = down_cast<ResourceShader*>(outResource);
+
+    // 1. Derive stage directory from the library path
+    const std::string shaderDir = GetShaderDirectory(libraryPath);
+
+    if (!NOUS_FileManager::IsDirectory(shaderDir))
+    {
+        NOUS_ERROR("[ImporterShader] Stage directory not found: %s", shaderDir.c_str());
+        return false;
+    }
+
+    // 2. Read every .spv in the directory and build ShaderSources
+    for (const auto& entry : std::filesystem::directory_iterator(shaderDir))
+    {
+        if (!entry.is_regular_file())           continue;
+        if (entry.path().extension() != ".spv") continue;
+
+        const std::string stem  = entry.path().stem().string();
+        const ShaderStage stage = FilenameToStage(stem);
+
+        if (stage == ShaderStage::Unknown)
+        {
+            NOUS_WARN("[ImporterShader] Unrecognized stage file '%s', skipping.", stem.c_str());
+            continue;
+        }
+
+        FileHandle file;
+        if (!file.Open(entry.path().string(), FileMode::READ, true))
+        {
+            NOUS_ERROR("[ImporterShader] Cannot open '%s'.", entry.path().string().c_str());
+            return false;
+        }
+
+        char*  rawBytes  = nullptr;
+        uint64 bytesRead = 0;
+        if (!file.ReadAllBytes(&rawBytes, &bytesRead))
+        {
+            NOUS_ERROR("[ImporterShader] Failed to read '%s'.", entry.path().string().c_str());
+            file.Close();
+            return false;
+        }
+        file.Close();
+
+        ShaderSource src;
+        src.stage = stage;
+        src.spirvBinary.resize(bytesRead / sizeof(uint32_t));
+        std::memcpy(src.spirvBinary.data(), rawBytes, bytesRead);
+        NOUS_DELETE(rawBytes, MemoryTag::FILE);
+
+        shader->stagesData.push_back(std::move(src));
+    }
+
+    if (shader->stagesData.empty())
+    {
+        NOUS_ERROR("[ImporterShader] No SPIR-V stages found in '%s'.", shaderDir.c_str());
+        return false;
+    }
+
+    // 3. Load reflection: try cached JSON first, fall back to live reflection
+    const std::string reflectionJsonPath = shaderDir + "\\reflection.json";
+
+    if (!NOUS_ShaderSystem::DeserializeReflection(reflectionJsonPath, shader->reflection))
+    {
+        NOUS_WARN("[ImporterShader] reflection.json missing or invalid, reflecting from SPIR-V.");
+
+        std::vector<ShaderReflectionResult> reflections;
+        reflections.reserve(shader->stagesData.size());
+        for (const ShaderSource& src : shader->stagesData)
+        {
+            ShaderReflectionResult reflected = NOUS_ShaderSystem::ReflectSpirV(src);
+            if (!reflected.success)
+            {
+                NOUS_WARN("[ImporterShader] Reflection failed for stage: %s",
+                          reflected.errorMessage.c_str());
+            }
+            reflections.push_back(std::move(reflected));
+        }
+        shader->reflection = NOUS_ShaderSystem::MergeReflections(reflections);
+    }
+
+    NOUS_INFO("[ImporterShader] Loaded %zu stage(s) from '%s'.",
+              shader->stagesData.size(), shaderDir.c_str());
 
     return true;
 }
 
 bool ImporterShader::Unload(Resource* inResource)
 {
-	ResourceShader* material = down_cast<ResourceShader*>(inResource);
+    ResourceShader* shader = down_cast<ResourceShader*>(inResource);
 
-	return true;
+    shader->stagesData.clear();
+    shader->reflection = {};
+
+    return true;
 }

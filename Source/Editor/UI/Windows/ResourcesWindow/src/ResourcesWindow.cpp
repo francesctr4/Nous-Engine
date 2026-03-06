@@ -130,6 +130,11 @@ void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor)
             textColor = ImVec4(0.8f, 0.5f, 0.0f, 1.0f);
             break;
         }
+        case ResourceType::SHADER:
+        {
+            textColor = ImVec4(0.7f, 0.2f, 1.0f, 1.0f);
+            break;
+        }
         default:
         {
             textColor = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
@@ -152,7 +157,8 @@ void Resources::DisplayResource(const Resource* resource, const ImVec4& textColo
 
     ImGui::TableSetColumnIndex(2);
     ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-    ImGui::Text("%s", Resource::GetLibraryExtensionFromType(resource->GetType()).c_str());
+    ImGui::Text("%s", resource->GetType() == ResourceType::SHADER ?
+        "spv" : Resource::GetLibraryExtensionFromType(resource->GetType()).c_str());
     ImGui::PopStyleColor();
 
     ImGui::TableSetColumnIndex(3);
