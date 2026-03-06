@@ -20,7 +20,14 @@ NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::s
     ParseResult result;
 
     const std::string token = "#pragma stage ";
-    std::vector<std::pair<ShaderStage, size_t>> stagePositions;
+
+    struct StageEntry
+    {
+        ShaderStage stage;
+        size_t      pragmaStart;  // position of '#pragma stage ...' in fullSource
+        size_t      contentStart; // position after the '\n' of that pragma line
+    };
+    std::vector<StageEntry> stagePositions;
 
     // Encontrar todas las líneas "#pragma stage <name>"
     size_t pos = 0;
@@ -40,8 +47,7 @@ NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::s
             return result;
         }
 
-        // El source de esta stage empieza justo después del \n del pragma
-        stagePositions.push_back({ stage, lineEnd + 1 });
+        stagePositions.push_back({ stage, pos, lineEnd + 1 });
         pos = lineEnd;
     }
 
@@ -54,15 +60,13 @@ NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::s
     // Extraer el texto de cada stage (de su inicio hasta el siguiente pragma)
     for (size_t i = 0; i < stagePositions.size(); ++i)
     {
-        const size_t start = stagePositions[i].second;
+        const size_t start = stagePositions[i].contentStart;
         const size_t end   = (i + 1 < stagePositions.size())
-                           ? stagePositions[i + 1].second - token.size() - 10 // antes del pragma
+                           ? stagePositions[i + 1].pragmaStart
                            : fullSource.size();
-        // Más robusto: buscar la línea del siguiente pragma hacia atrás
-        // (ver nota abajo)
 
         RawStage raw;
-        raw.stage      = stagePositions[i].first;
+        raw.stage      = stagePositions[i].stage;
         raw.glslSource = fullSource.substr(start, end - start);
         result.stages.push_back(std::move(raw));
     }

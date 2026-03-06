@@ -19,8 +19,7 @@ find_package(GTest CONFIG REQUIRED)
 
 target_link_libraries(${TEST_NAME}
         PRIVATE
-        NousEngine::Engine
-        NousEngine::Editor
+        ShaderSystem
         GTest::gtest
         GTest::gtest_main
 )
