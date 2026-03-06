@@ -9,7 +9,7 @@ class t_NOUS_STLAllocator : public ::testing::Test {
 protected:
     void SetUp() override {
         // Initialize memory manager if not already active
-        MemoryManager::InitializeMemory(300);
+        MemoryManager::InitializeMemory(65536);
     }
 
     void TearDown() override {
