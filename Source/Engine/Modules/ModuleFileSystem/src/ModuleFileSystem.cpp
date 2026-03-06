@@ -49,6 +49,7 @@ bool ModuleFileSystem::Start()
 
 	/* TEMP */
 	Test_CompileShader();
+	Test_CompileShaderUnified();
 	/* END TEMP */
 
 	return true;

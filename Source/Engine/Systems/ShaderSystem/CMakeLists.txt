@@ -6,6 +6,8 @@ add_library(ShaderSystem STATIC)
 
 add_subdirectory(ShaderCompiler)
 add_subdirectory(ShaderReflection)
+add_subdirectory(ShaderLoader)
+add_subdirectory(ShaderParser)
 add_subdirectory(Tests)
 
 set_target_properties(ShaderSystem PROPERTIES

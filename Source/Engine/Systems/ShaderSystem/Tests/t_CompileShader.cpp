@@ -11,6 +11,8 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
+#include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
@@ -326,4 +328,100 @@ void Test_CompileShader()
     //     down_cast<ResourceShader*>(
     //         External->resourceManager->CreateResource(
     //             "Assets/Shaders/BuiltIn.MaterialShader.glsl"));
+}
+
+void Test_CompileShaderUnified()
+{
+    ShaderCompilerConfig config{};
+    config.entryPoint   = "main";
+    config.optimization = ShaderOptimizationLevel::Zero;
+
+    ShaderLoadResult result = NOUS_ShaderSystem::LoadShaderFromFile(
+        "Assets/Shaders/temp_MockShader.glsl", config);
+
+    NOUS_ASSERT(result.success);
+    NOUS_ASSERT(result.shader != nullptr);
+    NOUS_ASSERT(result.shader->stagesData.size() == 2);
+
+    const PipelineReflectionResult& pipe = result.shader->reflection;
+
+    // A) Descriptor sets: set=0 (CameraUBO) + set=1 (uAlbedo)
+    {
+        NOUS_ASSERT(pipe.descriptorSets.size() == 2);
+        NOUS_ASSERT(pipe.descriptorSets.count(0) == 1);
+        NOUS_ASSERT(pipe.descriptorSets.count(1) == 1);
+
+        const ReflectedBinding* cam    = FindBinding(pipe, 0, 0);
+        const ReflectedBinding* albedo = FindBinding(pipe, 1, 0);
+        NOUS_ASSERT(cam && albedo);
+
+        NOUS_ASSERT(cam->type      == DescriptorType::UniformBuffer);
+        NOUS_ASSERT(cam->count     == 1);
+        NOUS_ASSERT(cam->blockSize >= 64);
+        NOUS_ASSERT(cam->stageMask != 0);
+
+        NOUS_ASSERT(albedo->type      == DescriptorType::CombinedImageSampler);
+        NOUS_ASSERT(albedo->count     == 1);
+        NOUS_ASSERT(albedo->blockSize == 0);
+        NOUS_ASSERT(albedo->stageMask != 0);
+
+        // stageMask de cam solo debe tener vertex, albedo solo fragment
+        // No hardcodeamos los bits, pero sí que son distintos entre sí
+        NOUS_ASSERT(cam->stageMask != albedo->stageMask);
+    }
+
+    // B) Push constant merged visible en ambos stages
+    {
+        const ReflectedPushConstant* pc = FindFirstPushConstant(pipe);
+        NOUS_ASSERT(pc);
+        NOUS_ASSERT(pc->offset    == 0);
+        NOUS_ASSERT(pc->size      >= 80);
+        // stageMask debe tener ambos stages (vertex | fragment)
+        NOUS_ASSERT(pc->stageMask != 0);
+
+        if (!pc->members.empty())
+        {
+            auto hasMember = [&](const char* n, uint32_t off, uint32_t sz) {
+                return std::any_of(pc->members.begin(), pc->members.end(),
+                    [&](const ReflectedMember& m) {
+                        return m.name == n && m.offset == off && m.size >= sz;
+                    });
+            };
+            NOUS_ASSERT(hasMember("uModel", 0,  64));
+            NOUS_ASSERT(hasMember("uTint",  64, 16));
+        }
+    }
+
+    // C) Vertex inputs: aPos(vec3), aNormal(vec3), aUV(vec2)
+    {
+        const ReflectedInput* in0 = FindVertexInput(pipe, 0);
+        const ReflectedInput* in1 = FindVertexInput(pipe, 1);
+        const ReflectedInput* in2 = FindVertexInput(pipe, 2);
+        NOUS_ASSERT(in0 && in1 && in2);
+
+        NOUS_ASSERT(in0->name == "aPos");
+        NOUS_ASSERT(in0->ToDataType() == DataType::Vec3);
+
+        NOUS_ASSERT(in1->name == "aNormal");
+        NOUS_ASSERT(in1->ToDataType() == DataType::Vec3);
+
+        NOUS_ASSERT(in2->name == "aUV");
+        NOUS_ASSERT(in2->ToDataType() == DataType::Vec2);
+    }
+
+    // D) Fragment output: outColor en location=0 (vec4 float)
+    {
+        NOUS_ASSERT(!pipe.fragmentOutputs.empty());
+
+        const ReflectedOutput* outColor = FindFragmentOutput(pipe, 0);
+        NOUS_ASSERT(outColor);
+        NOUS_ASSERT(outColor->name       == "outColor");
+        NOUS_ASSERT(outColor->components == 4);
+        NOUS_ASSERT(outColor->bitWidth   == 32);
+        NOUS_ASSERT(outColor->scalarType == ScalarType::Float);
+    }
+
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "TEST SHADERS LOAD UNIFIED SUCCESS");
+
+    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
 }
