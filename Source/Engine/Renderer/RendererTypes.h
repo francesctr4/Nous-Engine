@@ -13,6 +13,7 @@ class Camera;
 class ResourceMesh;
 class ResourceMaterial;
 class ResourceTexture;
+class ResourceShader;
 
 // -----------------------------------------------------------------------------
 // Texture Maps
@@ -68,6 +69,24 @@ struct RenderPacket
     float deltaTime;
 
     std::vector<GeometryRenderData> geometries;
+};
+
+// -----------------------------------------------------------------------------
+// Backend shader interface
+// -----------------------------------------------------------------------------
+/**
+ * @brief Opaque interface owned by each ResourceShader.
+ *
+ * The active backend allocates a concrete implementation (e.g. VulkanShader)
+ * and stores it in ResourceShader::internalData. The resource layer never
+ * includes any backend headers — it only holds this pointer.
+ */
+struct IBackendShader
+{
+    virtual ~IBackendShader() = default;
+
+    virtual void Bind()    = 0;
+    virtual void Destroy() = 0;
 };
 
 // -----------------------------------------------------------------------------
@@ -137,6 +156,9 @@ struct IRendererBackend
             uint32_t indexCount, const uint32_t* indices,
             ResourceMesh* outGeometry) = 0;
     virtual void DestroyGeometry(ResourceMesh* geometry) noexcept = 0;
+
+    [[nodiscard]] virtual bool CreateShader(ResourceShader* shader) = 0;
+    virtual void DestroyShader(ResourceShader* shader) noexcept = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

@@ -161,6 +161,17 @@ bool RendererBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertice
     return mBackendInterface && mBackendInterface->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
 }
 
+bool RendererBackend::CreateShader(ResourceShader* shader)
+{
+    return mBackendInterface && mBackendInterface->CreateShader(shader);
+}
+
+void RendererBackend::DestroyShader(ResourceShader* shader)
+{
+    if (mBackendInterface)
+        mBackendInterface->DestroyShader(shader);
+}
+
 void RendererBackend::DestroyGeometry(ResourceMesh* geometry)
 {
     if (mBackendInterface)

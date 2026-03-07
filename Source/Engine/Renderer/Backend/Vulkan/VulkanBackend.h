@@ -8,6 +8,7 @@
 class ResourceMesh;
 class ResourceMaterial;
 class ResourceTexture;
+class ResourceShader;
 
 // --------------- Vulkan Renderer Backend --------------- \\
 
@@ -58,6 +59,9 @@ public:
 
 	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry) override;
     void DestroyGeometry(ResourceMesh* geometry) noexcept override;
+
+	bool CreateShader(ResourceShader* shader) override;
+	void DestroyShader(ResourceShader* shader) noexcept override;
 
 	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 

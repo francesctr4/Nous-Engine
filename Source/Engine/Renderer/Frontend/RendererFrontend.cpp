@@ -226,6 +226,16 @@ void RendererFrontend::DestroyGeometry(ResourceMesh* geometry)
 	mBackend->DestroyGeometry(geometry);
 }
 
+bool RendererFrontend::CreateShader(ResourceShader* shader)
+{
+	return mBackend->CreateShader(shader);
+}
+
+void RendererFrontend::DestroyShader(ResourceShader* shader)
+{
+	mBackend->DestroyShader(shader);
+}
+
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)
 {
     mEditorOverlay = overlay;

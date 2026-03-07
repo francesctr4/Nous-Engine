@@ -6,6 +6,10 @@
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 
+// No renderer headers included here — forward declaration keeps the
+// ResourceManager layer decoupled from any backend implementation.
+struct IBackendShader;
+
 class ResourceShader : public Resource
 {
 public:
@@ -22,9 +26,9 @@ public:
     uint32 generation;
 
     std::vector<ShaderSource> stagesData;
-    PipelineReflectionResult reflection;     // merged interface (pipeline-level)
-    // uint64_t interfaceHash = 0;
-    //IBackendShader* internalData = nullptr; // e.g. VulkanBackendShader*
+    PipelineReflectionResult reflection;        // merged interface (pipeline-level)
+
+    IBackendShader* internalData = nullptr;     // owned by the active backend (e.g. VulkanShader*)
 
 };
 

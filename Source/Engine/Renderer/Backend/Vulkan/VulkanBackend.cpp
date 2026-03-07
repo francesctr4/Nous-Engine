@@ -25,6 +25,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
@@ -1195,6 +1196,24 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
         internalData->ID = INVALID_ID;
         internalData->generation = INVALID_ID;
     }
+}
+
+// ─────────────────────────────── Shaders ─────────────────────────────────
+
+bool VulkanBackend::CreateShader(ResourceShader* shader)
+{
+    // TODO: allocate VulkanShader, build pipeline from shader->stagesData
+    //       and shader->reflection, store in shader->internalData.
+    return true;
+}
+
+void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
+{
+    if (!shader || !shader->internalData)
+        return;
+
+    // TODO: cast shader->internalData to VulkanShader*, destroy pipeline/modules.
+    shader->internalData = nullptr;
 }
 
 VulkanContext* VulkanBackend::GetVulkanContext()

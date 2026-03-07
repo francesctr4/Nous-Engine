@@ -6,6 +6,7 @@
 class ResourceMesh;
 class ResourceMaterial;
 class ResourceTexture;
+class ResourceShader;
 
 /**
  * @brief Bridge layer between RendererFrontend and the active renderer implementation.
@@ -59,6 +60,9 @@ public:
 									  uint32_t indexCount, const uint32_t* indices,
 									  ResourceMesh* outGeometry);
 	void DestroyGeometry(ResourceMesh* geometry);
+
+	[[nodiscard]] bool CreateShader(ResourceShader* shader);
+	void DestroyShader(ResourceShader* shader);
 
 public:
 
