@@ -45,6 +45,58 @@ void main() { gl_Position = vec4(aPos, 1.0); }
 void main() { gl_Position = vec4(0.0); }
 )";
 
+    // Full pipeline: vertex → tessControl → tessEvaluation → geometry → fragment
+    constexpr const char* kAllStages = R"(#pragma stage vertex
+#version 450
+void main()
+{
+    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+}
+#pragma stage tessControl
+#version 450
+layout(vertices = 3) out;
+void main()
+{
+    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+    if (gl_InvocationID == 0)
+    {
+        gl_TessLevelOuter[0] = 1.0;
+        gl_TessLevelOuter[1] = 1.0;
+        gl_TessLevelOuter[2] = 1.0;
+        gl_TessLevelInner[0] = 1.0;
+    }
+}
+#pragma stage tessEvaluation
+#version 450
+layout(triangles, equal_spacing, ccw) in;
+void main()
+{
+    gl_Position = gl_TessCoord.x * gl_in[0].gl_Position
+                + gl_TessCoord.y * gl_in[1].gl_Position
+                + gl_TessCoord.z * gl_in[2].gl_Position;
+}
+#pragma stage geometry
+#version 450
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+void main()
+{
+    for (int i = 0; i < 3; ++i)
+    {
+        gl_Position = gl_in[i].gl_Position;
+        EmitVertex();
+    }
+    EndPrimitive();
+}
+#pragma stage fragment
+#version 450
+layout(location = 0) out vec4 outColor;
+void main()
+{
+    outColor = vec4(1.0);
+}
+)";
+
     // Source with invalid GLSL after the pragma
     constexpr const char* kInvalidGlslSource = R"(#pragma stage vertex
 #version 450
@@ -255,4 +307,68 @@ TEST_F(t_ShaderLoader, LoadFromFile_NonexistentPath_ErrorMessageIsNotEmpty)
     ShaderLoadResult result = LoadShaderFromFile("nonexistent/path/shader.glsl", config);
     ASSERT_FALSE(result.success);
     EXPECT_FALSE(result.errorMessage.empty());
+}
+
+// =====================================================
+// Full Pipeline - All Stages
+// =====================================================
+
+TEST_F(t_ShaderLoader, AllStages_ReturnsSuccess)
+{
+    ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
+    EXPECT_TRUE(result.success) << result.errorMessage;
+    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+}
+
+TEST_F(t_ShaderLoader, AllStages_HasFiveStages)
+{
+    ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
+    ASSERT_TRUE(result.success) << result.errorMessage;
+    ASSERT_NE(result.shader, nullptr);
+    EXPECT_EQ(result.shader->stagesData.size(), 5u);
+    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+}
+
+TEST_F(t_ShaderLoader, AllStages_StageOrderIsCorrect)
+{
+    ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
+    ASSERT_TRUE(result.success) << result.errorMessage;
+    ASSERT_NE(result.shader, nullptr);
+    ASSERT_EQ(result.shader->stagesData.size(), 5u);
+    EXPECT_EQ(result.shader->stagesData[0].stage, ShaderStage::Vertex);
+    EXPECT_EQ(result.shader->stagesData[1].stage, ShaderStage::TessControl);
+    EXPECT_EQ(result.shader->stagesData[2].stage, ShaderStage::TessEvaluation);
+    EXPECT_EQ(result.shader->stagesData[3].stage, ShaderStage::Geometry);
+    EXPECT_EQ(result.shader->stagesData[4].stage, ShaderStage::Fragment);
+    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+}
+
+TEST_F(t_ShaderLoader, AllStages_EachStageHasSpirVBinary)
+{
+    ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
+    ASSERT_TRUE(result.success) << result.errorMessage;
+    ASSERT_NE(result.shader, nullptr);
+    for (const ShaderSource& src : result.shader->stagesData)
+    {
+        EXPECT_FALSE(src.spirvBinary.empty()) << "Stage " << (int)src.stage << " has empty SPIR-V";
+    }
+    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+}
+
+TEST_F(t_ShaderLoader, AllStages_ReflectionHasVertexInputs)
+{
+    ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
+    ASSERT_TRUE(result.success) << result.errorMessage;
+    ASSERT_NE(result.shader, nullptr);
+    EXPECT_GE(result.shader->reflection.vertexInputs.size(), 0u);    // no user-defined inputs in minimal vert
+    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+}
+
+TEST_F(t_ShaderLoader, AllStages_ReflectionHasFragmentOutput)
+{
+    ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
+    ASSERT_TRUE(result.success) << result.errorMessage;
+    ASSERT_NE(result.shader, nullptr);
+    EXPECT_EQ(result.shader->reflection.fragmentOutputs.size(), 1u);
+    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
 }

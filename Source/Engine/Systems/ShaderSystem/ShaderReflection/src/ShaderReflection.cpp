@@ -28,12 +28,11 @@ static uint32_t ToStageMask(ShaderStage s)
     switch (s)
     {
         case ShaderStage::Vertex:   return 1u << 0;
-        case ShaderStage::Fragment: return 1u << 1;
-        // Add more if your engine supports them:
-        // case ShaderStage::Compute:  return 1u << 2;
-        // case ShaderStage::Geometry: return 1u << 3;
-        // case ShaderStage::TessControl: return 1u << 4;
-        // case ShaderStage::TessEvaluation: return 1u << 5;
+        case ShaderStage::TessControl: return 1u << 1;
+        case ShaderStage::TessEvaluation: return 1u << 2;
+        case ShaderStage::Geometry: return 1u << 3;
+        case ShaderStage::Fragment: return 1u << 4;
+        case ShaderStage::Compute:  return 1u << 5;
         default: return 0;
     }
 }

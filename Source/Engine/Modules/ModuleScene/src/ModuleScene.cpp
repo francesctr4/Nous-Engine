@@ -91,6 +91,11 @@ bool ModuleScene::Start()
 			  External->resourceManager->CreateResource(
 				  "Assets/Shaders/temp_MockShader.glsl"));
 
+	ResourceShader* shaderWithAllStages =
+		  down_cast<ResourceShader*>(
+			  External->resourceManager->CreateResource(
+				  "Assets/Shaders/temp_ShaderWithAllStages.glsl"));
+
     LoadScene("Assets/Scenes/LagiacrusScene.nous");
 
 	return true;
