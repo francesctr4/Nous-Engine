@@ -111,6 +111,9 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
     }
 
     // 4. Compile each stage, write its SPIR-V, and collect for reflection
+    // IMPORTANT: Compiler Config is set to optimization PERFORMANCE by default.
+    // That means it will scrap unused values whenever necessary! So SPV won't match GLSL 1:1!
+    // If you want a 1:1 replication, then you should use ZERO optimization.
     const ShaderCompilerConfig compilerConfig{};
     bool ret = true;
 
