@@ -83,10 +83,15 @@ static std::array<VkVertexInputAttributeDescription, Vertex2D::ATTRIBUTE_COUNT> 
     return attributeDescriptions;
 }
 
-namespace NOUS_VulkanShaderUtils 
+namespace NOUS_VulkanShaderUtils
 {
     bool CreateShaderModule(VulkanContext* vkContext, std::string name, std::string typeStr,
         VkShaderStageFlagBits shaderStageFlag, uint32 stageIndex, VulkanShaderStage* shaderStages);
+
+    // Creates a VulkanShaderStage directly from a SPIR-V binary (no file I/O).
+    bool CreateShaderModuleFromBinary(VulkanContext* vkContext,
+        const std::vector<uint32_t>& spirvBinary, VkShaderStageFlagBits stageFlagBit,
+        VulkanShaderStage* outStage);
 }
 
 #endif // VULKANSHADERUTILS_H

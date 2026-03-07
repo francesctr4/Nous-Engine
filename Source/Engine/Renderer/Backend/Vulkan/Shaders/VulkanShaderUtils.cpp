@@ -5,6 +5,7 @@
 #include <Engine/Core/FileSystem/FileHandle/include/FileHandle.h>
 
 #include <format>
+#include <vector>
 
 bool NOUS_VulkanShaderUtils::CreateShaderModule(VulkanContext* vkContext, std::string name, std::string typeStr, VkShaderStageFlagBits shaderStageFlag, uint32 stageIndex, VulkanShaderStage* shaderStages)
 {
@@ -52,10 +53,37 @@ bool NOUS_VulkanShaderUtils::CreateShaderModule(VulkanContext* vkContext, std::s
     shaderStages[stageIndex].shaderStageCreateInfo.module = shaderStages[stageIndex].handle;
     shaderStages[stageIndex].shaderStageCreateInfo.pName = "main";
 
-    if (fileBuffer) 
+    if (fileBuffer)
     {
         NOUS_DELETE_ARRAY(fileBuffer, size, MemoryTag::FILE);
     }
+
+    return true;
+}
+
+bool NOUS_VulkanShaderUtils::CreateShaderModuleFromBinary(VulkanContext* vkContext,
+    const std::vector<uint32_t>& spirvBinary, VkShaderStageFlagBits stageFlagBit,
+    VulkanShaderStage* outStage)
+{
+    if (!outStage || spirvBinary.empty())
+    {
+        NOUS_ERROR("CreateShaderModuleFromBinary: null output stage or empty binary.");
+        return false;
+    }
+
+    MemoryManager::ZeroMemory(&outStage->shaderModuleCreateInfo, sizeof(VkShaderModuleCreateInfo));
+    outStage->shaderModuleCreateInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    outStage->shaderModuleCreateInfo.codeSize = spirvBinary.size() * sizeof(uint32_t);
+    outStage->shaderModuleCreateInfo.pCode    = spirvBinary.data();
+
+    VK_CHECK(vkCreateShaderModule(vkContext->device.logicalDevice,
+        &outStage->shaderModuleCreateInfo, vkContext->allocator, &outStage->handle));
+
+    MemoryManager::ZeroMemory(&outStage->shaderStageCreateInfo, sizeof(VkPipelineShaderStageCreateInfo));
+    outStage->shaderStageCreateInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    outStage->shaderStageCreateInfo.stage  = stageFlagBit;
+    outStage->shaderStageCreateInfo.module = outStage->handle;
+    outStage->shaderStageCreateInfo.pName  = "main";
 
     return true;
 }

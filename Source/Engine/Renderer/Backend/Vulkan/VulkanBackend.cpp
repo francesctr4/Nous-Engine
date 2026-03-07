@@ -27,6 +27,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
+#include "Engine/Renderer/Backend/Vulkan/Resources/Shader/VulkanShader.h"
 
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include <Engine/Core/Application.h>
@@ -1202,9 +1203,11 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
 
 bool VulkanBackend::CreateShader(ResourceShader* shader)
 {
-    // TODO: allocate VulkanShader, build pipeline from shader->stagesData
-    //       and shader->reflection, store in shader->internalData.
-    return true;
+    if (!shader)
+        return false;
+
+    // Target the scene renderpass for user-created shaders.
+    return NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader);
 }
 
 void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
@@ -1212,7 +1215,8 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     if (!shader || !shader->internalData)
         return;
 
-    // TODO: cast shader->internalData to VulkanShader*, destroy pipeline/modules.
+    VulkanShader* vs = static_cast<VulkanShader*>(shader->internalData);
+    NOUS_VulkanShader::Destroy(vkContext, vs);
     shader->internalData = nullptr;
 }
 
