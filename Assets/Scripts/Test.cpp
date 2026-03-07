@@ -36,7 +36,7 @@ public:
     void Awake() override
     {
         /*coding_start::Test::Awake*/
-        Nous_Engine->Logger->Info("[%s] This is a TEST", __FUNCTION__);
+        Nous_Engine->Logger->Debug("[%s] This is a TEST", __FUNCTION__);
         /*coding_end::Test::Awake*/
     }
 

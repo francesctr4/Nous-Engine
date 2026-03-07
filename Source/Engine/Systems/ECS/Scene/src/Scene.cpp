@@ -186,7 +186,7 @@ void Scene::Deserialize(const std::string& filepath) {
     }
 
     json_value_free(root);
-    NOUS_WARN("[%s] Successfully loaded scene: %s with %zu objects", __FUNCTION__, filepath.c_str(), m_GameObjects.size());
+    NOUS_DEBUG("[%s] Successfully loaded scene: %s with %zu objects", __FUNCTION__, filepath.c_str(), m_GameObjects.size());
 }
 
 // -----------------------------------------------------------------------------

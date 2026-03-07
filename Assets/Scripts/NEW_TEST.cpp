@@ -36,7 +36,7 @@ public:
     void Awake() override
     {
         /*coding_start::NEW_TEST::Awake*/
-        Nous_Engine->Logger->Info("[%s] OMG i canot belive my eyes", __FUNCTION__);
+        Nous_Engine->Logger->Debug("[%s] OMG i canot belive my eyes", __FUNCTION__);
         /*coding_end::NEW_TEST::Awake*/
     }
 

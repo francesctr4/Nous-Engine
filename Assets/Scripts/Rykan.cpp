@@ -35,7 +35,7 @@ public:
     void Awake() override
     {
         /*coding_start::Rykan::Awake*/
-        Nous_Engine->Logger->Warn(__FUNCTION__);
+        Nous_Engine->Logger->Debug(__FUNCTION__);
         //DoSomething();
         /*coding_end::Rykan::Awake*/
     }
@@ -53,13 +53,13 @@ public:
         // Check for F4 key press
         if (Nous_Engine->Input->GetKey(InputAPI::SDL_SCANCODE_F) == InputAPI::KeyState::DOWN)
         {
-            Nous_Engine->Logger->Fatal("F key pressed!");
+            Nous_Engine->Logger->Debug("F key pressed!");
             Nous_Engine->GameObject->Create("adioooos");
         }
 
         if (Nous_Engine->Input->GetKey(InputAPI::SDL_SCANCODE_H) == InputAPI::KeyState::DOWN)
         {
-            Nous_Engine->Logger->Fatal("H key pressed!");
+            Nous_Engine->Logger->Debug("H key pressed!");
             Nous_Engine->GameObject->Create("RYKAAAAN");
         }
         /*coding_end::Rykan::Update*/
@@ -99,9 +99,9 @@ public:
     /*coding_start::Rykan*/
     void DoSomething()
     {
-        Nous_Engine->Logger->Warn("Doing something");
+        Nous_Engine->Logger->Debug("Doing something");
         gameobjectHandleID = Nous_Engine->GameObject->Create("HolaSoyRykan");
-        Nous_Engine->Logger->Warn("Created gameobject with ID: %u", gameobjectHandleID);
+        Nous_Engine->Logger->Debug("Created gameobject with ID: %u", gameobjectHandleID);
 
         Nous_Engine->GameObject->SetPosition(gameobjectHandleID, 69.0f, 69.0f, 69.0f);
         Nous_Engine->GameObject->SetRotation(gameobjectHandleID, 69.0f, 69.0f, 69.0f);
