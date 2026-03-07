@@ -21,10 +21,10 @@ public:
 
     void OnEvent(const Event& event) override;
 
+	// -------------------------------------------------------------------- //
+
 	bool CreateLibraryFolder();
 	bool ImportDirectory(const std::string& directory);
-
-    bool CompileShaders();
 };
 
 #endif // MODULEFILESYSTEM_H
