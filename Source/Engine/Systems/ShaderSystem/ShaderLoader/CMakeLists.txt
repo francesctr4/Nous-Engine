@@ -3,3 +3,7 @@ target_sources(ShaderSystem PRIVATE
         include/ShaderLoaderTypes.h
         src/ShaderLoader.cpp
 )
+
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()

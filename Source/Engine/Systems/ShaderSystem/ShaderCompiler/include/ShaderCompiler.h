@@ -5,6 +5,7 @@
 
 #include <string>
 
+#include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
 
 namespace NOUS_ShaderSystem

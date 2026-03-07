@@ -1,7 +1,8 @@
 #ifndef NOUS_ENGINE_SHADERLOADER_H
 #define NOUS_ENGINE_SHADERLOADER_H
 
-#include "ShaderLoaderTypes.h"
+#include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
+#include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 
 // ShaderLoader.h
 namespace NOUS_ShaderSystem

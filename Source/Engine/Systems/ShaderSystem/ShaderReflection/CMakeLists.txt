@@ -8,3 +8,7 @@ target_sources(ShaderSystem PRIVATE
 
 find_package(parson CONFIG REQUIRED)
 target_link_libraries(ShaderSystem PUBLIC parson::parson)
+
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()

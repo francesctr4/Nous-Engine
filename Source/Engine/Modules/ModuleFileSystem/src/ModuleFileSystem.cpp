@@ -7,7 +7,6 @@
 #include "Engine/Core/Logger/Logger.h"
 
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
-#include "Engine/Systems/ShaderSystem/Tests/ShaderMockShaders.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_FILESYSTEM;
 
@@ -46,11 +45,6 @@ bool ModuleFileSystem::Awake()
 bool ModuleFileSystem::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
-	/* TEMP */
-	Test_CompileShader();
-	Test_CompileShaderUnified();
-	/* END TEMP */
 
 	return true;
 }

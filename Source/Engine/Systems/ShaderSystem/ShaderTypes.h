@@ -19,25 +19,6 @@ enum class ShaderStage : std::int8_t
     ALL
 };
 
-enum class ShaderOptimizationLevel : std::int8_t
-{
-    Unknown = -1,
-
-    Zero = 0,
-    Size = 1,
-    Performance = 2,
-
-    ALL
-};
-
-struct ShaderCompilerConfig
-{
-    ShaderOptimizationLevel optimization = ShaderOptimizationLevel::Performance;
-    bool generateDebugInfo = true;
-    bool warningsAsErrors = false;
-    std::string entryPoint = "main";
-};
-
 class ShaderSource
 {
 public:
@@ -50,14 +31,6 @@ public:
     uint64_t sourceHash = 0;
 
     bool IsValid() const { return !glslSource.empty() && stage != ShaderStage::Unknown; }
-};
-
-struct ShaderCompileResult
-{
-    bool success;
-    std::string errorMessage;
-
-    ShaderSource shaderSource;
 };
 
 #endif //NOUS_ENGINE_SHADER_TYPES_H
