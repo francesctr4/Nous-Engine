@@ -242,41 +242,10 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Sync Objects created successfully!");
     }
 
-    // Create Vulkan Material Shader
-    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Nous Material Shader...");
-    if (!NOUS_VulkanMaterialShader::CreateMaterialShader(vkContext, &vkContext->sceneRenderpass, &vkContext->materialShader))
-    {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Nous Material Shader. Shutting the Application.");
-        ret = false;
-    }
-    else
-    {
-        NOUS_DEBUG_C(CURRENT_CHANNEL, "Nous Material Shader created successfully!");
-    }
-
-    // Create Vulkan Game Shader
-    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Nous Game Shader...");
-    if (!NOUS_VulkanMaterialShader::CreateMaterialShader(vkContext, &vkContext->gameRenderpass, &vkContext->gameShader))
-    {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Nous Game Shader. Shutting the Application.");
-        ret = false;
-    }
-    else
-    {
-        NOUS_DEBUG_C(CURRENT_CHANNEL, "Nous Game Shader created successfully!");
-    }
-
-    // Create Vulkan UI Shader
-    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Nous UI Shader...");
-    if (!NOUS_VulkanUIShader::CreateUIShader(vkContext, &vkContext->uiShader))
-    {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Nous UI Shader. Shutting the Application.");
-        ret = false;
-    }
-    else
-    {
-        NOUS_DEBUG_C(CURRENT_CHANNEL, "Nous UI Shader created successfully!");
-    }
+    // BuiltIn shaders are loaded via the ResourceManager in ModuleScene::Start(),
+    // which calls ImporterShader::Load → CreateShader → VulkanBackend::CreateShader.
+    // vkContext->builtInMaterialShader, builtInGameShader, builtInUIShader are
+    // assigned automatically when each built-in asset path is recognised there.
 
     // Create Vulkan Buffers
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Buffers...");
@@ -306,9 +275,26 @@ void VulkanBackend::Shutdown() noexcept
 
     NOUS_VulkanBuffer::DestroyBuffers(vkContext);
 
-    NOUS_VulkanUIShader::DestroyUIShader(vkContext, &vkContext->uiShader);
-    NOUS_VulkanMaterialShader::DestroyMaterialShader(vkContext, &vkContext->materialShader);
-    NOUS_VulkanMaterialShader::DestroyMaterialShader(vkContext, &vkContext->gameShader);
+    // builtInMaterialShader and builtInUIShader are managed by the ResourceManager;
+    // ClearResources() → DestroyShader() releases their GPU resources and nulls these
+    // pointers before Shutdown() is called. Guard against the unexpected case.
+    if (vkContext->builtInMaterialShader || vkContext->builtInUIShader)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] BuiltIn shader pointer(s) still set — ResourceManager may not have cleared resources.");
+    vkContext->builtInMaterialShader = nullptr;
+    vkContext->builtInUIShader       = nullptr;
+
+    // builtInGameShader is an internal clone (same SPIR-V, game renderpass) that is
+    // NOT tracked by the ResourceManager, so we own it here.
+    if (vkContext->builtInGameShader)
+    {
+        if (vkContext->builtInGameShader->internalData)
+        {
+            vkContext->builtInGameShader->internalData->Destroy();
+            vkContext->builtInGameShader->internalData = nullptr;
+        }
+        NOUS_DELETE(vkContext->builtInGameShader, MemoryTag::RESOURCE_SHADER);
+        vkContext->builtInGameShader = nullptr;
+    }
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
@@ -618,23 +604,18 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
 
     NOUS_VulkanRenderpass::BeginRenderpass(commandBuffer, renderpass, framebuffer);
 
+    // Initial pipeline bind; UpdateGlobalWorldState / DrawGeometry will re-bind as needed.
+    auto TryBind = [&](ResourceShader* rs) {
+        if (rs && rs->internalData)
+            NOUS_VulkanShader::BindPipeline(commandBuffer->handle,
+                static_cast<VulkanShader*>(rs->internalData));
+    };
+
     switch (renderpassID)
     {
-        case RenderpassType::SCENE:
-        {
-            NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, &vkContext->materialShader);
-            break;
-        }
-        case RenderpassType::GAME:
-        {
-            NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, &vkContext->gameShader);
-            break;
-        }
-        case RenderpassType::UI:
-        {
-            NOUS_VulkanUIShader::UseUIShader(vkContext, &vkContext->uiShader);
-            break;
-        }
+        case RenderpassType::SCENE: TryBind(vkContext->builtInMaterialShader); break;
+        case RenderpassType::GAME:  TryBind(vkContext->builtInGameShader);     break;
+        case RenderpassType::UI:    TryBind(vkContext->builtInUIShader);       break;
     }
 
     return true;
@@ -787,25 +768,20 @@ bool VulkanBackend::UpdateGlobalWorldState(
         const glm::vec3& viewPosition, const glm::vec4& ambientColor,
         int32 mode)
 {
+    ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
+        ? vkContext->builtInGameShader
+        : vkContext->builtInMaterialShader;
+
+    if (!rShader || !rShader->internalData) return false;
+
     VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
+    VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
 
-    VulkanMaterialShader* shader = nullptr;
+    NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
 
-    if (renderpassID == RenderpassType::GAME)
-    {
-        shader = &vkContext->gameShader;
-    }
-    else 
-    {
-        shader = &vkContext->materialShader;
-    }
-
-    NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, shader);
-
-    shader->globalUBO.projection = projection;
-    shader->globalUBO.view = view;
-
-    NOUS_VulkanMaterialShader::UpdateMaterialShaderGlobalState(vkContext, commandBuffer, shader, vkContext->frameDeltaTime);
+    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+    NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
+        vkContext->imageIndex, &ubo, sizeof(ubo));
 
     return true;
 }
@@ -814,12 +790,18 @@ bool VulkanBackend::UpdateGlobalUIState(RenderpassType renderpassID,
                                         const glm::mat4& projection, const glm::mat4& view,
                                         int32 mode)
 {
-    NOUS_VulkanUIShader::UseUIShader(vkContext, &vkContext->uiShader);
+    if (!vkContext->builtInUIShader || !vkContext->builtInUIShader->internalData) return false;
 
-    vkContext->uiShader.globalUBO.projection = projection;
-    vkContext->uiShader.globalUBO.view = view;
+    VulkanShader* vs = static_cast<VulkanShader*>(vkContext->builtInUIShader->internalData);
 
-    NOUS_VulkanUIShader::UpdateUIShaderGlobalState(vkContext, &vkContext->uiShader, vkContext->frameDeltaTime);
+    // UI renderpass uses the main graphics command buffer.
+    VkCommandBuffer cmdBuf = vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle;
+
+    NOUS_VulkanShader::BindPipeline(cmdBuf, vs);
+
+    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf, vs,
+        vkContext->imageIndex, &ubo, sizeof(ubo));
 
     return true;
 }
@@ -856,58 +838,82 @@ VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(RenderpassTyp
 
 bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData)
 {
-    // Ignore non-uploaded geometries.
     if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID)
-    {
         return true;
-    }
+
+    ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
+        ? vkContext->builtInGameShader
+        : vkContext->builtInMaterialShader;
+
+    if (!rShader || !rShader->internalData) return false;
 
     VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
+    VulkanShader*        vs            = static_cast<VulkanShader*>(rShader->internalData);
+    VulkanGeometryData*  bufferData    = &vkContext->geometries[renderData.geometry->internalID];
 
-    VulkanMaterialShader* shader = nullptr;
+    // Bind pipeline.
+    NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
 
-    if (renderpassID == RenderpassType::GAME)
+    // Push model matrix via push constants.
+    vkCmdPushConstants(commandBuffer->handle, vs->pipeline.pipelineLayout,
+        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &renderData.model);
+
+    // Resolve material.
+    ResourceMaterial* material = renderData.material
+        ? renderData.material
+        : External->resourceManager->GetDefaultMaterial();
+
+    // Per-instance descriptors (material UBO + texture sampler).
+    if (material && material->internalID != INVALID_ID && vs->instancePool)
     {
-        shader = &vkContext->gameShader;
+        const uint32_t instanceID  = material->internalID;
+        const uint32_t imageIndex  = vkContext->imageIndex;
+
+        // Write diffuse colour to instance UBO (binding 0).
+        struct InstanceUBO { glm::vec4 diffuseColor; } ubo{ material->diffuseColor };
+        auto& uboGen = vs->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
+        NOUS_VulkanShader::WriteInstanceUBO(vkContext, vs, imageIndex, instanceID,
+            &ubo, sizeof(ubo), &uboGen);
+
+        // Write diffuse texture sampler (binding 1), lazy update.
+        // Fall back to the default texture if the material's texture is missing,
+        // has an invalid generation, or has not yet been uploaded to the GPU.
+        ResourceTexture* texture = material->diffuseMap.texture;
+        if (!texture || texture->generation == INVALID_ID || !texture->internalData)
+            texture = External->resourceManager->GetDefaultTexture();
+
+        if (texture && texture->internalData)
+        {
+            VulkanTextureData* texData = static_cast<VulkanTextureData*>(texture->internalData);
+            auto& samplerGen = vs->instanceStates[instanceID].descriptorStates[1].generations[imageIndex];
+            auto& samplerID  = vs->instanceStates[instanceID].descriptorStates[1].ids[imageIndex];
+            NOUS_VulkanShader::WriteInstanceSampler(vkContext, vs, imageIndex, instanceID,
+                1, texData->image.view, texData->sampler,
+                &samplerGen, &samplerID, texture->ID, texture->generation);
+        }
+        else if (vs->instanceStates[instanceID].descriptorStates[1].generations[imageIndex] == UINT32_MAX)
+        {
+            // Binding 1 has never been written for this image index (fresh slot, no
+            // valid texture yet including no default). Drawing now would violate
+            // VUID-vkCmdDrawIndexed-None-08114 — skip until a texture is available.
+            return true;
+        }
+
+        NOUS_VulkanShader::BindInstanceDescriptorSet(commandBuffer->handle, vs, imageIndex, instanceID);
     }
-    else
+
+    // Bind vertex buffer.
+    VkDeviceSize offset = bufferData->vertexBufferOffset;
+    vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1,
+        &vkContext->objectVertexBuffer.handle, &offset);
+
+    if (bufferData->indexCount > 0)
     {
-        shader = &vkContext->materialShader;
-    }
-
-    VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
-
-    NOUS_VulkanMaterialShader::UseMaterialShader(vkContext, commandBuffer, shader);
-
-    NOUS_VulkanMaterialShader::MaterialShaderSetModel(vkContext, commandBuffer, shader, renderData.model);
-
-    ResourceMaterial* material = nullptr;
-
-    if (renderData.material)
-    {
-        material = renderData.material;
-    }
-    else 
-    {
-        material = External->resourceManager->GetDefaultMaterial();
-    }
-
-    NOUS_VulkanMaterialShader::MaterialShaderApplyMaterial(vkContext, commandBuffer, shader, material);
-
-    // Bind vertex buffer at offset.
-    VkDeviceSize offsets[1] = { bufferData->vertexBufferOffset };
-
-    vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1, &vkContext->objectVertexBuffer.handle, (VkDeviceSize*)offsets);
-
-    // Draw indexed or non-indexed.
-    if (bufferData->indexCount > 0) 
-    {
-        // Bind index buffer at offset.
-        vkCmdBindIndexBuffer(commandBuffer->handle, vkContext->objectIndexBuffer.handle, bufferData->indexBufferOffset, VK_INDEX_TYPE_UINT32);
-        // Issue the draw.
+        vkCmdBindIndexBuffer(commandBuffer->handle, vkContext->objectIndexBuffer.handle,
+            bufferData->indexBufferOffset, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(commandBuffer->handle, bufferData->indexCount, 1, 0, 0, 0);
     }
-    else 
+    else
     {
         vkCmdDraw(commandBuffer->handle, bufferData->vertexCount, 1, 0, 0);
     }
@@ -1029,40 +1035,61 @@ void VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
 
 bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
 {
-    if (material) 
+    if (!material)
     {
-        if (!NOUS_VulkanMaterialShader::AcquireMaterialShaderResources(vkContext, &vkContext->materialShader, material))
-        {
-            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
-            return false;
-        }
-
-        if (!NOUS_VulkanMaterialShader::AcquireMaterialShaderResources(vkContext, &vkContext->gameShader, material))
-        {
-            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() - Failed to acquire shader resources.");
-            return false;
-        }
-
-        NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Material created.", __FUNCTION__);
-        return true;
+        NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() called with nullptr.");
+        return false;
     }
 
-    NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() called with nullptr. Creation failed.");
-    return false;
+    // Acquire an instance slot from the scene shader.
+    // The game shader uses the same GLSL/layout so slots are acquired in sync.
+    if (vkContext->builtInMaterialShader && vkContext->builtInMaterialShader->internalData)
+    {
+        VulkanShader* vs = static_cast<VulkanShader*>(vkContext->builtInMaterialShader->internalData);
+        uint32_t instanceID = 0;
+        if (!NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vs, &instanceID))
+        {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() - Instance pool full.");
+            return false;
+        }
+        material->internalID = instanceID;
+
+        // Acquire the matching slot in the game shader as well.
+        if (vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
+        {
+            VulkanShader* vsGame = static_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
+            uint32_t gameID = 0;
+            NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vsGame, &gameID);
+            // gameID should match instanceID since both pools start empty and are
+            // acquired in the same order.
+        }
+    }
+
+    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Material created (instance %u).", __FUNCTION__, material->internalID);
+    return true;
 }
 
 void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
 {
-    if (material) 
+    if (material)
     {
-        if (material->internalID != INVALID_ID) 
+        if (material->internalID != INVALID_ID)
         {
-            NOUS_VulkanMaterialShader::ReleaseMaterialShaderResources(vkContext, &vkContext->materialShader, material);
-            //ReleaseMaterialShaderResources(vkContext, &vkContext->gameShader, material);
+            if (vkContext->builtInMaterialShader && vkContext->builtInMaterialShader->internalData)
+            {
+                VulkanShader* vs = static_cast<VulkanShader*>(vkContext->builtInMaterialShader->internalData);
+                NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vs, material->internalID);
+            }
+            if (vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
+            {
+                VulkanShader* vsGame = static_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
+                NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vsGame, material->internalID);
+            }
+            material->internalID = INVALID_ID;
         }
-        else 
+        else
         {
-            NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with internal_id = INVALID_ID. Nothing was done.");
+            NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with INVALID_ID.");
         }
     }
     else 
@@ -1206,7 +1233,48 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     if (!shader)
         return false;
 
-    // Target the scene renderpass for user-created shaders.
+    const std::string assetPath = shader->GetAssetsPath();
+
+    // ── BuiltIn.UIShader → UI renderpass ──────────────────────────────────────
+    if (assetPath.find("BuiltIn.UIShader") != std::string::npos)
+    {
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->uiRenderpass, shader))
+            return false;
+        vkContext->builtInUIShader = shader;
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.UIShader assigned to uiRenderpass.");
+        return true;
+    }
+
+    // ── BuiltIn.MaterialShader → scene renderpass (primary) ───────────────────
+    //    Also creates an internal clone for the game renderpass so both viewports
+    //    have independent global UBO buffers and descriptor sets.
+    if (assetPath.find("BuiltIn.MaterialShader") != std::string::npos)
+    {
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader))
+            return false;
+        vkContext->builtInMaterialShader = shader;
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to sceneRenderpass.");
+
+        // Game renderpass clone — owns its own VulkanShader (not in ResourceManager).
+        ResourceShader* gameShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+        gameShader->stagesData = shader->stagesData;
+        gameShader->reflection = shader->reflection;
+
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->gameRenderpass, gameShader))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create game-renderpass variant; game viewport will be unavailable.");
+            NOUS_DELETE(gameShader, MemoryTag::RESOURCE_SHADER);
+        }
+        else
+        {
+            vkContext->builtInGameShader = gameShader;
+            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader clone assigned to gameRenderpass.");
+        }
+
+        return true;
+    }
+
+    // ── Default: scene renderpass for user-defined shaders ────────────────────
     return NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader);
 }
 
@@ -1214,6 +1282,10 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
 {
     if (!shader || !shader->internalData)
         return;
+
+    // Null out vkContext built-in pointers so Shutdown() doesn't touch freed memory.
+    if (shader == vkContext->builtInMaterialShader) vkContext->builtInMaterialShader = nullptr;
+    if (shader == vkContext->builtInUIShader)       vkContext->builtInUIShader       = nullptr;
 
     VulkanShader* vs = static_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);

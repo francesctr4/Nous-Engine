@@ -2,17 +2,17 @@
 
 #include "Engine/Renderer/Backend/Vulkan/Shaders/VulkanShaderUtils.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/GraphicsPipeline/VulkanGraphicsPipeline.h"
+#include "Engine/Renderer/Backend/Vulkan/Resources/Buffer/VulkanBuffer.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 
 #include <algorithm>
 
-// ─────────────────────────────── Helpers ─────────────────────────────────────
+// ─────────────────────────────── Type helpers ─────────────────────────────────
 
 static VkShaderStageFlagBits ToVkStageFlagBit(ShaderStage stage)
 {
@@ -28,9 +28,8 @@ static VkShaderStageFlagBits ToVkStageFlagBit(ShaderStage stage)
     }
 }
 
-// Converts the engine's custom stage bitmask (ShaderReflection.cpp ToStageMask) to
-// VkShaderStageFlags. Mapping: Vertex=bit0, TessCtrl=bit1, TessEval=bit2,
-// Geometry=bit3, Fragment=bit4, Compute=bit5.
+// Engine stage bitmask (from ShaderReflection.cpp):
+//   Vertex=bit0, TessCtrl=bit1, TessEval=bit2, Geometry=bit3, Fragment=bit4, Compute=bit5
 static VkShaderStageFlags StageMaskToVkFlags(uint32_t mask)
 {
     VkShaderStageFlags flags = 0;
@@ -77,11 +76,188 @@ static VkFormat DataTypeToVkFormat(DataType dt)
     }
 }
 
+// ─────────────────────────────── Internal helpers ────────────────────────────
+
+// Round size up to the device's minUniformBufferOffsetAlignment.
+static uint32_t AlignUBOStride(VulkanContext* vkContext, uint32_t size)
+{
+    const uint64_t align = vkContext->device.properties.limits.minUniformBufferOffsetAlignment;
+    if (align == 0 || size == 0) return size;
+    return static_cast<uint32_t>((size + align - 1) & ~(align - 1));
+}
+
+// Allocate global (set=0) descriptor pool, one UBO buffer per image, and descriptor sets.
+static bool AllocateGlobalResources(VulkanContext* vkContext, VulkanShader* vs,
+                                    const PipelineReflectionResult& refl)
+{
+    auto it = refl.descriptorSets.find(0);
+    if (it == refl.descriptorSets.end()) return true; // no set=0
+
+    const auto& set0 = it->second;
+
+    // Find the first UBO binding to determine the block size.
+    uint32_t uboBlockSize = 0;
+    for (const auto& rb : set0)
+        if (rb.type == DescriptorType::UniformBuffer) { uboBlockSize = rb.blockSize; break; }
+
+    if (uboBlockSize == 0) return true; // no UBO in set=0, nothing to allocate
+
+    vs->globalUBOStride = uboBlockSize;
+
+    constexpr uint32_t imageCount = 3; // triple-buffering
+    VkDevice dev = vkContext->device.logicalDevice;
+
+    // ── Descriptor pool ───────────────────────────────────────────────────────
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    for (const auto& rb : set0)
+    {
+        VkDescriptorPoolSize ps{};
+        ps.type            = ToVkDescriptorType(rb.type);
+        ps.descriptorCount = imageCount * rb.count;
+        poolSizes.push_back(ps);
+    }
+
+    VkDescriptorPoolCreateInfo poolCI{};
+    poolCI.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolCI.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolCI.pPoolSizes    = poolSizes.data();
+    poolCI.maxSets       = imageCount;
+
+    VK_CHECK(vkCreateDescriptorPool(dev, &poolCI, vkContext->allocator, &vs->globalPool));
+
+    // ── UBO buffers (one per image) ───────────────────────────────────────────
+    const uint32_t deviceLocalBits = vkContext->device.supportsDeviceLocalHostVisible
+                                      ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0;
+
+    vs->globalUBOBuffers.resize(imageCount);
+    for (uint32_t i = 0; i < imageCount; ++i)
+    {
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, vs->globalUBOStride,
+                VkBufferUsageFlagBits(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | deviceLocalBits,
+                true, &vs->globalUBOBuffers[i]))
+        {
+            NOUS_ERROR("[VulkanShader] Failed to create global UBO buffer %u.", i);
+            return false;
+        }
+    }
+
+    // ── Descriptor sets (one per image) ───────────────────────────────────────
+    std::vector<VkDescriptorSetLayout> layouts(imageCount, vs->descriptorSetLayouts[0]);
+    vs->globalDescriptorSets.resize(imageCount);
+
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool     = vs->globalPool;
+    allocInfo.descriptorSetCount = imageCount;
+    allocInfo.pSetLayouts        = layouts.data();
+
+    VK_CHECK(vkAllocateDescriptorSets(dev, &allocInfo, vs->globalDescriptorSets.data()));
+
+    // Write initial buffer descriptors so the sets are valid from the start.
+    for (uint32_t i = 0; i < imageCount; ++i)
+    {
+        VkDescriptorBufferInfo bufInfo{};
+        bufInfo.buffer = vs->globalUBOBuffers[i].handle;
+        bufInfo.offset = 0;
+        bufInfo.range  = vs->globalUBOStride;
+
+        VkWriteDescriptorSet write{};
+        write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet          = vs->globalDescriptorSets[i];
+        write.dstBinding      = 0;
+        write.dstArrayElement = 0;
+        write.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        write.descriptorCount = 1;
+        write.pBufferInfo     = &bufInfo;
+
+        vkUpdateDescriptorSets(dev, 1, &write, 0, nullptr);
+    }
+
+    return true;
+}
+
+// Allocate instance (set=1) descriptor pool and shared UBO buffer.
+static bool AllocateInstanceResources(VulkanContext* vkContext, VulkanShader* vs,
+                                      const PipelineReflectionResult& refl)
+{
+    auto it = refl.descriptorSets.find(1);
+    if (it == refl.descriptorSets.end()) return true; // no set=1
+
+    const auto& set1 = it->second;
+
+    uint32_t uboBlockSize = 0;
+    for (const auto& rb : set1)
+        if (rb.type == DescriptorType::UniformBuffer) { uboBlockSize = rb.blockSize; break; }
+
+    vs->instanceUBOStride    = AlignUBOStride(vkContext, uboBlockSize);
+    vs->instanceBindingCount = static_cast<uint32_t>(set1.size());
+
+    constexpr uint32_t imageCount   = 3;
+    constexpr uint32_t maxInstances = VULKAN_SHADER_MAX_INSTANCE_COUNT;
+    VkDevice dev = vkContext->device.logicalDevice;
+
+    // ── Descriptor pool ───────────────────────────────────────────────────────
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    for (const auto& rb : set1)
+    {
+        VkDescriptorPoolSize ps{};
+        ps.type            = ToVkDescriptorType(rb.type);
+        ps.descriptorCount = maxInstances * imageCount * rb.count;
+        poolSizes.push_back(ps);
+    }
+
+    VkDescriptorPoolCreateInfo poolCI{};
+    poolCI.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolCI.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolCI.pPoolSizes    = poolSizes.data();
+    poolCI.maxSets       = maxInstances * imageCount;
+    poolCI.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+    VK_CHECK(vkCreateDescriptorPool(dev, &poolCI, vkContext->allocator, &vs->instancePool));
+
+    // ── Shared instance UBO buffer ────────────────────────────────────────────
+    if (vs->instanceUBOStride > 0)
+    {
+        const uint32_t deviceLocalBits = vkContext->device.supportsDeviceLocalHostVisible
+                                          ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0;
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext,
+                static_cast<uint64_t>(vs->instanceUBOStride) * maxInstances,
+                VkBufferUsageFlagBits(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | deviceLocalBits,
+                true, &vs->instanceUBOBuffer))
+        {
+            NOUS_ERROR("[VulkanShader] Failed to create instance UBO buffer.");
+            return false;
+        }
+    }
+
+    // ── Instance state slots ──────────────────────────────────────────────────
+    vs->instanceStates.resize(maxInstances);
+    for (auto& state : vs->instanceStates)
+    {
+        state.inUse = false;
+        state.descriptorStates.resize(vs->instanceBindingCount);
+        for (auto& ds : state.descriptorStates)
+        {
+            ds.generations.fill(UINT32_MAX);
+            ds.ids.fill(UINT32_MAX);
+        }
+    }
+
+    return true;
+}
+
 // ─────────────────────────────── IBackendShader ───────────────────────────────
 
 void VulkanShader::Bind()
 {
-    // Pipeline binding is issued per-draw-call via the command buffer.
+    // Pipeline binding is per-draw-call via BindPipeline().
 }
 
 void VulkanShader::Destroy()
@@ -93,7 +269,7 @@ void VulkanShader::Destroy()
 // ─────────────────────────────── Create ──────────────────────────────────────
 
 bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* renderpass,
-    ResourceShader* shader)
+                                ResourceShader* shader)
 {
     if (!shader || shader->stagesData.empty())
     {
@@ -109,16 +285,14 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
 
     // ── 1. Shader modules ─────────────────────────────────────────────────────
     vs->stages.resize(shader->stagesData.size());
-
     for (size_t i = 0; i < shader->stagesData.size(); ++i)
     {
         const ShaderSource& src = shader->stagesData[i];
-
         if (!NOUS_VulkanShaderUtils::CreateShaderModuleFromBinary(
                 vkContext, src.spirvBinary, ToVkStageFlagBit(src.stage), &vs->stages[i]))
         {
             NOUS_ERROR("[VulkanShader] Failed to create shader module for stage %d.", (int)src.stage);
-            NOUS_VulkanShader::Destroy(vkContext, vs);
+            Destroy(vkContext, vs);
             return false;
         }
     }
@@ -136,7 +310,6 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
         {
             std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
             layoutBindings.reserve(bindings.size());
-
             for (const ReflectedBinding& rb : bindings)
             {
                 VkDescriptorSetLayoutBinding b{};
@@ -161,7 +334,6 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     // ── 3. Push constant ranges from reflection ───────────────────────────────
     std::vector<VkPushConstantRange> pushRanges;
     pushRanges.reserve(refl.pushConstants.size());
-
     for (const ReflectedPushConstant& pc : refl.pushConstants)
     {
         VkPushConstantRange range{};
@@ -191,7 +363,6 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     std::vector<VkVertexInputAttributeDescription> attribs;
     attribs.reserve(sortedInputs.size());
     uint32_t stride = 0;
-
     for (const ReflectedInput& in : sortedInputs)
     {
         VkVertexInputAttributeDescription attrib{};
@@ -208,8 +379,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     bindingDesc.stride    = stride;
     bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    // ── 6. Build the VkPipeline ───────────────────────────────────────────────
-    // Viewport / scissor (dynamic states override these at draw time)
+    // ── 6. Build VkGraphicsPipeline ───────────────────────────────────────────
     VkViewport viewport{};
     viewport.x        = 0.0f;
     viewport.y        = static_cast<float>(vkContext->framebufferHeight);
@@ -231,18 +401,17 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     viewportStateCI.pScissors     = &scissor;
 
     VkPipelineRasterizationStateCreateInfo rasterCI{};
-    rasterCI.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterCI.polygonMode             = VK_POLYGON_MODE_FILL;
-    rasterCI.lineWidth               = 1.0f;
-    rasterCI.cullMode                = VK_CULL_MODE_BACK_BIT;
-    rasterCI.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterCI.depthBiasEnable         = VK_FALSE;
+    rasterCI.sType       = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterCI.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterCI.lineWidth   = 1.0f;
+    rasterCI.cullMode    = VK_CULL_MODE_BACK_BIT;
+    rasterCI.frontFace   = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
     VkPipelineMultisampleStateCreateInfo msaaCI{};
-    msaaCI.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    msaaCI.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
-    msaaCI.sampleShadingEnable   = VK_FALSE;
-    msaaCI.minSampleShading      = 1.0f;
+    msaaCI.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    msaaCI.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    msaaCI.sampleShadingEnable  = VK_FALSE;
+    msaaCI.minSampleShading     = 1.0f;
 
     VkPipelineDepthStencilStateCreateInfo depthCI{};
     depthCI.sType            = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -251,8 +420,8 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     depthCI.depthCompareOp   = VK_COMPARE_OP_LESS;
 
     VkPipelineColorBlendAttachmentState blendAttach{};
-    blendAttach.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                 VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    blendAttach.colorWriteMask    = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                    VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     blendAttach.blendEnable           = VK_TRUE;
     blendAttach.srcColorBlendFactor   = VK_BLEND_FACTOR_SRC_ALPHA;
     blendAttach.dstColorBlendFactor   = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -315,14 +484,27 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     if (result != VK_SUCCESS)
     {
         NOUS_ERROR("[VulkanShader] vkCreateGraphicsPipelines failed (%d).", result);
-        NOUS_VulkanShader::Destroy(vkContext, vs);
+        Destroy(vkContext, vs);
+        return false;
+    }
+
+    // ── 7. Allocate descriptor resources driven by reflection ─────────────────
+    if (!AllocateGlobalResources(vkContext, vs, refl))
+    {
+        NOUS_ERROR("[VulkanShader] Failed to allocate global descriptor resources.");
+        Destroy(vkContext, vs);
+        return false;
+    }
+
+    if (!AllocateInstanceResources(vkContext, vs, refl))
+    {
+        NOUS_ERROR("[VulkanShader] Failed to allocate instance descriptor resources.");
+        Destroy(vkContext, vs);
         return false;
     }
 
     shader->internalData = vs;
-    NOUS_INFO("[VulkanShader] Created pipeline for shader with %zu stage(s).",
-              shader->stagesData.size());
-
+    NOUS_INFO("[VulkanShader] Created shader with %zu stage(s).", shader->stagesData.size());
     return true;
 }
 
@@ -335,7 +517,29 @@ void NOUS_VulkanShader::Destroy(VulkanContext* vkContext, VulkanShader* vs)
     VkDevice dev                     = vkContext->device.logicalDevice;
     VkAllocationCallbacks* allocator = vkContext->allocator;
 
-    // Pipeline and its layout
+    // Instance resources
+    if (vs->instancePool != VK_NULL_HANDLE)
+    {
+        if (vs->instanceUBOBuffer.handle != VK_NULL_HANDLE)
+            NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vs->instanceUBOBuffer);
+
+        vkDestroyDescriptorPool(dev, vs->instancePool, allocator);
+        vs->instancePool = VK_NULL_HANDLE;
+    }
+    vs->instanceStates.clear();
+
+    // Global resources
+    if (vs->globalPool != VK_NULL_HANDLE)
+    {
+        for (auto& buf : vs->globalUBOBuffers)
+            NOUS_VulkanBuffer::DestroyBuffer(vkContext, &buf);
+        vs->globalUBOBuffers.clear();
+
+        vkDestroyDescriptorPool(dev, vs->globalPool, allocator);
+        vs->globalPool = VK_NULL_HANDLE;
+    }
+
+    // Pipeline and layout
     if (vs->pipeline.handle != VK_NULL_HANDLE)
     {
         vkDestroyPipeline(dev, vs->pipeline.handle, allocator);
@@ -349,22 +553,192 @@ void NOUS_VulkanShader::Destroy(VulkanContext* vkContext, VulkanShader* vs)
 
     // Descriptor set layouts
     for (VkDescriptorSetLayout layout : vs->descriptorSetLayouts)
-    {
         if (layout != VK_NULL_HANDLE)
             vkDestroyDescriptorSetLayout(dev, layout, allocator);
-    }
     vs->descriptorSetLayouts.clear();
 
     // Shader modules
     for (VulkanShaderStage& stage : vs->stages)
-    {
         if (stage.handle != VK_NULL_HANDLE)
         {
             vkDestroyShaderModule(dev, stage.handle, allocator);
             stage.handle = VK_NULL_HANDLE;
         }
-    }
     vs->stages.clear();
 
     NOUS_DELETE(vs, MemoryTag::RENDERER);
+}
+
+// ─────────────────────────────── Per-frame ───────────────────────────────────
+
+void NOUS_VulkanShader::BindPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs)
+{
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->pipeline.handle);
+}
+
+void NOUS_VulkanShader::UpdateGlobal(VulkanContext* vkContext, VkCommandBuffer cmdBuffer,
+                                      VulkanShader* vs, uint32_t imageIndex,
+                                      const void* data, uint64_t size)
+{
+    if (!vs->globalPool || imageIndex >= vs->globalDescriptorSets.size()) return;
+
+    NOUS_VulkanBuffer::LoadData(vkContext, &vs->globalUBOBuffers[imageIndex],
+        0, size, 0, const_cast<void*>(data));
+
+    VkDescriptorBufferInfo bufInfo{};
+    bufInfo.buffer = vs->globalUBOBuffers[imageIndex].handle;
+    bufInfo.offset = 0;
+    bufInfo.range  = vs->globalUBOStride;
+
+    VkWriteDescriptorSet write{};
+    write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet          = vs->globalDescriptorSets[imageIndex];
+    write.dstBinding      = 0;
+    write.dstArrayElement = 0;
+    write.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    write.descriptorCount = 1;
+    write.pBufferInfo     = &bufInfo;
+
+    vkUpdateDescriptorSets(vkContext->device.logicalDevice, 1, &write, 0, nullptr);
+
+    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        vs->pipeline.pipelineLayout, 0, 1,
+        &vs->globalDescriptorSets[imageIndex], 0, nullptr);
+}
+
+// ─────────────────────────────── Instance management ─────────────────────────
+
+bool NOUS_VulkanShader::AcquireInstanceSlot(VulkanContext* vkContext, VulkanShader* vs,
+                                             uint32_t* outID)
+{
+    if (!vs->instancePool)
+    {
+        NOUS_ERROR("[VulkanShader] AcquireInstanceSlot: no instance pool.");
+        return false;
+    }
+
+    for (uint32_t i = 0; i < VULKAN_SHADER_MAX_INSTANCE_COUNT; ++i)
+    {
+        if (vs->instanceStates[i].inUse) continue;
+
+        // Allocate three descriptor sets (one per swapchain image).
+        const VkDescriptorSetLayout layout = vs->descriptorSetLayouts[1];
+        std::array<VkDescriptorSetLayout, 3> layouts = {layout, layout, layout};
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool     = vs->instancePool;
+        allocInfo.descriptorSetCount = 3;
+        allocInfo.pSetLayouts        = layouts.data();
+
+        VK_CHECK(vkAllocateDescriptorSets(vkContext->device.logicalDevice,
+            &allocInfo, vs->instanceStates[i].descriptorSets.data()));
+
+        for (auto& ds : vs->instanceStates[i].descriptorStates)
+        {
+            ds.generations.fill(UINT32_MAX);
+            ds.ids.fill(UINT32_MAX);
+        }
+
+        vs->instanceStates[i].inUse = true;
+        *outID = i;
+        return true;
+    }
+
+    NOUS_ERROR("[VulkanShader] Instance pool full (%u slots).", VULKAN_SHADER_MAX_INSTANCE_COUNT);
+    return false;
+}
+
+void NOUS_VulkanShader::ReleaseInstanceSlot(VulkanContext* vkContext, VulkanShader* vs,
+                                             uint32_t id)
+{
+    if (id >= VULKAN_SHADER_MAX_INSTANCE_COUNT || !vs->instanceStates[id].inUse) return;
+
+    VK_CHECK(vkFreeDescriptorSets(vkContext->device.logicalDevice, vs->instancePool,
+        3, vs->instanceStates[id].descriptorSets.data()));
+
+    vs->instanceStates[id].inUse = false;
+}
+
+// ─────────────────────────────── Descriptor writes ───────────────────────────
+
+void NOUS_VulkanShader::WriteInstanceUBO(VulkanContext* vkContext, VulkanShader* vs,
+                                          uint32_t imageIndex, uint32_t instanceID,
+                                          const void* data, uint64_t size,
+                                          uint32_t* inOutGeneration)
+{
+    if (!vs->instancePool || instanceID >= VULKAN_SHADER_MAX_INSTANCE_COUNT) return;
+    if (!vs->instanceStates[instanceID].inUse) return;
+
+    const uint64_t offset = static_cast<uint64_t>(instanceID) * vs->instanceUBOStride;
+    NOUS_VulkanBuffer::LoadData(vkContext, &vs->instanceUBOBuffer,
+        offset, size, 0, const_cast<void*>(data));
+
+    // Write descriptor only once or when invalidated.
+    if (*inOutGeneration == UINT32_MAX)
+    {
+        VkDescriptorBufferInfo bufInfo{};
+        bufInfo.buffer = vs->instanceUBOBuffer.handle;
+        bufInfo.offset = offset;
+        bufInfo.range  = vs->instanceUBOStride;
+
+        VkWriteDescriptorSet write{};
+        write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet          = vs->instanceStates[instanceID].descriptorSets[imageIndex];
+        write.dstBinding      = 0;
+        write.dstArrayElement = 0;
+        write.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        write.descriptorCount = 1;
+        write.pBufferInfo     = &bufInfo;
+
+        vkUpdateDescriptorSets(vkContext->device.logicalDevice, 1, &write, 0, nullptr);
+        *inOutGeneration = 0;
+    }
+}
+
+void NOUS_VulkanShader::WriteInstanceSampler(VulkanContext* vkContext, VulkanShader* vs,
+                                              uint32_t imageIndex, uint32_t instanceID,
+                                              uint32_t bindingIndex,
+                                              VkImageView imageView, VkSampler sampler,
+                                              uint32_t* inOutGeneration, uint32_t* inOutID,
+                                              uint32_t resourceID, uint32_t resourceGeneration)
+{
+    if (!vs->instancePool || instanceID >= VULKAN_SHADER_MAX_INSTANCE_COUNT) return;
+
+    // A generation of UINT32_MAX means this binding has never been written — always
+    // force the first write even if the resource ID/generation happen to match that
+    // sentinel (e.g. uninitialized ResourceTexture::ID / generation fields).
+    const bool neverWritten = (*inOutGeneration == UINT32_MAX);
+
+    // Lazy: skip write if resource is unchanged (only after at least one write).
+    if (!neverWritten && *inOutID == resourceID && *inOutGeneration == resourceGeneration) return;
+
+    VkDescriptorImageInfo imgInfo{};
+    imgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imgInfo.imageView   = imageView;
+    imgInfo.sampler     = sampler;
+
+    VkWriteDescriptorSet write{};
+    write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet          = vs->instanceStates[instanceID].descriptorSets[imageIndex];
+    write.dstBinding      = bindingIndex;
+    write.dstArrayElement = 0;
+    write.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write.descriptorCount = 1;
+    write.pImageInfo      = &imgInfo;
+
+    vkUpdateDescriptorSets(vkContext->device.logicalDevice, 1, &write, 0, nullptr);
+
+    *inOutGeneration = resourceGeneration;
+    *inOutID         = resourceID;
+}
+
+void NOUS_VulkanShader::BindInstanceDescriptorSet(VkCommandBuffer cmdBuffer, VulkanShader* vs,
+                                                   uint32_t imageIndex, uint32_t instanceID)
+{
+    if (!vs->instancePool || instanceID >= VULKAN_SHADER_MAX_INSTANCE_COUNT) return;
+
+    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        vs->pipeline.pipelineLayout, 1, 1,
+        &vs->instanceStates[instanceID].descriptorSets[imageIndex], 0, nullptr);
 }

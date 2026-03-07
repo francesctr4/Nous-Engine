@@ -86,25 +86,18 @@ bool ModuleScene::Start()
 		}
 	}
 
-	ResourceShader* mockShader =
-		  down_cast<ResourceShader*>(
-			  External->resourceManager->CreateResource(
-				  "Assets/Shaders/temp_MockShader.glsl"));
+	// TODO 1: Descommenting this will produce a crash in Editor Windows for loop when drawing.
+	// TODO 1: probably because we are presenting incorrect values to screen in the Resources/ResourceManager Window.
+	// TODO 2: We also need to delete all the deprecated data, functions and usages of old shaders.
+	// ResourceShader* mockShader =
+	//  	  down_cast<ResourceShader*>(
+	//  		  External->resourceManager->CreateResource(
+	//  			  "Assets/Shaders/temp_MockShader.glsl"));
 
-	ResourceShader* shaderWithAllStages =
-		  down_cast<ResourceShader*>(
-			  External->resourceManager->CreateResource(
-				  "Assets/Shaders/temp_ShaderWithAllStages.glsl"));
-
-	ResourceShader* materialShader =
-		  down_cast<ResourceShader*>(
-			  External->resourceManager->CreateResource(
-				  "Assets/Shaders/BuiltIn.MaterialShader.glsl"));
-
-	ResourceShader* UIShader =
-		  down_cast<ResourceShader*>(
-			  External->resourceManager->CreateResource(
-				  "Assets/Shaders/BuiltIn.UIShader.glsl"));
+	 // ResourceShader* shaderWithAllStages =
+	 // 	  down_cast<ResourceShader*>(
+	 // 		  External->resourceManager->CreateResource(
+	 // 			  "Assets/Shaders/temp_ShaderWithAllStages.glsl"));
 
     LoadScene("Assets/Scenes/LagiacrusScene.nous");
 

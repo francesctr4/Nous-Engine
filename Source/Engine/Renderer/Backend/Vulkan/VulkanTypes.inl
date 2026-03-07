@@ -423,6 +423,13 @@ struct VulkanContext
     VulkanMaterialShader gameShader;
     VulkanUIShader uiShader;
 
+    // ── Built-in shaders via the new ResourceShader / VulkanShader system ─────
+    // Loaded in Initialize(); destroyed in Shutdown().
+    // internalData points to a heap-allocated VulkanShader.
+    class ResourceShader* builtInMaterialShader = nullptr;
+    class ResourceShader* builtInGameShader     = nullptr;
+    class ResourceShader* builtInUIShader       = nullptr;
+
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
 

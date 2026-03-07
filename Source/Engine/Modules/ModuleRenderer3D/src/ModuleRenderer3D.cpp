@@ -54,6 +54,12 @@ bool ModuleRenderer3D::Awake()
 		return false;
 	}
 
+	// Load BuiltIn shaders now that the Vulkan backend and ResourceManager are both ready.
+	// This guarantees the shaders exist before any Start() call or rendering begins.
+	// TODO: It seems UIShader is optional...? Still works without it so...
+	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
+	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.UIShader.glsl");
+
 	return true;
 }
 
