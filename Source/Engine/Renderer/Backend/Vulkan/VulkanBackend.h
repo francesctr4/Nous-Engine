@@ -41,11 +41,6 @@ public:
             const glm::vec3& viewPosition, const glm::vec4& ambientColor,
             int32 mode) override;
 
-	bool UpdateGlobalUIState(
-            RenderpassType renderpassID,
-            const glm::mat4& projection, const glm::mat4& view,
-            int32 mode) override;
-
 	bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData) override;
 
 	// ----------------------------------------------------------------------------------------------- //

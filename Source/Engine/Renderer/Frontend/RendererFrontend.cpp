@@ -137,11 +137,6 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 	RenderpassType uiRenderpass = RenderpassType::UI;
 	success &= ExecuteRenderpass(uiRenderpass, [&]()
 	{
-        success &= mBackend->UpdateGlobalUIState(
-				uiRenderpass,
-				packet->editorCamera->GetProjectionMatrix(),
-				packet->editorCamera->GetViewMatrix(), 0);
-
 		DrawEditor();
 	});
 

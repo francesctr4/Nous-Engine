@@ -135,11 +135,6 @@ struct IRendererBackend
             const glm::vec3& viewPosition, const glm::vec4& ambientColor,
             int32_t mode) = 0;
 
-    [[nodiscard]] virtual bool UpdateGlobalUIState(
-            RenderpassType renderpassID,
-            const glm::mat4& projection, const glm::mat4& view,
-            int32_t mode) = 0;
-
     [[nodiscard]] virtual bool DrawGeometry(
             RenderpassType renderpassID,
             const GeometryRenderData& renderData) = 0;

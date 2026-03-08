@@ -428,7 +428,6 @@ struct VulkanContext
     // internalData points to a heap-allocated VulkanShader.
     class ResourceShader* builtInMaterialShader = nullptr;
     class ResourceShader* builtInGameShader     = nullptr;
-    class ResourceShader* builtInUIShader       = nullptr;
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;

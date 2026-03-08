@@ -113,14 +113,6 @@ bool RendererBackend::UpdateGlobalWorldState(RenderpassType renderpassID,
     return mBackendInterface && mBackendInterface->UpdateGlobalWorldState(renderpassID, projection, view, viewPosition, ambientColor, mode);
 }
 
-bool RendererBackend::UpdateGlobalUIState(RenderpassType renderpassID,
-                                          const glm::mat4& projection, const glm::mat4& view,
-                                          int32 mode)
-{
-    return mBackendInterface && mBackendInterface->UpdateGlobalUIState(renderpassID, projection, view, mode);
-}
-
-
 // ─────────────────────────────── Drawing ─────────────────────────────────
 bool RendererBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData)
 {

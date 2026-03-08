@@ -242,10 +242,10 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Sync Objects created successfully!");
     }
 
-    // BuiltIn shaders are loaded via the ResourceManager in ModuleScene::Start(),
+    // BuiltIn shaders are loaded via the ResourceManager in ModuleRenderer3D::Awake(),
     // which calls ImporterShader::Load → CreateShader → VulkanBackend::CreateShader.
-    // vkContext->builtInMaterialShader, builtInGameShader, builtInUIShader are
-    // assigned automatically when each built-in asset path is recognised there.
+    // vkContext->builtInMaterialShader and builtInGameShader are assigned automatically
+    // when the built-in asset path is recognised there.
 
     // Create Vulkan Buffers
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Buffers...");
@@ -275,13 +275,12 @@ void VulkanBackend::Shutdown() noexcept
 
     NOUS_VulkanBuffer::DestroyBuffers(vkContext);
 
-    // builtInMaterialShader and builtInUIShader are managed by the ResourceManager;
-    // ClearResources() → DestroyShader() releases their GPU resources and nulls these
-    // pointers before Shutdown() is called. Guard against the unexpected case.
-    if (vkContext->builtInMaterialShader || vkContext->builtInUIShader)
-        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] BuiltIn shader pointer(s) still set — ResourceManager may not have cleared resources.");
+    // builtInMaterialShader is managed by the ResourceManager;
+    // ClearResources() → DestroyShader() releases its GPU resources and nulls this
+    // pointer before Shutdown() is called. Guard against the unexpected case.
+    if (vkContext->builtInMaterialShader)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInMaterialShader pointer still set — ResourceManager may not have cleared resources.");
     vkContext->builtInMaterialShader = nullptr;
-    vkContext->builtInUIShader       = nullptr;
 
     // builtInGameShader is an internal clone (same SPIR-V, game renderpass) that is
     // NOT tracked by the ResourceManager, so we own it here.
@@ -615,7 +614,7 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
     {
         case RenderpassType::SCENE: TryBind(vkContext->builtInMaterialShader); break;
         case RenderpassType::GAME:  TryBind(vkContext->builtInGameShader);     break;
-        case RenderpassType::UI:    TryBind(vkContext->builtInUIShader);       break;
+        case RenderpassType::UI:    break; // ImGui uses its own imgui_impl_vulkan pipeline
     }
 
     return true;
@@ -786,25 +785,6 @@ bool VulkanBackend::UpdateGlobalWorldState(
     return true;
 }
 
-bool VulkanBackend::UpdateGlobalUIState(RenderpassType renderpassID,
-                                        const glm::mat4& projection, const glm::mat4& view,
-                                        int32 mode)
-{
-    if (!vkContext->builtInUIShader || !vkContext->builtInUIShader->internalData) return false;
-
-    VulkanShader* vs = static_cast<VulkanShader*>(vkContext->builtInUIShader->internalData);
-
-    // UI renderpass uses the main graphics command buffer.
-    VkCommandBuffer cmdBuf = vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle;
-
-    NOUS_VulkanShader::BindPipeline(cmdBuf, vs);
-
-    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
-    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf, vs,
-        vkContext->imageIndex, &ubo, sizeof(ubo));
-
-    return true;
-}
 
 VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(RenderpassType renderpassID)
 {
@@ -1235,16 +1215,6 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
 
     const std::string assetPath = shader->GetAssetsPath();
 
-    // ── BuiltIn.UIShader → UI renderpass ──────────────────────────────────────
-    if (assetPath.find("BuiltIn.UIShader") != std::string::npos)
-    {
-        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->uiRenderpass, shader))
-            return false;
-        vkContext->builtInUIShader = shader;
-        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.UIShader assigned to uiRenderpass.");
-        return true;
-    }
-
     // ── BuiltIn.MaterialShader → scene renderpass (primary) ───────────────────
     //    Also creates an internal clone for the game renderpass so both viewports
     //    have independent global UBO buffers and descriptor sets.
@@ -1283,9 +1253,8 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     if (!shader || !shader->internalData)
         return;
 
-    // Null out vkContext built-in pointers so Shutdown() doesn't touch freed memory.
+    // Null out vkContext built-in pointer so Shutdown() doesn't touch freed memory.
     if (shader == vkContext->builtInMaterialShader) vkContext->builtInMaterialShader = nullptr;
-    if (shader == vkContext->builtInUIShader)       vkContext->builtInUIShader       = nullptr;
 
     VulkanShader* vs = static_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
