@@ -472,10 +472,14 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.pWaitDstStageMask = waitStages;
 
-    VkResult submitRes = vkQueueSubmit(
-            vkContext->device.graphicsQueue,
-            1, &submitInfo,
-            vkContext->inFlightFences[vkContext->currentFrame]);
+    VkResult submitRes;
+    {
+        std::lock_guard<std::mutex> queueLock(vkContext->device.graphicsQueueMutex);
+        submitRes = vkQueueSubmit(
+                vkContext->device.graphicsQueue,
+                1, &submitInfo,
+                vkContext->inFlightFences[vkContext->currentFrame]);
+    }
 
     if (!VkResultIsSuccess(submitRes))
     {
@@ -1116,6 +1120,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     }
     else
     {
+        std::lock_guard<std::mutex> geoLock(vkContext->geometriesMutex);
         for (uint32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i)
         {
             if (vkContext->geometries[i].ID == INVALID_ID)
@@ -1142,11 +1147,14 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     internalData->vertexCount = vertexCount;
     internalData->vertexSize = sizeof(Vertex3D) * vertexCount;
 
-    if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectVertexBuffer,
-        &internalData->vertexBufferOffset, internalData->vertexSize, vertices))
     {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateGeometry() failed to upload to the vertex buffer!");
-        return false;
+        std::lock_guard<std::mutex> vtxLock(vkContext->vertexBufferMutex);
+        if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectVertexBuffer,
+            &internalData->vertexBufferOffset, internalData->vertexSize, vertices))
+        {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateGeometry() failed to upload to the vertex buffer!");
+            return false;
+        }
     }
 
     // Index data, if applicable
@@ -1155,6 +1163,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
         internalData->indexCount = indexCount;
         internalData->indexSize = sizeof(uint32) * indexCount;
 
+        std::lock_guard<std::mutex> idxLock(vkContext->indexBufferMutex);
         if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectIndexBuffer,
             &internalData->indexBufferOffset, internalData->indexSize, indices))
         {
@@ -1163,25 +1172,29 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
         }
     }
 
-    if (internalData->generation == INVALID_ID) 
+    if (internalData->generation == INVALID_ID)
     {
         internalData->generation = 0;
     }
-    else 
+    else
     {
         internalData->generation++;
     }
 
-    if (isReupload) 
+    if (isReupload)
     {
         // Free vertex data
-        NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectVertexBuffer, 
-            oldRange.vertexBufferOffset, oldRange.vertexSize);
+        {
+            std::lock_guard<std::mutex> vtxLock(vkContext->vertexBufferMutex);
+            NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectVertexBuffer,
+                oldRange.vertexBufferOffset, oldRange.vertexSize);
+        }
 
         // Free index data, if applicable
-        if (oldRange.indexSize > 0) 
+        if (oldRange.indexSize > 0)
         {
-            NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectIndexBuffer, 
+            std::lock_guard<std::mutex> idxLock(vkContext->indexBufferMutex);
+            NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectIndexBuffer,
                 oldRange.indexBufferOffset, oldRange.indexSize);
         }
     }
@@ -1199,19 +1212,25 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
         VulkanGeometryData* internalData = &vkContext->geometries[geometry->internalID];
 
         // Free vertex data
-        NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectVertexBuffer, internalData->vertexBufferOffset, internalData->vertexSize);
+        {
+            std::lock_guard<std::mutex> vtxLock(vkContext->vertexBufferMutex);
+            NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectVertexBuffer, internalData->vertexBufferOffset, internalData->vertexSize);
+        }
 
         // Free index data, if applicable
-        if (internalData->indexSize > 0) 
+        if (internalData->indexSize > 0)
         {
+            std::lock_guard<std::mutex> idxLock(vkContext->indexBufferMutex);
             NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectIndexBuffer, internalData->indexBufferOffset, internalData->indexSize);
         }
 
         // Clean up data.
-        MemoryManager::ZeroMemory(internalData, sizeof(VulkanGeometryData));
-
-        internalData->ID = INVALID_ID;
-        internalData->generation = INVALID_ID;
+        {
+            std::lock_guard<std::mutex> geoLock(vkContext->geometriesMutex);
+            MemoryManager::ZeroMemory(internalData, sizeof(VulkanGeometryData));
+            internalData->ID = INVALID_ID;
+            internalData->generation = INVALID_ID;
+        }
     }
 }
 

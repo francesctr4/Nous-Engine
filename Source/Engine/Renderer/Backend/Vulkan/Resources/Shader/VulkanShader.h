@@ -4,6 +4,7 @@
 #include "Engine/Renderer/RendererTypes.h"
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
 
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -61,6 +62,7 @@ struct VulkanShader : public IBackendShader
     uint32_t                     instanceUBOStride = 0; // bytes per instance (aligned)
     uint32_t                     instanceBindingCount = 0; // bindings in set=1
     std::vector<VulkanShaderInstanceState> instanceStates; // VULKAN_SHADER_MAX_INSTANCE_COUNT
+    mutable std::mutex                     instanceMutex;  // guards instanceStates slot acquisition/release
 
     // ── IBackendShader ────────────────────────────────────────────────────────
     void Bind()    override;

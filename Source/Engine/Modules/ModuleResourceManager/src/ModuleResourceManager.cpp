@@ -18,6 +18,7 @@
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
+#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
@@ -171,6 +172,7 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 	{
 		if (!ResourceExists(uid)) continue;
 		Resource* resource = resources[uid];
+		if (!resource) continue; // still loading (placeholder); skip
 		ImporterManager::Unload(resource->GetType(), resource);
 		DeleteResource(resource);
 	}
@@ -631,7 +633,19 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 	NOUS_INFO(" - Assets path: %s", metaFileData.assetsPath.c_str());
 	NOUS_INFO(" - Library path: %s", metaFileData.libraryPath.c_str());
 
-	if (!ResourceExists(metaFileData.uid))
+	// Atomically check-and-claim the UID slot to prevent two threads from loading the same resource.
+	// We insert a nullptr placeholder under the lock, load outside it, then replace.
+	bool needsLoad = false;
+	{
+		std::lock_guard<std::mutex> lock(resourcesMutex);
+		if (resources.find(metaFileData.uid) == resources.end())
+		{
+			resources[metaFileData.uid] = nullptr; // claim slot; marks "in progress"
+			needsLoad = true;
+		}
+	}
+
+	if (needsLoad)
 	{
 		NOUS_INFO("Resource with UID %u does not exist. Creating new instance...", metaFileData.uid);
 
@@ -640,6 +654,9 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 		{
 			NOUS_ERROR("CreateResource ERROR: Failed to instantiate resource of type %s.",
 					   Resource::GetLibraryExtensionFromType(metaFileData.resourceType).c_str());
+			// Remove the placeholder so the slot is available again.
+			std::lock_guard<std::mutex> lock(resourcesMutex);
+			resources.erase(metaFileData.uid);
 			return nullptr;
 		}
 
@@ -656,10 +673,15 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 		{
 			NOUS_ERROR("CreateResource ERROR: Failed to load resource from library: %s",
 					   metaFileData.libraryPath.c_str());
+			std::lock_guard<std::mutex> lock(resourcesMutex);
+			resources.erase(metaFileData.uid);
 			return nullptr;
 		}
 
-		AddResource(metaFileData.uid, resource);
+		{
+			std::lock_guard<std::mutex> lock(resourcesMutex);
+			resources[metaFileData.uid] = resource;
+		}
 
 		resource->IncreaseReferenceCount();
 		resource->Validate();
@@ -673,18 +695,24 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 	else
 	{
 		NOUS_INFO("Resource with UID %u already exists. Requesting existing instance...", metaFileData.uid);
-		Resource* existingResource = RequestResource(metaFileData.uid);
-		if (existingResource)
-		{
-			NOUS_INFO("Existing resource retrieved successfully (Name: %s, RefCount: %u).",
-					  existingResource->GetName().c_str(), existingResource->GetReferenceCount());
 
-			existingResource->Validate();
-		}
-		else
+		// Spin-wait if another thread is still loading (slot is claimed but pointer is nullptr).
+		Resource* existingResource = nullptr;
+		while (true)
 		{
-			NOUS_ERROR("CreateResource ERROR: Failed to retrieve existing resource with UID %u.", metaFileData.uid);
+			{
+				std::lock_guard<std::mutex> lock(resourcesMutex);
+				existingResource = resources.count(metaFileData.uid) ? resources.at(metaFileData.uid) : nullptr;
+			}
+			if (existingResource != nullptr) break;
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1); // yield while other thread loads
 		}
+
+		existingResource->IncreaseReferenceCount();
+		existingResource->Validate();
+
+		NOUS_INFO("Existing resource retrieved successfully (Name: %s, RefCount: %u).",
+				  existingResource->GetName().c_str(), existingResource->GetReferenceCount());
 		NOUS_INFO("========================================");
 
 		return existingResource;
@@ -697,6 +725,7 @@ bool ModuleResourceManager::UnloadResource(const UID& UID)
 		return false;
 
 	Resource* tmpResource = resources[UID];
+	if (!tmpResource) return false; // still loading (placeholder); ignore
 	tmpResource->DecreaseReferenceCount();
 
 	// Only destroy GPU resources and delete the object when the last reference is
@@ -713,12 +742,14 @@ bool ModuleResourceManager::UnloadResource(const UID& UID)
 
 Resource* ModuleResourceManager::RequestResource(const UID& uid)
 {
-	Resource* resource = resources[uid];
+	std::lock_guard<std::mutex> lock(resourcesMutex);
+	auto it = resources.find(uid);
+	if (it == resources.end() || !it->second) return nullptr;
 	// Resource is already fully loaded (GPU data is valid). Just bump the ref count
 	// and return the existing pointer — do NOT re-call ImporterManager::Load, which
 	// would re-upload GPU data and overwrite internalID / internalData.
-	resource->IncreaseReferenceCount();
-	return resource;
+	it->second->IncreaseReferenceCount();
+	return it->second;
 }
 
 void ModuleResourceManager::AddResource(const UID& uid, Resource*& resource)
@@ -731,6 +762,7 @@ void ModuleResourceManager::ClearResources()
 {
 	for (auto& [UID, Resource] : resources)
 	{
+		if (!Resource) continue; // skip in-progress load placeholders
 		ImporterManager::Unload(Resource->GetType(), Resource);
 
 		switch (Resource->GetType())

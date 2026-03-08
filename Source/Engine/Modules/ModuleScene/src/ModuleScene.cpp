@@ -136,7 +136,7 @@ UpdateStatus ModuleScene::Update(float dt)
     {
         App->jobSystem->SubmitJob([this]()
                                   {
-                                      GameObject* go = activeScene->CreateGameObject("Lagiacrus Head");
+                                      GameObject* go = activeScene->CreateGameObjectDetached("Lagiacrus Head");
 
                                       auto& meshComp = go->AddComponent<CMesh>();
                                       meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
@@ -144,6 +144,7 @@ UpdateStatus ModuleScene::Update(float dt)
 //                                      auto& matComp = go->AddComponent<CMaterial>();
 //                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
 
+                                      activeScene->RegisterGameObject(go);
                                   }, "Render Lagiacrus");
     }
 
@@ -151,7 +152,7 @@ UpdateStatus ModuleScene::Update(float dt)
     {
         App->jobSystem->SubmitJob([this]()
                                   {
-                                      GameObject* go = activeScene->CreateGameObject("Cypher");
+                                      GameObject* go = activeScene->CreateGameObjectDetached("Cypher");
 
                                       auto& meshComp = go->AddComponent<CMesh>();
                                       meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
@@ -159,6 +160,7 @@ UpdateStatus ModuleScene::Update(float dt)
                                       auto& matComp = go->AddComponent<CMaterial>();
                                       matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
 
+                                      activeScene->RegisterGameObject(go);
                                   }, "Render Cypher");
     }
 
@@ -166,7 +168,7 @@ UpdateStatus ModuleScene::Update(float dt)
     {
         App->jobSystem->SubmitJob([this]()
                                   {
-                                      GameObject* go = activeScene->CreateGameObject("Queen Xenomorph");
+                                      GameObject* go = activeScene->CreateGameObjectDetached("Queen Xenomorph");
 
                                       auto& meshComp = go->AddComponent<CMesh>();
                                       meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
@@ -174,6 +176,7 @@ UpdateStatus ModuleScene::Update(float dt)
                                       auto& matComp = go->AddComponent<CMaterial>();
                                       matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
 
+                                      activeScene->RegisterGameObject(go);
                                   }, "Render Queen Xenomorph");
     }
 
@@ -181,7 +184,7 @@ UpdateStatus ModuleScene::Update(float dt)
     {
         App->jobSystem->SubmitJob([this]()
                                   {
-                                      GameObject* go = activeScene->CreateGameObject("Wolf");
+                                      GameObject* go = activeScene->CreateGameObjectDetached("Wolf");
 
                                       auto& meshComp = go->AddComponent<CMesh>();
                                       meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
@@ -189,6 +192,7 @@ UpdateStatus ModuleScene::Update(float dt)
                                       auto& matComp = go->AddComponent<CMaterial>();
                                       matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
 
+                                      activeScene->RegisterGameObject(go);
                                   }, "Render Wolf");
     }
 
@@ -207,16 +211,15 @@ UpdateStatus ModuleScene::Update(float dt)
         {
             App->jobSystem->SubmitJob([this, model]()
                                       {
-                                          GameObject* go = activeScene->CreateGameObject(model.name);
+                                          GameObject* go = activeScene->CreateGameObjectDetached(model.name);
 
                                           auto& meshComp = go->AddComponent<CMesh>();
                                           meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource(model.meshPath));
 
-                                          NOUS_Multithreading::NOUS_Thread::SleepMS(1000); // optional delay
-
                                           auto& matComp = go->AddComponent<CMaterial>();
                                           matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource(model.matPath));
 
+                                          activeScene->RegisterGameObject(go);
                                       }, model.jobName);
         }
     }

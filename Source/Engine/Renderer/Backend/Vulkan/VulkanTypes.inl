@@ -277,6 +277,9 @@ struct VulkanContext
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
+    std::mutex geometriesMutex;     // guards slot scan + ID assignment in CreateGeometry/DestroyGeometry
+    std::mutex vertexBufferMutex;   // guards objectVertexBuffer freelist (Allocate/Free)
+    std::mutex indexBufferMutex;    // guards objectIndexBuffer freelist (Allocate/Free)
 
     VulkanImGuiResources imGuiResources;
 

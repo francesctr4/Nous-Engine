@@ -62,6 +62,8 @@ void Resources::Draw()
 
                 for (const auto& [UID, Resource] : resourcesMap)
                 {
+                    if (!Resource) continue; // skip in-progress loads (nullptr placeholder)
+
                     ImVec4 textColor;
                     ChooseTextColor(Resource->GetType(), textColor);
 

@@ -39,6 +39,30 @@ GameObject* Scene::CreateGameObject(const std::string& name, GameObject* parent)
     return go;
 }
 
+GameObject* Scene::CreateGameObjectDetached(const std::string& name, GameObject* parent)
+{
+    uint32_t id;
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        id = GenerateUniqueID();
+    }
+
+    auto* go = NOUS_NEW<GameObject>(MemoryTag::GAMEOBJECT, id, name);
+    go->AddComponent<CTransform>();
+
+    if (parent)
+        parent->AddChild(go);
+
+    return go;
+}
+
+void Scene::RegisterGameObject(GameObject* go)
+{
+    if (!go) return;
+    std::lock_guard<std::mutex> lock(m_Mutex);
+    m_GameObjects.push_back(go);
+}
+
 void Scene::DestroyGameObject(GameObject* go) {
     if (!go) return;
 

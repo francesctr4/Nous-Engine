@@ -253,10 +253,14 @@ bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64 newSize,
     return true;
 }
 
-void NOUS_VulkanBuffer::CopyBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue, 
+void NOUS_VulkanBuffer::CopyBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue,
 	VkBuffer source, uint64 sourceOffset, VkBuffer dest, uint64 destOffset, uint64 size)
 {
-    vkQueueWaitIdle(queue);
+    // NOTE: do NOT call vkQueueWaitIdle here directly — this function may be called
+    // from a worker thread, and calling vkQueueWaitIdle on the queue from a non-main
+    // thread violates Vulkan's external-synchronization requirement on VkQueue.
+    // CommandBufferEndAndFreeSingleTime submits via CreateQueueSubmitTask (which routes
+    // the submit through the main thread) and waits for idle there instead.
 
     // Create a one-time-use command buffer.
     VulkanCommandBuffer tempCommandBuffer;

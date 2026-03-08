@@ -16,6 +16,11 @@ public:
 
     NOUS_ENGINE_API GameObject* CreateGameObject(const std::string& name = "GameObject", GameObject* parent = nullptr);
     NOUS_ENGINE_API void DestroyGameObject(GameObject* go);
+
+    // Thread-safe alternative for worker threads: create a GO without adding it to the scene,
+    // set up all components, then call RegisterGameObject to make it visible to the main thread.
+    NOUS_ENGINE_API GameObject* CreateGameObjectDetached(const std::string& name = "GameObject", GameObject* parent = nullptr);
+    NOUS_ENGINE_API void RegisterGameObject(GameObject* go);
     void Update(float deltaTime);
 
     GameObject* FindGameObjectByID(uint32_t id);

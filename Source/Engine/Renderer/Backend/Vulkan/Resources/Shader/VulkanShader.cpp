@@ -662,6 +662,8 @@ bool NOUS_VulkanShader::AcquireInstanceSlot(VulkanContext* vkContext, VulkanShad
         return false;
     }
 
+    std::lock_guard<std::mutex> lock(vs->instanceMutex);
+
     for (uint32_t i = 0; i < VULKAN_SHADER_MAX_INSTANCE_COUNT; ++i)
     {
         if (vs->instanceStates[i].inUse) continue;
@@ -697,6 +699,8 @@ bool NOUS_VulkanShader::AcquireInstanceSlot(VulkanContext* vkContext, VulkanShad
 void NOUS_VulkanShader::ReleaseInstanceSlot(VulkanContext* vkContext, VulkanShader* vs,
                                              uint32_t id)
 {
+    std::lock_guard<std::mutex> lock(vs->instanceMutex);
+
     if (id >= VULKAN_SHADER_MAX_INSTANCE_COUNT || !vs->instanceStates[id].inUse) return;
 
     VK_CHECK(vkFreeDescriptorSets(vkContext->device.logicalDevice, vs->instancePool,
