@@ -427,8 +427,10 @@ bool NOUS_VulkanDevice::CreateLogicalDevice(VulkanContext* vkContext)
 
     VkPhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
-    deviceFeatures.sampleRateShading = VK_TRUE; // Enable sample shading feature for the device.
-    // [...]
+    deviceFeatures.sampleRateShading = VK_TRUE;
+    // Enable optional pipeline features if the physical device supports them.
+    deviceFeatures.geometryShader    = vkContext->device.features.geometryShader;
+    deviceFeatures.tessellationShader = vkContext->device.features.tessellationShader;
 
     VkDeviceCreateInfo deviceCreateInfo{};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

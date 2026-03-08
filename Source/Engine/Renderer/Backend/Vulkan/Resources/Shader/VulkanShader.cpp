@@ -450,10 +450,27 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     vertexInputCI.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribs.size());
     vertexInputCI.pVertexAttributeDescriptions    = attribs.empty() ? nullptr : attribs.data();
 
+    // Detect tessellation stages so we can configure the pipeline correctly.
+    bool hasTessellation = false;
+    for (const ShaderSource& src : shader->stagesData)
+    {
+        if (src.stage == ShaderStage::TessControl || src.stage == ShaderStage::TessEvaluation)
+        {
+            hasTessellation = true;
+            break;
+        }
+    }
+
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyCI{};
     inputAssemblyCI.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssemblyCI.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssemblyCI.topology               = hasTessellation
+                                                ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
+                                                : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssemblyCI.primitiveRestartEnable = VK_FALSE;
+
+    VkPipelineTessellationStateCreateInfo tessCI{};
+    tessCI.sType              = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+    tessCI.patchControlPoints = 3; // standard triangle patch
 
     std::vector<VkPipelineShaderStageCreateInfo> stageInfos;
     stageInfos.reserve(vs->stages.size());
@@ -466,6 +483,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     pipelineCI.pStages             = stageInfos.data();
     pipelineCI.pVertexInputState   = &vertexInputCI;
     pipelineCI.pInputAssemblyState = &inputAssemblyCI;
+    pipelineCI.pTessellationState  = hasTessellation ? &tessCI : nullptr;
     pipelineCI.pViewportState      = &viewportStateCI;
     pipelineCI.pRasterizationState = &rasterCI;
     pipelineCI.pMultisampleState   = &msaaCI;
