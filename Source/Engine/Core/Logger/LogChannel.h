@@ -34,7 +34,6 @@
     X(NOUS_ENGINE_CORE_MODULE_WINDOW, "ModuleWindow.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_SCENE, "ModuleScene.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER, "ModuleResourceManager.cpp") \
-    X(NOUS_ENGINE_CORE_MODULE_FILESYSTEM, "ModuleFileSystem.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_INPUT, "ModuleInput.cpp") \
     \
     /* ============================ ECS ============================ */ \

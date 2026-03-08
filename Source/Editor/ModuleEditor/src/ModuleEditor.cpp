@@ -38,6 +38,7 @@
 #include <vector>
 #include <memory>
 
+#include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Core/Logger/Logger.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
@@ -61,6 +62,8 @@ ModuleEditor::~ModuleEditor()
 bool ModuleEditor::Awake()
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
+
+	NOUS_FileManager::CopyFile(R"(Assets\Settings\imgui.ini)", "imgui.ini");
 
 	App->renderer->GetRendererFrontend()->SetEditorOverlay(this);
 	currentBackendType = App->renderer->GetRendererFrontend()->GetBackendType();

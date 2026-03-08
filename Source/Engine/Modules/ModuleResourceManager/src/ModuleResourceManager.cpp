@@ -9,6 +9,7 @@
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
+#include <filesystem>
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
@@ -36,6 +37,44 @@ ModuleResourceManager::~ModuleResourceManager()
 bool ModuleResourceManager::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	if (!NOUS_FileManager::Exists("Library") ||
+		!NOUS_FileManager::Exists("Library/Shaders") ||
+		!NOUS_FileManager::Exists("Library/Meshes") ||
+		!NOUS_FileManager::Exists("Library/Materials") ||
+		!NOUS_FileManager::Exists("Library/Textures"))
+	{
+		EnsureLibraryDirectories();
+		ImportDirectory("Assets");
+	}
+
+	return true;
+}
+
+bool ModuleResourceManager::EnsureLibraryDirectories()
+{
+	return NOUS_FileManager::CreateDirectory("Library") &&
+		   NOUS_FileManager::CreateDirectory("Library/Shaders") &&
+		   NOUS_FileManager::CreateDirectory("Library/Meshes") &&
+		   NOUS_FileManager::CreateDirectory("Library/Materials") &&
+		   NOUS_FileManager::CreateDirectory("Library/Textures");
+}
+
+bool ModuleResourceManager::ImportDirectory(const std::string& directory)
+{
+	if (!NOUS_FileManager::Exists(directory))
+	{
+		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Directory does not exist: %s", __FUNCTION__, directory.c_str());
+		return false;
+	}
+
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+	{
+		if (std::filesystem::is_regular_file(entry))
+		{
+			ImportFile(entry.path().string());
+		}
+	}
 
 	return true;
 }
@@ -424,8 +463,9 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 	return true;
 }
 
-const std::unordered_map<UID, Resource*>& ModuleResourceManager::GetResourcesMap() const
+std::unordered_map<UID, Resource*> ModuleResourceManager::GetResourcesMap() const
 {
+	std::lock_guard<std::mutex> lock(resourcesMutex);
 	return resources;
 }
 

@@ -1,7 +1,6 @@
 #include <Engine/Core/Application.h>
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Modules/ModuleFileSystem/include/ModuleFileSystem.h"
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
@@ -38,11 +37,10 @@ Application::Application()
 
     listModules[0] = window = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION, this);
     listModules[1] = input = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION, this);
-    listModules[2] = fileSystem = NOUS_NEW<ModuleFileSystem>(MemoryTag::APPLICATION, this);
-    listModules[3] = camera = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION, this);
-    listModules[4] = resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION, this);
-    listModules[5] = scene = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this);
-    listModules[6] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this);
+    listModules[2] = camera = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION, this);
+    listModules[3] = resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION, this);
+    listModules[4] = scene = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this);
+    listModules[5] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this);
 
     // ------------- MULTITHREADING ------------- //
     jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);

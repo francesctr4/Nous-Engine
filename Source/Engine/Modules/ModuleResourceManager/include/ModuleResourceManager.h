@@ -39,12 +39,15 @@ public:
 	// ------------------------------------------------------------------------ //
 
 	NOUS_ENGINE_API bool ImportFile(const std::string& path);
+	NOUS_ENGINE_API bool ImportDirectory(const std::string& directory);
 
 	NOUS_ENGINE_API bool ResourceExists(const UID& uid);
 	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath);
 	NOUS_ENGINE_API bool UnloadResource(const UID& UID);
 
-	NOUS_ENGINE_API const std::unordered_map<UID, Resource*>& GetResourcesMap() const;
+	// Returns a thread-safe snapshot copy of the resources map.
+	// Safe to call from any thread (e.g. editor UI) concurrently with AddResource().
+	NOUS_ENGINE_API std::unordered_map<UID, Resource*> GetResourcesMap() const;
 
 	NOUS_ENGINE_API void ClearResources();
 
@@ -52,6 +55,8 @@ public:
     [[nodiscard]] ResourceMaterial* GetDefaultMaterial() const;
 
 private:
+
+	bool EnsureLibraryDirectories();
 
 	bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
 	bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
@@ -66,7 +71,7 @@ private:
 
 private:
 
-	std::mutex resourcesMutex;  // Mutex to protect resources map from race conditions
+	mutable std::mutex resourcesMutex;  // mutable: const methods (e.g. GetResourcesMap) can lock it
 	std::unordered_map<UID, Resource*> resources;
 
 	ResourceTexture* mDefaultTexture = nullptr;

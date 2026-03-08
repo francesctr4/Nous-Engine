@@ -12,12 +12,11 @@ class EventSystem;
 class Timer;
 namespace NOUS_Multithreading { class NOUS_JobSystem; }
 
-constexpr uint8_t NUM_MODULES = 7;
+constexpr uint8_t NUM_MODULES = 6;
 
 class Module;
 class ModuleWindow;
 class ModuleInput;
-class ModuleFileSystem;
 class ModuleCamera3D;
 class ModuleResourceManager;
 class ModuleScene;
@@ -55,7 +54,6 @@ public:
 
 	ModuleWindow* window;
 	ModuleInput* input;
-	ModuleFileSystem* fileSystem;
 	ModuleCamera3D* camera;
 	ModuleResourceManager* resourceManager;
 	ModuleScene* scene;
