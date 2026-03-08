@@ -139,7 +139,11 @@ JSON_Value* GameObject::Serialize() const {
     JSON_Array* componentsArr = json_value_get_array(componentsVal);
 
     for (const auto& [type, component] : m_Components)
-        json_array_append_value(componentsArr, component->Serialize());
+    {
+        JSON_Value* serialized = component->Serialize();
+        if (serialized)
+            json_array_append_value(componentsArr, serialized);
+    }
 
     json_object_set_value(obj, "components", componentsVal);
     return objVal;

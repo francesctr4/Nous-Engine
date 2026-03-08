@@ -408,12 +408,17 @@ void ModuleScene::SaveScene(const std::string& path)
 
 void ModuleScene::LoadScene(const std::string& path)
 {
+	// Drain any in-flight mesh/material loading jobs before clearing the scene.
+	// Without this, a job that called CreateGameObjectDetached before the clear
+	// could still call RegisterGameObject afterward, inserting a stale GO into
+	// the freshly loaded scene (or crashing if ClearScene already deleted it).
+	App->jobSystem->WaitForPendingJobs();
+
 	ClearScene();
 
 	App->jobSystem->SubmitJob([this, path](){
 		activeScene->Deserialize(path);
 	}, "LoadScene");
-
 }
 
 void ModuleScene::ClearScene()

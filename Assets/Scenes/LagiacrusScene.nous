@@ -3,24 +3,24 @@
     "version": 0.10000000000000001,
     "GameObjects": [
         {
-            "uid": 298497733,
+            "uid": 2814761471,
             "name": "Lagiacrus Head",
             "parent": 0,
             "components": [
                 {
                     "type": "CTransform",
                     "position": [
-                        -74.300003051757812,
-                        98.400001525878906,
-                        -246.19999694824219
+                        -113.59999847412109,
+                        0,
+                        -157
                     ],
                     "rotation": [
-                        0.69999998807907104,
-                        -119,
+                        0,
+                        -86.699996948242188,
                         0
                     ],
                     "scale": [
-                        1.0299999713897705,
+                        1,
                         1,
                         1
                     ]
@@ -28,12 +28,49 @@
                 {
                     "type": "CMesh",
                     "assetPath": "Assets\\Meshes\\Lagiacrus_Head.fbx"
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\Lagiacrus_Head.nmat"
                 }
             ]
         },
         {
-            "uid": 4095839088,
-            "name": "adioooos",
+            "uid": 550701904,
+            "name": "Cypher",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -212,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx"
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\cypher_material.nmat"
+                }
+            ]
+        },
+        {
+            "uid": 595142034,
+            "name": "Queen Xenomorph",
             "parent": 0,
             "components": [
                 {
@@ -49,16 +86,24 @@
                         0
                     ],
                     "scale": [
-                        1,
-                        1,
-                        1
+                        0.5,
+                        0.5,
+                        0.5
                     ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Queen_Xenomorph.fbx"
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\queen_xenomorph.nmat"
                 }
             ]
         },
         {
-            "uid": 398395914,
-            "name": "adioooos",
+            "uid": 1487752541,
+            "name": "Wolf",
             "parent": 0,
             "components": [
                 {
@@ -70,7 +115,7 @@
                     ],
                     "rotation": [
                         0,
-                        0,
+                        -118.19999694824219,
                         0
                     ],
                     "scale": [
@@ -78,156 +123,14 @@
                         1,
                         1
                     ]
-                }
-            ]
-        },
-        {
-            "uid": 1588395522,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
+                },
                 {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 3115871554,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Wolf.obj"
+                },
                 {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 1422535452,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 861740340,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 862599577,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 2658219374,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\wolf_material.nmat"
                 }
             ]
         }

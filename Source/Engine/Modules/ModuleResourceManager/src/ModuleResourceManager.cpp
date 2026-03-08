@@ -173,6 +173,7 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 		if (!ResourceExists(uid)) continue;
 		Resource* resource = resources[uid];
 		if (!resource) continue; // still loading (placeholder); skip
+		if (resource->GetReferenceCount() > 0) continue; // re-acquired since queuing; skip
 		ImporterManager::Unload(resource->GetType(), resource);
 		DeleteResource(resource);
 	}
