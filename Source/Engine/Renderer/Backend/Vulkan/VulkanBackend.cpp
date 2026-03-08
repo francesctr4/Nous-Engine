@@ -12,9 +12,6 @@
 #include "Engine/Renderer/Backend/Vulkan/Core/Instance/VulkanInstance.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/Buffer/VulkanBuffer.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/Image/VulkanImage.h"
-#include <Engine/Renderer/Backend/Vulkan/Shaders/VulkanShaderUtils.h>
-#include "Engine/Renderer/Backend/Vulkan/Shaders/BuiltIn/MaterialShader/VulkanMaterialShader.h"
-#include "Engine/Renderer/Backend/Vulkan/Shaders/BuiltIn/UIShader/VulkanUIShader.h"
 #include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
 
 #include <Engine/Core/FileSystem/FileSystem.h>

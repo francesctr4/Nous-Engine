@@ -1,6 +1,5 @@
 #include "VulkanShader.h"
 
-#include "Engine/Renderer/Backend/Vulkan/Shaders/VulkanShaderUtils.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/GraphicsPipeline/VulkanGraphicsPipeline.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/Buffer/VulkanBuffer.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
@@ -11,6 +10,35 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
 #include <algorithm>
+
+// ─────────────────────────────── Module helpers ───────────────────────────────
+
+static bool CreateShaderModuleFromBinary(VulkanContext* vkContext,
+    const std::vector<uint32_t>& spirvBinary, VkShaderStageFlagBits stageFlagBit,
+    VulkanShaderStage* outStage)
+{
+    if (!outStage || spirvBinary.empty())
+    {
+        NOUS_ERROR("CreateShaderModuleFromBinary: null output stage or empty binary.");
+        return false;
+    }
+
+    MemoryManager::ZeroMemory(&outStage->shaderModuleCreateInfo, sizeof(VkShaderModuleCreateInfo));
+    outStage->shaderModuleCreateInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    outStage->shaderModuleCreateInfo.codeSize = spirvBinary.size() * sizeof(uint32_t);
+    outStage->shaderModuleCreateInfo.pCode    = spirvBinary.data();
+
+    VK_CHECK(vkCreateShaderModule(vkContext->device.logicalDevice,
+        &outStage->shaderModuleCreateInfo, vkContext->allocator, &outStage->handle));
+
+    MemoryManager::ZeroMemory(&outStage->shaderStageCreateInfo, sizeof(VkPipelineShaderStageCreateInfo));
+    outStage->shaderStageCreateInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    outStage->shaderStageCreateInfo.stage  = stageFlagBit;
+    outStage->shaderStageCreateInfo.module = outStage->handle;
+    outStage->shaderStageCreateInfo.pName  = "main";
+
+    return true;
+}
 
 // ─────────────────────────────── Type helpers ─────────────────────────────────
 
@@ -288,7 +316,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     for (size_t i = 0; i < shader->stagesData.size(); ++i)
     {
         const ShaderSource& src = shader->stagesData[i];
-        if (!NOUS_VulkanShaderUtils::CreateShaderModuleFromBinary(
+        if (!CreateShaderModuleFromBinary(
                 vkContext, src.spirvBinary, ToVkStageFlagBit(src.stage), &vs->stages[i]))
         {
             NOUS_ERROR("[VulkanShader] Failed to create shader module for stage %d.", (int)src.stage);
