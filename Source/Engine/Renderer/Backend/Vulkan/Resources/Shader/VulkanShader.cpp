@@ -1,6 +1,5 @@
 #include "VulkanShader.h"
 
-#include "Engine/Renderer/Backend/Vulkan/Resources/GraphicsPipeline/VulkanGraphicsPipeline.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/Buffer/VulkanBuffer.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
