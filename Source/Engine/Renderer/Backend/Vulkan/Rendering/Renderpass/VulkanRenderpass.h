@@ -3,7 +3,7 @@
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
 
-enum RenderpassClearFlag 
+enum RenderpassClearFlag
 {
     NO_CLEAR,
 
@@ -12,20 +12,24 @@ enum RenderpassClearFlag
     STENCIL_BUFFER
 };
 
-namespace NOUS_VulkanRenderpass 
+namespace NOUS_VulkanRenderpass
 {
+    /**
+     * @brief Create a renderpass.
+     *
+     * @param offscreen  When true the color attachment transitions to
+     *                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL (suitable for sampling
+     *                   in a later pass, e.g. scene/game viewports).
+     *                   When false it transitions to VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+     *                   (suitable for swapchain presentation, e.g. the UI pass).
+     */
     bool CreateRenderpass(
         VulkanContext* vkContext,
         VulkanRenderpass* outRenderpass,
         glm::vec4 renderArea, glm::vec4 clearColor,
         float depth, uint32 stencil, uint8 clearFlags,
-        bool prevPass, bool nextPass);
-
-	bool CreateOffscreenRenderpass(
-        VulkanContext* vkContext,
-        VulkanRenderpass* outRenderpass,
-        glm::vec4 renderArea, glm::vec4 clearColor,
-        float depth, uint32 stencil, uint8 clearFlags);
+        bool prevPass, bool nextPass,
+        bool offscreen = false);
 
     void DestroyRenderpass(VulkanContext* vkContext, VulkanRenderpass* renderpass);
 

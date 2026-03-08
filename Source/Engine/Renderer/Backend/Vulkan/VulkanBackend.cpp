@@ -140,12 +140,12 @@ bool VulkanBackend::Initialize()
 
     // Scene Render Pass
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Scene Render Pass...");
-    if (!NOUS_VulkanRenderpass::CreateOffscreenRenderpass(vkContext, &vkContext->sceneRenderpass, 
+    if (!NOUS_VulkanRenderpass::CreateRenderpass(vkContext, &vkContext->sceneRenderpass,
         glm::vec4(0.0f, 0.0f, vkContext->framebufferWidth, vkContext->framebufferHeight),
         glm::vec4(0.1f, 0.0f, 0.0f, 1.0f),
-        1.0f,
-        0, 
-        RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER))
+        1.0f, 0,
+        RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER,
+        false, false, true))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Scene Render Pass. Shutting the Application.");
         ret = false;
@@ -157,12 +157,12 @@ bool VulkanBackend::Initialize()
 
     // Game Render Pass
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Game Render Pass...");
-    if (!NOUS_VulkanRenderpass::CreateOffscreenRenderpass(vkContext, &vkContext->gameRenderpass,
+    if (!NOUS_VulkanRenderpass::CreateRenderpass(vkContext, &vkContext->gameRenderpass,
         glm::vec4(0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight),
         glm::vec4(0.0f, 0.0f, 0.1f, 1.0f),
-        1.0f,
-        0,
-        RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER))
+        1.0f, 0,
+        RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER,
+        false, false, true))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Game Render Pass. Shutting the Application.");
         ret = false;
@@ -177,10 +177,9 @@ bool VulkanBackend::Initialize()
     if (!NOUS_VulkanRenderpass::CreateRenderpass(vkContext, &vkContext->uiRenderpass,
         glm::vec4(0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight),
         glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        1.0f,
-        0,
+        1.0f, 0,
         RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER,
-        false, false))
+        false, false, false))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan UI Render Pass. Shutting the Application.");
         ret = false;

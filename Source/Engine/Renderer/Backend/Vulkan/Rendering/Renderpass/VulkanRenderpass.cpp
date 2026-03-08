@@ -4,7 +4,6 @@
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-// glmath
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
@@ -13,207 +12,120 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     VulkanRenderpass* outRenderpass,
     glm::vec4 renderArea, glm::vec4 clearColor,
     float depth, uint32 stencil, uint8 clearFlags,
-    bool prevPass, bool nextPass)
+    bool prevPass, bool nextPass,
+    bool offscreen)
 {
-    bool ret = false;
-
     outRenderpass->clearFlags = clearFlags;
     outRenderpass->renderArea = renderArea;
     outRenderpass->clearColor = clearColor;
-    outRenderpass->prevPass = prevPass;
-    outRenderpass->nextPass = nextPass;
+    outRenderpass->prevPass   = prevPass;
+    outRenderpass->nextPass   = nextPass;
+    outRenderpass->depth      = depth;
+    outRenderpass->stencil    = stencil;
 
-    outRenderpass->depth = depth;
-    outRenderpass->stencil = stencil;
+    const bool doClearColor = (clearFlags & RenderpassClearFlag::COLOR_BUFFER) != 0;
+    const bool doClearDepth = (clearFlags & RenderpassClearFlag::DEPTH_BUFFER) != 0;
 
-    uint32 attachmentCount = 0;
-    std::array<VkAttachmentDescription, 2> attachments;
+    // ── Attachments ───────────────────────────────────────────────────────────
 
-    // --- Color Attachment (Always Present) ---
-    bool doClearColor = (outRenderpass->clearFlags & RenderpassClearFlag::COLOR_BUFFER) != 0;
-    VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = vkContext->swapChain.swapChainImageFormat;
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = doClearColor ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    std::array<VkAttachmentDescription, 2> attachments{};
 
-    // Fix: Set initialLayout based on loadOp
-    colorAttachment.initialLayout = doClearColor ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    // Color attachment
+    attachments[0].format         = vkContext->swapChain.swapChainImageFormat;
+    attachments[0].samples        = VK_SAMPLE_COUNT_1_BIT;
+    attachments[0].loadOp         = doClearColor ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+    attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    // Offscreen passes always start from UNDEFINED (fresh texture each frame).
+    // Present passes start from UNDEFINED when clearing, otherwise preserve the current swapchain layout.
+    attachments[0].initialLayout  = (offscreen || doClearColor) ? VK_IMAGE_LAYOUT_UNDEFINED
+                                                                 : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    // Offscreen: transition to SHADER_READ_ONLY so the output can be sampled in the next pass.
+    // Present:   transition to PRESENT_SRC_KHR for swapchain presentation.
+    attachments[0].finalLayout    = offscreen ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                                              : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    attachments[attachmentCount++] = colorAttachment;
+    // Depth attachment
+    attachments[1].format         = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
+    attachments[1].samples        = VK_SAMPLE_COUNT_1_BIT;
+    attachments[1].loadOp         = doClearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+    // Offscreen passes store depth so it remains available for subsequent passes.
+    attachments[1].storeOp        = offscreen ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[1].stencilLoadOp  = doClearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[1].initialLayout  = doClearDepth ? VK_IMAGE_LAYOUT_UNDEFINED
+                                                 : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    attachments[1].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference colorAttachmentRef{};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // ── Subpass ───────────────────────────────────────────────────────────────
 
-    // --- Depth Attachment (Always Present) ---
-    bool doClearDepth = (outRenderpass->clearFlags & RenderpassClearFlag::DEPTH_BUFFER) != 0;
-    // In CreateRenderpass (UI render pass)
-    VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
-    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = doClearDepth ?
-        VK_ATTACHMENT_LOAD_OP_CLEAR :
-        VK_ATTACHMENT_LOAD_OP_LOAD; // Preserve depth data if not clearing
+    VkAttachmentReference colorRef{};
+    colorRef.attachment = 0;
+    colorRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    // Match the offscreen pass's final layout when loading
-    depthAttachment.initialLayout = doClearDepth ?
-        VK_IMAGE_LAYOUT_UNDEFINED : // Clear requires UNDEFINED layout
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // Preserve layout
+    VkAttachmentReference depthRef{};
+    depthRef.attachment = 1;
+    depthRef.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    attachments[attachmentCount++] = depthAttachment;
-
-    VkAttachmentReference depthAttachmentRef{};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    // --- Subpass Setup ---
     VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef; // Always reference depth
+    subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount    = 1;
+    subpass.pColorAttachments       = &colorRef;
+    subpass.pDepthStencilAttachment = &depthRef;
 
-    VkSubpassDependency dependency{};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask =
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    dependency.dstStageMask =
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask =
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependency.dstAccessMask =
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    // ── Subpass dependencies ──────────────────────────────────────────────────
+    // Both pass types share the first dependency (external → subpass 0).
+    // Offscreen passes add a second (subpass 0 → external) to ensure the color
+    // output is fully written and transitioned before it is sampled as a texture.
 
-    // Render pass creation
-    VkRenderPassCreateInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = attachmentCount; // Corrected to actual count
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
+    std::array<VkSubpassDependency, 2> dependencies{};
+    uint32_t dependencyCount = 1;
 
-    VK_CHECK(vkCreateRenderPass(vkContext->device.logicalDevice, &renderPassInfo, vkContext->allocator, &outRenderpass->handle));
-    ret = true;
+    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass      = 0;
+    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+                                    | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+                                    | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependencies[0].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+                                    | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+                                    | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-    return ret;
-}
-
-bool NOUS_VulkanRenderpass::CreateOffscreenRenderpass(
-    VulkanContext* vkContext,
-    VulkanRenderpass* outRenderpass,
-    glm::vec4 renderArea, glm::vec4 clearColor,
-    float depth, uint32 stencil, uint8 clearFlags)
-{
-    outRenderpass->clearFlags = clearFlags;
-    outRenderpass->renderArea = renderArea;
-    outRenderpass->clearColor = clearColor;
-
-    outRenderpass->depth = depth;
-    outRenderpass->stencil = stencil;
-
+    if (offscreen)
     {
-        std::array<VkAttachmentDescription, 2> attachments = {};
-        // Color attachment
-        attachments[0].format = vkContext->swapChain.swapChainImageFormat;
-        attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        // Depth attachment
-        attachments[1].format = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
-        attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-        attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-        VkAttachmentReference colorReference = {};
-        colorReference.attachment = 0;
-        colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkAttachmentReference depthReference = {};
-        depthReference.attachment = 1;
-        depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-        VkSubpassDescription subpassDescription = {};
-        subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpassDescription.colorAttachmentCount = 1;
-        subpassDescription.pColorAttachments = &colorReference;
-        subpassDescription.pDepthStencilAttachment = &depthReference;
-        subpassDescription.inputAttachmentCount = 0;
-        subpassDescription.pInputAttachments = nullptr;
-        subpassDescription.preserveAttachmentCount = 0;
-        subpassDescription.pPreserveAttachments = nullptr;
-        subpassDescription.pResolveAttachments = nullptr;
-
-        // Subpass dependencies for layout transitions
-        std::array<VkSubpassDependency, 2> dependencies;
-
-        dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependencies[0].dstSubpass = 0;
-        dependencies[0].srcStageMask =
-            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | // Wait for previous depth writes
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[0].dstStageMask =
-            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | // Depth testing/clearing
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // Color writes
-        dependencies[0].srcAccessMask =
-            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | // Previous depth writes
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[0].dstAccessMask =
-            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | // Offscreen depth writes
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-        dependencies[1].srcSubpass = 0;
-        dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-        dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        dependencies[1].srcSubpass      = 0;
+        dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
+        dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[1].dstAccessMask   = VK_ACCESS_SHADER_READ_BIT;
         dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-        VkRenderPassCreateInfo renderPassInfo = {};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        renderPassInfo.pAttachments = attachments.data();
-        renderPassInfo.subpassCount = 1;
-        renderPassInfo.pSubpasses = &subpassDescription;
-        renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-        renderPassInfo.pDependencies = dependencies.data();
-
-        if (vkCreateRenderPass(vkContext->device.logicalDevice, &renderPassInfo, vkContext->allocator, &outRenderpass->handle) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create render pass!");
-        }
+        dependencyCount = 2;
     }
+
+    // ── Render pass creation ──────────────────────────────────────────────────
+
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments    = attachments.data();
+    renderPassInfo.subpassCount    = 1;
+    renderPassInfo.pSubpasses      = &subpass;
+    renderPassInfo.dependencyCount = dependencyCount;
+    renderPassInfo.pDependencies   = dependencies.data();
+
+    VK_CHECK(vkCreateRenderPass(vkContext->device.logicalDevice, &renderPassInfo,
+        vkContext->allocator, &outRenderpass->handle));
 
     return true;
 }
 
 void NOUS_VulkanRenderpass::DestroyRenderpass(VulkanContext* vkContext, VulkanRenderpass* renderpass)
 {
-    NOUS_DEBUG("Destroying Render Pass...");
-
-    if (renderpass && renderpass->handle) 
+    if (renderpass && renderpass->handle)
     {
         vkDestroyRenderPass(vkContext->device.logicalDevice, renderpass->handle, vkContext->allocator);
         renderpass->handle = 0;
@@ -223,44 +135,34 @@ void NOUS_VulkanRenderpass::DestroyRenderpass(VulkanContext* vkContext, VulkanRe
 void NOUS_VulkanRenderpass::BeginRenderpass(VulkanCommandBuffer* commandBuffer, VulkanRenderpass* renderpass, VkFramebuffer frameBuffer)
 {
     VkRenderPassBeginInfo renderPassInfo{};
-
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderpass->handle;
+    renderPassInfo.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass  = renderpass->handle;
     renderPassInfo.framebuffer = frameBuffer;
 
-    renderPassInfo.renderArea.offset = { static_cast<int32>(renderpass->renderArea.x), static_cast<int32>(renderpass->renderArea.y) };
-    renderPassInfo.renderArea.extent = { static_cast<uint32>(renderpass->renderArea.z), static_cast<uint32>(renderpass->renderArea.w) };
-
-    renderPassInfo.clearValueCount = 0;
-    renderPassInfo.pClearValues = nullptr;
+    renderPassInfo.renderArea.offset = { static_cast<int32>(renderpass->renderArea.x),
+                                         static_cast<int32>(renderpass->renderArea.y) };
+    renderPassInfo.renderArea.extent = { static_cast<uint32>(renderpass->renderArea.z),
+                                         static_cast<uint32>(renderpass->renderArea.w) };
 
     std::array<VkClearValue, 2> clearValues{};
+    renderPassInfo.clearValueCount = 0;
 
-    bool doClearColor = (renderpass->clearFlags & RenderpassClearFlag::COLOR_BUFFER) != 0;
-
-    if (doClearColor) 
+    if (renderpass->clearFlags & RenderpassClearFlag::COLOR_BUFFER)
     {
         MemoryManager::CopyMemory(clearValues[renderPassInfo.clearValueCount].color.float32,
                                   glm::value_ptr(renderpass->clearColor), sizeof(glm::vec4));
-
         renderPassInfo.clearValueCount++;
     }
 
-    bool doClearDepth = (renderpass->clearFlags & RenderpassClearFlag::DEPTH_BUFFER) != 0;
-
-    if (doClearDepth)
+    if (renderpass->clearFlags & RenderpassClearFlag::DEPTH_BUFFER)
     {
         MemoryManager::CopyMemory(clearValues[renderPassInfo.clearValueCount].color.float32,
                                   glm::value_ptr(renderpass->clearColor), sizeof(glm::vec4));
-
-        clearValues[renderPassInfo.clearValueCount].depthStencil.depth = renderpass->depth;
+        clearValues[renderPassInfo.clearValueCount].depthStencil.depth   = renderpass->depth;
         clearValues[renderPassInfo.clearValueCount].depthStencil.stencil = renderpass->stencil;
-        bool doClearStencil = (renderpass->clearFlags & RenderpassClearFlag::STENCIL_BUFFER) != 0;
 
-        if (doClearStencil)
-        {
+        if (renderpass->clearFlags & RenderpassClearFlag::STENCIL_BUFFER)
             clearValues[renderPassInfo.clearValueCount].depthStencil.stencil = renderpass->stencil;
-        }
 
         renderPassInfo.clearValueCount++;
     }
