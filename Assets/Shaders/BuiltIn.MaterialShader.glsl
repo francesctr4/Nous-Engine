@@ -5,10 +5,8 @@ layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec2 inTexCoord;
 
-layout(location = 0) out int outMode;
-
 // Data Transfer Object
-layout(location = 1) out struct DataTransferObject
+layout(location = 0) out struct DataTransferObject
 {
     vec3 outColor;
     vec2 texCoord;
@@ -39,10 +37,8 @@ void main()
 #pragma stage fragment
 #version 450
 
-layout(location = 0) in flat int outMode;
-
 // Data Transfer Object
-layout(location = 1) in struct DataTransferObject
+layout(location = 0) in struct DataTransferObject
 {
     vec3 outColor;
     vec2 texCoord;
