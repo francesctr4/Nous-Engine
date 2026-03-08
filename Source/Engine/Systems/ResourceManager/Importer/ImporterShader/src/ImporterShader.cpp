@@ -74,7 +74,7 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
 
     // 1. Read the unified .glsl source file
     FileHandle glslFile;
-    if (!glslFile.Open(metaFileData.assetsPath, FileMode::READ, false))
+    if (!glslFile.Open(metaFileData.assetsPath, FileMode::READ, true))
     {
         NOUS_ERROR("[ImporterShader] Cannot open source '%s'.", metaFileData.assetsPath.c_str());
         return false;
