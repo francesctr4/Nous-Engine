@@ -30,6 +30,10 @@ public:
 
     NOUS_ENGINE_API NOUS_Vector<GameObject*>& GetGameObjects();
 
+    // Returns a thread-safe snapshot copy of the game objects list.
+    // Safe to call from the main thread concurrently with CreateGameObject() on a background thread.
+    NOUS_ENGINE_API NOUS_Vector<GameObject*> GetGameObjectsSnapshot() const;
+
     void Serialize(const std::string& filepath) const;
     void Deserialize(const std::string& filepath);
     void Clear();

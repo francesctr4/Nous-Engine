@@ -107,6 +107,12 @@ void Scene::SetName(const std::string& name) { m_Name = name; }
 
 NOUS_Vector<GameObject*>& Scene::GetGameObjects() { return m_GameObjects; }
 
+NOUS_Vector<GameObject*> Scene::GetGameObjectsSnapshot() const
+{
+    std::lock_guard<std::mutex> lock(m_Mutex);
+    return m_GameObjects;
+}
+
 // -----------------------------------------------------------------------------
 // Serialization
 // -----------------------------------------------------------------------------
@@ -135,9 +141,15 @@ void Scene::Serialize(const std::string& filepath) const {
 // Deserialization
 // -----------------------------------------------------------------------------
 void Scene::Deserialize(const std::string& filepath) {
-    std::lock_guard<std::mutex> lock(m_Mutex);
-    Clear();
+    // Phase 1 — clear existing content under a brief lock.
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        Clear();
+    }
 
+    // Phase 2 — parse JSON and build GameObjects into a local vector.
+    // No mutex held here so the main thread can call GetGameObjectsSnapshot()
+    // freely (it will simply get an empty vector while loading is in progress).
     JSON_Value* root = json_parse_file(filepath.c_str());
     if (!root) {
         NOUS_ERROR("Failed to parse scene file: %s", filepath.c_str());
@@ -146,7 +158,7 @@ void Scene::Deserialize(const std::string& filepath) {
 
     JSON_Object* rootObj = json_value_get_object(root);
     const char* sceneName = json_object_get_string(rootObj, "name");
-    if (sceneName) m_Name = sceneName;
+    std::string newName = sceneName ? sceneName : "";
 
     JSON_Array* arr = json_object_get_array(rootObj, "GameObjects");
     if (!arr) {
@@ -161,32 +173,40 @@ void Scene::Deserialize(const std::string& filepath) {
     for (size_t i = 0; i < count; ++i) {
         JSON_Object* obj = json_array_get_object(arr, i);
         auto* gameObject = GameObject::Deserialize(obj);
-        if (gameObject) {
-            uint32_t parentID = gameObject->GetParentID();
-            gameObjectsWithParents.push_back({gameObject, parentID});
-        }
+        if (gameObject)
+            gameObjectsWithParents.push_back({gameObject, gameObject->GetParentID()});
     }
 
-    for (auto& [gameObject, parentID] : gameObjectsWithParents)
-        m_GameObjects.push_back(gameObject);
+    json_value_free(root);
 
-    for (auto& gameObject : m_GameObjects) {
-        uint32_t parentID = gameObject->GetParentID();
-        if (parentID != 0) {
-            GameObject* parent = FindGameObjectByID_NoLock(parentID);
-            if (parent) {
-                parent->AddChild(gameObject);
-                NOUS_INFO("Set parent: %s (ID: %u) -> %s (ID: %u)",
-                          gameObject->GetName().c_str(), gameObject->GetID(),
-                          parent->GetName().c_str(), parentID);
-            } else {
-                NOUS_WARN("Parent with ID %u not found for %s", parentID, gameObject->GetName().c_str());
+    // Phase 3 — batch-commit to m_GameObjects and wire parent relationships.
+    // Lock is held only for this brief write phase, not during JSON parsing.
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+
+        if (!newName.empty()) m_Name = newName;
+
+        for (auto& [gameObject, _] : gameObjectsWithParents)
+            m_GameObjects.push_back(gameObject);
+
+        for (auto& gameObject : m_GameObjects) {
+            uint32_t parentID = gameObject->GetParentID();
+            if (parentID != 0) {
+                GameObject* parent = FindGameObjectByID_NoLock(parentID);
+                if (parent) {
+                    parent->AddChild(gameObject);
+                    NOUS_INFO("Set parent: %s (ID: %u) -> %s (ID: %u)",
+                              gameObject->GetName().c_str(), gameObject->GetID(),
+                              parent->GetName().c_str(), parentID);
+                } else {
+                    NOUS_WARN("Parent with ID %u not found for %s", parentID, gameObject->GetName().c_str());
+                }
             }
         }
     }
 
-    json_value_free(root);
-    NOUS_DEBUG("[%s] Successfully loaded scene: %s with %zu objects", __FUNCTION__, filepath.c_str(), m_GameObjects.size());
+    NOUS_DEBUG("[%s] Successfully loaded scene: %s with %zu objects",
+               __FUNCTION__, filepath.c_str(), gameObjectsWithParents.size());
 }
 
 // -----------------------------------------------------------------------------

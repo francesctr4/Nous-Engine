@@ -52,8 +52,10 @@ void HierarchyWindow::Draw() {
                         }
                     }
 
-                    // Draw only root-level objects
-                    for (auto& goPtr : m_Scene->GetGameObjects())
+                    // Snapshot under mutex — guards against concurrent CreateGameObject() calls
+                    // from the background LoadScene job reallocating the vector mid-iteration.
+                    const auto gameObjects = m_Scene->GetGameObjectsSnapshot();
+                    for (auto& goPtr : gameObjects)
                     {
                         if (!goPtr->GetParent())
                         {

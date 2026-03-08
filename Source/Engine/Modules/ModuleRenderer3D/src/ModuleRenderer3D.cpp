@@ -54,9 +54,16 @@ bool ModuleRenderer3D::Awake()
 		return false;
 	}
 
+	// ------------------------------ SHADERS ------------------------------ //
+
 	// Load BuiltIn shaders now that the Vulkan backend and ResourceManager are both ready.
 	// This guarantees the shaders exist before any Start() call or rendering begins.
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
+
+	// TEMP SHADERS (DEBUG)
+	// TODO: We also need to delete all the deprecated data, functions and usages of old shaders.
+	App->resourceManager->CreateResource("Assets/Shaders/temp_MockShader.glsl");
+	App->resourceManager->CreateResource("Assets/Shaders/temp_ShaderWithAllStages.glsl");
 
 	return true;
 }
@@ -180,7 +187,9 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
 
 	packet->geometries.clear();
 
-	const auto& gameObjects = App->scene->activeScene->GetGameObjects();
+	// Snapshot under mutex — guards against concurrent CreateGameObject() calls
+	// from the background LoadScene job reallocating the vector mid-iteration.
+	const auto gameObjects = App->scene->activeScene->GetGameObjectsSnapshot();
 	packet->geometries.reserve(gameObjects.size());
 
 	for (const auto& goPtr : gameObjects)
