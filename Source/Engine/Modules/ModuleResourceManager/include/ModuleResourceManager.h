@@ -74,6 +74,11 @@ private:
 	mutable std::mutex resourcesMutex;  // mutable: const methods (e.g. GetResourcesMap) can lock it
 	std::unordered_map<UID, Resource*> resources;
 
+	// UIDs whose refcount hit 0 during a frame and are waiting for safe GPU destruction.
+	// Flushed at the start of the next PreUpdate, before any command buffer recording.
+	std::mutex m_PendingUnloadsMutex;
+	std::vector<UID> m_PendingUnloads;
+
 	ResourceTexture* mDefaultTexture = nullptr;
 	ResourceMaterial* mDefaultMaterial = nullptr;
 };

@@ -997,8 +997,11 @@ void VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
 {
     VulkanTextureData* textureData = reinterpret_cast<VulkanTextureData*>(texture->internalData);
 
-    if (textureData) 
+    if (textureData)
     {
+        // Ensure no in-flight command buffers still reference this image/view before freeing.
+        vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
         NOUS_VulkanImage::DestroyVulkanImage(vkContext, &textureData->image);
         MemoryManager::ZeroMemory(&textureData->image, sizeof(VulkanImage));
 
@@ -1016,6 +1019,10 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
         NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() called with nullptr.");
         return false;
     }
+
+    // Guard: slot already acquired (shared resource requested a second time).
+    if (material->internalID != INVALID_ID)
+        return true;
 
     // Acquire an instance slot from the scene shader.
     // The game shader uses the same GLSL/layout so slots are acquired in sync.
@@ -1051,6 +1058,9 @@ void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
     {
         if (material->internalID != INVALID_ID)
         {
+            // Ensure descriptor sets are no longer referenced by any in-flight command buffers.
+            vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
             if (vkContext->builtInMaterialShader && vkContext->builtInMaterialShader->internalData)
             {
                 VulkanShader* vs = static_cast<VulkanShader*>(vkContext->builtInMaterialShader->internalData);
@@ -1181,8 +1191,11 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
 
 void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
 {
-    if (geometry && geometry->internalID != INVALID_ID) 
+    if (geometry && geometry->internalID != INVALID_ID)
     {
+        // Ensure no in-flight draw commands are still reading from these buffer ranges.
+        vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
         VulkanGeometryData* internalData = &vkContext->geometries[geometry->internalID];
 
         // Free vertex data

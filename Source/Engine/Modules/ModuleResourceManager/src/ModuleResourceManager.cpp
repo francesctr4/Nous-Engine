@@ -128,6 +128,14 @@ bool ModuleResourceManager::Start()
 		return false;
 	}
 
+	// Give the default texture a stable, valid ID and generation so the
+	// descriptor lazy-write cache (WriteInstanceSampler) can distinguish it
+	// from the "never written" sentinel (UINT32_MAX). Without this, every draw
+	// using the default texture re-fires vkUpdateDescriptorSets, which causes
+	// validation errors when multiple objects share the same material instance.
+	mDefaultTexture->ID         = 0;
+	mDefaultTexture->generation = 0;
+
 	// -----------------------
 	// Default Material
 	// -----------------------
@@ -149,6 +157,23 @@ bool ModuleResourceManager::Start()
 UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	// Flush pending unloads — deferred from UnloadResource to avoid destroying
+	// GPU resources mid-frame (between command recording and vkQueueSubmit).
+	// By the time PreUpdate runs the previous frame has been fully submitted.
+	std::vector<UID> toDestroy;
+	{
+		std::lock_guard<std::mutex> lock(m_PendingUnloadsMutex);
+		std::swap(toDestroy, m_PendingUnloads);
+	}
+
+	for (const UID& uid : toDestroy)
+	{
+		if (!ResourceExists(uid)) continue;
+		Resource* resource = resources[uid];
+		ImporterManager::Unload(resource->GetType(), resource);
+		DeleteResource(resource);
+	}
 
 	return UpdateStatus::CONTINUE;
 }
@@ -669,32 +694,30 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 bool ModuleResourceManager::UnloadResource(const UID& UID)
 {
 	if (!ResourceExists(UID))
-	{
 		return false;
-	}
 
 	Resource* tmpResource = resources[UID];
-
-	ImporterManager::Unload(tmpResource->GetType(), tmpResource);
-
 	tmpResource->DecreaseReferenceCount();
 
+	// Only destroy GPU resources and delete the object when the last reference is
+	// released. Defer to PreUpdate so we never destroy GPU resources mid-frame
+	// (between command recording and vkQueueSubmit).
 	if (tmpResource->GetReferenceCount() == 0)
 	{
-		DeleteResource(tmpResource);
+		std::lock_guard<std::mutex> lock(m_PendingUnloadsMutex);
+		m_PendingUnloads.push_back(UID);
 	}
-	
+
 	return true;
 }
 
 Resource* ModuleResourceManager::RequestResource(const UID& uid)
 {
 	Resource* resource = resources[uid];
-
-	ImporterManager::Load(resource->GetType(), resource->GetLibraryPath(), resource);
-
+	// Resource is already fully loaded (GPU data is valid). Just bump the ref count
+	// and return the existing pointer — do NOT re-call ImporterManager::Load, which
+	// would re-upload GPU data and overwrite internalID / internalData.
 	resource->IncreaseReferenceCount();
-
 	return resource;
 }
 
