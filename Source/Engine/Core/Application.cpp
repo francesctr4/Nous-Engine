@@ -189,21 +189,32 @@ void Application::FinishUpdate() const
     }
 
     sprintf(buffer,
-        "%s | dt: %.3f s | FPS: %.2f | Graphics Timer: %.3f s | Frame Count: %d",
-        TITLE, cachedDt, cachedFPS, TimeManager::graphicsTimer.ReadSec(), TimeManager::frameCount);
+        "%s | dt: %.3f s | FPS: %d | Graphics Timer: %.3f s | Frame Count: %d",
+        TITLE, cachedDt, static_cast<int>(cachedFPS + 0.5f), TimeManager::graphicsTimer.ReadSec(), TimeManager::frameCount);
 
     window->SetTitle(buffer);
 
     NOUS_TRACE("-------------- Frame Finished --------------");
 
-    // Adapt according to target FPS
+    // Frame pacing: target a precise frame time.
+    // SDL_Delay has ~1ms granularity on Windows — too coarse for 144Hz (~6.94ms/frame).
+    // Strategy: SDL_Delay for the bulk of the remaining time (minus a 2ms safety buffer),
+    // then spin-wait for sub-millisecond precision on the final stretch.
 
     const float targetFrameTime = 1.0f / targetFPS;
-    const float elapsedTime = msTimer->ReadSec();
+    const float remaining = targetFrameTime - msTimer->ReadSec();
 
-    if (elapsedTime < targetFrameTime)
+    if (remaining > 0.0f)
     {
-        SDL_Delay((targetFrameTime - elapsedTime) * 1000);
+        constexpr float spinThreshold = 0.002f; // spin for the last 2ms
+
+        if (remaining > spinThreshold)
+        {
+            SDL_Delay(static_cast<Uint32>((remaining - spinThreshold) * 1000.0f));
+        }
+
+        // Spin-wait for the final portion — burns CPU briefly but gives precise timing.
+        while (msTimer->ReadSec() < targetFrameTime) {}
     }
 }
 
