@@ -293,11 +293,13 @@ void VulkanBackend::Shutdown() noexcept
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
-    NOUS_VulkanMultithreading::DestroyWorkerCommandPools(vkContext);
-
-    NOUS_VulkanCommandBuffer::DestroyCommandBuffers(vkContext);
-
-    NOUS_VulkanFramebuffer::DestroyFramebuffers(vkContext);
+    if (!m_preShutdownDone)
+    {
+        // PreShutdown() was not called externally — run it now.
+        NOUS_VulkanMultithreading::DestroyWorkerCommandPools(vkContext);
+        NOUS_VulkanCommandBuffer::DestroyCommandBuffers(vkContext);
+        NOUS_VulkanFramebuffer::DestroyFramebuffers(vkContext);
+    }
 
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->uiRenderpass);
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->gameRenderpass);
@@ -312,6 +314,30 @@ void VulkanBackend::Shutdown() noexcept
     NOUS_VulkanDebugMessenger::DestroyDebugUtilsMessengerEXT(vkContext->instance, vkContext->debugMessenger, vkContext->allocator);
 
     NOUS_VulkanInstance::DestroyInstance(vkContext);
+}
+
+void VulkanBackend::WaitIdle() noexcept
+{
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+}
+
+void VulkanBackend::PreShutdown() noexcept
+{
+    if (m_preShutdownDone) return;
+
+    // Free command buffers so they no longer reference pipelines, descriptor sets,
+    // and vertex/index buffers. This must happen before ClearResources() destroys
+    // those Vulkan objects, otherwise the validation layer reports lifetime violations
+    // even though the GPU has already finished (vkDeviceWaitIdle was called before this).
+    NOUS_VulkanMultithreading::DestroyWorkerCommandPools(vkContext);
+    NOUS_VulkanCommandBuffer::DestroyCommandBuffers(vkContext);
+
+    // Destroy framebuffers so they no longer reference the offscreen texture imageViews.
+    // DestroyTexture() (called by ClearResources) would otherwise trigger
+    // VUID-vkDestroyImageView-imageView-01026 "in use by VkFramebuffer".
+    NOUS_VulkanFramebuffer::DestroyFramebuffers(vkContext);
+
+    m_preShutdownDone = true;
 }
 
 void VulkanBackend::Resized(uint16 width, uint16 height) noexcept
@@ -334,9 +360,13 @@ FrameResult VulkanBackend::BeginFrame(float dt)
     vkContext->frameDeltaTime = dt;
     VulkanDevice* device = &vkContext->device;
 
-    // If we are in the middle of recreating the swapchain, skip this frame gracefully.
+    // If we are in the middle of recreating the swapchain, attempt to rebuild now.
     if (vkContext->recreatingSwapchain)
     {
+        // Clear the flag BEFORE calling RecreateResources() — otherwise RecreateResources()
+        // would immediately return false seeing the flag still set.
+        vkContext->recreatingSwapchain = false;
+
         VkResult waitRes = vkDeviceWaitIdle(device->logicalDevice);
         if (!VkResultIsSuccess(waitRes))
         {
@@ -415,16 +445,12 @@ FrameResult VulkanBackend::BeginFrame(float dt)
         }
     }
 
-    return FrameResult::SUCCESS;
-}
-
-FrameResult VulkanBackend::EndFrame(float /*dt*/)
-{
-    // Ensure the image we are about to use isn't still in-flight from a previous frame.
+    // Wait for any previous frame that was rendering to this swapchain image to finish.
+    // Must happen here — BEFORE BeginRenderpass resets/records the command buffer for imageIndex.
     if (vkContext->imagesInFlight[vkContext->imageIndex] != VK_NULL_HANDLE)
     {
         VkFence imgFence = vkContext->imagesInFlight[vkContext->imageIndex];
-        VkResult waitRes = vkWaitForFences(vkContext->device.logicalDevice, 1, &imgFence, VK_TRUE, UINT64_MAX);
+        VkResult waitRes = vkWaitForFences(device->logicalDevice, 1, &imgFence, VK_TRUE, UINT64_MAX);
         if (!VkResultIsSuccess(waitRes))
         {
             NOUS_FATAL_C(CURRENT_CHANNEL, "Image fence wait failure! Error: %s", VkResultMessage(waitRes, true).c_str());
@@ -435,6 +461,11 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
     // Mark this swapchain image as now being used by this frame's fence.
     vkContext->imagesInFlight[vkContext->imageIndex] = vkContext->inFlightFences[vkContext->currentFrame];
 
+    return FrameResult::SUCCESS;
+}
+
+FrameResult VulkanBackend::EndFrame(float /*dt*/)
+{
     // Reset the current frame fence for reuse.
     {
         VkResult resetRes = vkResetFences(vkContext->device.logicalDevice, 1, &vkContext->inFlightFences[vkContext->currentFrame]);
@@ -520,9 +551,6 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
         NOUS_ERROR_C(CURRENT_CHANNEL, "Queue present failed: %s", VkResultMessage(presentRes, true).c_str());
         return FrameResult::ERROR;
     }
-
-    // TODO: If I don't put this here, I get validation errors. Something must be wrong.
-    vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
     return FrameResult::SUCCESS;
 }

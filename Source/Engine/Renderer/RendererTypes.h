@@ -119,6 +119,8 @@ struct IRendererBackend
     // ─────────────────────────────── Lifecycle ───────────────────────────────
     [[nodiscard]] virtual bool Initialize() = 0;
     virtual void Shutdown() noexcept = 0;
+    virtual void WaitIdle() noexcept = 0;
+    virtual void PreShutdown() noexcept = 0;
     virtual void Resized(uint16_t width, uint16_t height) noexcept = 0;
 
     // ─────────────────────────────── Frame Lifecycle ─────────────────────────

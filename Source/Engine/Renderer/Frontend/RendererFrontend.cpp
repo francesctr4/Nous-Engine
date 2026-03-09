@@ -50,6 +50,18 @@ void RendererFrontend::Shutdown()
 	mBackend->Destroy();
 }
 
+void RendererFrontend::WaitIdle() noexcept
+{
+    if (mBackend)
+        mBackend->WaitIdle();
+}
+
+void RendererFrontend::PreShutdown() noexcept
+{
+    if (mBackend)
+        mBackend->PreShutdown();
+}
+
 void RendererFrontend::OnResized(uint16_t width, uint16_t height)
 {
 	mBackend->Resized(width, height);

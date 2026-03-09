@@ -761,35 +761,30 @@ void ModuleResourceManager::AddResource(const UID& uid, Resource*& resource)
 
 void ModuleResourceManager::ClearResources()
 {
-	for (auto& [UID, Resource] : resources)
-	{
-		if (!Resource) continue; // skip in-progress load placeholders
-		ImporterManager::Unload(Resource->GetType(), Resource);
+    // Destroy shaders FIRST — DestroyShader() frees descriptor sets that reference
+    // texture imageViews. If textures are destroyed first, the imageViews are freed
+    // while descriptor sets still hold references → VUID-vkDestroyImageView-01026.
+    for (auto& [UID, Resource] : resources)
+    {
+        if (!Resource || Resource->GetType() != ResourceType::SHADER) continue;
+        ImporterManager::Unload(ResourceType::SHADER, Resource);
+        NOUS_DELETE(Resource, MemoryTag::RESOURCE_SHADER);
+    }
 
-		switch (Resource->GetType())
-		{
-			case ResourceType::MESH:
-			{
-				NOUS_DELETE(Resource, MemoryTag::RESOURCE_MESH);
-				break;
-			}
-			case ResourceType::MATERIAL:
-			{
-				NOUS_DELETE(Resource, MemoryTag::RESOURCE_MATERIAL);
-				break;
-			}
-			case ResourceType::TEXTURE:
-			{
-				NOUS_DELETE(Resource, MemoryTag::RESOURCE_TEXTURE);
-				break;
-			}
-			case ResourceType::SHADER:
-			{
-				NOUS_DELETE(Resource, MemoryTag::RESOURCE_SHADER);
-				break;
-			}
-		}
-	}
+    // Destroy remaining resources (mesh, texture, material) in any order.
+    for (auto& [UID, Resource] : resources)
+    {
+        if (!Resource || Resource->GetType() == ResourceType::SHADER) continue;
+        ImporterManager::Unload(Resource->GetType(), Resource);
+
+        switch (Resource->GetType())
+        {
+            case ResourceType::MESH:     NOUS_DELETE(Resource, MemoryTag::RESOURCE_MESH);     break;
+            case ResourceType::MATERIAL: NOUS_DELETE(Resource, MemoryTag::RESOURCE_MATERIAL); break;
+            case ResourceType::TEXTURE:  NOUS_DELETE(Resource, MemoryTag::RESOURCE_TEXTURE);  break;
+            default: break;
+        }
+    }
 
 	resources.clear();
 

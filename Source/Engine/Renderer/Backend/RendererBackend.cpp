@@ -74,6 +74,22 @@ void RendererBackend::Shutdown()
     }
 }
 
+void RendererBackend::WaitIdle() noexcept
+{
+    if (mBackendInterface)
+    {
+        mBackendInterface->WaitIdle();
+    }
+}
+
+void RendererBackend::PreShutdown() noexcept
+{
+    if (mBackendInterface)
+    {
+        mBackendInterface->PreShutdown();
+    }
+}
+
 void RendererBackend::Resized(uint16_t width, uint16_t height)
 {
     if (mBackendInterface)
