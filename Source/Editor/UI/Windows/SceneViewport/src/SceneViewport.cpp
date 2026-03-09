@@ -178,7 +178,7 @@ void SceneViewport::HandleGizmoInput()
     }
 
     // Toggle local/world mode
-    if (External->input->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
+    if (External->input->GetKey(SDL_SCANCODE_T) == KeyState::DOWN)
     {
         m_GizmoSpace = (m_GizmoSpace == GizmoSpace::LOCAL)
             ? GizmoSpace::WORLD
