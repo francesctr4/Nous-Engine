@@ -119,8 +119,19 @@ struct IRendererBackend
     // ─────────────────────────────── Lifecycle ───────────────────────────────
     [[nodiscard]] virtual bool Initialize() = 0;
     virtual void Shutdown() noexcept = 0;
-    virtual void WaitIdle() noexcept = 0;
-    virtual void PreShutdown() noexcept = 0;
+
+    /**
+     * @brief Waits for the GPU to finish, then frees command buffers and framebuffers.
+     *
+     * After this call, no Vulkan object is referenced by any command buffer or
+     * framebuffer, so the caller can safely destroy application-level resources
+     * (textures, meshes, shaders, ImGui resources, etc.).
+     *
+     * Idempotent — safe to call more than once.  Shutdown() calls this internally
+     * as a safety fallback if it was not called explicitly beforehand.
+     */
+    virtual void ReleaseFrameResources() noexcept = 0;
+
     virtual void Resized(uint16_t width, uint16_t height) noexcept = 0;
 
     // ─────────────────────────────── Frame Lifecycle ─────────────────────────

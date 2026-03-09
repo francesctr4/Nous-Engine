@@ -166,15 +166,11 @@ bool ModuleEditor::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	// GPU sync + free command buffers/framebuffers BEFORE destroying any Vulkan
-	// resources.  The last frame's command buffers still reference ImGui's
-	// vertex/index buffers, pipeline, descriptor sets, and the framebuffers
-	// still reference the viewport image views.  Destroying those objects first
-	// would trigger validation errors (VUID-vkDestroyBuffer-buffer-00922, etc.)
-	// even though the GPU has finished.
-	RendererFrontend* frontend = App->renderer->GetRendererFrontend();
-	frontend->WaitIdle();
-	frontend->PreShutdown();
+	// Wait for the GPU and free command buffers/framebuffers BEFORE destroying
+	// any Vulkan resources.  The last frame's command buffers still reference
+	// ImGui's vertex/index buffers, pipeline, and descriptor sets, and the
+	// framebuffers still reference the viewport image views.
+	App->renderer->GetRendererFrontend()->ReleaseFrameResources();
 
 	switch (currentBackendType)
 	{

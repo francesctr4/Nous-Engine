@@ -267,7 +267,9 @@ bool VulkanBackend::Initialize()
 
 void VulkanBackend::Shutdown() noexcept
 {
-    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+    // Ensure frame resources are released before tearing down infrastructure.
+    // No-op if ReleaseFrameResources() was already called by the Editor or Renderer.
+    ReleaseFrameResources();
 
     NOUS_VulkanBuffer::DestroyBuffers(vkContext);
 
@@ -293,14 +295,6 @@ void VulkanBackend::Shutdown() noexcept
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
-    if (!m_preShutdownDone)
-    {
-        // PreShutdown() was not called externally — run it now.
-        NOUS_VulkanMultithreading::DestroyWorkerCommandPools(vkContext);
-        NOUS_VulkanCommandBuffer::DestroyCommandBuffers(vkContext);
-        NOUS_VulkanFramebuffer::DestroyFramebuffers(vkContext);
-    }
-
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->uiRenderpass);
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->gameRenderpass);
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->sceneRenderpass);
@@ -316,28 +310,26 @@ void VulkanBackend::Shutdown() noexcept
     NOUS_VulkanInstance::DestroyInstance(vkContext);
 }
 
-void VulkanBackend::WaitIdle() noexcept
+void VulkanBackend::ReleaseFrameResources() noexcept
 {
-    vkDeviceWaitIdle(vkContext->device.logicalDevice);
-}
+    if (m_frameResourcesReleased) return;
 
-void VulkanBackend::PreShutdown() noexcept
-{
-    if (m_preShutdownDone) return;
+    // Wait for the GPU to finish all submitted work.
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
     // Free command buffers so they no longer reference pipelines, descriptor sets,
-    // and vertex/index buffers. This must happen before ClearResources() destroys
-    // those Vulkan objects, otherwise the validation layer reports lifetime violations
-    // even though the GPU has already finished (vkDeviceWaitIdle was called before this).
+    // and vertex/index buffers.  Without this, the validation layer reports lifetime
+    // violations (e.g. VUID-vkDestroyBuffer-buffer-00922) even though the GPU has
+    // finished, because Vulkan tracks CPU-side object references.
     NOUS_VulkanMultithreading::DestroyWorkerCommandPools(vkContext);
     NOUS_VulkanCommandBuffer::DestroyCommandBuffers(vkContext);
 
     // Destroy framebuffers so they no longer reference the offscreen texture imageViews.
-    // DestroyTexture() (called by ClearResources) would otherwise trigger
-    // VUID-vkDestroyImageView-imageView-01026 "in use by VkFramebuffer".
+    // DestroyTexture() would otherwise trigger VUID-vkDestroyImageView-imageView-01026
+    // "in use by VkFramebuffer".
     NOUS_VulkanFramebuffer::DestroyFramebuffers(vkContext);
 
-    m_preShutdownDone = true;
+    m_frameResourcesReleased = true;
 }
 
 void VulkanBackend::Resized(uint16 width, uint16 height) noexcept

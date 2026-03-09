@@ -30,8 +30,7 @@ public:
 	// ---------------------------------------------------------------------
 	[[nodiscard]] NOUS_ENGINE_API bool Initialize(RendererBackendType backendType);
 	NOUS_ENGINE_API void Shutdown();
-	NOUS_ENGINE_API void WaitIdle() noexcept;
-	NOUS_ENGINE_API void PreShutdown() noexcept;
+	NOUS_ENGINE_API void ReleaseFrameResources() noexcept;
 	NOUS_ENGINE_API void OnResized(uint16_t width, uint16_t height);
 
 	// ---------------------------------------------------------------------

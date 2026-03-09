@@ -61,7 +61,6 @@ bool ModuleRenderer3D::Awake()
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
 
 	// TEMP SHADERS (DEBUG)
-	// TODO: We also need to delete all the deprecated data, functions and usages of old shaders.
 	App->resourceManager->CreateResource("Assets/Shaders/temp_MockShader.glsl");
 	App->resourceManager->CreateResource("Assets/Shaders/temp_ShaderWithAllStages.glsl");
 
@@ -128,22 +127,17 @@ bool ModuleRenderer3D::CleanUp()
 {
 	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 
-    // 1. GPU sync: wait for all in-flight frames to finish.
-    mRendererFrontend->WaitIdle();
+    // Release frame-scoped Vulkan objects (waits for GPU, frees command buffers
+    // and framebuffers).  If the Editor already called this, it is a no-op.
+    mRendererFrontend->ReleaseFrameResources();
 
-    // 2. Release command buffers and framebuffers BEFORE destroying resource objects.
-    //    Command buffers reference pipelines, descriptor sets, and vertex/index buffers.
-    //    Framebuffers reference offscreen texture imageViews.
-    //    Destroying those Vulkan objects while CBs or FBs still reference them triggers
-    //    validation errors even though the GPU is done (CPU-side lifetime rules).
-    mRendererFrontend->PreShutdown();
-
-    // 3. Destroy all GPU resources (textures, shaders, meshes, materials).
-    //    ClearResources() destroys shaders (descriptor sets) before textures (imageViews),
-    //    preventing VUID-vkDestroyImageView "in use by VkDescriptorSet".
+    // Destroy all GPU resources (textures, shaders, meshes, materials).
+    // Safe because ReleaseFrameResources() already freed the CBs/FBs that
+    // referenced these objects.
     App->resourceManager->ClearResources();
 
-    // 4. Shut down the remaining Vulkan backend (buffers, sync objects, renderpasses, device).
+    // Tear down the remaining Vulkan infrastructure (buffers, sync objects,
+    // renderpasses, swapchain, device).
 	mRendererFrontend->Shutdown();
 
 	NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Renderer Frontend shutdown was successful.", __FUNCTION__);

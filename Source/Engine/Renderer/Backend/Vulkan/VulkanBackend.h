@@ -24,8 +24,7 @@ public:
 
 	bool Initialize() override;
 	void Shutdown() noexcept override;
-	void WaitIdle() noexcept override;
-	void PreShutdown() noexcept override;
+	void ReleaseFrameResources() noexcept override;
 
 	void Resized(uint16 width, uint16 height) noexcept override;
 
@@ -69,7 +68,7 @@ public:
 private:
 
 	static VulkanContext* vkContext;
-	bool m_preShutdownDone = false;
+	bool m_frameResourcesReleased = false;
 
 };
 

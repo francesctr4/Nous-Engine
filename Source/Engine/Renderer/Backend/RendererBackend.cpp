@@ -74,19 +74,11 @@ void RendererBackend::Shutdown()
     }
 }
 
-void RendererBackend::WaitIdle() noexcept
+void RendererBackend::ReleaseFrameResources() noexcept
 {
     if (mBackendInterface)
     {
-        mBackendInterface->WaitIdle();
-    }
-}
-
-void RendererBackend::PreShutdown() noexcept
-{
-    if (mBackendInterface)
-    {
-        mBackendInterface->PreShutdown();
+        mBackendInterface->ReleaseFrameResources();
     }
 }
 

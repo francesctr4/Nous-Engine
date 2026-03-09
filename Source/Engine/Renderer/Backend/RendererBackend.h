@@ -27,8 +27,7 @@ public:
 
 	[[nodiscard]] bool Initialize();
 	void Shutdown();
-	void WaitIdle() noexcept;
-	void PreShutdown() noexcept;
+	void ReleaseFrameResources() noexcept;
 
 	void Resized(uint16_t width, uint16_t height);
 
