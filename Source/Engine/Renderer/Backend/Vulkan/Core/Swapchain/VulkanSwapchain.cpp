@@ -125,16 +125,12 @@ VkResult NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(VulkanContext* vkC
     VkResult result = vkAcquireNextImageKHR(vkContext->device.logicalDevice, swapchain->handle, timeout_ns,
         imageAvailableSemaphore, fence, outImageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) 
-    {
-        // Trigger swapchain recreation, then boot out of the render loop.
-        RecreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, swapchain);
-        return result;
-    }
-    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) 
+    // OUT_OF_DATE and SUBOPTIMAL are returned to the caller (VulkanBackend::BeginFrame)
+    // which handles recreation lazily via RecreateResources().  Recreating eagerly here
+    // would cause a double recreation — once now and once in RecreateResources().
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR)
     {
         NOUS_FATAL("Failed to acquire swapchain image!");
-        return result;
     }
 
     return result;
@@ -158,12 +154,9 @@ VkResult NOUS_VulkanSwapChain::SwapChainPresent(VulkanContext* vkContext, Vulkan
 
     VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
-    {
-        // Swapchain is out of date, suboptimal or a framebuffer resize has occurred. Trigger swapchain recreation.
-        RecreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, swapchain);
-    }
-    else if (result != VK_SUCCESS) 
+    // OUT_OF_DATE and SUBOPTIMAL are returned to the caller (VulkanBackend::EndFrame)
+    // which schedules lazy recreation via RecreateResources().
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR)
     {
         NOUS_FATAL("Failed to present swap chain image!");
     }

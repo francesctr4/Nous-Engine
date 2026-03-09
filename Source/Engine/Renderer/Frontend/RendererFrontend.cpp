@@ -122,7 +122,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 		}
 	});
 
-	// --- SCENE PASS ---
+	// --- GAME PASS ---
 	RenderpassType gameRenderpass = RenderpassType::GAME;
 	success &= ExecuteRenderpass(gameRenderpass, [&]()
 	{

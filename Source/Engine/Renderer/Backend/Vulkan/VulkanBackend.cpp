@@ -612,14 +612,8 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
 
     vkCmdSetScissor(commandBuffer->handle, 0, 1, &scissor);
 
-    vkContext->sceneRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->sceneRenderpass.renderArea.w = vkContext->framebufferHeight;
-
-    vkContext->gameRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->gameRenderpass.renderArea.w = vkContext->framebufferHeight;
-
-    vkContext->uiRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->uiRenderpass.renderArea.w = vkContext->framebufferHeight;
+    renderpass->renderArea.z = vkContext->framebufferWidth;
+    renderpass->renderArea.w = vkContext->framebufferHeight;
 
     NOUS_VulkanRenderpass::BeginRenderpass(commandBuffer, renderpass, framebuffer);
 
@@ -721,22 +715,13 @@ bool VulkanBackend::RecreateResources()
 
     External->BroadcastEvent(Event(EventType::IMGUI_RECREATION, {}));
 
-    vkContext->sceneRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->sceneRenderpass.renderArea.w = vkContext->framebufferHeight;
-
-    vkContext->gameRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->gameRenderpass.renderArea.w = vkContext->framebufferHeight;
-
-    vkContext->uiRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->uiRenderpass.renderArea.w = vkContext->framebufferHeight;
-
     cachedFramebufferWidth = 0;
     cachedFramebufferHeight = 0;
 
     // Update framebuffer size generation.
     vkContext->framebufferSizeLastGeneration = vkContext->framebufferSizeGeneration;
 
-    // CleanUp swapchain.
+    // Free old command buffers and framebuffers before recreating them.
     for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
         NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
@@ -744,7 +729,6 @@ bool VulkanBackend::RecreateResources()
         NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->imGuiResources.m_GameViewportCommandBuffers[i]);
     }
 
-    // Framebuffers.
     for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
         vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportFramebuffers[i], vkContext->allocator);
@@ -752,23 +736,13 @@ bool VulkanBackend::RecreateResources()
         vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->swapChain.swapChainFramebuffers[i], vkContext->allocator);
     }
 
-    vkContext->sceneRenderpass.renderArea.x = 0;
-    vkContext->sceneRenderpass.renderArea.y = 0;
-
-    vkContext->sceneRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->sceneRenderpass.renderArea.w = vkContext->framebufferHeight;
-
-    vkContext->gameRenderpass.renderArea.x = 0;
-    vkContext->gameRenderpass.renderArea.y = 0;
-
-    vkContext->gameRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->gameRenderpass.renderArea.w = vkContext->framebufferHeight;
-
-    vkContext->uiRenderpass.renderArea.x = 0;
-    vkContext->uiRenderpass.renderArea.y = 0;
-
-    vkContext->uiRenderpass.renderArea.z = vkContext->framebufferWidth;
-    vkContext->uiRenderpass.renderArea.w = vkContext->framebufferHeight;
+    // Update renderpass areas to match the new framebuffer dimensions.
+    auto updateRenderArea = [&](VulkanRenderpass& rp) {
+        rp.renderArea = { 0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight };
+    };
+    updateRenderArea(vkContext->sceneRenderpass);
+    updateRenderArea(vkContext->gameRenderpass);
+    updateRenderArea(vkContext->uiRenderpass);
 
     // Regenerate world framebuffers
     NOUS_VulkanFramebuffer::CreateFramebuffers(vkContext);
