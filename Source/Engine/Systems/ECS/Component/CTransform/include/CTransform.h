@@ -20,7 +20,7 @@ public:
     glm::mat4 worldMatrix {1.0f};
 
     // Helper methods
-    glm::mat4 GetLocalMatrix() const;
+    NOUS_ENGINE_API glm::mat4 GetLocalMatrix() const;
 
     void SetPosition(const glm::vec3& newPosition) { position = newPosition; }
     void SetRotation(const glm::vec3& newRotation) { rotation = newRotation; }

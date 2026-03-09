@@ -26,7 +26,7 @@ public:
 
 	void OnEvent(const Event& event) override;
 
-	Camera* GetCamera();
+	NOUS_ENGINE_API Camera* GetCamera();
 
 	bool sceneViewportHovered;
 

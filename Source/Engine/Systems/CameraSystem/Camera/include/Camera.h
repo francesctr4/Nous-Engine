@@ -3,6 +3,8 @@
 
 #include <glm/glm.hpp>
 
+#include "Engine/EngineExport.h"
+
 class Camera
 {
 public:
@@ -15,9 +17,9 @@ public:
     glm::vec3 GetPos() const;
 
     void SetNearPlane(float distance);
-    float GetNearPlane();
+    NOUS_ENGINE_API float GetNearPlane();
     void SetFarPlane(float distance);
-    float GetFarPlane();
+    NOUS_ENGINE_API float GetFarPlane();
 
     void SetFront(glm::vec3 front);
     void SetUp(glm::vec3 up);
@@ -26,7 +28,7 @@ public:
     glm::vec3 GetRight() const;
 
     float GetHorizontalFOV() const;
-    float GetVerticalFOV() const;
+    NOUS_ENGINE_API float GetVerticalFOV() const;
     void SetHorizontalFOV(float hfov);
     void SetVerticalFOV(float vfov);
     void SetBothFOV(float fov);
@@ -34,8 +36,8 @@ public:
     float GetAspectRatio() const;
     void SetAspectRatio(float aspectRatio);
 
-    glm::mat4 GetProjectionMatrix() const;
-    glm::mat4 GetViewMatrix() const;
+    NOUS_ENGINE_API glm::mat4 GetProjectionMatrix() const;
+    NOUS_ENGINE_API glm::mat4 GetViewMatrix() const;
 
 private:
     glm::vec3 position;

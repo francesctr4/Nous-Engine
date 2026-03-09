@@ -18,6 +18,7 @@
 #include "imgui_stdlib.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
+#include <ImGuizmo.h>
 
 #pragma region EDITOR WINDOWS
 
@@ -240,6 +241,7 @@ void ModuleEditor::InitFrame(RendererBackendType backendType)
 
 	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 }
 
 void ModuleEditor::InternalDrawEditor()

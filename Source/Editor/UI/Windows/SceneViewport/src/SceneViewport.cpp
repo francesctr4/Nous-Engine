@@ -2,6 +2,7 @@
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
+#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
@@ -16,7 +17,14 @@
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_impl_vulkan.h"
+
+#include <ImGuizmo.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "SDL3/SDL.h"
 
 SceneViewport::SceneViewport(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
@@ -36,6 +44,12 @@ void SceneViewport::Draw()
         if (ImGui::Begin(title, p_open))
         {
             External->camera->sceneViewportHovered = ImGui::IsWindowHovered();
+
+            // Handle gizmo mode switching (W/E/R keys) when viewport is hovered
+            if (ImGui::IsWindowHovered() || ImGui::IsWindowFocused())
+            {
+                HandleGizmoInput();
+            }
 
             // Get the size of the window's content area
             ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
@@ -60,14 +74,14 @@ void SceneViewport::Draw()
             ImVec2 uvMin(0.0f, 0.0f);
             ImVec2 uvMax(1.0f, 1.0f);
 
-            if (viewportAspect < textureAspect) 
+            if (viewportAspect < textureAspect)
             {
                 // Viewport is narrower: crop left/right
                 float cropFactor = textureAspect / viewportAspect;
                 uvMin.x = 0.5f - 0.5f / cropFactor;
                 uvMax.x = 0.5f + 0.5f / cropFactor;
             }
-            else if (viewportAspect > textureAspect) 
+            else if (viewportAspect > textureAspect)
             {
                 // Viewport is wider: crop top/bottom
                 float cropFactor = viewportAspect / textureAspect;
@@ -92,9 +106,22 @@ void SceneViewport::Draw()
             // Draw white border on top
             drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
 
-            // Make the entire window area a drag-and-drop target
-            ImGui::SetCursorScreenPos(squarePos);          // Position the invisible button to start at the top-left of the content area
-            ImGui::InvisibleButton("DropTarget", squareSize); // Create an invisible button that covers the entire content area
+            // Invisible button for drag-and-drop target area
+            ImGui::SetCursorScreenPos(squarePos);
+            ImGui::InvisibleButton("DropTarget", squareSize);
+
+            // Draw the gizmo on top — must be called after InvisibleButton so it can
+            // override the active widget when the user clicks on a gizmo axis.
+            // ImGuizmo::IsOver() returns true when the mouse is over the gizmo,
+            // allowing us to prevent the InvisibleButton from stealing future clicks.
+            DrawGizmo(squarePos, squareSize);
+
+            // If gizmo is being interacted with, clear ImGui's active ID so the
+            // InvisibleButton doesn't hold mouse capture and block the gizmo
+            if (ImGuizmo::IsUsing())
+            {
+                ImGui::ClearActiveID();
+            }
 
             // Start the drag-and-drop target
             if (ImGui::BeginDragDropTarget())
@@ -104,20 +131,6 @@ void SceneViewport::Draw()
 
                 if (payload != NULL)
                 {
-                    // Process the payload here
-                    //std::string assetsFilePathDrop = (const char*)payload->Data;
-                    //External->resourceManager->CreateResource(assetsFilePathDrop);
-
-                    //ImGuiID* payload_items = (ImGuiID*)payload->Data;
-                    //const int item_count = (int)(payload->DataSize / sizeof(ImGuiID));
-
-                    //// For example, print the dropped item IDs
-                    //for (int i = 0; i < item_count; ++i)
-                    //{
-                    //    ImGui_Temp::Text("Dropped item ID: %d", payload_items[i]);
-                    //    External->resourceManager->CreateResource(assetsFilePathDrop);
-                    //}
-
                     const char* payload_data = (const char*)payload->Data;
                     std::vector<std::string> filePaths;
 
@@ -151,7 +164,7 @@ void SceneViewport::Draw()
                             {
                                 External->resourceManager->CreateResource(path);
                             }, "Create Resource");
-                        
+
                     }
 
                 }
@@ -161,6 +174,129 @@ void SceneViewport::Draw()
             }
         }
         ImGui::End();
+    }
+}
+
+void SceneViewport::HandleGizmoInput()
+{
+    // Only switch gizmo mode when right mouse button is NOT held (camera uses RMB + WASD)
+    if (External->input->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::IDLE)
+    {
+        if (External->input->GetKey(SDL_SCANCODE_W) == KeyState::DOWN)
+            m_GizmoOperation = GizmoOperation::TRANSLATE;
+        if (External->input->GetKey(SDL_SCANCODE_E) == KeyState::DOWN)
+            m_GizmoOperation = GizmoOperation::ROTATE;
+        if (External->input->GetKey(SDL_SCANCODE_R) == KeyState::DOWN)
+            m_GizmoOperation = GizmoOperation::SCALE;
+    }
+
+    // Toggle local/world mode
+    if (External->input->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
+    {
+        m_GizmoSpace = (m_GizmoSpace == GizmoSpace::LOCAL)
+            ? GizmoSpace::WORLD
+            : GizmoSpace::LOCAL;
+    }
+
+    // Toggle snapping with Left Ctrl
+    m_UseSnap = (External->input->GetKey(SDL_SCANCODE_LCTRL) == KeyState::REPEAT
+              || External->input->GetKey(SDL_SCANCODE_LCTRL) == KeyState::DOWN);
+}
+
+void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportSize)
+{
+    GameObject* selected = External->scene->selectedGameObject;
+    if (!selected || !selected->HasComponent<CTransform>())
+        return;
+
+    Camera* cam = External->camera->GetCamera();
+    if (!cam)
+        return;
+
+    // Get camera matrices — ImGuizmo renders via ImGui draw lists (not Vulkan),
+    // so it expects standard OpenGL-convention matrices. glm::perspective already produces that.
+    glm::mat4 view = cam->GetViewMatrix();
+
+    // Build a projection matrix that matches the viewport panel's aspect ratio.
+    // The scene image is UV-cropped to fit the panel, so the gizmo projection must
+    // use the panel's aspect ratio to stay aligned with what the user sees.
+    float viewportAspect = viewportSize.x / viewportSize.y;
+    glm::mat4 projection = glm::perspective(
+        glm::radians(cam->GetVerticalFOV()),
+        viewportAspect,
+        cam->GetNearPlane(),
+        cam->GetFarPlane()
+    );
+
+    // Get the object's transform matrix
+    CTransform& transform = selected->GetComponent<CTransform>();
+    glm::mat4 objectMatrix = transform.GetLocalMatrix();
+
+    // Configure ImGuizmo for this viewport
+    ImGuizmo::SetOrthographic(false);
+    ImGuizmo::SetDrawlist();
+    ImGuizmo::SetRect(viewportPos.x, viewportPos.y, viewportSize.x, viewportSize.y);
+
+    // Map our enum to ImGuizmo operation
+    ImGuizmo::OPERATION operation;
+    switch (m_GizmoOperation)
+    {
+        case GizmoOperation::TRANSLATE: operation = ImGuizmo::OPERATION::TRANSLATE; break;
+        case GizmoOperation::ROTATE:    operation = ImGuizmo::OPERATION::ROTATE;    break;
+        case GizmoOperation::SCALE:     operation = ImGuizmo::OPERATION::SCALE;     break;
+        default:                        operation = ImGuizmo::OPERATION::TRANSLATE;  break;
+    }
+
+    // Set snap values based on current operation
+    float snapValues[3] = { 0.0f, 0.0f, 0.0f };
+    if (m_UseSnap)
+    {
+        switch (m_GizmoOperation)
+        {
+            case GizmoOperation::TRANSLATE:
+                snapValues[0] = snapValues[1] = snapValues[2] = m_TranslateSnap;
+                break;
+            case GizmoOperation::ROTATE:
+                snapValues[0] = snapValues[1] = snapValues[2] = m_RotateSnap;
+                break;
+            case GizmoOperation::SCALE:
+                snapValues[0] = snapValues[1] = snapValues[2] = m_ScaleSnap;
+                break;
+        }
+    }
+
+    // Scale mode must use LOCAL space (world scale doesn't make sense)
+    ImGuizmo::MODE mode = (m_GizmoOperation == GizmoOperation::SCALE)
+        ? ImGuizmo::LOCAL
+        : static_cast<ImGuizmo::MODE>(m_GizmoSpace);
+
+    // Render and manipulate the gizmo
+    ImGuizmo::Manipulate(
+        glm::value_ptr(view),
+        glm::value_ptr(projection),
+        operation,
+        mode,
+        glm::value_ptr(objectMatrix),
+        nullptr,
+        m_UseSnap ? snapValues : nullptr
+    );
+
+    // If the gizmo was manipulated, decompose the matrix back into transform components
+    if (ImGuizmo::IsUsing())
+    {
+        float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+        ImGuizmo::DecomposeMatrixToComponents(
+            glm::value_ptr(objectMatrix),
+            matrixTranslation,
+            matrixRotation,
+            matrixScale
+        );
+
+        transform.position = glm::vec3(matrixTranslation[0], matrixTranslation[1], matrixTranslation[2]);
+        transform.rotation = glm::vec3(matrixRotation[0], matrixRotation[1], matrixRotation[2]);
+        transform.scale    = glm::vec3(matrixScale[0], matrixScale[1], matrixScale[2]);
+
+        transform.UpdateMatrix();
     }
 }
 

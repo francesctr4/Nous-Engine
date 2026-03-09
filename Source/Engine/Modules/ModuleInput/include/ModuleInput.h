@@ -30,8 +30,8 @@ public:
 
 	void OnEvent(const Event& event) override;
 
-	KeyState GetKey(int id) const;
-	KeyState GetMouseButton(int id) const;
+	NOUS_ENGINE_API KeyState GetKey(int id) const;
+	NOUS_ENGINE_API KeyState GetMouseButton(int id) const;
 
 	int32 GetMouseX() const;
 	int32 GetMouseY() const;

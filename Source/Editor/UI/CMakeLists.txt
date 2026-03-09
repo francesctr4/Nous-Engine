@@ -20,8 +20,10 @@ target_include_directories(EditorUI PUBLIC
 target_compile_definitions(EditorUI PRIVATE NOUS_EDITOR_EXPORTS)
 
 find_package(imgui CONFIG REQUIRED)
+find_package(imguizmo CONFIG REQUIRED)
 
 target_link_libraries(EditorUI PUBLIC
         imgui::imgui
+        imguizmo::imguizmo
         ImGuiCustom
 )
