@@ -3,6 +3,7 @@
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include "Engine/EngineExport.h"
 
 typedef struct json_object_t JSON_Object;
@@ -13,32 +14,37 @@ public:
     COMPONENT_TYPE(CTransform)
 
     glm::vec3 position {0.0f, 0.0f, 0.0f};
-    glm::vec3 rotation {0.0f, 0.0f, 0.0f}; // Euler angles in degrees
+    glm::quat orientation {1.0f, 0.0f, 0.0f, 0.0f}; // Identity quaternion (w,x,y,z)
     glm::vec3 scale    {1.0f, 1.0f, 1.0f};
 
-    // Cached world matrix (updated by a system)
+    // Euler angle hint for Inspector display (degrees). Kept in sync but NOT the source of truth.
+    glm::vec3 eulerHint {0.0f, 0.0f, 0.0f};
+
+    // Cached world matrix (updated by UpdateMatrix)
     glm::mat4 worldMatrix {1.0f};
 
     // Helper methods
     NOUS_ENGINE_API glm::mat4 GetLocalMatrix() const;
 
     void SetPosition(const glm::vec3& newPosition) { position = newPosition; }
-    void SetRotation(const glm::vec3& newRotation) { rotation = newRotation; }
+    NOUS_ENGINE_API void SetEulerRotation(const glm::vec3& eulerDegrees);
+    void SetOrientation(const glm::quat& quat) { orientation = quat; eulerHint = GetEulerAngles(); }
     void SetScale(const glm::vec3& newScale) { scale = newScale; }
 
     void Translate(const glm::vec3& translation) { position += translation; }
-    void Rotate(const glm::vec3& eulerAngles) { rotation += eulerAngles; }
+    NOUS_ENGINE_API void Rotate(const glm::quat& deltaRotation);
 
-    // Forward vector based on rotation
-    glm::vec3 GetForward() const;
+    // Get Euler angles in degrees from the current orientation
+    NOUS_ENGINE_API glm::vec3 GetEulerAngles() const;
 
-    // Right vector based on rotation
-    glm::vec3 GetRight() const {
-        return glm::normalize(glm::cross(GetForward(), glm::vec3(0.0f, 1.0f, 0.0f)));
-    }
+    // Forward vector based on orientation
+    NOUS_ENGINE_API glm::vec3 GetForward() const;
 
-    // Up vector based on rotation
-    glm::vec3 GetUp() const;
+    // Right vector based on orientation
+    NOUS_ENGINE_API glm::vec3 GetRight() const;
+
+    // Up vector based on orientation
+    NOUS_ENGINE_API glm::vec3 GetUp() const;
 
     NOUS_ENGINE_API void UpdateMatrix();
 

@@ -87,9 +87,10 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
 
         // 3. Set the new position
         auto& transform = go->GetComponent<CTransform>();
-        transform.rotation = glm::vec3(x, y, z); // Assuming you use glm and your component has a 'position' member
+        transform.SetEulerRotation(glm::vec3(x, y, z));
+        transform.UpdateMatrix();
 
-        NOUS_DEBUG("[SCRIPT] Set position of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
+        NOUS_DEBUG("[SCRIPT] Set rotation of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
     };
 
     gameObject.SetScale = [](uint32_t id, float x, float y, float z) {

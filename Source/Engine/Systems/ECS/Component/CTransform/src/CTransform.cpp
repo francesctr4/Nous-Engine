@@ -2,44 +2,54 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 // Parson
 #include <parson.h>
 
 glm::mat4 CTransform::GetLocalMatrix() const {
-    glm::mat4 transform = glm::translate(glm::mat4(1.0f), position);
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), position);
+    glm::mat4 R = glm::toMat4(orientation);
+    glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
+    return T * R * S;
+}
 
-    // Convert Euler angles to quaternion and then to matrix
-    glm::quat quatRotation = glm::quat(glm::radians(rotation));
-    transform *= glm::mat4_cast(quatRotation);
+void CTransform::SetEulerRotation(const glm::vec3& eulerDegrees) {
+    eulerHint = eulerDegrees;
+    // Build quaternion using GLM's default Euler convention — must match GetEulerAngles()
+    // so that the round-trip SetEulerRotation(GetEulerAngles()) is lossless
+    orientation = glm::quat(glm::radians(eulerDegrees));
+}
 
-    transform = glm::scale(transform, scale);
-    return transform;
+void CTransform::Rotate(const glm::quat& deltaRotation) {
+    orientation = glm::normalize(deltaRotation * orientation);
+    eulerHint = GetEulerAngles();
+}
+
+glm::vec3 CTransform::GetEulerAngles() const {
+    // Extract Euler angles from quaternion in degrees
+    // Uses GLM's built-in extraction (pitch=X, yaw=Y, roll=Z)
+    return glm::degrees(glm::eulerAngles(orientation));
 }
 
 glm::vec3 CTransform::GetForward() const {
-    float yaw = glm::radians(rotation.y);
-    float pitch = glm::radians(rotation.x);
-    return glm::vec3(
-            sin(yaw) * cos(pitch),
-            -sin(pitch),
-            cos(yaw) * cos(pitch)
-    );
+    return glm::normalize(orientation * glm::vec3(0.0f, 0.0f, -1.0f));
+}
+
+glm::vec3 CTransform::GetRight() const {
+    return glm::normalize(orientation * glm::vec3(1.0f, 0.0f, 0.0f));
 }
 
 glm::vec3 CTransform::GetUp() const {
-    return glm::normalize(glm::cross(GetRight(), GetForward()));
+    return glm::normalize(orientation * glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void CTransform::UpdateMatrix() {
-    glm::quat qPitch = glm::angleAxis(glm::radians(rotation.x), glm::vec3(1,0,0));
-    glm::quat qYaw   = glm::angleAxis(glm::radians(rotation.y), glm::vec3(0,1,0));
-    glm::quat qRoll  = glm::angleAxis(glm::radians(rotation.z), glm::vec3(0,0,1));
-    glm::quat orientation = qYaw * qPitch * qRoll;
-    glm::mat4 rotationMatrix = glm::toMat4(orientation);
-    worldMatrix = glm::translate(glm::mat4(1.0f), position) *
-                  rotationMatrix *
-                  glm::scale(glm::mat4(1.0f), scale);
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), position);
+    glm::mat4 R = glm::toMat4(orientation);
+    glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
+    worldMatrix = T * R * S;
 }
 
 JSON_Value *CTransform::Serialize() const {
@@ -56,12 +66,21 @@ JSON_Value *CTransform::Serialize() const {
     json_array_append_number(posArr, position.z);
     json_object_set_value(obj, "position", posVal);
 
-    // Rotation
+    // Orientation (quaternion: w, x, y, z)
+    JSON_Value* quatVal = json_value_init_array();
+    JSON_Array* quatArr = json_value_get_array(quatVal);
+    json_array_append_number(quatArr, orientation.w);
+    json_array_append_number(quatArr, orientation.x);
+    json_array_append_number(quatArr, orientation.y);
+    json_array_append_number(quatArr, orientation.z);
+    json_object_set_value(obj, "orientation", quatVal);
+
+    // Also save Euler hint for human readability and backward compat
     JSON_Value* rotVal = json_value_init_array();
     JSON_Array* rotArr = json_value_get_array(rotVal);
-    json_array_append_number(rotArr, rotation.x);
-    json_array_append_number(rotArr, rotation.y);
-    json_array_append_number(rotArr, rotation.z);
+    json_array_append_number(rotArr, eulerHint.x);
+    json_array_append_number(rotArr, eulerHint.y);
+    json_array_append_number(rotArr, eulerHint.z);
     json_object_set_value(obj, "rotation", rotVal);
 
     // Scale
@@ -84,12 +103,25 @@ void CTransform::Deserialize(JSON_Object *obj) {
         position.z = static_cast<float>(json_array_get_number(pos, 2));
     }
 
-    // Rotation
-    JSON_Array* rot = json_object_get_array(obj, "rotation");
-    if (rot && json_array_get_count(rot) == 3) {
-        rotation.x = static_cast<float>(json_array_get_number(rot, 0));
-        rotation.y = static_cast<float>(json_array_get_number(rot, 1));
-        rotation.z = static_cast<float>(json_array_get_number(rot, 2));
+    // Orientation (quaternion) — preferred if present
+    JSON_Array* quat = json_object_get_array(obj, "orientation");
+    if (quat && json_array_get_count(quat) == 4) {
+        orientation.w = static_cast<float>(json_array_get_number(quat, 0));
+        orientation.x = static_cast<float>(json_array_get_number(quat, 1));
+        orientation.y = static_cast<float>(json_array_get_number(quat, 2));
+        orientation.z = static_cast<float>(json_array_get_number(quat, 3));
+        eulerHint = GetEulerAngles();
+    }
+    else {
+        // Backward compat: load from Euler angles if no quaternion saved
+        JSON_Array* rot = json_object_get_array(obj, "rotation");
+        if (rot && json_array_get_count(rot) == 3) {
+            glm::vec3 euler;
+            euler.x = static_cast<float>(json_array_get_number(rot, 0));
+            euler.y = static_cast<float>(json_array_get_number(rot, 1));
+            euler.z = static_cast<float>(json_array_get_number(rot, 2));
+            SetEulerRotation(euler);
+        }
     }
 
     // Scale

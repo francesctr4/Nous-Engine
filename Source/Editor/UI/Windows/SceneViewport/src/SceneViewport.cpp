@@ -23,6 +23,8 @@
 #include <ImGuizmo.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include "SDL3/SDL.h"
 
@@ -270,20 +272,18 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
         m_UseSnap ? snapValues : nullptr
     );
 
-    // If the gizmo was manipulated, decompose the matrix back into transform components
+    // If the gizmo was manipulated, decompose the matrix using GLM (quaternion-based)
     if (ImGuizmo::IsUsing())
     {
-        float matrixTranslation[3], matrixRotation[3], matrixScale[3];
-        ImGuizmo::DecomposeMatrixToComponents(
-            glm::value_ptr(objectMatrix),
-            matrixTranslation,
-            matrixRotation,
-            matrixScale
-        );
+        glm::vec3 newPosition, newScale, skew;
+        glm::vec4 perspective;
+        glm::quat newOrientation;
+        glm::decompose(objectMatrix, newScale, newOrientation, newPosition, skew, perspective);
 
-        transform.position = glm::vec3(matrixTranslation[0], matrixTranslation[1], matrixTranslation[2]);
-        transform.rotation = glm::vec3(matrixRotation[0], matrixRotation[1], matrixRotation[2]);
-        transform.scale    = glm::vec3(matrixScale[0], matrixScale[1], matrixScale[2]);
+        transform.position = newPosition;
+        transform.orientation = newOrientation;
+        transform.scale = newScale;
+        transform.eulerHint = transform.GetEulerAngles();
 
         transform.UpdateMatrix();
     }
