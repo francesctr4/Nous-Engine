@@ -106,71 +106,56 @@ void SceneViewport::Draw()
             // Draw white border on top
             drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
 
-            // Invisible button for drag-and-drop target area
-            ImGui::SetCursorScreenPos(squarePos);
-            ImGui::InvisibleButton("DropTarget", squareSize);
-
-            // Draw the gizmo on top — must be called after InvisibleButton so it can
-            // override the active widget when the user clicks on a gizmo axis.
-            // ImGuizmo::IsOver() returns true when the mouse is over the gizmo,
-            // allowing us to prevent the InvisibleButton from stealing future clicks.
+            // Draw the gizmo on top of the scene image
             DrawGizmo(squarePos, squareSize);
 
-            // If gizmo is being interacted with, clear ImGui's active ID so the
-            // InvisibleButton doesn't hold mouse capture and block the gizmo
-            if (ImGuizmo::IsUsing())
+            // Drag-and-drop target — only place the InvisibleButton when the gizmo
+            // is not being hovered/used, so it doesn't steal mouse input from ImGuizmo
+            if (!ImGuizmo::IsOver() && !ImGuizmo::IsUsing())
             {
-                ImGui::ClearActiveID();
-            }
+                ImGui::SetCursorScreenPos(squarePos);
+                ImGui::InvisibleButton("DropTarget", squareSize);
 
-            // Start the drag-and-drop target
-            if (ImGui::BeginDragDropTarget())
-            {
-                // Accept the payload
-                const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS");
-
-                if (payload != NULL)
+                if (ImGui::BeginDragDropTarget())
                 {
-                    const char* payload_data = (const char*)payload->Data;
-                    std::vector<std::string> filePaths;
+                    const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS");
 
-                    // Split the payload data into individual file paths (e.g., null-terminated strings)
-                    while (*payload_data)
+                    if (payload != NULL)
                     {
-                        std::string path(payload_data);
+                        const char* payload_data = (const char*)payload->Data;
+                        std::vector<std::string> filePaths;
 
-                        // Validate the path to ensure it contains only valid ASCII characters
-                        if (!path.empty() && IsValidASCII(path))
+                        while (*payload_data)
                         {
-                            filePaths.push_back(path);
-                        }
+                            std::string path(payload_data);
 
-                        // Move to the next string (skip the null terminator)
-                        payload_data += path.length() + 1;
-                    }
-
-                    // Process each file path
-                    for (const auto& path : filePaths)
-                    {
-                        ImGui::Text("Dropped file: %s", path.c_str());
-
-                        if (path.find(".nous") != std::string::npos)
-                        {
-                            External->scene->LoadScene(path);
-                            continue;
-                        }
-
-                        External->jobSystem->SubmitJob([path]()
+                            if (!path.empty() && IsValidASCII(path))
                             {
-                                External->resourceManager->CreateResource(path);
-                            }, "Create Resource");
+                                filePaths.push_back(path);
+                            }
 
+                            payload_data += path.length() + 1;
+                        }
+
+                        for (const auto& path : filePaths)
+                        {
+                            ImGui::Text("Dropped file: %s", path.c_str());
+
+                            if (path.find(".nous") != std::string::npos)
+                            {
+                                External->scene->LoadScene(path);
+                                continue;
+                            }
+
+                            External->jobSystem->SubmitJob([path]()
+                                {
+                                    External->resourceManager->CreateResource(path);
+                                }, "Create Resource");
+                        }
                     }
 
+                    ImGui::EndDragDropTarget();
                 }
-
-                // End the drag-and-drop target
-                ImGui::EndDragDropTarget();
             }
         }
         ImGui::End();
@@ -233,8 +218,12 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
     glm::mat4 objectMatrix = transform.GetLocalMatrix();
 
     // Configure ImGuizmo for this viewport
+    // SetImGuiContext is critical in DLL architectures where ImGui and ImGuizmo
+    // may not share the same global context
+    ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
     ImGuizmo::SetOrthographic(false);
-    ImGuizmo::SetDrawlist();
+    ImGuizmo::Enable(true);
+    ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImGuizmo::SetRect(viewportPos.x, viewportPos.y, viewportSize.x, viewportSize.y);
 
     // Map our enum to ImGuizmo operation
