@@ -10,6 +10,8 @@
 
 #include <algorithm>
 
+#include "Engine/Utils/Math/Vertex.inl"
+
 // ─────────────────────────────── Module helpers ───────────────────────────────
 
 static bool CreateShaderModuleFromBinary(VulkanContext* vkContext,
@@ -389,6 +391,9 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
 
     std::vector<VkVertexInputAttributeDescription> attribs;
     attribs.reserve(sortedInputs.size());
+
+    // TODO: IMPORTANT REFACTOR HERE, STRIDE SHOULDN'T DEPEND ON REFLECTION BECAUSE WE ARE COMPILING IN OPTIMIZED MODE
+    // TODO: AND WE MIGHT BE DISCARDING UNUSED INPUTS. CONSIDER USING HARDCODE VERTEX3D STRIDE OR SET SHADER OPTIMIZATION TO ZERO.
     uint32_t stride = 0;
     for (const ReflectedInput& in : sortedInputs)
     {
@@ -403,7 +408,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
 
     VkVertexInputBindingDescription bindingDesc{};
     bindingDesc.binding   = 0;
-    bindingDesc.stride    = stride;
+    bindingDesc.stride    = stride; // sizeof(Vertex3D);
     bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     // ── 6. Build VkGraphicsPipeline ───────────────────────────────────────────
