@@ -62,6 +62,11 @@ public:
 	[[nodiscard]] bool CreateShader(ResourceShader* shader);
 	void DestroyShader(ResourceShader* shader);
 
+	// ─────────────────────────────── Picking ────────────────────────────────
+	uint32_t PickObjectAt(int32_t pixelX, int32_t pixelY,
+						  const glm::mat4& projection, const glm::mat4& view,
+						  const std::vector<GeometryRenderData>& geometries);
+
 public:
 
 	uint64_t mFrameNumber;

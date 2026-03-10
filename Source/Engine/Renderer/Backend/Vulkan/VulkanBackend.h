@@ -59,6 +59,10 @@ public:
 	bool CreateShader(ResourceShader* shader) override;
 	void DestroyShader(ResourceShader* shader) noexcept override;
 
+	uint32 PickObjectAt(int32 pixelX, int32 pixelY,
+						const glm::mat4& projection, const glm::mat4& view,
+						const std::vector<GeometryRenderData>& geometries) override;
+
 	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 
 	void ProcessPendingSubmissions();

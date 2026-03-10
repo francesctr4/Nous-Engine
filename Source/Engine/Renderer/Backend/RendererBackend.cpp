@@ -179,3 +179,10 @@ void RendererBackend::DestroyGeometry(ResourceMesh* geometry)
         mBackendInterface->DestroyGeometry(geometry);
     }
 }
+
+uint32_t RendererBackend::PickObjectAt(int32_t pixelX, int32_t pixelY,
+                                       const glm::mat4& projection, const glm::mat4& view,
+                                       const std::vector<GeometryRenderData>& geometries)
+{
+    return mBackendInterface ? mBackendInterface->PickObjectAt(pixelX, pixelY, projection, view, geometries) : 0;
+}

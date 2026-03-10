@@ -5,6 +5,7 @@
 #include "Engine/EngineExport.h"
 
 #include <functional>
+#include <glm/glm.hpp>
 
 // Forward declarations
 class RendererBackend;
@@ -54,6 +55,22 @@ public:
 
 	[[nodiscard]] NOUS_ENGINE_API bool CreateShader(ResourceShader* shader);
 	NOUS_ENGINE_API void DestroyShader(ResourceShader* shader);
+
+	// ---------------------------------------------------------------------
+	// Picking
+	// ---------------------------------------------------------------------
+	/**
+	 * @brief Render the scene to a pick buffer and read back the object ID
+	 *        at the given pixel coordinate.
+	 * @param pixelX  X coordinate in framebuffer space.
+	 * @param pixelY  Y coordinate in framebuffer space.
+	 * @param projection  Camera projection matrix.
+	 * @param view  Camera view matrix.
+	 * @return The objectUID at (pixelX, pixelY), or 0 if nothing was hit.
+	 */
+	NOUS_ENGINE_API uint32_t PickObjectAt(int32_t pixelX, int32_t pixelY,
+										  const glm::mat4& projection, const glm::mat4& view,
+										  const std::vector<GeometryRenderData>& geometries);
 
 	// ---------------------------------------------------------------------
 	// Accessors

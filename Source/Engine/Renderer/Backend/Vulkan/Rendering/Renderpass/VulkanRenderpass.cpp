@@ -13,7 +13,8 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     glm::vec4 renderArea, glm::vec4 clearColor,
     float depth, uint32 stencil, uint8 clearFlags,
     bool prevPass, bool nextPass,
-    bool offscreen)
+    bool offscreen,
+    VkFormat colorFormatOverride)
 {
     outRenderpass->clearFlags = clearFlags;
     outRenderpass->renderArea = renderArea;
@@ -31,7 +32,9 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     std::array<VkAttachmentDescription, 2> attachments{};
 
     // Color attachment
-    attachments[0].format         = vkContext->swapChain.swapChainImageFormat;
+    attachments[0].format         = (colorFormatOverride != VK_FORMAT_UNDEFINED)
+                                    ? colorFormatOverride
+                                    : vkContext->swapChain.swapChainImageFormat;
     attachments[0].samples        = VK_SAMPLE_COUNT_1_BIT;
     attachments[0].loadOp         = doClearColor ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;

@@ -79,7 +79,7 @@ namespace NOUS_VulkanShader
      *        compiled SPIR-V and reflection data.  Populates shader->internalData.
      */
     bool Create(VulkanContext* vkContext, VulkanRenderpass* renderpass,
-                ResourceShader* shader);
+                ResourceShader* shader, bool disableBlending = false);
 
     /** @brief Destroy all GPU resources held by vs and free the struct. */
     void Destroy(VulkanContext* vkContext, VulkanShader* vs);

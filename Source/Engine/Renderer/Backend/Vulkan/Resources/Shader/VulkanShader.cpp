@@ -296,7 +296,7 @@ void VulkanShader::Destroy()
 // ─────────────────────────────── Create ──────────────────────────────────────
 
 bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* renderpass,
-                                ResourceShader* shader)
+                                ResourceShader* shader, bool disableBlending)
 {
     if (!shader || shader->stagesData.empty())
     {
@@ -449,7 +449,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     VkPipelineColorBlendAttachmentState blendAttach{};
     blendAttach.colorWriteMask    = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    blendAttach.blendEnable           = VK_TRUE;
+    blendAttach.blendEnable           = disableBlending ? VK_FALSE : VK_TRUE;
     blendAttach.srcColorBlendFactor   = VK_BLEND_FACTOR_SRC_ALPHA;
     blendAttach.dstColorBlendFactor   = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     blendAttach.colorBlendOp          = VK_BLEND_OP_ADD;

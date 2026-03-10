@@ -23,7 +23,7 @@ public:
     NOUS_ENGINE_API void RegisterGameObject(GameObject* go);
     void Update(float deltaTime);
 
-    GameObject* FindGameObjectByID(uint32_t id);
+    NOUS_ENGINE_API GameObject* FindGameObjectByID(uint32_t id);
     NOUS_Vector<GameObject*> FindGameObjectsByName(const std::string& name);
     GameObject* GetGameObjectByID(uint32_t id);
 

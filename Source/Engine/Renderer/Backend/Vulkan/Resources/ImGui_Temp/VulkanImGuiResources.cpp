@@ -12,10 +12,14 @@ void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkCont
 
 	CreateViewportImages(vkContext);
 	CreateViewportDepthResources(vkContext);
+	CreatePickResources(vkContext);
 }
 
 void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkContext)
 {
+	// Pick Resources
+	DestroyPickResources(vkContext);
+
 	// Game Viewport
 	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
 
@@ -49,6 +53,8 @@ void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkCo
 
 	// --------------------------
 
+	DestroyPickResources(vkContext);
+
 	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
 
 	for (int i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
@@ -65,6 +71,7 @@ void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkCo
 
 	CreateViewportImages(vkContext);
 	CreateViewportDepthResources(vkContext);
+	CreatePickResources(vkContext);
 
 	// ------------------------
 
@@ -226,6 +233,51 @@ void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkCo
 		VK_IMAGE_ASPECT_DEPTH_BIT,  // Use VK_IMAGE_ASPECT_DEPTH_BIT | STENCIL if needed
 		&vkContext->imGuiResources.m_GameViewportDepthAttachment
 	);
+}
+
+void NOUS_ImGuiVulkanResources::CreatePickResources(VulkanContext* vkContext)
+{
+	// Pick color image — R8G8B8A8_UNORM (no sRGB gamma) so raw ID bytes are preserved.
+	NOUS_VulkanImage::CreateVulkanImage(
+		vkContext,
+		VK_IMAGE_TYPE_2D,
+		vkContext->framebufferWidth,
+		vkContext->framebufferHeight,
+		1,
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		true,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		&vkContext->imGuiResources.m_PickImage
+	);
+
+	// Pick depth image
+	vkContext->device.depthFormat = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
+
+	NOUS_VulkanImage::CreateVulkanImage(
+		vkContext,
+		VK_IMAGE_TYPE_2D,
+		vkContext->framebufferWidth,
+		vkContext->framebufferHeight,
+		1,
+		VK_SAMPLE_COUNT_1_BIT,
+		vkContext->device.depthFormat,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		true,
+		VK_IMAGE_ASPECT_DEPTH_BIT,
+		&vkContext->imGuiResources.m_PickDepthAttachment
+	);
+}
+
+void NOUS_ImGuiVulkanResources::DestroyPickResources(VulkanContext* vkContext)
+{
+	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_PickDepthAttachment);
+	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_PickImage);
 }
 
 unsigned long long int NOUS_ImGuiVulkanResources::GetViewportTexture(VkDescriptorSet descriptorSet)

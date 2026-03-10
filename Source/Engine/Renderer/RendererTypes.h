@@ -167,6 +167,16 @@ struct IRendererBackend
 
     [[nodiscard]] virtual bool CreateShader(ResourceShader* shader) = 0;
     virtual void DestroyShader(ResourceShader* shader) noexcept = 0;
+
+    // ─────────────────────────────── Picking ────────────────────────────────
+    /**
+     * @brief Render the scene to a pick buffer and read back the object ID
+     *        at the given pixel coordinate.
+     * @return The objectUID at (pixelX, pixelY), or 0 if nothing was hit.
+     */
+    virtual uint32_t PickObjectAt(int32_t pixelX, int32_t pixelY,
+                                  const glm::mat4& projection, const glm::mat4& view,
+                                  const std::vector<GeometryRenderData>& geometries) = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

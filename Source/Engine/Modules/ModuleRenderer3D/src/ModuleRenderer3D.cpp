@@ -59,6 +59,7 @@ bool ModuleRenderer3D::Awake()
 	// Load BuiltIn shaders now that the Vulkan backend and ResourceManager are both ready.
 	// This guarantees the shaders exist before any Start() call or rendering begins.
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
+	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
 
 	// TEMP SHADERS (DEBUG)
 	App->resourceManager->CreateResource("Assets/Shaders/temp_MockShader.glsl");
@@ -205,6 +206,8 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
 		if (!goPtr->HasComponent<CMesh>()) continue;
 
 		GeometryRenderData data{};
+
+		data.objectUID = goPtr->GetID();
 
 		if (auto* transform = goPtr->TryGetComponent<CTransform>())
 			data.model = transform->worldMatrix;

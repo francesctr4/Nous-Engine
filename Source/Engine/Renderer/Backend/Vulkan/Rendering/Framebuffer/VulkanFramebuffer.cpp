@@ -58,6 +58,22 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 			vkContext->allocator, &vkContext->swapChain.swapChainFramebuffers[i]));
 	}
 
+	// Pick Framebuffer (single — used for on-demand mouse picking)
+
+	std::array<VkImageView, 2> pickAttachments = { vkContext->imGuiResources.m_PickImage.view, vkContext->imGuiResources.m_PickDepthAttachment.view };
+
+	VkFramebufferCreateInfo pickFramebufferCreateInfo{};
+	pickFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	pickFramebufferCreateInfo.renderPass = vkContext->pickRenderpass.handle;
+	pickFramebufferCreateInfo.attachmentCount = static_cast<uint32>(pickAttachments.size());
+	pickFramebufferCreateInfo.pAttachments = pickAttachments.data();
+	pickFramebufferCreateInfo.width = vkContext->framebufferWidth;
+	pickFramebufferCreateInfo.height = vkContext->framebufferHeight;
+	pickFramebufferCreateInfo.layers = 1;
+
+	VK_CHECK(vkCreateFramebuffer(vkContext->device.logicalDevice, &pickFramebufferCreateInfo,
+		vkContext->allocator, &vkContext->imGuiResources.m_PickFramebuffer));
+
     return ret;
 }
 
@@ -65,7 +81,13 @@ void NOUS_VulkanFramebuffer::DestroyFramebuffers(VulkanContext* vkContext)
 {
     NOUS_DEBUG("Destroying Framebuffers...");
 
-    for (uint16 i = 0; i < vkContext->swapChain.swapChainFramebuffers.size(); ++i) 
+    if (vkContext->imGuiResources.m_PickFramebuffer)
+    {
+		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_PickFramebuffer, vkContext->allocator);
+		vkContext->imGuiResources.m_PickFramebuffer = VK_NULL_HANDLE;
+    }
+
+    for (uint16 i = 0; i < vkContext->swapChain.swapChainFramebuffers.size(); ++i)
     {
 		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportFramebuffers[i], vkContext->allocator);
 		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportFramebuffers[i], vkContext->allocator);

@@ -212,6 +212,11 @@ struct VulkanImGuiResources
 
     VkSampler m_GameViewportTextureSampler;
     std::array<VkDescriptorSet, 3> m_GameViewportDescriptorSets;
+
+    // ---------- Pick (Mouse Picking) Resources ---------- //
+    VulkanImage m_PickImage;
+    VulkanImage m_PickDepthAttachment;
+    VkFramebuffer m_PickFramebuffer;
 };
 
 struct VulkanSubmitTask {
@@ -253,6 +258,7 @@ struct VulkanContext
     VulkanRenderpass sceneRenderpass;
     VulkanRenderpass gameRenderpass;
     VulkanRenderpass uiRenderpass;
+    VulkanRenderpass pickRenderpass;
 
     VulkanBuffer objectVertexBuffer;
     VulkanBuffer objectIndexBuffer;
@@ -274,6 +280,7 @@ struct VulkanContext
     // internalData points to a heap-allocated VulkanShader.
     class ResourceShader* builtInMaterialShader = nullptr;
     class ResourceShader* builtInGameShader     = nullptr;
+    class ResourceShader* builtInPickShader     = nullptr;
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;

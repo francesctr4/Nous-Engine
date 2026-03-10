@@ -29,7 +29,8 @@ namespace NOUS_VulkanRenderpass
         glm::vec4 renderArea, glm::vec4 clearColor,
         float depth, uint32 stencil, uint8 clearFlags,
         bool prevPass, bool nextPass,
-        bool offscreen = false);
+        bool offscreen = false,
+        VkFormat colorFormatOverride = VK_FORMAT_UNDEFINED);
 
     void DestroyRenderpass(VulkanContext* vkContext, VulkanRenderpass* renderpass);
 

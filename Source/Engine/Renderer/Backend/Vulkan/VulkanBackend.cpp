@@ -155,6 +155,24 @@ bool VulkanBackend::Initialize()
         NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Scene Render Pass created successfully!");
     }
 
+    // Pick Render Pass (R8G8B8A8_UNORM — no sRGB gamma, preserves raw ID bytes)
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Pick Render Pass...");
+    if (!NOUS_VulkanRenderpass::CreateRenderpass(vkContext, &vkContext->pickRenderpass,
+        glm::vec4(0.0f, 0.0f, vkContext->framebufferWidth, vkContext->framebufferHeight),
+        glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
+        1.0f, 0,
+        RenderpassClearFlag::COLOR_BUFFER | RenderpassClearFlag::DEPTH_BUFFER | RenderpassClearFlag::STENCIL_BUFFER,
+        false, false, true,
+        VK_FORMAT_R8G8B8A8_UNORM))
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Pick Render Pass. Shutting the Application.");
+        ret = false;
+    }
+    else
+    {
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Pick Render Pass created successfully!");
+    }
+
     // Game Render Pass
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Game Render Pass...");
     if (!NOUS_VulkanRenderpass::CreateRenderpass(vkContext, &vkContext->gameRenderpass,
@@ -293,10 +311,23 @@ void VulkanBackend::Shutdown() noexcept
         vkContext->builtInGameShader = nullptr;
     }
 
+    // builtInPickShader is an internal clone for mouse picking, also owned by VulkanBackend.
+    if (vkContext->builtInPickShader)
+    {
+        if (vkContext->builtInPickShader->internalData)
+        {
+            vkContext->builtInPickShader->internalData->Destroy();
+            vkContext->builtInPickShader->internalData = nullptr;
+        }
+        NOUS_DELETE(vkContext->builtInPickShader, MemoryTag::RESOURCE_SHADER);
+        vkContext->builtInPickShader = nullptr;
+    }
+
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->uiRenderpass);
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->gameRenderpass);
+    NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->pickRenderpass);
     NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->sceneRenderpass);
 
     NOUS_VulkanSwapChain::DestroySwapChain(vkContext, &vkContext->swapChain);
@@ -729,6 +760,12 @@ bool VulkanBackend::RecreateResources()
         NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->imGuiResources.m_GameViewportCommandBuffers[i]);
     }
 
+    if (vkContext->imGuiResources.m_PickFramebuffer)
+    {
+        vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_PickFramebuffer, vkContext->allocator);
+        vkContext->imGuiResources.m_PickFramebuffer = VK_NULL_HANDLE;
+    }
+
     for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
         vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportFramebuffers[i], vkContext->allocator);
@@ -741,6 +778,7 @@ bool VulkanBackend::RecreateResources()
         rp.renderArea = { 0, 0, vkContext->framebufferWidth, vkContext->framebufferHeight };
     };
     updateRenderArea(vkContext->sceneRenderpass);
+    updateRenderArea(vkContext->pickRenderpass);
     updateRenderArea(vkContext->gameRenderpass);
     updateRenderArea(vkContext->uiRenderpass);
 
@@ -1266,6 +1304,26 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         return true;
     }
 
+    // ── BuiltIn.PickShader → scene renderpass (for mouse picking) ──────────────
+    //    Internal clone — not tracked by ResourceManager. Stored as builtInPickShader.
+    if (assetPath.find("BuiltIn.PickShader") != std::string::npos)
+    {
+        ResourceShader* pickShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+        pickShader->stagesData = shader->stagesData;
+        pickShader->reflection = shader->reflection;
+
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->pickRenderpass, pickShader, true))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create BuiltIn.PickShader.");
+            NOUS_DELETE(pickShader, MemoryTag::RESOURCE_SHADER);
+            return false;
+        }
+
+        vkContext->builtInPickShader = pickShader;
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.PickShader assigned to pickRenderpass.");
+        return true;
+    }
+
     // ── Default: scene renderpass for user-defined shaders ────────────────────
     return NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader);
 }
@@ -1281,6 +1339,177 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     VulkanShader* vs = static_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
     shader->internalData = nullptr;
+}
+
+uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
+                                   const glm::mat4& projection, const glm::mat4& view,
+                                   const std::vector<GeometryRenderData>& geometries)
+{
+    ResourceShader* rPickShader = vkContext->builtInPickShader;
+    if (!rPickShader || !rPickShader->internalData)
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "[PickObjectAt] Pick shader not available.");
+        return 0;
+    }
+
+    // Clamp pixel coordinates to framebuffer bounds.
+    if (pixelX < 0 || pixelX >= vkContext->framebufferWidth ||
+        pixelY < 0 || pixelY >= vkContext->framebufferHeight)
+    {
+        return 0;
+    }
+
+    VulkanShader* pickVS = static_cast<VulkanShader*>(rPickShader->internalData);
+
+    // Wait for all GPU work to complete before using the pick resources.
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
+    // --- Allocate single-use command buffer ---
+    VulkanCommandBuffer cmdBuffer;
+    VkCommandPool pool = vkContext->device.mainGraphicsCommandPool;
+    VkQueue queue = vkContext->device.graphicsQueue;
+    NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(vkContext, pool, &cmdBuffer);
+
+    // --- Set viewport and scissor ---
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = static_cast<float>(vkContext->framebufferHeight);
+    viewport.width = static_cast<float>(vkContext->framebufferWidth);
+    viewport.height = -static_cast<float>(vkContext->framebufferHeight);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cmdBuffer.handle, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = { static_cast<uint32>(vkContext->framebufferWidth),
+                       static_cast<uint32>(vkContext->framebufferHeight) };
+    vkCmdSetScissor(cmdBuffer.handle, 0, 1, &scissor);
+
+    // --- Begin renderpass (dedicated UNORM pick renderpass) ---
+    VulkanRenderpass pickRP = vkContext->pickRenderpass;
+    pickRP.renderArea = { 0, 0, static_cast<float>(vkContext->framebufferWidth),
+                                static_cast<float>(vkContext->framebufferHeight) };
+    pickRP.clearColor = { 0.0f, 0.0f, 0.0f, 0.0f }; // objectUID 0 = "no object"
+    NOUS_VulkanRenderpass::BeginRenderpass(&cmdBuffer, &pickRP, vkContext->imGuiResources.m_PickFramebuffer);
+
+    // --- Bind pick pipeline ---
+    NOUS_VulkanShader::BindPipeline(cmdBuffer.handle, pickVS);
+
+    // --- Update global UBO (projection + view) ---
+    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuffer.handle, pickVS, 0, &ubo, sizeof(ubo));
+
+    // --- Draw each geometry with objectUID push constant ---
+    struct PickPushConstants
+    {
+        glm::mat4 model;
+        uint32 objectID;
+    };
+
+    for (const auto& geo : geometries)
+    {
+        if (!geo.geometry || geo.geometry->internalID == INVALID_ID)
+            continue;
+
+        VulkanGeometryData* bufferData = &vkContext->geometries[geo.geometry->internalID];
+
+        PickPushConstants pc{};
+        pc.model = geo.model;
+        pc.objectID = geo.objectUID;
+
+        vkCmdPushConstants(cmdBuffer.handle, pickVS->pipeline.pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT,
+            0, sizeof(PickPushConstants), &pc);
+
+        // Bind vertex buffer
+        VkDeviceSize offset = bufferData->vertexBufferOffset;
+        vkCmdBindVertexBuffers(cmdBuffer.handle, 0, 1,
+            &vkContext->objectVertexBuffer.handle, &offset);
+
+        if (bufferData->indexCount > 0)
+        {
+            vkCmdBindIndexBuffer(cmdBuffer.handle, vkContext->objectIndexBuffer.handle,
+                bufferData->indexBufferOffset, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(cmdBuffer.handle, bufferData->indexCount, 1, 0, 0, 0);
+        }
+        else
+        {
+            vkCmdDraw(cmdBuffer.handle, bufferData->vertexCount, 1, 0, 0);
+        }
+    }
+
+    // --- End renderpass ---
+    NOUS_VulkanRenderpass::EndRenderpass(&cmdBuffer, &pickRP);
+
+    // --- Transition pick image for transfer readback ---
+    // Scene renderpass transitions to SHADER_READ_ONLY; we need TRANSFER_SRC for copy.
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = vkContext->imGuiResources.m_PickImage.handle;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+    vkCmdPipelineBarrier(cmdBuffer.handle,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+    // --- Create staging buffer for single-pixel readback ---
+    VulkanBuffer stagingBuffer{};
+    NOUS_VulkanBuffer::CreateBuffer(vkContext, 4,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        true, &stagingBuffer);
+
+    // --- Copy single pixel from pick image to staging buffer ---
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset = { pixelX, pixelY, 0 };
+    region.imageExtent = { 1, 1, 1 };
+
+    vkCmdCopyImageToBuffer(cmdBuffer.handle,
+        vkContext->imGuiResources.m_PickImage.handle,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        stagingBuffer.handle, 1, &region);
+
+    // --- Submit and wait ---
+    NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(vkContext, pool, &cmdBuffer, queue);
+
+    // --- Read back pixel data ---
+    uint32 objectID = 0;
+    void* mapped = NOUS_VulkanBuffer::LockMemory(vkContext, &stagingBuffer, 0, 4, 0);
+    if (mapped)
+    {
+        const uint8* pixel = static_cast<const uint8*>(mapped);
+        objectID = static_cast<uint32>(pixel[0])
+                 | (static_cast<uint32>(pixel[1]) << 8)
+                 | (static_cast<uint32>(pixel[2]) << 16)
+                 | (static_cast<uint32>(pixel[3]) << 24);
+        NOUS_VulkanBuffer::UnlockMemory(vkContext, &stagingBuffer);
+    }
+
+    // --- Cleanup staging buffer ---
+    NOUS_VulkanBuffer::DestroyBuffer(vkContext, &stagingBuffer);
+
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "[PickObjectAt] Pixel (%d, %d) -> objectUID = %u", pixelX, pixelY, objectID);
+
+    return objectID;
 }
 
 VulkanContext* VulkanBackend::GetVulkanContext()

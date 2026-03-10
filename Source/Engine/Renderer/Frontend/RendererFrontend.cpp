@@ -237,6 +237,16 @@ void RendererFrontend::DestroyShader(ResourceShader* shader)
 	mBackend->DestroyShader(shader);
 }
 
+uint32_t RendererFrontend::PickObjectAt(int32_t pixelX, int32_t pixelY,
+                                        const glm::mat4& projection, const glm::mat4& view,
+                                        const std::vector<GeometryRenderData>& geometries)
+{
+    if (!mBackend)
+        return 0;
+
+    return mBackend->PickObjectAt(pixelX, pixelY, projection, view, geometries);
+}
+
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)
 {
     mEditorOverlay = overlay;
