@@ -47,8 +47,7 @@ void HierarchyWindow::Draw() {
                 if (opened) {
                     if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
                         if (!ImGui::IsAnyItemHovered()) {
-                            m_Selected = nullptr;
-                            External->scene->selectedGameObject = m_Selected;
+                            External->scene->selectedGameObject = nullptr;
                         }
                     }
 
@@ -68,7 +67,6 @@ void HierarchyWindow::Draw() {
                 // Process deletion first
                 for (auto* go : m_ToDelete) {
                     if (External->scene->selectedGameObject == go) {
-                        m_Selected = nullptr;
                         External->scene->selectedGameObject = nullptr;
                     }
                     m_Scene->DestroyGameObject(go);
@@ -93,7 +91,7 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go) {
         flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
     // Highlight if selected
-    if (go == m_Selected)
+    if (go == External->scene->selectedGameObject)
         flags |= ImGuiTreeNodeFlags_Selected;
 
     std::string label = go->GetName() + "###" + std::to_string(go->GetID());
@@ -101,17 +99,16 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go) {
 
     // Left-click to select
     if (ImGui::IsItemClicked()) {
-        m_Selected = go;
         // Optionally notify the application/inspector:
-        External->scene->selectedGameObject = m_Selected;
+        External->scene->selectedGameObject = go;
     }
 
     // Right-click menu
     if (ImGui::BeginPopupContextItem()) {
         if (ImGui::MenuItem("Delete")) {
             m_ToDelete.push_back(go);
-            if (m_Selected == go)
-                m_Selected = nullptr; // clear selection if deleted
+            if (External->scene->selectedGameObject == go)
+                External->scene->selectedGameObject = nullptr; // clear selection if deleted
         }
         ImGui::EndPopup();
     }

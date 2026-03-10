@@ -357,6 +357,12 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
         geometries.emplace_back(data);
     }
 
+    if (geometries.empty())
+    {
+        External->scene->selectedGameObject = nullptr;
+        return;
+    }
+
     // Use the camera's own projection matrix — must match what the scene pass renders
     // with, so the pick result aligns with the scene framebuffer.
     // The UV mapping above already accounts for the viewport panel's crop.

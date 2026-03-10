@@ -22,13 +22,11 @@ public:
     void Draw() override;
 
     void SetScene(Scene* scene) { m_Scene = scene; }
-    GameObject* GetSelected() const { return m_Selected; }
 
 private:
     void DrawGameObjectNode(GameObject* obj);
 
     Scene* m_Scene = nullptr;
-    GameObject* m_Selected = nullptr;
     NOUS_Vector<GameObject*> m_ToDelete; // objects pending deletion
     NOUS_Vector<ReparentRequest> m_ToReparent;
     bool IsChildOf(GameObject *parent, GameObject *child);
