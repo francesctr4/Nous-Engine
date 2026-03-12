@@ -37,7 +37,7 @@ struct TextureMap
 // -----------------------------------------------------------------------------
 enum class FrameResult : uint8_t
 {
-    SUCCESS = 0,       // Frame rendered successfully
+    SUCCESS = 0,  // Frame rendered successfully
     SKIPPED = 1,  // Frame intentionally skipped (e.g., swapchain recreation)
     ERROR = 2     // Fatal failure
 };

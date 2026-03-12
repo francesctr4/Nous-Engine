@@ -49,15 +49,14 @@ public:
 	NOUS_ENGINE_API void DestroyMaterial(ResourceMaterial* material);
 
 	[[nodiscard]] NOUS_ENGINE_API bool CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices,
-									  uint32_t indexCount, const uint32_t* indices,
-									  ResourceMesh* outGeometry);
+									  uint32_t indexCount, const uint32_t* indices, ResourceMesh* outGeometry);
 	NOUS_ENGINE_API void DestroyGeometry(ResourceMesh* geometry);
 
 	[[nodiscard]] NOUS_ENGINE_API bool CreateShader(ResourceShader* shader);
 	NOUS_ENGINE_API void DestroyShader(ResourceShader* shader);
 
 	// ---------------------------------------------------------------------
-	// Picking
+	// Mouse Picking
 	// ---------------------------------------------------------------------
 	/**
 	 * @brief Render the scene to a pick buffer and read back the object ID
