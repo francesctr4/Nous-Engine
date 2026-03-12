@@ -392,23 +392,36 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     std::vector<VkVertexInputAttributeDescription> attribs;
     attribs.reserve(sortedInputs.size());
 
-    // TODO: IMPORTANT REFACTOR HERE, STRIDE SHOULDN'T DEPEND ON REFLECTION BECAUSE WE ARE COMPILING IN OPTIMIZED MODE
-    // TODO: AND WE MIGHT BE DISCARDING UNUSED INPUTS. CONSIDER USING HARDCODE VERTEX3D STRIDE OR SET SHADER OPTIMIZATION TO ZERO.
-    uint32_t stride = 0;
+    // Attribute offsets are derived from the actual Vertex3D layout, not from
+    // reflection. When optimization is enabled the compiler may strip unused
+    // vertex inputs, so a running-sum of reflected sizes would give wrong offsets
+    // for any attribute that follows a stripped one (e.g. texCoord at location 2
+    // would land at offset 12 instead of 24 if color at location 1 was removed).
+    // The stride must also always equal sizeof(Vertex3D) regardless of how many
+    // inputs the shader actually reads.
+    static constexpr uint32_t k_Vertex3DOffsets[] = {
+        static_cast<uint32_t>(offsetof(Vertex3D, position)),   // location 0
+        static_cast<uint32_t>(offsetof(Vertex3D, color)),      // location 1
+        static_cast<uint32_t>(offsetof(Vertex3D, texCoord)),   // location 2
+    };
+    static constexpr uint32_t k_Vertex3DLocationCount =
+        sizeof(k_Vertex3DOffsets) / sizeof(k_Vertex3DOffsets[0]);
+
     for (const ReflectedInput& in : sortedInputs)
     {
         VkVertexInputAttributeDescription attrib{};
         attrib.location = in.location;
         attrib.binding  = 0;
         attrib.format   = DataTypeToVkFormat(in.ToDataType());
-        attrib.offset   = stride;
+        attrib.offset   = (in.location < k_Vertex3DLocationCount)
+                            ? k_Vertex3DOffsets[in.location]
+                            : 0u;
         attribs.push_back(attrib);
-        stride += in.sizeBytes;
     }
 
     VkVertexInputBindingDescription bindingDesc{};
     bindingDesc.binding   = 0;
-    bindingDesc.stride    = stride; // sizeof(Vertex3D);
+    bindingDesc.stride    = sizeof(Vertex3D);
     bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     // ── 6. Build VkGraphicsPipeline ───────────────────────────────────────────

@@ -19,7 +19,7 @@ enum class ShaderOptimizationLevel : std::int8_t
 
 struct ShaderCompilerConfig
 {
-    ShaderOptimizationLevel optimization = ShaderOptimizationLevel::Zero;
+    ShaderOptimizationLevel optimization = ShaderOptimizationLevel::Performance;
     bool generateDebugInfo = true;
     bool warningsAsErrors = false;
     std::string entryPoint = "main";
