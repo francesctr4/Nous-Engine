@@ -49,7 +49,14 @@ void SceneViewport::Draw()
 {
     if (*p_open)
     {
-        if (ImGui::Begin(title, p_open))
+        // Prevent a floating window from being moved by ImGui while the gizmo is active.
+        // Window movement is processed inside Begin(), so we must pass NoMove *to* Begin()
+        // using the gizmo state from the previous frame (static bool persists across calls).
+        static bool s_GizmoWasActive = false;
+        const ImGuiWindowFlags windowFlags = s_GizmoWasActive ? ImGuiWindowFlags_NoMove
+                                                               : ImGuiWindowFlags_None;
+
+        if (ImGui::Begin(title, p_open, windowFlags))
         {
             External->camera->sceneViewportHovered = ImGui::IsWindowHovered();
 
@@ -122,6 +129,7 @@ void SceneViewport::Draw()
             const bool gizmoVisible = External->scene->selectedGameObject != nullptr &&
                                       External->scene->selectedGameObject->HasComponent<CTransform>();
             const bool gizmoBlocking = gizmoVisible && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
+            s_GizmoWasActive = gizmoBlocking;
 
             // Handle mouse picking (click to select/deselect objects)
             if (!gizmoBlocking)
