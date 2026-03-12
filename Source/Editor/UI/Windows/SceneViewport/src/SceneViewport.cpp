@@ -116,16 +116,22 @@ void SceneViewport::Draw()
             // Draw the gizmo on top of the scene image
             DrawGizmo(squarePos, squareSize);
 
+            // ImGuizmo::IsOver() retains stale state from the previous frame when no
+            // gizmo was drawn (e.g. nothing selected). Only consult it when a gizmo is
+            // actually visible this frame, otherwise picking would be incorrectly blocked.
+            const bool gizmoVisible = External->scene->selectedGameObject != nullptr &&
+                                      External->scene->selectedGameObject->HasComponent<CTransform>();
+            const bool gizmoBlocking = gizmoVisible && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
+
             // Handle mouse picking (click to select/deselect objects)
-            // Only when gizmo is not in use, to avoid conflict with gizmo interaction
-            if (!ImGuizmo::IsOver() && !ImGuizmo::IsUsing())
+            if (!gizmoBlocking)
             {
                 HandleMousePicking(squarePos, squareSize, uvMin, uvMax);
             }
 
             // Drag-and-drop target — only place the InvisibleButton when the gizmo
             // is not being hovered/used, so it doesn't steal mouse input from ImGuizmo
-            if (!ImGuizmo::IsOver() && !ImGuizmo::IsUsing())
+            if (!gizmoBlocking)
             {
                 ImGui::SetCursorScreenPos(squarePos);
                 ImGui::InvisibleButton("DropTarget", squareSize);
