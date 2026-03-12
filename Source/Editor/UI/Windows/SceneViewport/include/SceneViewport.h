@@ -36,7 +36,7 @@ public:
 
 private:
 
-    bool IsValidASCII(const std::string& str);
+    static bool IsValidASCII(const std::string& str);
 
     void HandleGizmoInput();
     void HandleMousePicking(const ImVec2& viewportPos, const ImVec2& viewportSize,

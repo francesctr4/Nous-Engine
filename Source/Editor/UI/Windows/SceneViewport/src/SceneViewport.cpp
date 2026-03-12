@@ -391,7 +391,7 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
 // Utility function to check if a string contains only valid ASCII characters.
 bool SceneViewport::IsValidASCII(const std::string& str)
 {
-    for (auto c : str)
+    for (const auto c : str)
     {
         if (static_cast<unsigned char>(c) > 127)
         {

@@ -247,6 +247,16 @@ uint32_t RendererFrontend::PickObjectAt(int32_t pixelX, int32_t pixelY,
     return mBackend->PickObjectAt(pixelX, pixelY, projection, view, geometries);
 }
 
+bool RendererFrontend::SetOutlinedGeometries(
+	const std::vector<GeometryRenderData>& selectedGeometries,
+	const OutlineSettings &outlineSettings) const
+{
+	if (!mBackend || selectedGeometries.empty())
+		return false;
+
+	//return mBackend->SetOutlinedObjects(selectedGeometries, outlineSettings);
+}
+
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)
 {
     mEditorOverlay = overlay;

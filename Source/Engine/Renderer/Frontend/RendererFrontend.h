@@ -72,6 +72,27 @@ public:
 										  const std::vector<GeometryRenderData>& geometries);
 
 	// ---------------------------------------------------------------------
+	// Object Outlining
+	// ---------------------------------------------------------------------
+	/**
+	 * @brief Sets the list of objects that should be rendered with an outline
+	 *        effect during the next frame.
+	 *
+	 * This function is typically used by the editor or selection system to
+	 * visually highlight selected objects. The renderer will apply the outline
+	 * effect when rendering the scene, usually by performing an additional
+	 * stencil-based rendering pass.
+	 *
+	 * Passing an empty list clears the current outline selection.
+	 *
+	 * @param selectedGeometries Vector of geometries that should be outlined.
+	 * @param outlineSettings Outline settings used for the outline effect.
+	 */
+	NOUS_ENGINE_API bool SetOutlinedGeometries(
+		const std::vector<GeometryRenderData>& selectedGeometries,
+		const OutlineSettings& outlineSettings = OutlineSettings{}) const;
+
+	// ---------------------------------------------------------------------
 	// Accessors
 	// ---------------------------------------------------------------------
 	NOUS_ENGINE_API void SetBackendType(RendererBackendType backendType) noexcept;

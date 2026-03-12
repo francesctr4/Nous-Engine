@@ -71,6 +71,15 @@ struct RenderPacket
     std::vector<GeometryRenderData> geometries;
 };
 
+struct OutlineSettings
+{
+    OutlineSettings() : color(1.f, 0.5f, 0.f, 1.f), width(1.03f), depthAware(true) {}
+
+    glm::vec4 color;
+    float width;
+    bool depthAware;
+};
+
 // -----------------------------------------------------------------------------
 // Backend shader interface
 // -----------------------------------------------------------------------------
