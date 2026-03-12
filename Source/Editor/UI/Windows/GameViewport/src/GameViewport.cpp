@@ -37,44 +37,47 @@ void GameViewport::Draw()
             // Draw gray background
             drawList->AddRectFilled(squarePos, squareEnd, IM_COL32(100, 100, 100, 255));
 
-            // Calculate aspect ratios and UV coordinates
-            float textureWidth = 1920.0f;
-            float textureHeight = 1080.0f;
-
-            float textureAspect = textureWidth / textureHeight;
-            float viewportAspect = squareSize.x / squareSize.y;
-
-            ImVec2 uvMin(0.0f, 0.0f);
-            ImVec2 uvMax(1.0f, 1.0f);
-
-            if (viewportAspect < textureAspect)
+            if (squareSize.x > 0.0f && squareSize.y > 0.0f)
             {
-                // Viewport is narrower: crop left/right
-                float cropFactor = textureAspect / viewportAspect;
-                uvMin.x = 0.5f - 0.5f / cropFactor;
-                uvMax.x = 0.5f + 0.5f / cropFactor;
+                // Calculate aspect ratios and UV coordinates
+                float textureWidth = 1920.0f;
+                float textureHeight = 1080.0f;
+
+                float textureAspect = textureWidth / textureHeight;
+                float viewportAspect = squareSize.x / squareSize.y;
+
+                ImVec2 uvMin(0.0f, 0.0f);
+                ImVec2 uvMax(1.0f, 1.0f);
+
+                if (viewportAspect < textureAspect)
+                {
+                    // Viewport is narrower: crop left/right
+                    float cropFactor = textureAspect / viewportAspect;
+                    uvMin.x = 0.5f - 0.5f / cropFactor;
+                    uvMax.x = 0.5f + 0.5f / cropFactor;
+                }
+                else if (viewportAspect > textureAspect)
+                {
+                    // Viewport is wider: crop top/bottom
+                    float cropFactor = viewportAspect / textureAspect;
+                    uvMin.y = 0.5f - 0.5f / cropFactor;
+                    uvMax.y = 0.5f + 0.5f / cropFactor;
+                }
+
+                // Position the image at the start of the content region and render
+                ImGui::SetCursorPos(contentMin); // Position relative to window's content area
+
+                VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+
+                ImGui::Image(
+                        static_cast<ImTextureID>(
+                                NOUS_ImGuiVulkanResources::GetViewportTexture(
+                                        vkContext->imGuiResources.m_GameViewportDescriptorSets[vkContext->imageIndex])),
+                        squareSize, uvMin, uvMax);
+
+                // Draw white border on top
+                drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
             }
-            else if (viewportAspect > textureAspect)
-            {
-                // Viewport is wider: crop top/bottom
-                float cropFactor = viewportAspect / textureAspect;
-                uvMin.y = 0.5f - 0.5f / cropFactor;
-                uvMax.y = 0.5f + 0.5f / cropFactor;
-            }
-
-            // Position the image at the start of the content region and render
-            ImGui::SetCursorPos(contentMin); // Position relative to window's content area
-
-            VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
-
-            ImGui::Image(
-                    static_cast<ImTextureID>(
-                            NOUS_ImGuiVulkanResources::GetViewportTexture(
-                                    vkContext->imGuiResources.m_GameViewportDescriptorSets[vkContext->imageIndex])),
-                    squareSize, uvMin, uvMax);
-
-            // Draw white border on top
-            drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
         }
         ImGui::End();
     }

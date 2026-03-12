@@ -79,111 +79,114 @@ void SceneViewport::Draw()
             // Draw gray background
             drawList->AddRectFilled(squarePos, squareEnd, IM_COL32(100, 100, 100, 255));
 
-            // Calculate aspect ratios and UV coordinates
-            VulkanContext* vkCtx = VulkanBackend::GetVulkanContext();
-            float textureWidth  = static_cast<float>(vkCtx->framebufferWidth);
-            float textureHeight = static_cast<float>(vkCtx->framebufferHeight);
-
-            float textureAspect = textureWidth / textureHeight;
-            float viewportAspect = squareSize.x / squareSize.y;
-
-            ImVec2 uvMin(0.0f, 0.0f);
-            ImVec2 uvMax(1.0f, 1.0f);
-
-            if (viewportAspect < textureAspect)
-            {
-                // Viewport is narrower: crop left/right
-                float cropFactor = textureAspect / viewportAspect;
-                uvMin.x = 0.5f - 0.5f / cropFactor;
-                uvMax.x = 0.5f + 0.5f / cropFactor;
-            }
-            else if (viewportAspect > textureAspect)
-            {
-                // Viewport is wider: crop top/bottom
-                float cropFactor = viewportAspect / textureAspect;
-                uvMin.y = 0.5f - 0.5f / cropFactor;
-                uvMax.y = 0.5f + 0.5f / cropFactor;
-            }
-
-            // Position the image at the start of the content region and render
-            ImGui::SetCursorPos(contentMin); // Position relative to window's content area
-
             if (squareSize.x > 0.0f && squareSize.y > 0.0f)
             {
+                // Calculate aspect ratios and UV coordinates
+                VulkanContext* vkCtx = VulkanBackend::GetVulkanContext();
+                float textureWidth  = static_cast<float>(vkCtx->framebufferWidth);
+                float textureHeight = static_cast<float>(vkCtx->framebufferHeight);
+
+                float textureAspect  = textureWidth / textureHeight;
+                float viewportAspect = squareSize.x / squareSize.y;
+
+                ImVec2 uvMin(0.0f, 0.0f);
+                ImVec2 uvMax(1.0f, 1.0f);
+
+                if (viewportAspect < textureAspect)
+                {
+                    // Viewport is narrower: crop left/right
+                    float cropFactor = textureAspect / viewportAspect;
+                    uvMin.x = 0.5f - 0.5f / cropFactor;
+                    uvMax.x = 0.5f + 0.5f / cropFactor;
+                }
+                else if (viewportAspect > textureAspect)
+                {
+                    // Viewport is wider: crop top/bottom
+                    float cropFactor = viewportAspect / textureAspect;
+                    uvMin.y = 0.5f - 0.5f / cropFactor;
+                    uvMax.y = 0.5f + 0.5f / cropFactor;
+                }
+
+                // Position the image at the start of the content region and render
+                ImGui::SetCursorPos(contentMin);
                 ImGui::Image(
                         static_cast<ImTextureID>(
                                 NOUS_ImGuiVulkanResources::GetViewportTexture(
                                         vkCtx->imGuiResources.m_ViewportDescriptorSets[vkCtx->imageIndex])),
                         squareSize, uvMin, uvMax);
-            }
 
-            // Draw white border on top
-            drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
+                // Draw white border on top
+                drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
 
-            // Draw the gizmo on top of the scene image
-            DrawGizmo(squarePos, squareSize);
+                // Draw the gizmo on top of the scene image
+                DrawGizmo(squarePos, squareSize);
 
-            // ImGuizmo::IsOver() retains stale state from the previous frame when no
-            // gizmo was drawn (e.g. nothing selected). Only consult it when a gizmo is
-            // actually visible this frame, otherwise picking would be incorrectly blocked.
-            const bool gizmoVisible = External->scene->selectedGameObject != nullptr &&
-                                      External->scene->selectedGameObject->HasComponent<CTransform>();
-            const bool gizmoBlocking = gizmoVisible && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
-            s_GizmoWasActive = gizmoBlocking;
+                // ImGuizmo::IsOver() retains stale state from the previous frame when no
+                // gizmo was drawn (e.g. nothing selected). Only consult it when a gizmo is
+                // actually visible this frame, otherwise picking would be incorrectly blocked.
+                const bool gizmoVisible = External->scene->selectedGameObject != nullptr &&
+                                          External->scene->selectedGameObject->HasComponent<CTransform>();
+                const bool gizmoBlocking = gizmoVisible && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
+                s_GizmoWasActive = gizmoBlocking;
 
-            // Handle mouse picking (click to select/deselect objects)
-            if (!gizmoBlocking)
-            {
-                HandleMousePicking(squarePos, squareSize, uvMin, uvMax);
-            }
-
-            // Drag-and-drop target — only place the InvisibleButton when the gizmo
-            // is not being hovered/used, so it doesn't steal mouse input from ImGuizmo
-            if (!gizmoBlocking)
-            {
-                ImGui::SetCursorScreenPos(squarePos);
-                ImGui::InvisibleButton("DropTarget", squareSize);
-
-                if (ImGui::BeginDragDropTarget())
+                // Handle mouse picking (click to select/deselect objects)
+                if (!gizmoBlocking)
                 {
-                    const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS");
-
-                    if (payload != NULL)
-                    {
-                        const char* payload_data = (const char*)payload->Data;
-                        std::vector<std::string> filePaths;
-
-                        while (*payload_data)
-                        {
-                            std::string path(payload_data);
-
-                            if (!path.empty() && IsValidASCII(path))
-                            {
-                                filePaths.push_back(path);
-                            }
-
-                            payload_data += path.length() + 1;
-                        }
-
-                        for (const auto& path : filePaths)
-                        {
-                            ImGui::Text("Dropped file: %s", path.c_str());
-
-                            if (path.find(".nous") != std::string::npos)
-                            {
-                                External->scene->LoadScene(path);
-                                continue;
-                            }
-
-                            External->jobSystem->SubmitJob([path]()
-                                {
-                                    External->resourceManager->CreateResource(path);
-                                }, "Create Resource");
-                        }
-                    }
-
-                    ImGui::EndDragDropTarget();
+                    HandleMousePicking(squarePos, squareSize, uvMin, uvMax);
                 }
+
+                // Drag-and-drop target — only place the InvisibleButton when the gizmo
+                // is not being hovered/used, so it doesn't steal mouse input from ImGuizmo
+                if (!gizmoBlocking)
+                {
+                    ImGui::SetCursorScreenPos(squarePos);
+                    ImGui::InvisibleButton("DropTarget", squareSize);
+
+                    if (ImGui::BeginDragDropTarget())
+                    {
+                        const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS");
+
+                        if (payload != NULL)
+                        {
+                            const char* payload_data = (const char*)payload->Data;
+                            std::vector<std::string> filePaths;
+
+                            while (*payload_data)
+                            {
+                                std::string path(payload_data);
+
+                                if (!path.empty() && IsValidASCII(path))
+                                {
+                                    filePaths.push_back(path);
+                                }
+
+                                payload_data += path.length() + 1;
+                            }
+
+                            for (const auto& path : filePaths)
+                            {
+                                ImGui::Text("Dropped file: %s", path.c_str());
+
+                                if (path.find(".nous") != std::string::npos)
+                                {
+                                    External->scene->LoadScene(path);
+                                    continue;
+                                }
+
+                                External->jobSystem->SubmitJob([path]()
+                                    {
+                                        External->resourceManager->CreateResource(path);
+                                    }, "Create Resource");
+                            }
+                        }
+
+                        ImGui::EndDragDropTarget();
+                    }
+                }
+            }
+            else
+            {
+                s_GizmoWasActive = false;
             }
         }
         ImGui::End();
