@@ -1565,7 +1565,11 @@ bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
     // Draw the selected mesh at its original scale. The stencil-write pipeline writes
     // stencil=1 for every visible pixel (depth test ON, colour write OFF).
 
-    NOUS_VulkanShader::BindStencilWritePipeline(commandBuffer->handle, vs);
+    if (settings.depthAware)
+        NOUS_VulkanShader::BindStencilWritePipeline(commandBuffer->handle, vs);
+    else
+        NOUS_VulkanShader::BindStencilWriteNoDepthPipeline(commandBuffer->handle, vs);
+
     NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
         vkContext->imageIndex, &globalUBO, sizeof(globalUBO));
 
@@ -1612,7 +1616,10 @@ bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
     // The outline-draw pipeline uses stencil NOTEQUAL(1), so only the border ring
     // between the original silhouette and the expanded shell is coloured.
 
-    NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
+    if (settings.depthAware)
+        NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
+    else
+        NOUS_VulkanShader::BindOutlineNoDepthPipeline(commandBuffer->handle, vs);
 
     for (const auto& renderData : outlinedGeometries)
     {

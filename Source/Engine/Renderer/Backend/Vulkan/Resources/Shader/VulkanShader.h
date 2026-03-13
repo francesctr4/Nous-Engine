@@ -47,8 +47,10 @@ struct VulkanShader : public IBackendShader
     // ── Pipeline ──────────────────────────────────────────────────────────────
     std::vector<VulkanShaderStage>     stages;
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts; // indexed by set number
-    VulkanPipeline                     pipeline;             // Main / outline-draw pipeline
-    VulkanPipeline                     stencilWritePipeline; // Stencil-write pass (outline only; handle is VK_NULL_HANDLE if unused)
+    VulkanPipeline                     pipeline;                    // Main / outline-draw pipeline (depth-aware)
+    VulkanPipeline                     stencilWritePipeline;        // Stencil-write pass — depth-aware  (outline only)
+    VulkanPipeline                     outlineNoDepthPipeline;      // Outline-draw pass  — depth OFF    (outline only)
+    VulkanPipeline                     stencilWriteNoDepthPipeline; // Stencil-write pass — depth OFF    (outline only)
     VulkanContext*                     vkContext = nullptr;
 
     // ── Global (set=0) resources ──────────────────────────────────────────────
@@ -94,8 +96,14 @@ namespace NOUS_VulkanShader
     /** @brief Bind the main VkPipeline (outline-draw or regular). */
     void BindPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs);
 
-    /** @brief Bind the stencil-write pipeline (outline shaders only). */
+    /** @brief Bind the stencil-write pipeline — depth-aware (outline shaders only). */
     void BindStencilWritePipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs);
+
+    /** @brief Bind the outline-draw pipeline — depth OFF (outline shaders only). */
+    void BindOutlineNoDepthPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs);
+
+    /** @brief Bind the stencil-write pipeline — depth OFF (outline shaders only). */
+    void BindStencilWriteNoDepthPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs);
 
     /**
      * @brief Upload `data` (size bytes) to the global UBO for `imageIndex`,
