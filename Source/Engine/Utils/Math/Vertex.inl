@@ -7,13 +7,15 @@
 
 struct Vertex3D
 {
-    glm::vec3 position;   // location 0
-    glm::vec3 normal;     // location 1  — per-face / UV-split normal (used for lighting)
-    glm::vec3 color;      // location 2
-    glm::vec2 texCoord;   // location 3
-    glm::vec3 smoothNormal; // location 4 — position-welded smooth normal (used for outlining)
+    glm::vec3 position;     // location 0
+    glm::vec3 normal;       // location 1 — per-face / UV-split normal (lighting)
+    glm::vec3 color;        // location 2
+    glm::vec2 texCoord;     // location 3 — UV0: albedo, normal map, metallic/roughness, emissive
+    glm::vec3 smoothNormal; // location 4 — position-welded smooth normal (outline extrusion)
+    glm::vec4 tangent;      // location 5 — xyz: tangent direction, w: bitangent handedness sign (±1) for TBN
+    glm::vec2 texCoord2;    // location 6 — UV1: lightmap / baked AO
 
-    static const uint16_t ATTRIBUTE_COUNT = 5;
+    static const uint16_t ATTRIBUTE_COUNT = 7;
 
     bool operator==(const Vertex3D& other) const
     {
@@ -21,7 +23,9 @@ struct Vertex3D
                normal == other.normal &&
                color == other.color &&
                texCoord == other.texCoord &&
-               smoothNormal == other.smoothNormal;
+               smoothNormal == other.smoothNormal &&
+               tangent == other.tangent &&
+               texCoord2 == other.texCoord2;
     }
 };
 

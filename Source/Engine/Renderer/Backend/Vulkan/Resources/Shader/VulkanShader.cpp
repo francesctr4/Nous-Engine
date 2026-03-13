@@ -406,6 +406,8 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
         static_cast<uint32_t>(offsetof(Vertex3D, color)),        // location 2
         static_cast<uint32_t>(offsetof(Vertex3D, texCoord)),     // location 3
         static_cast<uint32_t>(offsetof(Vertex3D, smoothNormal)), // location 4
+        static_cast<uint32_t>(offsetof(Vertex3D, tangent)),      // location 5
+        static_cast<uint32_t>(offsetof(Vertex3D, texCoord2)),    // location 6
     };
     static constexpr uint32_t k_Vertex3DLocationCount =
         sizeof(k_Vertex3DOffsets) / sizeof(k_Vertex3DOffsets[0]);

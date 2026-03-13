@@ -22,7 +22,7 @@ constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MAIN;
 int main(int argc, char** argv)
 {
     // Specify the amount of memory available for the project
-    MemoryManager::InitializeMemory(MiB(20));
+    MemoryManager::InitializeMemory(MiB(50));
 
     NOUS_Multithreading::RegisterMainThread();
 

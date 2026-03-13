@@ -245,6 +245,32 @@ void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh)
 
         vertex.smoothNormal = { 0.0f, 0.0f, 0.0f }; // computed below
 
+        // Tangent (vec4: xyz = tangent direction, w = bitangent handedness sign)
+        // Assimp computes both tangent and bitangent via aiProcess_CalcTangentSpace.
+        // We store only the sign of the bitangent so the shader can reconstruct it
+        // with cross(N, T) * w, which correctly handles mirrored-UV meshes.
+        if (mesh->HasTangentsAndBitangents())
+        {
+            const glm::vec3 t = { mesh->mTangents[i].x,    mesh->mTangents[i].y,    mesh->mTangents[i].z };
+            const glm::vec3 b = { mesh->mBitangents[i].x,  mesh->mBitangents[i].y,  mesh->mBitangents[i].z };
+            const float sign  = (glm::dot(glm::cross(vertex.normal, t), b) < 0.0f) ? -1.0f : 1.0f;
+            vertex.tangent    = glm::vec4(t, sign);
+        }
+        else
+        {
+            vertex.tangent = { 1.0f, 0.0f, 0.0f, 1.0f }; // fallback: world X axis, positive handedness
+        }
+
+        // UV1 — second texture coordinate set (lightmap / baked AO)
+        if (mesh->HasTextureCoords(1))
+        {
+            vertex.texCoord2 = { mesh->mTextureCoords[1][i].x, mesh->mTextureCoords[1][i].y };
+        }
+        else
+        {
+            vertex.texCoord2 = { 0.0f, 0.0f };
+        }
+
         resMesh->vertices.emplace_back(vertex);
     }
 
