@@ -14,7 +14,6 @@ function(copy_assets)
     # Ensure destination exists
     file(MAKE_DIRECTORY "${ASSETS_BIN_DIR}")
 
-    # Optional: stage only specific subfolders (recommended)
     set(_ASSET_SUBDIRS
             Fonts
             Materials

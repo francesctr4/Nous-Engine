@@ -9,6 +9,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -159,6 +160,18 @@ static bool RunProcessCaptureLive(const std::wstring& commandLine, DWORD& outExi
 
 #endif // _WIN32
 
+// Returns the directory containing the running executable (no trailing separator).
+static std::filesystem::path GetExeDir()
+{
+#ifdef _WIN32
+    char buf[MAX_PATH];
+    GetModuleFileNameA(nullptr, buf, MAX_PATH);
+    return std::filesystem::path(buf).parent_path();
+#else
+    return std::filesystem::canonical("/proc/self/exe").parent_path();
+#endif
+}
+
 ScriptManager::ScriptManager() : m_libraryHandle(nullptr), m_scriptRegistry(nullptr)
 {
     ScriptBindings::InitializeBindings(api);
@@ -236,11 +249,12 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     UnloadScriptLibrary();
 
 #ifdef _WIN32
+    const std::wstring batPath = (GetExeDir() / "Scripts" / "RebuildScripts.bat").wstring();
     std::wstring cmd;
 #ifdef _DEBUG
-    cmd = L"Scripts\\RebuildScripts.bat Debug";
+    cmd = batPath + L" Debug";
 #else
-    cmd = L"Scripts\\RebuildScripts.bat Release";
+    cmd = batPath + L" Release";
 #endif
 
     DWORD exitCode = 0;
@@ -361,7 +375,7 @@ void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
 
 bool ScriptManager::GenerateScript(const std::string& className)
 {
-    const std::string& templatePath = "Scripts/ScriptTemplate.inl";
+    const std::string templatePath = (GetExeDir() / "Scripts" / "ScriptTemplate.inl").string();
     const std::string& outputPath = "Assets/Scripts/" + className + ".cpp";
 
     // Read the template file

@@ -12,6 +12,10 @@ public:
 
     virtual ~IScript() = default;
 
+    // Must be called instead of delete to ensure deallocation happens in the
+    // same DLL heap that allocated this instance (avoids cross-DLL heap mismatch).
+    virtual void Destroy() { delete this; }
+
     // Called once when the script is first attached/loaded
     virtual void Awake() = 0;
 

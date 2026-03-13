@@ -34,8 +34,10 @@ ModuleScene::ModuleScene(Application* app) : Module(app), scripts(MemoryTag::SCR
 	gameCamera = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM);
 
-	// Load the script library
-	if (!scriptManager->LoadScriptLibrary("Scripts/Scripts.dll")) {
+	// Load the script library — path is exe-relative so it works regardless of working directory
+	// SDL3's SDL_GetBasePath() returns a const char* managed internally by SDL — do NOT free it.
+	const std::string scriptsDllPath = (std::filesystem::path(SDL_GetBasePath()) / "Scripts" / "Scripts.dll").string();
+	if (!scriptManager->LoadScriptLibrary(scriptsDllPath)) {
 		NOUS_ERROR("Failed to load script library on startup");
 	}
 
@@ -390,11 +392,9 @@ void ModuleScene::RecompileScripts()
 
 
 void ModuleScene::CleanupScripts() {
-	// Call cleanup on all scripts first
 	for (auto& script : scripts) {
 		if (script) {
-			// Note: If your IScript has a cleanup/destructor method, call it here
-			delete script;
+			script->Destroy(); // dealloc in the DLL that allocated it
 		}
 	}
 	scripts.clear();
