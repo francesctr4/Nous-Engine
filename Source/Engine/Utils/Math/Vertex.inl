@@ -7,19 +7,21 @@
 
 struct Vertex3D
 {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec3 color;
-    glm::vec2 texCoord;
+    glm::vec3 position;   // location 0
+    glm::vec3 normal;     // location 1  — per-face / UV-split normal (used for lighting)
+    glm::vec3 color;      // location 2
+    glm::vec2 texCoord;   // location 3
+    glm::vec3 smoothNormal; // location 4 — position-welded smooth normal (used for outlining)
 
-    static const uint16_t ATTRIBUTE_COUNT = 4;
+    static const uint16_t ATTRIBUTE_COUNT = 5;
 
     bool operator==(const Vertex3D& other) const
     {
         return position == other.position &&
                normal == other.normal &&
                color == other.color &&
-               texCoord == other.texCoord;
+               texCoord == other.texCoord &&
+               smoothNormal == other.smoothNormal;
     }
 };
 

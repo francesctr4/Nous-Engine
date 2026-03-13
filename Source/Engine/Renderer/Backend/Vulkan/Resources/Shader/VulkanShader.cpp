@@ -401,10 +401,11 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     // The stride must also always equal sizeof(Vertex3D) regardless of how many
     // inputs the shader actually reads.
     static constexpr uint32_t k_Vertex3DOffsets[] = {
-        static_cast<uint32_t>(offsetof(Vertex3D, position)),   // location 0
-        static_cast<uint32_t>(offsetof(Vertex3D, normal)),     // location 1
-        static_cast<uint32_t>(offsetof(Vertex3D, color)),      // location 2
-        static_cast<uint32_t>(offsetof(Vertex3D, texCoord)),   // location 3
+        static_cast<uint32_t>(offsetof(Vertex3D, position)),     // location 0
+        static_cast<uint32_t>(offsetof(Vertex3D, normal)),       // location 1
+        static_cast<uint32_t>(offsetof(Vertex3D, color)),        // location 2
+        static_cast<uint32_t>(offsetof(Vertex3D, texCoord)),     // location 3
+        static_cast<uint32_t>(offsetof(Vertex3D, smoothNormal)), // location 4
     };
     static constexpr uint32_t k_Vertex3DLocationCount =
         sizeof(k_Vertex3DOffsets) / sizeof(k_Vertex3DOffsets[0]);

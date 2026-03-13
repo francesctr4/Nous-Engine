@@ -1,6 +1,8 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
 #include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
 
+#include <map>
+
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
@@ -188,6 +190,9 @@ void ProcessNode(aiNode* node, const aiScene* scene, Resource*& outMesh)
 
 void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh)
 {
+    ResourceMesh* resMesh = down_cast<ResourceMesh*>(outMesh);
+    const size_t startIdx = resMesh->vertices.size();
+
     // Vertices
     for (uint32 i = 0; i < mesh->mNumVertices; ++i)
     {
@@ -238,7 +243,43 @@ void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh)
             vertex.texCoord = { 0.0f, 0.0f };
         }
 
-        down_cast<ResourceMesh*>(outMesh)->vertices.emplace_back(vertex);
+        vertex.smoothNormal = { 0.0f, 0.0f, 0.0f }; // computed below
+
+        resMesh->vertices.emplace_back(vertex);
+    }
+
+    // Compute welded smooth normals ─────────────────────────────────────────
+    // Assimp splits vertices at UV seams, giving each split copy a slightly
+    // different normal even after GenSmoothNormals. For the inverted-hull
+    // outline pass this causes gaps and spikes because adjacent split vertices
+    // extrude in different directions.
+    // Fix: group vertices by exact world position and average their normals.
+    // Every split copy at the same position then extrudes identically.
+    {
+        struct Vec3Less
+        {
+            bool operator()(const glm::vec3& a, const glm::vec3& b) const
+            {
+                if (a.x != b.x) return a.x < b.x;
+                if (a.y != b.y) return a.y < b.y;
+                return a.z < b.z;
+            }
+        };
+
+        std::map<glm::vec3, std::pair<glm::vec3, uint32_t>, Vec3Less> accum;
+
+        for (size_t i = startIdx; i < resMesh->vertices.size(); ++i)
+        {
+            auto& [sum, cnt] = accum[resMesh->vertices[i].position];
+            sum += resMesh->vertices[i].normal;
+            ++cnt;
+        }
+
+        for (size_t i = startIdx; i < resMesh->vertices.size(); ++i)
+        {
+            const auto& [sum, cnt] = accum[resMesh->vertices[i].position];
+            resMesh->vertices[i].smoothNormal = glm::normalize(sum / static_cast<float>(cnt));
+        }
     }
 
     // Indices
