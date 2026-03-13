@@ -201,6 +201,14 @@ void ProcessMesh(aiMesh* mesh, const aiScene* scene, Resource*& outMesh)
             mesh->mVertices[i].z
         };
 
+        // Normal
+        vertex.normal =
+        {
+            mesh->mNormals[i].x,
+            mesh->mNormals[i].y,
+            mesh->mNormals[i].z
+        };
+
         // Color
         if (mesh->HasVertexColors(0))
         {

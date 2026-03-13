@@ -8,14 +8,16 @@
 struct Vertex3D
 {
     glm::vec3 position;
+    glm::vec3 normal;
     glm::vec3 color;
     glm::vec2 texCoord;
 
-    static const uint16_t ATTRIBUTE_COUNT = 3;
+    static const uint16_t ATTRIBUTE_COUNT = 4;
 
     bool operator==(const Vertex3D& other) const
     {
         return position == other.position &&
+               normal == other.normal &&
                color == other.color &&
                texCoord == other.texCoord;
     }

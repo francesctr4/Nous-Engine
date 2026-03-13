@@ -1072,7 +1072,7 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
     // The game shader uses the same GLSL/layout so slots are acquired in sync.
     if (vkContext->builtInMaterialShader && vkContext->builtInMaterialShader->internalData)
     {
-        VulkanShader* vs = static_cast<VulkanShader*>(vkContext->builtInMaterialShader->internalData);
+        auto* vs = down_cast<VulkanShader*>(vkContext->builtInMaterialShader->internalData);
         uint32_t instanceID = 0;
         if (!NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vs, &instanceID))
         {
@@ -1084,7 +1084,7 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
         // Acquire the matching slot in the game shader as well.
         if (vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
         {
-            VulkanShader* vsGame = static_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
+            auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
             uint32_t gameID = 0;
             NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vsGame, &gameID);
             // gameID should match instanceID since both pools start empty and are
@@ -1142,7 +1142,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     //bool isReupload = false;
     bool isReupload = geometry->internalID != INVALID_ID;
 
-    VulkanGeometryData oldRange;
+    VulkanGeometryData oldRange{};
     VulkanGeometryData* internalData = nullptr;
 
     if (isReupload)
@@ -1203,8 +1203,8 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
         internalData->indexCount = indexCount;
         internalData->indexSize = sizeof(uint32) * indexCount;
 
-        std::lock_guard<std::mutex> idxLock(vkContext->indexBufferMutex);
-        if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectIndexBuffer,
+        std::lock_guard idxLock(vkContext->indexBufferMutex);
+        if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, nullptr, queue, &vkContext->objectIndexBuffer,
             &internalData->indexBufferOffset, internalData->indexSize, indices))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateGeometry() failed to upload to the index buffer!");
@@ -1260,13 +1260,13 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
         // Free index data, if applicable
         if (internalData->indexSize > 0)
         {
-            std::lock_guard<std::mutex> idxLock(vkContext->indexBufferMutex);
+            std::lock_guard idxLock(vkContext->indexBufferMutex);
             NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectIndexBuffer, internalData->indexBufferOffset, internalData->indexSize);
         }
 
         // Clean up data.
         {
-            std::lock_guard<std::mutex> geoLock(vkContext->geometriesMutex);
+            std::lock_guard geoLock(vkContext->geometriesMutex);
             MemoryManager::ZeroMemory(internalData, sizeof(VulkanGeometryData));
             internalData->ID = INVALID_ID;
             internalData->generation = INVALID_ID;
@@ -1294,7 +1294,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to sceneRenderpass.");
 
         // Game renderpass clone — owns its own VulkanShader (not in ResourceManager).
-        ResourceShader* gameShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+        auto* gameShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
         gameShader->stagesData = shader->stagesData;
         gameShader->reflection = shader->reflection;
 
@@ -1316,7 +1316,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     //    Internal clone — not tracked by ResourceManager. Stored as builtInPickShader.
     if (assetPath.find("BuiltIn.PickShader") != std::string::npos)
     {
-        ResourceShader* pickShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+        auto* pickShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
         pickShader->stagesData = shader->stagesData;
         pickShader->reflection = shader->reflection;
 
@@ -1357,7 +1357,7 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     if (shader == vkContext->builtInMaterialShader) vkContext->builtInMaterialShader = nullptr;
     if (shader == vkContext->builtInOutlineShader)  vkContext->builtInOutlineShader  = nullptr;
 
-    VulkanShader* vs = static_cast<VulkanShader*>(shader->internalData);
+    auto* vs = down_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
     shader->internalData = nullptr;
 }
@@ -1386,7 +1386,7 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
     // --- Allocate single-use command buffer ---
-    VulkanCommandBuffer cmdBuffer;
+    VulkanCommandBuffer cmdBuffer{};
     VkCommandPool pool = vkContext->device.mainGraphicsCommandPool;
     VkQueue queue = vkContext->device.graphicsQueue;
     NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(vkContext, pool, &cmdBuffer);
@@ -1517,7 +1517,7 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
     void* mapped = NOUS_VulkanBuffer::LockMemory(vkContext, &stagingBuffer, 0, 4, 0);
     if (mapped)
     {
-        const uint8* pixel = static_cast<const uint8*>(mapped);
+        const auto* pixel = static_cast<const uint8*>(mapped);
         objectID = static_cast<uint32>(pixel[0])
                  | (static_cast<uint32>(pixel[1]) << 8)
                  | (static_cast<uint32>(pixel[2]) << 16)
@@ -1575,8 +1575,21 @@ bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
 
         VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
 
-        vkCmdPushConstants(commandBuffer->handle, vs->pipeline.pipelineLayout,
-            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &renderData.model);
+        // Pass 1: draw the mesh at its ORIGINAL position (thickness=0) to mark the
+        // stencil buffer at the real silhouette — NOT the expanded shell.
+        struct OutlinePushConstant
+        {
+            glm::mat4 model;
+            float thickness;
+        } pc{.model = renderData.model, .thickness = 0.0f};
+
+        vkCmdPushConstants(
+    commandBuffer->handle,
+    vs->pipeline.pipelineLayout,
+    VK_SHADER_STAGE_VERTEX_BIT,
+    0,
+    sizeof(OutlinePushConstant),
+    &pc);
 
         VkDeviceSize offset = bufferData->vertexBufferOffset;
         vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1,
@@ -1595,8 +1608,9 @@ bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
     }
 
     // ── Pass 2: Outline-draw ──────────────────────────────────────────────────
-    // Draw each mesh again with a uniformly scaled model matrix. The outline-draw
-    // pipeline uses stencil NOTEQUAL(1), so only the border ring is coloured.
+    // Draw each mesh again with normal extrusion (thickness = settings.width).
+    // The outline-draw pipeline uses stencil NOTEQUAL(1), so only the border ring
+    // between the original silhouette and the expanded shell is coloured.
 
     NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
 
@@ -1606,11 +1620,19 @@ bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
 
         VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
 
-        // Scale uniformly around the model's own origin.
-        const glm::mat4 scaledModel = glm::scale(renderData.model, glm::vec3(settings.width));
+        struct OutlinePushConstant
+        {
+            glm::mat4 model;
+            float thickness;
+        } pc{.model = renderData.model, .thickness = settings.width};
 
-        vkCmdPushConstants(commandBuffer->handle, vs->pipeline.pipelineLayout,
-            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &scaledModel);
+        vkCmdPushConstants(
+    commandBuffer->handle,
+    vs->pipeline.pipelineLayout,
+    VK_SHADER_STAGE_VERTEX_BIT,
+    0,
+    sizeof(OutlinePushConstant),
+    &pc);
 
         VkDeviceSize offset = bufferData->vertexBufferOffset;
         vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1,
