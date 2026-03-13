@@ -61,6 +61,7 @@ bool ModuleRenderer3D::Awake()
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
+	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
 
 	// TEMP SHADERS (DEBUG)
 	//App->resourceManager->CreateResource("Assets/Shaders/temp_MockShader.glsl");

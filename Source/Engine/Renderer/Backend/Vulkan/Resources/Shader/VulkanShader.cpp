@@ -299,7 +299,7 @@ void VulkanShader::Destroy()
 
 bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* renderpass,
                                 ResourceShader* shader, bool disableBlending,
-                                bool createOutlinePipelines)
+                                bool createOutlinePipelines, bool useLineTopology)
 {
     if (!shader || shader->stagesData.empty())
     {
@@ -539,7 +539,9 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     inputAssemblyCI.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssemblyCI.topology               = hasTessellation
                                                 ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
-                                                : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+                                                : (useLineTopology
+                                                    ? VK_PRIMITIVE_TOPOLOGY_LINE_LIST
+                                                    : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     inputAssemblyCI.primitiveRestartEnable = VK_FALSE;
 
     VkPipelineTessellationStateCreateInfo tessCI{};

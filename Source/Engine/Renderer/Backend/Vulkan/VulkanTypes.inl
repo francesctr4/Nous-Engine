@@ -282,6 +282,11 @@ struct VulkanContext
     class ResourceShader* builtInGameShader     = nullptr;
     class ResourceShader* builtInPickShader     = nullptr;
     class ResourceShader* builtInOutlineShader  = nullptr; // Scene renderpass only; ResourceManager-owned
+    class ResourceShader* builtInGridShader     = nullptr; // Scene renderpass only; ResourceManager-owned
+
+    // ── Editor grid resources ──────────────────────────────────────────────────
+    VulkanBuffer gridVertexBuffer{};
+    uint32       gridVertexCount = 0;
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;

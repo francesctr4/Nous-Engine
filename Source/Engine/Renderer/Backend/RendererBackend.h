@@ -73,6 +73,10 @@ public:
 								const std::vector<GeometryRenderData>& outlinedGeometries,
 								const OutlineSettings& settings);
 
+	// ─────────────────────────────── Editor Grid ─────────────────────────────
+	bool DrawGrid(RenderpassType renderpassID,
+	              const glm::mat4& projection, const glm::mat4& view);
+
 public:
 
 	uint64_t mFrameNumber;

@@ -197,6 +197,15 @@ struct IRendererBackend
                                         const glm::mat4& view,
                                         const std::vector<GeometryRenderData>& outlinedGeometries,
                                         const OutlineSettings& settings) = 0;
+
+    // ─────────────────────────────── Editor Grid ─────────────────────────────
+    /**
+     * @brief Render a reference grid at the world origin on the XZ plane.
+     *        Only draws when renderpassID == SCENE (editor viewport).
+     */
+    virtual bool DrawGrid(RenderpassType renderpassID,
+                          const glm::mat4& projection,
+                          const glm::mat4& view) = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

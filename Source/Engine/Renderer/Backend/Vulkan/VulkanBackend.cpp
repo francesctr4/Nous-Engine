@@ -29,6 +29,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Resources/Shader/VulkanShader.h"
 
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
+#include "Engine/Utils/Math/Vertex.inl"
 #include <Engine/Core/Application.h>
 #include <Engine/Core/EventSystem/EventSystem.h>
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
@@ -282,6 +283,69 @@ bool VulkanBackend::Initialize()
         vkContext->geometries[i].generation = INVALID_ID;
     }
 
+    // ── Create editor grid vertex buffer ──────────────────────────────────────
+    {
+        constexpr int halfExtent = 500;
+        constexpr int step       = 10;
+
+        const glm::vec3 colorAxisX(0.70f, 0.15f, 0.15f); // X axis: red
+        const glm::vec3 colorAxisZ(0.15f, 0.15f, 0.70f); // Z axis: blue
+        const glm::vec3 colorMinor(0.30f, 0.30f, 0.30f); // regular lines: grey
+
+        const float fHalf = static_cast<float>(halfExtent);
+
+        // Layout: axis lines first (4 vertices), then all minor lines.
+        // This lets DrawGrid issue two draw calls with different line widths.
+        std::vector<Vertex3D> gridVerts;
+        gridVerts.reserve(static_cast<size_t>((halfExtent * 2 / step + 1) * 4));
+
+        // ── Axis lines (always first, 4 vertices) ─────────────────────────────
+        { Vertex3D v{}; v.position = {-fHalf, 0.0f, 0.0f}; v.color = colorAxisX; gridVerts.push_back(v); }
+        { Vertex3D v{}; v.position = { fHalf, 0.0f, 0.0f}; v.color = colorAxisX; gridVerts.push_back(v); }
+        { Vertex3D v{}; v.position = {0.0f, 0.0f, -fHalf}; v.color = colorAxisZ; gridVerts.push_back(v); }
+        { Vertex3D v{}; v.position = {0.0f, 0.0f,  fHalf}; v.color = colorAxisZ; gridVerts.push_back(v); }
+
+        // ── Minor lines (skip i==0, those are the axes) ───────────────────────
+        for (int i = -halfExtent; i <= halfExtent; i += step)
+        {
+            if (i == 0) continue;
+
+            const float fi = static_cast<float>(i);
+
+            Vertex3D v1{}, v2{};
+            v1.position = {-fHalf, 0.0f, fi};
+            v2.position = { fHalf, 0.0f, fi};
+            v1.color = v2.color = colorMinor;
+            gridVerts.push_back(v1);
+            gridVerts.push_back(v2);
+
+            Vertex3D v3{}, v4{};
+            v3.position = {fi, 0.0f, -fHalf};
+            v4.position = {fi, 0.0f,  fHalf};
+            v3.color = v4.color = colorMinor;
+            gridVerts.push_back(v3);
+            gridVerts.push_back(v4);
+        }
+
+        vkContext->gridVertexCount = static_cast<uint32>(gridVerts.size());
+        const uint64 bufferSize    = gridVerts.size() * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufferSize,
+            VkBufferUsageFlagBits(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->gridVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create grid vertex buffer.");
+        }
+        else
+        {
+            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->gridVertexBuffer,
+                0, bufferSize, 0, gridVerts.data());
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Grid vertex buffer created (%u vertices).",
+                vkContext->gridVertexCount);
+        }
+    }
+
 	return ret;
 }
 
@@ -330,6 +394,19 @@ void VulkanBackend::Shutdown() noexcept
     if (vkContext->builtInOutlineShader)
         NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInOutlineShader pointer still set — ResourceManager may not have cleared resources.");
     vkContext->builtInOutlineShader = nullptr;
+
+    // builtInGridShader is managed by the ResourceManager (like builtInMaterialShader).
+    if (vkContext->builtInGridShader)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInGridShader pointer still set — ResourceManager may not have cleared resources.");
+    vkContext->builtInGridShader = nullptr;
+
+    // Destroy the editor grid vertex buffer (not managed by ResourceManager).
+    if (vkContext->gridVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->gridVertexBuffer);
+        vkContext->gridVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->gridVertexCount = 0;
+    }
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
@@ -1344,6 +1421,20 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         return true;
     }
 
+    // ── BuiltIn.GridShader → scene renderpass (editor grid overlay) ───────────
+    //    Uses LINE_LIST topology. No game renderpass clone needed.
+    if (assetPath.find("BuiltIn.GridShader") != std::string::npos)
+    {
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
+                                        /*disableBlending=*/false,
+                                        /*createOutlinePipelines=*/false,
+                                        /*useLineTopology=*/true))
+            return false;
+        vkContext->builtInGridShader = shader;
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.GridShader assigned to sceneRenderpass (LINE_LIST).");
+        return true;
+    }
+
     // ── Default: scene renderpass for user-defined shaders ────────────────────
     return NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader);
 }
@@ -1356,6 +1447,7 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     // Null out vkContext built-in pointer so Shutdown() doesn't touch freed memory.
     if (shader == vkContext->builtInMaterialShader) vkContext->builtInMaterialShader = nullptr;
     if (shader == vkContext->builtInOutlineShader)  vkContext->builtInOutlineShader  = nullptr;
+    if (shader == vkContext->builtInGridShader)     vkContext->builtInGridShader     = nullptr;
 
     auto* vs = down_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
@@ -1536,6 +1628,52 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
 VulkanContext* VulkanBackend::GetVulkanContext()
 {
     return vkContext;
+}
+
+bool VulkanBackend::DrawGrid(RenderpassType renderpassID,
+                             const glm::mat4& projection, const glm::mat4& view)
+{
+    // Grid is scene-viewport only.
+    if (renderpassID != RenderpassType::SCENE)
+        return true;
+
+    ResourceShader* rGridShader = vkContext->builtInGridShader;
+    if (!rGridShader || !rGridShader->internalData)
+        return true; // Grid shader not loaded yet — skip gracefully.
+
+    if (vkContext->gridVertexBuffer.handle == VK_NULL_HANDLE || vkContext->gridVertexCount == 0)
+        return true;
+
+    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    VulkanShader* vs = static_cast<VulkanShader*>(rGridShader->internalData);
+
+    // Bind the grid pipeline and upload view/projection to the grid shader's global UBO.
+    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+
+    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+        vkContext->imageIndex, &ubo, sizeof(ubo));
+
+    // Push identity model matrix (grid lives at the world origin).
+    const glm::mat4 identity(1.0f);
+    vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &identity);
+
+    // Bind the grid vertex buffer (axis lines first, minor lines after).
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->gridVertexBuffer.handle, &offset);
+
+    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
+
+    // ── Axis lines (first 4 vertices: X axis + Z axis) ────────────────────────
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 3.0f : 1.0f);
+    vkCmdDraw(cmdBuf->handle, 4, 1, 0, 0);
+
+    // ── Minor grid lines (remaining vertices) ─────────────────────────────────
+    vkCmdSetLineWidth(cmdBuf->handle, 1.0f);
+    vkCmdDraw(cmdBuf->handle, vkContext->gridVertexCount - 4, 1, 4, 0);
+
+    return true;
 }
 
 bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,

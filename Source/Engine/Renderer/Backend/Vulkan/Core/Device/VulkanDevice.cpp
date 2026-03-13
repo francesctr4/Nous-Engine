@@ -433,6 +433,7 @@ bool NOUS_VulkanDevice::CreateLogicalDevice(VulkanContext* vkContext)
     // Enable optional pipeline features if the physical device supports them.
     deviceFeatures.geometryShader    = vkContext->device.features.geometryShader;
     deviceFeatures.tessellationShader = vkContext->device.features.tessellationShader;
+    deviceFeatures.wideLines          = vkContext->device.features.wideLines;
 
     VkDeviceCreateInfo deviceCreateInfo{};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

@@ -116,6 +116,12 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 				packet->editorCamera->GetPos(),
 				glm::vec4(1.0f), 0);
 
+		// Draw the editor reference grid at the world origin (XZ plane).
+		success &= mBackend->DrawGrid(
+				sceneRenderpass,
+				packet->editorCamera->GetProjectionMatrix(),
+				packet->editorCamera->GetViewMatrix());
+
 		for (auto& geometry : packet->geometries)
 		{
             success &= mBackend->DrawGeometry(sceneRenderpass, geometry);

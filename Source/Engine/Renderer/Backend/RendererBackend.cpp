@@ -194,3 +194,9 @@ bool RendererBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
 {
     return mBackendInterface && mBackendInterface->DrawOutlinedGeometries(renderpassID, projection, view, outlinedGeometries, settings);
 }
+
+bool RendererBackend::DrawGrid(RenderpassType renderpassID,
+                               const glm::mat4& projection, const glm::mat4& view)
+{
+    return mBackendInterface && mBackendInterface->DrawGrid(renderpassID, projection, view);
+}

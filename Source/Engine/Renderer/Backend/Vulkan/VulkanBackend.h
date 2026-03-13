@@ -68,6 +68,9 @@ public:
 								const std::vector<GeometryRenderData>& outlinedGeometries,
 								const OutlineSettings& settings) override;
 
+	bool DrawGrid(RenderpassType renderpassID,
+	              const glm::mat4& projection, const glm::mat4& view) override;
+
 	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 
 	void ProcessPendingSubmissions();
