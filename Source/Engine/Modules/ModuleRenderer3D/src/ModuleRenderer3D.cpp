@@ -63,8 +63,8 @@ bool ModuleRenderer3D::Awake()
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
 
 	// TEMP SHADERS (DEBUG)
-	App->resourceManager->CreateResource("Assets/Shaders/temp_MockShader.glsl");
-	App->resourceManager->CreateResource("Assets/Shaders/temp_ShaderWithAllStages.glsl");
+	//App->resourceManager->CreateResource("Assets/Shaders/temp_MockShader.glsl");
+	//App->resourceManager->CreateResource("Assets/Shaders/temp_ShaderWithAllStages.glsl");
 
 	return true;
 }
