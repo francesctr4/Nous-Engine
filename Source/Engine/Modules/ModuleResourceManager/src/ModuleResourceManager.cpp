@@ -39,15 +39,12 @@ bool ModuleResourceManager::Awake()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	if (!NOUS_FileManager::Exists("Library") ||
-		!NOUS_FileManager::Exists("Library/Shaders") ||
-		!NOUS_FileManager::Exists("Library/Meshes") ||
-		!NOUS_FileManager::Exists("Library/Materials") ||
-		!NOUS_FileManager::Exists("Library/Textures"))
-	{
-		EnsureLibraryDirectories();
-		ImportDirectory("Assets");
-	}
+	// Always ensure directories exist — idempotent, safe to call every startup.
+	EnsureLibraryDirectories();
+
+	// Always scan Assets/ on startup. ImportFile is a cheap no-op for assets
+	// whose library binary is already up-to-date (Case 3 timestamp check).
+	ImportDirectory("Assets");
 
 	return true;
 }
@@ -220,6 +217,26 @@ void ModuleResourceManager::OnEvent(const Event& event)
 	}
 }
 
+// Returns the effective modification time of a library output path.
+// Shader library "paths" are directories containing .spv files — Windows does
+// not reliably update a directory's own mtime when its contents change, so we
+// scan for the newest regular file inside it instead.
+static std::filesystem::file_time_type GetLibraryTime(const std::filesystem::path& libraryPath)
+{
+	namespace fs = std::filesystem;
+
+	if (fs::is_directory(libraryPath))
+	{
+		auto newest = fs::file_time_type::min();
+		for (const auto& entry : fs::directory_iterator(libraryPath))
+			if (fs::is_regular_file(entry))
+				newest = std::max(newest, fs::last_write_time(entry));
+		return newest;
+	}
+
+	return fs::last_write_time(libraryPath);
+}
+
 bool ModuleResourceManager::ImportFile(const std::string& path)
 {
 	NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Importing file: %s", __FUNCTION__, path.c_str());
@@ -371,48 +388,24 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 			}
 			else
 			{
-				// DONE
-				// CASE 3: The file is in "Assets\\" and HAS Meta File AND Library File
-				// Load the Library File
+				// CASE 3: The file is in "Assets\\" and HAS Meta File AND Library File.
+				// Compare filesystem timestamps: if the source asset is newer than the
+				// library binary, the binary is stale and must be regenerated.
 
-				// Here we finish importing the file, and we start creating the resource.
+				namespace fs = std::filesystem;
 
-				//CreateResource(metaFileData.assetsPath);
+				const fs::file_time_type assetTime   = fs::last_write_time(metaFileData.assetsPath);
+				const fs::file_time_type libraryTime = GetLibraryTime(metaFileData.libraryPath);
 
-				//if (!ResourceExists(metaFileData.uid))
-				//{
-				//	// Create New Resource Into Scene
-				//	Resource* resource = InstantiateResource(resourceType);
+				if (assetTime > libraryTime)
+				{
+					NOUS_INFO_C(CURRENT_CHANNEL,
+						"[ImportFile] '%s' modified since last import — regenerating library binary.",
+						metaFileData.name.c_str());
 
-				//	if (resource != nullptr)
-				//	{
-				//		resource->SetName(metaFileData.name);
-				//		resource->SetUID(metaFileData.uid);
-				//		resource->SetType(metaFileData.resourceType);
-				//		resource->SetAssetsPath(metaFileData.assetsPath);
-				//		resource->SetLibraryPath(metaFileData.libraryPath);
-				//	}
-				//	else
-				//	{
-				//		NOUS_ERROR("Import File ERROR: CASE 3 --> Failed to Instantiate Resource. Returned nullptr.");
-				//		return false;
-				//	}
-
-				//	// Manage inside: Loading in memory & increase reference count. 
-				//	// Manage inside: Retrieve resource name and assetspath from libraryfile.
-				//	ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource);
-
-				//	AddResource(metaFileData.uid, resource);
-
-				//	// Push to render packet
-				//	//External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
-				//}
-				//else
-				//{
-				//	// TODO
-				//	// Get Loaded Resource and Increase Reference Count
-				//	resources[metaFileData.uid]->IncreaseReferenceCount();
-				//}
+					ImporterManager::Import(metaFileData.resourceType, metaFileData);
+				}
+				// else: library is up to date — nothing to do.
 			}
 		}
 	}
