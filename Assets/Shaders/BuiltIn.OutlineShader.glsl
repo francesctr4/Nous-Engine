@@ -27,7 +27,16 @@ void main()
     mat3 normalMatrix = transpose(inverse(mat3(pushConstant.model)));
     vec3 worldNormal = normalize(normalMatrix * inNormal);
 
-    worldPos += worldNormal * pushConstant.outlineThickness;
+    // Scale thickness by the model's average axis scale so the outline width
+    // is proportional to the mesh's world-space size. Without this, a mesh
+    // scaled to 0.01 would show the same world-space extrusion as a mesh
+    // at scale 1.0, making the outline look enormous relative to the mesh.
+    float scaleX = length(vec3(pushConstant.model[0]));
+    float scaleY = length(vec3(pushConstant.model[1]));
+    float scaleZ = length(vec3(pushConstant.model[2]));
+    float modelScale = (scaleX + scaleY + scaleZ) / 3.0;
+
+    worldPos += worldNormal * pushConstant.outlineThickness * modelScale;
 
     gl_Position = globalUBO.projection * globalUBO.view * vec4(worldPos, 1.0);
 }
