@@ -8,6 +8,12 @@ cmake-build-*
 build
 /docs
 
+#ignore temp files
+console.log
+imgui.ini
+Library
+vc140.pdb
+
 #Ignore Claude Metadata
 .claude
 
