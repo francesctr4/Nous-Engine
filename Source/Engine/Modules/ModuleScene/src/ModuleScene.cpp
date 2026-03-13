@@ -54,7 +54,10 @@ ModuleScene::~ModuleScene()
     selectedGameObject = nullptr;
 
 	// Clean up scripts before destroying script manager
-	CleanupScripts();
+	{
+		std::lock_guard<std::mutex> lock(scriptsMutex);
+		CleanupScripts();
+	}
 
 	NOUS_DELETE(gameCamera, MemoryTag::CAMERA);
 	NOUS_DELETE(scriptManager, MemoryTag::SCRIPTING_SYSTEM);
@@ -67,10 +70,13 @@ bool ModuleScene::Awake()
 
 	gameCamera->SetPos(-4.61f, 100.0f, 718.32f);
 
-	for (auto& script : scripts)
 	{
-		if (script) {
-			script->Awake();
+		std::lock_guard<std::mutex> lock(scriptsMutex);
+		for (auto& script : scripts)
+		{
+			if (script) {
+				script->Awake();
+			}
 		}
 	}
 
@@ -81,10 +87,13 @@ bool ModuleScene::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	for (auto& script : scripts)
 	{
-		if (script) {
-			script->Start();
+		std::lock_guard<std::mutex> lock(scriptsMutex);
+		for (auto& script : scripts)
+		{
+			if (script) {
+				script->Start();
+			}
 		}
 	}
 
@@ -104,13 +113,16 @@ UpdateStatus ModuleScene::Update(float dt)
 	NOUS_TRACE("%s()", __FUNCTION__);
 
 	// Update only valid scripts
-	for (auto it = scripts.begin(); it != scripts.end(); ) {
-		if (*it) {
-			(*it)->Update(dt);
-			++it;
-		} else {
-			// Remove null scripts
-			it = scripts.erase(it);
+	{
+		std::lock_guard<std::mutex> lock(scriptsMutex);
+		for (auto it = scripts.begin(); it != scripts.end(); ) {
+			if (*it) {
+				(*it)->Update(dt);
+				++it;
+			} else {
+				// Remove null scripts
+				it = scripts.erase(it);
+			}
 		}
 	}
 
@@ -275,10 +287,13 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	for (auto& script : scripts)
 	{
-		if (script) {
-			script->LateUpdate(dt);
+		std::lock_guard<std::mutex> lock(scriptsMutex);
+		for (auto& script : scripts)
+		{
+			if (script) {
+				script->LateUpdate(dt);
+			}
 		}
 	}
 
@@ -289,7 +304,13 @@ bool ModuleScene::CleanUp()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	CleanupScripts();
+	// Wait for any in-flight jobs (e.g. hot-reload) before touching scripts
+	App->jobSystem->WaitForPendingJobs();
+
+	{
+		std::lock_guard<std::mutex> lock(scriptsMutex);
+		CleanupScripts();
+	}
 	scriptManager->UnloadScriptLibrary();
 
 	return true;
@@ -369,15 +390,19 @@ void ModuleScene::CreateScriptInstances() {
 
 void ModuleScene::RecompileScripts()
 {
-	// Clean up current scripts
-	CleanupScripts();
+	// Phase 1: destroy old scripts (lock protects against main-thread iteration)
+	{
+		std::lock_guard<std::mutex> lock(scriptsMutex);
+		CleanupScripts();
+	}
 
-	// Reload the script library
+	// Phase 2: rebuild DLL — lock is released so the main thread keeps rendering
+	// (scripts vector is empty, so Update/PostUpdate loops are harmless no-ops)
 	if (scriptManager->ReloadScriptLibrary("Scripts/Scripts.dll")) {
-		// Recreate script instances
+		// Phase 3: create and initialize new scripts under lock
+		std::lock_guard<std::mutex> lock(scriptsMutex);
 		CreateScriptInstances();
 
-		// Re-initialize scripts
 		for (auto &script: scripts) {
 			if (script) {
 				script->Awake();

@@ -5,6 +5,7 @@
 #include "Engine/EngineExport.h"
 #include <string>
 #include <vector>
+#include <mutex>
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
@@ -48,6 +49,7 @@ public:
 	// Scripting
 	ScriptManager* scriptManager;
 	NOUS_Vector<IScript*> scripts;
+	std::mutex scriptsMutex;
 
 	void CreateScriptInstances();
 	void RecompileScripts();
