@@ -298,7 +298,8 @@ void VulkanShader::Destroy()
 // ─────────────────────────────── Create ──────────────────────────────────────
 
 bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* renderpass,
-                                ResourceShader* shader, bool disableBlending)
+                                ResourceShader* shader, bool disableBlending,
+                                bool createOutlinePipelines)
 {
     if (!shader || shader->stagesData.empty())
     {
@@ -460,14 +461,38 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
 
     VkPipelineDepthStencilStateCreateInfo depthCI{};
     depthCI.sType            = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthCI.depthTestEnable  = VK_TRUE;
-    depthCI.depthWriteEnable = VK_TRUE;
-    depthCI.depthCompareOp   = VK_COMPARE_OP_LESS;
+
+    if (createOutlinePipelines)
+    {
+        // Outline-draw pipeline: depth test ON (respect scene depth), no depth write,
+        // stencil test NOTEQUAL(1) — only draw where the mesh was NOT marked in pass 1.
+        VkStencilOpState outlineStencil{};
+        outlineStencil.failOp      = VK_STENCIL_OP_KEEP;
+        outlineStencil.passOp      = VK_STENCIL_OP_KEEP;
+        outlineStencil.depthFailOp = VK_STENCIL_OP_KEEP;
+        outlineStencil.compareOp   = VK_COMPARE_OP_NOT_EQUAL;
+        outlineStencil.compareMask = 0xFF;
+        outlineStencil.writeMask   = 0x00;
+        outlineStencil.reference   = 1;
+
+        depthCI.depthTestEnable   = VK_TRUE;
+        depthCI.depthWriteEnable  = VK_FALSE;
+        depthCI.depthCompareOp    = VK_COMPARE_OP_LESS_OR_EQUAL;
+        depthCI.stencilTestEnable = VK_TRUE;
+        depthCI.front             = outlineStencil;
+        depthCI.back              = outlineStencil;
+    }
+    else
+    {
+        depthCI.depthTestEnable  = VK_TRUE;
+        depthCI.depthWriteEnable = VK_TRUE;
+        depthCI.depthCompareOp   = VK_COMPARE_OP_LESS;
+    }
 
     VkPipelineColorBlendAttachmentState blendAttach{};
     blendAttach.colorWriteMask    = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    blendAttach.blendEnable           = disableBlending ? VK_FALSE : VK_TRUE;
+    blendAttach.blendEnable           = (disableBlending || createOutlinePipelines) ? VK_FALSE : VK_TRUE;
     blendAttach.srcColorBlendFactor   = VK_BLEND_FACTOR_SRC_ALPHA;
     blendAttach.dstColorBlendFactor   = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     blendAttach.colorBlendOp          = VK_BLEND_OP_ADD;
@@ -551,6 +576,62 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
         return false;
     }
 
+    // ── 6b. Stencil-write pipeline (outline shaders only) ─────────────────────
+    // When createOutlinePipelines is true, `pipeline` above is the outline-draw
+    // pipeline (stencil NOTEQUAL, no depth write, full color output).  We now create
+    // a second pipeline that only writes to the stencil buffer — used in the first
+    // outline pass to mark the mesh silhouette before the colour pass.
+    if (createOutlinePipelines)
+    {
+        // Reconfigure depth/stencil for stencil-write pass:
+        //   - Depth test ON (only mark visible pixels), depth write OFF
+        //   - Stencil: always pass, replace with reference=1
+        VkStencilOpState stencilWriteState{};
+        stencilWriteState.failOp      = VK_STENCIL_OP_KEEP;
+        stencilWriteState.passOp      = VK_STENCIL_OP_REPLACE;
+        stencilWriteState.depthFailOp = VK_STENCIL_OP_KEEP;
+        stencilWriteState.compareOp   = VK_COMPARE_OP_ALWAYS;
+        stencilWriteState.compareMask = 0xFF;
+        stencilWriteState.writeMask   = 0xFF;
+        stencilWriteState.reference   = 1;
+
+        VkPipelineDepthStencilStateCreateInfo stencilWriteDepthCI{};
+        stencilWriteDepthCI.sType             = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        stencilWriteDepthCI.depthTestEnable   = VK_TRUE;
+        stencilWriteDepthCI.depthWriteEnable  = VK_FALSE;
+        stencilWriteDepthCI.depthCompareOp    = VK_COMPARE_OP_LESS_OR_EQUAL;
+        stencilWriteDepthCI.stencilTestEnable = VK_TRUE;
+        stencilWriteDepthCI.front             = stencilWriteState;
+        stencilWriteDepthCI.back              = stencilWriteState;
+
+        // No colour output — this pass only marks the stencil buffer.
+        VkPipelineColorBlendAttachmentState stencilWriteBlendAttach{};
+        stencilWriteBlendAttach.colorWriteMask = 0;
+        stencilWriteBlendAttach.blendEnable    = VK_FALSE;
+
+        VkPipelineColorBlendStateCreateInfo stencilWriteBlendCI{};
+        stencilWriteBlendCI.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        stencilWriteBlendCI.attachmentCount = 1;
+        stencilWriteBlendCI.pAttachments    = &stencilWriteBlendAttach;
+
+        pipelineCI.pDepthStencilState = &stencilWriteDepthCI;
+        pipelineCI.pColorBlendState   = &stencilWriteBlendCI;
+        // Reuse the same layout — both pipelines share descriptors and push constants.
+        vs->stencilWritePipeline.pipelineLayout = VK_NULL_HANDLE; // owned by vs->pipeline
+
+        result = vkCreateGraphicsPipelines(dev, VK_NULL_HANDLE, 1,
+            &pipelineCI, vkContext->allocator, &vs->stencilWritePipeline.handle);
+
+        if (result != VK_SUCCESS)
+        {
+            NOUS_ERROR("[VulkanShader] Failed to create stencil-write pipeline (%d).", result);
+            Destroy(vkContext, vs);
+            return false;
+        }
+
+        NOUS_INFO("[VulkanShader] Outline stencil-write pipeline created.");
+    }
+
     // ── 7. Allocate descriptor resources driven by reflection ─────────────────
     if (!AllocateGlobalResources(vkContext, vs, refl))
     {
@@ -603,6 +684,12 @@ void NOUS_VulkanShader::Destroy(VulkanContext* vkContext, VulkanShader* vs)
     }
 
     // Pipeline and layout
+    // Stencil-write pipeline: shares pipelineLayout with main pipeline — only destroy handle.
+    if (vs->stencilWritePipeline.handle != VK_NULL_HANDLE)
+    {
+        vkDestroyPipeline(dev, vs->stencilWritePipeline.handle, allocator);
+        vs->stencilWritePipeline.handle = VK_NULL_HANDLE;
+    }
     if (vs->pipeline.handle != VK_NULL_HANDLE)
     {
         vkDestroyPipeline(dev, vs->pipeline.handle, allocator);
@@ -637,6 +724,12 @@ void NOUS_VulkanShader::Destroy(VulkanContext* vkContext, VulkanShader* vs)
 void NOUS_VulkanShader::BindPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs)
 {
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->pipeline.handle);
+}
+
+void NOUS_VulkanShader::BindStencilWritePipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs)
+{
+    if (vs->stencilWritePipeline.handle != VK_NULL_HANDLE)
+        vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->stencilWritePipeline.handle);
 }
 
 void NOUS_VulkanShader::UpdateGlobal(VulkanContext* vkContext, VkCommandBuffer cmdBuffer,

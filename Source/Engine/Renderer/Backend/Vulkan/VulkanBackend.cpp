@@ -14,6 +14,8 @@
 #include "Engine/Renderer/Backend/Vulkan/Resources/Image/VulkanImage.h"
 #include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <Engine/Core/FileSystem/FileSystem.h>
 
 #include <Engine/Core/MemoryManager/MemoryManager.h>
@@ -322,6 +324,12 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_DELETE(vkContext->builtInPickShader, MemoryTag::RESOURCE_SHADER);
         vkContext->builtInPickShader = nullptr;
     }
+
+    // builtInOutlineShader is managed by the ResourceManager (like builtInMaterialShader).
+    // ClearResources() → DestroyShader() releases its GPU resources before Shutdown().
+    if (vkContext->builtInOutlineShader)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInOutlineShader pointer still set — ResourceManager may not have cleared resources.");
+    vkContext->builtInOutlineShader = nullptr;
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
@@ -1324,6 +1332,18 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         return true;
     }
 
+    // ── BuiltIn.OutlineShader → scene renderpass only (editor view, not game) ──
+    //    The outline effect is an editor-only feature; no game renderpass clone needed.
+    if (assetPath.find("BuiltIn.OutlineShader") != std::string::npos)
+    {
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
+                                        /*disableBlending=*/false, /*createOutlinePipelines=*/true))
+            return false;
+        vkContext->builtInOutlineShader = shader;
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.OutlineShader assigned to sceneRenderpass.");
+        return true;
+    }
+
     // ── Default: scene renderpass for user-defined shaders ────────────────────
     return NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader);
 }
@@ -1335,6 +1355,7 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
 
     // Null out vkContext built-in pointer so Shutdown() doesn't touch freed memory.
     if (shader == vkContext->builtInMaterialShader) vkContext->builtInMaterialShader = nullptr;
+    if (shader == vkContext->builtInOutlineShader)  vkContext->builtInOutlineShader  = nullptr;
 
     VulkanShader* vs = static_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
@@ -1517,7 +1538,100 @@ VulkanContext* VulkanBackend::GetVulkanContext()
     return vkContext;
 }
 
-void VulkanBackend::ProcessPendingSubmissions() 
+bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
+                                            const glm::mat4& projection, const glm::mat4& view,
+                                            const std::vector<GeometryRenderData>& outlinedGeometries,
+                                            const OutlineSettings& settings)
+{
+    // Outline effect is scene-viewport only.
+    if (renderpassID != RenderpassType::SCENE)
+        return true;
+
+    if (outlinedGeometries.empty())
+        return true;
+
+    ResourceShader* rOutlineShader = vkContext->builtInOutlineShader;
+    if (!rOutlineShader || !rOutlineShader->internalData)
+        return true; // Outline shader not loaded yet — skip gracefully.
+
+    VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
+    VulkanShader* vs = static_cast<VulkanShader*>(rOutlineShader->internalData);
+
+    // Upload the outline global UBO: projection + view + outlineColor.
+    struct OutlineGlobalUBO { glm::mat4 projection; glm::mat4 view; glm::vec4 outlineColor; }
+        globalUBO{ projection, view, settings.color };
+
+    // ── Pass 1: Stencil-write ─────────────────────────────────────────────────
+    // Draw the selected mesh at its original scale. The stencil-write pipeline writes
+    // stencil=1 for every visible pixel (depth test ON, colour write OFF).
+
+    NOUS_VulkanShader::BindStencilWritePipeline(commandBuffer->handle, vs);
+    NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
+        vkContext->imageIndex, &globalUBO, sizeof(globalUBO));
+
+    for (const auto& renderData : outlinedGeometries)
+    {
+        if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID) continue;
+
+        VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
+
+        vkCmdPushConstants(commandBuffer->handle, vs->pipeline.pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &renderData.model);
+
+        VkDeviceSize offset = bufferData->vertexBufferOffset;
+        vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1,
+            &vkContext->objectVertexBuffer.handle, &offset);
+
+        if (bufferData->indexCount > 0)
+        {
+            vkCmdBindIndexBuffer(commandBuffer->handle, vkContext->objectIndexBuffer.handle,
+                bufferData->indexBufferOffset, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(commandBuffer->handle, bufferData->indexCount, 1, 0, 0, 0);
+        }
+        else
+        {
+            vkCmdDraw(commandBuffer->handle, bufferData->vertexCount, 1, 0, 0);
+        }
+    }
+
+    // ── Pass 2: Outline-draw ──────────────────────────────────────────────────
+    // Draw each mesh again with a uniformly scaled model matrix. The outline-draw
+    // pipeline uses stencil NOTEQUAL(1), so only the border ring is coloured.
+
+    NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
+
+    for (const auto& renderData : outlinedGeometries)
+    {
+        if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID) continue;
+
+        VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
+
+        // Scale uniformly around the model's own origin.
+        const glm::mat4 scaledModel = glm::scale(renderData.model, glm::vec3(settings.width));
+
+        vkCmdPushConstants(commandBuffer->handle, vs->pipeline.pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &scaledModel);
+
+        VkDeviceSize offset = bufferData->vertexBufferOffset;
+        vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1,
+            &vkContext->objectVertexBuffer.handle, &offset);
+
+        if (bufferData->indexCount > 0)
+        {
+            vkCmdBindIndexBuffer(commandBuffer->handle, vkContext->objectIndexBuffer.handle,
+                bufferData->indexBufferOffset, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(commandBuffer->handle, bufferData->indexCount, 1, 0, 0, 0);
+        }
+        else
+        {
+            vkCmdDraw(commandBuffer->handle, bufferData->vertexCount, 1, 0, 0);
+        }
+    }
+
+    return true;
+}
+
+void VulkanBackend::ProcessPendingSubmissions()
 {
     std::unique_lock<std::mutex> lock(vkContext->submitQueueMutex);
 

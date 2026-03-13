@@ -47,7 +47,8 @@ struct VulkanShader : public IBackendShader
     // ── Pipeline ──────────────────────────────────────────────────────────────
     std::vector<VulkanShaderStage>     stages;
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts; // indexed by set number
-    VulkanPipeline                     pipeline;
+    VulkanPipeline                     pipeline;             // Main / outline-draw pipeline
+    VulkanPipeline                     stencilWritePipeline; // Stencil-write pass (outline only; handle is VK_NULL_HANDLE if unused)
     VulkanContext*                     vkContext = nullptr;
 
     // ── Global (set=0) resources ──────────────────────────────────────────────
@@ -77,17 +78,24 @@ namespace NOUS_VulkanShader
     /**
      * @brief Build all Vulkan resources from a ResourceShader that already holds
      *        compiled SPIR-V and reflection data.  Populates shader->internalData.
+     *
+     * @param createOutlinePipelines  When true, creates a second stencil-write pipeline
+     *        stored in VulkanShader::stencilWritePipeline.  Used for the outline shader.
      */
     bool Create(VulkanContext* vkContext, VulkanRenderpass* renderpass,
-                ResourceShader* shader, bool disableBlending = false);
+                ResourceShader* shader, bool disableBlending = false,
+                bool createOutlinePipelines = false);
 
     /** @brief Destroy all GPU resources held by vs and free the struct. */
     void Destroy(VulkanContext* vkContext, VulkanShader* vs);
 
     // ── Per-frame operations ──────────────────────────────────────────────────
 
-    /** @brief Bind the VkPipeline. */
+    /** @brief Bind the main VkPipeline (outline-draw or regular). */
     void BindPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs);
+
+    /** @brief Bind the stencil-write pipeline (outline shaders only). */
+    void BindStencilWritePipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs);
 
     /**
      * @brief Upload `data` (size bytes) to the global UBO for `imageIndex`,

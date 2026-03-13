@@ -67,6 +67,12 @@ public:
 						  const glm::mat4& projection, const glm::mat4& view,
 						  const std::vector<GeometryRenderData>& geometries);
 
+	// ─────────────────────────────── Outlining ───────────────────────────────
+	bool DrawOutlinedGeometries(RenderpassType renderpassID,
+								const glm::mat4& projection, const glm::mat4& view,
+								const std::vector<GeometryRenderData>& outlinedGeometries,
+								const OutlineSettings& settings);
+
 public:
 
 	uint64_t mFrameNumber;

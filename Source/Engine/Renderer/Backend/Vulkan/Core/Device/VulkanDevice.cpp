@@ -247,8 +247,10 @@ int32 NOUS_VulkanDevice::FindMemoryIndex(VkPhysicalDevice& physicalDevice, uint3
 
 VkFormat NOUS_VulkanDevice::FindDepthFormat(VkPhysicalDevice& physicalDevice)
 {
-    return FindSupportedFormat(physicalDevice, 
-        { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+    // Prefer formats that include a stencil component (required for stencil-buffer effects
+    // such as object outlining). Fall back to depth-only if no stencil format is available.
+    return FindSupportedFormat(physicalDevice,
+        { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT },
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }

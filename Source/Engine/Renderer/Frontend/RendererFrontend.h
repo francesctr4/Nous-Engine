@@ -90,7 +90,7 @@ public:
 	 */
 	NOUS_ENGINE_API bool SetOutlinedGeometries(
 		const std::vector<GeometryRenderData>& selectedGeometries,
-		const OutlineSettings& outlineSettings = OutlineSettings{}) const;
+		const OutlineSettings& outlineSettings = OutlineSettings{});
 
 	// ---------------------------------------------------------------------
 	// Accessors
@@ -117,6 +117,10 @@ private:
 	RendererBackendType mBackendType;
 
 	IEditorOverlay* mEditorOverlay;
+
+	// Outlined geometries — populated each frame by SetOutlinedGeometries().
+	std::vector<GeometryRenderData> mOutlinedGeometries;
+	OutlineSettings                 mOutlineSettings;
 
 };
 

@@ -186,6 +186,17 @@ struct IRendererBackend
     virtual uint32_t PickObjectAt(int32_t pixelX, int32_t pixelY,
                                   const glm::mat4& projection, const glm::mat4& view,
                                   const std::vector<GeometryRenderData>& geometries) = 0;
+
+    // ─────────────────────────────── Outlining ───────────────────────────────
+    /**
+     * @brief Render a stencil-based outline around the given geometries.
+     *        Only affects RenderpassType::SCENE (editor viewport).
+     */
+    virtual bool DrawOutlinedGeometries(RenderpassType renderpassID,
+                                        const glm::mat4& projection,
+                                        const glm::mat4& view,
+                                        const std::vector<GeometryRenderData>& outlinedGeometries,
+                                        const OutlineSettings& settings) = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

@@ -120,6 +120,17 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 		{
             success &= mBackend->DrawGeometry(sceneRenderpass, geometry);
 		}
+
+		// Stencil-based outline pass (scene viewport only).
+		if (!mOutlinedGeometries.empty())
+		{
+			success &= mBackend->DrawOutlinedGeometries(
+				sceneRenderpass,
+				packet->editorCamera->GetProjectionMatrix(),
+				packet->editorCamera->GetViewMatrix(),
+				mOutlinedGeometries,
+				mOutlineSettings);
+		}
 	});
 
 	// --- GAME PASS ---
@@ -249,12 +260,11 @@ uint32_t RendererFrontend::PickObjectAt(int32_t pixelX, int32_t pixelY,
 
 bool RendererFrontend::SetOutlinedGeometries(
 	const std::vector<GeometryRenderData>& selectedGeometries,
-	const OutlineSettings &outlineSettings) const
+	const OutlineSettings& outlineSettings)
 {
-	if (!mBackend || selectedGeometries.empty())
-		return false;
-
-	//return mBackend->SetOutlinedObjects(selectedGeometries, outlineSettings);
+	mOutlinedGeometries = selectedGeometries;
+	mOutlineSettings    = outlineSettings;
+	return true;
 }
 
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)

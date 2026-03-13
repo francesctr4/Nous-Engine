@@ -186,3 +186,11 @@ uint32_t RendererBackend::PickObjectAt(int32_t pixelX, int32_t pixelY,
 {
     return mBackendInterface ? mBackendInterface->PickObjectAt(pixelX, pixelY, projection, view, geometries) : 0;
 }
+
+bool RendererBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
+                                             const glm::mat4& projection, const glm::mat4& view,
+                                             const std::vector<GeometryRenderData>& outlinedGeometries,
+                                             const OutlineSettings& settings)
+{
+    return mBackendInterface && mBackendInterface->DrawOutlinedGeometries(renderpassID, projection, view, outlinedGeometries, settings);
+}

@@ -198,6 +198,14 @@ void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkCo
 	// Depth resources
 	vkContext->device.depthFormat = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
 
+	// Include the stencil aspect when the chosen depth format has a stencil component.
+	// Stencil-only formats (D32_SFLOAT) must NOT include VK_IMAGE_ASPECT_STENCIL_BIT.
+	const VkImageAspectFlags depthAspect =
+		(vkContext->device.depthFormat == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+		 vkContext->device.depthFormat == VK_FORMAT_D24_UNORM_S8_UINT)
+		? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)
+		: VK_IMAGE_ASPECT_DEPTH_BIT;
+
 	// Create depth image and its view.
 	NOUS_VulkanImage::CreateVulkanImage(
 		vkContext,
@@ -211,12 +219,12 @@ void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkCo
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		true,  // Create view
-		VK_IMAGE_ASPECT_DEPTH_BIT,  // Use VK_IMAGE_ASPECT_DEPTH_BIT | STENCIL if needed
+		depthAspect,
 		&vkContext->imGuiResources.m_ViewportDepthAttachment
 	);
 
 	// ------------------------------------------------------------------------------------------------- //
-	 
+
 	// Create depth image and its view.
 	NOUS_VulkanImage::CreateVulkanImage(
 		vkContext,
@@ -230,7 +238,7 @@ void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkCo
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		true,  // Create view
-		VK_IMAGE_ASPECT_DEPTH_BIT,  // Use VK_IMAGE_ASPECT_DEPTH_BIT | STENCIL if needed
+		depthAspect,
 		&vkContext->imGuiResources.m_GameViewportDepthAttachment
 	);
 }

@@ -281,6 +281,7 @@ struct VulkanContext
     class ResourceShader* builtInMaterialShader = nullptr;
     class ResourceShader* builtInGameShader     = nullptr;
     class ResourceShader* builtInPickShader     = nullptr;
+    class ResourceShader* builtInOutlineShader  = nullptr; // Scene renderpass only; ResourceManager-owned
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;

@@ -60,6 +60,7 @@ bool ModuleRenderer3D::Awake()
 	// This guarantees the shaders exist before any Start() call or rendering begins.
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
+	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
 
 	// TEMP SHADERS (DEBUG)
 	App->resourceManager->CreateResource("Assets/Shaders/temp_MockShader.glsl");
@@ -101,6 +102,21 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	packet.deltaTime = dt;
 	packet.editorCamera = App->camera->GetCamera();
 	packet.gameCamera  = App->scene->gameCamera;
+
+	// Populate the outline list from the currently selected GameObject.
+	{
+		std::vector<GeometryRenderData> outlinedGeometries;
+		if (App->scene->selectedGameObject && App->scene->selectedGameObject->HasComponent<CMesh>())
+		{
+			GeometryRenderData data{};
+			if (auto* t = App->scene->selectedGameObject->TryGetComponent<CTransform>())
+				data.model = t->worldMatrix;
+			if (auto* m = App->scene->selectedGameObject->TryGetComponent<CMesh>())
+				data.geometry = m->mesh;
+			outlinedGeometries.push_back(data);
+		}
+		mRendererFrontend->SetOutlinedGeometries(outlinedGeometries);
+	}
 
 	if (BuildRenderPacket(&packet) && !App->isMinimized)
 	{
