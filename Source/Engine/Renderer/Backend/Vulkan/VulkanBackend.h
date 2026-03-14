@@ -75,6 +75,11 @@ public:
 	                    const glm::mat4& projection,
 	                    const glm::mat4& view) override;
 
+	bool DrawBoundingBoxes(RenderpassType renderpassID,
+	                       const glm::mat4& projection,
+	                       const glm::mat4& view,
+	                       const std::vector<BoundingBoxData>& boxes) override;
+
 	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 
 	void ProcessPendingSubmissions();

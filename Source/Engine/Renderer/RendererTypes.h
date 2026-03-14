@@ -81,6 +81,26 @@ struct OutlineSettings
 };
 
 // -----------------------------------------------------------------------------
+// Bounding box data
+// -----------------------------------------------------------------------------
+/**
+ * @brief Transform and color for one bounding box draw call.
+ *
+ * The transform maps a unit cube (±0.5 on each axis) to the desired
+ * bounding box in world space:
+ *   - AABB: translate(worldCenter) * scale(worldExtents)  — no rotation
+ *   - OBB:  worldMatrix * translate(localCenter) * scale(localExtents)
+ */
+struct BoundingBoxData
+{
+    BoundingBoxData() : transform(1.0f), color(1.0f) {}
+    BoundingBoxData(const glm::mat4& t, const glm::vec4& c) : transform(t), color(c) {}
+
+    glm::mat4 transform;
+    glm::vec4 color;
+};
+
+// -----------------------------------------------------------------------------
 // Backend shader interface
 // -----------------------------------------------------------------------------
 /**
@@ -216,6 +236,19 @@ struct IRendererBackend
     virtual bool DrawBackground(RenderpassType renderpassID,
                                 const glm::mat4& projection,
                                 const glm::mat4& view) = 0;
+
+    // ─────────────────────────────── Bounding Boxes ──────────────────────────
+    /**
+     * @brief Render wireframe bounding boxes (AABB and/or OBB) for debugging.
+     *        Only draws when renderpassID == SCENE (editor viewport).
+     *
+     * Each BoundingBoxData carries a pre-computed transform that maps the
+     * unit cube vertex buffer to the desired bounding box in world space.
+     */
+    virtual bool DrawBoundingBoxes(RenderpassType renderpassID,
+                                   const glm::mat4& projection,
+                                   const glm::mat4& view,
+                                   const std::vector<BoundingBoxData>& boxes) = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

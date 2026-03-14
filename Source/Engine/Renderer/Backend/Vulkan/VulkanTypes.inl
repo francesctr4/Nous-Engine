@@ -292,6 +292,13 @@ struct VulkanContext
     VulkanBuffer gridVertexBuffer{};
     uint32       gridVertexCount = 0;
 
+    // ── Bounding box shader ────────────────────────────────────────────────────
+    class ResourceShader* builtInBoundingBoxShader = nullptr; // Scene renderpass; ResourceManager-owned
+
+    // ── Bounding box unit-cube wireframe (static, shared for all boxes) ────────
+    VulkanBuffer boundingBoxVertexBuffer{};
+    uint32       boundingBoxVertexCount = 0;
+
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
     std::mutex geometriesMutex;     // guards slot scan + ID assignment in CreateGeometry/DestroyGeometry

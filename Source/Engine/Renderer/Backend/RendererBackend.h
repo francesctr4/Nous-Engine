@@ -81,6 +81,11 @@ public:
 	bool DrawBackground(RenderpassType renderpassID,
 							   const glm::mat4& projection, const glm::mat4& view);
 
+	// ─────────────────────────────── Bounding Boxes ──────────────────────────
+	bool DrawBoundingBoxes(RenderpassType renderpassID,
+	                       const glm::mat4& projection, const glm::mat4& view,
+	                       const std::vector<BoundingBoxData>& boxes);
+
 public:
 
 	uint64_t mFrameNumber;

@@ -1,6 +1,9 @@
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 
 #include "Engine/Core/Application.h"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
@@ -17,6 +20,7 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/LogChannel.h"
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 
 
 #ifdef _PROFILING
@@ -63,6 +67,7 @@ bool ModuleRenderer3D::Awake()
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
+	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
 
 	// TEMP SHADERS (DEBUG)
 	//App->resourceManager->CreateResource("Assets/Shaders/temp_MockShader.glsl");
@@ -118,6 +123,78 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			outlinedGeometries.push_back(data);
 		}
 		mRendererFrontend->SetOutlinedGeometries(outlinedGeometries);
+	}
+
+	// Compute AABB and OBB bounding boxes for all GameObjects with meshes.
+	{
+		std::vector<BoundingBoxData> boundingBoxes;
+
+		if (App->scene->activeScene)
+		{
+		const auto gameObjects = App->scene->activeScene->GetGameObjectsSnapshot();
+
+		for (const auto& goPtr : gameObjects)
+		{
+			auto* meshComp = goPtr->TryGetComponent<CMesh>();
+			auto* transform = goPtr->TryGetComponent<CTransform>();
+			if (!meshComp || !meshComp->mesh || !transform)
+				continue;
+
+			const auto& vertices = meshComp->mesh->vertices;
+			if (vertices.empty())
+				continue;
+
+			// Compute local AABB from mesh vertices.
+			glm::vec3 localMin = vertices[0].position;
+			glm::vec3 localMax = vertices[0].position;
+			for (const auto& v : vertices)
+			{
+				localMin = glm::min(localMin, v.position);
+				localMax = glm::max(localMax, v.position);
+			}
+
+			const glm::vec3 localCenter  = (localMin + localMax) * 0.5f;
+			const glm::vec3 localExtents = localMax - localMin;
+
+			// ── OBB: apply full world transform (includes rotation) ────────────
+			// transform = worldMatrix * translate(localCenter) * scale(localExtents)
+			const glm::mat4& worldMatrix = transform->worldMatrix;
+			glm::mat4 obbTransform = worldMatrix
+				* glm::translate(glm::mat4(1.0f), localCenter)
+				* glm::scale(glm::mat4(1.0f), localExtents);
+			boundingBoxes.emplace_back(obbTransform, glm::vec4(0.3f, 0.6f, 1.0f, 1.0f)); // blue
+
+			// ── AABB: compute world-space axis-aligned bounds ──────────────────
+			// Transform all 8 local corners through the world matrix, then take min/max.
+			const glm::vec3 corners[8] = {
+				glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMin.z, 1.0f)),
+				glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMin.z, 1.0f)),
+				glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMin.z, 1.0f)),
+				glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMin.z, 1.0f)),
+				glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMax.z, 1.0f)),
+				glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMax.z, 1.0f)),
+				glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMax.z, 1.0f)),
+				glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMax.z, 1.0f)),
+			};
+
+			glm::vec3 worldMin = corners[0];
+			glm::vec3 worldMax = corners[0];
+			for (const auto& c : corners)
+			{
+				worldMin = glm::min(worldMin, c);
+				worldMax = glm::max(worldMax, c);
+			}
+
+			const glm::vec3 worldCenter  = (worldMin + worldMax) * 0.5f;
+			const glm::vec3 worldExtents = worldMax - worldMin;
+
+			glm::mat4 aabbTransform = glm::translate(glm::mat4(1.0f), worldCenter)
+				* glm::scale(glm::mat4(1.0f), worldExtents);
+			boundingBoxes.emplace_back(aabbTransform, glm::vec4(1.0f, 0.4f, 0.1f, 1.0f)); // orange-red
+		}
+		} // if activeScene
+
+		mRendererFrontend->SetBoundingBoxes(boundingBoxes);
 	}
 
 	if (BuildRenderPacket(&packet) && !App->isMinimized)

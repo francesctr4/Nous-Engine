@@ -346,6 +346,56 @@ bool VulkanBackend::Initialize()
         }
     }
 
+    // ── Create bounding box unit-cube wireframe vertex buffer ─────────────────
+    // 8 corners of a unit cube at ±0.5, 12 edges → 24 line-segment endpoints.
+    {
+        // Corners
+        const glm::vec3 p[8] = {
+            { -0.5f, -0.5f, -0.5f }, // 0
+            {  0.5f, -0.5f, -0.5f }, // 1
+            {  0.5f,  0.5f, -0.5f }, // 2
+            { -0.5f,  0.5f, -0.5f }, // 3
+            { -0.5f, -0.5f,  0.5f }, // 4
+            {  0.5f, -0.5f,  0.5f }, // 5
+            {  0.5f,  0.5f,  0.5f }, // 6
+            { -0.5f,  0.5f,  0.5f }, // 7
+        };
+
+        // 12 edges, each as a pair of corner indices
+        constexpr int edgeIndices[24] = {
+            0,1, 1,2, 2,3, 3,0, // bottom face
+            4,5, 5,6, 6,7, 7,4, // top face
+            0,4, 1,5, 2,6, 3,7  // vertical pillars
+        };
+
+        std::vector<Vertex3D> boxVerts;
+        boxVerts.reserve(24);
+        for (int i = 0; i < 24; ++i)
+        {
+            Vertex3D v{};
+            v.position = p[edgeIndices[i]];
+            boxVerts.push_back(v);
+        }
+
+        vkContext->boundingBoxVertexCount = static_cast<uint32>(boxVerts.size());
+        const uint64 bbBufSize = boxVerts.size() * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bbBufSize,
+            VkBufferUsageFlagBits(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->boundingBoxVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create bounding box vertex buffer.");
+        }
+        else
+        {
+            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->boundingBoxVertexBuffer,
+                0, bbBufSize, 0, boxVerts.data());
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Bounding box vertex buffer created (%u vertices).",
+                vkContext->boundingBoxVertexCount);
+        }
+    }
+
 	return ret;
 }
 
@@ -423,6 +473,19 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->gridVertexBuffer);
         vkContext->gridVertexBuffer.handle = VK_NULL_HANDLE;
         vkContext->gridVertexCount = 0;
+    }
+
+    // builtInBoundingBoxShader is ResourceManager-owned; guard like grid shader.
+    if (vkContext->builtInBoundingBoxShader)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInBoundingBoxShader pointer still set — ResourceManager may not have cleared resources.");
+    vkContext->builtInBoundingBoxShader = nullptr;
+
+    // Destroy the bounding box unit-cube vertex buffer (not managed by ResourceManager).
+    if (vkContext->boundingBoxVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->boundingBoxVertexBuffer);
+        vkContext->boundingBoxVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->boundingBoxVertexCount = 0;
     }
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
@@ -1488,6 +1551,20 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         return true;
     }
 
+    // ── BuiltIn.BoundingBoxShader → scene renderpass (editor bounding box overlay) ─
+    //    Uses LINE_LIST topology. Scene viewport only; no game renderpass clone needed.
+    if (assetPath.find("BuiltIn.BoundingBoxShader") != std::string::npos)
+    {
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
+                                        /*disableBlending=*/false,
+                                        /*createOutlinePipelines=*/false,
+                                        /*useLineTopology=*/true))
+            return false;
+        vkContext->builtInBoundingBoxShader = shader;
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BoundingBoxShader assigned to sceneRenderpass (LINE_LIST).");
+        return true;
+    }
+
     // ── Default: scene renderpass for user-defined shaders ────────────────────
     return NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader);
 }
@@ -1502,6 +1579,7 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     if (shader == vkContext->builtInOutlineShader)          vkContext->builtInOutlineShader           = nullptr;
     if (shader == vkContext->builtInGridShader)             vkContext->builtInGridShader              = nullptr;
     if (shader == vkContext->builtInSceneBackgroundShader)  vkContext->builtInSceneBackgroundShader   = nullptr;
+    if (shader == vkContext->builtInBoundingBoxShader)      vkContext->builtInBoundingBoxShader       = nullptr;
 
     auto* vs = down_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
@@ -1804,6 +1882,62 @@ bool VulkanBackend::DrawBackground(RenderpassType renderpassID,
 
     // Draw the fullscreen triangle — no vertex buffer needed.
     vkCmdDraw(cmdBuf->handle, 3, 1, 0, 0);
+
+    return true;
+}
+
+bool VulkanBackend::DrawBoundingBoxes(RenderpassType renderpassID,
+                                       const glm::mat4& projection,
+                                       const glm::mat4& view,
+                                       const std::vector<BoundingBoxData>& boxes)
+{
+    // Bounding boxes are scene-viewport only.
+    if (renderpassID != RenderpassType::SCENE)
+        return true;
+
+    if (boxes.empty())
+        return true;
+
+    ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
+    if (!rShader || !rShader->internalData)
+        return true; // Shader not loaded yet — skip gracefully.
+
+    if (vkContext->boundingBoxVertexBuffer.handle == VK_NULL_HANDLE || vkContext->boundingBoxVertexCount == 0)
+        return true;
+
+    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
+
+    // Bind the bounding box pipeline and upload view/projection to the global UBO.
+    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+
+    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+        vkContext->imageIndex, &ubo, sizeof(ubo));
+
+    // Bind the shared unit-cube wireframe vertex buffer once.
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->boundingBoxVertexBuffer.handle, &offset);
+
+    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 2.0f : 1.0f);
+
+    // Push constant layout: mat4 model (64 bytes) + vec4 color (16 bytes) = 80 bytes.
+    struct BoundingBoxPushConstants
+    {
+        glm::mat4 model;
+        glm::vec4 color;
+    };
+
+    for (const BoundingBoxData& box : boxes)
+    {
+        BoundingBoxPushConstants pc{ box.transform, box.color };
+        vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT,
+            0, sizeof(BoundingBoxPushConstants), &pc);
+
+        vkCmdDraw(cmdBuf->handle, vkContext->boundingBoxVertexCount, 1, 0, 0);
+    }
 
     return true;
 }

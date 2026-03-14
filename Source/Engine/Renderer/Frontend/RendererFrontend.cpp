@@ -142,6 +142,16 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 				mOutlinedGeometries,
 				mOutlineSettings);
 		}
+
+		// Wireframe bounding boxes (AABB / OBB) for debugging — scene viewport only.
+		if (!mBoundingBoxes.empty())
+		{
+			success &= mBackend->DrawBoundingBoxes(
+				sceneRenderpass,
+				packet->editorCamera->GetProjectionMatrix(),
+				packet->editorCamera->GetViewMatrix(),
+				mBoundingBoxes);
+		}
 	});
 
 	// --- GAME PASS ---
@@ -281,6 +291,11 @@ bool RendererFrontend::SetOutlinedGeometries(
 	mOutlinedGeometries = selectedGeometries;
 	mOutlineSettings    = outlineSettings;
 	return true;
+}
+
+void RendererFrontend::SetBoundingBoxes(const std::vector<BoundingBoxData>& boxes)
+{
+	mBoundingBoxes = boxes;
 }
 
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)

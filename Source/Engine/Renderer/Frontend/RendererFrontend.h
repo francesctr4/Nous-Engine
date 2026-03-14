@@ -93,6 +93,17 @@ public:
 		const OutlineSettings& outlineSettings = OutlineSettings{});
 
 	// ---------------------------------------------------------------------
+	// Bounding Boxes
+	// ---------------------------------------------------------------------
+	/**
+	 * @brief Sets the bounding boxes to be drawn during the next frame.
+	 *        Each entry carries a pre-computed transform and a color so that
+	 *        both AABB and OBB can be submitted together.
+	 *        Passing an empty vector disables bounding box rendering.
+	 */
+	NOUS_ENGINE_API void SetBoundingBoxes(const std::vector<BoundingBoxData>& boxes);
+
+	// ---------------------------------------------------------------------
 	// Accessors
 	// ---------------------------------------------------------------------
 	NOUS_ENGINE_API void SetBackendType(RendererBackendType backendType) noexcept;
@@ -121,6 +132,9 @@ private:
 	// Outlined geometries — populated each frame by SetOutlinedGeometries().
 	std::vector<GeometryRenderData> mOutlinedGeometries;
 	OutlineSettings                 mOutlineSettings;
+
+	// Bounding boxes — populated each frame by SetBoundingBoxes().
+	std::vector<BoundingBoxData> mBoundingBoxes;
 
 };
 

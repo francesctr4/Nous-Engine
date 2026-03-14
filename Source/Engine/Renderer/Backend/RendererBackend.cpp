@@ -206,3 +206,10 @@ bool RendererBackend::DrawBackground(RenderpassType renderpassID,
 {
     return mBackendInterface && mBackendInterface->DrawBackground(renderpassID, projection, view);
 }
+
+bool RendererBackend::DrawBoundingBoxes(RenderpassType renderpassID,
+                                        const glm::mat4& projection, const glm::mat4& view,
+                                        const std::vector<BoundingBoxData>& boxes)
+{
+    return mBackendInterface && mBackendInterface->DrawBoundingBoxes(renderpassID, projection, view, boxes);
+}
