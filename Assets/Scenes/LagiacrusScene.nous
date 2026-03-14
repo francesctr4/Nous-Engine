@@ -10,19 +10,19 @@
                 {
                     "type": "CTransform",
                     "position": [
-                        -113.59999847412109,
+                        -98.887863159179688,
                         0,
-                        -157
+                        0
                     ],
                     "orientation": [
-                        0.72717398405075073,
+                        0.94317394495010376,
                         0,
-                        -0.68645316362380981,
+                        0.33229944109916687,
                         0
                     ],
                     "rotation": [
                         0,
-                        -86.699920654296875,
+                        38.816806793212891,
                         0
                     ],
                     "scale": [
@@ -194,6 +194,59 @@
                     "farPlane": 10000,
                     "aspectRatio": 1.7699999809265137,
                     "isMainCamera": true
+                }
+            ]
+        },
+        {
+            "uid": 2204086558,
+            "name": "Rotator",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [
+                        "MoveScriptGameObject"
+                    ],
+                    "properties": {
+                        "MoveScriptGameObject": {
+                            "m_amplitude": {
+                                "type": 0,
+                                "value": 200
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 1
+                            },
+                            "m_target": {
+                                "type": 3,
+                                "value": 2814761471
+                            }
+                        }
+                    }
                 }
             ]
         }

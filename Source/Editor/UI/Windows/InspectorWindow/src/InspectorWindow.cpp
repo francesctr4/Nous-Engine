@@ -13,11 +13,14 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Scripting/ScriptManager.h"
+#include "Engine/Scripting/Internal/IScript.inl"
 
 #include "imgui.h"
 #include <glm/glm.hpp>
 #include <vector>
 #include <string>
+
+#include "Engine/Systems/ECS/Scene/include/Scene.h"
 
 InspectorWindow::InspectorWindow(const char* title, EditorContext* context, bool start_open)
         : IEditorWindow(title, context, nullptr, start_open) {
@@ -141,20 +144,87 @@ void InspectorWindow::Draw() {
 
             // --- Script Component ---
             if (go->HasComponent<CScript>()) {
+                auto& cs = go->GetComponent<CScript>();
+                const auto& scriptNames = cs.GetScriptNames();
+
                 if (ImGui::CollapsingHeader("Scripts", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    auto& cs = go->GetComponent<CScript>();
                     ImGui::Indent();
 
-                    // List attached scripts with remove buttons
-                    const auto& scriptNames = cs.GetScriptNames();
-                    for (int i = 0; i < static_cast<int>(scriptNames.size()); ++i) {
-                        ImGui::BulletText("%s", scriptNames[i].c_str());
+                    // One sub-section per attached script
+                    for (int i = 0; i < static_cast<int>(scriptNames.size()); ++i)
+                    {
+                        const std::string& sName = scriptNames[i];
+
+                        // Script header with remove button
+                        ImGui::PushID(i);
+                        bool open = ImGui::CollapsingHeader(sName.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
                         ImGui::SameLine();
-                        const std::string removeId = "Remove##script_" + std::to_string(i);
-                        if (ImGui::SmallButton(removeId.c_str())) {
-                            cs.RemoveScript(scriptNames[i]);
-                            break; // Iterator invalidated — restart next frame
+                        if (ImGui::SmallButton("Remove")) {
+                            cs.RemoveScript(sName);
+                            ImGui::PopID();
+                            break; // iterator invalidated — skip rest of frame
                         }
+
+                        // Properties (if script has any)
+                        if (open) {
+                            IScript* inst = cs.GetInstance(i);
+                            if (inst) {
+                                ImGui::Indent();
+                                auto props = inst->GetProperties();
+                                if (props.empty()) {
+                                    ImGui::TextDisabled("No exposed properties.");
+                                }
+                                for (auto& prop : props) {
+                                    switch (prop.type) {
+                                        case ScriptProperty::Type::Float:
+                                            ImGui::DragFloat(prop.name,
+                                                             static_cast<float*>(prop.ptr),
+                                                             0.1f);
+                                            break;
+                                        case ScriptProperty::Type::Int:
+                                            ImGui::DragInt(prop.name,
+                                                           static_cast<int*>(prop.ptr));
+                                            break;
+                                        case ScriptProperty::Type::Bool:
+                                            ImGui::Checkbox(prop.name,
+                                                            static_cast<bool*>(prop.ptr));
+                                            break;
+                                        case ScriptProperty::Type::GameObject: {
+                                            auto* idPtr = static_cast<uint32_t*>(prop.ptr);
+
+                                            // Resolve current name for the preview label
+                                            std::string preview = "None";
+                                            if (*idPtr != 0 && External->scene->activeScene) {
+                                                auto* target = External->scene->activeScene->GetGameObjectByID(*idPtr);
+                                                preview = target ? target->GetName() : "(missing)";
+                                            }
+
+                                            if (ImGui::BeginCombo(prop.name, preview.c_str())) {
+                                                // None option
+                                                if (ImGui::Selectable("None", *idPtr == 0))
+                                                    *idPtr = 0;
+
+                                                // All scene GameObjects
+                                                if (External->scene->activeScene) {
+                                                    const auto gos = External->scene->activeScene->GetGameObjectsSnapshot();
+                                                    for (auto* target : gos) {
+                                                        const bool selected = (*idPtr == target->GetID());
+                                                        if (ImGui::Selectable(target->GetName().c_str(), selected))
+                                                            *idPtr = target->GetID();
+                                                        if (selected) ImGui::SetItemDefaultFocus();
+                                                    }
+                                                }
+                                                ImGui::EndCombo();
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                                ImGui::Unindent();
+                            }
+                        }
+
+                        ImGui::PopID();
                     }
 
                     // Add script from dropdown

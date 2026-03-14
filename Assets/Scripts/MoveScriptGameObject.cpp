@@ -13,106 +13,107 @@
 #include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
 
 // ----- HEADER FILES ----- //
-/*coding_start::MoveScript*/
-/*coding_end::MoveScript*/
+/*coding_start::MoveScriptGameObject*/
+/*coding_end::MoveScriptGameObject*/
 
 // Moves the owning GameObject along the X axis every frame using the scripting API.
-class MoveScript : public IScript
+class MoveScriptGameObject : public IScript
 {
 public:
 
-    MoveScript()
+    MoveScriptGameObject()
     {
-        /*coding_start::MoveScript::MoveScript*/
-        /*coding_end::MoveScript::MoveScript*/
+        /*coding_start::MoveScriptGameObject::MoveScriptGameObject*/
+        /*coding_end::MoveScriptGameObject::MoveScriptGameObject*/
     }
 
-    ~MoveScript() override
+    ~MoveScriptGameObject() override
     {
-        /*coding_start::MoveScript::~MoveScript*/
-        /*coding_end::MoveScript::~MoveScript*/
+        /*coding_start::MoveScriptGameObject::~MoveScriptGameObject*/
+        /*coding_end::MoveScriptGameObject::~MoveScriptGameObject*/
     }
 
     void Awake() override
     {
-        /*coding_start::MoveScript::Awake*/
-        Nous_Engine->Logger->Info("[MoveScript] Awake — owner ID: %u", m_ownerID);
-        /*coding_end::MoveScript::Awake*/
+        /*coding_start::MoveScriptGameObject::Awake*/
+        Nous_Engine->Logger->Info("[MoveScriptGameObject] Awake — owner ID: %u", m_ownerID);
+        /*coding_end::MoveScriptGameObject::Awake*/
     }
 
     void Start() override
     {
-        /*coding_start::MoveScript::Start*/
+        /*coding_start::MoveScriptGameObject::Start*/
         // Snapshot the starting position so we can oscillate around it
         Nous_Engine->GameObject->GetPosition(m_ownerID, &m_originX, &m_originY, &m_originZ);
-        Nous_Engine->Logger->Info("[MoveScript] Start — origin (%.2f, %.2f, %.2f)",
+        Nous_Engine->Logger->Info("[MoveScriptGameObject] Start — origin (%.2f, %.2f, %.2f)",
                                    m_originX, m_originY, m_originZ);
-        /*coding_end::MoveScript::Start*/
+        /*coding_end::MoveScriptGameObject::Start*/
     }
 
     void Update(float deltaTime) override
     {
-        /*coding_start::MoveScript::Update*/
+        /*coding_start::MoveScriptGameObject::Update*/
         m_time += deltaTime;
 
         // Simple sinusoidal oscillation along the X axis (amplitude 2, period ~6s)
         const float offsetX = m_amplitude * sinf(m_speed * m_time);
 
-        Nous_Engine->GameObject->SetRotation(m_ownerID,
+        Nous_Engine->GameObject->SetRotation(m_target,
                                               m_originX,
                                               m_originY + offsetX,
                                               m_originZ);
-        /*coding_end::MoveScript::Update*/
+        /*coding_end::MoveScriptGameObject::Update*/
     }
 
     void FixedUpdate(float fixedDeltaTime) override
     {
-        /*coding_start::MoveScript::FixedUpdate*/
-        /*coding_end::MoveScript::FixedUpdate*/
+        /*coding_start::MoveScriptGameObject::FixedUpdate*/
+        /*coding_end::MoveScriptGameObject::FixedUpdate*/
     }
 
     void LateUpdate(float deltaTime) override
     {
-        /*coding_start::MoveScript::LateUpdate*/
-        /*coding_end::MoveScript::LateUpdate*/
+        /*coding_start::MoveScriptGameObject::LateUpdate*/
+        /*coding_end::MoveScriptGameObject::LateUpdate*/
     }
 
     void OnEnable() override
     {
-        /*coding_start::MoveScript::OnEnable*/
-        /*coding_end::MoveScript::OnEnable*/
+        /*coding_start::MoveScriptGameObject::OnEnable*/
+        /*coding_end::MoveScriptGameObject::OnEnable*/
     }
 
     void OnDisable() override
     {
-        /*coding_start::MoveScript::OnDisable*/
-        /*coding_end::MoveScript::OnDisable*/
+        /*coding_start::MoveScriptGameObject::OnDisable*/
+        /*coding_end::MoveScriptGameObject::OnDisable*/
     }
 
     void OnDestroy() override
     {
-        /*coding_start::MoveScript::OnDestroy*/
-        Nous_Engine->Logger->Info("[MoveScript] OnDestroy");
-        /*coding_end::MoveScript::OnDestroy*/
+        /*coding_start::MoveScriptGameObject::OnDestroy*/
+        Nous_Engine->Logger->Info("[MoveScriptGameObject] OnDestroy");
+        /*coding_end::MoveScriptGameObject::OnDestroy*/
     }
 
     // ----- METHODS ----- //
-    /*coding_start::MoveScript*/
-    /*coding_end::MoveScript*/
+    /*coding_start::MoveScriptGameObject*/
+    /*coding_end::MoveScriptGameObject*/
 
 private:
 
     // ----- ATTRIBUTES ----- //
     // Use SCRIPT_FIELD(Type, name, "Label", defaultValue) to expose a field to the Inspector.
-    /*coding_start::MoveScript*/
+    /*coding_start::MoveScriptGameObject*/
     float m_time    = 0.0f;
     float m_originX = 0.0f;
     float m_originY = 0.0f;
     float m_originZ = 0.0f;
     SCRIPT_FIELD(float, m_amplitude, 200.0f)
     SCRIPT_FIELD(float, m_speed,     1.0f)
-    /*coding_end::MoveScript*/
+    SCRIPT_GAMEOBJECT(m_target, 0);
+    /*coding_end::MoveScriptGameObject*/
 
 };
 
-REGISTER_SCRIPT(MoveScript)
+REGISTER_SCRIPT(MoveScriptGameObject)

@@ -84,6 +84,16 @@ set SDK_DIR=%SCRIPTS_OUTPUT_DIR%\SDK
 set SDK_INCLUDE=%SDK_DIR%\include
 set SDK_ENGINE_API_CPP=%SDK_DIR%\src\EngineAPI.cpp
 
+REM -----------------------------
+REM 3.5) Sync SDK headers from source so hot-reload always uses the latest
+REM      engine headers without requiring a full engine rebuild.
+REM -----------------------------
+set ENGINE_SCRIPTING_SRC=@CMAKE_SOURCE_DIR@\Source\Engine\Scripting
+if exist "%ENGINE_SCRIPTING_SRC%" (
+    xcopy /S /Y /Q "%ENGINE_SCRIPTING_SRC%\*.inl" "%SDK_INCLUDE%\Engine\Scripting\" >nul 2>&1
+    xcopy /S /Y /Q "%ENGINE_SCRIPTING_SRC%\*.h"   "%SDK_INCLUDE%\Engine\Scripting\" >nul 2>&1
+)
+
 REM Validate SDK exists
 if not exist "%SDK_INCLUDE%\Engine\Scripting\Internal\IScript.inl" (
     echo [ERROR] Script SDK headers missing.

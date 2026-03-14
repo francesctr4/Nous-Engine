@@ -4,10 +4,22 @@
 #include "Engine/Systems/ECS/Component/Component.h"
 #include <string>
 #include <vector>
+#include <map>
 
 #include "Engine/EngineExport.h"
 
 class IScript;
+
+// Mirrors ScriptProperty::Type without requiring IScript.inl in this header.
+// Values must stay in sync with ScriptProperty::Type in IScript.inl.
+struct SavedProperty
+{
+    uint8_t type;   // 0 = Float, 1 = Int, 2 = Bool, 3 = GameObject (uint32_t ID)
+    union { float f; int32_t i; bool b; uint32_t u; } value{};
+};
+
+// scriptName → propertyName → saved value
+using ScriptPropertyMap = std::map<std::string, std::map<std::string, SavedProperty>>;
 
 class CScript : public Component {
 public:
@@ -29,6 +41,12 @@ public:
 
     const std::vector<std::string>& GetScriptNames() const { return m_scriptNames; }
 
+    // Returns the live IScript instance at index i, or nullptr if out of range / not started
+    IScript* GetInstance(size_t i) const
+    {
+        return (i < m_instances.size()) ? m_instances[i] : nullptr;
+    }
+
     // Called by ModuleScene during hot-reload (destroys DLL instances, keeps names intact)
     void ClearInstances();
 
@@ -42,10 +60,13 @@ public:
 private:
     void CreateInstances();
     void DestroyInstances();
+    void SaveProperties();          // snapshot live property values → m_savedProperties
+    void ApplyProperties();         // write m_savedProperties back into live instances
 
     std::vector<std::string> m_scriptNames;
     std::vector<IScript*>    m_instances;
     bool                     m_started = false;
+    ScriptPropertyMap        m_savedProperties; // persists across hot-reload and serialization
 };
 
 #endif // NOUS_ENGINE_CSCRIPT_H

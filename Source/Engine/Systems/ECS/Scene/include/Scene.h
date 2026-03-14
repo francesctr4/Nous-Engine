@@ -25,7 +25,7 @@ public:
 
     NOUS_ENGINE_API GameObject* FindGameObjectByID(uint32_t id);
     NOUS_Vector<GameObject*> FindGameObjectsByName(const std::string& name);
-    GameObject* GetGameObjectByID(uint32_t id);
+    NOUS_ENGINE_API GameObject* GetGameObjectByID(uint32_t id);
 
     uint32_t CreateGameObjectID(const std::string& name = "GameObject", GameObject* parent = nullptr);
     void DestroyGameObjectByID(uint32_t id);
