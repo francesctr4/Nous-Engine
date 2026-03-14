@@ -7,11 +7,13 @@
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
+#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 
 #include "imgui.h"
+#include <glm/glm.hpp>
 
 InspectorWindow::InspectorWindow(const char* title, EditorContext* context, bool start_open)
         : IEditorWindow(title, context, nullptr, start_open) {
@@ -86,6 +88,30 @@ void InspectorWindow::Draw() {
                     } else {
                         ImGui::TextDisabled("No mesh assigned.");
                     }
+                }
+            }
+
+            // --- Camera Component ---
+            if (go->HasComponent<CCamera>()) {
+                if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    auto& cam = go->GetComponent<CCamera>();
+
+                    ImGui::Indent();
+
+                    ImGui::Checkbox("Main Camera", &cam.isMainCamera);
+
+                    if (ImGui::DragFloat("FOV", &cam.fov, 0.5f, 5.0f, 170.0f, "%.1f deg"))
+                        cam.fov = glm::clamp(cam.fov, 5.0f, 170.0f);
+
+                    if (ImGui::DragFloat("Near Plane", &cam.nearPlane, 0.01f, 0.01f, cam.farPlane - 0.01f, "%.3f"))
+                        cam.nearPlane = glm::max(cam.nearPlane, 0.001f);
+
+                    if (ImGui::DragFloat("Far Plane", &cam.farPlane, 1.0f, cam.nearPlane + 0.01f, 100000.0f, "%.1f"))
+                        cam.farPlane = glm::max(cam.farPlane, cam.nearPlane + 0.01f);
+
+                    ImGui::DragFloat("Aspect Ratio", &cam.aspectRatio, 0.01f, 0.1f, 10.0f, "%.3f");
+
+                    ImGui::Unindent();
                 }
             }
 

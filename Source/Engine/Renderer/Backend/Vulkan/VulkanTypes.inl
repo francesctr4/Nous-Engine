@@ -299,6 +299,11 @@ struct VulkanContext
     VulkanBuffer boundingBoxVertexBuffer{};
     uint32       boundingBoxVertexCount = 0;
 
+    // ── Camera frustum wireframe (dynamic, updated each frame) ─────────────────
+    // Capacity: k_MaxCameraFrustums (8) × 24 vertices (12 edges × 2 endpoints)
+    VulkanBuffer frustumVertexBuffer{};
+    uint32       frustumVertexCapacity = 0; // in vertices
+
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
     std::mutex geometriesMutex;     // guards slot scan + ID assignment in CreateGeometry/DestroyGeometry

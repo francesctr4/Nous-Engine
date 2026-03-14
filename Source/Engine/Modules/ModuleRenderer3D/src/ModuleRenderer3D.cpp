@@ -4,6 +4,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <cmath>
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
@@ -15,6 +16,7 @@
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
@@ -195,6 +197,60 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		} // if activeScene
 
 		mRendererFrontend->SetBoundingBoxes(boundingBoxes);
+	}
+
+	// Collect camera frustums from all GameObjects with a CCamera component.
+	{
+		std::vector<CameraFrustumData> frustums;
+
+		if (App->scene->activeScene)
+		{
+			const auto gameObjects = App->scene->activeScene->GetGameObjectsSnapshot();
+
+			for (const auto& goPtr : gameObjects)
+			{
+				auto* cam       = goPtr->TryGetComponent<CCamera>();
+				auto* transform = goPtr->TryGetComponent<CTransform>();
+				if (!cam || !transform)
+					continue;
+
+				const float vfovRad     = glm::radians(cam->fov);
+				const float halfTan     = std::tan(vfovRad * 0.5f);
+				const float halfH_near  = cam->nearPlane * halfTan;
+				const float halfW_near  = halfH_near * cam->aspectRatio;
+				const float halfH_far   = cam->farPlane  * halfTan;
+				const float halfW_far   = halfH_far  * cam->aspectRatio;
+
+				const glm::vec3 pos     = transform->position;
+				const glm::vec3 fwd     = transform->GetForward();
+				const glm::vec3 up      = transform->GetUp();
+				const glm::vec3 right   = transform->GetRight();
+
+				const glm::vec3 nearCenter = pos + fwd * cam->nearPlane;
+				const glm::vec3 farCenter  = pos + fwd * cam->farPlane;
+
+				CameraFrustumData fdata{};
+				// Near quad: TL, TR, BR, BL
+				fdata.corners[0] = nearCenter + up * halfH_near - right * halfW_near;
+				fdata.corners[1] = nearCenter + up * halfH_near + right * halfW_near;
+				fdata.corners[2] = nearCenter - up * halfH_near + right * halfW_near;
+				fdata.corners[3] = nearCenter - up * halfH_near - right * halfW_near;
+				// Far quad: TL, TR, BR, BL
+				fdata.corners[4] = farCenter  + up * halfH_far  - right * halfW_far;
+				fdata.corners[5] = farCenter  + up * halfH_far  + right * halfW_far;
+				fdata.corners[6] = farCenter  - up * halfH_far  + right * halfW_far;
+				fdata.corners[7] = farCenter  - up * halfH_far  - right * halfW_far;
+
+				// Main camera: yellow; secondary cameras: green.
+				fdata.color = cam->isMainCamera
+					? glm::vec4(1.0f, 0.85f, 0.0f, 1.0f)
+					: glm::vec4(0.2f, 0.9f,  0.2f, 1.0f);
+
+				frustums.push_back(fdata);
+			}
+		}
+
+		mRendererFrontend->SetCameraFrustums(frustums);
 	}
 
 	if (BuildRenderPacket(&packet) && !App->isMinimized)

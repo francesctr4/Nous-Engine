@@ -80,6 +80,12 @@ public:
 	                       const glm::mat4& view,
 	                       const std::vector<BoundingBoxData>& boxes) override;
 
+	bool DrawCameraFrustums(RenderpassType renderpassID,
+	                        const glm::mat4& projection,
+	                        const glm::mat4& view,
+	                        const std::vector<CameraFrustumData>& frustums,
+	                        bool globalAlreadySet = false) override;
+
 	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 
 	void ProcessPendingSubmissions();

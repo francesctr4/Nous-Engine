@@ -54,6 +54,17 @@ public:
 	void CreateScriptInstances();
 	void RecompileScripts();
 	void CleanupScripts();
+
+private:
+	/**
+	 * @brief Ensures at least one GameObject with a main CCamera exists in the
+	 *        active scene. If none is found, a "Main Camera" GO is created and
+	 *        positioned at the current gameCamera location.
+	 *
+	 * Called at the end of every LoadScene job so that scenes saved before the
+	 * CCamera system existed automatically get a camera on load.
+	 */
+	void EnsureMainCamera();
 };
 
 #endif // MODULESCENE_H

@@ -152,6 +152,19 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 				packet->editorCamera->GetViewMatrix(),
 				mBoundingBoxes);
 		}
+
+		// Camera frustum wireframes — scene viewport only.
+		// Pass globalAlreadySet=true when DrawBoundingBoxes ran first (shared shader):
+		// prevents a double vkUpdateDescriptorSets on the already-bound descriptor set.
+		if (!mCameraFrustums.empty())
+		{
+			success &= mBackend->DrawCameraFrustums(
+				sceneRenderpass,
+				packet->editorCamera->GetProjectionMatrix(),
+				packet->editorCamera->GetViewMatrix(),
+				mCameraFrustums,
+				/*globalAlreadySet=*/ !mBoundingBoxes.empty());
+		}
 	});
 
 	// --- GAME PASS ---
@@ -296,6 +309,11 @@ bool RendererFrontend::SetOutlinedGeometries(
 void RendererFrontend::SetBoundingBoxes(const std::vector<BoundingBoxData>& boxes)
 {
 	mBoundingBoxes = boxes;
+}
+
+void RendererFrontend::SetCameraFrustums(const std::vector<CameraFrustumData>& frustums)
+{
+	mCameraFrustums = frustums;
 }
 
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)

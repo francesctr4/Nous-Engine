@@ -86,6 +86,13 @@ public:
 	                       const glm::mat4& projection, const glm::mat4& view,
 	                       const std::vector<BoundingBoxData>& boxes);
 
+	// ─────────────────────────────── Camera Frustums ─────────────────────────
+	bool DrawCameraFrustums(RenderpassType renderpassID,
+	                        const glm::mat4& projection,
+	                        const glm::mat4& view,
+	                        const std::vector<CameraFrustumData>& frustums,
+	                        bool globalAlreadySet = false);
+
 public:
 
 	uint64_t mFrameNumber;

@@ -305,6 +305,6 @@ uint32_t Scene::GenerateUniqueID() {
     uint32_t id;
     do {
         id = static_cast<uint32_t>(Random::Generate());
-    } while (FindGameObjectByID_NoLock(id) != nullptr);
+    } while (id == 0 || FindGameObjectByID_NoLock(id) != nullptr);
     return id;
 }

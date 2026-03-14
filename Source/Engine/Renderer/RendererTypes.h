@@ -81,6 +81,26 @@ struct OutlineSettings
 };
 
 // -----------------------------------------------------------------------------
+// Camera frustum data (for Scene View debug visualization)
+// -----------------------------------------------------------------------------
+/**
+ * @brief 8-corner world-space frustum for a CCamera component.
+ *
+ * Corner order:
+ *   [0] near TL, [1] near TR, [2] near BR, [3] near BL
+ *   [4] far  TL, [5] far  TR, [6] far  BR, [7] far  BL
+ */
+struct CameraFrustumData
+{
+    CameraFrustumData() : corners{}, color(0.0f, 1.0f, 0.0f, 1.0f) {}
+    CameraFrustumData(const glm::vec3 c[8], const glm::vec4& col)
+        : color(col) { for (int i = 0; i < 8; ++i) corners[i] = c[i]; }
+
+    glm::vec3 corners[8];
+    glm::vec4 color;
+};
+
+// -----------------------------------------------------------------------------
 // Bounding box data
 // -----------------------------------------------------------------------------
 /**
@@ -249,6 +269,26 @@ struct IRendererBackend
                                    const glm::mat4& projection,
                                    const glm::mat4& view,
                                    const std::vector<BoundingBoxData>& boxes) = 0;
+
+    // ─────────────────────────────── Camera Frustums ─────────────────────────
+    /**
+     * @brief Render camera frustum wireframes in the Scene View.
+     *        Only draws when renderpassID == SCENE (editor viewport).
+     *
+     * Each CameraFrustumData holds the 8 world-space corners of a perspective
+     * frustum. 12 edges are drawn (near quad + far quad + 4 connecting lines).
+     */
+    /**
+     * @param globalAlreadySet  Pass true when the bounding-box shader's global
+     *        descriptor set was already updated this frame (e.g. DrawBoundingBoxes ran).
+     *        When true the function skips vkUpdateDescriptorSets and only rebinds,
+     *        avoiding the "descriptor set updated while bound" validation error.
+     */
+    virtual bool DrawCameraFrustums(RenderpassType renderpassID,
+                                    const glm::mat4& projection,
+                                    const glm::mat4& view,
+                                    const std::vector<CameraFrustumData>& frustums,
+                                    bool globalAlreadySet = false) = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

@@ -104,6 +104,16 @@ public:
 	NOUS_ENGINE_API void SetBoundingBoxes(const std::vector<BoundingBoxData>& boxes);
 
 	// ---------------------------------------------------------------------
+	// Camera Frustums
+	// ---------------------------------------------------------------------
+	/**
+	 * @brief Sets the camera frustums to be drawn in the Scene View each frame.
+	 *        Each CameraFrustumData holds 8 world-space corners (near + far quads).
+	 *        Passing an empty vector disables frustum rendering.
+	 */
+	NOUS_ENGINE_API void SetCameraFrustums(const std::vector<CameraFrustumData>& frustums);
+
+	// ---------------------------------------------------------------------
 	// Accessors
 	// ---------------------------------------------------------------------
 	NOUS_ENGINE_API void SetBackendType(RendererBackendType backendType) noexcept;
@@ -135,6 +145,9 @@ private:
 
 	// Bounding boxes — populated each frame by SetBoundingBoxes().
 	std::vector<BoundingBoxData> mBoundingBoxes;
+
+	// Camera frustums — populated each frame by SetCameraFrustums().
+	std::vector<CameraFrustumData> mCameraFrustums;
 
 };
 

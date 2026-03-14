@@ -213,3 +213,9 @@ bool RendererBackend::DrawBoundingBoxes(RenderpassType renderpassID,
 {
     return mBackendInterface && mBackendInterface->DrawBoundingBoxes(renderpassID, projection, view, boxes);
 }
+
+bool RendererBackend::DrawCameraFrustums(RenderpassType renderpassID, const glm::mat4 &projection,
+    const glm::mat4 &view, const std::vector<CameraFrustumData> &frustums, bool globalAlreadySet)
+{
+    return mBackendInterface && mBackendInterface->DrawCameraFrustums(renderpassID, projection, view, frustums, globalAlreadySet);
+}

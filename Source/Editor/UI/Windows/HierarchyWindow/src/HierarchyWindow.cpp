@@ -2,6 +2,7 @@
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 
 #include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
@@ -42,6 +43,21 @@ void HierarchyWindow::Draw() {
                         m_ToReparent.push_back({ draggedGO, nullptr });
                     }
                     ImGui::EndDragDropTarget();
+                }
+
+                // Right-click on the scene root to create objects.
+                if (ImGui::BeginPopupContextItem("##SceneContextMenu")) {
+                    if (ImGui::MenuItem("Create Empty")) {
+                        GameObject* go = m_Scene->CreateGameObject("GameObject", nullptr);
+                        External->scene->selectedGameObject = go;
+                    }
+                    if (ImGui::MenuItem("Create Camera")) {
+                        GameObject* go = m_Scene->CreateGameObject("Main Camera", nullptr);
+                        auto& cam = go->AddComponent<CCamera>();
+                        cam.isMainCamera = true;
+                        External->scene->selectedGameObject = go;
+                    }
+                    ImGui::EndPopup();
                 }
 
                 if (opened) {

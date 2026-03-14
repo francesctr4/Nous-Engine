@@ -396,6 +396,28 @@ bool VulkanBackend::Initialize()
         }
     }
 
+    // ── Create camera frustum wireframe vertex buffer (dynamic, host-visible) ─
+    // Capacity: 8 frustums × 24 vertices (12 edges × 2 endpoints per frustum).
+    {
+        constexpr uint32 k_MaxCameraFrustums    = 8;
+        constexpr uint32 k_FrustumVertCapacity  = k_MaxCameraFrustums * 24;
+        const uint64 frustumBufSize = k_FrustumVertCapacity * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, frustumBufSize,
+            VkBufferUsageFlagBits(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->frustumVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create camera frustum vertex buffer.");
+        }
+        else
+        {
+            vkContext->frustumVertexCapacity = k_FrustumVertCapacity;
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Camera frustum vertex buffer created (capacity %u vertices).",
+                k_FrustumVertCapacity);
+        }
+    }
+
 	return ret;
 }
 
@@ -486,6 +508,14 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->boundingBoxVertexBuffer);
         vkContext->boundingBoxVertexBuffer.handle = VK_NULL_HANDLE;
         vkContext->boundingBoxVertexCount = 0;
+    }
+
+    // Destroy the camera frustum vertex buffer.
+    if (vkContext->frustumVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->frustumVertexBuffer);
+        vkContext->frustumVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->frustumVertexCapacity = 0;
     }
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
@@ -1937,6 +1967,109 @@ bool VulkanBackend::DrawBoundingBoxes(RenderpassType renderpassID,
             0, sizeof(BoundingBoxPushConstants), &pc);
 
         vkCmdDraw(cmdBuf->handle, vkContext->boundingBoxVertexCount, 1, 0, 0);
+    }
+
+    return true;
+}
+
+bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
+                                        const glm::mat4& projection,
+                                        const glm::mat4& view,
+                                        const std::vector<CameraFrustumData>& frustums,
+                                        bool globalAlreadySet)
+{
+    // Frustum visualization is scene-viewport only.
+    if (renderpassID != RenderpassType::SCENE)
+        return true;
+
+    if (frustums.empty())
+        return true;
+
+    // Reuse the bounding box shader: same vertex format (Vertex3D.position),
+    // same GlobalUBO (projection + view), same push constants (model + color).
+    ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
+    if (!rShader || !rShader->internalData)
+        return true;
+
+    if (vkContext->frustumVertexBuffer.handle == VK_NULL_HANDLE || vkContext->frustumVertexCapacity == 0)
+        return true;
+
+    // Corner winding order: [0]=nearTL [1]=nearTR [2]=nearBR [3]=nearBL
+    //                        [4]=farTL  [5]=farTR  [6]=farBR  [7]=farBL
+    // 12 edges as LINE_LIST (24 vertex indices):
+    //   near quad:       0-1, 1-2, 2-3, 3-0
+    //   far quad:        4-5, 5-6, 6-7, 7-4
+    //   connecting:      0-4, 1-5, 2-6, 3-7
+    constexpr int k_EdgeIndices[24] = {
+        0,1, 1,2, 2,3, 3,0,   // near quad
+        4,5, 5,6, 6,7, 7,4,   // far quad
+        0,4, 1,5, 2,6, 3,7    // connecting edges
+    };
+
+    // Build interleaved world-space vertex list for all frustums.
+    std::vector<Vertex3D> verts;
+    verts.reserve(frustums.size() * 24);
+
+    for (const CameraFrustumData& f : frustums)
+    {
+        for (int i = 0; i < 24; ++i)
+        {
+            Vertex3D v{};
+            v.position = f.corners[k_EdgeIndices[i]];
+            verts.push_back(v);
+        }
+    }
+
+    const uint32 totalVerts = static_cast<uint32>(verts.size());
+    if (totalVerts > vkContext->frustumVertexCapacity)
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "[DrawCameraFrustums] Frustum vertex count (%u) exceeds buffer capacity (%u). Skipping.",
+            totalVerts, vkContext->frustumVertexCapacity);
+        return true;
+    }
+
+    NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->frustumVertexBuffer,
+        0, totalVerts * sizeof(Vertex3D), 0, verts.data());
+
+    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
+
+    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+
+    if (globalAlreadySet)
+    {
+        // DrawBoundingBoxes already called UpdateGlobal this frame, which bound
+        // the global descriptor set (set=0) into this command buffer. Calling
+        // vkUpdateDescriptorSets on it again would invalidate the CB.
+        // Just rebind it — no update needed (same projection/view matrices).
+        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vs->pipeline.pipelineLayout, 0, 1,
+            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+    }
+    else
+    {
+        // First (or only) use of this shader this frame — full update.
+        struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+            vkContext->imageIndex, &ubo, sizeof(ubo));
+    }
+
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->frustumVertexBuffer.handle, &offset);
+
+    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
+
+    // model = identity: frustum vertices are already in world space.
+    struct FrustumPushConstants { glm::mat4 model; glm::vec4 color; };
+
+    for (uint32 i = 0; i < static_cast<uint32>(frustums.size()); ++i)
+    {
+        FrustumPushConstants pc{ glm::mat4(1.0f), frustums[i].color };
+        vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(FrustumPushConstants), &pc);
+
+        vkCmdDraw(cmdBuf->handle, 24, 1, i * 24, 0);
     }
 
     return true;

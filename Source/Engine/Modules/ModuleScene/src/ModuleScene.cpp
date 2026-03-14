@@ -18,6 +18,10 @@
 
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
+#include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
@@ -111,6 +115,10 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 UpdateStatus ModuleScene::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	// Update all scene GameObjects (calls OnUpdate on each component, e.g. CCamera).
+	if (activeScene)
+		activeScene->Update(dt);
 
 	// Update only valid scripts
 	{
@@ -325,7 +333,21 @@ void ModuleScene::OnEvent(const Event& event)
 			NOUS_DEBUG("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
 			NOUS_DEBUG("Received context: %d, %d", event.ctx.i32[0], event.ctx.i32[1]);
 
-			gameCamera->SetAspectRatio((float)event.ctx.i32[0] / (float)event.ctx.i32[1]);
+			const float newAspect = (float)event.ctx.i32[0] / (float)event.ctx.i32[1];
+
+			// Update the legacy fallback camera.
+			gameCamera->SetAspectRatio(newAspect);
+
+			// Also update any CCamera components so the frustum visualization stays correct.
+			if (activeScene)
+			{
+				const auto gos = activeScene->GetGameObjectsSnapshot();
+				for (const auto& go : gos)
+				{
+					if (auto* cam = go->TryGetComponent<CCamera>())
+						cam->aspectRatio = newAspect;
+				}
+			}
 
 			break;
 		}
@@ -443,6 +465,7 @@ void ModuleScene::LoadScene(const std::string& path)
 
 	App->jobSystem->SubmitJob([this, path](){
 		activeScene->Deserialize(path);
+		EnsureMainCamera();
 	}, "LoadScene");
 }
 
@@ -450,4 +473,47 @@ void ModuleScene::ClearScene()
 {
     selectedGameObject = nullptr;
     activeScene->Clear();
+}
+
+void ModuleScene::EnsureMainCamera()
+{
+    if (!activeScene)
+        return;
+
+    // Check whether the loaded scene already has a main camera.
+    const auto gameObjects = activeScene->GetGameObjectsSnapshot();
+    for (const auto& go : gameObjects)
+    {
+        if (auto* cam = go->TryGetComponent<CCamera>())
+        {
+            if (cam->isMainCamera)
+                return; // Found one — nothing to do.
+        }
+    }
+
+    // No main camera found. Create a default one that mirrors the legacy gameCamera.
+    NOUS_INFO("No main CCamera found in scene — creating default 'Main Camera' GameObject.");
+
+    GameObject* cameraGO = activeScene->CreateGameObject("Main Camera", nullptr);
+
+    // Position from the legacy orphan Camera so the view doesn't jump.
+    if (auto* t = cameraGO->TryGetComponent<CTransform>())
+    {
+        t->SetPosition(gameCamera->GetPos());
+        // Derive orientation from the legacy camera's front/up vectors.
+        const glm::vec3 fwd = gameCamera->GetFront();
+        const glm::vec3 up  = gameCamera->GetUp();
+        const glm::vec3 right = glm::normalize(glm::cross(fwd, up));
+        const glm::mat3 rotMat(right, up, -fwd); // column-major: right, up, -forward
+        t->SetOrientation(glm::normalize(glm::quat_cast(rotMat)));
+        t->UpdateMatrix();
+    }
+
+    // Mirror FOV and clip planes from the legacy camera.
+    auto& cam        = cameraGO->AddComponent<CCamera>();
+    cam.isMainCamera = true;
+    cam.fov          = gameCamera->GetVerticalFOV();   // degrees
+    cam.nearPlane    = gameCamera->GetNearPlane();
+    cam.farPlane     = gameCamera->GetFarPlane();
+    cam.aspectRatio  = gameCamera->GetAspectRatio();
 }
