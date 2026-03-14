@@ -299,7 +299,8 @@ void VulkanShader::Destroy()
 
 bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* renderpass,
                                 ResourceShader* shader, bool disableBlending,
-                                bool createOutlinePipelines, bool useLineTopology)
+                                bool createOutlinePipelines, bool useLineTopology,
+                                bool noDepthTest)
 {
     if (!shader || shader->stagesData.empty())
     {
@@ -485,6 +486,15 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
         depthCI.stencilTestEnable = VK_TRUE;
         depthCI.front             = outlineStencil;
         depthCI.back              = outlineStencil;
+    }
+    else if (noDepthTest)
+    {
+        // Background-style pipeline: depth test OFF, depth write OFF.
+        // The background is drawn first and must not occlude or be occluded
+        // by any scene geometry via the depth buffer.
+        depthCI.depthTestEnable  = VK_FALSE;
+        depthCI.depthWriteEnable = VK_FALSE;
+        depthCI.depthCompareOp   = VK_COMPARE_OP_ALWAYS;
     }
     else
     {

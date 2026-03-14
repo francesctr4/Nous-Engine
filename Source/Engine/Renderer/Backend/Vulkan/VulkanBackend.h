@@ -71,6 +71,10 @@ public:
 	bool DrawGrid(RenderpassType renderpassID,
 	              const glm::mat4& projection, const glm::mat4& view) override;
 
+	bool DrawBackground(RenderpassType renderpassID,
+	                    const glm::mat4& projection,
+	                    const glm::mat4& view) override;
+
 	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 
 	void ProcessPendingSubmissions();

@@ -77,6 +77,10 @@ public:
 	bool DrawGrid(RenderpassType renderpassID,
 	              const glm::mat4& projection, const glm::mat4& view);
 
+	// ─────────────────────────────── Background ──────────────────────────────
+	bool DrawBackground(RenderpassType renderpassID,
+							   const glm::mat4& projection, const glm::mat4& view);
+
 public:
 
 	uint64_t mFrameNumber;

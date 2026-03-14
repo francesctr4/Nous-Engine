@@ -284,6 +284,10 @@ struct VulkanContext
     class ResourceShader* builtInOutlineShader  = nullptr; // Scene renderpass only; ResourceManager-owned
     class ResourceShader* builtInGridShader     = nullptr; // Scene renderpass only; ResourceManager-owned
 
+    // ── Background gradient shader ─────────────────────────────────────────────
+    class ResourceShader* builtInSceneBackgroundShader = nullptr; // Scene renderpass; ResourceManager-owned
+    class ResourceShader* builtInGameBackgroundShader  = nullptr; // Game renderpass; VulkanBackend-owned clone
+
     // ── Editor grid resources ──────────────────────────────────────────────────
     VulkanBuffer gridVertexBuffer{};
     uint32       gridVertexCount = 0;

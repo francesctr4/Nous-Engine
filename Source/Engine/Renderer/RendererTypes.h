@@ -73,7 +73,7 @@ struct RenderPacket
 
 struct OutlineSettings
 {
-    OutlineSettings() : color(0.f, 0.5f, 1.f, 1.f), width(3.0f), depthAware(false) {}
+    OutlineSettings() : color(1.f, 0.5f, 0.f, 1.f), width(3.0f), depthAware(false) {}
 
     glm::vec4 color;
     float width;
@@ -206,6 +206,16 @@ struct IRendererBackend
     virtual bool DrawGrid(RenderpassType renderpassID,
                           const glm::mat4& projection,
                           const glm::mat4& view) = 0;
+
+    // ─────────────────────────────── Background ──────────────────────────────
+    /**
+     * @brief Render a fullscreen sky-to-horizon gradient as the viewport background.
+     *        Must be called first in the renderpass, before any geometry.
+     *        Works for both SCENE and GAME renderpasses.
+     */
+    virtual bool DrawBackground(RenderpassType renderpassID,
+                                const glm::mat4& projection,
+                                const glm::mat4& view) = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

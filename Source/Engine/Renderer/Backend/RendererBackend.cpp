@@ -200,3 +200,9 @@ bool RendererBackend::DrawGrid(RenderpassType renderpassID,
 {
     return mBackendInterface && mBackendInterface->DrawGrid(renderpassID, projection, view);
 }
+
+bool RendererBackend::DrawBackground(RenderpassType renderpassID,
+                               const glm::mat4& projection, const glm::mat4& view)
+{
+    return mBackendInterface && mBackendInterface->DrawBackground(renderpassID, projection, view);
+}

@@ -377,6 +377,18 @@ void VulkanBackend::Shutdown() noexcept
         vkContext->builtInGameShader = nullptr;
     }
 
+    // builtInGameBackgroundShader is a VulkanBackend-owned clone for the game viewport.
+    if (vkContext->builtInGameBackgroundShader)
+    {
+        if (vkContext->builtInGameBackgroundShader->internalData)
+        {
+            vkContext->builtInGameBackgroundShader->internalData->Destroy();
+            vkContext->builtInGameBackgroundShader->internalData = nullptr;
+        }
+        NOUS_DELETE(vkContext->builtInGameBackgroundShader, MemoryTag::RESOURCE_SHADER);
+        vkContext->builtInGameBackgroundShader = nullptr;
+    }
+
     // builtInPickShader is an internal clone for mouse picking, also owned by VulkanBackend.
     if (vkContext->builtInPickShader)
     {
@@ -399,6 +411,11 @@ void VulkanBackend::Shutdown() noexcept
     if (vkContext->builtInGridShader)
         NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInGridShader pointer still set — ResourceManager may not have cleared resources.");
     vkContext->builtInGridShader = nullptr;
+
+    // builtInSceneBackgroundShader is ResourceManager-owned.
+    if (vkContext->builtInSceneBackgroundShader)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInSceneBackgroundShader pointer still set — ResourceManager may not have cleared resources.");
+    vkContext->builtInSceneBackgroundShader = nullptr;
 
     // Destroy the editor grid vertex buffer (not managed by ResourceManager).
     if (vkContext->gridVertexBuffer.handle != VK_NULL_HANDLE)
@@ -1435,6 +1452,42 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         return true;
     }
 
+    // ── BuiltIn.BackgroundShader → scene + game renderpass (viewport background) ─
+    //    Fullscreen gradient with depth test OFF. Also creates a game renderpass clone.
+    if (assetPath.find("BuiltIn.BackgroundShader") != std::string::npos)
+    {
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
+                                        /*disableBlending=*/false,
+                                        /*createOutlinePipelines=*/false,
+                                        /*useLineTopology=*/false,
+                                        /*noDepthTest=*/true))
+            return false;
+        vkContext->builtInSceneBackgroundShader = shader;
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader assigned to sceneRenderpass.");
+
+        // Game renderpass clone — owned by VulkanBackend, not ResourceManager.
+        auto* gameBackgroundShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+        gameBackgroundShader->stagesData = shader->stagesData;
+        gameBackgroundShader->reflection = shader->reflection;
+
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->gameRenderpass, gameBackgroundShader,
+                                        /*disableBlending=*/false,
+                                        /*createOutlinePipelines=*/false,
+                                        /*useLineTopology=*/false,
+                                        /*noDepthTest=*/true))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create game-renderpass background variant.");
+            NOUS_DELETE(gameBackgroundShader, MemoryTag::RESOURCE_SHADER);
+        }
+        else
+        {
+            vkContext->builtInGameBackgroundShader = gameBackgroundShader;
+            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader clone assigned to gameRenderpass.");
+        }
+
+        return true;
+    }
+
     // ── Default: scene renderpass for user-defined shaders ────────────────────
     return NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader);
 }
@@ -1445,9 +1498,10 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
         return;
 
     // Null out vkContext built-in pointer so Shutdown() doesn't touch freed memory.
-    if (shader == vkContext->builtInMaterialShader) vkContext->builtInMaterialShader = nullptr;
-    if (shader == vkContext->builtInOutlineShader)  vkContext->builtInOutlineShader  = nullptr;
-    if (shader == vkContext->builtInGridShader)     vkContext->builtInGridShader     = nullptr;
+    if (shader == vkContext->builtInMaterialShader)         vkContext->builtInMaterialShader         = nullptr;
+    if (shader == vkContext->builtInOutlineShader)          vkContext->builtInOutlineShader           = nullptr;
+    if (shader == vkContext->builtInGridShader)             vkContext->builtInGridShader              = nullptr;
+    if (shader == vkContext->builtInSceneBackgroundShader)  vkContext->builtInSceneBackgroundShader   = nullptr;
 
     auto* vs = down_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
@@ -1672,6 +1726,84 @@ bool VulkanBackend::DrawGrid(RenderpassType renderpassID,
     // ── Minor grid lines (remaining vertices) ─────────────────────────────────
     vkCmdSetLineWidth(cmdBuf->handle, 1.0f);
     vkCmdDraw(cmdBuf->handle, vkContext->gridVertexCount - 4, 1, 4, 0);
+
+    return true;
+}
+
+bool VulkanBackend::DrawBackground(RenderpassType renderpassID,
+                                    const glm::mat4& projection,
+                                    const glm::mat4& view)
+{
+    // Select the shader for this renderpass.
+    ResourceShader* rShader = nullptr;
+    if (renderpassID == RenderpassType::SCENE)
+        rShader = vkContext->builtInSceneBackgroundShader;
+    else if (renderpassID == RenderpassType::GAME)
+        rShader = vkContext->builtInGameBackgroundShader;
+
+    if (!rShader || !rShader->internalData)
+        return true; // Shader not loaded yet — skip gracefully.
+
+    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
+
+    // Bind the background pipeline (no vertex buffers, no descriptor sets needed).
+    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+
+    // ── Compute the UV-y of the world y=0 horizon line ────────────────────────
+    //
+    // For a perspective camera, the world-space Y of a ray through NDC (x, y) is:
+    //   worldDir.y = right.y * x/P00  +  up.y * y/P11  +  forward.y
+    //
+    // Setting worldDir.y = 0 (horizon), and assuming no camera roll (right.y = 0):
+    //   horizonNDC_y = -forward.y * P11 / up.y
+    //
+    // GLM mat4 is column-major: mat[col][row].
+    // View matrix rows: [right | up | -forward | translation]
+    //   view[1][1] = up.y       (column 1, row 1)
+    //   view[1][2] = -forward.y (column 1, row 2)  →  forward.y = -view[1][2]
+    //   proj[1][1] = 1/tan(fovY/2)
+    //
+    // Then convert NDC to UV:  UV.y = (NDC.y + 1) / 2
+    // (with the inverted Vulkan viewport: NDC.y=-1 is screen bottom → UV.y=0,
+    //                                     NDC.y=+1 is screen top   → UV.y=1)
+    const float upY     = view[1][1];   // world Y projected onto camera up
+    const float negFwdY = view[1][2];   // -forward.y
+    const float focalY  = projection[1][1];
+
+    float horizonNDC_y;
+    if (std::abs(upY) > 1e-4f)
+        horizonNDC_y = negFwdY * focalY / upY;  // = -forward.y * P11 / up.y
+    else
+        horizonNDC_y = (negFwdY >= 0.0f) ? 100.0f : -100.0f; // camera near-vertical: off screen
+
+    // Allow a small margin outside [0,1] so the gradient still looks natural
+    // when the horizon is just off the edge of the screen.
+    const float horizonY = std::clamp((horizonNDC_y + 1.0f) * 0.5f, -0.5f, 1.5f);
+
+    // ── Push constants ─────────────────────────────────────────────────────────
+    struct BackgroundPushConstants
+    {
+        glm::vec4 skyColor;     // offset  0 — deep blue at top and bottom edges
+        glm::vec4 horizonColor; // offset 16 — near-white at the world y=0 line
+        float     horizonY;     // offset 32 — UV-y of the horizon (computed above)
+    };
+    const BackgroundPushConstants push
+    {
+        glm::vec4(0.08f, 0.14f, 0.32f, 1.0f), // sky: deep blue
+        glm::vec4(0.92f, 0.95f, 1.00f, 1.0f), // horizon: near-white
+        horizonY
+    };
+
+    // Size = offset of last field + its size = 32 + 4 = 36 bytes.
+    constexpr uint32_t k_PushSize =
+        offsetof(BackgroundPushConstants, horizonY) + sizeof(float);
+
+    vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+        VK_SHADER_STAGE_FRAGMENT_BIT, 0, k_PushSize, &push);
+
+    // Draw the fullscreen triangle — no vertex buffer needed.
+    vkCmdDraw(cmdBuf->handle, 3, 1, 0, 0);
 
     return true;
 }

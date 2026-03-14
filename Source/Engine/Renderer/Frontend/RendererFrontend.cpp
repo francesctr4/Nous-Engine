@@ -109,6 +109,11 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 	RenderpassType sceneRenderpass = RenderpassType::SCENE;
 	success &= ExecuteRenderpass(sceneRenderpass, [&]()
 	{
+		// Background gradient must come first — before geometry and the grid.
+		success &= mBackend->DrawBackground(sceneRenderpass,
+			packet->editorCamera->GetProjectionMatrix(),
+			packet->editorCamera->GetViewMatrix());
+
         success &= mBackend->UpdateGlobalWorldState(
 				sceneRenderpass,
 				packet->editorCamera->GetProjectionMatrix(),
@@ -143,6 +148,11 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 	RenderpassType gameRenderpass = RenderpassType::GAME;
 	success &= ExecuteRenderpass(gameRenderpass, [&]()
 	{
+		// Background gradient must come first — before geometry.
+		success &= mBackend->DrawBackground(gameRenderpass,
+			packet->gameCamera->GetProjectionMatrix(),
+			packet->gameCamera->GetViewMatrix());
+
         success &= mBackend->UpdateGlobalWorldState(
 				gameRenderpass,
 				packet->gameCamera->GetProjectionMatrix(),
