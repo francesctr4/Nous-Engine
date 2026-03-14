@@ -19,6 +19,10 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/EngineExport.h"
 
+#include <glm/glm.hpp>
+#include <unordered_map>
+#include <utility>
+
 // ---------------------------------------------------------------------
 // Forward Declarations
 // ---------------------------------------------------------------------
@@ -56,6 +60,9 @@ public:
 	// ---------------------------------------------------------------------
 	[[nodiscard]] NOUS_ENGINE_API RendererFrontend* GetRendererFrontend() const;
 
+	// Toggle frustum culling against the game camera. Default: disabled.
+	bool frustumCullingEnabled = false;
+
 private:
 	// ---------------------------------------------------------------------
 	// Internal Methods
@@ -67,6 +74,10 @@ private:
 	// Members
 	// ---------------------------------------------------------------------
 	RendererFrontend* mRendererFrontend;
+
+	// World-space AABBs computed each frame in the bounding-box loop.
+	// Keyed by GameObject ID; consumed by BuildRenderPacket for frustum culling.
+	std::unordered_map<uint32_t, std::pair<glm::vec3, glm::vec3>> mMeshAABBCache;
 };
 
 #endif // NOUS_ENGINE_MODULE_RENDERER3D_H

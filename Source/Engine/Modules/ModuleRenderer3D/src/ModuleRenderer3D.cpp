@@ -22,7 +22,9 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/LogChannel.h"
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Utils/Math/FrustumCulling.h"
 
 
 #ifdef _PROFILING
@@ -128,7 +130,9 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	}
 
 	// Compute AABB and OBB bounding boxes for all GameObjects with meshes.
+	// The world-space AABBs are cached in mMeshAABBCache for use by BuildRenderPacket.
 	{
+		mMeshAABBCache.clear();
 		std::vector<BoundingBoxData> boundingBoxes;
 
 		if (App->scene->activeScene)
@@ -193,6 +197,9 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			glm::mat4 aabbTransform = glm::translate(glm::mat4(1.0f), worldCenter)
 				* glm::scale(glm::mat4(1.0f), worldExtents);
 			boundingBoxes.emplace_back(aabbTransform, glm::vec4(1.0f, 0.4f, 0.1f, 1.0f)); // orange-red
+
+			// Cache for frustum culling in BuildRenderPacket.
+			mMeshAABBCache[goPtr->GetID()] = { worldMin, worldMax };
 		}
 		} // if activeScene
 
@@ -347,6 +354,17 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
 
 	packet->geometries.clear();
 
+	// Extract frustum planes from the game camera for per-mesh culling.
+	// Meshes whose world-space AABB is completely outside the frustum are skipped.
+	FrustumCulling::FrustumPlanes frustum{};
+	bool hasFrustum = false;
+	if (frustumCullingEnabled && packet->gameCamera)
+	{
+		const glm::mat4 vp = packet->gameCamera->GetProjectionMatrix() * packet->gameCamera->GetViewMatrix();
+		frustum    = FrustumCulling::ExtractFrustumPlanes(vp);
+		hasFrustum = true;
+	}
+
 	// Snapshot under mutex — guards against concurrent CreateGameObject() calls
 	// from the background LoadScene job reallocating the vector mid-iteration.
 	const auto gameObjects = App->scene->activeScene->GetGameObjectsSnapshot();
@@ -368,6 +386,18 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
 
 		if (auto* material = goPtr->TryGetComponent<CMaterial>())
 			data.material = material->material;
+
+		// Frustum cull against the game camera using the cached world-space AABB.
+		// Meshes with no cached AABB (e.g. empty vertex arrays) are not culled.
+		if (hasFrustum)
+		{
+			const auto it = mMeshAABBCache.find(goPtr->GetID());
+			if (it != mMeshAABBCache.end() &&
+				!FrustumCulling::IsAABBVisible(frustum, it->second.first, it->second.second))
+			{
+				continue;
+			}
+		}
 
 		packet->geometries.emplace_back(data);
 	}
