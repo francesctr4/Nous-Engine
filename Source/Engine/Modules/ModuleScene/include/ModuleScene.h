@@ -12,7 +12,7 @@
 class Scene;
 class GameObject;
 class Camera;
-class IScript;
+class CScript;
 class ScriptManager;
 
 class ModuleScene : public Module, public IEventListener
@@ -40,22 +40,27 @@ public:
 	NOUS_ENGINE_API void LoadScene(const std::string& path);
 	NOUS_ENGINE_API void ClearScene();
 
+	// Called by CScript::OnStart / CScript::OnDestroy to maintain the live registry
+	NOUS_ENGINE_API void RegisterScriptComponent(CScript* component);
+	NOUS_ENGINE_API void UnregisterScriptComponent(CScript* component);
+
 public:
 
-	Scene* activeScene;
-	GameObject* selectedGameObject;
-	Camera* gameCamera;
-
-	// Scripting
+	Scene*         activeScene;
+	GameObject*    selectedGameObject;
+	Camera*        gameCamera;
 	ScriptManager* scriptManager;
-	NOUS_Vector<IScript*> scripts;
-	std::mutex scriptsMutex;
 
-	void CreateScriptInstances();
+private:
+
+	// Flat registry of every live CScript component in the scene.
+	// Used for hot-reload and LateUpdate dispatch.
+	NOUS_Vector<CScript*> m_scriptComponents;
+	std::mutex            m_scriptComponentsMutex;
+
 	void RecompileScripts();
 	void CleanupScripts();
 
-private:
 	/**
 	 * @brief Ensures at least one GameObject with a main CCamera exists in the
 	 *        active scene. If none is found, a "Main Camera" GO is created and

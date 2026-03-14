@@ -11,7 +11,6 @@
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
 #include "Engine/Scripting/ScriptManager.h"
-#include "Engine/Scripting/Internal/IScript.inl"
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
@@ -20,6 +19,7 @@
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
@@ -27,26 +27,25 @@
 
 #include <SDL3/SDL.h>
 #include <filesystem>
+#include <algorithm>
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
-ModuleScene::ModuleScene(Application* app) : Module(app), scripts(MemoryTag::SCRIPTING_SYSTEM)
+ModuleScene::ModuleScene(Application* app)
+    : Module(app), m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	activeScene = NOUS_NEW<Scene>(MemoryTag::SCENE);
-	gameCamera = NOUS_NEW<Camera>(MemoryTag::CAMERA);
+	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE);
+	gameCamera    = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM);
 
-	// Load the script library — path is exe-relative so it works regardless of working directory
+	// Load the script library — path is exe-relative so it works regardless of working directory.
 	// SDL3's SDL_GetBasePath() returns a const char* managed internally by SDL — do NOT free it.
-	const std::string scriptsDllPath = (std::filesystem::path(SDL_GetBasePath()) / "Scripts" / "Scripts.dll").string();
-	if (!scriptManager->LoadScriptLibrary(scriptsDllPath)) {
+	const std::string scriptsDllPath =
+        (std::filesystem::path(SDL_GetBasePath()) / "Scripts" / "Scripts.dll").string();
+	if (!scriptManager->LoadScriptLibrary(scriptsDllPath))
 		NOUS_ERROR("Failed to load script library on startup");
-	}
-
-	// Create script instances
-	CreateScriptInstances();
 
 	App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
@@ -56,12 +55,6 @@ ModuleScene::~ModuleScene()
 	NOUS_TRACE("%s()", __FUNCTION__);
 
     selectedGameObject = nullptr;
-
-	// Clean up scripts before destroying script manager
-	{
-		std::lock_guard<std::mutex> lock(scriptsMutex);
-		CleanupScripts();
-	}
 
 	NOUS_DELETE(gameCamera, MemoryTag::CAMERA);
 	NOUS_DELETE(scriptManager, MemoryTag::SCRIPTING_SYSTEM);
@@ -74,32 +67,12 @@ bool ModuleScene::Awake()
 
 	gameCamera->SetPos(-4.61f, 100.0f, 718.32f);
 
-	{
-		std::lock_guard<std::mutex> lock(scriptsMutex);
-		for (auto& script : scripts)
-		{
-			if (script) {
-				script->Awake();
-			}
-		}
-	}
-
 	return true;
 }
 
 bool ModuleScene::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
-
-	{
-		std::lock_guard<std::mutex> lock(scriptsMutex);
-		for (auto& script : scripts)
-		{
-			if (script) {
-				script->Start();
-			}
-		}
-	}
 
     LoadScene("Assets/Scenes/LagiacrusScene.nous");
 
@@ -116,23 +89,9 @@ UpdateStatus ModuleScene::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	// Update all scene GameObjects (calls OnUpdate on each component, e.g. CCamera).
+	// Update all scene GameObjects — calls OnUpdate on each component (CCamera, CScript, …)
 	if (activeScene)
 		activeScene->Update(dt);
-
-	// Update only valid scripts
-	{
-		std::lock_guard<std::mutex> lock(scriptsMutex);
-		for (auto it = scripts.begin(); it != scripts.end(); ) {
-			if (*it) {
-				(*it)->Update(dt);
-				++it;
-			} else {
-				// Remove null scripts
-				it = scripts.erase(it);
-			}
-		}
-	}
 
 	if (App->input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
 	{
@@ -295,14 +254,11 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
+	// Dispatch LateUpdate to all CScript components
 	{
-		std::lock_guard<std::mutex> lock(scriptsMutex);
-		for (auto& script : scripts)
-		{
-			if (script) {
-				script->LateUpdate(dt);
-			}
-		}
+		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+		for (auto* cs : m_scriptComponents)
+			if (cs) cs->LateUpdate(dt);
 	}
 
 	return UpdateStatus::CONTINUE;
@@ -315,10 +271,7 @@ bool ModuleScene::CleanUp()
 	// Wait for any in-flight jobs (e.g. hot-reload) before touching scripts
 	App->jobSystem->WaitForPendingJobs();
 
-	{
-		std::lock_guard<std::mutex> lock(scriptsMutex);
-		CleanupScripts();
-	}
+	CleanupScripts();
 	scriptManager->UnloadScriptLibrary();
 
 	return true;
@@ -354,98 +307,74 @@ void ModuleScene::OnEvent(const Event& event)
 	}
 }
 
-void ModuleScene::CreateScriptInstances() {
-    // Clear any existing scripts first
-    CleanupScripts();
+// ---------------------------------------------------------------------------
+// CScript component registry — called by CScript::OnStart / OnDestroy
+// ---------------------------------------------------------------------------
 
-    // Define the scripts directory path
-    std::string scriptsPath = "Assets/Scripts/";
-
-    // Vector to store script names
-    std::vector<std::string> scriptNames;
-
-    try {
-        // Check if directory exists
-        if (!std::filesystem::exists(scriptsPath)) {
-            NOUS_WARN("Scripts directory does not exist: %s", scriptsPath.c_str());
-            return;
-        }
-
-        // Iterate through all files in the directory
-        for (const auto& entry : std::filesystem::directory_iterator(scriptsPath)) {
-            if (entry.is_regular_file()) {
-                std::string filename = entry.path().filename().string();
-                std::string extension = entry.path().extension().string();
-
-                // Only process .cpp files (or adjust for your script extension)
-                if (extension == ".cpp" || extension == ".inl" || extension == ".h") {
-                    // Remove extension to get the class name
-                    std::string className = entry.path().stem().string();
-
-                    // Skip the template file if it exists
-                    if (className != "ScriptTemplate") {
-                        scriptNames.push_back(className);
-                    }
-                }
-            }
-        }
-
-        // Create script instances for all found scripts
-        for (const std::string& name : scriptNames) {
-            IScript* script = scriptManager->CreateScriptInstance(name);
-            if (script) {
-                scripts.emplace_back(script);
-                NOUS_INFO("Created script instance: %s", name.c_str());
-            } else {
-                NOUS_WARN("Failed to create script instance: %s", name.c_str());
-            }
-        }
-
-        NOUS_INFO("Successfully created %zu script instances", scriptNames.size());
-
-    } catch (const std::filesystem::filesystem_error& ex) {
-        NOUS_ERROR("Filesystem error while reading scripts directory: %s", ex.what());
-    } catch (const std::exception& ex) {
-        NOUS_ERROR("Error reading scripts directory: %s", ex.what());
-    }
+void ModuleScene::RegisterScriptComponent(CScript* component)
+{
+	std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+	m_scriptComponents.push_back(component);
 }
+
+void ModuleScene::UnregisterScriptComponent(CScript* component)
+{
+	std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+	auto it = std::find(m_scriptComponents.begin(), m_scriptComponents.end(), component);
+	if (it != m_scriptComponents.end())
+		m_scriptComponents.erase(it);
+}
+
+// ---------------------------------------------------------------------------
+// Hot-reload
+// ---------------------------------------------------------------------------
 
 void ModuleScene::RecompileScripts()
 {
-	// Phase 1: destroy old scripts (lock protects against main-thread iteration)
+	// Phase 1: destroy all DLL-allocated instances but keep the component names.
+	// Lock is released afterward so the main thread keeps rendering harmlessly
+	// (CScript::OnUpdate iterates an empty m_instances — safe no-op).
 	{
-		std::lock_guard<std::mutex> lock(scriptsMutex);
-		CleanupScripts();
+		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+		for (auto* cs : m_scriptComponents)
+			if (cs) cs->ClearInstances();
 	}
 
-	// Phase 2: rebuild DLL — lock is released so the main thread keeps rendering
-	// (scripts vector is empty, so Update/PostUpdate loops are harmless no-ops)
-	if (scriptManager->ReloadScriptLibrary("Scripts/Scripts.dll")) {
-		// Phase 3: create and initialize new scripts under lock
-		std::lock_guard<std::mutex> lock(scriptsMutex);
-		CreateScriptInstances();
+	// Phase 2: rebuild DLL (lock not held)
+	const std::string dllPath =
+        (std::filesystem::path(SDL_GetBasePath()) / "Scripts" / "Scripts.dll").string();
 
-		for (auto &script: scripts) {
-			if (script) {
-				script->Awake();
-				script->Start();
-			}
-		}
-		NOUS_INFO("Script hot-reload completed successfully");
-	} else {
+	if (!scriptManager->ReloadScriptLibrary(dllPath))
+	{
 		NOUS_ERROR("Script hot-reload failed");
+		return;
 	}
+
+	// Phase 3: recreate instances from the new DLL
+	{
+		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+		for (auto* cs : m_scriptComponents)
+			if (cs) cs->RecreateInstances();
+	}
+
+	NOUS_INFO("Script hot-reload completed successfully");
 }
 
+// ---------------------------------------------------------------------------
+// Cleanup (called from CleanUp() before UnloadScriptLibrary)
+// ---------------------------------------------------------------------------
 
-void ModuleScene::CleanupScripts() {
-	for (auto& script : scripts) {
-		if (script) {
-			script->Destroy(); // dealloc in the DLL that allocated it
-		}
-	}
-	scripts.clear();
-	NOUS_INFO("Cleaned up all script instances");
+void ModuleScene::CleanupScripts()
+{
+	std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+
+	// Destroy DLL-allocated instances; ClearInstances sets m_started=false so
+	// the subsequent CScript::OnDestroy (from scene destruction) skips unregister.
+	for (auto* cs : m_scriptComponents)
+		if (cs) cs->ClearInstances();
+
+	m_scriptComponents.clear();
+	NOUS_INFO("Cleaned up all CScript instances");
 }
 
 void ModuleScene::SaveScene(const std::string& path)

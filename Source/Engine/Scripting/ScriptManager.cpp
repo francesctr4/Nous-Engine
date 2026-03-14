@@ -330,6 +330,15 @@ bool ScriptManager::WaitForDLLUnload(const std::string& dllPath, int maxRetries)
     return true; // On non-Windows or if we can't check, just proceed
 }
 
+std::vector<std::string> ScriptManager::GetAvailableScriptNames() const
+{
+    std::vector<std::string> names;
+    if (!m_scriptRegistry) return names;
+    for (const auto& [name, _] : m_scriptRegistry->GetAll())
+        names.push_back(name);
+    return names;
+}
+
 IScript* ScriptManager::CreateScriptInstance(const std::string& scriptName) {
     if (!m_scriptRegistry) {
         NOUS_ERROR("Script registry not available");

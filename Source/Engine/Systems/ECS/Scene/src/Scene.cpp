@@ -81,8 +81,17 @@ void Scene::DestroyGameObject(GameObject* go) {
 // Update
 // -----------------------------------------------------------------------------
 void Scene::Update(float deltaTime) {
-    std::lock_guard<std::mutex> lock(m_Mutex);
-    for (auto& gameObject : m_GameObjects) {
+    // Snapshot under lock so job-thread mutations to m_GameObjects are safe,
+    // then release the lock before dispatching UpdateComponents.
+    // This allows scripts to call back into scene queries (GetGameObjectByID etc.)
+    // without deadlocking on m_Mutex.
+    NOUS_Vector<GameObject*> snapshot(MemoryTag::GAMEOBJECT);
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        snapshot = m_GameObjects;
+    }
+
+    for (auto& gameObject : snapshot) {
         gameObject->UpdateComponents(deltaTime);
     }
 }

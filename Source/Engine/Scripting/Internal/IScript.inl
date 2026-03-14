@@ -1,12 +1,18 @@
 #ifndef NOUS_ENGINE_ISCRIPT_INL
 #define NOUS_ENGINE_ISCRIPT_INL
 
+#include <cstdint>
+
 class IScript
 {
 protected:
 
     // Prevent creating IScript directly
     IScript() = default;
+
+    // ID of the owning GameObject — set by CScript before calling Awake().
+    // Use Nous_Engine->GameObject->SetPosition(m_ownerID, ...) to manipulate self.
+    uint32_t m_ownerID = 0;
 
 public:
 
@@ -15,6 +21,10 @@ public:
     // Must be called instead of delete to ensure deallocation happens in the
     // same DLL heap that allocated this instance (avoids cross-DLL heap mismatch).
     virtual void Destroy() { delete this; }
+
+    // Set/get the owning GameObject ID (called by CScript before Awake)
+    void     SetOwnerID(uint32_t id) { m_ownerID = id; }
+    uint32_t GetOwnerID()      const { return m_ownerID; }
 
     // Called once when the script is first attached/loaded
     virtual void Awake() = 0;

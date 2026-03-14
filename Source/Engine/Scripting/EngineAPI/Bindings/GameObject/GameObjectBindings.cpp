@@ -60,7 +60,8 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
 
         // 3. Set the new position
         auto& transform = go->GetComponent<CTransform>();
-        transform.position = glm::vec3(x, y, z); // Assuming you use glm and your component has a 'position' member
+        transform.position = glm::vec3(x, y, z);
+        transform.UpdateMatrix();
 
         NOUS_DEBUG("[SCRIPT] Set position of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
     };
@@ -95,27 +96,53 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
 
     gameObject.SetScale = [](uint32_t id, float x, float y, float z) {
         if (!External || !External->scene || !External->scene->activeScene) {
-            NOUS_ERROR("[SCRIPT] Scene not available for SetPosition!");
+            NOUS_ERROR("[SCRIPT] Scene not available for SetScale!");
             return;
         }
-
-        // 1. Get the GameObject by ID
         GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
-        if (!go) {
-            NOUS_WARN("[SCRIPT] GameObject with ID %u not found for SetPosition!", id);
-            return;
-        }
-
-        // 2. Check for and get the Transform component
+        if (!go) { NOUS_WARN("[SCRIPT] GameObject ID %u not found for SetScale!", id); return; }
         if (!go->HasComponent<CTransform>()) {
-            NOUS_WARN("[SCRIPT] GameObject %u has no Transform component!", id);
-            return;
+            NOUS_WARN("[SCRIPT] GameObject %u has no Transform for SetScale!", id); return;
         }
-
-        // 3. Set the new position
         auto& transform = go->GetComponent<CTransform>();
-        transform.scale = glm::vec3(x, y, z); // Assuming you use glm and your component has a 'position' member
+        transform.scale = glm::vec3(x, y, z);
+        transform.UpdateMatrix();
+        NOUS_DEBUG("[SCRIPT] Set scale of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
+    };
 
-        NOUS_DEBUG("[SCRIPT] Set position of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
+    gameObject.GetPosition = [](uint32_t id, float* x, float* y, float* z) {
+        if (!External || !External->scene || !External->scene->activeScene) return;
+        GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
+        if (!go || !go->HasComponent<CTransform>()) return;
+        const auto& pos = go->GetComponent<CTransform>().position;
+        if (x) *x = pos.x;
+        if (y) *y = pos.y;
+        if (z) *z = pos.z;
+    };
+
+    gameObject.GetRotation = [](uint32_t id, float* x, float* y, float* z) {
+        if (!External || !External->scene || !External->scene->activeScene) return;
+        GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
+        if (!go || !go->HasComponent<CTransform>()) return;
+        const glm::vec3 euler = go->GetComponent<CTransform>().GetEulerAngles();
+        if (x) *x = euler.x;
+        if (y) *y = euler.y;
+        if (z) *z = euler.z;
+    };
+
+    gameObject.GetScale = [](uint32_t id, float* x, float* y, float* z) {
+        if (!External || !External->scene || !External->scene->activeScene) return;
+        GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
+        if (!go || !go->HasComponent<CTransform>()) return;
+        const auto& sc = go->GetComponent<CTransform>().scale;
+        if (x) *x = sc.x;
+        if (y) *y = sc.y;
+        if (z) *z = sc.z;
+    };
+
+    gameObject.FindByName = [](const char* name) -> uint32_t {
+        if (!External || !External->scene || !External->scene->activeScene || !name) return 0;
+        auto results = External->scene->activeScene->FindGameObjectsByName(name);
+        return results.empty() ? 0 : results[0]->GetID();
     };
 }

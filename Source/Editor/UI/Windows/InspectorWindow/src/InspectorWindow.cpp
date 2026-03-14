@@ -8,12 +8,16 @@
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Scripting/ScriptManager.h"
 
 #include "imgui.h"
 #include <glm/glm.hpp>
+#include <vector>
+#include <string>
 
 InspectorWindow::InspectorWindow(const char* title, EditorContext* context, bool start_open)
         : IEditorWindow(title, context, nullptr, start_open) {
@@ -133,6 +137,62 @@ void InspectorWindow::Draw() {
                         }
                     }
                 }
+            }
+
+            // --- Script Component ---
+            if (go->HasComponent<CScript>()) {
+                if (ImGui::CollapsingHeader("Scripts", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    auto& cs = go->GetComponent<CScript>();
+                    ImGui::Indent();
+
+                    // List attached scripts with remove buttons
+                    const auto& scriptNames = cs.GetScriptNames();
+                    for (int i = 0; i < static_cast<int>(scriptNames.size()); ++i) {
+                        ImGui::BulletText("%s", scriptNames[i].c_str());
+                        ImGui::SameLine();
+                        const std::string removeId = "Remove##script_" + std::to_string(i);
+                        if (ImGui::SmallButton(removeId.c_str())) {
+                            cs.RemoveScript(scriptNames[i]);
+                            break; // Iterator invalidated — restart next frame
+                        }
+                    }
+
+                    // Add script from dropdown
+                    ImGui::Spacing();
+                    const std::vector<std::string> available =
+                        External->scene->scriptManager->GetAvailableScriptNames();
+
+                    if (!available.empty()) {
+                        static int s_selectedScript = 0;
+                        if (s_selectedScript >= static_cast<int>(available.size()))
+                            s_selectedScript = 0;
+
+                        std::vector<const char*> cNames;
+                        cNames.reserve(available.size());
+                        for (const auto& n : available) cNames.push_back(n.c_str());
+
+                        ImGui::SetNextItemWidth(160.0f);
+                        ImGui::Combo("##ScriptPick", &s_selectedScript,
+                                     cNames.data(), static_cast<int>(cNames.size()));
+                        ImGui::SameLine();
+                        if (ImGui::Button("Add Script"))
+                            cs.AddScript(available[s_selectedScript]);
+                    } else {
+                        ImGui::TextDisabled("No scripts in registry (rebuild DLL?)");
+                    }
+
+                    ImGui::Unindent();
+                }
+            }
+
+            // --- Add Component section ---
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            if (!go->HasComponent<CScript>()) {
+                if (ImGui::Button("Add CScript Component"))
+                    go->AddComponent<CScript>();
             }
 
         }

@@ -26,6 +26,9 @@ public:
     // Script management
     IScript* CreateScriptInstance(const std::string& scriptName);
 
+    // Returns names of all scripts registered in the loaded DLL (empty if no DLL loaded)
+    NOUS_ENGINE_API std::vector<std::string> GetAvailableScriptNames() const;
+
     // Script generation
     NOUS_ENGINE_API static bool GenerateScript(const std::string& className);
 
