@@ -28,10 +28,17 @@ CScript::~CScript()
 
 void CScript::OnStart()
 {
+    // Always register so the component appears in the registry and can be found
+    // by PressPlay() / hot-reload regardless of simulation state.
+    External->scene->RegisterScriptComponent(this);
+    m_registered = true;
+
+    // Defer instance creation to PressPlay() when the simulation is not running.
+    if (!External->scene->IsPlaying())
+        return;
+
     CreateInstances();
     m_started = true;
-
-    External->scene->RegisterScriptComponent(this);
 
     for (auto* inst : m_instances)
     {
@@ -45,6 +52,7 @@ void CScript::OnStart()
 
 void CScript::OnUpdate(float dt)
 {
+    if (dt <= 0.0f) return;
     for (auto* inst : m_instances)
         if (inst) inst->Update(dt);
 }
@@ -57,9 +65,16 @@ void CScript::LateUpdate(float dt)
 
 void CScript::OnDestroy()
 {
-    if (m_started)
+    // Unregister only if we actually registered — avoids calling into the scene
+    // module if OnStart() was never reached (e.g., component destroyed mid-construction).
+    if (m_registered && External && External->scene)
     {
         External->scene->UnregisterScriptComponent(this);
+        m_registered = false;
+    }
+
+    if (m_started)
+    {
         DestroyInstances();
         m_started = false;
     }

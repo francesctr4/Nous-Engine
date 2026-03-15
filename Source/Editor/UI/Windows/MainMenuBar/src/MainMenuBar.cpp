@@ -1,6 +1,8 @@
 #include "Editor/UI/Windows/MainMenuBar/include/MainMenuBar.h"
 
 #include "imgui.h"
+#include "Engine/Core/Application.h"
+#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -328,6 +330,56 @@ void MainMenuBar::Draw()
 
 			ImGui::EndMenu();
 
+		}
+
+		// -----------------------------------------------------------------------
+		// Centered simulation toolbar — Play / Pause / Stop / Step
+		// -----------------------------------------------------------------------
+		{
+			const SimulationState state = External->scene->GetSimulationState();
+
+			constexpr float buttonW  = 52.0f;
+			constexpr float spacing  = 4.0f;
+			constexpr float totalW   = buttonW * 4.0f + spacing * 3.0f;
+			const float     centerX  = (ImGui::GetWindowWidth() - totalW) * 0.5f;
+			ImGui::SetCursorPosX(centerX);
+
+			// Play button — disabled while already playing
+			const bool canPlay = (state == SimulationState::STOPPED);
+			if (!canPlay) ImGui::BeginDisabled();
+			if (ImGui::Button("Play", { buttonW, 0 }))
+				External->scene->PressPlay();
+			if (!canPlay) ImGui::EndDisabled();
+
+			ImGui::SameLine(0.0f, spacing);
+
+			// Pause button — disabled when stopped; highlighted when paused
+			const bool canPause  = (state != SimulationState::STOPPED);
+			const bool isPaused  = (state == SimulationState::PAUSED);
+			if (!canPause) ImGui::BeginDisabled();
+			if (isPaused)  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.85f, 0.65f, 0.10f, 1.0f));
+			if (ImGui::Button("Pause", { buttonW, 0 }))
+				External->scene->PressPause();
+			if (isPaused)  ImGui::PopStyleColor();
+			if (!canPause) ImGui::EndDisabled();
+
+			ImGui::SameLine(0.0f, spacing);
+
+			// Stop button — disabled when already stopped
+			const bool canStop = (state != SimulationState::STOPPED);
+			if (!canStop) ImGui::BeginDisabled();
+			if (ImGui::Button("Stop", { buttonW, 0 }))
+				External->scene->PressStop();
+			if (!canStop) ImGui::EndDisabled();
+
+			ImGui::SameLine(0.0f, spacing);
+
+			// Step button — only available while paused
+			const bool canStep = (state == SimulationState::PAUSED);
+			if (!canStep) ImGui::BeginDisabled();
+			if (ImGui::Button("Step", { buttonW, 0 }))
+				External->scene->PressStep();
+			if (!canStep) ImGui::EndDisabled();
 		}
 
 		ImGui::EndMainMenuBar();

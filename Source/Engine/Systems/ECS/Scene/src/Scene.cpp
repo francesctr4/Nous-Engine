@@ -149,9 +149,8 @@ NOUS_Vector<GameObject*> Scene::GetGameObjectsSnapshot() const
 // -----------------------------------------------------------------------------
 // Serialization
 // -----------------------------------------------------------------------------
-void Scene::Serialize(const std::string& filepath) const {
-    std::lock_guard<std::mutex> lock(m_Mutex);
-
+void Scene::Serialize(const std::string& filepath) const
+{
     JSON_Value* root = json_value_init_object();
     JSON_Object* rootObj = json_value_get_object(root);
     JSON_Value* arrVal = json_value_init_array();
@@ -173,14 +172,9 @@ void Scene::Serialize(const std::string& filepath) const {
 // -----------------------------------------------------------------------------
 // Deserialization
 // -----------------------------------------------------------------------------
-void Scene::Deserialize(const std::string& filepath) {
-    // Phase 1 — clear existing content under a brief lock.
-    {
-        std::lock_guard<std::mutex> lock(m_Mutex);
-        Clear();
-    }
-
-    // Phase 2 — parse JSON and build GameObjects into a local vector.
+void Scene::Deserialize(const std::string& filepath)
+{
+    // Phase 1 — parse JSON and build GameObjects into a local vector.
     // No mutex held here so the main thread can call GetGameObjectsSnapshot()
     // freely (it will simply get an empty vector while loading is in progress).
     JSON_Value* root = json_parse_file(filepath.c_str());

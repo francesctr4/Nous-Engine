@@ -35,7 +35,7 @@ void CMesh::Deserialize(JSON_Object *obj) {
 }
 
 void CMesh::OnDestroy() {
-    if (mesh->IsValid())
+    if (mesh && mesh->IsValid())
     {
         External->resourceManager->UnloadResource(mesh->GetUID());
     }

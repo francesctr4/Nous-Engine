@@ -15,6 +15,8 @@ class Camera;
 class CScript;
 class ScriptManager;
 
+enum class SimulationState { STOPPED, PLAYING, PAUSED };
+
 class ModuleScene : public Module, public IEventListener
 {
 public:
@@ -44,6 +46,19 @@ public:
 	NOUS_ENGINE_API void RegisterScriptComponent(CScript* component);
 	NOUS_ENGINE_API void UnregisterScriptComponent(CScript* component);
 
+	// ---------------------------------------------------------------------------
+	// Simulation controls
+	// ---------------------------------------------------------------------------
+	NOUS_ENGINE_API void PressPlay();   // STOPPED → PLAYING
+	NOUS_ENGINE_API void PressStop();   // PLAYING/PAUSED → STOPPED (restores scene snapshot)
+	NOUS_ENGINE_API void PressPause();  // PLAYING ↔ PAUSED toggle
+	NOUS_ENGINE_API void PressStep();   // Advances exactly one frame while PAUSED
+
+	NOUS_ENGINE_API bool            IsPlaying()           const { return m_simulationState == SimulationState::PLAYING; }
+	NOUS_ENGINE_API bool            IsPaused()            const { return m_simulationState == SimulationState::PAUSED;  }
+	NOUS_ENGINE_API bool            IsStopped()           const { return m_simulationState == SimulationState::STOPPED; }
+	NOUS_ENGINE_API SimulationState GetSimulationState()  const { return m_simulationState; }
+
 public:
 
 	Scene*         activeScene;
@@ -57,6 +72,15 @@ private:
 	// Used for hot-reload and LateUpdate dispatch.
 	NOUS_Vector<CScript*> m_scriptComponents;
 	std::mutex            m_scriptComponentsMutex;
+
+	// ---------------------------------------------------------------------------
+	// Simulation state
+	// ---------------------------------------------------------------------------
+	SimulationState m_simulationState  = SimulationState::STOPPED;
+	bool            m_stepOneFrame     = false;  // consume in Update() to tick one frame while PAUSED
+	bool            m_didStepThisFrame = false;  // propagates to PostUpdate() for LateUpdate gating
+	bool            m_pendingStop      = false;  // deferred LoadScene flag — set by PressStop(), consumed in PreUpdate()
+	std::string     m_snapshotPath     = "Library/_simulation_snapshot.nous";
 
 	void RecompileScripts();
 	void CleanupScripts();

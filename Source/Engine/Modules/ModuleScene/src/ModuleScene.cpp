@@ -25,6 +25,8 @@
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
+#include "Engine/Core/TimeManager/TimeManager.h"
+
 #include <SDL3/SDL.h>
 #include <filesystem>
 #include <algorithm>
@@ -82,6 +84,18 @@ bool ModuleScene::Start()
 UpdateStatus ModuleScene::PreUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
+
+	// Deferred stop: PressStop() set this flag instead of calling LoadScene() directly,
+	// so that the scene is never cleared while the SCENE/GAME command buffers are still
+	// recorded but not yet submitted (EndFrame hasn't run). By the time PreUpdate() is
+	// reached, the previous frame's EndFrame has fully submitted — safe to reload.
+	if (m_pendingStop)
+	{
+		m_pendingStop = false;
+		LoadScene(m_snapshotPath);
+		NOUS_INFO("[Scene] Simulation stopped — scene restored from snapshot.");
+	}
+
 	return UpdateStatus::CONTINUE;
 }
 
@@ -89,9 +103,34 @@ UpdateStatus ModuleScene::Update(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	// Update all scene GameObjects — calls OnUpdate on each component (CCamera, CScript, …)
+	// Compute simulation dt — non-zero only when simulation is ticking.
+	m_didStepThisFrame = false;
+	float simDt = 0.0f;
+
+	if (m_simulationState == SimulationState::PLAYING)
+	{
+		simDt = dt;
+	}
+	else if (m_simulationState == SimulationState::PAUSED && m_stepOneFrame)
+	{
+		simDt              = dt;
+		m_stepOneFrame     = false;
+		m_didStepThisFrame = true;
+	}
+
+	TimeManager::simulationDeltaTime = simDt;
+	if (simDt > 0.0f)
+	{
+		TimeManager::simulationTime += simDt;
+		TimeManager::simulationFrameCount++;
+	}
+
+	// Always update the scene — CTransform, CCamera, etc. need to run every frame for
+	// rendering and editor-mode interactions. Scripts naturally don't tick in STOPPED mode
+	// because m_instances is empty (CScript::OnUpdate iterates nothing).
+	// Pass simDt so script Update() receives 0 when paused/stopped, full dt when playing.
 	if (activeScene)
-		activeScene->Update(dt);
+		activeScene->Update(simDt);
 
 	if (App->input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
 	{
@@ -254,11 +293,12 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-	// Dispatch LateUpdate to all CScript components
+	// Dispatch LateUpdate only when the simulation actually ticked this frame.
+	if (m_simulationState == SimulationState::PLAYING || m_didStepThisFrame)
 	{
 		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
 		for (auto* cs : m_scriptComponents)
-			if (cs) cs->LateUpdate(dt);
+			if (cs) cs->LateUpdate(TimeManager::simulationDeltaTime);
 	}
 
 	return UpdateStatus::CONTINUE;
@@ -368,13 +408,105 @@ void ModuleScene::CleanupScripts()
 {
 	std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
 
-	// Destroy DLL-allocated instances; ClearInstances sets m_started=false so
-	// the subsequent CScript::OnDestroy (from scene destruction) skips unregister.
+	// Destroy DLL-allocated instances and mark each component as unregistered.
+	// ClearRegistrationState() ensures that the subsequent OnDestroy() calls
+	// (from ~ModuleScene() → NOUS_DELETE(activeScene)) skip the UnregisterScriptComponent
+	// call entirely — the scene module may be in a partially-destroyed state at that point.
 	for (auto* cs : m_scriptComponents)
-		if (cs) cs->ClearInstances();
+	{
+		if (cs)
+		{
+			cs->ClearInstances();
+			cs->ClearRegistrationState();
+		}
+	}
 
 	m_scriptComponents.clear();
 	NOUS_INFO("Cleaned up all CScript instances");
+}
+
+// ---------------------------------------------------------------------------
+// Simulation controls
+// ---------------------------------------------------------------------------
+
+void ModuleScene::PressPlay()
+{
+	if (m_simulationState != SimulationState::STOPPED)
+		return;
+
+	// If a stop is still pending (very unlikely but possible if Play is pressed before
+	// PreUpdate fires), cancel the pending reload — we're about to start fresh.
+	m_pendingStop = false;
+
+	// Wait for any in-flight jobs (e.g. the async Deserialize from a previous PressStop).
+	// Without this, a rapid Stop → Play sequence would serialize a partially-constructed
+	// scene (CMesh/CMaterial resources not yet assigned), corrupting the snapshot and
+	// causing null Resource* dereferences the next time the snapshot is loaded.
+	App->jobSystem->WaitForPendingJobs();
+
+	// Ensure the snapshot directory exists, then save the current scene state.
+	std::filesystem::create_directories(std::filesystem::path(m_snapshotPath).parent_path());
+	activeScene->Serialize(m_snapshotPath);
+
+	// Start all registered CScript components (they were registered in OnStart but
+	// deferred instance creation because the simulation was stopped).
+	{
+		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+		for (auto* cs : m_scriptComponents)
+			if (cs) cs->RecreateInstances();
+	}
+
+	m_simulationState = SimulationState::PLAYING;
+
+	TimeManager::simulationTime       = 0.0f;
+	TimeManager::simulationDeltaTime  = 0.0f;
+	TimeManager::simulationFrameCount = 0;
+	TimeManager::gameTimer.Start();
+
+	NOUS_INFO("[Scene] Simulation started.");
+}
+
+void ModuleScene::PressStop()
+{
+	if (m_simulationState == SimulationState::STOPPED)
+		return;
+
+	m_simulationState             = SimulationState::STOPPED;
+	m_stepOneFrame                = false;
+	m_didStepThisFrame            = false;
+	TimeManager::simulationDeltaTime  = 0.0f;
+	TimeManager::simulationTime       = 0.0f;
+	TimeManager::simulationFrameCount = 0;
+
+	// Defer the actual scene reload to PreUpdate() so that LoadScene() / ClearScene()
+	// never run while the SCENE or GAME command buffers are recorded but not yet
+	// submitted by EndFrame(). DestroyGeometry() calls vkDeviceWaitIdle, which only
+	// waits for already-submitted work — not for recorded-but-pending command buffers.
+	// PreUpdate() is guaranteed to run after the previous frame's EndFrame has submitted.
+	m_pendingStop = true;
+}
+
+void ModuleScene::PressPause()
+{
+	if (m_simulationState == SimulationState::PLAYING)
+	{
+		m_simulationState = SimulationState::PAUSED;
+		NOUS_INFO("[Scene] Simulation paused.");
+	}
+	else if (m_simulationState == SimulationState::PAUSED)
+	{
+		m_simulationState = SimulationState::PLAYING;
+		NOUS_INFO("[Scene] Simulation resumed.");
+	}
+}
+
+void ModuleScene::PressStep()
+{
+	if (m_simulationState != SimulationState::PAUSED)
+		return;
+
+	m_stepOneFrame = true;
+	NOUS_INFO("[Scene] Simulation stepping one frame.");
 }
 
 void ModuleScene::SaveScene(const std::string& path)
@@ -384,18 +516,14 @@ void ModuleScene::SaveScene(const std::string& path)
 
 void ModuleScene::LoadScene(const std::string& path)
 {
-	// Drain any in-flight mesh/material loading jobs before clearing the scene.
-	// Without this, a job that called CreateGameObjectDetached before the clear
-	// could still call RegisterGameObject afterward, inserting a stale GO into
-	// the freshly loaded scene (or crashing if ClearScene already deleted it).
+	// Drain any in-flight jobs (e.g. debug hotkey loaders) before clearing the
+	// scene. Without this, a job that called CreateGameObjectDetached before the
+	// clear could still call RegisterGameObject afterward on a cleared scene.
 	App->jobSystem->WaitForPendingJobs();
 
 	ClearScene();
-
-	App->jobSystem->SubmitJob([this, path](){
-		activeScene->Deserialize(path);
-		EnsureMainCamera();
-	}, "LoadScene");
+	activeScene->Deserialize(path);
+	EnsureMainCamera();
 }
 
 void ModuleScene::ClearScene()

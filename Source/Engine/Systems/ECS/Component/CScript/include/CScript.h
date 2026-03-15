@@ -53,6 +53,11 @@ public:
     // Called by ModuleScene during hot-reload (recreates instances + Awake + Start, no re-registration)
     void RecreateInstances();
 
+    // Called by ModuleScene::CleanupScripts() during engine shutdown — marks the component
+    // as unregistered so that the subsequent OnDestroy() (from scene destruction) does not
+    // attempt to call back into the scene module while it is being torn down.
+    void ClearRegistrationState() { m_registered = false; }
+
     // Serialization
     NOUS_ENGINE_API JSON_Value* Serialize()             const override;
     NOUS_ENGINE_API void        Deserialize(JSON_Object* obj) override;
@@ -65,7 +70,8 @@ private:
 
     std::vector<std::string> m_scriptNames;
     std::vector<IScript*>    m_instances;
-    bool                     m_started = false;
+    bool                     m_started    = false;  // true when DLL instances are alive and ticking
+    bool                     m_registered = false;  // true when RegisterScriptComponent has been called
     ScriptPropertyMap        m_savedProperties; // persists across hot-reload and serialization
 };
 
