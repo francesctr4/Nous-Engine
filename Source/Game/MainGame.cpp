@@ -18,7 +18,8 @@ int main(int argc, char** argv)
 
     NOUS_Multithreading::UnregisterMainThread();
 
-    NOUS_INFO(MemoryManager::GetMemoryUsageStats().c_str());
+    LogOutputMultiline(LOG_LEVEL_INFO, LogChannel::DEFAULT,
+        (std::string("[main] ") + MemoryManager::GetMemoryUsageStats()).c_str());
 
     NOUS_INFO("=== GameApp exited successfully ===");
 

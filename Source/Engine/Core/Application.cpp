@@ -90,7 +90,8 @@ bool Application::Start() const
         }
     }
 
-    NOUS_INFO(MemoryManager::GetMemoryUsageStats().c_str());
+    LogOutputMultiline(LOG_LEVEL_INFO, LogChannel::NOUS_ENGINE_CORE_APPLICATION,
+        (std::string("[Application::Start] ") + MemoryManager::GetMemoryUsageStats()).c_str());
 
     msTimer->Start();
 

@@ -135,7 +135,8 @@ int main(int argc, char** argv)
 
     NOUS_Multithreading::UnregisterMainThread();
 
-    NOUS_INFO_C(CURRENT_CHANNEL, (std::string("[%s] ") + MemoryManager::GetMemoryUsageStats()).c_str(), __FUNCTION__);
+    LogOutputMultiline(LOG_LEVEL_INFO, LogChannel::NOUS_EDITOR_MAIN,
+        (std::string("[main] ") + MemoryManager::GetMemoryUsageStats()).c_str());
 
     NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Successfully exited Nous Engine. See you soon!", __FUNCTION__);
 
