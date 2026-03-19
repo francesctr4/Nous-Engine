@@ -68,9 +68,16 @@ bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64 size, VkBu
     outBuffer->memoryPropertyFlags = memoryPropertyFlags;
 
     // ----- FREE LIST ----- //
-    outBuffer->freelistMemoryRequirement = Freelist::GetMemoryRequirement(size);
-    outBuffer->freelistBlock = MemoryManager::Allocate(outBuffer->freelistMemoryRequirement, MemoryTag::RENDERER);
-    outBuffer->bufferFreelist = new (&outBuffer->freelistBlock) Freelist(size, outBuffer->freelistBlock);
+    // Only create a FreeList for buffers large enough to benefit from sub-allocation.
+    // Small buffers (e.g. staging readback buffers) are used as a single whole-buffer
+    // allocation and don't need a FreeList.  DestroyBuffer already handles nullptr safely.
+    constexpr uint64 kFreelistMinSize = sizeof(void*) * sizeof(Freelist::Node); // 192 bytes
+    if (size >= kFreelistMinSize)
+    {
+        outBuffer->freelistMemoryRequirement = Freelist::GetMemoryRequirement(size);
+        outBuffer->freelistBlock = MemoryManager::Allocate(outBuffer->freelistMemoryRequirement, MemoryTag::RENDERER);
+        outBuffer->bufferFreelist = new (&outBuffer->freelistBlock) Freelist(size, outBuffer->freelistBlock);
+    }
 
     VkBufferCreateInfo bufferCreateInfo{};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -307,9 +314,16 @@ void NOUS_VulkanBuffer::UnlockMemory(VulkanContext* vkContext, VulkanBuffer* buf
 bool NOUS_VulkanBuffer::Allocate(VulkanBuffer* buffer, uint64 size, uint64* outOffset)
 {
     // ----- FREE LIST ----- //
-    if (!buffer || !size || !outOffset) 
+    if (!buffer || !size || !outOffset)
     {
         NOUS_ERROR("NOUS_VulkanBuffer::Allocate() requires valid buffer, a nonzero size and valid pointer to hold offset.");
+        return false;
+    }
+
+    if (!buffer->bufferFreelist)
+    {
+        NOUS_ERROR("NOUS_VulkanBuffer::Allocate() called on a buffer with no FreeList (buffer size %llu is below the sub-allocation threshold).",
+                   buffer->totalSize);
         return false;
     }
 
@@ -319,9 +333,16 @@ bool NOUS_VulkanBuffer::Allocate(VulkanBuffer* buffer, uint64 size, uint64* outO
 bool NOUS_VulkanBuffer::Free(VulkanBuffer* buffer, uint64 size, uint64 offset)
 {
     // ----- FREE LIST ----- //
-    if (!buffer || !size) 
+    if (!buffer || !size)
     {
         NOUS_ERROR("NOUS_VulkanBuffer::Free() requires valid buffer and a nonzero size.");
+        return false;
+    }
+
+    if (!buffer->bufferFreelist)
+    {
+        NOUS_ERROR("NOUS_VulkanBuffer::Free() called on a buffer with no FreeList (buffer size %llu is below the sub-allocation threshold).",
+                   buffer->totalSize);
         return false;
     }
 

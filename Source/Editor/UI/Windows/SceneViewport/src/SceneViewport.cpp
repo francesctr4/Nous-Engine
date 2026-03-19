@@ -397,7 +397,15 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
     if (objectID != 0)
     {
         GameObject* found = External->scene->activeScene->FindGameObjectByID(objectID);
-        External->scene->selectedGameObject = found;
+        if (found)
+        {
+            External->scene->selectedGameObject = found;
+        }
+        else
+        {
+            // objectID didn't match any live GO — stale pick result; deselect.
+            External->scene->selectedGameObject = nullptr;
+        }
     }
     else
     {

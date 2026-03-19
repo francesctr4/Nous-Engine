@@ -21,7 +21,8 @@ public:
     void Open() { *p_open = true; }
     void Close() { *p_open = false; }
 
-    const char* GetTitle() { return title; }
+    const char* GetTitle() const { return title; }
+    const EditorContext* GetContext() const { return context; }
 
 protected:
 

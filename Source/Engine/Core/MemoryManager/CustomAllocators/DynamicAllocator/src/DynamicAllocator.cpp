@@ -10,7 +10,19 @@ uint64 DynamicAllocator::GetMemoryRequirement(uint64 totalSize)
     return sizeof(InternalState) + freelistReq + totalSize;
 }
 
-DynamicAllocator::DynamicAllocator(uint64 totalSize, void* memory) {
+DynamicAllocator::DynamicAllocator(uint64 totalSize, void* memory)
+{
+    if (!memory)
+    {
+        NOUS_FATAL("DynamicAllocator() called with null memory pointer!");
+        return;
+    }
+    if (totalSize == 0)
+    {
+        NOUS_FATAL("DynamicAllocator() called with totalSize == 0!");
+        return;
+    }
+
     state_ = static_cast<InternalState*>(memory);
     new (state_) InternalState();
 
@@ -36,8 +48,21 @@ DynamicAllocator::~DynamicAllocator()
 {
     if (state_)
     {
+        // Leak detection: report any allocations that were never freed.
+        {
+            std::scoped_lock g(state_->mapMutex);
+            if (!state_->allocMap.empty())
+            {
+                NOUS_WARN("DynamicAllocator::~DynamicAllocator() — %zu allocation(s) never freed (leak):",
+                          state_->allocMap.size());
+                for (const auto& [ptr, info] : state_->allocMap)
+                {
+                    NOUS_WARN("  leaked block %p: %llu bytes (aligned: %llu)", ptr, info.rawSize, info.alignedSize);
+                }
+            }
+        }
+
         state_->freelist->~Freelist();
-        // Optionally: detect leaks here by checking state_->allocMap not empty.
         MemoryManager::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
     }
 }
@@ -63,25 +88,32 @@ void* DynamicAllocator::Allocate(uint64 size)
     return nullptr;
 }
 
-// Existing sized path (kept for fast-path callers that know size)
+// Sized path — caller provides the size (fast path, no map lookup needed).
 bool DynamicAllocator::Free(void* block, uint64 size)
 {
     if (!state_ || !block || size == 0) return false;
 
     char* base = static_cast<char*>(state_->userMemory);
     char* p    = static_cast<char*>(block);
-    if (p < base || p >= base + state_->totalSize) {
-        NOUS_ERROR("DynamicAllocator::Free(size): out of range");
+    if (p < base || p >= base + state_->totalSize)
+    {
+        NOUS_ERROR("DynamicAllocator::Free(size): block %p is out of managed range.", block);
         return false;
+    }
+
+    {
+        std::scoped_lock g(state_->mapMutex);
+        auto it = state_->allocMap.find(block);
+        if (it == state_->allocMap.end())
+        {
+            NOUS_ERROR("DynamicAllocator::Free(size): block %p not in allocMap — possible double-free.", block);
+            return false;
+        }
+        state_->allocMap.erase(it);
     }
 
     const uint64 aligned = Align16(size);
     const uint64 offset  = static_cast<uint64>(p - base);
-
-    {   std::scoped_lock g(state_->mapMutex);
-        auto it = state_->allocMap.find(block);
-        if (it != state_->allocMap.end()) state_->allocMap.erase(it);
-    }
     return state_->freelist->Free(aligned, offset);
 }
 

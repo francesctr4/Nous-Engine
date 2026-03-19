@@ -117,7 +117,15 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 	config.stats.taggedAllocations[static_cast<uint64>(tag)] += size;
 
 	void* block = config.allocator->Allocate(size); // allocator aligns internally
-	ZeroMemory(block, size);                         // zero raw bytes (fine)
+	if (!block)
+	{
+		NOUS_FATAL_C(CURRENT_CHANNEL,
+			"[MemoryManager::Allocate] Allocation of %llu bytes (tag=%d) failed! "
+			"Pool exhausted? Free space: %llu bytes.",
+			size, static_cast<int>(tag), config.allocator->GetFreeSpace());
+		return nullptr;
+	}
+	ZeroMemory(block, size);
 
 #ifdef _PROFILING
 	TracyAlloc(block, size);
@@ -163,6 +171,7 @@ void MemoryManager::Free(void* block, MemoryTag tag)
 
 void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
+	if (!block) return;
 	std::scoped_lock lock(memoryMutex);
 
 	if (tag == MemoryTag::UNKNOWN)

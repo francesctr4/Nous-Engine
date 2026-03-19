@@ -76,7 +76,7 @@ bool ModuleScene::Start()
 {
 	NOUS_TRACE("%s()", __FUNCTION__);
 
-    LoadScene("Assets/Scenes/LagiacrusScene.nous");
+    LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
 
 	return true;
 }
@@ -524,6 +524,23 @@ void ModuleScene::LoadScene(const std::string& path)
 	ClearScene();
 	activeScene->Deserialize(path);
 	EnsureMainCamera();
+}
+
+void ModuleScene::LoadSceneAsync(const std::string& path)
+{
+	// Drain any in-flight jobs (e.g. debug hotkey loaders) before clearing the
+	// scene. Without this, a job that called CreateGameObjectDetached before the
+	// clear could still call RegisterGameObject afterward on a cleared scene.
+	App->jobSystem->WaitForPendingJobs();
+
+	ClearScene();
+
+	App->jobSystem->SubmitJob([this, path]
+		{
+			activeScene->Deserialize(path);
+			EnsureMainCamera();
+		}
+	);
 }
 
 void ModuleScene::ClearScene()

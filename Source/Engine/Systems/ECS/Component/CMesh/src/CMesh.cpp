@@ -35,7 +35,10 @@ void CMesh::Deserialize(JSON_Object *obj) {
 }
 
 void CMesh::OnDestroy() {
-    if (mesh && mesh->IsValid())
+    // Guard: External is set to nullptr in MainEditor.cpp before Application
+    // destruction.  If we're called during shutdown after that point, the
+    // ResourceManager is no longer reachable.
+    if (External && mesh && mesh->IsValid())
     {
         External->resourceManager->UnloadResource(mesh->GetUID());
     }

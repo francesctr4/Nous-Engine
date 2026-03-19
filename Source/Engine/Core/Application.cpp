@@ -51,8 +51,12 @@ Application::~Application()
     if (jobSystem)
         jobSystem->WaitForPendingJobs();
 
-    for (auto* mod : listModules)
-        NOUS_DELETE(mod, MemoryTag::APPLICATION);
+    // Delete modules in REVERSE order (5→0), matching the CleanUp order.
+    // Forward order would free ModuleResourceManager (3) before ModuleScene (4),
+    // causing use-after-free when ~ModuleScene destroys GameObjects whose
+    // CMesh::OnDestroy still references the ResourceManager.
+    for (int i = NUM_MODULES - 1; i >= 0; --i)
+        NOUS_DELETE(listModules[i], MemoryTag::APPLICATION);
 
     NOUS_DELETE(jobSystem, MemoryTag::THREAD);
     NOUS_DELETE(eventSystem, MemoryTag::APPLICATION);
@@ -123,7 +127,7 @@ UpdateStatus Application::Update()
 #ifdef _PROFILING
     ZoneScoped;
 #endif
-   
+
     NOUS_TRACE("-------------- PrepareUpdate --------------");
 
     ret = PrepareUpdate();
@@ -132,30 +136,24 @@ UpdateStatus Application::Update()
 
     for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
     {
-        if (listModules[i] != nullptr) 
-        {
+        if (listModules[i] != nullptr)
             ret = listModules[i]->PreUpdate(dt);
-        }
     }
 
     NOUS_TRACE("-------------- Update --------------");
 
     for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
     {
-        if (listModules[i] != nullptr) 
-        {
+        if (listModules[i] != nullptr)
             ret = listModules[i]->Update(dt);
-        }
     }
 
     NOUS_TRACE("-------------- PostUpdate --------------");
 
     for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
     {
-        if (listModules[i] != nullptr) 
-        {
+        if (listModules[i] != nullptr)
             ret = listModules[i]->PostUpdate(dt);
-        }
     }
 
     NOUS_TRACE("-------------- FinishUpdate --------------");

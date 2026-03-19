@@ -40,6 +40,7 @@ public:
 
 	NOUS_ENGINE_API void SaveScene(const std::string& path);
 	NOUS_ENGINE_API void LoadScene(const std::string& path);
+	NOUS_ENGINE_API void LoadSceneAsync(const std::string& path);
 	NOUS_ENGINE_API void ClearScene();
 
 	// Called by CScript::OnStart / CScript::OnDestroy to maintain the live registry
@@ -61,10 +62,10 @@ public:
 
 public:
 
-	Scene*         activeScene;
-	GameObject*    selectedGameObject;
-	Camera*        gameCamera;
-	ScriptManager* scriptManager;
+	Scene*         activeScene    = nullptr;
+	GameObject*    selectedGameObject = nullptr;
+	Camera*        gameCamera    = nullptr;
+	ScriptManager* scriptManager = nullptr;
 
 private:
 

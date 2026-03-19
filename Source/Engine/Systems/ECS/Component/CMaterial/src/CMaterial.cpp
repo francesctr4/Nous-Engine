@@ -40,7 +40,10 @@ void CMaterial::Deserialize(JSON_Object* obj) {
 // -----------------------------------------------------------------------------
 void CMaterial::OnDestroy()
 {
-    if (material && material->IsValid()) {
+    // Guard: External is set to nullptr in MainEditor.cpp before Application
+    // destruction.  If we're called during shutdown after that point, the
+    // ResourceManager is no longer reachable.
+    if (External && material && material->IsValid()) {
         External->resourceManager->UnloadResource(material->GetUID());
     }
 }

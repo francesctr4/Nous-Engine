@@ -290,9 +290,18 @@ bool ModuleRenderer3D::CleanUp()
     // and framebuffers).  If the Editor already called this, it is a no-op.
     mRendererFrontend->ReleaseFrameResources();
 
+    // Destroy all GameObjects BEFORE freeing GPU resources.  Component
+    // OnDestroy callbacks (CMesh, CMaterial) need the ResourceManager and
+    // its Resource objects to still be alive so they can safely decrement
+    // reference counts via UnloadResource().
+    App->scene->selectedGameObject = nullptr;
+    if (App->scene->activeScene)
+        App->scene->activeScene->Clear();
+
     // Destroy all GPU resources (textures, shaders, meshes, materials).
     // Safe because ReleaseFrameResources() already freed the CBs/FBs that
-    // referenced these objects.
+    // referenced these objects, and the scene has been cleared above so no
+    // component still holds a reference to any Resource.
     App->resourceManager->ClearResources();
 
     // Tear down the remaining Vulkan infrastructure (buffers, sync objects,
