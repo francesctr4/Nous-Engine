@@ -1,6 +1,8 @@
 #ifndef MEMORYMANAGER_H
 #define MEMORYMANAGER_H
 
+#include <vector>
+
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
 
@@ -59,7 +61,7 @@ namespace MemoryManager
 	};
 
 	NOUS_ENGINE_API MemoryStatsSnapshot GetMemoryStats();
-	NOUS_ENGINE_API const char** GetMemoryTagNames();
+	NOUS_ENGINE_API const char* const* GetMemoryTagNames();
 
 	struct MemoryConfigSnapshot
 	{

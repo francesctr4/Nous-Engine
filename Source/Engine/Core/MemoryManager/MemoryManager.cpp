@@ -26,13 +26,18 @@ struct MemoryStats
 	uint64 taggedAllocations[static_cast<uint64>(MemoryTag::MAX)];
 };
 
-struct MemorySystemConfig 
+struct MemorySystemConfig
 {
 	MemoryStats stats;
 
 	uint64 totalAllocationSize;
 	uint64 allocatorRequirement;
 
+	// Separate storage for the DynamicAllocator object so it doesn't alias
+	// allocatorBlock. Placing new(&allocatorBlock) DA(...) would overwrite
+	// the pointer with the object's bytes — works only by coincidence while
+	// DA is exactly sizeof(void*). This buffer is the right fix.
+	alignas(DynamicAllocator) char allocatorStorage[sizeof(DynamicAllocator)];
 	DynamicAllocator* allocator;
 	void* allocatorBlock;
 };
@@ -57,8 +62,8 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 		return;
 	}
 
-	// 3. Construct allocator using placement new
-	config.allocator = new (&config.allocatorBlock) DynamicAllocator(
+	// 3. Construct allocator object in its own storage (separate from the pool block)
+	config.allocator = new (config.allocatorStorage) DynamicAllocator(
 			config.totalAllocationSize,
 			config.allocatorBlock
 	);
@@ -85,15 +90,9 @@ void MemoryManager::ShutdownMemory()
 
 	// ----------------------------------------------------------------------- //
 
-	MemoryTag tag = MemoryTag::UNKNOWN;
-	float amount = 0.0f;
-
-	for (uint32 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
+	for (uint32 i = 0; i < static_cast<uint32>(MemoryTag::MAX); ++i)
 	{
-		tag = static_cast<MemoryTag>(i);
-		amount = static_cast<float>(config.stats.taggedAllocations[i]);
-		
-		NOUS_ASSERT_MSG(amount == 0.0f, "Memory Leaks Detected!");
+		NOUS_ASSERT_MSG(config.stats.taggedAllocations[i] == 0, "Memory Leaks Detected!");
 	}
 
 	NOUS_ASSERT(config.stats.totalAllocations == 0);
@@ -177,19 +176,35 @@ void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UN
 
 	if (tag == MemoryTag::UNKNOWN)
 	{
-		NOUS_WARN("Memory Free called using MEMORY_TAG_UNKNOWN.");
+		NOUS_WARN_C(CURRENT_CHANNEL, "Memory Free called using MEMORY_TAG_UNKNOWN.");
 	}
 
-	config.stats.totalAllocated -= size;
-	config.stats.totalAllocations--;
-	config.stats.taggedAllocations[static_cast<uint64>(tag)] -= size;
+	const uint64 raw = config.allocator->GetRecordedSize(block);
+	if (raw == 0)
+	{
+		// Not tracked by allocator: skip stats to avoid underflow
+		NOUS_WARN_C(CURRENT_CHANNEL,
+					"Free(size=%llu, tag=%d): block %p not recorded — skipping stats",
+					size, static_cast<int>(tag), block);
+		(void)config.allocator->Free(block, size);
+		return;
+	}
 
 #ifdef _PROFILING
 	TracyFree(block);
 #endif // _PROFILING
 
-	// Allocator aligns internally
-	config.allocator->Free(block, size);
+	config.stats.totalAllocated -= raw;
+	config.stats.totalAllocations--;
+	config.stats.taggedAllocations[static_cast<uint64>(tag)] -= raw;
+
+	const bool ok = config.allocator->Free(block);
+	if (!ok)
+	{
+		NOUS_WARN_C(CURRENT_CHANNEL,
+					"Free(size=%llu, tag=%d): allocator failed to free %p",
+					size, static_cast<int>(tag), block);
+	}
 }
 
 void* MemoryManager::ZeroMemory(void* block, uint64 size)
@@ -288,12 +303,18 @@ MemoryManager::MemoryStatsSnapshot MemoryManager::GetMemoryStats()
 	return snapshot;
 }
 
-const char** MemoryManager::GetMemoryTagNames()
+const char* const* MemoryManager::GetMemoryTagNames()
 {
-	static std::vector<const char*> names;
-	names.clear();
-	for (auto name : magic_enum::enum_names<MemoryTag>())
-		names.push_back(name.data());
+	// Enum names are compile-time constants — populate once.
+	// string_view::data() points into static string literals so the pointers
+	// remain valid for the lifetime of the program.
+	static const std::vector<const char*> names = []()
+	{
+		std::vector<const char*> v;
+		for (auto name : magic_enum::enum_names<MemoryTag>())
+			v.push_back(name.data());
+		return v;
+	}();
 	return names.data();
 }
 

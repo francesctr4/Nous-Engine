@@ -40,7 +40,7 @@ void MemoryWindow::Draw()
     {
         auto stats  = MemoryManager::GetMemoryStats();
         auto config = MemoryManager::GetMemoryConfig();
-        const char** tags = MemoryManager::GetMemoryTagNames();
+        const char* const* tags = MemoryManager::GetMemoryTagNames();
 
         // ------------------------------
         // Compute metrics
