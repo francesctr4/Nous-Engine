@@ -1,4 +1,7 @@
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionSerializer.h"
+#include "Engine/Core/Logger/Logger.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 #include <parson.h>
 
@@ -173,6 +176,8 @@ static ReflectedOutput DeserializeFragmentOutput(JSON_Object* o)
 bool NOUS_ShaderSystem::SerializeReflection(const PipelineReflectionResult& reflection,
                                             const std::string& jsonPath)
 {
+    NOUS_TRACE_C(CURRENT_CHANNEL, "Serializing reflection to '%s'", jsonPath.c_str());
+
     JSON_Value*  rootVal = json_value_init_object();
     JSON_Object* root    = json_value_get_object(rootVal);
 
@@ -219,14 +224,26 @@ bool NOUS_ShaderSystem::SerializeReflection(const PipelineReflectionResult& refl
 
     const bool ok = (json_serialize_to_file_pretty(rootVal, jsonPath.c_str()) == JSONSuccess);
     json_value_free(rootVal);
+
+    if (ok)
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Serialized reflection to '%s'", jsonPath.c_str());
+    else
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to serialize reflection to '%s'", jsonPath.c_str());
+
     return ok;
 }
 
 bool NOUS_ShaderSystem::DeserializeReflection(const std::string& jsonPath,
                                               PipelineReflectionResult& outReflection)
 {
+    NOUS_TRACE_C(CURRENT_CHANNEL, "Deserializing reflection from '%s'", jsonPath.c_str());
+
     JSON_Value* rootVal = json_parse_file(jsonPath.c_str());
-    if (!rootVal) return false;
+    if (!rootVal)
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to parse reflection JSON '%s'", jsonPath.c_str());
+        return false;
+    }
 
     JSON_Object* root = json_value_get_object(rootVal);
     if (!root) { json_value_free(rootVal); return false; }
@@ -287,5 +304,6 @@ bool NOUS_ShaderSystem::DeserializeReflection(const std::string& jsonPath,
     }
 
     json_value_free(rootVal);
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Deserialized reflection from '%s'", jsonPath.c_str());
     return true;
 }

@@ -1,10 +1,12 @@
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
+#include "Engine/Core/Logger/Logger.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 #include <shaderc/shaderc.hpp>
 
 #include <cstdint>
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -74,10 +76,12 @@ namespace NOUS_ShaderSystem
                                     bool optimize,
                                     bool debugInfo)
     {
+        NOUS_TRACE_C(CURRENT_CHANNEL, "Compiling '%s' -> '%s'", glslPath.c_str(), spvPath.c_str());
+
         std::string source;
         if (!ReadTextFile(glslPath, source))
         {
-            std::cerr << "Failed to read GLSL file: " << glslPath << '\n';
+            NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to read GLSL file: %s", glslPath.c_str());
             return false;
         }
 
@@ -106,8 +110,8 @@ namespace NOUS_ShaderSystem
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            std::cerr << "Shader compile failed: " << glslPath << '\n';
-            std::cerr << result.GetErrorMessage() << '\n';
+            NOUS_ERROR_C(CURRENT_CHANNEL, "Shader compile failed '%s': %s",
+                         glslPath.c_str(), result.GetErrorMessage().c_str());
             return false;
         }
 
@@ -117,10 +121,11 @@ namespace NOUS_ShaderSystem
                              spirv.data(),
                              spirv.size() * sizeof(uint32_t)))
         {
-            std::cerr << "Failed to write SPIR-V file: " << spvPath << '\n';
+            NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to write SPIR-V file: %s", spvPath.c_str());
             return false;
         }
 
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Compiled '%s' -> %zu words", glslPath.c_str(), spirv.size());
         return true;
     }
 
@@ -136,14 +141,18 @@ namespace NOUS_ShaderSystem
         out.shaderSource.entryPoint = config.entryPoint;
         out.shaderSource.glslSource.assign(glsl.begin(), glsl.end());
 
+        NOUS_TRACE_C(CURRENT_CHANNEL, "Compiling stage from '%s'", out.shaderSource.virtualPath.c_str());
+
         if (glsl.empty())
         {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "GLSL source is empty for '%s'", out.shaderSource.virtualPath.c_str());
             out.errorMessage = "ShaderCompiler: GLSL source is empty.";
             return out;
         }
 
         if (stage == ShaderStage::Unknown)
         {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "ShaderStage is Unknown for '%s'", out.shaderSource.virtualPath.c_str());
             out.errorMessage = "ShaderCompiler: ShaderStage is Unknown.";
             return out;
         }
@@ -178,6 +187,8 @@ namespace NOUS_ShaderSystem
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "Compilation failed for '%s': %s",
+                         out.shaderSource.virtualPath.c_str(), out.errorMessage.c_str());
             out.success = false;
             return out;
         }
@@ -186,7 +197,15 @@ namespace NOUS_ShaderSystem
         out.success = !out.shaderSource.spirvBinary.empty();
 
         if (!out.success && out.errorMessage.empty())
+        {
             out.errorMessage = "ShaderCompiler: compilation succeeded but SPIR-V output is empty (unexpected).";
+            NOUS_WARN_C(CURRENT_CHANNEL, "SPIR-V output is empty for '%s'", out.shaderSource.virtualPath.c_str());
+        }
+        else
+        {
+            NOUS_DEBUG_C(CURRENT_CHANNEL, "Stage compiled '%s' -> %zu words",
+                         out.shaderSource.virtualPath.c_str(), out.shaderSource.spirvBinary.size());
+        }
 
         return out;
     }

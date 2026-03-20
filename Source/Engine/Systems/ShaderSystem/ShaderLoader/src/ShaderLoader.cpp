@@ -1,4 +1,7 @@
+#include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
 #include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
@@ -12,18 +15,22 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromSource(
     const std::string& debugName,
     const ShaderCompilerConfig& config)
 {
+    NOUS_TRACE_C(CURRENT_CHANNEL, "Loading shader from source '%s'", debugName.c_str());
+
     ShaderLoadResult out;
     out.sourcePath = debugName;
 
-    // 1. Parsear stages
+    // 1. Parse stages
     ParseResult parsed = ParseShaderStages(fullSource);
     if (!parsed.success)
     {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Parse failed for '%s': %s",
+                     debugName.c_str(), parsed.errorMessage.c_str());
         out.errorMessage = parsed.errorMessage;
         return out;
     }
 
-    // 2. Compilar + reflejar cada stage
+    // 2. Compile + reflect each stage
     std::vector<ShaderReflectionResult> reflections;
     std::vector<ShaderSource>           sources;
 
@@ -32,22 +39,23 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromSource(
         const std::string stageSuffix = (raw.stage == ShaderStage::Vertex)   ? ".vert"
                                       : (raw.stage == ShaderStage::Fragment) ? ".frag"
                                       : ".comp";
+        const std::string stageName = debugName + stageSuffix;
 
         ShaderCompileResult compiled = CompileGlslStringToSpirv(
-            raw.glslSource, raw.stage, config, debugName + stageSuffix);
+            raw.glslSource, raw.stage, config, stageName);
 
         if (!compiled.success)
         {
-            out.errorMessage = "Stage compile failed [" + debugName + stageSuffix + "]: "
-                             + compiled.errorMessage;
+            out.errorMessage = "Stage compile failed [" + stageName + "]: " + compiled.errorMessage;
+            NOUS_ERROR_C(CURRENT_CHANNEL, "%s", out.errorMessage.c_str());
             return out;
         }
 
         ShaderReflectionResult reflected = ReflectSpirV(compiled.shaderSource);
         if (!reflected.success)
         {
-            out.errorMessage = "Stage reflection failed [" + debugName + stageSuffix + "]: "
-                             + reflected.errorMessage;
+            out.errorMessage = "Stage reflection failed [" + stageName + "]: " + reflected.errorMessage;
+            NOUS_ERROR_C(CURRENT_CHANNEL, "%s", out.errorMessage.c_str());
             return out;
         }
 
@@ -58,25 +66,31 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromSource(
     // 3. Merge
     PipelineReflectionResult pipeline = MergeReflections(reflections);
 
-    // 4. Construir ResourceShader
+    // 4. Build ResourceShader
     auto* rShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
     rShader->reflection  = std::move(pipeline);
     rShader->stagesData  = std::move(sources);
 
     out.shader  = rShader;
     out.success = true;
+
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Shader loaded '%s' (%zu stage(s))",
+                 debugName.c_str(), rShader->stagesData.size());
     return out;
 }
 
 ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromFile(
     const std::string& path, const ShaderCompilerConfig& config)
 {
+    NOUS_TRACE_C(CURRENT_CHANNEL, "Loading shader from file '%s'", path.c_str());
+
     ShaderLoadResult err;
 
     FileHandle file;
     if (!file.Open(path, FileMode::READ, false))
     {
         err.errorMessage = "LoadShaderFromFile: cannot open '" + path + "'";
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Cannot open shader file '%s'", path.c_str());
         return err;
     }
 
@@ -86,8 +100,11 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromFile(
     if (!file.ReadAllBytes(&buffer, &bytesRead))
     {
         err.errorMessage = "LoadShaderFromFile: failed to read '" + path + "'";
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to read shader file '%s'", path.c_str());
         return err;
     }
+
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Read shader file '%s' (%llu bytes)", path.c_str(), bytesRead);
 
     std::string source(buffer, bytesRead);
     NOUS_DELETE(buffer, MemoryTag::FILE);

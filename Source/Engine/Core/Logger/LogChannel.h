@@ -81,13 +81,14 @@
     X(NOUS_ENGINE_SYSTEM_TIMEMANAGER, "TimeManager.cpp") \
     X(NOUS_ENGINE_SYSTEM_FILESYSTEM, "FileManager.cpp") \
     X(NOUS_ENGINE_SYSTEM_RESOURCEMANAGER, "ResourceManager.cpp") \
-    X(NOUS_ENGINE_SYSTEM_SHADERSYSTEM, "ShaderSystem.cpp") \
+    X(NOUS_ENGINE_SYSTEM_SHADERSYSTEM, "SHADER_SYSTEM") \
     \
     /* ============================ UTILS ============================ */ \
     X(NOUS_ENGINE_UTILS_LOGGER, "Logger.cpp") \
     X(NOUS_ENGINE_UTILS_RANDOM, "Random.cpp") \
     X(NOUS_ENGINE_UTILS_JSONFILE, "JsonFile.cpp") \
     X(NOUS_ENGINE_UTILS_ASSERTS, "Asserts.h") \
+    \
     /* ============================ FEATURES ============================ */ \
     X(NOUS_ENGINE_EDITOR_FEATURE_MOUSE_PICKING, "MOUSE_PICKING")
 

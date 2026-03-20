@@ -1,4 +1,7 @@
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflection.h"
+#include "Engine/Core/Logger/Logger.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 #include <spirv_reflect.h>
 
@@ -131,6 +134,8 @@ static uint32_t GetArrayCount(const SpvReflectBlockVariable& m)
 PipelineReflectionResult NOUS_ShaderSystem::MergeReflections(
     const std::vector<ShaderReflectionResult>& stages)
 {
+    NOUS_TRACE_C(CURRENT_CHANNEL, "Merging reflection from %zu stage(s)", stages.size());
+
     PipelineReflectionResult out;
 
     for (const auto& stage : stages)
@@ -174,17 +179,23 @@ PipelineReflectionResult NOUS_ShaderSystem::MergeReflections(
         }
     }
 
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Merged pipeline reflection: %zu descriptor set(s), %zu push constant(s)",
+                 out.descriptorSets.size(), out.pushConstants.size());
     return out;
 }
 
 ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& source)
 {
+    NOUS_TRACE_C(CURRENT_CHANNEL, "Reflecting SPIR-V for '%s' (%zu words)",
+                 source.virtualPath.c_str(), source.spirvBinary.size());
+
     ShaderReflectionResult out{};
     out.success = false;
 
     if (source.spirvBinary.empty())
     {
         out.errorMessage = "ReflectSpirv: SPIR-V is empty.";
+        NOUS_ERROR_C(CURRENT_CHANNEL, "SPIR-V binary is empty for '%s'", source.virtualPath.c_str());
         return out;
     }
 
@@ -192,6 +203,7 @@ ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& sourc
     if (stageMask == 0)
     {
         out.errorMessage = "ReflectSpirv: Unsupported/unknown ShaderStage for stageMask mapping.";
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Unsupported shader stage for '%s'", source.virtualPath.c_str());
         return out;
     }
 
@@ -205,6 +217,7 @@ ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& sourc
     if (r != SPV_REFLECT_RESULT_SUCCESS)
     {
         out.errorMessage = "ReflectSpirv: Failed to create reflection module.";
+        NOUS_ERROR_C(CURRENT_CHANNEL, "spirv-reflect module creation failed for '%s'", source.virtualPath.c_str());
         return out;
     }
 
@@ -366,5 +379,9 @@ ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& sourc
     spvReflectDestroyShaderModule(&module);
 
     out.success = true;
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Reflected '%s': %zu binding(s), %zu push constant(s), %zu vertex input(s), %zu fragment output(s)",
+                 source.virtualPath.c_str(),
+                 out.bindings.size(), out.pushConstants.size(),
+                 out.vertexInputs.size(), out.fragmentOutputs.size());
     return out;
 }

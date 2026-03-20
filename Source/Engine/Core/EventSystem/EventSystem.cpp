@@ -70,8 +70,7 @@ void EventSystem::Broadcast(const Event& evt)
                 listener->OnEvent(evt);
         }
 
-        NOUS_TRACE("Broadcasted event type: %d to %zu listener(s)",
-                   static_cast<int>(evt.type), it->second.size());
+        NOUS_TRACE("Broadcasted event type: %d to %zu listener(s)", static_cast<int>(evt.type), it->second.size());
     }
     else
     {

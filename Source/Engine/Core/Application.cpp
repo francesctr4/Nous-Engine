@@ -126,11 +126,11 @@ UpdateStatus Application::Update()
     ZoneScoped;
 #endif
 
-    NOUS_TRACE("-------------- PrepareUpdate --------------");
+    // -------------- PrepareUpdate --------------
 
     ret = PrepareUpdate();
 
-    NOUS_TRACE("-------------- PreUpdate --------------");
+    // -------------- PreUpdate --------------
 
     for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
     {
@@ -138,7 +138,7 @@ UpdateStatus Application::Update()
             ret = listModules[i]->PreUpdate(dt);
     }
 
-    NOUS_TRACE("-------------- Update --------------");
+    // -------------- Update --------------
 
     for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
     {
@@ -146,7 +146,7 @@ UpdateStatus Application::Update()
             ret = listModules[i]->Update(dt);
     }
 
-    NOUS_TRACE("-------------- PostUpdate --------------");
+    // -------------- PostUpdate --------------
 
     for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
     {
@@ -154,7 +154,7 @@ UpdateStatus Application::Update()
             ret = listModules[i]->PostUpdate(dt);
     }
 
-    NOUS_TRACE("-------------- FinishUpdate --------------");
+    // -------------- FinishUpdate --------------
 
     FinishUpdate();
 
@@ -189,7 +189,7 @@ void Application::FinishUpdate() const
 
     window->SetTitle(buffer);
 
-    NOUS_TRACE("-------------- Frame Finished --------------");
+    // -------------- Frame Finished --------------
 
     // Frame pacing: target a precise frame time.
     // SDL_Delay has ~1ms granularity on Windows — too coarse for 144Hz (~6.94ms/frame).

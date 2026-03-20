@@ -1,4 +1,7 @@
 #include "Engine/Systems/ShaderSystem/ShaderParser/include/ShaderParser.h"
+#include "Engine/Core/Logger/Logger.h"
+
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
 
@@ -17,6 +20,8 @@ static ShaderStage ParseStageName(const std::string& name)
 
 NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::string& fullSource)
 {
+    NOUS_TRACE_C(CURRENT_CHANNEL, "Parsing shader stages (%zu bytes)", fullSource.size());
+
     ParseResult result;
 
     const std::string token = "#pragma stage ";
@@ -44,6 +49,7 @@ NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::s
         if (stage == ShaderStage::Unknown)
         {
             result.errorMessage = "ParseShaderStages: unknown stage '" + stageName + "'";
+            NOUS_ERROR_C(CURRENT_CHANNEL, "Unknown stage directive: '%s'", stageName.c_str());
             return result;
         }
 
@@ -54,6 +60,7 @@ NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::s
     if (stagePositions.empty())
     {
         result.errorMessage = "ParseShaderStages: no '#pragma stage' directives found.";
+        NOUS_ERROR_C(CURRENT_CHANNEL, "No '#pragma stage' directives found in shader source");
         return result;
     }
 
@@ -72,5 +79,6 @@ NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::s
     }
 
     result.success = true;
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Parsed %zu stage(s)", result.stages.size());
     return result;
 }
