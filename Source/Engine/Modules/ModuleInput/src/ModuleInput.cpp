@@ -10,8 +10,6 @@
 
 ModuleInput::ModuleInput(Application* app) : Module(app)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 
 	MemoryManager::SetMemory(keyboard, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_KEYBOARD_KEYS);
@@ -27,15 +25,11 @@ ModuleInput::ModuleInput(Application* app) : Module(app)
 
 ModuleInput::~ModuleInput()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	NOUS_DELETE_ARRAY(keyboard, MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 }
 
 bool ModuleInput::Awake()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	bool ret = true;
 
 	if (!SDL_InitSubSystem(SDL_INIT_EVENTS))
@@ -49,14 +43,11 @@ bool ModuleInput::Awake()
 
 bool ModuleInput::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
 }
 
 UpdateStatus ModuleInput::PreUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	UpdateStatus ret = UpdateStatus::CONTINUE;
 
 	SDL_PumpEvents();
@@ -231,8 +222,6 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 
 bool ModuleInput::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	SDL_QuitSubSystem(SDL_INIT_EVENTS);
 	SDL_Quit();
 

@@ -27,13 +27,13 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 
 	if(!mBackend->Create(backendType))
 	{
-		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Renderer backend failed to create. Aborting application...", __FUNCTION__);
+		NOUS_ERROR_C(CURRENT_CHANNEL, "Renderer backend failed to create. Aborting application...");
 		return false;
 	}
 
 	if (!mBackend->Initialize())
 	{
-		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Renderer backend initialization failed. Aborting application...", __FUNCTION__);
+		NOUS_ERROR_C(CURRENT_CHANNEL, "Renderer backend initialization failed. Aborting application...");
 
 		Shutdown();
 		return false;
@@ -82,7 +82,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 {
 	if (!packet || !packet->editorCamera || !packet->gameCamera)
 	{
-		NOUS_WARN_C(CURRENT_CHANNEL, "[%s] Missing render packet or cameras; skipping frame.", __FUNCTION__);
+		NOUS_WARN_C(CURRENT_CHANNEL, "Missing render packet or cameras; skipping frame.");
 		return FrameResult::SKIPPED;
 	}
 
@@ -95,11 +95,11 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 			break;
 
 		case FrameResult::SKIPPED:
-			NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Frame skipped (swapchain recreation/minimized).", __FUNCTION__);
+			NOUS_DEBUG_C(CURRENT_CHANNEL, "Frame skipped (swapchain recreation/minimized).");
 			return FrameResult::SKIPPED;
 
 		case FrameResult::ERROR:
-			NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] BeginFrame() failed.", __FUNCTION__);
+			NOUS_ERROR_C(CURRENT_CHANNEL, "BeginFrame() failed.");
 			return FrameResult::ERROR;
 	}
 
@@ -201,19 +201,19 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 
 	if (endResult == FrameResult::ERROR)
 	{
-		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] EndFrame() failed.", __FUNCTION__);
+		NOUS_ERROR_C(CURRENT_CHANNEL, "EndFrame() failed.");
 		return FrameResult::ERROR;
 	}
 
 	if (endResult == FrameResult::SKIPPED)
 	{
-		NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Frame skipped during EndFrame (likely swapchain reset).", __FUNCTION__);
+		NOUS_DEBUG_C(CURRENT_CHANNEL, "Frame skipped during EndFrame (likely swapchain reset).");
 		return FrameResult::SKIPPED;
 	}
 
 	if (!success)
 	{
-		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] One or more render passes failed.", __FUNCTION__);
+		NOUS_ERROR_C(CURRENT_CHANNEL, "One or more render passes failed.");
 		return FrameResult::ERROR;
 	}
 
@@ -224,7 +224,7 @@ bool RendererFrontend::ExecuteRenderpass(RenderpassType type, const std::functio
 {
 	if (!mBackend->BeginRenderpass(type))
 	{
-		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Begin Renderpass with type (%d) failed!", __FUNCTION__, static_cast<int>(type));
+		NOUS_ERROR_C(CURRENT_CHANNEL, "Begin Renderpass with type (%d) failed!", static_cast<int>(type));
 		return false;
 	}
 
@@ -232,7 +232,7 @@ bool RendererFrontend::ExecuteRenderpass(RenderpassType type, const std::functio
 
 	if (!mBackend->EndRenderpass(type))
 	{
-		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] End Renderpass with type (%d) failed!", __FUNCTION__, static_cast<int>(type));
+		NOUS_ERROR_C(CURRENT_CHANNEL, "End Renderpass with type (%d) failed!", static_cast<int>(type));
 		return false;
 	}
 

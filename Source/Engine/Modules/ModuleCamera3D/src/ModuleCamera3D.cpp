@@ -15,7 +15,6 @@
 
 ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	sceneViewportHovered = false;
 
 	camera = NOUS_NEW<Camera>(MemoryTag::CAMERA);
@@ -25,14 +24,11 @@ ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
 
 ModuleCamera3D::~ModuleCamera3D()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	NOUS_DELETE(camera, MemoryTag::CAMERA);
 }
 
 bool ModuleCamera3D::Awake()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	camera->SetPos(-100, 100, 300);
 
 	return true;
@@ -40,21 +36,16 @@ bool ModuleCamera3D::Awake()
 
 bool ModuleCamera3D::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
 }
 
 UpdateStatus ModuleCamera3D::PreUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleCamera3D::Update(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	if (sceneViewportHovered) 
 	{
 		glm::vec3 newPos(0, 0, 0);
@@ -94,14 +85,11 @@ UpdateStatus ModuleCamera3D::Update(float dt)
 
 UpdateStatus ModuleCamera3D::PostUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	return UpdateStatus::CONTINUE;
 }
 
 bool ModuleCamera3D::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
 }
 
@@ -111,7 +99,7 @@ void ModuleCamera3D::OnEvent(const Event& event)
 	{
 		case EventType::WINDOW_RESIZED:
 		{
-			NOUS_DEBUG("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
+			NOUS_DEBUG("WINDOW RESIZED EVENT");
 			NOUS_DEBUG("Received context: %d, %d", event.ctx.i32[0], event.ctx.i32[1]);
 
 			camera->SetAspectRatio((float)event.ctx.i32[0] / (float)event.ctx.i32[1]);

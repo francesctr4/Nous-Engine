@@ -48,7 +48,6 @@ ModuleEditor::ModuleEditor(Application* app) : Module(app),
     editorWindows(MemoryTag::EDITOR),
     fonts(MemoryTag::EDITOR)
 {
-	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 	currentBackendType = RendererBackendType::UNKNOWN;
 
     App->eventSystem->Subscribe(EventType::INPUT_EVENT, this);
@@ -57,13 +56,11 @@ ModuleEditor::ModuleEditor(Application* app) : Module(app),
 
 ModuleEditor::~ModuleEditor()
 {
-	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
+
 }
 
 bool ModuleEditor::Awake()
 {
-	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
-
 	NOUS_FileManager::CopyFile(R"(Assets\Settings\imgui.ini)", "imgui.ini");
 
 	App->renderer->GetRendererFrontend()->SetEditorOverlay(this);
@@ -88,7 +85,7 @@ bool ModuleEditor::Awake()
 	{
 		case RendererBackendType::VULKAN:
 		{
-            NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Using Renderer Backend: %d (Vulkan)", __FUNCTION__, currentBackendType);
+            NOUS_INFO_C(CURRENT_CHANNEL, "Using Renderer Backend: %d (Vulkan)", currentBackendType);
 			VulkanContext* vkContext = GetVulkanContext();
 
 			// Setup Platform/Renderer backends
@@ -147,15 +144,11 @@ bool ModuleEditor::Awake()
 
 bool ModuleEditor::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	return true;
 }
 
 void ModuleEditor::DrawEditor()
 {
-    NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
-
 	InitFrame(currentBackendType);
 
 	InternalDrawEditor();
@@ -165,8 +158,6 @@ void ModuleEditor::DrawEditor()
 
 bool ModuleEditor::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	// Wait for the GPU and free command buffers/framebuffers BEFORE destroying
 	// any Vulkan resources.  The last frame's command buffers still reference
 	// ImGui's vertex/index buffers, pipeline, and descriptor sets, and the

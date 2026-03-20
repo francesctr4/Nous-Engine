@@ -232,8 +232,7 @@ void Scene::Deserialize(const std::string& filepath)
         }
     }
 
-    NOUS_DEBUG("[%s] Successfully loaded scene: %s with %zu objects",
-               __FUNCTION__, filepath.c_str(), gameObjectsWithParents.size());
+    NOUS_DEBUG("Successfully loaded scene: %s with %zu objects", filepath.c_str(), gameObjectsWithParents.size());
 }
 
 // -----------------------------------------------------------------------------

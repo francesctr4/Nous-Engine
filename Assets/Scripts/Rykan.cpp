@@ -35,7 +35,7 @@ public:
     void Awake() override
     {
         /*coding_start::Rykan::Awake*/
-        Nous_Engine->Logger->Debug(__FUNCTION__);
+        NOUS_SCRIPT_DEBUG("I'm awake");
         //DoSomething();
         /*coding_end::Rykan::Awake*/
     }

@@ -14,7 +14,7 @@ LinearAllocator::LinearAllocator(uint64 capacity, void* preAllocatedMemory)
 
         if (memory == nullptr)
         {
-            NOUS_ERROR("%s() - Allocation Failure", __FUNCTION__);
+            NOUS_ERROR("Allocation Failure");
             throw std::bad_alloc(); // Handle allocation failure
         }
     }

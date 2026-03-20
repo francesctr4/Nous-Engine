@@ -68,7 +68,7 @@ bool VulkanBackend::Initialize()
     cachedFramebufferWidth = 0;
 
     // Instance
-    NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s][VULKAN] Creating Vulkan instance...", __FUNCTION__);
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan instance...");
     if (!NOUS_VulkanInstance::CreateInstance(vkContext)) 
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Instance. Shutting the Application.");
@@ -1215,12 +1215,11 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     
     if (!VkResultIsSuccess(result)) 
     {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "[%s][VULKAN] Error creating texture sampler: %s", VkResultMessage(result, true).c_str());
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Error creating texture sampler: %s", VkResultMessage(result, true).c_str());
         return false;
     }
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "[%s][VULKAN] Texture Created Successfully: %s",
-              __FUNCTION__, VkResultMessage(result, true).c_str());
+    NOUS_INFO_C(CURRENT_CHANNEL, "Texture Created Successfully: %s", VkResultMessage(result, true).c_str());
     return true;
 }
 
@@ -1279,7 +1278,7 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
         }
     }
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Material created (instance %u).", __FUNCTION__, material->internalID);
+    NOUS_INFO_C(CURRENT_CHANNEL, "Material created (instance %u).", material->internalID);
     return true;
 }
 
@@ -1623,7 +1622,7 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
     ResourceShader* rPickShader = vkContext->builtInPickShader;
     if (!rPickShader || !rPickShader->internalData)
     {
-        NOUS_WARN_C(CURRENT_CHANNEL, "[PickObjectAt] Pick shader not available.");
+        NOUS_WARN_C(LogChannel::NOUS_ENGINE_EDITOR_FEATURE_MOUSE_PICKING, "Pick shader not available.");
         return 0;
     }
 
@@ -1782,7 +1781,8 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
     // --- Cleanup staging buffer ---
     NOUS_VulkanBuffer::DestroyBuffer(vkContext, &stagingBuffer);
 
-    NOUS_DEBUG_C(CURRENT_CHANNEL, "[PickObjectAt] Pixel (%d, %d) -> objectUID = %u", pixelX, pixelY, objectID);
+    NOUS_DEBUG_C(LogChannel::NOUS_ENGINE_EDITOR_FEATURE_MOUSE_PICKING,
+        "Pixel (%d, %d) -> objectUID = %u", pixelX, pixelY, objectID);
 
     return objectID;
 }

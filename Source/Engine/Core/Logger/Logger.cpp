@@ -1,8 +1,8 @@
 #include "Logger.h"
 #include "Asserts.h"
 #include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
-#include "Engine/Core/TimeManager/TimeManager.h"
 
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <cstdarg>
@@ -38,6 +38,13 @@ static std::atomic<bool> s_loggingPaused{false};
 static bool s_logLevelEnabled[LOG_LEVEL_MAX] = {
     true, true, true, true, true, false  // TRACE off by default
 };
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Log timer — independent of graphicsTimer so timestamps start from main()
+// ──────────────────────────────────────────────────────────────────────────────
+
+static std::chrono::steady_clock::time_point s_logEpoch; // zero-initialised (not yet set)
+static bool                                  s_logEpochSet = false;
 
 // ──────────────────────────────────────────────────────────────────────────────
 // File
@@ -198,21 +205,71 @@ static const char* k_LevelStrings[] = {
     "[FATAL]: ", "[ERROR]: ", "[WARN]: ",
     "[INFO]: ",  "[DEBUG]: ", "[TRACE]: "
 };
+// Short tags used in the verbose console line (no trailing colon/space).
+static const char* k_LevelTags[] = {
+    "[FATAL]", "[ERROR]", "[WARN]",
+    "[INFO]",  "[DEBUG]", "[TRACE]"
+};
 static const uint8_t k_LevelColors[] = { 64, 4, 6, 2, 1, 8 };
 
-static void LogOutputInternal(LogLevel level, LogChannel channel, const char* userFormatted)
+static void LogOutputInternal(LogLevel level, LogChannel channel,
+                              const char* file, int line, const char* function,
+                              const char* userFormatted)
 {
-    // Build the final "[LEVEL]: text\n" string once.
+    // Stored message — "[LEVEL]: text\n" — ConsoleWindow prepends its own prefixes.
     char finalBuffer[k_FormatBufSize];
     snprintf(finalBuffer, k_FormatBufSize, "%s%s\n", k_LevelStrings[level], userFormatted);
 
-    // Timestamp captured exactly once here — no duplicate ReadSec() calls.
-    const double timestamp = TimeManager::graphicsTimer.ReadSec();
+    // Timestamp relative to s_logEpoch (set at the top of main via StartLogTimer).
+    const double timestamp = std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - s_logEpoch).count();
 
-    // Platform console is synchronous (in-process, no I/O waits).
-    PrintToConsoleColor(finalBuffer, k_LevelColors[level]);
+    // Thread ID — OS-level on Windows, hashed std::thread::id elsewhere.
+#ifdef _WIN32
+    const uint64_t threadId = static_cast<uint64_t>(GetCurrentThreadId());
+#else
+    const uint64_t threadId = static_cast<uint64_t>(
+        std::hash<std::thread::id>{}(std::this_thread::get_id()));
+#endif
 
-    LogEntry entry{ level, channel, timestamp, std::string(finalBuffer) };
+    // Verbose console line — mirrors the ConsoleWindow "Details" format.
+    // [MM:SS:mmm] [LEVEL] [CHANNEL] filename:line [func] (tid:N) text
+    {
+        const int totalMs = static_cast<int>(timestamp * 1000.0);
+        char consoleBuffer[k_FormatBufSize];
+
+        if (file)
+            snprintf(consoleBuffer, k_FormatBufSize,
+                     "[%02d:%02d:%03d] %s [%s] %s:%d [%s] (tid:%llu) %s\n",
+                     (totalMs / 1000) / 60, (totalMs / 1000) % 60, totalMs % 1000,
+                     k_LevelTags[level],
+                     LOG_CHANNEL_NAMES[(int)channel],
+                     file, line,
+                     function ? function : "",
+                     static_cast<unsigned long long>(threadId),
+                     userFormatted);
+        else
+            snprintf(consoleBuffer, k_FormatBufSize,
+                     "[%02d:%02d:%03d] %s [%s] (tid:%llu) %s\n",
+                     (totalMs / 1000) / 60, (totalMs / 1000) % 60, totalMs % 1000,
+                     k_LevelTags[level],
+                     LOG_CHANNEL_NAMES[(int)channel],
+                     static_cast<unsigned long long>(threadId),
+                     userFormatted);
+
+        PrintToConsoleColor(consoleBuffer, k_LevelColors[level]);
+    }
+
+    // entry.message stays as "[LEVEL]: text\n" — ConsoleWindow adds its own timestamp/channel prefix.
+    LogEntry entry;
+    entry.level     = level;
+    entry.channel   = channel;
+    entry.timestamp = timestamp;
+    entry.message   = std::string(finalBuffer);
+    entry.file      = file;
+    entry.line      = line;
+    entry.function  = function;
+    entry.threadId  = threadId;
 
     if (s_running.load(std::memory_order_relaxed))
     {
@@ -234,8 +291,18 @@ static void LogOutputInternal(LogLevel level, LogChannel channel, const char* us
 // Public API — lifecycle
 // ──────────────────────────────────────────────────────────────────────────────
 
+void StartLogTimer()
+{
+    if (!s_logEpochSet) {
+        s_logEpoch    = std::chrono::steady_clock::now();
+        s_logEpochSet = true;
+    }
+}
+
 bool InitializeLogging()
 {
+    StartLogTimer(); // fallback: anchors to InitializeLogging() call if not called earlier
+
     if (!s_logFile.Open("console.log", FileMode::WRITE, false)) {
         // Can't use LogOutput yet — print directly to stderr.
         fprintf(stderr, "[Logger] Unable to open console.log for writing.\n");
@@ -276,7 +343,7 @@ void LogOutput(LogLevel level, const char* message, ...)
     vsnprintf(buf, k_FormatBufSize, message, args);
     va_end(args);
 
-    LogOutputInternal(level, LogChannel::DEFAULT, buf);
+    LogOutputInternal(level, LogChannel::DEFAULT, nullptr, 0, nullptr, buf);
 }
 
 void LogOutput(LogLevel level, LogChannel channel, const char* message, ...)
@@ -290,7 +357,23 @@ void LogOutput(LogLevel level, LogChannel channel, const char* message, ...)
     vsnprintf(buf, k_FormatBufSize, message, args);
     va_end(args);
 
-    LogOutputInternal(level, channel, buf);
+    LogOutputInternal(level, channel, nullptr, 0, nullptr, buf);
+}
+
+void LogOutputEx(LogLevel level, LogChannel channel,
+                 const char* file, int line, const char* function,
+                 const char* message, ...)
+{
+    if (s_loggingPaused.load(std::memory_order_relaxed)) return;
+    if (!IsLogLevelEnabled(level)) return;
+
+    char buf[k_FormatBufSize];
+    va_list args;
+    va_start(args, message);
+    vsnprintf(buf, k_FormatBufSize, message, args);
+    va_end(args);
+
+    LogOutputInternal(level, channel, file, line, function, buf);
 }
 
 void LogOutputMultiline(LogLevel level, LogChannel channel, const char* text)
@@ -302,7 +385,22 @@ void LogOutputMultiline(LogLevel level, LogChannel channel, const char* text)
     std::string line;
     while (std::getline(stream, line)) {
         if (!line.empty())
-            LogOutputInternal(level, channel, line.c_str());
+            LogOutputInternal(level, channel, nullptr, 0, nullptr, line.c_str());
+    }
+}
+
+void LogOutputMultilineEx(LogLevel level, LogChannel channel,
+                          const char* file, int line, const char* function,
+                          const char* text)
+{
+    if (s_loggingPaused.load(std::memory_order_relaxed)) return;
+    if (!IsLogLevelEnabled(level)) return;
+
+    std::istringstream stream(text);
+    std::string entry;
+    while (std::getline(stream, entry)) {
+        if (!entry.empty())
+            LogOutputInternal(level, channel, file, line, function, entry.c_str());
     }
 }
 

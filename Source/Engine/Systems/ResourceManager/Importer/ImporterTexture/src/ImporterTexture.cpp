@@ -100,8 +100,7 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
         // Acquire internal texture resources and upload to GPU.
         if(!External->renderer->GetRendererFrontend()->CreateTexture(data, texture))
         {
-            NOUS_ERROR("[%s] Failed to acquire renderer resources for texture '%s'",
-                       __FUNCTION__, texture->GetName().c_str());
+            NOUS_ERROR("Failed to acquire renderer resources for texture '%s'", texture->GetName().c_str());
             return false;
         }
 

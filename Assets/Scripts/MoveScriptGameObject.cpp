@@ -62,6 +62,7 @@ public:
                                               m_originX,
                                               m_originY + offsetX,
                                               m_originZ);
+        NOUS_SCRIPT_TRACE("MOVING");
         /*coding_end::MoveScriptGameObject::Update*/
     }
 

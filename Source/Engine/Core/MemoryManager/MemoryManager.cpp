@@ -53,7 +53,7 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 
 	if (!config.allocatorBlock) 
 	{
-		NOUS_FATAL_C(CURRENT_CHANNEL, "[%s] Memory system allocation failed", __FUNCTION__);
+		NOUS_FATAL_C(CURRENT_CHANNEL, "Memory system allocation failed");
 		return;
 	}
 
@@ -63,8 +63,7 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 			config.allocatorBlock
 	);
 
-	NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Memory system initialized with %llu bytes",
-			   __FUNCTION__, config.totalAllocationSize);
+	NOUS_DEBUG_C(CURRENT_CHANNEL, "Memory system initialized with %llu bytes", config.totalAllocationSize);
 }
 
 void MemoryManager::ShutdownMemory()
@@ -109,14 +108,14 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 
 	if (tag == MemoryTag::UNKNOWN) 
 	{
-		NOUS_WARN_C(CURRENT_CHANNEL, "[%s] Memory Allocation called using MEMORY_TAG_UNKNOWN.", __FUNCTION__);
+		NOUS_WARN_C(CURRENT_CHANNEL, "Memory Allocation called using MEMORY_TAG_UNKNOWN.");
 	}
 
 	void* block = config.allocator->Allocate(size); // allocator aligns internally
 	if (!block)
 	{
 		NOUS_FATAL_C(CURRENT_CHANNEL,
-			"[MemoryManager::Allocate] Allocation of %llu bytes (tag=%d) failed! "
+			"Allocation of %llu bytes (tag=%d) failed! "
 			"Pool exhausted? Free space: %llu bytes.",
 			size, static_cast<int>(tag), config.allocator->GetFreeSpace());
 		return nullptr;

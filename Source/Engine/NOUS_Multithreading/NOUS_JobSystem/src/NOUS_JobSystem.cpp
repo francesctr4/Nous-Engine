@@ -53,7 +53,7 @@ void NOUS_Multithreading::NOUS_JobSystem::SubmitJob(const std::function<void()>&
 	}
 	else
 	{
-		NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Submitting job '%s' to thread pool (%d pending jobs)", __FUNCTION__,
+		NOUS_DEBUG_C(CURRENT_CHANNEL, "Submitting job '%s' to thread pool (%d pending jobs)",
 					 jobName.c_str(), GetPendingJobs());
 		mThreadPool->SubmitJob(job);
 	}

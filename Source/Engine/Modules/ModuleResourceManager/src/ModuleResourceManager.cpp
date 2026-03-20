@@ -25,20 +25,16 @@ constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOU
 
 ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	App->eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
 
 ModuleResourceManager::~ModuleResourceManager()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+
 }
 
 bool ModuleResourceManager::Awake()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	// Always ensure directories exist — idempotent, safe to call every startup.
 	EnsureLibraryDirectories();
 
@@ -62,7 +58,7 @@ bool ModuleResourceManager::ImportDirectory(const std::string& directory)
 {
 	if (!NOUS_FileManager::Exists(directory))
 	{
-		NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Directory does not exist: %s", __FUNCTION__, directory.c_str());
+		NOUS_ERROR_C(CURRENT_CHANNEL, "Directory does not exist: %s", directory.c_str());
 		return false;
 	}
 
@@ -79,8 +75,6 @@ bool ModuleResourceManager::ImportDirectory(const std::string& directory)
 
 bool ModuleResourceManager::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	// -----------------------
 	// Default Texture
 	// -----------------------
@@ -154,8 +148,6 @@ bool ModuleResourceManager::Start()
 
 UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	// Flush pending unloads — deferred from UnloadResource to avoid destroying
 	// GPU resources mid-frame (between command recording and vkQueueSubmit).
 	// By the time PreUpdate runs the previous frame has been fully submitted.
@@ -180,28 +172,21 @@ UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 
 UpdateStatus ModuleResourceManager::Update(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleResourceManager::PostUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	return UpdateStatus::CONTINUE;
 }
 
 bool ModuleResourceManager::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	return true;
 }
 
 void ModuleResourceManager::OnEvent(const Event& event)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	switch (event.type)
 	{
 		case EventType::DROP_FILE:
@@ -239,7 +224,7 @@ static std::filesystem::file_time_type GetLibraryTime(const std::filesystem::pat
 
 bool ModuleResourceManager::ImportFile(const std::string& path)
 {
-	NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Importing file: %s", __FUNCTION__, path.c_str());
+	NOUS_DEBUG_C(CURRENT_CHANNEL, "Importing file: %s", path.c_str());
 
 	if (!NOUS_FileManager::Exists(path))
 	{
@@ -607,7 +592,7 @@ bool ModuleResourceManager::ResourceExists(const UID& uid)
 
 Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 {
-	NOUS_INFO("[%s] Creating Resource", __FUNCTION__);
+	NOUS_INFO("Creating Resource");
 	NOUS_INFO("Assets path: %s", assetsPath.c_str());
 
 	std::string metaFilePath = assetsPath + ".meta";
@@ -616,7 +601,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 	MetaFileData metaFileData;
 	if (!ReadMetaFile(metaFilePath, metaFileData))
 	{
-		NOUS_ERROR("CreateResource ERROR: Failed to read meta file: %s", metaFilePath.c_str());
+		NOUS_ERROR("Failed to read meta file: %s", metaFilePath.c_str());
 		return nullptr;
 	}
 

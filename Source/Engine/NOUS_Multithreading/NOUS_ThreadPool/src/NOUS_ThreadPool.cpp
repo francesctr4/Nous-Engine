@@ -120,7 +120,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 		thread->SetCurrentJob(job);
 		thread->StartExecutionTimer();
 
-		NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Executing job '%s' on thread '%s' (%u)", __FUNCTION__,
+		NOUS_DEBUG_C(CURRENT_CHANNEL, "Executing job '%s' on thread '%s' (%u)",
 				   job->GetName().c_str(), thread->GetName().c_str(), thread->GetID());
 
 		try
@@ -129,10 +129,10 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 		}
 		catch (const std::exception& e)
 		{
-			NOUS_ERROR_C(CURRENT_CHANNEL, ("[%s] Job '" + job->GetName() + "' failed: " + e.what()).c_str(), __FUNCTION__);
+			NOUS_ERROR_C(CURRENT_CHANNEL, ("Job '" + job->GetName() + "' failed: " + e.what()).c_str());
 		}
 
-		NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Job '%s' completed successfully on thread '%s' (%u) in %.3f s", __FUNCTION__,
+		NOUS_DEBUG_C(CURRENT_CHANNEL, "Job '%s' completed successfully on thread '%s' (%u) in %.3f s",
 				   job->GetName().c_str(), thread->GetName().c_str(),
 				   thread->GetID(), (thread->GetExecutionTimeMS() / 1000.0f));
 

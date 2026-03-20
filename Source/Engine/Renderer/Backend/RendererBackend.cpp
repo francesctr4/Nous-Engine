@@ -33,17 +33,17 @@ bool RendererBackend::Create(RendererBackendType bType)
             // backendInterface = NOUS_NEW<DirectXBackend>(MemoryTag::RENDERER);
             break;
         default:
-            NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Unknown backend type: %d", __FUNCTION__, static_cast<int>(bType));
+            NOUS_ERROR_C(CURRENT_CHANNEL, "Unknown backend type: %d", static_cast<int>(bType));
             return false;
     }
 
     if (!mBackendInterface)
     {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Failed to create backend interface.", __FUNCTION__);
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create backend interface.");
         return false;
     }
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Created backend type (%d) successfully.", __FUNCTION__, static_cast<int>(bType));
+    NOUS_INFO_C(CURRENT_CHANNEL, "Created backend type (%d) successfully.", static_cast<int>(bType));
     return true;
 }
 
@@ -51,7 +51,7 @@ void RendererBackend::Destroy()
 {
     if (mBackendInterface)
     {
-        NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Destroying renderer backend...", __FUNCTION__);
+        NOUS_INFO_C(CURRENT_CHANNEL, "Destroying renderer backend...");
         NOUS_DELETE(mBackendInterface, MemoryTag::RENDERER);
     }
 }
@@ -60,7 +60,7 @@ bool RendererBackend::Initialize()
 {
     if (!mBackendInterface)
     {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "[%s] Initialize() called with no backend.", __FUNCTION__);
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Initialize called with no backend.");
         return false;
     }
     return mBackendInterface->Initialize();

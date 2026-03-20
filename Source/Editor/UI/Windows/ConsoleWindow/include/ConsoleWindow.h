@@ -74,6 +74,7 @@ private:
     char inputBuffer[256] = "";
 
     bool freezeConsole = false;
+    bool m_showDetails = true; // show file:line + thread ID per entry
 
     static constexpr const char* k_LevelNames[] = {
         "FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"

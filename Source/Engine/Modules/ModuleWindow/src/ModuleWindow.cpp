@@ -8,20 +8,16 @@
 
 ModuleWindow::ModuleWindow(Application* app) : Module(app)
 {
-    NOUS_TRACE("%s()", __FUNCTION__);
-
     window = nullptr;
 }
 
 ModuleWindow::~ModuleWindow()
 {
-    NOUS_TRACE("%s()", __FUNCTION__);
+
 }
 
 bool ModuleWindow::Awake()
 {
-    NOUS_TRACE("%s()", __FUNCTION__);
-
     bool ret = true;
 
     // Initialize SDL
@@ -52,8 +48,6 @@ bool ModuleWindow::Awake()
 
 bool ModuleWindow::Start()
 {
-    NOUS_TRACE("%s()", __FUNCTION__);
-
     SDL_MaximizeWindow(window);
 
     return true;
@@ -61,8 +55,6 @@ bool ModuleWindow::Start()
 
 bool ModuleWindow::CleanUp()
 {
-    NOUS_TRACE("%s()", __FUNCTION__);
-
     if (window != nullptr)
     {
         SDL_DestroyWindow(window);

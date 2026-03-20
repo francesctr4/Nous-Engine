@@ -36,8 +36,6 @@
 ModuleScene::ModuleScene(Application* app)
     : Module(app), m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE);
 	gameCamera    = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM);
@@ -54,8 +52,6 @@ ModuleScene::ModuleScene(Application* app)
 
 ModuleScene::~ModuleScene()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
     selectedGameObject = nullptr;
 
 	NOUS_DELETE(gameCamera, MemoryTag::CAMERA);
@@ -65,8 +61,6 @@ ModuleScene::~ModuleScene()
 
 bool ModuleScene::Awake()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	gameCamera->SetPos(-4.61f, 100.0f, 718.32f);
 
 	return true;
@@ -74,8 +68,6 @@ bool ModuleScene::Awake()
 
 bool ModuleScene::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
     LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
 
 	return true;
@@ -83,8 +75,6 @@ bool ModuleScene::Start()
 
 UpdateStatus ModuleScene::PreUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	// Deferred stop: PressStop() set this flag instead of calling LoadScene() directly,
 	// so that the scene is never cleared while the SCENE/GAME command buffers are still
 	// recorded but not yet submitted (EndFrame hasn't run). By the time PreUpdate() is
@@ -101,8 +91,6 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 
 UpdateStatus ModuleScene::Update(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	// Compute simulation dt — non-zero only when simulation is ticking.
 	m_didStepThisFrame = false;
 	float simDt = 0.0f;
@@ -291,8 +279,6 @@ UpdateStatus ModuleScene::Update(float dt)
 
 UpdateStatus ModuleScene::PostUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	// Dispatch LateUpdate only when the simulation actually ticked this frame.
 	if (m_simulationState == SimulationState::PLAYING || m_didStepThisFrame)
 	{
@@ -306,8 +292,6 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 
 bool ModuleScene::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	// Wait for any in-flight jobs (e.g. hot-reload) before touching scripts
 	App->jobSystem->WaitForPendingJobs();
 
@@ -323,7 +307,7 @@ void ModuleScene::OnEvent(const Event& event)
 	{
 		case EventType::WINDOW_RESIZED:
 		{
-			NOUS_DEBUG("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
+			NOUS_DEBUG("WINDOW RESIZED EVENT");
 			NOUS_DEBUG("Received context: %d, %d", event.ctx.i32[0], event.ctx.i32[1]);
 
 			const float newAspect = (float)event.ctx.i32[0] / (float)event.ctx.i32[1];

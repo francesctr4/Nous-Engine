@@ -28,12 +28,12 @@
     \
     /* ============================ CORE ============================ */   \
     X(NOUS_ENGINE_MAIN, "MainEngine.cpp") \
-    X(NOUS_ENGINE_CORE_APPLICATION, "Application.cpp") \
+    X(NOUS_ENGINE_CORE_APPLICATION, "NOUS_ENGINE_CORE_APPLICATION") \
     X(NOUS_ENGINE_MODULE_RENDERER3D, "ModuleRenderer3D.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_CAMERA3D, "ModuleCamera3D.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_WINDOW, "ModuleWindow.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_SCENE, "ModuleScene.cpp") \
-    X(NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER, "ModuleResourceManager.cpp") \
+    X(NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER, "RESOURCE_MANAGER") \
     X(NOUS_ENGINE_CORE_MODULE_INPUT, "ModuleInput.cpp") \
     \
     /* ============================ ECS ============================ */ \
@@ -73,6 +73,7 @@
     X(NOUS_ENGINE_SCRIPTING_INPUTBINDINGS, "InputBindings.cpp") \
     X(NOUS_ENGINE_SCRIPTING_GAMEOBJECTBINDINGS, "GameObjectBindings.cpp") \
     X(NOUS_ENGINE_SCRIPTING_SCRIPT_MANAGER, "ScriptManager.cpp") \
+    X(NOUS_ENGINE_SCRIPTING_USER_SCRIPTS, "SCRIPT") \
     \
     /* ============================ ENGINE SYSTEMS ============================ */ \
     X(NOUS_ENGINE_SYSTEM_EVENTSYSTEM, "EventSystem.cpp") \
@@ -86,7 +87,9 @@
     X(NOUS_ENGINE_UTILS_LOGGER, "Logger.cpp") \
     X(NOUS_ENGINE_UTILS_RANDOM, "Random.cpp") \
     X(NOUS_ENGINE_UTILS_JSONFILE, "JsonFile.cpp") \
-    X(NOUS_ENGINE_UTILS_ASSERTS, "Asserts.h")
+    X(NOUS_ENGINE_UTILS_ASSERTS, "Asserts.h") \
+    /* ============================ FEATURES ============================ */ \
+    X(NOUS_ENGINE_EDITOR_FEATURE_MOUSE_PICKING, "MOUSE_PICKING")
 
 // ------------------------------------------------------------
 // Enum generation

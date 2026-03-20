@@ -109,8 +109,6 @@ bool Application::Start() const
 
 UpdateStatus Application::PrepareUpdate()
 {
-    NOUS_TRACE("%s()", __FUNCTION__);
-
     dt = msTimer->ReadSec();
     msTimer->Start();
 
@@ -169,8 +167,6 @@ UpdateStatus Application::Update()
 
 void Application::FinishUpdate() const
 {
-    NOUS_TRACE("%s()", __FUNCTION__);
-
     eventSystem->DispatchQueued();
 
     // Set Window Title with Debug Info

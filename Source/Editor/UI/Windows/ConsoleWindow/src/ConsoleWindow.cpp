@@ -5,6 +5,17 @@
 #include <algorithm>
 #include <cstring>
 
+// Returns just the filename portion of a full path (no allocation, no runtime search needed
+// since the path was already resolved to just the filename at compile time via NOUS_SOURCE_FILE).
+static const char* GetFileName(const char* path)
+{
+    if (!path) return "";
+    const char* name = path;
+    for (const char* p = path; *p; ++p)
+        if (*p == '/' || *p == '\\') name = p + 1;
+    return name;
+}
+
 static constexpr ImVec4 k_LevelColors[] = {
     ImVec4(1.0f, 0.0f, 0.0f, 1.0f),   // FATAL  — red
     ImVec4(1.0f, 0.4f, 0.4f, 1.0f),   // ERROR  — light red
@@ -242,6 +253,8 @@ void ConsoleWindow::DrawMenuBar()
     ImGui::SameLine();
     if (ImGui::Checkbox("Freeze", &freezeConsole))
         SetLoggingPaused(freezeConsole);
+    ImGui::SameLine();
+    ImGui::Checkbox("Details", &m_showDetails);
 
     // ── Level filter ────────────────────────────────────────────────────────
     ImGui::SameLine(0, 50);
@@ -291,7 +304,7 @@ void ConsoleWindow::DrawMenuBar()
         m_channelSummaryDirty = false;
     }
 
-    ImGui::SetNextItemWidth(360);
+    ImGui::SetNextItemWidth(280);
     if (ImGui::BeginCombo("##ChannelFilter", m_channelSummary.c_str(), ImGuiComboFlags_HeightLargest))
     {
         if (ImGui::Selectable("Select All", false)) {
@@ -357,12 +370,52 @@ void ConsoleWindow::DrawLogPanel()
                      (totalMs / 1000) % 60,
                      totalMs % 1000);
 
+            // Strip "[LEVEL]: " prefix from the stored message — level is shown separately.
+            const char* msgText = entry.message.c_str();
+            const char* sep = strstr(msgText, "]: ");
+            if (sep) msgText = sep + 3;
+
             ImGui::PushStyleColor(ImGuiCol_Text, k_LevelColors[(int)entry.level]);
-            ImGui::Text("[%s] [%s] %s",
-                        timeBuffer,
-                        LOG_CHANNEL_NAMES[(int)entry.channel],
-                        entry.message.c_str());
-            ImGui::PopStyleColor();
+
+            if (m_showDetails && (entry.file || entry.threadId != 0))
+            {
+                // Metadata prefix in a dimmer colour.
+                // Format: [time] [LEVEL] [channel] file:line [func] (tid:N)
+                ImGui::PopStyleColor();
+
+                char metaBuffer[128];
+                if (entry.file)
+                    snprintf(metaBuffer, sizeof(metaBuffer), "%s:%d [%s] (tid:%llu)",
+                             GetFileName(entry.file), entry.line,
+                             entry.function ? entry.function : "",
+                             static_cast<unsigned long long>(entry.threadId));
+                else
+                    snprintf(metaBuffer, sizeof(metaBuffer), "(tid:%llu)",
+                             static_cast<unsigned long long>(entry.threadId));
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+                ImGui::Text("[%s] %s [%s] %s",
+                            timeBuffer,
+                            k_LevelNames[(int)entry.level],
+                            LOG_CHANNEL_NAMES[(int)entry.channel],
+                            metaBuffer);
+                ImGui::PopStyleColor();
+
+                // Message on the same row in level colour.
+                ImGui::SameLine(0, 8);
+                ImGui::PushStyleColor(ImGuiCol_Text, k_LevelColors[(int)entry.level]);
+                ImGui::TextUnformatted(msgText);
+                ImGui::PopStyleColor();
+            }
+            else
+            {
+                ImGui::Text("[%s] %s [%s] %s",
+                            timeBuffer,
+                            k_LevelNames[(int)entry.level],
+                            LOG_CHANNEL_NAMES[(int)entry.channel],
+                            msgText);
+                ImGui::PopStyleColor();
+            }
         }
     }
     clipper.End();
