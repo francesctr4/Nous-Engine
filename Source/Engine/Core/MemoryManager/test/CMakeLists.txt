@@ -1,8 +1,4 @@
-# ===========================================
-# NOUS_Job - Unit Tests
-# ===========================================
-
-set(TEST_NAME "t_ShaderReflection")
+set(TEST_NAME "t_MemoryManager")
 
 add_executable(${TEST_NAME}
         ${TEST_NAME}.cpp
@@ -10,22 +6,18 @@ add_executable(${TEST_NAME}
 
 target_include_directories(${TEST_NAME}
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
         ${CMAKE_SOURCE_DIR}/Source
 )
 
-# These must match the packages found in your main Nous Engine build
 find_package(GTest CONFIG REQUIRED)
 
 target_link_libraries(${TEST_NAME}
         PRIVATE
-        ShaderSystem
+        NousEngine::Engine
+        NousEngine::Editor
         GTest::gtest
         GTest::gtest_main
 )
-
-# Register test
-include(GoogleTest)
 
 set_target_properties(${TEST_NAME} PROPERTIES
         VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

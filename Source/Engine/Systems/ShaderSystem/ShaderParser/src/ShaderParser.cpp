@@ -20,7 +20,7 @@ static ShaderStage ParseStageName(const std::string& name)
 
 NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::string& fullSource)
 {
-    NOUS_TRACE_C(CURRENT_CHANNEL, "Parsing shader stages (%zu bytes)", fullSource.size());
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Parsing shader stages (%zu bytes)", fullSource.size());
 
     ParseResult result;
 

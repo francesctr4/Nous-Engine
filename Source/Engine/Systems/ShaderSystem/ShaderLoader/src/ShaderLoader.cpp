@@ -15,7 +15,7 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromSource(
     const std::string& debugName,
     const ShaderCompilerConfig& config)
 {
-    NOUS_TRACE_C(CURRENT_CHANNEL, "Loading shader from source '%s'", debugName.c_str());
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Loading shader from source '%s'", debugName.c_str());
 
     ShaderLoadResult out;
     out.sourcePath = debugName;
@@ -82,7 +82,7 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromSource(
 ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromFile(
     const std::string& path, const ShaderCompilerConfig& config)
 {
-    NOUS_TRACE_C(CURRENT_CHANNEL, "Loading shader from file '%s'", path.c_str());
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Loading shader from file '%s'", path.c_str());
 
     ShaderLoadResult err;
 

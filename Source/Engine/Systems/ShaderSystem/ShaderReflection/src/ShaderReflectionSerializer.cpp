@@ -176,7 +176,7 @@ static ReflectedOutput DeserializeFragmentOutput(JSON_Object* o)
 bool NOUS_ShaderSystem::SerializeReflection(const PipelineReflectionResult& reflection,
                                             const std::string& jsonPath)
 {
-    NOUS_TRACE_C(CURRENT_CHANNEL, "Serializing reflection to '%s'", jsonPath.c_str());
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Serializing reflection to '%s'", jsonPath.c_str());
 
     JSON_Value*  rootVal = json_value_init_object();
     JSON_Object* root    = json_value_get_object(rootVal);
@@ -236,8 +236,6 @@ bool NOUS_ShaderSystem::SerializeReflection(const PipelineReflectionResult& refl
 bool NOUS_ShaderSystem::DeserializeReflection(const std::string& jsonPath,
                                               PipelineReflectionResult& outReflection)
 {
-    NOUS_TRACE_C(CURRENT_CHANNEL, "Deserializing reflection from '%s'", jsonPath.c_str());
-
     JSON_Value* rootVal = json_parse_file(jsonPath.c_str());
     if (!rootVal)
     {

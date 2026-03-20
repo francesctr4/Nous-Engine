@@ -76,7 +76,7 @@ namespace NOUS_ShaderSystem
                                     bool optimize,
                                     bool debugInfo)
     {
-        NOUS_TRACE_C(CURRENT_CHANNEL, "Compiling '%s' -> '%s'", glslPath.c_str(), spvPath.c_str());
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Compiling '%s' -> '%s'", glslPath.c_str(), spvPath.c_str());
 
         std::string source;
         if (!ReadTextFile(glslPath, source))
@@ -141,7 +141,7 @@ namespace NOUS_ShaderSystem
         out.shaderSource.entryPoint = config.entryPoint;
         out.shaderSource.glslSource.assign(glsl.begin(), glsl.end());
 
-        NOUS_TRACE_C(CURRENT_CHANNEL, "Compiling stage from '%s'", out.shaderSource.virtualPath.c_str());
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Compiling stage from '%s'", out.shaderSource.virtualPath.c_str());
 
         if (glsl.empty())
         {

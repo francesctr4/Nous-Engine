@@ -134,7 +134,7 @@ static uint32_t GetArrayCount(const SpvReflectBlockVariable& m)
 PipelineReflectionResult NOUS_ShaderSystem::MergeReflections(
     const std::vector<ShaderReflectionResult>& stages)
 {
-    NOUS_TRACE_C(CURRENT_CHANNEL, "Merging reflection from %zu stage(s)", stages.size());
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Merging reflection from %zu stage(s)", stages.size());
 
     PipelineReflectionResult out;
 
@@ -186,7 +186,7 @@ PipelineReflectionResult NOUS_ShaderSystem::MergeReflections(
 
 ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& source)
 {
-    NOUS_TRACE_C(CURRENT_CHANNEL, "Reflecting SPIR-V for '%s' (%zu words)",
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Reflecting SPIR-V for '%s' (%zu words)",
                  source.virtualPath.c_str(), source.spirvBinary.size());
 
     ShaderReflectionResult out{};

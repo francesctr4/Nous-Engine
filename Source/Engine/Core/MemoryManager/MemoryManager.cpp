@@ -68,13 +68,13 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 
 void MemoryManager::ShutdownMemory()
 {
-	if (config.allocator->GetFreeSpace() != config.totalAllocationSize)
+	if (config.allocator)
 	{
-		NOUS_WARN_C(CURRENT_CHANNEL, "Possible leaks detected: not all memory returned to allocator!");
-	}
+		if (config.allocator->GetFreeSpace() != config.totalAllocationSize)
+		{
+			NOUS_WARN_C(CURRENT_CHANNEL, "Possible leaks detected: not all memory returned to allocator!");
+		}
 
-	if (config.allocator) 
-	{
 		// Explicit destructor call
 		config.allocator->~DynamicAllocator();
 		free(config.allocatorBlock);
@@ -209,6 +209,7 @@ void* MemoryManager::SetMemory(void* destination, int32 value, uint64 size)
 
 std::string MemoryManager::GetMemoryUsageStats()
 {
+	std::lock_guard<std::mutex> lock(memoryMutex);
 	std::ostringstream out;
 	bool anyUsed = false;
 
@@ -270,6 +271,7 @@ std::string MemoryManager::GetMemoryUsageStats()
 
 uint64 MemoryManager::GetMemoryAllocationCount()
 {
+	std::lock_guard<std::mutex> lock(memoryMutex);
 	return config.stats.totalAllocations;
 }
 

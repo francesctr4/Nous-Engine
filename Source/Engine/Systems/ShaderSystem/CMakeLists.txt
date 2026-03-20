@@ -25,3 +25,7 @@ target_link_libraries(ShaderSystem PUBLIC
         unofficial::shaderc::shaderc
         unofficial::spirv-reflect
 )
+
+target_link_libraries(ShaderSystem PRIVATE
+        Logger
+)
