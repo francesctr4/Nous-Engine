@@ -79,9 +79,14 @@ public:
         MemoryManager::Free(static_cast<void*>(p), tag_);
     }
 
-    // Max elements we can allocate
-    constexpr size_type max_size() const noexcept {
-        return std::numeric_limits<size_type>::max() / sizeof(T);
+    // Max elements that could theoretically fit in the pool.
+    // Queries the live pool capacity so containers don't attempt reserves beyond it.
+    // Falls back to the theoretical maximum if the pool isn't initialised yet.
+    size_type max_size() const noexcept {
+        const uint64 poolSize = MemoryManager::GetMemoryConfig().totalAllocationSize;
+        if (poolSize == 0)
+            return std::numeric_limits<size_type>::max() / sizeof(T);
+        return static_cast<size_type>(poolSize / sizeof(T));
     }
 
     // Access / change tag

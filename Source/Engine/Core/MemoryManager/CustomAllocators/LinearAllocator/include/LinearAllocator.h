@@ -1,6 +1,7 @@
 #ifndef LINEARALLOCATOR_H
 #define LINEARALLOCATOR_H
 
+#include <cstddef>
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
 
@@ -15,7 +16,16 @@ public:
 
     void Create(uint64 capacity, void* preAllocatedMemory = nullptr);
 
-    void* Allocate(uint64 size);
+    // Allocate 'size' bytes aligned to 'alignment' (must be a power of two).
+    // Default alignment is alignof(std::max_align_t) (typically 16 bytes on x64),
+    // which satisfies the requirements of any fundamental type.
+    void* Allocate(uint64 size, uint64 alignment = alignof(std::max_align_t));
+
+    // Reset rewinds the cursor to 0 without freeing the backing allocation.
+    // Suitable for per-frame scratch allocators that are reused each frame.
+    void Reset();
+
+    // FreeAll resets the cursor; for owned allocations it also frees the backing block.
     void FreeAll();
 
     // Getters for debugging or inspection
@@ -29,12 +39,12 @@ public:
     LinearAllocator(LinearAllocator&&) = delete;
     LinearAllocator& operator=(LinearAllocator&&) = delete;
 
-public:
+private:
 
     uint64 capacity;
     uint64 offset;
-    void* memory;
-    bool ownsMemory;
+    void*  memory;
+    bool   ownsMemory;
 
 };
 

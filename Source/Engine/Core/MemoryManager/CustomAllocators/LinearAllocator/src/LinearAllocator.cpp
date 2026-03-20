@@ -68,9 +68,7 @@ void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
     MemoryManager::ZeroMemory(memory, capacity);
 }
 
-// Allocate memory with alignment
-
-void* LinearAllocator::Allocate(uint64 size)
+void* LinearAllocator::Allocate(uint64 size, uint64 alignment)
 {
     if (size == 0)
     {
@@ -84,16 +82,34 @@ void* LinearAllocator::Allocate(uint64 size)
         return nullptr;
     }
 
-    if (offset + size > capacity)
+    // Round the absolute cursor address up to the requested alignment boundary,
+    // then derive the offset from the buffer base.
+    // Aligning the relative offset alone is insufficient when the buffer base
+    // itself is not aligned to 'alignment'.
+    // alignment must be a power of two (not validated here — callers must ensure this).
+    const auto cursor       = reinterpret_cast<uintptr_t>(static_cast<uint8*>(memory) + offset);
+    const auto aligned      = (cursor + static_cast<uintptr_t>(alignment) - 1)
+                              & ~(static_cast<uintptr_t>(alignment) - 1);
+    const uint64 alignedOffset = static_cast<uint64>(aligned - reinterpret_cast<uintptr_t>(memory));
+
+    if (alignedOffset + size > capacity)
     {
-        NOUS_ERROR("LinearAllocator::Allocate() — requested %llu bytes but only %llu remain (capacity=%llu).",
-                   size, GetRemainingSize(), capacity);
+        NOUS_ERROR("LinearAllocator::Allocate() — requested %llu bytes (aligned offset %llu) but only %llu remain (capacity=%llu).",
+                   size, alignedOffset, capacity - alignedOffset, capacity);
         return nullptr;
     }
 
-    void* block = static_cast<uint8*>(memory) + offset;
-    offset += size;
+    void* block = static_cast<uint8*>(memory) + alignedOffset;
+    offset = alignedOffset + size;
     return block;
+}
+
+void LinearAllocator::Reset()
+{
+    // Rewind the cursor without touching the backing allocation.
+    // Works for both owned and external memory — callers are responsible for
+    // re-initialising any objects that were placed in the buffer.
+    offset = 0;
 }
 
 void LinearAllocator::FreeAll()

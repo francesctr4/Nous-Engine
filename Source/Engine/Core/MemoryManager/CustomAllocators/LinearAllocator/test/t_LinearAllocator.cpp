@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <cstddef>
+#include <vector>
 #include "Engine/Core/MemoryManager/CustomAllocators/LinearAllocator/include/LinearAllocator.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
@@ -152,4 +154,90 @@ TEST_F(t_LinearAllocator, CreateCanReinitialize)
 
     void* p = la.Allocate(128);
     EXPECT_NE(p, nullptr);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Default alignment: every allocation is aligned to alignof(std::max_align_t)
+// ─────────────────────────────────────────────────────────────────────────────
+TEST_F(t_LinearAllocator, DefaultAlignmentSatisfiesMaxAlign)
+{
+    LinearAllocator la(256);
+
+    // Allocate odd sizes — each returned pointer must be max-aligned.
+    for (uint64 size : {1u, 3u, 7u, 13u})
+    {
+        void* p = la.Allocate(size);
+        ASSERT_NE(p, nullptr) << "Allocate(" << size << ") returned null";
+        EXPECT_EQ(reinterpret_cast<uintptr_t>(p) % alignof(std::max_align_t), 0u)
+            << "Allocation of " << size << " bytes is not max-aligned";
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom alignment: caller can request stricter power-of-two alignment
+// ─────────────────────────────────────────────────────────────────────────────
+TEST_F(t_LinearAllocator, CustomAlignmentIsRespected)
+{
+    LinearAllocator la(512);
+
+    void* p32 = la.Allocate(1, 32);
+    ASSERT_NE(p32, nullptr);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(p32) % 32, 0u);
+
+    void* p64 = la.Allocate(1, 64);
+    ASSERT_NE(p64, nullptr);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(p64) % 64, 0u);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Padding from alignment is reflected in GetAllocatedSize()
+// ─────────────────────────────────────────────────────────────────────────────
+TEST_F(t_LinearAllocator, AlignmentPaddingReflectedInOffset)
+{
+    LinearAllocator la(256);
+
+    // First alloc of 1 byte with default alignment (16): offset becomes 1,
+    // next aligned offset is 16 → second alloc starts there.
+    void* p1 = la.Allocate(1);
+    void* p2 = la.Allocate(1);
+    ASSERT_NE(p1, nullptr);
+    ASSERT_NE(p2, nullptr);
+
+    // The gap between p1 and p2 must equal the alignment (padding was inserted).
+    EXPECT_EQ(static_cast<uint8*>(p2) - static_cast<uint8*>(p1),
+              static_cast<ptrdiff_t>(alignof(std::max_align_t)));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reset() rewinds the cursor without freeing the backing block
+// ─────────────────────────────────────────────────────────────────────────────
+TEST_F(t_LinearAllocator, ResetReusesOwnedBuffer)
+{
+    LinearAllocator la(256);
+
+    void* p1 = la.Allocate(64);
+    ASSERT_NE(p1, nullptr);
+
+    la.Reset();
+    EXPECT_EQ(la.GetAllocatedSize(), 0u);
+
+    // Buffer must still be live — same address is reissued on the next alloc.
+    void* p2 = la.Allocate(64);
+    ASSERT_NE(p2, nullptr);
+    EXPECT_EQ(p1, p2); // backing block was reused, not freed
+}
+
+TEST_F(t_LinearAllocator, ResetReusesExternalBuffer)
+{
+    constexpr uint64 kCap = 256;
+    std::vector<uint8_t> buf(kCap, 0);
+    LinearAllocator la(kCap, buf.data());
+
+    la.Allocate(128);
+    la.Reset();
+    EXPECT_EQ(la.GetAllocatedSize(), 0u);
+
+    // Next alloc should return the start of the external buffer again.
+    void* p = la.Allocate(64);
+    EXPECT_EQ(p, static_cast<void*>(buf.data()));
 }
