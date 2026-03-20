@@ -35,11 +35,24 @@ LinearAllocator::~LinearAllocator()
     ownsMemory = false;
 }
 
-void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory) 
+void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
 {
+    // Guard against re-initialization: free existing owned memory first.
+    if (memory != nullptr)
+    {
+        NOUS_WARN("LinearAllocator::Create() called on an already-initialized allocator. "
+                  "Freeing previous allocation to avoid leak.");
+        if (ownsMemory)
+            MemoryManager::Free(memory, this->capacity, MemoryTag::LINEAR_ALLOCATOR);
+        memory = nullptr;
+        this->capacity = 0;
+        offset = 0;
+    }
+
     this->capacity = capacity;
     this->memory = preAllocatedMemory;
     this->ownsMemory = (preAllocatedMemory == nullptr);
+    this->offset = 0;
 
     if (memory == nullptr)
     {
@@ -47,7 +60,8 @@ void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
 
         if (memory == nullptr)
         {
-            throw std::bad_alloc(); // Handle allocation failure
+            NOUS_ERROR("LinearAllocator::Create() — allocation of %llu bytes failed.", capacity);
+            throw std::bad_alloc();
         }
     }
 
@@ -58,39 +72,58 @@ void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
 
 void* LinearAllocator::Allocate(uint64 size)
 {
-    if (offset + size > capacity)
+    if (size == 0)
     {
-        NOUS_ERROR("LinearAllocator::Allocate - Tried to allocate %lluB, only %lluB remaining.", size, GetRemainingSize());
-
-        return nullptr; // Out of memory
+        NOUS_WARN("LinearAllocator::Allocate() called with size == 0.");
+        return nullptr;
     }
 
-    void* block = static_cast<uint8*>(memory) + offset; // Calculate the block address
+    if (!memory)
+    {
+        NOUS_ERROR("LinearAllocator::Allocate() called on an uninitialized allocator.");
+        return nullptr;
+    }
 
-    offset += size; // Increment the allocation offset
+    if (offset + size > capacity)
+    {
+        NOUS_ERROR("LinearAllocator::Allocate() — requested %llu bytes but only %llu remain (capacity=%llu).",
+                   size, GetRemainingSize(), capacity);
+        return nullptr;
+    }
 
-    return block;  
+    void* block = static_cast<uint8*>(memory) + offset;
+    offset += size;
+    return block;
 }
 
 void LinearAllocator::FreeAll()
 {
-    MemoryManager::Free(memory, capacity, MemoryTag::LINEAR_ALLOCATOR);
+    if (!ownsMemory)
+    {
+        // Only reset the cursor — don't free memory we don't own.
+        offset = 0;
+        return;
+    }
 
-    memory = nullptr;
+    if (memory)
+    {
+        MemoryManager::Free(memory, capacity, MemoryTag::LINEAR_ALLOCATOR);
+        memory = nullptr;
+    }
     offset = 0;
 }
 
-inline uint64 LinearAllocator::GetTotalSize() const 
-{ 
-    return capacity; 
+uint64 LinearAllocator::GetTotalSize() const
+{
+    return capacity;
 }
 
-inline uint64 LinearAllocator::GetAllocatedSize() const 
-{ 
-    return offset; 
+uint64 LinearAllocator::GetAllocatedSize() const
+{
+    return offset;
 }
 
-inline uint64 LinearAllocator::GetRemainingSize() const 
-{ 
-    return capacity - offset; 
+uint64 LinearAllocator::GetRemainingSize() const
+{
+    return capacity - offset;
 }

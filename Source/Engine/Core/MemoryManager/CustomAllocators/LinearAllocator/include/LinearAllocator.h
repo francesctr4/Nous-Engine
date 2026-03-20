@@ -2,8 +2,9 @@
 #define LINEARALLOCATOR_H
 
 #include "Engine/Core/Globals.h"
+#include "Engine/EngineExport.h"
 
-class LinearAllocator 
+class NOUS_ENGINE_API LinearAllocator
 {
 public:
 

@@ -48,6 +48,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
         # --- Engine Modules ---
         Core
+        MemoryManager
         Modules
         NOUS_Multithreading
         Renderer
@@ -59,6 +60,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 if (WIN32)
   target_link_options(${PROJECT_NAME} PRIVATE
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Core>"
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:MemoryManager>"
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Modules>"
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:NOUS_Multithreading>"
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Renderer>"

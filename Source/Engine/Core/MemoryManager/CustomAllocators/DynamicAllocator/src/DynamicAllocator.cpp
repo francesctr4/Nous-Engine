@@ -7,7 +7,9 @@
 uint64 DynamicAllocator::GetMemoryRequirement(uint64 totalSize)
 {
     const uint64 freelistReq = Freelist::GetMemoryRequirement(totalSize);
-    return sizeof(InternalState) + freelistReq + totalSize;
+    // Align the start of user memory to 16 bytes so every allocation is 16-byte aligned.
+    const uint64 headerSize  = Align16(sizeof(InternalState) + freelistReq);
+    return headerSize + totalSize;
 }
 
 DynamicAllocator::DynamicAllocator(uint64 totalSize, void* memory)
@@ -33,9 +35,12 @@ DynamicAllocator::DynamicAllocator(uint64 totalSize, void* memory)
     // Calculate freelist requirement
     const uint64 freelistReq = Freelist::GetMemoryRequirement(totalSize);
 
-    // Memory layout correction
+    // Align the header (InternalState + freelist) to 16 bytes so userMemory is
+    // 16-byte aligned and every allocation inherits that alignment.
+    const uint64 headerSize  = Align16(sizeof(InternalState) + freelistReq);
+
     state_->freelistMemory = memPtr + sizeof(InternalState);
-    state_->userMemory     = memPtr + sizeof(InternalState) + freelistReq;
+    state_->userMemory     = memPtr + headerSize;
 
     // Initialize freelist in pre-allocated space
     state_->freelist = new (&state_->freelistMemory) Freelist(

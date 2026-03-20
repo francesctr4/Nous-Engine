@@ -252,11 +252,16 @@ void Freelist::Clear()
 {
     if (!state_) return;
 
-    for (uint64 i = 1; i < state_->maxEntries; ++i) 
+    // Reset ALL nodes to INVALID before resetting the head.
+    // Skipping this leaves dangling `next` pointers when multiple
+    // nodes were live, producing a corrupt list after Clear().
+    for (uint64 i = 0; i < state_->maxEntries; ++i)
     {
-        state_->nodes[i] = Node();
+        state_->nodes[i] = Node(); // sets offset/size = INVALID_ID, next = nullptr
     }
 
+    // Re-establish a single free node covering the whole pool.
+    state_->head = &state_->nodes[0];
     state_->head->offset = 0;
     state_->head->size = state_->totalSize;
     state_->head->next = nullptr;
@@ -367,13 +372,15 @@ bool Freelist::Resize(uint64 newSize, uint64* memoryRequirement, void* newMemory
 
 Freelist::Node* Freelist::GetNode()
 {
-    for (uint64 i = 1; i < state_->maxEntries; ++i) 
+    // Search from index 0 (not 1) so that nodes[0] can be reclaimed after
+    // being returned via ReturnNode.  Starting at 1 permanently lost any
+    // slot that was returned while it was the head node.
+    for (uint64 i = 0; i < state_->maxEntries; ++i)
     {
-        if (state_->nodes[i].offset == INVALID_ID) 
+        if (state_->nodes[i].offset == INVALID_ID)
         {
             state_->nodes[i].offset = 0;
             state_->nodes[i].size = 0;
-
             return &state_->nodes[i];
         }
     }

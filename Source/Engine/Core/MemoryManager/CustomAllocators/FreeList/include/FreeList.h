@@ -2,8 +2,9 @@
 #define FREELIST_H
 
 #include "Engine/Core/Globals.h"
+#include "Engine/EngineExport.h"
 
-class Freelist
+class NOUS_ENGINE_API Freelist
 {
 public:
 

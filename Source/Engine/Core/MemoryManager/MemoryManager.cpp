@@ -112,10 +112,6 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 		NOUS_WARN_C(CURRENT_CHANNEL, "[%s] Memory Allocation called using MEMORY_TAG_UNKNOWN.", __FUNCTION__);
 	}
 
-	config.stats.totalAllocated += size;
-	config.stats.totalAllocations++;
-	config.stats.taggedAllocations[static_cast<uint64>(tag)] += size;
-
 	void* block = config.allocator->Allocate(size); // allocator aligns internally
 	if (!block)
 	{
@@ -125,6 +121,12 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 			size, static_cast<int>(tag), config.allocator->GetFreeSpace());
 		return nullptr;
 	}
+
+	// Update stats only after a confirmed successful allocation.
+	config.stats.totalAllocated += size;
+	config.stats.totalAllocations++;
+	config.stats.taggedAllocations[static_cast<uint64>(tag)] += size;
+
 	ZeroMemory(block, size);
 
 #ifdef _PROFILING
