@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, shader-system]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: ${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            preset: Debug-Windows
+          - os: ubuntu-latest
+            preset: Debug-Linux
+          # macOS disabled — free tier cost (10x minute multiplier)
+          # - os: macos-latest
+          #   preset: Debug-macOS
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Clone vcpkg as a sibling of the repo — matches the toolchainFile path in CMakePresets.json
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: ${{ github.workspace }}/../vcpkg
+          vcpkgJsonGlob: vcpkg.json
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libvulkan-dev
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Install Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja -y
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }} -DNOUS_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build Build/${{ matrix.preset }} --parallel
+
+      - name: Test
+        run: ctest --test-dir Build/${{ matrix.preset }} --output-on-failure --parallel
