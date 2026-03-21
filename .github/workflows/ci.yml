@@ -48,6 +48,11 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install ninja -y
 
+      # Set up MSVC environment so CMake picks cl.exe instead of MinGW (both are on PATH on windows-latest)
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Configure
         run: cmake --preset ${{ matrix.preset }} -DNOUS_BUILD_TESTS=ON
 

@@ -9,6 +9,7 @@
 #include <future>
 #include <array>
 #include <deque>
+#include <unordered_map>
 
 class Freelist;
 
