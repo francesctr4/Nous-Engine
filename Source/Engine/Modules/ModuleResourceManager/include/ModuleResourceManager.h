@@ -8,6 +8,7 @@
 
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 
 using UID = uint32_t;
 struct MetaFileData;
