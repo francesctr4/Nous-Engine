@@ -1,6 +1,7 @@
 #ifndef NOUS_ENGINE_ISCRIPT_INL
 #define NOUS_ENGINE_ISCRIPT_INL
 
+#include <cmath>
 #include <cstdint>
 #include <vector>
 #include <type_traits>
