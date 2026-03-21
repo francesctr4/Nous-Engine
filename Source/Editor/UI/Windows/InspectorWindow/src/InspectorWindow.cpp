@@ -46,7 +46,8 @@ void InspectorWindow::Draw() {
             // --- GameObject Header ---
             ImGui::SeparatorText("GameObject Info");
             static char buffer[256];
-            strncpy_s(buffer, go->GetName().c_str(), sizeof(buffer));
+            strncpy(buffer, go->GetName().c_str(), sizeof(buffer) - 1);
+            buffer[sizeof(buffer) - 1] = '\0';
             if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
                 go->SetName(buffer);
             ImGui::SameLine();

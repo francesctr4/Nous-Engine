@@ -212,7 +212,8 @@ void ConsoleWindow::Draw()
 
     // 2. Detect search text change — update lowercased needle and mark dirty.
     if (strcmp(searchBuffer, m_lastSearchStr) != 0) {
-        strcpy_s(m_lastSearchStr, searchBuffer);
+        strncpy(m_lastSearchStr, searchBuffer, sizeof(m_lastSearchStr) - 1);
+        m_lastSearchStr[sizeof(m_lastSearchStr) - 1] = '\0';
         m_searchLower = searchBuffer;
         std::transform(m_searchLower.begin(), m_searchLower.end(),
                        m_searchLower.begin(),
@@ -453,7 +454,7 @@ void ConsoleWindow::DrawCommandLine()
         if (start[0])
             ExecuteCommand(start);
 
-        strcpy_s(inputBuffer, "");
+        inputBuffer[0] = '\0';
         reclaimFocus = true;
     }
     ImGui::PopItemWidth();

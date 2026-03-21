@@ -1,6 +1,8 @@
 #ifndef NOUS_ENGINE_EDITORCONTEXT_H
 #define NOUS_ENGINE_EDITORCONTEXT_H
 
+#include <cstddef>
+
 class ImFont;
 
 class EditorContext
