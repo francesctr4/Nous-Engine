@@ -2,6 +2,7 @@
 #define IMPORTER_INL
 
 #include <Engine/Core/Globals.h>
+#include <string>
 
 class Resource;
 struct MetaFileData;

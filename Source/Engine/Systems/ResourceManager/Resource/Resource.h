@@ -4,6 +4,8 @@
 #include <Engine/Core/Globals.h>
 #include "Engine/EngineExport.h"
 
+#include <string>
+
 using UID = uint32;
 
 enum class ResourceType 

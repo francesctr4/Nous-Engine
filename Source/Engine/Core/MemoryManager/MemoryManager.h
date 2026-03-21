@@ -1,6 +1,7 @@
 #ifndef MEMORYMANAGER_H
 #define MEMORYMANAGER_H
 
+#include <string>
 #include <vector>
 
 #include "Engine/Core/Globals.h"

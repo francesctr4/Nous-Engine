@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <mutex>
+#include <string>
 
 class GameObject;
 

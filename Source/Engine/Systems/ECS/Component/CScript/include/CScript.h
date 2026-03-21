@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_CSCRIPT_H
 
 #include "Engine/Systems/ECS/Component/Component.h"
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <map>
