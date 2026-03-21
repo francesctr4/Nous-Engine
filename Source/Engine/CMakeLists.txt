@@ -45,18 +45,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         parson::parson
         Tracy::TracyClient
         glm::glm
-
-        # --- Engine Modules ---
-        Core
-        MemoryManager
-        Modules
-        NOUS_Multithreading
-        Renderer
-        Scripting
-        Systems
-        Utils
 )
 
+# Force all symbols from static engine modules into the shared library.
+# Without this, only symbols directly referenced by MainEngine.cpp are exported,
+# causing undefined reference errors at link time for downstream targets.
 if (WIN32)
   target_link_options(${PROJECT_NAME} PRIVATE
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Core>"
@@ -67,6 +60,22 @@ if (WIN32)
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Scripting>"
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Systems>"
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Utils>"
+  )
+  target_link_libraries(${PROJECT_NAME} PRIVATE
+    Core MemoryManager Modules NOUS_Multithreading Renderer Scripting Systems Utils
+  )
+elseif(APPLE)
+  # macOS: -all_load is the equivalent (no per-archive scoping needed here)
+  target_link_libraries(${PROJECT_NAME} PRIVATE
+    -Wl,-all_load
+    Core MemoryManager Modules NOUS_Multithreading Renderer Scripting Systems Utils
+  )
+else()
+  # Linux (GNU ld): wrap static archives with --whole-archive / --no-whole-archive
+  target_link_libraries(${PROJECT_NAME} PRIVATE
+    -Wl,--whole-archive
+    Core MemoryManager Modules NOUS_Multithreading Renderer Scripting Systems Utils
+    -Wl,--no-whole-archive
   )
 endif()
 
