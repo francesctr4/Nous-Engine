@@ -2,6 +2,7 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include <imgui.h>
+#include <algorithm>
 #include <numeric>
 
 struct MemoryUsageHistory
