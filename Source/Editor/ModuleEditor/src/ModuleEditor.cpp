@@ -362,6 +362,7 @@ void ModuleEditor::OnEvent(const Event &event)
             }
 			break;
 		}
+		default: break;
 	}
 }
 
