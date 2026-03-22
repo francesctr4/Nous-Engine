@@ -17,9 +17,8 @@ jobs:
             preset: Debug-Windows
           - os: ubuntu-latest
             preset: Debug-Linux
-          # macOS disabled for now to avoid costs
-          # - os: macos-latest
-          #   preset: Debug-macOS
+          - os: macos-latest
+            preset: Debug-macOS
 
     runs-on: ${{ matrix.os }}
 

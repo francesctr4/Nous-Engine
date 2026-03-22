@@ -10,9 +10,7 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Application.h"
 
-#if defined(_WIN32) || defined(_WIN64)
 #define STB_IMAGE_IMPLEMENTATION
-#endif
 #define STBI_THREAD_LOCAL
 #include "stb_image.h"
 
