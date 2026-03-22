@@ -1,5 +1,7 @@
 #include "Editor/UI/Windows/SceneViewport/include/SceneViewport.h"
 
+#include <algorithm>   // std::clamp
+
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
