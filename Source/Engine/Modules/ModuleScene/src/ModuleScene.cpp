@@ -42,8 +42,15 @@ ModuleScene::ModuleScene(Application* app)
 
 	// Load the script library — path is exe-relative so it works regardless of working directory.
 	// SDL3's SDL_GetBasePath() returns a const char* managed internally by SDL — do NOT free it.
+#if defined(_WIN32)
+	constexpr const char* kScriptsLib = "Scripts.dll";
+#elif defined(__APPLE__)
+	constexpr const char* kScriptsLib = "Scripts.dylib";
+#else
+	constexpr const char* kScriptsLib = "Scripts.so";
+#endif
 	const std::string scriptsDllPath =
-        (std::filesystem::path(SDL_GetBasePath()) / "Scripts" / "Scripts.dll").string();
+        (std::filesystem::path(SDL_GetBasePath()) / "Scripts" / kScriptsLib).string();
 	if (!scriptManager->LoadScriptLibrary(scriptsDllPath))
 		NOUS_ERROR("Failed to load script library on startup");
 

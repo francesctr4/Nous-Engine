@@ -12,9 +12,13 @@
 #include <filesystem>
 
 #ifdef _WIN32
-#include <Windows.h>
+#  include <Windows.h>
+#elif defined(__APPLE__)
+#  include <dlfcn.h>
+#  include <mach-o/dyld.h>   // _NSGetExecutablePath
+#  include <climits>          // PATH_MAX
 #else
-#include <dlfcn.h>
+#  include <dlfcn.h>
 #endif
 
 #ifdef _WIN32
@@ -167,6 +171,12 @@ static std::filesystem::path GetExeDir()
     char buf[MAX_PATH];
     GetModuleFileNameA(nullptr, buf, MAX_PATH);
     return std::filesystem::path(buf).parent_path();
+#elif defined(__APPLE__)
+    char buf[PATH_MAX];
+    uint32_t size = sizeof(buf);
+    if (_NSGetExecutablePath(buf, &size) == 0)
+        return std::filesystem::canonical(buf).parent_path();
+    return std::filesystem::current_path();
 #else
     return std::filesystem::canonical("/proc/self/exe").parent_path();
 #endif

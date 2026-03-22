@@ -6,7 +6,11 @@
 
 #include <optional>
 
-const std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+#ifdef __APPLE__
+const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset" };
+#else
+const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+#endif
 
 struct VkPhysicalDeviceQueueFamilyIndices
 {
@@ -31,10 +35,15 @@ struct VkPhysicalDeviceRequirements
 	bool extensionsSupported;
 	bool swapChainAdequate;
 
-	bool Completed() 
+	bool Completed()
 	{
+#ifdef __APPLE__
+		// MoltenVK/Apple Silicon: no discrete GPU, no geometry shader support
+		return samplerAnisotropy && queueFamilies && extensionsSupported && swapChainAdequate;
+#else
 		return discreteGPU && geometryShader && samplerAnisotropy &&
 			queueFamilies && extensionsSupported && swapChainAdequate;
+#endif
 	}
 };
 

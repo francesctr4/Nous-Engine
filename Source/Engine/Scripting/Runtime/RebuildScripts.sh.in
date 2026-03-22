@@ -127,7 +127,15 @@ done < <(find "$SCRIPTS_ASSETS_DIR" -name "*.cpp" -print0)
 # -----------------------------
 # 6) Build flags
 # -----------------------------
-FLAGS=(-std=c++23 -shared -fPIC -DSCRIPTS_EXPORTS -I"$SDK_INCLUDE")
+if [ "$(uname)" = "Darwin" ]; then
+    SHARED_FLAGS=(-dynamiclib)
+    SCRIPTS_LIB="Scripts.dylib"
+else
+    SHARED_FLAGS=(-shared -fPIC)
+    SCRIPTS_LIB="Scripts.so"
+fi
+
+FLAGS=(-std=c++23 "${SHARED_FLAGS[@]}" -DSCRIPTS_EXPORTS -I"$SDK_INCLUDE")
 
 if [ "$BUILD_MODE" = "Debug" ]; then
     FLAGS+=(-g -O0 -D_DEBUG)
@@ -135,7 +143,7 @@ else
     FLAGS+=(-O2 -DNDEBUG)
 fi
 
-OUTPUT="$SCRIPTS_OUTPUT_DIR/Scripts.so"
+OUTPUT="$SCRIPTS_OUTPUT_DIR/$SCRIPTS_LIB"
 
 # -----------------------------
 # 7) Compile
