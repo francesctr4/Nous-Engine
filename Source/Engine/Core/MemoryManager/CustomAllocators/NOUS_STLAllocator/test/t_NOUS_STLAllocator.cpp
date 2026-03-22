@@ -234,5 +234,5 @@ TEST_F(t_NOUS_STLAllocator, AllocateBeyondMaxSizeThrows)
 {
     NOUS_STLAllocator<int> alloc(MemoryTag::ARRAY);
     const std::size_t tooBig = alloc.max_size() + 1;
-    EXPECT_THROW(alloc.allocate(tooBig), std::bad_array_new_length);
+    EXPECT_THROW((void)alloc.allocate(tooBig), std::bad_array_new_length);
 }

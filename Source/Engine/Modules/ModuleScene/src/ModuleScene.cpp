@@ -263,7 +263,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
 										  while (std::chrono::steady_clock::now() - start < duration)
 										  {
-											  std::sqrt(123.456); // Dummy CPU-bound work
+											  (void)std::sqrt(123.456); // Dummy CPU-bound work
 										  }
 
 									  }, "Stress Test");
@@ -335,6 +335,7 @@ void ModuleScene::OnEvent(const Event& event)
 
 			break;
 		}
+		default: break;
 	}
 }
 

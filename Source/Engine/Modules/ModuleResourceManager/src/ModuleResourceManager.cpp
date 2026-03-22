@@ -549,6 +549,7 @@ Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
 			resource = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
 			break;
 		}
+		default: break;
 	}
 
 	return resource;
@@ -580,6 +581,7 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 			NOUS_DELETE(resource, MemoryTag::RESOURCE_SHADER);
 			break;
 		}
+		default: break;
 	}
 
 	resources.erase(uid);

@@ -183,7 +183,7 @@ void Application::FinishUpdate() const
         updateTitleTimer->Start();
     }
 
-    sprintf(buffer,
+    snprintf(buffer, sizeof(buffer),
         "%s | dt: %.3f s | FPS: %d | Graphics Timer: %.3f s | Frame Count: %d",
         TITLE, cachedDt, static_cast<int>(cachedFPS + 0.5f), TimeManager::graphicsTimer.ReadSec(), TimeManager::frameCount);
 

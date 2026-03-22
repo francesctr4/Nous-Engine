@@ -31,7 +31,7 @@ void HierarchyWindow::Draw() {
                 // Root node = Scene itself
                 bool opened = ImGui::TreeNodeEx((void*)m_Scene,
                                                 ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow,
-                                                m_Scene->GetName().c_str());
+                                                "%s", m_Scene->GetName().c_str());
 
                 // 🔹 Make the SCENE NODE a drag-drop target for reparenting to root
                 if (ImGui::BeginDragDropTarget()) {

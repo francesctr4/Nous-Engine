@@ -232,7 +232,7 @@ void ModuleInput::OnEvent(const Event& event)
 {
 	switch (event.type)
 	{
-		
+		default: break;
 	}
 }
 

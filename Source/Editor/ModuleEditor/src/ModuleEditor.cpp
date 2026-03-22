@@ -358,6 +358,7 @@ void ModuleEditor::OnEvent(const Event &event)
                     GameViewport::CreateGameViewportDescriptorSets();
                     break;
                 }
+                default: break;
             }
 			break;
 		}

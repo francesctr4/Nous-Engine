@@ -106,6 +106,7 @@ void ModuleCamera3D::OnEvent(const Event& event)
 
 			break;
 		}
+		default: break;
     }
 }
 

@@ -738,7 +738,7 @@ void AssetsBrowser::Draw()
         }
         ImGui::EndChild();
 
-        ImGui::Text("Selected: %d/%llu items", Selection.Size, Items.size());
+        ImGui::Text("Selected: %d/%llu items", Selection.Size, (unsigned long long)Items.size());
         ImGui::End();
     }
 }
