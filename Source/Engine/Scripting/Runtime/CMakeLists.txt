@@ -5,13 +5,28 @@
 set(SCRIPTS_OUTPUT_DIR  "${CMAKE_BINARY_DIR}/bin/Scripts")
 set(SCRIPTS_SRC_DIR     "${CMAKE_SOURCE_DIR}/Assets/Scripts")
 
-# Generate RebuildScripts.bat with the source Assets/Scripts path baked in
+# Generate rebuild scripts with the source Assets/Scripts path baked in
 file(MAKE_DIRECTORY "${SCRIPTS_OUTPUT_DIR}")
-configure_file(
-        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.bat.in"
-        "${SCRIPTS_OUTPUT_DIR}/RebuildScripts.bat"
-        @ONLY
-)
+
+if(WIN32)
+    configure_file(
+            "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.bat.in"
+            "${SCRIPTS_OUTPUT_DIR}/RebuildScripts.bat"
+            @ONLY
+    )
+else()
+    configure_file(
+            "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.sh.in"
+            "${SCRIPTS_OUTPUT_DIR}/RebuildScripts.sh"
+            @ONLY
+    )
+    # Ensure the script is executable after configuration
+    file(CHMOD "${SCRIPTS_OUTPUT_DIR}/RebuildScripts.sh"
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                        GROUP_READ GROUP_EXECUTE
+                        WORLD_READ WORLD_EXECUTE
+    )
+endif()
 file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.inl"
         DESTINATION "${SCRIPTS_OUTPUT_DIR}")
 

@@ -13,9 +13,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Windows disabled because it is already working
-          # - os: windows-latest
-          # preset: Debug-Windows
+          - os: windows-latest
+            preset: Debug-Windows
           - os: ubuntu-latest
             preset: Debug-Linux
           # macOS disabled for now to avoid costs

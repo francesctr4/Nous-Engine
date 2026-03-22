@@ -283,9 +283,41 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
 
     NOUS_INFO("Scripts recompiled successfully!");
 #else
-    // Keep your old path or implement posix_spawn + pipe on Linux
-    int result = std::system("./Scripts/RebuildScripts.sh");
-    if (result != 0) return false;
+    const std::string shPath = (GetExeDir() / "Scripts" / "RebuildScripts.sh").string();
+#ifdef _DEBUG
+    const std::string cmd = "bash \"" + shPath + "\" Debug 2>&1";
+#else
+    const std::string cmd = "bash \"" + shPath + "\" Release 2>&1";
+#endif
+
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe)
+    {
+        NOUS_ERROR("Failed to launch script build process (popen failed).");
+        return false;
+    }
+
+    char buffer[256];
+    while (fgets(buffer, sizeof(buffer), pipe))
+    {
+        std::string line(buffer);
+        if (!line.empty() && line.back() == '\n') line.pop_back();
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+
+        if (line.find("error") != std::string::npos || line.find("ERROR") != std::string::npos)
+            NOUS_ERROR("[ScriptManager::ReloadScriptLibrary] %s", line.c_str());
+        else
+            NOUS_INFO("[ScriptManager::ReloadScriptLibrary] %s", line.c_str());
+    }
+
+    const int exitCode = pclose(pipe);
+    if (exitCode != 0)
+    {
+        NOUS_ERROR("Scripts recompilation failed! ExitCode=%d", exitCode);
+        return false;
+    }
+
+    NOUS_INFO("Scripts recompiled successfully!");
 #endif
 
     // Wait for file system and ensure DLL can be loaded

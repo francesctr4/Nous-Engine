@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+# ============================================================
+# Nous Engine - RebuildScripts.sh (SDK-only, no engine source)
+# Requirements:
+#   <bin>/Scripts/SDK/include/Engine/.../IScript.inl
+#   <bin>/Scripts/SDK/src/EngineAPI.cpp
+#   @CMAKE_SOURCE_DIR@/Assets/Scripts/*.cpp
+# Output:
+#   <bin>/Scripts/Scripts.so
+# ============================================================
+
+set -euo pipefail
+
+# -----------------------------
+# 1) Find C++ compiler
+# -----------------------------
+CXX_COMPILER=""
+for candidate in c++ g++ clang++; do
+    if command -v "$candidate" &>/dev/null; then
+        CXX_COMPILER="$candidate"
+        break
+    fi
+done
+
+if [ -z "$CXX_COMPILER" ]; then
+    echo "[ERROR] No C++ compiler found (tried c++, g++, clang++)"
+    exit 1
+fi
+
+echo "[INFO] CXX_COMPILER          = $CXX_COMPILER"
+
+# -----------------------------
+# 2) Resolve paths
+# -----------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+SCRIPTS_OUTPUT_DIR="$BIN_DIR/Scripts"
+
+# Source Assets/Scripts path baked in at CMake configure time
+SCRIPTS_ASSETS_DIR="@CMAKE_SOURCE_DIR@/Assets/Scripts"
+
+mkdir -p "$SCRIPTS_OUTPUT_DIR"
+
+SCRIPTS_OBJ_DIR="$SCRIPTS_OUTPUT_DIR/obj"
+mkdir -p "$SCRIPTS_OBJ_DIR"
+
+# -----------------------------
+# 2.5) Build configuration
+# Usage:
+#   RebuildScripts.sh
+#   RebuildScripts.sh Debug
+#   RebuildScripts.sh Release
+# -----------------------------
+BUILD_MODE="${1:-}"
+
+if [ "$BUILD_MODE" != "Debug" ] && [ "$BUILD_MODE" != "Release" ]; then
+    # Auto-detect from path
+    case "$BIN_DIR" in
+        *[Rr]elease*) BUILD_MODE="Release" ;;
+        *)             BUILD_MODE="Debug"   ;;
+    esac
+fi
+
+echo "[INFO] BUILD_MODE            = $BUILD_MODE"
+
+# -----------------------------
+# 3) SDK paths (required)
+# -----------------------------
+SDK_DIR="$SCRIPTS_OUTPUT_DIR/SDK"
+SDK_INCLUDE="$SDK_DIR/include"
+SDK_ENGINE_API_CPP="$SDK_DIR/src/EngineAPI.cpp"
+
+# -----------------------------
+# 3.5) Sync SDK headers from source so hot-reload always uses the latest
+#      engine headers without requiring a full engine rebuild.
+# -----------------------------
+ENGINE_SCRIPTING_SRC="@CMAKE_SOURCE_DIR@/Source/Engine/Scripting"
+if [ -d "$ENGINE_SCRIPTING_SRC" ]; then
+    while IFS= read -r -d '' f; do
+        rel="${f#"$ENGINE_SCRIPTING_SRC"/}"
+        dest_dir="$SDK_INCLUDE/Engine/Scripting/$(dirname "$rel")"
+        mkdir -p "$dest_dir"
+        cp "$f" "$dest_dir/"
+    done < <(find "$ENGINE_SCRIPTING_SRC" \( -name "*.inl" -o -name "*.h" \) -print0)
+fi
+
+# Validate SDK
+if [ ! -f "$SDK_INCLUDE/Engine/Scripting/Internal/IScript.inl" ]; then
+    echo "[ERROR] Script SDK headers missing."
+    echo "        Expected: $SDK_INCLUDE/Engine/Scripting/Internal/IScript.inl"
+    exit 1
+fi
+
+if [ ! -f "$SDK_ENGINE_API_CPP" ]; then
+    echo "[ERROR] Script SDK EngineAPI.cpp missing."
+    echo "        Expected: $SDK_ENGINE_API_CPP"
+    exit 1
+fi
+
+# Validate scripts exist
+if [ ! -d "$SCRIPTS_ASSETS_DIR" ]; then
+    echo "[ERROR] Scripts source folder missing: $SCRIPTS_ASSETS_DIR"
+    exit 1
+fi
+
+# -----------------------------
+# 4) Diagnostics
+# -----------------------------
+echo "============================================================"
+echo "[INFO] BIN_DIR               = $BIN_DIR"
+echo "[INFO] SCRIPTS_OUTPUT_DIR    = $SCRIPTS_OUTPUT_DIR"
+echo "[INFO] SCRIPTS_ASSETS_DIR    = $SCRIPTS_ASSETS_DIR"
+echo "[INFO] SDK_INCLUDE           = $SDK_INCLUDE"
+echo "[INFO] SDK_ENGINE_API_CPP    = $SDK_ENGINE_API_CPP"
+echo "============================================================"
+
+# -----------------------------
+# 5) Collect sources
+# -----------------------------
+SOURCES=("$SDK_ENGINE_API_CPP")
+
+while IFS= read -r -d '' f; do
+    SOURCES+=("$f")
+done < <(find "$SCRIPTS_ASSETS_DIR" -name "*.cpp" -print0)
+
+# -----------------------------
+# 6) Build flags
+# -----------------------------
+FLAGS=(-std=c++23 -shared -fPIC -DSCRIPTS_EXPORTS -I"$SDK_INCLUDE")
+
+if [ "$BUILD_MODE" = "Debug" ]; then
+    FLAGS+=(-g -O0 -D_DEBUG)
+else
+    FLAGS+=(-O2 -DNDEBUG)
+fi
+
+OUTPUT="$SCRIPTS_OUTPUT_DIR/Scripts.so"
+
+# -----------------------------
+# 7) Compile
+# -----------------------------
+"$CXX_COMPILER" "${FLAGS[@]}" "${SOURCES[@]}" -o "$OUTPUT"
+
+echo "[OK] Scripts compiled successfully: $OUTPUT"
+exit 0
