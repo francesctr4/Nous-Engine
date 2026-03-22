@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #  include <Windows.h>
@@ -92,20 +93,17 @@ void SetupMSVCEnvironment()
 // Compile srcPath into a shared library at outPath.
 // Uses the full compiler path baked in by CMake — no vcvars or PATH required.
 // Returns true on success, false if compilation fails for any reason.
-// Callers must check IsCompilerAvailable() first and skip if false.
 //
 // On Windows: srcPath must be a .c file. We compile with /NODEFAULTLIB /ENTRY:DllMain
 // so the linker requires NO runtime libraries — no LIB environment variable needed.
+// /GS-: disables the buffer security check (__security_check_cookie) that MSVC injects
+//       by default, which would otherwise be an unresolved CRT symbol.
+// /ENTRY:DllMain: linker flag (must follow /link) — bypasses _DllMainCRTStartup.
 bool CompileSharedLib(const std::string& srcPath, const std::string& outPath)
 {
 #ifdef _WIN32
     SetupMSVCEnvironment();
 
-    // /GS-: disable buffer security check (__security_check_cookie) — the only CRT
-    //       symbol MSVC injects into trivial functions when /GS is on (default).
-    // /NODEFAULTLIB: no CRT — eliminates the need for the LIB environment variable.
-    // /ENTRY:DllMain: linker flag — use our hand-rolled DllMain as the PE entry point
-    //   instead of _DllMainCRTStartup. MUST go after /link, not before /Fe.
     // cmd.exe outer-quote syntax: ""{exe}" args" — outer quotes stripped by cmd.exe,
     // inner quotes protect the executable path from spaces.
     const std::string logPath = outPath + ".build.log";
@@ -120,7 +118,6 @@ bool CompileSharedLib(const std::string& srcPath, const std::string& outPath)
     const int rc = std::system(cmd.c_str());
     if (rc != 0)
     {
-        // Print compiler output so the failure message contains actionable info.
         std::ifstream log(logPath);
         if (log.is_open())
         {
@@ -152,109 +149,107 @@ bool CompileSharedLib(const std::string& srcPath, const std::string& outPath)
 } // namespace
 
 // ============================================================
-// DLL loading / symbol resolution
+// Test fixture
 // ============================================================
 
-TEST(t_ScriptManager, LoadNonExistentLibrary)
+class t_ScriptManager : public ::testing::Test
 {
+protected:
+    std::filesystem::path tmpDir;
+
+    void SetUp() override
+    {
+        const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
+        tmpDir = std::filesystem::temp_directory_path() / "nous_script_tests" / info->name();
+        std::filesystem::create_directories(tmpDir);
+    }
+
+    void TearDown() override
+    {
+        std::filesystem::remove_all(tmpDir);
+    }
+
+    // Skips the current test if the compiler is not available on disk.
+    // Call at the top of every test that invokes CompileSharedLib.
+    void RequireCompiler()
+    {
+        if (!IsCompilerAvailable())
+            GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
+    }
+
+    // Returns the full path for a shared library with the given stem inside tmpDir.
+    std::string LibPath(const std::string& stem) const
+    {
+        return (tmpDir / (stem + SharedLibExt())).string();
+    }
+
+    // Writes a minimal valid DLL source that exports the given {name, returnValue} pairs.
+    // On Windows writes a .c file (for /NODEFAULTLIB compatibility).
+    // On other platforms writes a .cpp file.
+    // Returns the source file path, or empty string if writing failed.
+    struct Export { std::string name; int value; };
+    std::string WriteSource(const std::string& stem, const std::vector<Export>& exports)
+    {
+#ifdef _WIN32
+        const std::string path = (tmpDir / (stem + ".c")).string();
+        std::ofstream f(path);
+        if (!f.is_open()) return {};
+        f << "typedef int BOOL;\ntypedef unsigned long DWORD;\n"
+          << "typedef void* HINSTANCE;\ntypedef void* LPVOID;\n"
+          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n";
+        for (const auto& e : exports)
+            f << "__declspec(dllexport) int " << e.name << "(void) { return " << e.value << "; }\n";
+#else
+        const std::string path = (tmpDir / (stem + ".cpp")).string();
+        std::ofstream f(path);
+        if (!f.is_open()) return {};
+        f << "#define EXPORT __attribute__((visibility(\"default\")))\n";
+        for (const auto& e : exports)
+            f << "extern \"C\" EXPORT int " << e.name << "() { return " << e.value << "; }\n";
+#endif
+        return path;
+    }
+};
+
+// ============================================================
+// Tests
+// ============================================================
+
+TEST_F(t_ScriptManager, LoadNonExistentLibrary)
+{
+    // No compiler needed — just verifies the loader returns null gracefully.
     void* handle = LoadLib("/nonexistent/path/Scripts.so");
     EXPECT_EQ(handle, nullptr);
 }
 
-// ============================================================
-// Compilation integration tests
-// ============================================================
-
-TEST(t_ScriptManager, CompileLoadCallUnload)
+TEST_F(t_ScriptManager, CompileLoadCallUnload)
 {
-    if (!IsCompilerAvailable())
-        GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
+    RequireCompiler();
 
-    namespace fs = std::filesystem;
-    const fs::path tmpDir = fs::temp_directory_path() / "nous_script_test";
-    fs::create_directories(tmpDir);
-
-    // On Windows we write a .c file so we can use /NODEFAULTLIB (no C++ name mangling needed).
-    // On other platforms a .cpp file is fine.
-#ifdef _WIN32
-    const std::string srcPath = (tmpDir / "test_script.c").string();
-#else
-    const std::string srcPath = (tmpDir / "test_script.cpp").string();
-#endif
-    const std::string libPath = (tmpDir / (std::string("test_script") + SharedLibExt())).string();
-
-    {
-        std::ofstream f(srcPath);
-        ASSERT_TRUE(f.is_open());
-#ifdef _WIN32
-        // Pure-C, no CRT: define BOOL/DWORD/etc. manually so /NODEFAULTLIB works.
-        f << "typedef int BOOL;\n"
-          << "typedef unsigned long DWORD;\n"
-          << "typedef void* HINSTANCE;\n"
-          << "typedef void* LPVOID;\n"
-          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n"
-          << "__declspec(dllexport) int NousTestGetMagic(void) { return 1337; }\n";
-#else
-        f << "#ifdef _WIN32\n"
-          << "#  define EXPORT __declspec(dllexport)\n"
-          << "#else\n"
-          << "#  define EXPORT __attribute__((visibility(\"default\")))\n"
-          << "#endif\n"
-          << "extern \"C\" EXPORT int NousTestGetMagic() { return 1337; }\n";
-#endif
-    }
+    const std::string srcPath = WriteSource("test_script", {{"NousTestGetMagic", 1337}});
+    ASSERT_FALSE(srcPath.empty());
+    const std::string libPath = LibPath("test_script");
 
     ASSERT_TRUE(CompileSharedLib(srcPath, libPath)) << "Compilation failed unexpectedly";
-    ASSERT_TRUE(fs::exists(libPath)) << "Output library not found after successful compile";
+    ASSERT_TRUE(std::filesystem::exists(libPath)) << "Output library not found after successful compile";
 
     void* handle = LoadLib(libPath);
     ASSERT_NE(handle, nullptr) << "Failed to load freshly compiled library";
 
-    using MagicFn = int(*)();
-    auto fn = reinterpret_cast<MagicFn>(GetSym(handle, "NousTestGetMagic"));
+    auto fn = reinterpret_cast<int(*)()>(GetSym(handle, "NousTestGetMagic"));
     ASSERT_NE(fn, nullptr) << "Symbol NousTestGetMagic not found";
     EXPECT_EQ(fn(), 1337);
 
     UnloadLib(handle);
-    fs::remove(srcPath);
-    fs::remove(libPath);
 }
 
-TEST(t_ScriptManager, ReloadCycle)
+TEST_F(t_ScriptManager, ReloadCycle)
 {
-    if (!IsCompilerAvailable())
-        GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
+    RequireCompiler();
 
-    namespace fs = std::filesystem;
-    const fs::path tmpDir = fs::temp_directory_path() / "nous_script_reload_test";
-    fs::create_directories(tmpDir);
-
-#ifdef _WIN32
-    const std::string srcPath = (tmpDir / "reload_script.c").string();
-#else
-    const std::string srcPath = (tmpDir / "reload_script.cpp").string();
-#endif
-    const std::string libPath = (tmpDir / (std::string("reload_script") + SharedLibExt())).string();
-
-    {
-        std::ofstream f(srcPath);
-        ASSERT_TRUE(f.is_open());
-#ifdef _WIN32
-        f << "typedef int BOOL;\n"
-          << "typedef unsigned long DWORD;\n"
-          << "typedef void* HINSTANCE;\n"
-          << "typedef void* LPVOID;\n"
-          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n"
-          << "__declspec(dllexport) int NousTestVersion(void) { return 1; }\n";
-#else
-        f << "#ifdef _WIN32\n"
-          << "#  define EXPORT __declspec(dllexport)\n"
-          << "#else\n"
-          << "#  define EXPORT __attribute__((visibility(\"default\")))\n"
-          << "#endif\n"
-          << "extern \"C\" EXPORT int NousTestVersion() { return 1; }\n";
-#endif
-    }
+    const std::string srcPath = WriteSource("reload_script", {{"NousTestVersion", 1}});
+    ASSERT_FALSE(srcPath.empty());
+    const std::string libPath = LibPath("reload_script");
 
     ASSERT_TRUE(CompileSharedLib(srcPath, libPath));
 
@@ -272,70 +267,38 @@ TEST(t_ScriptManager, ReloadCycle)
     ASSERT_NE(fn2, nullptr);
     EXPECT_EQ(fn2(), 1);
     UnloadLib(h2);
-
-    fs::remove(srcPath);
-    fs::remove(libPath);
 }
 
-TEST(t_ScriptManager, InvalidSourceFails)
+TEST_F(t_ScriptManager, InvalidSourceFails)
 {
-    if (!IsCompilerAvailable())
-        GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
-
-    namespace fs = std::filesystem;
-    const fs::path tmpDir = fs::temp_directory_path() / "nous_script_error_test";
-    fs::create_directories(tmpDir);
+    RequireCompiler();
 
 #ifdef _WIN32
     const std::string srcPath = (tmpDir / "broken_script.c").string();
 #else
     const std::string srcPath = (tmpDir / "broken_script.cpp").string();
 #endif
-    const std::string libPath = (tmpDir / (std::string("broken_script") + SharedLibExt())).string();
-
     {
         std::ofstream f(srcPath);
         ASSERT_TRUE(f.is_open());
         f << "this is not valid C++ code {{{;\n";
     }
 
-    EXPECT_FALSE(CompileSharedLib(srcPath, libPath))
+    EXPECT_FALSE(CompileSharedLib(srcPath, LibPath("broken_script")))
         << "Broken source should fail to compile";
-
-    fs::remove(srcPath);
 }
 
-TEST(t_ScriptManager, HotReloadWithCodeChange)
+TEST_F(t_ScriptManager, HotReloadWithCodeChange)
 {
-    if (!IsCompilerAvailable())
-        GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
+    RequireCompiler();
 
-    namespace fs = std::filesystem;
-    const fs::path tmpDir = fs::temp_directory_path() / "nous_script_hotreload_test";
-    fs::create_directories(tmpDir);
+    const std::string libPath = LibPath("hotreload_script");
 
-#ifdef _WIN32
-    const std::string srcPath = (tmpDir / "hotreload_script.c").string();
-#else
-    const std::string srcPath = (tmpDir / "hotreload_script.cpp").string();
-#endif
-    const std::string libPath = (tmpDir / (std::string("hotreload_script") + SharedLibExt())).string();
-
-    // --- Version 1 ---
-    {
-        std::ofstream f(srcPath);
-        ASSERT_TRUE(f.is_open());
-#ifdef _WIN32
-        f << "typedef int BOOL;\ntypedef unsigned long DWORD;\ntypedef void* HINSTANCE;\ntypedef void* LPVOID;\n"
-          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n"
-          << "__declspec(dllexport) int NousGetVersion(void) { return 1; }\n";
-#else
-        f << "#define EXPORT __attribute__((visibility(\"default\")))\n"
-          << "extern \"C\" EXPORT int NousGetVersion() { return 1; }\n";
-#endif
-    }
-
+    // Version 1
+    const std::string srcPath = WriteSource("hotreload_script", {{"NousGetVersion", 1}});
+    ASSERT_FALSE(srcPath.empty());
     ASSERT_TRUE(CompileSharedLib(srcPath, libPath));
+
     void* h1 = LoadLib(libPath);
     ASSERT_NE(h1, nullptr);
     auto fn1 = reinterpret_cast<int(*)()>(GetSym(h1, "NousGetVersion"));
@@ -343,103 +306,45 @@ TEST(t_ScriptManager, HotReloadWithCodeChange)
     EXPECT_EQ(fn1(), 1);
     UnloadLib(h1);
 
-    // --- Version 2 — overwrite source and recompile ---
-    {
-        std::ofstream f(srcPath);
-        ASSERT_TRUE(f.is_open());
-#ifdef _WIN32
-        f << "typedef int BOOL;\ntypedef unsigned long DWORD;\ntypedef void* HINSTANCE;\ntypedef void* LPVOID;\n"
-          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n"
-          << "__declspec(dllexport) int NousGetVersion(void) { return 2; }\n";
-#else
-        f << "#define EXPORT __attribute__((visibility(\"default\")))\n"
-          << "extern \"C\" EXPORT int NousGetVersion() { return 2; }\n";
-#endif
-    }
-
+    // Version 2 — overwrite source and recompile
+    WriteSource("hotreload_script", {{"NousGetVersion", 2}});
     ASSERT_TRUE(CompileSharedLib(srcPath, libPath)) << "Recompile after code change failed";
+
     void* h2 = LoadLib(libPath);
     ASSERT_NE(h2, nullptr) << "Failed to load updated library";
     auto fn2 = reinterpret_cast<int(*)()>(GetSym(h2, "NousGetVersion"));
     ASSERT_NE(fn2, nullptr);
     EXPECT_EQ(fn2(), 2) << "Updated library should return new value after hot-reload";
     UnloadLib(h2);
-
-    fs::remove(srcPath);
-    fs::remove(libPath);
 }
 
-TEST(t_ScriptManager, FileUnlockedAfterUnload)
+TEST_F(t_ScriptManager, FileUnlockedAfterUnload)
 {
-    if (!IsCompilerAvailable())
-        GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
+    RequireCompiler();
 
-    namespace fs = std::filesystem;
-    const fs::path tmpDir = fs::temp_directory_path() / "nous_script_unlock_test";
-    fs::create_directories(tmpDir);
-
-#ifdef _WIN32
-    const std::string srcPath = (tmpDir / "unlock_script.c").string();
-#else
-    const std::string srcPath = (tmpDir / "unlock_script.cpp").string();
-#endif
-    const std::string libPath = (tmpDir / (std::string("unlock_script") + SharedLibExt())).string();
-
-    {
-        std::ofstream f(srcPath);
-        ASSERT_TRUE(f.is_open());
-#ifdef _WIN32
-        f << "typedef int BOOL;\ntypedef unsigned long DWORD;\ntypedef void* HINSTANCE;\ntypedef void* LPVOID;\n"
-          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n"
-          << "__declspec(dllexport) int NousTestGetMagic(void) { return 42; }\n";
-#else
-        f << "#define EXPORT __attribute__((visibility(\"default\")))\n"
-          << "extern \"C\" EXPORT int NousTestGetMagic() { return 42; }\n";
-#endif
-    }
+    const std::string srcPath = WriteSource("unlock_script", {{"NousTestGetMagic", 42}});
+    ASSERT_FALSE(srcPath.empty());
+    const std::string libPath = LibPath("unlock_script");
 
     ASSERT_TRUE(CompileSharedLib(srcPath, libPath));
     void* handle = LoadLib(libPath);
     ASSERT_NE(handle, nullptr);
     UnloadLib(handle);
 
-    // After unloading, the OS must have released the file lock so we can overwrite it.
+    // After unloading, the OS must release the file lock so the DLL can be overwritten.
     // On Windows a loaded DLL is locked; this verifies FreeLibrary fully releases it.
     std::error_code ec;
-    EXPECT_TRUE(fs::remove(libPath, ec))
+    EXPECT_TRUE(std::filesystem::remove(libPath, ec))
         << "DLL file still locked after UnloadLib — hot-reload would fail: " << ec.message();
-
-    fs::remove(srcPath);
 }
 
-TEST(t_ScriptManager, SymbolNotFound)
+TEST_F(t_ScriptManager, SymbolNotFound)
 {
-    if (!IsCompilerAvailable())
-        GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
+    RequireCompiler();
 
-    namespace fs = std::filesystem;
-    const fs::path tmpDir = fs::temp_directory_path() / "nous_script_sym_test";
-    fs::create_directories(tmpDir);
-
-#ifdef _WIN32
-    const std::string srcPath = (tmpDir / "sym_script.c").string();
-#else
-    const std::string srcPath = (tmpDir / "sym_script.cpp").string();
-#endif
-    const std::string libPath = (tmpDir / (std::string("sym_script") + SharedLibExt())).string();
-
-    {
-        std::ofstream f(srcPath);
-        ASSERT_TRUE(f.is_open());
-#ifdef _WIN32
-        f << "typedef int BOOL;\ntypedef unsigned long DWORD;\ntypedef void* HINSTANCE;\ntypedef void* LPVOID;\n"
-          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n"
-          << "__declspec(dllexport) int NousRealFunction(void) { return 0; }\n";
-#else
-        f << "#define EXPORT __attribute__((visibility(\"default\")))\n"
-          << "extern \"C\" EXPORT int NousRealFunction() { return 0; }\n";
-#endif
-    }
+    const std::string srcPath = WriteSource("sym_script", {{"NousRealFunction", 0}});
+    ASSERT_FALSE(srcPath.empty());
+    const std::string libPath = LibPath("sym_script");
 
     ASSERT_TRUE(CompileSharedLib(srcPath, libPath));
     void* handle = LoadLib(libPath);
@@ -451,79 +356,30 @@ TEST(t_ScriptManager, SymbolNotFound)
         << "GetSym must still find real exports after a failed lookup";
 
     UnloadLib(handle);
-    fs::remove(srcPath);
-    fs::remove(libPath);
 }
 
-TEST(t_ScriptManager, CompileToNonexistentDirectory)
+TEST_F(t_ScriptManager, CompileToNonexistentDirectory)
 {
-    if (!IsCompilerAvailable())
-        GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
+    RequireCompiler();
 
-    namespace fs = std::filesystem;
-    const fs::path tmpDir = fs::temp_directory_path() / "nous_script_nodir_test";
-    fs::create_directories(tmpDir);
+    const std::string srcPath = WriteSource("nodir_script", {{"NousTestGetMagic", 0}});
+    ASSERT_FALSE(srcPath.empty());
 
-#ifdef _WIN32
-    const std::string srcPath = (tmpDir / "nodir_script.c").string();
-#else
-    const std::string srcPath = (tmpDir / "nodir_script.cpp").string();
-#endif
-    // Output directory does not exist — compiler/linker must fail, not silently succeed.
     const std::string badLibPath =
         (tmpDir / "no_such_subdir" / (std::string("out") + SharedLibExt())).string();
 
-    {
-        std::ofstream f(srcPath);
-        ASSERT_TRUE(f.is_open());
-#ifdef _WIN32
-        f << "typedef int BOOL;\ntypedef unsigned long DWORD;\ntypedef void* HINSTANCE;\ntypedef void* LPVOID;\n"
-          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n"
-          << "__declspec(dllexport) int NousTestGetMagic(void) { return 0; }\n";
-#else
-        f << "#define EXPORT __attribute__((visibility(\"default\")))\n"
-          << "extern \"C\" EXPORT int NousTestGetMagic() { return 0; }\n";
-#endif
-    }
-
     EXPECT_FALSE(CompileSharedLib(srcPath, badLibPath))
         << "Compiling to a nonexistent output directory should fail";
-
-    fs::remove(srcPath);
 }
 
-TEST(t_ScriptManager, MultipleExports)
+TEST_F(t_ScriptManager, MultipleExports)
 {
-    if (!IsCompilerAvailable())
-        GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
+    RequireCompiler();
 
-    namespace fs = std::filesystem;
-    const fs::path tmpDir = fs::temp_directory_path() / "nous_script_multi_test";
-    fs::create_directories(tmpDir);
-
-#ifdef _WIN32
-    const std::string srcPath = (tmpDir / "multi_script.c").string();
-#else
-    const std::string srcPath = (tmpDir / "multi_script.cpp").string();
-#endif
-    const std::string libPath = (tmpDir / (std::string("multi_script") + SharedLibExt())).string();
-
-    {
-        std::ofstream f(srcPath);
-        ASSERT_TRUE(f.is_open());
-#ifdef _WIN32
-        f << "typedef int BOOL;\ntypedef unsigned long DWORD;\ntypedef void* HINSTANCE;\ntypedef void* LPVOID;\n"
-          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n"
-          << "__declspec(dllexport) int NousOnStart(void)   { return 10; }\n"
-          << "__declspec(dllexport) int NousOnUpdate(void)  { return 20; }\n"
-          << "__declspec(dllexport) int NousOnDestroy(void) { return 30; }\n";
-#else
-        f << "#define EXPORT __attribute__((visibility(\"default\")))\n"
-          << "extern \"C\" EXPORT int NousOnStart()   { return 10; }\n"
-          << "extern \"C\" EXPORT int NousOnUpdate()  { return 20; }\n"
-          << "extern \"C\" EXPORT int NousOnDestroy() { return 30; }\n";
-#endif
-    }
+    const std::string srcPath = WriteSource("multi_script",
+        {{"NousOnStart", 10}, {"NousOnUpdate", 20}, {"NousOnDestroy", 30}});
+    ASSERT_FALSE(srcPath.empty());
+    const std::string libPath = LibPath("multi_script");
 
     ASSERT_TRUE(CompileSharedLib(srcPath, libPath));
     void* handle = LoadLib(libPath);
@@ -543,46 +399,19 @@ TEST(t_ScriptManager, MultipleExports)
     EXPECT_EQ(fnDestroy(), 30);
 
     UnloadLib(handle);
-    fs::remove(srcPath);
-    fs::remove(libPath);
 }
 
-TEST(t_ScriptManager, ConcurrentLoads)
+TEST_F(t_ScriptManager, ConcurrentLoads)
 {
-    if (!IsCompilerAvailable())
-        GTEST_SKIP() << "Compiler not found at: " NOUS_TEST_CXX_COMPILER;
+    RequireCompiler();
 
-    namespace fs = std::filesystem;
-    const fs::path tmpDir = fs::temp_directory_path() / "nous_script_concurrent_test";
-    fs::create_directories(tmpDir);
+    const std::string srcA = WriteSource("concurrent_a", {{"NousGetId", 100}});
+    const std::string srcB = WriteSource("concurrent_b", {{"NousGetId", 200}});
+    ASSERT_FALSE(srcA.empty());
+    ASSERT_FALSE(srcB.empty());
+    const std::string libA = LibPath("concurrent_a");
+    const std::string libB = LibPath("concurrent_b");
 
-#ifdef _WIN32
-    const std::string srcA = (tmpDir / "concurrent_a.c").string();
-    const std::string srcB = (tmpDir / "concurrent_b.c").string();
-#else
-    const std::string srcA = (tmpDir / "concurrent_a.cpp").string();
-    const std::string srcB = (tmpDir / "concurrent_b.cpp").string();
-#endif
-    const std::string libA = (tmpDir / (std::string("concurrent_a") + SharedLibExt())).string();
-    const std::string libB = (tmpDir / (std::string("concurrent_b") + SharedLibExt())).string();
-
-    auto writeSource = [](const std::string& path, int returnVal) -> bool
-    {
-        std::ofstream f(path);
-        if (!f.is_open()) return false;
-#ifdef _WIN32
-        f << "typedef int BOOL;\ntypedef unsigned long DWORD;\ntypedef void* HINSTANCE;\ntypedef void* LPVOID;\n"
-          << "BOOL __stdcall DllMain(HINSTANCE h, DWORD r, LPVOID lp) { return 1; }\n"
-          << "__declspec(dllexport) int NousGetId(void) { return " << returnVal << "; }\n";
-#else
-        f << "#define EXPORT __attribute__((visibility(\"default\")))\n"
-          << "extern \"C\" EXPORT int NousGetId() { return " << returnVal << "; }\n";
-#endif
-        return true;
-    };
-
-    ASSERT_TRUE(writeSource(srcA, 100));
-    ASSERT_TRUE(writeSource(srcB, 200));
     ASSERT_TRUE(CompileSharedLib(srcA, libA));
     ASSERT_TRUE(CompileSharedLib(srcB, libB));
 
@@ -602,6 +431,4 @@ TEST(t_ScriptManager, ConcurrentLoads)
 
     UnloadLib(hA);
     UnloadLib(hB);
-    fs::remove(srcA); fs::remove(libA);
-    fs::remove(srcB); fs::remove(libB);
 }
