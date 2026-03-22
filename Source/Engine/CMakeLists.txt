@@ -50,46 +50,45 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # Force all symbols from static engine modules into the shared library.
 # Without this, only symbols directly referenced by MainEngine.cpp are exported,
 # causing undefined reference errors at link time for downstream targets.
-if (WIN32)
-  target_link_options(${PROJECT_NAME} PRIVATE
-    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Core>"
-    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:MemoryManager>"
-    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Modules>"
-    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:NOUS_Multithreading>"
-    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Renderer>"
-    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Scripting>"
-    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Systems>"
-    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:Utils>"
-  )
-  target_link_libraries(${PROJECT_NAME} PRIVATE
-    Core MemoryManager Modules NOUS_Multithreading Renderer Scripting Systems Utils
-  )
-elseif(APPLE)
-  # macOS: -all_load is the equivalent (no per-archive scoping needed here)
-  target_link_libraries(${PROJECT_NAME} PRIVATE
-    -Wl,-all_load
-    Core MemoryManager Modules NOUS_Multithreading Renderer Scripting Systems Utils
-  )
-else()
-  # Linux (GNU ld): wrap ALL static archives with --whole-archive / --no-whole-archive.
-  # CMake only applies --whole-archive to the directly listed targets; their transitive
-  # sub-library dependencies appear after --no-whole-archive and are excluded.
-  # We must explicitly list every concrete sub-library target here.
-  target_link_libraries(${PROJECT_NAME} PRIVATE
-    -Wl,--whole-archive
+#
+# We use target_link_options with $<TARGET_FILE:...> for the whole-archive flags
+# on all platforms. This avoids CMake's library deduplication, which would otherwise
+# move sub-libraries out of the whole-archive range into the normal link section.
+# target_link_libraries is still used for CMake dependency tracking.
+
+set(NOUS_ENGINE_STATIC_LIBS
     # Top-level aggregates
-    Core MemoryManager Modules NOUS_Multithreading Renderer Scripting Systems Utils
+    Core Modules NOUS_Multithreading Renderer Scripting Systems Utils
     # Core sub-libraries
-    EventSystem FileSystem Logger TimeManager
+    MemoryManager EventSystem FileSystem Logger TimeManager
     # Modules sub-libraries
     ModuleCamera3D ModuleInput ModuleRenderer3D ModuleResourceManager ModuleScene ModuleWindow
     # Renderer sub-libraries
     RendererFrontend RendererBackend VulkanBackend
     # Systems sub-libraries
     Camera ECS ResourceManager ShaderSystem
-    -Wl,--no-whole-archive
-  )
+)
+
+if (WIN32)
+  foreach(lib IN LISTS NOUS_ENGINE_STATIC_LIBS)
+    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:${lib}>")
+  endforeach()
+elseif(APPLE)
+  foreach(lib IN LISTS NOUS_ENGINE_STATIC_LIBS)
+    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:-force_load,$<TARGET_FILE:${lib}>")
+  endforeach()
+else()
+  # Linux (GNU ld): per-library --whole-archive via LINKER: prefix.
+  # "LINKER:--whole-archive,path,--no-whole-archive" expands to:
+  #   -Wl,--whole-archive,/abs/path/to/lib.a,--no-whole-archive
+  # which passes three separate args to ld, scoping --whole-archive to just that archive.
+  foreach(lib IN LISTS NOUS_ENGINE_STATIC_LIBS)
+    target_link_options(${PROJECT_NAME} PRIVATE
+      "LINKER:--whole-archive,$<TARGET_FILE:${lib}>,--no-whole-archive")
+  endforeach()
 endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${NOUS_ENGINE_STATIC_LIBS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
