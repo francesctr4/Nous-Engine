@@ -71,10 +71,22 @@ elseif(APPLE)
     Core MemoryManager Modules NOUS_Multithreading Renderer Scripting Systems Utils
   )
 else()
-  # Linux (GNU ld): wrap static archives with --whole-archive / --no-whole-archive
+  # Linux (GNU ld): wrap ALL static archives with --whole-archive / --no-whole-archive.
+  # CMake only applies --whole-archive to the directly listed targets; their transitive
+  # sub-library dependencies appear after --no-whole-archive and are excluded.
+  # We must explicitly list every concrete sub-library target here.
   target_link_libraries(${PROJECT_NAME} PRIVATE
     -Wl,--whole-archive
+    # Top-level aggregates
     Core MemoryManager Modules NOUS_Multithreading Renderer Scripting Systems Utils
+    # Core sub-libraries
+    EventSystem FileSystem Logger TimeManager
+    # Modules sub-libraries
+    ModuleCamera3D ModuleInput ModuleRenderer3D ModuleResourceManager ModuleScene ModuleWindow
+    # Renderer sub-libraries
+    RendererFrontend RendererBackend VulkanBackend
+    # Systems sub-libraries
+    Camera ECS ResourceManager ShaderSystem
     -Wl,--no-whole-archive
   )
 endif()
