@@ -19,10 +19,10 @@ find_package(GTest CONFIG REQUIRED)
 
 target_link_libraries(${TEST_NAME}
         PRIVATE
+        ShaderSystem
+        ResourceManager
         MemoryManager
         FileSystem
-        ResourceManager
-        ShaderSystem
         Logger
         TimeManager
         GTest::gtest
