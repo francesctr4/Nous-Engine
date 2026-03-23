@@ -20,24 +20,34 @@ layout(push_constant) uniform pushConstantObject
 
 void main()
 {
-    vec3 worldPos = vec3(pushConstant.model * vec4(inPosition, 1.0));
+    // Transform to clip space first.
+    vec4 clipPos = globalUBO.projection * globalUBO.view
+                 * pushConstant.model * vec4(inPosition, 1.0);
 
-    // Use the welded smooth normal (not the per-face/UV-split render normal) so
-    // that all vertex copies at the same position extrude identically, preventing
-    // gaps and spikes at UV seams and hard edges.
-    mat3 normalMatrix = transpose(inverse(mat3(pushConstant.model)));
-    vec3 worldSmoothNormal = normalize(normalMatrix * inSmoothNormal);
+    if (pushConstant.outlineThickness > 0.0)
+    {
+        // Transform the welded smooth normal to view space.
+        // Using view*model normal matrix so the normal is in view space, whose
+        // XY plane maps directly to screen X/Y.
+        mat3 normalMV = transpose(inverse(mat3(globalUBO.view * pushConstant.model)));
+        vec3 viewNormal = normalize(normalMV * inSmoothNormal);
 
-    // Scale thickness proportionally to the model's world-space size so the
-    // outline width stays consistent regardless of the mesh's scale transform.
-    float scaleX = length(vec3(pushConstant.model[0]));
-    float scaleY = length(vec3(pushConstant.model[1]));
-    float scaleZ = length(vec3(pushConstant.model[2]));
-    float modelScale = (scaleX + scaleY + scaleZ) / 3.0;
+        // Project normal onto the screen plane (drop Z).
+        // If the normal points almost directly at/away from the camera its XY
+        // projection is near zero — use a small epsilon to avoid division by zero.
+        vec2 screenNormal = viewNormal.xy;
+        float len = length(screenNormal);
+        if (len > 1e-4)
+            screenNormal /= len;
+        else
+            screenNormal = vec2(0.0);
 
-    worldPos += worldSmoothNormal * pushConstant.outlineThickness * modelScale;
+        // Offset in clip space (multiply by w so the offset is constant in NDC,
+        // giving a screen-space-fixed pixel width independent of depth and mesh size).
+        clipPos.xy += screenNormal * pushConstant.outlineThickness * clipPos.w;
+    }
 
-    gl_Position = globalUBO.projection * globalUBO.view * vec4(worldPos, 1.0);
+    gl_Position = clipPos;
 }
 
 // ------------------------------------------------------------------------------------------------------

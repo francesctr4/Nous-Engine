@@ -73,7 +73,7 @@ struct RenderPacket
 
 struct OutlineSettings
 {
-    OutlineSettings() : color(1.f, 0.5f, 0.f, 1.f), width(3.0f), depthAware(false) {}
+    OutlineSettings() : color(1.f, 0.5f, 0.f, 1.f), width(0.01f), depthAware(false) {}
 
     glm::vec4 color;
     float width;
