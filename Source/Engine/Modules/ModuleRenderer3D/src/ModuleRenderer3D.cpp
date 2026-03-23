@@ -95,6 +95,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	ZoneScoped;
 #endif
 
+	// Propagate parent transforms top-down before any world-matrix reads.
+	if (App->scene->activeScene)
+		App->scene->activeScene->UpdateWorldMatrices();
+
 	RenderPacket packet{};
 	packet.deltaTime = dt;
 	packet.editorCamera = App->camera->GetCamera();

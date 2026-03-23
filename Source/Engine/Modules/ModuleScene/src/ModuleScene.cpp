@@ -22,6 +22,8 @@
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
@@ -32,6 +34,8 @@
 #include <algorithm>
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
+#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 ModuleScene::ModuleScene(Application* app)
     : Module(app), m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
@@ -150,92 +154,49 @@ UpdateStatus ModuleScene::Update(float dt)
     if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
     {
         App->jobSystem->SubmitJob([this]()
-                                  {
-                                      GameObject* go = activeScene->CreateGameObjectDetached("Lagiacrus Head");
-
-                                      auto& meshComp = go->AddComponent<CMesh>();
-                                      meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Lagiacrus_Head.fbx"));
-
-//                                      auto& matComp = go->AddComponent<CMaterial>();
-//                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/Lagiacrus_Head.nmat"));
-
-                                      activeScene->RegisterGameObject(go);
-                                  }, "Render Lagiacrus");
+        {
+            SpawnMeshAsHierarchy("Assets/Meshes/Lagiacrus_Head.fbx");
+        }, "Spawn Lagiacrus");
     }
 
     if (App->input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
     {
         App->jobSystem->SubmitJob([this]()
-                                  {
-                                      GameObject* go = activeScene->CreateGameObjectDetached("Cypher");
-
-                                      auto& meshComp = go->AddComponent<CMesh>();
-                                      meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Cypher_S0_Skelmesh.fbx"));
-
-                                      auto& matComp = go->AddComponent<CMaterial>();
-                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/cypher_material.nmat"));
-
-                                      activeScene->RegisterGameObject(go);
-                                  }, "Render Cypher");
+        {
+            SpawnMeshAsHierarchy("Assets/Meshes/Cypher_S0_Skelmesh.fbx");
+        }, "Spawn Cypher");
     }
 
     if (App->input->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
     {
         App->jobSystem->SubmitJob([this]()
-                                  {
-                                      GameObject* go = activeScene->CreateGameObjectDetached("Queen Xenomorph");
-
-                                      auto& meshComp = go->AddComponent<CMesh>();
-                                      meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Queen_Xenomorph.fbx"));
-
-                                      auto& matComp = go->AddComponent<CMaterial>();
-                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/queen_xenomorph.nmat"));
-
-                                      activeScene->RegisterGameObject(go);
-                                  }, "Render Queen Xenomorph");
+        {
+            SpawnMeshAsHierarchy("Assets/Meshes/Queen_Xenomorph.fbx");
+        }, "Spawn Queen Xenomorph");
     }
 
     if (App->input->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
     {
         App->jobSystem->SubmitJob([this]()
-                                  {
-                                      GameObject* go = activeScene->CreateGameObjectDetached("Wolf");
-
-                                      auto& meshComp = go->AddComponent<CMesh>();
-                                      meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource("Assets/Meshes/Wolf.obj"));
-
-                                      auto& matComp = go->AddComponent<CMaterial>();
-                                      matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource("Assets/Materials/wolf_material.nmat"));
-
-                                      activeScene->RegisterGameObject(go);
-                                  }, "Render Wolf");
+        {
+            SpawnMeshAsHierarchy("Assets/Meshes/Wolf.obj");
+        }, "Spawn Wolf");
     }
 
-// Optional: Batch creation with delays (like your F5 example)
     if (App->input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN)
     {
-        struct ModelData { const char* name; const char* meshPath; const char* matPath; const char* jobName; };
-        std::vector<ModelData> models = {
-                {"Lagiacrus Head", "Assets/Meshes/Lagiacrus_Head.fbx", "Assets/Materials/Lagiacrus_Head.nmat", "Render Lagiacrus"},
-                {"Cypher", "Assets/Meshes/Cypher_S0_Skelmesh.fbx", "Assets/Materials/cypher_material.nmat", "Render Cypher"},
-                {"Queen Xenomorph", "Assets/Meshes/Queen_Xenomorph.fbx", "Assets/Materials/queen_xenomorph.nmat", "Render Queen Xenomorph"},
-                {"Wolf", "Assets/Meshes/Wolf.obj", "Assets/Materials/wolf_material.nmat", "Render Wolf"}
+        static const std::vector<std::string> meshPaths = {
+            "Assets/Meshes/Lagiacrus_Head.fbx",
+            "Assets/Meshes/Cypher_S0_Skelmesh.fbx",
+            "Assets/Meshes/Queen_Xenomorph.fbx",
+            "Assets/Meshes/Wolf.obj"
         };
-
-        for (const auto& model : models)
+        for (const auto& path : meshPaths)
         {
-            App->jobSystem->SubmitJob([this, model]()
-                                      {
-                                          GameObject* go = activeScene->CreateGameObjectDetached(model.name);
-
-                                          auto& meshComp = go->AddComponent<CMesh>();
-                                          meshComp.mesh = down_cast<ResourceMesh*>(App->resourceManager->CreateResource(model.meshPath));
-
-                                          auto& matComp = go->AddComponent<CMaterial>();
-                                          matComp.material = down_cast<ResourceMaterial*>(App->resourceManager->CreateResource(model.matPath));
-
-                                          activeScene->RegisterGameObject(go);
-                                      }, model.jobName);
+            App->jobSystem->SubmitJob([this, path]()
+            {
+                SpawnMeshAsHierarchy(path);
+            }, "Spawn Model");
         }
     }
 
@@ -539,6 +500,79 @@ void ModuleScene::ClearScene()
 {
     selectedGameObject = nullptr;
     activeScene->Clear();
+}
+
+void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
+{
+    // 1. Read meta to get library path and verify the asset exists.
+    MetaFileData metaData;
+    if (!App->resourceManager->GetAssetMetaData(assetsPath, metaData))
+    {
+        NOUS_ERROR("[SpawnMeshAsHierarchy] No meta file for '%s'. Import it first.", assetsPath.c_str());
+        return;
+    }
+
+    // 2. Load the full submesh hierarchy from the library binary.
+    const auto submeshes = ImporterMesh::LoadHierarchy(metaData.libraryPath);
+    if (submeshes.empty())
+    {
+        NOUS_ERROR("[SpawnMeshAsHierarchy] No submeshes in '%s'.", metaData.libraryPath.c_str());
+        return;
+    }
+
+    // 3. Root GO — named after the file, no mesh of its own.
+    const std::string modelName = std::filesystem::path(assetsPath).filename().string();
+    GameObject* rootGO = activeScene->CreateGameObjectDetached(modelName);
+
+    // 4. One child GO per submesh.
+    for (int32_t i = 0; i < static_cast<int32_t>(submeshes.size()); ++i)
+    {
+        const SubMeshData& sub = submeshes[static_cast<size_t>(i)];
+
+        ResourceMesh* meshResource =
+            App->resourceManager->RequestOrCreateSubMeshResource(assetsPath, i);
+        if (!meshResource)
+        {
+            NOUS_WARN("[SpawnMeshAsHierarchy] Failed to create sub-resource for submesh %d of '%s'.",
+                i, assetsPath.c_str());
+            continue;
+        }
+
+        // Create child GO attached to root.
+        GameObject* childGO = activeScene->CreateGameObjectDetached(sub.name, rootGO);
+
+        // Apply the node's accumulated world transform as the child's local transform.
+        if (auto* t = childGO->TryGetComponent<CTransform>())
+        {
+            glm::vec3 pos, scale, skew;
+            glm::vec4 persp;
+            glm::quat orient;
+            glm::decompose(sub.localTransform, scale, orient, pos, skew, persp);
+
+            t->position    = pos;
+            t->orientation = orient;
+            t->scale       = scale;
+            t->eulerHint   = t->GetEulerAngles();
+            t->UpdateMatrix();
+        }
+
+        // Mesh component — references the individual submesh resource.
+        auto& meshComp      = childGO->AddComponent<CMesh>();
+        meshComp.mesh        = meshResource;
+        meshComp.submeshIndex = i;
+
+        // Default material — user can reassign via Inspector.
+        auto& matComp    = childGO->AddComponent<CMaterial>();
+        matComp.material = App->resourceManager->GetDefaultMaterial();
+
+        activeScene->RegisterGameObject(childGO);
+    }
+
+    // 5. Register root last so children are already in the scene list.
+    activeScene->RegisterGameObject(rootGO);
+
+    NOUS_INFO("[SpawnMeshAsHierarchy] Spawned '%s' with %zu submesh(es).",
+        modelName.c_str(), submeshes.size());
 }
 
 void ModuleScene::EnsureMainCamera()

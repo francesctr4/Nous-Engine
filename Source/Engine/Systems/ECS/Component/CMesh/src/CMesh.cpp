@@ -11,26 +11,36 @@ JSON_Value *CMesh::Serialize() const {
     JSON_Object* obj = json_value_get_object(objVal);
 
     json_object_set_string(obj, "type", GetType().c_str());
+    json_object_set_string(obj, "assetPath", mesh ? mesh->GetAssetsPath().c_str() : "");
 
-    if (mesh) {
-        // Save the asset path to recreate the resource later
-        json_object_set_string(obj, "assetPath", mesh->GetAssetsPath().c_str());
-    } else {
-        json_object_set_string(obj, "assetPath", "");
-    }
+    // Only write submeshIndex for actual sub-resources; omit for merged meshes so
+    // old scene files (without this field) continue to load via CreateResource().
+    if (submeshIndex >= 0)
+        json_object_set_number(obj, "submeshIndex", static_cast<double>(submeshIndex));
 
     return objVal;
 }
 
 void CMesh::Deserialize(JSON_Object *obj) {
     const char* assetPath = json_object_get_string(obj, "assetPath");
-    if (assetPath && strlen(assetPath) > 0) {
-        // Create or load the resource via the resource manager
-        mesh = down_cast<ResourceMesh*>(
-                External->resourceManager->CreateResource(assetPath)
-        );
-    } else {
+    if (!assetPath || strlen(assetPath) == 0)
+    {
         mesh = nullptr;
+        return;
+    }
+
+    // Detect whether this component references a specific submesh.
+    // json_object_get_value returns nullptr when the key is absent (old scenes).
+    const JSON_Value* subIdxVal = json_object_get_value(obj, "submeshIndex");
+    if (subIdxVal)
+    {
+        submeshIndex = static_cast<int32_t>(json_value_get_number(subIdxVal));
+        mesh = External->resourceManager->RequestOrCreateSubMeshResource(assetPath, submeshIndex);
+    }
+    else
+    {
+        submeshIndex = -1;
+        mesh = down_cast<ResourceMesh*>(External->resourceManager->CreateResource(assetPath));
     }
 }
 

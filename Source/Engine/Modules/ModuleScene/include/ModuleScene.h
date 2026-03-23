@@ -43,6 +43,12 @@ public:
 	NOUS_ENGINE_API void LoadSceneAsync(const std::string& path);
 	NOUS_ENGINE_API void ClearScene();
 
+	// Creates a root GameObject + one child GO per submesh for the given mesh
+	// asset.  Each child has CTransform (from the node's local transform),
+	// CMesh (individual submesh resource), and default CMaterial.
+	// Safe to call from a job thread via CreateGameObjectDetached + RegisterGameObject.
+	NOUS_ENGINE_API void SpawnMeshAsHierarchy(const std::string& assetsPath);
+
 	// Called by CScript::OnStart / CScript::OnDestroy to maintain the live registry
 	NOUS_ENGINE_API void RegisterScriptComponent(CScript* component);
 	NOUS_ENGINE_API void UnregisterScriptComponent(CScript* component);

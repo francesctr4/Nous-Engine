@@ -78,6 +78,37 @@ void Scene::DestroyGameObject(GameObject* go) {
 }
 
 // -----------------------------------------------------------------------------
+// World matrix update (top-down hierarchy pass)
+// -----------------------------------------------------------------------------
+static void UpdateWorldMatrixRecursive(GameObject* go)
+{
+    if (auto* t = go->TryGetComponent<CTransform>())
+        t->UpdateMatrix();
+
+    for (auto* child : go->GetChildren())
+        UpdateWorldMatrixRecursive(child);
+}
+
+void Scene::UpdateWorldMatrices()
+{
+    // Snapshot so job-thread mutations to m_GameObjects don't race.
+    NOUS_Vector<GameObject*> snapshot(MemoryTag::GAMEOBJECT);
+    {
+        std::lock_guard<std::mutex> lock(m_Mutex);
+        snapshot = m_GameObjects;
+    }
+
+    // Only start the recursion from root objects (no parent).
+    // Children are visited by UpdateWorldMatrixRecursive so they get parent's
+    // worldMatrix before their own UpdateMatrix() is called.
+    for (auto* go : snapshot)
+    {
+        if (!go->GetParent())
+            UpdateWorldMatrixRecursive(go);
+    }
+}
+
+// -----------------------------------------------------------------------------
 // Update
 // -----------------------------------------------------------------------------
 void Scene::Update(float deltaTime) {

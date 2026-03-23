@@ -18,6 +18,7 @@
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
@@ -559,6 +560,15 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 {
 	UID uid = resource->GetUID();
 
+	// Remove any sub-resource map entry that points to this UID.
+	for (auto it = m_submeshUIDMap.begin(); it != m_submeshUIDMap.end(); )
+	{
+		if (it->second == uid)
+			it = m_submeshUIDMap.erase(it);
+		else
+			++it;
+	}
+
 	switch (resource->GetType())
 	{
 		case ResourceType::MESH:
@@ -791,6 +801,91 @@ ResourceTexture *ModuleResourceManager::GetDefaultTexture() const
 ResourceMaterial *ModuleResourceManager::GetDefaultMaterial() const
 {
     return mDefaultMaterial;
+}
+
+bool ModuleResourceManager::GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData)
+{
+    return ReadMetaFile(assetsPath + ".meta", outData);
+}
+
+ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::string& assetsPath,
+                                                                      int32_t submeshIndex)
+{
+    // Read meta to resolve the base UID and library path.
+    MetaFileData metaData;
+    if (!ReadMetaFile(assetsPath + ".meta", metaData))
+    {
+        NOUS_ERROR("RequestOrCreateSubMeshResource: missing meta for %s", assetsPath.c_str());
+        return nullptr;
+    }
+
+    const auto key = std::make_pair(metaData.uid, submeshIndex);
+
+    // Fast path: sub-resource already loaded this session.
+    {
+        std::lock_guard<std::mutex> lock(resourcesMutex);
+        auto mapIt = m_submeshUIDMap.find(key);
+        if (mapIt != m_submeshUIDMap.end())
+        {
+            auto resIt = resources.find(mapIt->second);
+            if (resIt != resources.end() && resIt->second)
+            {
+                resIt->second->IncreaseReferenceCount();
+                return down_cast<ResourceMesh*>(resIt->second);
+            }
+            // Stale entry (resource was destroyed) — remove and recreate below.
+            m_submeshUIDMap.erase(mapIt);
+        }
+    }
+
+    // Load the full hierarchy to pick the requested submesh.
+    const auto hierarchy = ImporterMesh::LoadHierarchy(metaData.libraryPath);
+    if (submeshIndex < 0 || submeshIndex >= static_cast<int32_t>(hierarchy.size()))
+    {
+        NOUS_ERROR("RequestOrCreateSubMeshResource: index %d out of range (count=%zu) for %s",
+            submeshIndex, hierarchy.size(), assetsPath.c_str());
+        return nullptr;
+    }
+
+    const SubMeshData& sub = hierarchy[static_cast<size_t>(submeshIndex)];
+
+    // Build the ResourceMesh.
+    ResourceMesh* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
+    mesh->SetName(sub.name);
+    mesh->SetType(ResourceType::MESH);
+    mesh->SetAssetsPath(assetsPath);
+    mesh->SetLibraryPath(metaData.libraryPath);
+
+    mesh->vertices = sub.vertices;
+    mesh->indices.assign(sub.indices.begin(), sub.indices.end());
+
+    // Upload geometry to the GPU.
+    if (!App->renderer->GetRendererFrontend()->CreateGeometry(
+        mesh->vertices.size(), mesh->vertices.data(),
+        mesh->indices.size(), mesh->indices.data(), mesh))
+    {
+        NOUS_ERROR("RequestOrCreateSubMeshResource: GPU upload failed for submesh %d of %s",
+            submeshIndex, assetsPath.c_str());
+        NOUS_DELETE(mesh, MemoryTag::RESOURCE_MESH);
+        return nullptr;
+    }
+
+    // Assign a unique UID, register in the resource map and the sub-resource map.
+    UID uid;
+    {
+        std::lock_guard<std::mutex> lock(resourcesMutex);
+        do { uid = static_cast<UID>(Random::Generate()); }
+        while (uid == 0 || resources.count(uid));
+
+        resources[uid]         = mesh;
+        m_submeshUIDMap[key]   = uid;
+    }
+
+    mesh->SetUID(uid);
+    mesh->IncreaseReferenceCount();
+    mesh->Validate();
+
+    return mesh;
 }
 
 //std::string ModuleResourceManager::GetLibraryPath(const std::string& assetsPath)

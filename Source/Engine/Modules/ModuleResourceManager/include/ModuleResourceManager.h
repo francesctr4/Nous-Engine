@@ -6,13 +6,16 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 
+#include <map>
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using UID = uint32_t;
 struct MetaFileData;
+class ResourceMesh;
 
 class ResourceTexture;
 class ResourceMaterial;
@@ -56,6 +59,17 @@ public:
     [[nodiscard]] ResourceTexture* GetDefaultTexture() const;
     [[nodiscard]] ResourceMaterial* GetDefaultMaterial() const;
 
+    // Reads the .meta sidecar for assetsPath and fills outData.
+    // Returns false if the meta file is missing or malformed.
+    NOUS_ENGINE_API bool GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData);
+
+    // Returns the ResourceMesh for a specific submesh within a source asset.
+    // If already loaded this session, bumps the ref count and returns it.
+    // Otherwise loads the submesh from the library binary, uploads it to the GPU,
+    // and registers it in the resource map with a generated UID.
+    NOUS_ENGINE_API ResourceMesh* RequestOrCreateSubMeshResource(const std::string& assetsPath,
+                                                                  int32_t submeshIndex);
+
 private:
 
 	bool EnsureLibraryDirectories();
@@ -80,6 +94,11 @@ private:
 	// Flushed at the start of the next PreUpdate, before any command buffer recording.
 	std::mutex m_PendingUnloadsMutex;
 	std::vector<UID> m_PendingUnloads;
+
+	// Maps (baseAssetUID, submeshIndex) → sub-resource UID.
+	// Allows RequestOrCreateSubMeshResource to reuse already-loaded sub-resources.
+	// Entry removed when the sub-resource is destroyed in DeleteResource().
+	std::map<std::pair<UID, int32_t>, UID> m_submeshUIDMap;
 
 	ResourceTexture* mDefaultTexture = nullptr;
 	ResourceMaterial* mDefaultMaterial = nullptr;

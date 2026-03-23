@@ -3,6 +3,8 @@
 #include <algorithm>   // std::clamp
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
@@ -175,10 +177,23 @@ void SceneViewport::Draw()
                                     continue;
                                 }
 
-                                External->jobSystem->SubmitJob([path]()
+                                // Mesh assets → spawn a full submesh hierarchy.
+                                // All other assets → just load the resource.
+                                const std::string ext = NOUS_FileManager::GetExtension(path);
+                                if (Resource::GetTypeFromExtension(ext) == ResourceType::MESH)
+                                {
+                                    External->jobSystem->SubmitJob([path]()
+                                    {
+                                        External->scene->SpawnMeshAsHierarchy(path);
+                                    }, "Spawn Mesh Hierarchy");
+                                }
+                                else
+                                {
+                                    External->jobSystem->SubmitJob([path]()
                                     {
                                         External->resourceManager->CreateResource(path);
                                     }, "Create Resource");
+                                }
                             }
                         }
 
@@ -246,9 +261,11 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
         cam->GetFarPlane()
     );
 
-    // Get the object's transform matrix
+    // Get the object's transform matrix.
+    // Use worldMatrix so the gizmo is placed at the correct world position even
+    // when the selected object is a child of another GO.
     CTransform& transform = selected->GetComponent<CTransform>();
-    glm::mat4 objectMatrix = transform.GetLocalMatrix();
+    glm::mat4 objectMatrix = transform.worldMatrix;
 
     // Configure ImGuizmo for this viewport
     // SetImGuiContext is critical in DLL architectures where ImGui and ImGuizmo
@@ -303,18 +320,30 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
         m_UseSnap ? snapValues : nullptr
     );
 
-    // If the gizmo was manipulated, decompose the matrix using GLM (quaternion-based)
+    // If the gizmo was manipulated, decompose the result into local space.
+    // objectMatrix now holds the NEW world matrix after Manipulate().
+    // For child GOs we must factor out the parent's world transform so that
+    // position/orientation/scale remain in the parent's local space.
     if (ImGuizmo::IsUsing())
     {
+        glm::mat4 parentInverse = glm::mat4(1.0f);
+        if (GameObject* parent = selected->GetParent())
+        {
+            if (CTransform* pt = parent->TryGetComponent<CTransform>())
+                parentInverse = glm::inverse(pt->worldMatrix);
+        }
+
+        const glm::mat4 newLocalMatrix = parentInverse * objectMatrix;
+
         glm::vec3 newPosition, newScale, skew;
         glm::vec4 perspective;
         glm::quat newOrientation;
-        glm::decompose(objectMatrix, newScale, newOrientation, newPosition, skew, perspective);
+        glm::decompose(newLocalMatrix, newScale, newOrientation, newPosition, skew, perspective);
 
-        transform.position = newPosition;
+        transform.position    = newPosition;
         transform.orientation = newOrientation;
-        transform.scale = newScale;
-        transform.eulerHint = transform.GetEulerAngles();
+        transform.scale       = newScale;
+        transform.eulerHint   = transform.GetEulerAngles();
 
         transform.UpdateMatrix();
     }

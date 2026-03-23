@@ -1,4 +1,5 @@
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
@@ -46,10 +47,23 @@ glm::vec3 CTransform::GetUp() const {
 }
 
 void CTransform::UpdateMatrix() {
-    glm::mat4 T = glm::translate(glm::mat4(1.0f), position);
-    glm::mat4 R = glm::toMat4(orientation);
-    glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
-    worldMatrix = T * R * S;
+    const glm::mat4 local = GetLocalMatrix();
+
+    // If this component has a parent GO with a CTransform, chain the parent's
+    // already-computed worldMatrix so children inherit parent transforms.
+    if (m_GameObject)
+    {
+        if (GameObject* parent = m_GameObject->GetParent())
+        {
+            if (CTransform* pt = parent->TryGetComponent<CTransform>())
+            {
+                worldMatrix = pt->worldMatrix * local;
+                return;
+            }
+        }
+    }
+
+    worldMatrix = local;
 }
 
 JSON_Value *CTransform::Serialize() const {
