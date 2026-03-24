@@ -53,7 +53,7 @@ void HierarchyWindow::Draw() {
                         while (data < end) {
                             std::string path(data);
                             data += path.size() + 1;
-                            if (path.size() >= 8 && path.substr(path.size() - 8) == ".nprefab")
+                            if (std::filesystem::path(path).extension() == ".nprefab")
                                 External->scene->InstantiatePrefab(path, nullptr);
                         }
                     }
@@ -188,7 +188,7 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go, bool insidePrefab) {
             while (data < end) {
                 std::string path(data);
                 data += path.size() + 1;
-                if (path.size() >= 8 && path.substr(path.size() - 8) == ".nprefab")
+                if (std::filesystem::path(path).extension() == ".nprefab")
                     External->scene->InstantiatePrefab(path, go);
             }
         }

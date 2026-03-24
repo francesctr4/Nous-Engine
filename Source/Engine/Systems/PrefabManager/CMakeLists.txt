@@ -16,3 +16,7 @@ target_include_directories(PrefabManager PUBLIC
 target_compile_definitions(PrefabManager PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(PrefabManager PUBLIC ECS)
+
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()

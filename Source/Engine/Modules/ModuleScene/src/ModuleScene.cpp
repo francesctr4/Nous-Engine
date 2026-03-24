@@ -94,7 +94,8 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 	// reached, the previous frame's EndFrame has fully submitted — safe to reload.
 	if (m_pendingStop)
 	{
-		m_pendingStop = false;
+		m_pendingStop          = false;
+		m_pendingPrefabRefresh = false; // LoadScene calls RefreshPrefabInstances directly
 		LoadScene(m_snapshotPath);
 		NOUS_INFO("[Scene] Simulation stopped — scene restored from snapshot.");
 	}
@@ -653,7 +654,17 @@ void ModuleScene::RefreshPrefabInstances()
         }
     }
 
+    if (prefabRoots.empty())
+    {
+        NOUS_INFO("[Scene] RefreshPrefabInstances: no prefab instances found in scene.");
+        return;
+    }
+
+    NOUS_INFO("[Scene] RefreshPrefabInstances: refreshing %zu prefab instance(s).", prefabRoots.size());
+
     // Phase 2: reload each root now that the snapshot is discarded.
     for (auto* root : prefabRoots)
         PrefabManager::ReloadPrefabInstance(root, activeScene);
+
+    NOUS_INFO("[Scene] RefreshPrefabInstances: done.");
 }

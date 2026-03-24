@@ -251,8 +251,8 @@
             ]
         },
         {
-            "uid": 2357965471,
-            "name": "Cypher_S0_Skelmesh.fbx",
+            "uid": 2925014570,
+            "name": "Queen Xenomorph",
             "parent": 0,
             "components": [
                 {
@@ -274,39 +274,47 @@
                         0
                     ],
                     "scale": [
-                        1,
-                        1,
-                        1
+                        0.5,
+                        0.5,
+                        0.5
                     ]
                 },
                 {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Queen_Xenomorph.fbx"
+                },
+                {
                     "type": "CPrefab",
-                    "prefabSourcePath": "Assets\\Prefabs\\Wolf.nprefab"
+                    "prefabSourcePath": "Assets\\Prefabs\\TestPrefab.nprefab"
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\queen_xenomorph.nmat"
                 }
             ]
         },
         {
-            "uid": 1866633268,
-            "name": "untitled1",
-            "parent": 2357965471,
+            "uid": 205762121,
+            "name": "Wolf",
+            "parent": 2925014570,
             "components": [
                 {
                     "type": "CTransform",
                     "position": [
-                        -93.835624694824219,
+                        0,
                         0,
                         0
                     ],
                     "orientation": [
-                        1,
+                        0.51354122161865234,
                         0,
-                        0,
+                        -0.85806488990783691,
                         0
                     ],
                     "rotation": [
-                        0,
-                        -0,
-                        0
+                        180,
+                        -61.79998779296875,
+                        180
                     ],
                     "scale": [
                         1,
@@ -316,12 +324,11 @@
                 },
                 {
                     "type": "CMesh",
-                    "assetPath": "Assets\/Meshes\/Cypher_S0_Skelmesh.fbx",
-                    "submeshIndex": 0
+                    "assetPath": "Assets\\Meshes\\Wolf.obj"
                 },
                 {
                     "type": "CMaterial",
-                    "assetPath": ""
+                    "assetPath": "Assets\\Materials\\wolf_material.nmat"
                 }
             ]
         }

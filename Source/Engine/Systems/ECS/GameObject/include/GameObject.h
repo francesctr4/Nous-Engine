@@ -34,6 +34,7 @@ public:
     template<typename T> T& GetComponent();
     template<typename T> T* TryGetComponent();
     template<typename T> void RemoveComponent();
+    void RemoveComponent(std::type_index typeIndex);
 
     void UpdateComponents(float deltaTime);
     NOUS_Vector<Component*> GetAllComponents();
@@ -79,7 +80,18 @@ T& GameObject::AddComponent(Args&&... args) {
     T* component = NOUS_NEW<T>(MemoryTag::COMPONENT, std::forward<Args>(args)...);
     component->m_GameObject = this;
 
-    m_Components[typeid(T)] = component;
+    auto it = m_Components.find(typeid(T));
+    if (it != m_Components.end()) {
+        Component* old = it->second;
+        if (old) {
+            old->OnDestroy();
+            NOUS_DELETE(old, MemoryTag::COMPONENT);
+        }
+        it->second = component;
+    } else {
+        m_Components[typeid(T)] = component;
+    }
+
     component->OnStart();
     return *component;
 }

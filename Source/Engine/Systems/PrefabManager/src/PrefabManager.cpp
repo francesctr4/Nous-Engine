@@ -11,7 +11,9 @@
 #include <filesystem>
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
+#include <cstring>
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_SCENE;
 
@@ -44,7 +46,7 @@ void PrefabManager::SavePrefab(GameObject* root, const std::string& filePath)
     JSON_Value* fileRoot = json_value_init_object();
     JSON_Object* fileObj  = json_value_get_object(fileRoot);
     json_object_set_string(fileObj, "name", root->GetName().c_str());
-    json_object_set_number(fileObj, "version", 0.1);
+    json_object_set_number(fileObj, "version", 1);
 
     JSON_Value* arrVal = json_value_init_array();
     JSON_Array* arr    = json_value_get_array(arrVal);
@@ -81,7 +83,8 @@ void PrefabManager::SavePrefab(GameObject* root, const std::string& filePath)
     json_serialize_to_file_pretty(fileRoot, filePath.c_str());
     json_value_free(fileRoot);
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Saved prefab: %s (%zu objects)", filePath.c_str(), allGOs.size());
+    NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Saved prefab '%s' → %s (%zu object(s))",
+        root->GetName().c_str(), filePath.c_str(), allGOs.size());
 }
 
 // -----------------------------------------------------------------------------
@@ -103,6 +106,13 @@ GameObject* PrefabManager::InstantiatePrefab(const std::string& filePath, Scene*
     }
 
     JSON_Object* fileObj = json_value_get_object(fileRoot);
+
+    const int version = static_cast<int>(json_object_get_number(fileObj, "version"));
+    if (version != 1)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[PrefabManager] InstantiatePrefab: unexpected version %d in '%s' — proceeding anyway.", version, filePath.c_str());
+    else
+        NOUS_DEBUG("[PrefabManager] InstantiatePrefab: loading '%s' (version %d)", filePath.c_str(), version);
+
     JSON_Array*  arr     = json_object_get_array(fileObj, "GameObjects");
     if (!arr)
     {
@@ -169,7 +179,11 @@ GameObject* PrefabManager::InstantiatePrefab(const std::string& filePath, Scene*
         if (it != prefabIDToGO.end())
             it->second->AddChild(entry.go);
         else
-            NOUS_WARN_C(CURRENT_CHANNEL, "[PrefabManager] Parent prefab UID %u not found during instantiation.", entry.prefabParentID);
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[PrefabManager] Parent prefab UID %u not found — destroying orphaned GO '%s'.",
+                entry.prefabParentID, entry.go->GetName().c_str());
+            scene->DestroyGameObject(entry.go);
+        }
     }
 
     // Find the root GO (no parent in prefab) and optionally parent it to parentGO.
@@ -202,7 +216,8 @@ GameObject* PrefabManager::InstantiatePrefab(const std::string& filePath, Scene*
     for (auto& entry : entries)
         scene->RegisterGameObject(entry.go);
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Instantiated prefab: %s (%zu objects)", filePath.c_str(), entries.size());
+    NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Instantiated prefab '%s' → root GO '%s' (%zu object(s))",
+        filePath.c_str(), prefabRoot->GetName().c_str(), entries.size());
     return prefabRoot;
 }
 
@@ -244,6 +259,47 @@ void PrefabManager::ReloadPrefabInstance(GameObject* instanceRoot, Scene* scene)
     JSON_Object* fileObj = json_value_get_object(fileRoot);
     JSON_Array*  arr     = json_object_get_array(fileObj, "GameObjects");
     if (!arr) { json_value_free(fileRoot); return; }
+
+    // Before rebuilding, collect which component types the prefab root defines.
+    // Any component currently on instanceRoot that is NOT CTransform, CPrefab, or in
+    // that set is stale (removed from the prefab since last save) and must be stripped.
+    {
+        std::unordered_set<std::string> prefabRootTypes;
+        const size_t preCount = json_array_get_count(arr);
+        for (size_t i = 0; i < preCount; ++i)
+        {
+            JSON_Object* obj = json_array_get_object(arr, i);
+            if (static_cast<uint32_t>(json_object_get_number(obj, "parent")) != 0) continue;
+
+            JSON_Array* comps = json_object_get_array(obj, "components");
+            if (comps)
+            {
+                for (size_t j = 0; j < json_array_get_count(comps); ++j)
+                {
+                    JSON_Object* compObj  = json_array_get_object(comps, j);
+                    const char*  typeName = json_object_get_string(compObj, "type");
+                    if (typeName) prefabRootTypes.insert(typeName);
+                }
+            }
+            break; // only one root entry
+        }
+
+        // Collect stale type_indices before removing (avoid mutating while iterating).
+        std::vector<std::type_index> toRemove;
+        for (auto* comp : instanceRoot->GetAllComponents())
+        {
+            const std::string t = comp->GetType();
+            if (t == "CTransform" || t == "CPrefab") continue;
+            if (prefabRootTypes.find(t) == prefabRootTypes.end())
+                toRemove.push_back(typeid(*comp));
+        }
+        for (const auto& ti : toRemove)
+            instanceRoot->RemoveComponent(ti);
+
+        if (!toRemove.empty())
+            NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] ReloadPrefabInstance: removed %zu stale component(s) from root '%s'.",
+                toRemove.size(), instanceRoot->GetName().c_str());
+    }
 
     struct GOEntry
     {
@@ -338,6 +394,6 @@ void PrefabManager::ReloadPrefabInstance(GameObject* instanceRoot, Scene* scene)
             it->second->AddChild(entry.go);
     }
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Reloaded prefab instance '%s' from %s",
-        instanceRoot->GetName().c_str(), prefabPath.c_str());
+    NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Reloaded prefab instance '%s' from '%s' (%zu child(ren) rebuilt).",
+        instanceRoot->GetName().c_str(), prefabPath.c_str(), entries.size());
 }

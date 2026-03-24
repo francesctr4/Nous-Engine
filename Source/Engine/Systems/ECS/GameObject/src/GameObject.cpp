@@ -48,6 +48,18 @@ void GameObject::AddComponent(Component* component) {
     component->OnStart();
 }
 
+void GameObject::RemoveComponent(std::type_index typeIndex) {
+    auto it = m_Components.find(typeIndex);
+    if (it != m_Components.end()) {
+        Component* comp = it->second;
+        if (comp) {
+            comp->OnDestroy();
+            NOUS_DELETE(comp, MemoryTag::COMPONENT);
+        }
+        m_Components.erase(it);
+    }
+}
+
 void GameObject::UpdateComponents(float deltaTime) {
     for (auto& [type, component] : m_Components)
         component->OnUpdate(deltaTime);

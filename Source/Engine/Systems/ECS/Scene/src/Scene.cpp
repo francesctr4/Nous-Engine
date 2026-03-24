@@ -309,7 +309,7 @@ void Scene::CollectGameObjectTree(GameObject* root, NOUS_Vector<GameObject*>& co
 void Scene::DestroySingleGameObject(GameObject* go) {
     if (!go) return;
 
-    if (External->scene->selectedGameObject == go)
+    if (External && External->scene && External->scene->selectedGameObject == go)
         External->scene->selectedGameObject = nullptr;
 
     if (auto* parent = go->GetParent())

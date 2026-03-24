@@ -22,7 +22,6 @@
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
-#include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
 InspectorWindow::InspectorWindow(const char* title, EditorContext* context, bool start_open)
         : IEditorWindow(title, context, nullptr, start_open) {

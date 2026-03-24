@@ -12,8 +12,8 @@ class GameObject;
 
 class Scene {
 public:
-    explicit Scene(const std::string& name = "Untitled Scene");
-    ~Scene();
+    NOUS_ENGINE_API explicit Scene(const std::string& name = "Untitled Scene");
+    NOUS_ENGINE_API ~Scene();
 
     NOUS_ENGINE_API GameObject* CreateGameObject(const std::string& name = "GameObject", GameObject* parent = nullptr);
     NOUS_ENGINE_API void DestroyGameObject(GameObject* go);
