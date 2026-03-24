@@ -1,0 +1,45 @@
+{
+    "name": "Wolf",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 1487752541,
+            "name": "Wolf",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        -0.70710676908493042,
+                        -0,
+                        0.70710676908493042,
+                        -0
+                    ],
+                    "rotation": [
+                        0,
+                        270,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Wolf.obj"
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\wolf_material.nmat"
+                }
+            ]
+        }
+    ]
+}

@@ -249,6 +249,81 @@
                     "isMainCamera": true
                 }
             ]
+        },
+        {
+            "uid": 2357965471,
+            "name": "Cypher_S0_Skelmesh.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CPrefab",
+                    "prefabSourcePath": "Assets\\Prefabs\\Wolf.nprefab"
+                }
+            ]
+        },
+        {
+            "uid": 1866633268,
+            "name": "untitled1",
+            "parent": 2357965471,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -93.835624694824219,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Meshes\/Cypher_S0_Skelmesh.fbx",
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": ""
+                }
+            ]
         }
     ]
 }

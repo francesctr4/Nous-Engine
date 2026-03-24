@@ -90,6 +90,7 @@ enum class FileType
     SHADER,
     FONT,
     SCENE,
+    PREFAB,
 
     ALL_TYPES
 };
@@ -121,6 +122,9 @@ const std::unordered_map<std::string, FileType> extensionToFileType =
     // Scene file extensions
     {".nous", FileType::SCENE},
 
+    // Prefab file extensions
+    {".nprefab", FileType::PREFAB},
+
     // Meta file extensions
     {".meta", FileType::META},
 };
@@ -136,7 +140,8 @@ const std::unordered_map<FileType, uint32> icon_type_overlay_colors =
 
     {FileType::META, IM_COL32(255, 255, 255, 255)},    // White for meta
     {FileType::FONT, IM_COL32(127, 0, 255, 255)},      // Purple for fonts
-    {FileType::SCENE, IM_COL32(255, 0, 0, 255)},       // Red for scenes
+    {FileType::SCENE,   IM_COL32(255, 0,   0,   255)},  // Red for scenes
+    {FileType::PREFAB,  IM_COL32(100, 180, 255, 255)},  // Blue for prefabs
     {FileType::SHADER, IM_COL32(255, 127, 255, 255)},  // Pink for shaders
 
     {FileType::FOLDER, IM_COL32(255, 204, 0, 255)}     // Yellow for folders

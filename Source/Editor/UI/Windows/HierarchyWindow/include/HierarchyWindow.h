@@ -4,6 +4,8 @@
 #include "Editor/UI/IEditorWindow.inl"
 #include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
+#include <string>
+
 class Scene;
 class GameObject;
 
@@ -24,12 +26,18 @@ public:
     void SetScene(Scene* scene) { m_Scene = scene; }
 
 private:
-    void DrawGameObjectNode(GameObject* obj);
+    void DrawGameObjectNode(GameObject* obj, bool insidePrefab = false);
+    void DrawSaveAsPrefabPopup();
 
     Scene* m_Scene = nullptr;
-    NOUS_Vector<GameObject*> m_ToDelete; // objects pending deletion
+    NOUS_Vector<GameObject*> m_ToDelete;
     NOUS_Vector<ReparentRequest> m_ToReparent;
     bool IsChildOf(GameObject *parent, GameObject *child);
+
+    // Save-as-prefab popup state
+    bool        m_showSaveAsPrefabPopup = false;
+    char        m_prefabNameBuffer[128] = {};
+    GameObject* m_prefabSaveTarget      = nullptr;
 };
 
 #endif

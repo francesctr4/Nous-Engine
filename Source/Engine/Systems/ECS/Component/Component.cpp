@@ -3,6 +3,7 @@
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 
 #include "Engine/Core/Logger/Logger.h"
@@ -23,6 +24,10 @@ Component* Component::CreateComponent(const std::string& type) {
 
     if (type == "CCamera") {
         return NOUS_NEW<CCamera>(MemoryTag::COMPONENT);
+    }
+
+    if (type == "CPrefab") {
+        return NOUS_NEW<CPrefab>(MemoryTag::COMPONENT);
     }
 
     if (type == "CScript") {

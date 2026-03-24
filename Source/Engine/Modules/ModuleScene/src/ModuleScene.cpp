@@ -36,6 +36,8 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/PrefabManager/include/PrefabManager.h"
+#include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
 ModuleScene::ModuleScene(Application* app)
     : Module(app), m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
@@ -95,6 +97,12 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 		m_pendingStop = false;
 		LoadScene(m_snapshotPath);
 		NOUS_INFO("[Scene] Simulation stopped — scene restored from snapshot.");
+	}
+
+	if (m_pendingPrefabRefresh)
+	{
+		m_pendingPrefabRefresh = false;
+		RefreshPrefabInstances();
 	}
 
 	return UpdateStatus::CONTINUE;
@@ -477,6 +485,7 @@ void ModuleScene::LoadScene(const std::string& path)
 	ClearScene();
 	activeScene->Deserialize(path);
 	EnsureMainCamera();
+	RefreshPrefabInstances();
 }
 
 void ModuleScene::LoadSceneAsync(const std::string& path)
@@ -492,8 +501,17 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 		{
 			activeScene->Deserialize(path);
 			EnsureMainCamera();
+			// RefreshPrefabInstances() must NOT run on the job thread — it calls
+			// DestroyGameObject → CMesh::OnDestroy → vkDeviceWaitIdle, which deadlocks
+			// when the main thread is rendering. Defer to PreUpdate() instead.
+			m_pendingPrefabRefresh = true;
 		}
 	);
+}
+
+GameObject* ModuleScene::InstantiatePrefab(const std::string& path, GameObject* parentGO)
+{
+	return PrefabManager::InstantiatePrefab(path, activeScene, parentGO);
 }
 
 void ModuleScene::ClearScene()
@@ -616,4 +634,26 @@ void ModuleScene::EnsureMainCamera()
     cam.nearPlane    = gameCamera->GetNearPlane();
     cam.farPlane     = gameCamera->GetFarPlane();
     cam.aspectRatio  = gameCamera->GetAspectRatio();
+}
+
+void ModuleScene::RefreshPrefabInstances()
+{
+    if (!activeScene) return;
+
+    // Phase 1: collect prefab roots from a snapshot.
+    // We must NOT call ReloadPrefabInstance while iterating — reload destroys
+    // children that are also in the snapshot, leaving dangling pointers.
+    NOUS_Vector<GameObject*> prefabRoots(MemoryTag::SCENE);
+    {
+        const auto snapshot = activeScene->GetGameObjectsSnapshot();
+        for (auto* go : snapshot)
+        {
+            if (go->HasComponent<CPrefab>())
+                prefabRoots.push_back(go);
+        }
+    }
+
+    // Phase 2: reload each root now that the snapshot is discarded.
+    for (auto* root : prefabRoots)
+        PrefabManager::ReloadPrefabInstance(root, activeScene);
 }

@@ -21,6 +21,8 @@
 #include <string>
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
+#include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
 InspectorWindow::InspectorWindow(const char* title, EditorContext* context, bool start_open)
         : IEditorWindow(title, context, nullptr, start_open) {
@@ -44,12 +46,29 @@ void InspectorWindow::Draw() {
             }
 
             // --- GameObject Header ---
-            ImGui::SeparatorText("GameObject Info");
+            CPrefab* cprefab = go->TryGetComponent<CPrefab>();
+            if (cprefab)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
+                ImGui::SeparatorText("Prefab Instance");
+                ImGui::PopStyleColor();
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.55f, 0.55f, 0.55f, 1.0f));
+                ImGui::TextUnformatted(cprefab->prefabSourcePath.c_str());
+                ImGui::PopStyleColor();
+                ImGui::Spacing();
+            }
+            else
+            {
+                ImGui::SeparatorText("GameObject Info");
+            }
+
             static char buffer[256];
             strncpy(buffer, go->GetName().c_str(), sizeof(buffer) - 1);
             buffer[sizeof(buffer) - 1] = '\0';
+            if (cprefab) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
             if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
                 go->SetName(buffer);
+            if (cprefab) ImGui::PopStyleColor();
             ImGui::SameLine();
             ImGui::TextDisabled("(ID: %u)", go->GetID());
 

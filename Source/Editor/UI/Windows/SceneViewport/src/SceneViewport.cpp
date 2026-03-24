@@ -178,6 +178,7 @@ void SceneViewport::Draw()
                                 }
 
                                 // Mesh assets → spawn a full submesh hierarchy.
+                                // Prefab assets → instantiate prefab into scene.
                                 // All other assets → just load the resource.
                                 const std::string ext = NOUS_FileManager::GetExtension(path);
                                 if (Resource::GetTypeFromExtension(ext) == ResourceType::MESH)
@@ -186,6 +187,10 @@ void SceneViewport::Draw()
                                     {
                                         External->scene->SpawnMeshAsHierarchy(path);
                                     }, "Spawn Mesh Hierarchy");
+                                }
+                                else if (ext == ".nprefab")
+                                {
+                                    External->scene->InstantiatePrefab(path, nullptr);
                                 }
                                 else
                                 {
