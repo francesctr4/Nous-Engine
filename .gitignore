@@ -12,6 +12,7 @@ build
 console.log
 imgui.ini
 Library
+Delivery
 vc140.pdb
 
 #Ignore Claude Metadata

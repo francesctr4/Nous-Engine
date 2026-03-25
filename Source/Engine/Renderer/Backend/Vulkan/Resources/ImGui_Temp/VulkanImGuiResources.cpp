@@ -5,7 +5,14 @@
 
 void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkContext)
 {
+	// Descriptor pool is always needed (material descriptors use it in all modes).
 	CreateImGuiDescriptorPool(vkContext);
+
+	if (vkContext->renderMode == RenderMode::GAME)
+	{
+		// GAME mode: no offscreen viewport images, samplers, depth, or pick resources.
+		return;
+	}
 
 	CreateViewportTextureSampler(vkContext, &vkContext->imGuiResources.m_ViewportTextureSampler);
 	CreateViewportTextureSampler(vkContext, &vkContext->imGuiResources.m_GameViewportTextureSampler);
@@ -17,41 +24,40 @@ void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkCont
 
 void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkContext)
 {
-	// Pick Resources
-	DestroyPickResources(vkContext);
-
-	// Game Viewport
-	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
-
-	for (int i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
+	if (vkContext->renderMode != RenderMode::GAME)
 	{
-		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportImages[i]);
+		// Pick Resources
+		DestroyPickResources(vkContext);
+
+		// Game Viewport
+		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
+
+		for (int i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
+		{
+			NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportImages[i]);
+		}
+
+		vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportTextureSampler, vkContext->allocator);
+
+		// Scene Viewport
+		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
+
+		for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
+		{
+			NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportImages[i]);
+		}
+
+		vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportTextureSampler, vkContext->allocator);
 	}
 
-	vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportTextureSampler, vkContext->allocator);
-
-	// Scene Viewport
-	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
-
-	for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
-	{
-		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportImages[i]);
-	}
-
-	vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportTextureSampler, vkContext->allocator);
-
-	// Editor
+	// Descriptor pool is always created.
 	vkDestroyDescriptorPool(vkContext->device.logicalDevice, vkContext->imGuiResources.descriptorPool, vkContext->allocator);
 }
 
 void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkContext)
 {
-	// Destroy all
-
-	//DestroyGameViewportDescriptorSets(vkContext);
-	//DestroySceneViewportDescriptorSets(vkContext);
-
-	// --------------------------
+	if (vkContext->renderMode == RenderMode::GAME)
+		return; // Nothing to recreate in GAME mode (no offscreen images).
 
 	DestroyPickResources(vkContext);
 
@@ -72,11 +78,6 @@ void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkCo
 	CreateViewportImages(vkContext);
 	CreateViewportDepthResources(vkContext);
 	CreatePickResources(vkContext);
-
-	// ------------------------
-
-	//CreateSceneViewportDescriptorSets(vkContext);
-	//CreateGameViewportDescriptorSets(vkContext);
 }
 
 // ----------------------------------------------------------------------------------- //

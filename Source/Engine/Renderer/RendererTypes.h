@@ -139,6 +139,15 @@ struct IBackendShader
 };
 
 // -----------------------------------------------------------------------------
+// Render mode
+// -----------------------------------------------------------------------------
+enum class RenderMode : uint8_t
+{
+    EDITOR,  // Default: 3 passes, off-screen viewports, ImGui overlay
+    GAME     // Standalone: 1 game pass renders directly to swapchain, no ImGui
+};
+
+// -----------------------------------------------------------------------------
 // Renderer backend type
 // -----------------------------------------------------------------------------
 enum class RendererBackendType
@@ -168,6 +177,7 @@ struct IRendererBackend
     // ─────────────────────────────── Lifecycle ───────────────────────────────
     [[nodiscard]] virtual bool Initialize() = 0;
     virtual void Shutdown() noexcept = 0;
+    virtual void SetRenderMode(RenderMode mode) noexcept = 0;
 
     /**
      * @brief Waits for the GPU to finish, then frees command buffers and framebuffers.

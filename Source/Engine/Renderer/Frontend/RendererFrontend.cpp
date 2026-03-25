@@ -31,6 +31,10 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 		return false;
 	}
 
+	// Apply render mode now that the backend exists (created inside Create()).
+	// This must happen before Initialize() which uses renderMode during setup.
+	mBackend->SetRenderMode(mRenderMode);
+
 	if (!mBackend->Initialize())
 	{
 		NOUS_ERROR_C(CURRENT_CHANNEL, "Renderer backend initialization failed. Aborting application...");
@@ -80,9 +84,15 @@ FrameResult RendererFrontend::EndFrame(float dt)
 
 FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 {
-	if (!packet || !packet->editorCamera || !packet->gameCamera)
+	if (!packet || !packet->gameCamera)
 	{
-		NOUS_WARN_C(CURRENT_CHANNEL, "Missing render packet or cameras; skipping frame.");
+		NOUS_WARN_C(CURRENT_CHANNEL, "Missing render packet or game camera; skipping frame.");
+		return FrameResult::SKIPPED;
+	}
+
+	if (mRenderMode == RenderMode::EDITOR && !packet->editorCamera)
+	{
+		NOUS_WARN_C(CURRENT_CHANNEL, "Missing editor camera in EDITOR mode; skipping frame.");
 		return FrameResult::SKIPPED;
 	}
 
@@ -105,73 +115,68 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 
 	bool success = true;
 
-	// --- SCENE PASS ---
-	RenderpassType sceneRenderpass = RenderpassType::SCENE;
-	success &= ExecuteRenderpass(sceneRenderpass, [&]()
+	// --- SCENE PASS (EDITOR mode only) ---
+	if (mRenderMode == RenderMode::EDITOR)
 	{
-		// Background gradient must come first — before geometry and the grid.
-		success &= mBackend->DrawBackground(sceneRenderpass,
-			packet->editorCamera->GetProjectionMatrix(),
-			packet->editorCamera->GetViewMatrix());
-
-        success &= mBackend->UpdateGlobalWorldState(
-				sceneRenderpass,
-				packet->editorCamera->GetProjectionMatrix(),
-				packet->editorCamera->GetViewMatrix(),
-				packet->editorCamera->GetPos(),
-				glm::vec4(1.0f), 0);
-
-		// Draw the editor reference grid at the world origin (XZ plane).
-		success &= mBackend->DrawGrid(
-				sceneRenderpass,
+		RenderpassType sceneRenderpass = RenderpassType::SCENE;
+		success &= ExecuteRenderpass(sceneRenderpass, [&]()
+		{
+			success &= mBackend->DrawBackground(sceneRenderpass,
 				packet->editorCamera->GetProjectionMatrix(),
 				packet->editorCamera->GetViewMatrix());
 
-		for (auto& geometry : packet->geometries)
-		{
-            success &= mBackend->DrawGeometry(sceneRenderpass, geometry);
-		}
+			success &= mBackend->UpdateGlobalWorldState(
+					sceneRenderpass,
+					packet->editorCamera->GetProjectionMatrix(),
+					packet->editorCamera->GetViewMatrix(),
+					packet->editorCamera->GetPos(),
+					glm::vec4(1.0f), 0);
 
-		// Stencil-based outline pass (scene viewport only).
-		if (!mOutlinedGeometries.empty())
-		{
-			success &= mBackend->DrawOutlinedGeometries(
-				sceneRenderpass,
-				packet->editorCamera->GetProjectionMatrix(),
-				packet->editorCamera->GetViewMatrix(),
-				mOutlinedGeometries,
-				mOutlineSettings);
-		}
+			success &= mBackend->DrawGrid(
+					sceneRenderpass,
+					packet->editorCamera->GetProjectionMatrix(),
+					packet->editorCamera->GetViewMatrix());
 
-		// Wireframe bounding boxes (AABB / OBB) for debugging — scene viewport only.
-		if (!mBoundingBoxes.empty())
-		{
-			success &= mBackend->DrawBoundingBoxes(
-				sceneRenderpass,
-				packet->editorCamera->GetProjectionMatrix(),
-				packet->editorCamera->GetViewMatrix(),
-				mBoundingBoxes);
-		}
+			for (auto& geometry : packet->geometries)
+			{
+				success &= mBackend->DrawGeometry(sceneRenderpass, geometry);
+			}
 
-		// Camera frustum wireframes — scene viewport only.
-		// Pass globalAlreadySet=true when DrawBoundingBoxes ran first (shared shader):
-		// prevents a double vkUpdateDescriptorSets on the already-bound descriptor set.
-		if (!mCameraFrustums.empty())
-		{
-			success &= mBackend->DrawCameraFrustums(
-				sceneRenderpass,
-				packet->editorCamera->GetProjectionMatrix(),
-				packet->editorCamera->GetViewMatrix(),
-				mCameraFrustums,
-				/*globalAlreadySet=*/ !mBoundingBoxes.empty());
-		}
-	});
+			if (!mOutlinedGeometries.empty())
+			{
+				success &= mBackend->DrawOutlinedGeometries(
+					sceneRenderpass,
+					packet->editorCamera->GetProjectionMatrix(),
+					packet->editorCamera->GetViewMatrix(),
+					mOutlinedGeometries,
+					mOutlineSettings);
+			}
+
+			if (!mBoundingBoxes.empty())
+			{
+				success &= mBackend->DrawBoundingBoxes(
+					sceneRenderpass,
+					packet->editorCamera->GetProjectionMatrix(),
+					packet->editorCamera->GetViewMatrix(),
+					mBoundingBoxes);
+			}
+
+			if (!mCameraFrustums.empty())
+			{
+				success &= mBackend->DrawCameraFrustums(
+					sceneRenderpass,
+					packet->editorCamera->GetProjectionMatrix(),
+					packet->editorCamera->GetViewMatrix(),
+					mCameraFrustums,
+					/*globalAlreadySet=*/ !mBoundingBoxes.empty());
+			}
+		});
+	}
 
 	// --- GAME PASS ---
 	RenderpassType gameRenderpass = RenderpassType::GAME;
 	success &= ExecuteRenderpass(gameRenderpass, [&]()
 	{
-		// Background gradient must come first — before geometry.
 		success &= mBackend->DrawBackground(gameRenderpass,
 			packet->gameCamera->GetProjectionMatrix(),
 			packet->gameCamera->GetViewMatrix());
@@ -189,12 +194,15 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 		}
 	});
 
-	// --- UI PASS ---
-	RenderpassType uiRenderpass = RenderpassType::UI;
-	success &= ExecuteRenderpass(uiRenderpass, [&]()
+	// --- UI PASS (EDITOR mode only) ---
+	if (mRenderMode == RenderMode::EDITOR)
 	{
-		DrawEditor();
-	});
+		RenderpassType uiRenderpass = RenderpassType::UI;
+		success &= ExecuteRenderpass(uiRenderpass, [&]()
+		{
+			DrawEditor();
+		});
+	}
 
 	// --- END FRAME ---
 	const FrameResult endResult = EndFrame(packet->deltaTime);
@@ -319,6 +327,17 @@ void RendererFrontend::SetCameraFrustums(const std::vector<CameraFrustumData>& f
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)
 {
     mEditorOverlay = overlay;
+}
+
+void RendererFrontend::SetRenderMode(RenderMode mode) noexcept
+{
+    // Stored locally; forwarded to VulkanContext inside Initialize() after backend Create().
+    mRenderMode = mode;
+}
+
+RenderMode RendererFrontend::GetRenderMode() const noexcept
+{
+    return mRenderMode;
 }
 
 RendererBackendType RendererFrontend::GetBackendType() const noexcept

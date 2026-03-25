@@ -257,10 +257,16 @@ struct VulkanContext
 
     VulkanSwapChain swapChain;
 
+    RenderMode renderMode = RenderMode::EDITOR;
+
     VulkanRenderpass sceneRenderpass;
     VulkanRenderpass gameRenderpass;
     VulkanRenderpass uiRenderpass;
     VulkanRenderpass pickRenderpass;
+
+    // GAME mode only: non-offscreen renderpass + framebuffers targeting swapchain directly.
+    VulkanRenderpass gameSwapchainRenderpass{};
+    std::array<VkFramebuffer, 3> gameSwapchainFramebuffers{};
 
     VulkanBuffer objectVertexBuffer;
     VulkanBuffer objectIndexBuffer;

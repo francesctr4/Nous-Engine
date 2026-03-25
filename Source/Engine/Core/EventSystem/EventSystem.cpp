@@ -74,7 +74,7 @@ void EventSystem::Broadcast(const Event& evt)
     }
     else
     {
-        NOUS_WARN("Broadcasted event type: %d (no listeners registered)", static_cast<int>(evt.type));
+        NOUS_TRACE("Broadcasted event type: %d (no listeners registered)", static_cast<int>(evt.type));
     }
 }
 

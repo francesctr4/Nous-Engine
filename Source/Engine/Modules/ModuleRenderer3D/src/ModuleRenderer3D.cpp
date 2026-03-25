@@ -45,6 +45,13 @@ ModuleRenderer3D::~ModuleRenderer3D()
 	NOUS_DELETE(mRendererFrontend, MemoryTag::RENDERER);
 }
 
+void ModuleRenderer3D::SetRenderMode(RenderMode mode) noexcept
+{
+	m_renderMode = mode;
+	// Stored in RendererFrontend; forwarded to VulkanContext inside Initialize().
+	mRendererFrontend->SetRenderMode(mode);
+}
+
 bool ModuleRenderer3D::Awake()
 {
 	mRendererFrontend->SetBackendType(RendererBackendType::VULKAN);
@@ -58,18 +65,18 @@ bool ModuleRenderer3D::Awake()
 
 	// ------------------------------ SHADERS ------------------------------ //
 
-	// Load BuiltIn shaders now that the Vulkan backend and ResourceManager are both ready.
-	// This guarantees the shaders exist before any Start() call or rendering begins.
+	// Always load shaders needed for game rendering.
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
-	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
-	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
-	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
 	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
-	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
 
-	// TEMP SHADERS (DEBUG)
-	//App->resourceManager->CreateResource("Assets/Shaders/temp_MockShader.glsl");
-	//App->resourceManager->CreateResource("Assets/Shaders/temp_ShaderWithAllStages.glsl");
+	// Editor-only shaders — skip in GAME mode.
+	if (m_renderMode == RenderMode::EDITOR)
+	{
+		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
+		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
+		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
+		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
+	}
 
 	return true;
 }
@@ -101,9 +108,12 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 	RenderPacket packet{};
 	packet.deltaTime = dt;
-	packet.editorCamera = App->camera->GetCamera();
+	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? App->camera->GetCamera() : nullptr;
 	packet.gameCamera  = App->scene->gameCamera;
 
+	// Editor-only: outline, bounding boxes, camera frustums (skipped in GAME mode).
+	if (m_renderMode == RenderMode::EDITOR)
+	{
 	// Populate the outline list from the currently selected GameObject.
 	{
 		std::vector<GeometryRenderData> outlinedGeometries;
@@ -249,6 +259,8 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 		mRendererFrontend->SetCameraFrustums(frustums);
 	}
+
+	} // end EDITOR-only block
 
 	if (BuildRenderPacket(&packet) && !App->isMinimized)
 	{

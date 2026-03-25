@@ -10,9 +10,9 @@
                 {
                     "type": "CTransform",
                     "position": [
-                        -153.29440307617188,
-                        0,
-                        -210.37252807617188
+                        -356.59796142578125,
+                        157.9481201171875,
+                        -846.6710205078125
                     ],
                     "orientation": [
                         0.76185643672943115,
@@ -33,11 +33,15 @@
                 },
                 {
                     "type": "CMesh",
-                    "assetPath": "Assets\\Meshes\\Lagiacrus_Head.fbx"
+                    "assetPath": "Assets\\Meshes\\Lagiacrus_Head.fbx",
+                    "libraryPath": "Library\\Meshes\\4162411114.nmesh",
+                    "resourceUID": 4162411114
                 },
                 {
                     "type": "CMaterial",
-                    "assetPath": "Assets\\Materials\\Lagiacrus_Head.nmat"
+                    "assetPath": "Assets\\Materials\\Lagiacrus_Head.nmat",
+                    "libraryPath": "Library\\Materials\\1732592393.nmat",
+                    "resourceUID": 1732592393
                 }
             ]
         },
@@ -49,34 +53,38 @@
                 {
                     "type": "CTransform",
                     "position": [
-                        -212,
+                        -282.29623413085938,
                         0,
                         0
                     ],
                     "orientation": [
-                        1,
+                        0.79473936557769775,
                         0,
-                        0,
+                        -0.60695087909698486,
                         0
                     ],
                     "rotation": [
                         0,
-                        -0,
+                        -74.738716125488281,
                         0
                     ],
                     "scale": [
+                        0.99999922513961792,
                         1,
-                        1,
-                        1
+                        0.99999922513961792
                     ]
                 },
                 {
                     "type": "CMesh",
-                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx"
+                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx",
+                    "libraryPath": "Library\\Meshes\\781487361.nmesh",
+                    "resourceUID": 781487361
                 },
                 {
                     "type": "CMaterial",
-                    "assetPath": "Assets\\Materials\\cypher_material.nmat"
+                    "assetPath": "Assets\\Materials\\cypher_material.nmat",
+                    "libraryPath": "Library\\Materials\\3904711568.nmat",
+                    "resourceUID": 3904711568
                 }
             ]
         },
@@ -111,11 +119,15 @@
                 },
                 {
                     "type": "CMesh",
-                    "assetPath": "Assets\\Meshes\\Queen_Xenomorph.fbx"
+                    "assetPath": "Assets\\Meshes\\Queen_Xenomorph.fbx",
+                    "libraryPath": "Library\\Meshes\\2926293762.nmesh",
+                    "resourceUID": 2926293762
                 },
                 {
                     "type": "CMaterial",
-                    "assetPath": "Assets\\Materials\\queen_xenomorph.nmat"
+                    "assetPath": "Assets\\Materials\\queen_xenomorph.nmat",
+                    "libraryPath": "Library\\Materials\\1438301404.nmat",
+                    "resourceUID": 1438301404
                 }
             ]
         },
@@ -127,34 +139,38 @@
                 {
                     "type": "CTransform",
                     "position": [
-                        0,
+                        190.737548828125,
                         0,
                         0
                     ],
                     "orientation": [
-                        0.51354122161865234,
+                        0.56610256433486938,
                         0,
-                        -0.85806488990783691,
+                        -0.82433480024337769,
                         0
                     ],
                     "rotation": [
                         180,
-                        -61.79998779296875,
+                        -68.957778930664062,
                         180
                     ],
                     "scale": [
+                        0.99998337030410767,
                         1,
-                        1,
-                        1
+                        0.99998337030410767
                     ]
                 },
                 {
                     "type": "CMesh",
-                    "assetPath": "Assets\\Meshes\\Wolf.obj"
+                    "assetPath": "Assets\\Meshes\\Wolf.obj",
+                    "libraryPath": "Library\\Meshes\\3984858807.nmesh",
+                    "resourceUID": 3984858807
                 },
                 {
                     "type": "CMaterial",
-                    "assetPath": "Assets\\Materials\\wolf_material.nmat"
+                    "assetPath": "Assets\\Materials\\wolf_material.nmat",
+                    "libraryPath": "Library\\Materials\\1782489807.nmat",
+                    "resourceUID": 1782489807
                 }
             ]
         },
@@ -219,20 +235,20 @@
                 {
                     "type": "CTransform",
                     "position": [
-                        -4.6100001335144043,
-                        100,
-                        718.32000732421875
+                        0,
+                        120.5,
+                        410.01998901367188
                     ],
                     "orientation": [
-                        1,
+                        0.99737799167633057,
+                        0.072367846965789795,
                         0,
-                        -0,
-                        -0
+                        0
                     ],
                     "rotation": [
+                        8.3000001907348633,
                         0,
-                        -0,
-                        -0
+                        0
                     ],
                     "scale": [
                         1,
@@ -242,93 +258,11 @@
                 },
                 {
                     "type": "CCamera",
-                    "fov": 60.000003814697266,
+                    "fov": 60,
                     "nearPlane": 0.10000000149011612,
                     "farPlane": 10000,
                     "aspectRatio": 1.8879055976867676,
                     "isMainCamera": true
-                }
-            ]
-        },
-        {
-            "uid": 2925014570,
-            "name": "Queen Xenomorph",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "orientation": [
-                        1,
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        -0,
-                        0
-                    ],
-                    "scale": [
-                        0.5,
-                        0.5,
-                        0.5
-                    ]
-                },
-                {
-                    "type": "CMesh",
-                    "assetPath": "Assets\\Meshes\\Queen_Xenomorph.fbx"
-                },
-                {
-                    "type": "CPrefab",
-                    "prefabSourcePath": "Assets\\Prefabs\\TestPrefab.nprefab"
-                },
-                {
-                    "type": "CMaterial",
-                    "assetPath": "Assets\\Materials\\queen_xenomorph.nmat"
-                }
-            ]
-        },
-        {
-            "uid": 205762121,
-            "name": "Wolf",
-            "parent": 2925014570,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "orientation": [
-                        0.51354122161865234,
-                        0,
-                        -0.85806488990783691,
-                        0
-                    ],
-                    "rotation": [
-                        180,
-                        -61.79998779296875,
-                        180
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                },
-                {
-                    "type": "CMesh",
-                    "assetPath": "Assets\\Meshes\\Wolf.obj"
-                },
-                {
-                    "type": "CMaterial",
-                    "assetPath": "Assets\\Materials\\wolf_material.nmat"
                 }
             ]
         }

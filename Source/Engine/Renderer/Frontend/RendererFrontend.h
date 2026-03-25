@@ -120,6 +120,8 @@ public:
 	[[nodiscard]] NOUS_ENGINE_API enum RendererBackendType GetBackendType() const noexcept;
 
 	NOUS_ENGINE_API void SetEditorOverlay(IEditorOverlay* overlay);
+	NOUS_ENGINE_API void SetRenderMode(RenderMode mode) noexcept;
+	[[nodiscard]] NOUS_ENGINE_API RenderMode GetRenderMode() const noexcept;
 
 private:
 	// ---------------------------------------------------------------------
@@ -136,6 +138,7 @@ private:
 
 	RendererBackend* mBackend;
 	RendererBackendType mBackendType;
+	RenderMode mRenderMode = RenderMode::EDITOR;
 
 	IEditorOverlay* mEditorOverlay;
 

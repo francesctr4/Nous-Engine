@@ -26,6 +26,7 @@ Application::Application()
 	External = this;
 
     isMinimized = false;
+    isGameMode  = false;
 
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;

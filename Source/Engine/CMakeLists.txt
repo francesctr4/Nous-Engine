@@ -37,6 +37,11 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # Link engine modules + dependencies
+target_link_libraries(${PROJECT_NAME} PUBLIC
+        # glm appears in public headers (RendererTypes.h, etc.) so must be PUBLIC
+        glm::glm
+)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
         # --- Third-Party ---
         SDL3::SDL3
@@ -44,7 +49,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         assimp::assimp
         parson::parson
         Tracy::TracyClient
-        glm::glm
 )
 
 # Force all symbols from static engine modules into the shared library.

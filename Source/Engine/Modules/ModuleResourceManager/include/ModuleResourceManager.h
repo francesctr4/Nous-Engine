@@ -48,7 +48,19 @@ public:
 
 	NOUS_ENGINE_API bool ResourceExists(const UID& uid);
 	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath);
+
+	// GAME mode variant: load directly from a known library path without reading a .meta file.
+	NOUS_ENGINE_API Resource* CreateResourceFromLibrary(UID uid, ResourceType type,
+	                                                    const std::string& name,
+	                                                    const std::string& assetsPath,
+	                                                    const std::string& libraryPath);
+
+	// GAME mode variant: load a submesh by library path + index, no .meta required.
+	NOUS_ENGINE_API ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(
+	    const std::string& libraryPath, int32_t submeshIndex);
+
 	NOUS_ENGINE_API bool UnloadResource(const UID& UID);
+
 
 	// Returns a thread-safe snapshot copy of the resources map.
 	// Safe to call from any thread (e.g. editor UI) concurrently with AddResource().
@@ -77,6 +89,7 @@ private:
 	bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
 	bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
 
+
 	Resource* InstantiateResource(const ResourceType& type);
 	void DeleteResource(Resource*& resource);
 
@@ -102,6 +115,7 @@ private:
 
 	ResourceTexture* mDefaultTexture = nullptr;
 	ResourceMaterial* mDefaultMaterial = nullptr;
+
 };
 
 #endif // MODULERESOURCEMANAGER_H

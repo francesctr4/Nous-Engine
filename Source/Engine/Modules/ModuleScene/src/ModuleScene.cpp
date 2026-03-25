@@ -1,4 +1,5 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
@@ -81,7 +82,11 @@ bool ModuleScene::Awake()
 
 bool ModuleScene::Start()
 {
-    LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
+    // In GAME mode the GameApp controls which scene to load via an explicit
+    // LoadSceneAsync() call after Start() returns.  Skip the auto-load here
+    // to avoid a double-load race condition.
+    if (!External->IsGameMode())
+        LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
 
 	return true;
 }
@@ -474,6 +479,12 @@ void ModuleScene::PressStep()
 void ModuleScene::SaveScene(const std::string& path)
 {
     activeScene->Serialize(path);
+
+    // Mirror the saved scene to Library/Scenes/ so GameApp can load it
+    // from Library without needing Assets/.
+    const std::string filename = NOUS_FileManager::GetFilename(path);
+    const std::string libraryPath = "Library/Scenes/" + filename;
+    NOUS_FileManager::CopyFile(path, libraryPath);
 }
 
 void ModuleScene::LoadScene(const std::string& path)

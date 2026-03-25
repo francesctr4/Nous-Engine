@@ -24,6 +24,7 @@ public:
 
 	bool Initialize() override;
 	void Shutdown() noexcept override;
+	void SetRenderMode(RenderMode mode) noexcept override;
 	void ReleaseFrameResources() noexcept override;
 
 	void Resized(uint16 width, uint16 height) noexcept override;

@@ -27,6 +27,7 @@ public:
 
 	[[nodiscard]] bool Initialize();
 	void Shutdown();
+	void SetRenderMode(RenderMode mode) noexcept;
 	void ReleaseFrameResources() noexcept;
 
 	void Resized(uint16_t width, uint16_t height);

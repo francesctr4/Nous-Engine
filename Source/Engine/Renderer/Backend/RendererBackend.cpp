@@ -74,6 +74,12 @@ void RendererBackend::Shutdown()
     }
 }
 
+void RendererBackend::SetRenderMode(RenderMode mode) noexcept
+{
+    if (mBackendInterface)
+        mBackendInterface->SetRenderMode(mode);
+}
+
 void RendererBackend::ReleaseFrameResources() noexcept
 {
     if (mBackendInterface)

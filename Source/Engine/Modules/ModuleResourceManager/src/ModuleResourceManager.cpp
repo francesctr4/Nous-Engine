@@ -10,6 +10,7 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include <filesystem>
+#include <algorithm>
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
@@ -39,9 +40,30 @@ bool ModuleResourceManager::Awake()
 	// Always ensure directories exist — idempotent, safe to call every startup.
 	EnsureLibraryDirectories();
 
-	// Always scan Assets/ on startup. ImportFile is a cheap no-op for assets
+	if (External->IsGameMode())
+	{
+		// GAME mode: Library binaries are pre-built. No asset scanning/importing needed.
+		return true;
+	}
+
+	// EDITOR mode: scan Assets/ on startup. ImportFile is a cheap no-op for assets
 	// whose library binary is already up-to-date (Case 3 timestamp check).
 	ImportDirectory("Assets");
+
+	// Mirror all scene files from Assets/Scenes/ → Library/Scenes/ so GameApp
+	// can always load them from Library/ without needing Assets/.
+	if (NOUS_FileManager::Exists("Assets/Scenes"))
+	{
+		for (const auto& entry : std::filesystem::directory_iterator("Assets/Scenes"))
+		{
+			if (entry.path().extension() == ".nous")
+			{
+				const std::string src  = entry.path().string();
+				const std::string dest = "Library/Scenes/" + entry.path().filename().string();
+				NOUS_FileManager::CopyFile(src, dest);
+			}
+		}
+	}
 
 	return true;
 }
@@ -52,7 +74,8 @@ bool ModuleResourceManager::EnsureLibraryDirectories()
 		   NOUS_FileManager::CreateDirectory("Library/Shaders") &&
 		   NOUS_FileManager::CreateDirectory("Library/Meshes") &&
 		   NOUS_FileManager::CreateDirectory("Library/Materials") &&
-		   NOUS_FileManager::CreateDirectory("Library/Textures");
+		   NOUS_FileManager::CreateDirectory("Library/Textures") &&
+		   NOUS_FileManager::CreateDirectory("Library/Scenes");
 }
 
 bool ModuleResourceManager::ImportDirectory(const std::string& directory)
@@ -524,6 +547,7 @@ bool ModuleResourceManager::ReadMetaFile(const std::string& metaFilePath, MetaFi
 	return true;
 }
 
+
 Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
 {
 	Resource* resource = nullptr;
@@ -708,6 +732,136 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 
 		return existingResource;
 	}
+}
+
+Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType type,
+                                                            const std::string& name,
+                                                            const std::string& assetsPath,
+                                                            const std::string& libraryPath)
+{
+	bool needsLoad = false;
+	{
+		std::lock_guard<std::mutex> lock(resourcesMutex);
+		if (resources.find(uid) == resources.end())
+		{
+			resources[uid] = nullptr; // claim slot
+			needsLoad = true;
+		}
+	}
+
+	if (needsLoad)
+	{
+		Resource* resource = InstantiateResource(type);
+		if (!resource)
+		{
+			std::lock_guard<std::mutex> lock(resourcesMutex);
+			resources.erase(uid);
+			return nullptr;
+		}
+
+		resource->SetName(name);
+		resource->SetUID(uid);
+		resource->SetType(type);
+		resource->SetAssetsPath(assetsPath);
+		resource->SetLibraryPath(libraryPath);
+
+		if (!ImporterManager::Load(type, libraryPath, resource))
+		{
+			NOUS_ERROR("CreateResourceFromLibrary: failed to load '%s' from '%s'", name.c_str(), libraryPath.c_str());
+			std::lock_guard<std::mutex> lock(resourcesMutex);
+			resources.erase(uid);
+			return nullptr;
+		}
+
+		{
+			std::lock_guard<std::mutex> lock(resourcesMutex);
+			resources[uid] = resource;
+		}
+
+		resource->IncreaseReferenceCount();
+		resource->Validate();
+		return resource;
+	}
+	else
+	{
+		Resource* existing = nullptr;
+		while (true)
+		{
+			{
+				std::lock_guard<std::mutex> lock(resourcesMutex);
+				existing = resources.count(uid) ? resources.at(uid) : nullptr;
+			}
+			if (existing) break;
+			NOUS_Multithreading::NOUS_Thread::SleepMS(1);
+		}
+		existing->IncreaseReferenceCount();
+		return existing;
+	}
+}
+
+ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
+    const std::string& libraryPath, int32_t submeshIndex)
+{
+	// Use hash(libraryPath) as a stable synthetic base UID for dedup.
+	const UID baseUID = static_cast<UID>(std::hash<std::string>{}(libraryPath) & 0xFFFFFFFF);
+	const auto key = std::make_pair(baseUID, submeshIndex);
+
+	{
+		std::lock_guard<std::mutex> lock(resourcesMutex);
+		auto mapIt = m_submeshUIDMap.find(key);
+		if (mapIt != m_submeshUIDMap.end())
+		{
+			auto resIt = resources.find(mapIt->second);
+			if (resIt != resources.end() && resIt->second)
+			{
+				resIt->second->IncreaseReferenceCount();
+				return down_cast<ResourceMesh*>(resIt->second);
+			}
+			m_submeshUIDMap.erase(mapIt);
+		}
+	}
+
+	const auto hierarchy = ImporterMesh::LoadHierarchy(libraryPath);
+	if (submeshIndex < 0 || submeshIndex >= static_cast<int32_t>(hierarchy.size()))
+	{
+		NOUS_ERROR("RequestOrCreateSubMeshResourceFromLibrary: index %d out of range for '%s'",
+		    submeshIndex, libraryPath.c_str());
+		return nullptr;
+	}
+
+	const SubMeshData& sub = hierarchy[static_cast<size_t>(submeshIndex)];
+	ResourceMesh* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
+	mesh->SetName(sub.name);
+	mesh->SetType(ResourceType::MESH);
+	mesh->SetLibraryPath(libraryPath);
+
+	mesh->vertices = sub.vertices;
+	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
+
+	if (!App->renderer->GetRendererFrontend()->CreateGeometry(
+	    mesh->vertices.size(), mesh->vertices.data(),
+	    mesh->indices.size(), mesh->indices.data(), mesh))
+	{
+		NOUS_ERROR("RequestOrCreateSubMeshResourceFromLibrary: GPU upload failed for submesh %d of '%s'",
+		    submeshIndex, libraryPath.c_str());
+		NOUS_DELETE(mesh, MemoryTag::RESOURCE_MESH);
+		return nullptr;
+	}
+
+	UID uid;
+	{
+		std::lock_guard<std::mutex> lock(resourcesMutex);
+		do { uid = static_cast<UID>(Random::Generate()); }
+		while (uid == 0 || resources.count(uid));
+
+		resources[uid] = mesh;
+		m_submeshUIDMap[key] = uid;
+	}
+
+	mesh->SetUID(uid);
+	mesh->IncreaseReferenceCount();
+	mesh->Validate();
+	return mesh;
 }
 
 bool ModuleResourceManager::UnloadResource(const UID& UID)

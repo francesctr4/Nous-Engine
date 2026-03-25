@@ -18,6 +18,7 @@
 #include "Engine/Modules/Module.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/EngineExport.h"
+#include "Engine/Renderer/RendererTypes.h"
 
 #include <glm/glm.hpp>
 #include <unordered_map>
@@ -63,6 +64,8 @@ public:
 	// Toggle frustum culling against the game camera. Default: disabled.
 	bool frustumCullingEnabled = false;
 
+	NOUS_ENGINE_API void SetRenderMode(RenderMode mode) noexcept;
+
 private:
 	// ---------------------------------------------------------------------
 	// Internal Methods
@@ -74,6 +77,7 @@ private:
 	// Members
 	// ---------------------------------------------------------------------
 	RendererFrontend* mRendererFrontend;
+	RenderMode m_renderMode = RenderMode::EDITOR;
 
 	// World-space AABBs computed each frame in the bounding-box loop.
 	// Keyed by GameObject ID; consumed by BuildRenderPacket for frustum culling.
