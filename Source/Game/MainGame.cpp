@@ -34,7 +34,7 @@ static GameConfig LoadGameConfig(const char* argv0)
     GameConfig cfg;
 
     const std::string configPath =
-        (std::filesystem::path(argv0).parent_path() / "game_config.json").string();
+        (std::filesystem::path(argv0).parent_path() / "Library" / "Settings" / "game_config.json").string();
 
     JSON_Value* root = json_parse_file(configPath.c_str());
     if (!root)

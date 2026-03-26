@@ -59,7 +59,7 @@ ModuleScene::ModuleScene(Application* app)
 	constexpr const char* kScriptsLib = "Scripts.so";
 #endif
 	const std::string scriptsDllPath =
-        (std::filesystem::path(SDL_GetBasePath()) / "Scripts" / kScriptsLib).string();
+        (std::filesystem::path(SDL_GetBasePath()) / "Library" / "Scripts" / kScriptsLib).string();
 	if (!scriptManager->LoadScriptLibrary(scriptsDllPath))
 		NOUS_ERROR("Failed to load script library on startup");
 
@@ -250,12 +250,7 @@ UpdateStatus ModuleScene::Update(float dt)
 	if (App->input->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
 	{
 		NOUS_INFO("Initiating script hot-reload...");
-
-		App->jobSystem->SubmitJob([this]
-		{
-			RecompileScripts();
-
-		}, "Scripts Hot-Reload");
+		App->jobSystem->SubmitJob([this] { RecompileScripts(); }, "Scripts Hot-Reload");
 	}
 
 	return UpdateStatus::CONTINUE;
@@ -338,35 +333,32 @@ void ModuleScene::UnregisterScriptComponent(CScript* component)
 // Hot-reload
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Hot-reload
+// ---------------------------------------------------------------------------
+
 void ModuleScene::RecompileScripts()
 {
-	// Phase 1: destroy all DLL-allocated instances but keep the component names.
-	// Lock is released afterward so the main thread keeps rendering harmlessly
-	// (CScript::OnUpdate iterates an empty m_instances — safe no-op).
+	const std::string dllPath =
+		(std::filesystem::path(SDL_GetBasePath()) / "Library" / "Scripts" / "Scripts.dll").string();
+
 	{
 		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
 		for (auto* cs : m_scriptComponents)
 			if (cs) cs->ClearInstances();
 	}
 
-	// Phase 2: rebuild DLL (lock not held)
-	const std::string dllPath =
-        (std::filesystem::path(SDL_GetBasePath()) / "Scripts" / "Scripts.dll").string();
-
-	if (!scriptManager->ReloadScriptLibrary(dllPath))
-	{
-		NOUS_ERROR("Script hot-reload failed");
-		return;
-	}
-
-	// Phase 3: recreate instances from the new DLL
+	if (scriptManager->ReloadScriptLibrary(dllPath))
 	{
 		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
 		for (auto* cs : m_scriptComponents)
 			if (cs) cs->RecreateInstances();
+		NOUS_INFO("Script hot-reload completed successfully");
 	}
-
-	NOUS_INFO("Script hot-reload completed successfully");
+	else
+	{
+		NOUS_ERROR("Script hot-reload failed");
+	}
 }
 
 // ---------------------------------------------------------------------------

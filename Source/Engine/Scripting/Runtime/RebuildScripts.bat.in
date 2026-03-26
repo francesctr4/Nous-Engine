@@ -44,13 +44,22 @@ if errorlevel 1 (
 REM -----------------------------
 REM 2) Resolve bin dirs
 REM -----------------------------
+REM Normalize all paths up front using %%~fI to expand any ".." segments.
+REM This is required so that "if not exist" checks work correctly.
 set SCRIPT_DIR=%~dp0
-set BIN_DIR=%SCRIPT_DIR%..\
+for %%I in ("%SCRIPT_DIR%.") do set SCRIPTS_OUTPUT_DIR=%%~fI
+for %%I in ("%SCRIPT_DIR%..\..") do set EXE_DIR=%%~fI
 
-set SCRIPTS_OUTPUT_DIR=%BIN_DIR%Scripts
-
-REM Source Assets/Scripts path baked in at CMake configure time
-set SCRIPTS_ASSETS_BIN_DIR=@CMAKE_SOURCE_DIR@\Assets\Scripts
+REM Detect dev vs shipped build: dev exe lives under CMAKE_BINARY_DIR, shipped does not.
+REM Dev:     compile from the source tree (live edits, never stale).
+REM Shipped: compile from Assets\ next to the exe — delivery is self-contained, no fallback.
+set EXE_DIR_FWD=%EXE_DIR:\=/%
+echo %EXE_DIR_FWD% | findstr /I /C:"@CMAKE_BINARY_DIR@" >nul 2>&1
+if not errorlevel 1 (
+    set SCRIPTS_ASSETS_BIN_DIR=@CMAKE_SOURCE_DIR@\Assets\Scripts
+) else (
+    set SCRIPTS_ASSETS_BIN_DIR=%EXE_DIR%\Assets\Scripts
+)
 
 if not exist "%SCRIPTS_OUTPUT_DIR%" mkdir "%SCRIPTS_OUTPUT_DIR%" >nul 2>&1
 
@@ -118,7 +127,7 @@ REM -----------------------------
 REM 4) Diagnostics
 REM -----------------------------
 echo ============================================================
-echo [INFO] BIN_DIR              = %BIN_DIR%
+echo [INFO] EXE_DIR              = %EXE_DIR%
 echo [INFO] SCRIPTS_OUTPUT_DIR   = %SCRIPTS_OUTPUT_DIR%
 echo [INFO] SCRIPTS_ASSETS_BIN_DIR= %SCRIPTS_ASSETS_BIN_DIR%
 echo [INFO] SDK_INCLUDE          = %SDK_INCLUDE%

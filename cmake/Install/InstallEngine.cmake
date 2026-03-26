@@ -38,8 +38,21 @@ install(TARGETS Nous-Engine Nous-Editor
 
 # Scripts.dll
 install(TARGETS Scripts
-        RUNTIME DESTINATION Scripts
+        RUNTIME DESTINATION Library/Scripts
         COMPONENT InstallEngine
+)
+
+# Script build tools — RebuildScripts.bat/sh, ScriptTemplate.inl, SDK/ headers+src.
+# Excludes build artifacts (obj/, .exp, .lib, .rsp) that are only needed during compilation.
+install(DIRECTORY "${CMAKE_BINARY_DIR}/bin/Library/Scripts/"
+        DESTINATION Library/Scripts
+        COMPONENT InstallEngine
+        PATTERN "*.dll" EXCLUDE
+        PATTERN "*.pdb" EXCLUDE
+        PATTERN "*.exp" EXCLUDE
+        PATTERN "*.lib" EXCLUDE
+        PATTERN "*.rsp" EXCLUDE
+        PATTERN "obj"   EXCLUDE
 )
 
 # Runtime DLLs — scan PE import tables recursively

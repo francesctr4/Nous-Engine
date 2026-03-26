@@ -20,22 +20,32 @@ set_target_properties(GameApp PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+# Hide the console window in non-Debug builds (Release, Profiling, shipped).
+# Debug keeps /SUBSYSTEM:CONSOLE so the output is visible when running from the IDE.
+if(WIN32)
+    target_link_options(GameApp PRIVATE
+        $<$<NOT:$<CONFIG:Debug>>:/SUBSYSTEM:WINDOWS>
+        $<$<NOT:$<CONFIG:Debug>>:/ENTRY:mainCRTStartup>
+    )
+endif()
+
 target_include_directories(GameApp PRIVATE
         ${CMAKE_SOURCE_DIR}/Source
 )
 
-# Track game_config.json as an explicit dependency so it is copied to bin/ whenever it changes,
-# even without a C++ recompile.  GameApp depends on the GameConfig target, ensuring the copy
-# always runs before the executable is launched.
+# Track game_config.json as an explicit dependency so it is copied to bin/Library/Settings/
+# whenever it changes, even without a C++ recompile.  GameApp depends on the GameConfig target,
+# ensuring the copy always runs before the executable is launched.
 add_custom_command(
-        OUTPUT  "${CMAKE_BINARY_DIR}/bin/game_config.json"
+        OUTPUT  "${CMAKE_BINARY_DIR}/bin/Library/Settings/game_config.json"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_BINARY_DIR}/bin/Library/Settings"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
                 "${CMAKE_CURRENT_SOURCE_DIR}/game_config.json"
-                "${CMAKE_BINARY_DIR}/bin/game_config.json"
+                "${CMAKE_BINARY_DIR}/bin/Library/Settings/game_config.json"
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/game_config.json"
-        COMMENT "Copying game_config.json to bin/"
+        COMMENT "Copying game_config.json to bin/Library/Settings/"
 )
-add_custom_target(GameConfig DEPENDS "${CMAKE_BINARY_DIR}/bin/game_config.json")
+add_custom_target(GameConfig DEPENDS "${CMAKE_BINARY_DIR}/bin/Library/Settings/game_config.json")
 add_dependencies(GameApp GameConfig)
 
 include("${CMAKE_SOURCE_DIR}/cmake/Install/InstallGame.cmake")

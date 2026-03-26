@@ -19,7 +19,6 @@ function(copy_assets)
             Materials
             Meshes
             Scenes
-            Scripts
             Settings
             Shaders
             Textures

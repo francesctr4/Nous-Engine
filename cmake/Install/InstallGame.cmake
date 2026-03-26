@@ -36,9 +36,9 @@ install(TARGETS Nous-Engine
         COMPONENT InstallGame
 )
 
-# Scripts.dll — loaded at runtime from the Scripts/ subdirectory
+# Scripts.dll — loaded at runtime from the Library/Scripts/ subdirectory
 install(TARGETS Scripts
-        RUNTIME DESTINATION Scripts
+        RUNTIME DESTINATION Library/Scripts
         COMPONENT InstallGame
 )
 
@@ -63,7 +63,7 @@ install(CODE "
 
 # Game configuration — start scene, target FPS, etc.
 install(FILES "${CMAKE_SOURCE_DIR}/Source/Game/game_config.json"
-        DESTINATION .
+        DESTINATION Library/Settings
         COMPONENT InstallGame
 )
 

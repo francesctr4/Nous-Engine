@@ -384,21 +384,21 @@ void ModuleRenderer3D::WriteShaderManifest(const Resource* matShader, const Reso
 	addEntry("MaterialShader",   matShader);
 	addEntry("BackgroundShader", bgShader);
 
-	if (json_serialize_to_file_pretty(root, "Library/shader_manifest.json") != JSONSuccess)
-		NOUS_WARN_C(CURRENT_CHANNEL, "Failed to write Library/shader_manifest.json.");
+	if (json_serialize_to_file_pretty(root, "Library/Shaders/shader_manifest.json") != JSONSuccess)
+		NOUS_WARN_C(CURRENT_CHANNEL, "Failed to write Library/Shaders/shader_manifest.json.");
 	else
-		NOUS_INFO_C(CURRENT_CHANNEL, "Shader manifest written to Library/shader_manifest.json.");
+		NOUS_INFO_C(CURRENT_CHANNEL, "Shader manifest written to Library/Shaders/shader_manifest.json.");
 
 	json_value_free(root);
 }
 
 void ModuleRenderer3D::LoadShadersFromManifest()
 {
-	JSON_Value* root = json_parse_file("Library/shader_manifest.json");
+	JSON_Value* root = json_parse_file("Library/Shaders/shader_manifest.json");
 	if (!root)
 	{
 		NOUS_FATAL_C(CURRENT_CHANNEL,
-			"Library/shader_manifest.json not found. "
+			"Library/Shaders/shader_manifest.json not found. "
 			"Run the editor once to generate it before packaging the game.");
 		return;
 	}

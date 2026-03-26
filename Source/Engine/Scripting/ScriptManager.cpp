@@ -254,12 +254,10 @@ void ScriptManager::UnloadScriptLibrary() {
 bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
 {
     NOUS_INFO("Reloading script library...");
-
-    // Unload current library first
     UnloadScriptLibrary();
 
 #ifdef _WIN32
-    const std::wstring batPath = (GetExeDir() / "Scripts" / "RebuildScripts.bat").wstring();
+    const std::wstring batPath = (GetExeDir() / "Library" / "Scripts" / "RebuildScripts.bat").wstring();
     std::wstring cmd;
 #ifdef _DEBUG
     cmd = batPath + L" Debug";
@@ -270,9 +268,6 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     DWORD exitCode = 0;
     bool ran = RunProcessCaptureLive(cmd, exitCode, [](const std::string& line)
     {
-        // Route to your engine console:
-        // Use INFO for normal lines, ERROR if it looks like an error.
-        // (Simple heuristic; feel free to tighten.)
         if (line.find("error") != std::string::npos || line.find("fatal") != std::string::npos)
             NOUS_ERROR("[ScriptManager::ReloadScriptLibrary] %s", line.c_str());
         else
@@ -293,7 +288,7 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
 
     NOUS_INFO("Scripts recompiled successfully!");
 #else
-    const std::string shPath = (GetExeDir() / "Scripts" / "RebuildScripts.sh").string();
+    const std::string shPath = (GetExeDir() / "Library" / "Scripts" / "RebuildScripts.sh").string();
 #ifdef _DEBUG
     const std::string cmd = "bash \"" + shPath + "\" Debug 2>&1";
 #else
@@ -330,7 +325,6 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     NOUS_INFO("Scripts recompiled successfully!");
 #endif
 
-    // Wait for file system and ensure DLL can be loaded
     if (!WaitForDLLUnload(dllPath)) {
         NOUS_ERROR("DLL is still locked, cannot reload");
         return false;
@@ -426,7 +420,7 @@ void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
 
 bool ScriptManager::GenerateScript(const std::string& className)
 {
-    const std::string templatePath = (GetExeDir() / "Scripts" / "ScriptTemplate.inl").string();
+    const std::string templatePath = (GetExeDir() / "Library" / "Scripts" / "ScriptTemplate.inl").string();
     const std::string& outputPath = "Assets/Scripts/" + className + ".cpp";
 
     // Read the template file
