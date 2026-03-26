@@ -9,6 +9,7 @@
 #include <mutex>
 #include <atomic>
 #include "Engine/Core/EventSystem/IEventListener.h"
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
 class Scene;
@@ -17,6 +18,10 @@ class Camera;
 class CScript;
 class ScriptManager;
 
+// Dependency Injection
+class ModuleInput;
+class ModuleResourceManager;
+
 enum class SimulationState { STOPPED, PLAYING, PAUSED };
 
 class ModuleScene : public Module, public IEventListener
@@ -24,7 +29,8 @@ class ModuleScene : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleScene(Application* app);
+	ModuleScene(Application* app,
+		ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager);
 
 	// Destructor
 	virtual ~ModuleScene();
@@ -83,6 +89,10 @@ public:
 	ScriptManager* scriptManager = nullptr;
 
 private:
+
+	// Dependency Injection
+	ModuleInput* mModuleInput;
+	ModuleResourceManager* mModuleResourceManager;
 
 	SceneRenderData m_renderData;
 

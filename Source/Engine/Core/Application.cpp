@@ -35,12 +35,22 @@ Application::Application()
     msTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
     updateTitleTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
 
+    // TODO ModuleWindow: Remove dependency on ModuleRenderer
     listModules.push_back(window          = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION, this));
+
     listModules.push_back(input           = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION, this));
-    listModules.push_back(camera          = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION, this));
+
+    listModules.push_back(camera          = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION, this,
+        input));
+
+    // TODO ModuleResourceManager: Remove dependency on ModuleRenderer
     listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION, this));
-    listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this));
-    listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this));
+
+    listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this,
+        input, resourceManager));
+
+    listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this,
+        camera, resourceManager, scene));
 
     // ------------- MULTITHREADING ------------- //
     jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);

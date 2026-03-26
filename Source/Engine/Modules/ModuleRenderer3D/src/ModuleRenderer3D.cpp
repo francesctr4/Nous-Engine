@@ -37,7 +37,11 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_RENDERER3D;
 
-ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
+ModuleRenderer3D::ModuleRenderer3D(Application* app, ModuleCamera3D* moduleCamera,
+	ModuleResourceManager* moduleResourceManager, ModuleScene* moduleScene) :
+		Module(app), mModuleCamera3D(moduleCamera), mModuleResourceManager(moduleResourceManager),
+		mModuleScene(moduleScene)
+
 {
 	App->GetEventSystem()->Subscribe(EventType::WINDOW_RESIZED, this);
 
@@ -79,13 +83,13 @@ bool ModuleRenderer3D::Awake()
 	{
 		// EDITOR mode: load via asset path (reads .meta to resolve UID).
 		// Capture return values so we can persist the manifest for GAME mode.
-		Resource* matShader = App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
-		Resource* bgShader  = App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
+		Resource* matShader = mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
+		Resource* bgShader  = mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
 
-		App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
-		App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
-		App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
-		App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
+		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
+		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
+		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
+		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
 
 		if (matShader && bgShader)
 			WriteShaderManifest(matShader, bgShader);
@@ -117,11 +121,11 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	ZoneScoped;
 #endif
 
-	const SceneRenderData& sceneData = App->GetScene()->GetRenderData();
+	const SceneRenderData& sceneData = mModuleScene->GetRenderData();
 
 	RenderPacket packet{};
 	packet.deltaTime    = dt;
-	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? App->GetCamera()->GetCamera() : nullptr;
+	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? mModuleCamera3D->GetCamera() : nullptr;
 	packet.gameCamera   = sceneData.gameCamera;
 
 	// Editor-only: selection outline.
@@ -314,13 +318,13 @@ bool ModuleRenderer3D::CleanUp()
     // OnDestroy callbacks (CMesh, CMaterial) need the ResourceManager and
     // its Resource objects to still be alive so they can safely decrement
     // reference counts via UnloadResource().
-    App->GetScene()->ClearScene();
+    mModuleScene->ClearScene();
 
     // Destroy all GPU resources (textures, shaders, meshes, materials).
     // Safe because ReleaseFrameResources() already freed the CBs/FBs that
     // referenced these objects, and the scene has been cleared above so no
     // component still holds a reference to any Resource.
-    App->GetResourceManager()->ClearResources();
+    mModuleResourceManager->ClearResources();
 
     // Tear down the remaining Vulkan infrastructure (buffers, sync objects,
     // renderpasses, swapchain, device).
@@ -419,7 +423,7 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 		if (uid == 0 || !libPath)
 		{ NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: invalid data for '%s'.", key); return; }
 
-		App->GetResourceManager()->CreateResourceFromLibrary(
+		mModuleResourceManager->CreateResourceFromLibrary(
 			uid, ResourceType::SHADER, NOUS_FileManager::GetFilename(assetPath), assetPath, libPath);
 	};
 

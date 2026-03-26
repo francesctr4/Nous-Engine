@@ -270,10 +270,6 @@ void ModuleEditor::InternalDrawEditor()
 
 	ImGui::ShowDemoWindow();
 
-	//ImGui_Temp::Begin("camerapos");
-	//ImGui_Temp::Text("%f,%f,%f", App->GetCamera()->GetCamera()->GetPos().x, App->GetCamera()->GetCamera()->GetPos().y, App->GetCamera()->GetCamera()->GetPos().z);
-	//ImGui_Temp::End();
-
 	for (auto& win : editorWindows)
 	{
 		win->Draw();

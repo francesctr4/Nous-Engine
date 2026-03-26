@@ -13,7 +13,7 @@
 #include "glm/gtc/quaternion.hpp"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
+ModuleCamera3D::ModuleCamera3D(Application* app, ModuleInput* moduleInput) : Module(app), mModuleInput(moduleInput)
 {
 	sceneViewportHovered = false;
 
@@ -53,9 +53,9 @@ UpdateStatus ModuleCamera3D::Update(float dt)
 		float rotSensitivity = 0.3f;
 		float panSensitivity = 3.6f;
 
-		if (App->GetInput()->GetKey(SDL_SCANCODE_LSHIFT) == KeyState::REPEAT) speed *= 6;
+		if (mModuleInput->GetKey(SDL_SCANCODE_LSHIFT) == KeyState::REPEAT) speed *= 6;
 
-		if (App->GetInput()->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::REPEAT && App->GetInput()->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::IDLE)
+		if (mModuleInput->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::REPEAT && mModuleInput->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::IDLE)
 		{
 			// WASD Camera Movement Handling
 			HandleCameraMovement(newPos, speed);
@@ -63,13 +63,13 @@ UpdateStatus ModuleCamera3D::Update(float dt)
 			// Camera Rotation Handling
 			HandleCameraRotation(rotSensitivity, dt);
 
-			if (App->GetInput()->GetKey(SDL_SCANCODE_LALT) == KeyState::REPEAT)
+			if (mModuleInput->GetKey(SDL_SCANCODE_LALT) == KeyState::REPEAT)
 			{
 				HandleCameraOrbit(rotSensitivity, dt, glm::vec3(0.0f));
 			}
 		}
 
-		if (App->GetInput()->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::REPEAT)
+		if (mModuleInput->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::REPEAT)
 		{
 			// Mouse wheel pressed while dragging movement handling
 			HandleCameraPan(newPos, speed, panSensitivity, dt);
@@ -117,20 +117,20 @@ Camera* ModuleCamera3D::GetCamera()
 
 void ModuleCamera3D::HandleCameraMovement(glm::vec3& newPos, const float& speed)
 {
-    if (App->GetInput()->GetKey(SDL_SCANCODE_W) == KeyState::REPEAT) newPos += camera->GetFront() * speed;
-    if (App->GetInput()->GetKey(SDL_SCANCODE_S) == KeyState::REPEAT) newPos -= camera->GetFront() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_W) == KeyState::REPEAT) newPos += camera->GetFront() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_S) == KeyState::REPEAT) newPos -= camera->GetFront() * speed;
 
-    if (App->GetInput()->GetKey(SDL_SCANCODE_A) == KeyState::REPEAT) newPos -= camera->GetRight() * speed;
-    if (App->GetInput()->GetKey(SDL_SCANCODE_D) == KeyState::REPEAT) newPos += camera->GetRight() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_A) == KeyState::REPEAT) newPos -= camera->GetRight() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_D) == KeyState::REPEAT) newPos += camera->GetRight() * speed;
 
-    if (App->GetInput()->GetKey(SDL_SCANCODE_E) == KeyState::REPEAT) newPos += camera->GetUp() * speed;
-    if (App->GetInput()->GetKey(SDL_SCANCODE_Q) == KeyState::REPEAT) newPos -= camera->GetUp() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_E) == KeyState::REPEAT) newPos += camera->GetUp() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_Q) == KeyState::REPEAT) newPos -= camera->GetUp() * speed;
 }
 
 void ModuleCamera3D::HandleCameraRotation(const float& sensitivity, const float& dt)
 {
-    int dx = -App->GetInput()->GetMouseXMotion();
-    int dy = -App->GetInput()->GetMouseYMotion();
+    int dx = -mModuleInput->GetMouseXMotion();
+    int dy = -mModuleInput->GetMouseYMotion();
 
     float s = sensitivity * dt;
 
@@ -170,15 +170,15 @@ void ModuleCamera3D::HandleCameraRotation(const float& sensitivity, const float&
 
 void ModuleCamera3D::HandleCameraZoom(glm::vec3& newPos, const float& speed)
 {
-    int mouseZ = App->GetInput()->GetMouseZ();
+    int mouseZ = mModuleInput->GetMouseZ();
     if (mouseZ > 0) newPos += camera->GetFront() * speed;
     if (mouseZ < 0) newPos -= camera->GetFront() * speed;
 }
 
 void ModuleCamera3D::HandleCameraPan(glm::vec3& newPos, const float& speed, const float& sensitivity, const float& dt)
 {
-    int dx = -App->GetInput()->GetMouseXMotion();
-    int dy = -App->GetInput()->GetMouseYMotion();
+    int dx = -mModuleInput->GetMouseXMotion();
+    int dy = -mModuleInput->GetMouseYMotion();
 
     float s = sensitivity * dt;
     float deltaX = static_cast<float>(dx) * s;

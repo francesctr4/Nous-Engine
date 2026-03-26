@@ -32,13 +32,22 @@ struct SceneRenderData;
 class RendererFrontend;
 class Resource;
 
+// Dependency Injection
+class ModuleCamera3D;
+class ModuleResourceManager;
+class ModuleScene;
+
 class ModuleRenderer3D : public Module, public IEventListener
 {
 public:
 	// ---------------------------------------------------------------------
 	// Constructor / Destructor
 	// ---------------------------------------------------------------------
-	explicit ModuleRenderer3D(Application* app);
+	explicit ModuleRenderer3D(Application* app,
+		ModuleCamera3D* moduleCamera3D,
+		ModuleResourceManager* moduleResourceManager,
+		ModuleScene* moduleScene
+		);
 	~ModuleRenderer3D() override;
 
 	// ---------------------------------------------------------------------
@@ -88,6 +97,11 @@ private:
 	// ---------------------------------------------------------------------
 	RendererFrontend* mRendererFrontend;
 	RenderMode m_renderMode = RenderMode::EDITOR;
+
+	// Dependency Injection
+	ModuleCamera3D* mModuleCamera3D;
+	ModuleResourceManager* mModuleResourceManager;
+	ModuleScene* mModuleScene;
 
 	// World-space AABBs computed each frame in the bounding-box loop.
 	// Keyed by GameObject ID; consumed by BuildRenderPacket for frustum culling.

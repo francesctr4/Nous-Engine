@@ -8,11 +8,14 @@
 
 class Camera;
 
+// Dependency Injection
+class ModuleInput;
+
 class ModuleCamera3D : public Module, public IEventListener
 {
 public:
 
-	explicit ModuleCamera3D(Application* app);
+	explicit ModuleCamera3D(Application* app, ModuleInput* moduleInput);
 	~ModuleCamera3D() override;
 
 	bool Awake() override;
@@ -39,6 +42,9 @@ private:
 	void HandleCameraOrbit(const float& sensitivity, const float& dt, const glm::vec3& lookAt);
 
 	Camera* camera;
+
+	// Dependency Injection
+	ModuleInput* mModuleInput;
 
 };
 

@@ -23,7 +23,7 @@ public:
 
 	NOUS_ENGINE_API virtual bool CleanUp();
 
-public:
+protected:
 
 	Application* App;
 	
