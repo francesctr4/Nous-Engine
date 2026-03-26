@@ -2,6 +2,8 @@
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
+#include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/Logger.h"
 
@@ -85,7 +87,7 @@ bool ModuleScene::Start()
     // In GAME mode the GameApp controls which scene to load via an explicit
     // LoadSceneAsync() call after Start() returns.  Skip the auto-load here
     // to avoid a double-load race condition.
-    if (!External->IsGameMode())
+    if (External->renderer->GetRendererFrontend()->GetRenderMode() != RenderMode::GAME)
         LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
 
 	return true;

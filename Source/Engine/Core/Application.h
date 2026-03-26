@@ -60,10 +60,6 @@ public:
 	ModuleRenderer3D* renderer;
 
 	bool isMinimized;
-	bool isGameMode;
-
-	NOUS_ENGINE_API void SetGameMode(bool gameMode) { isGameMode = gameMode; }
-	[[nodiscard]] NOUS_ENGINE_API bool IsGameMode() const { return isGameMode; }
 
     // ------------- EVENT SYSTEM ------------- //
     EventSystem* eventSystem;

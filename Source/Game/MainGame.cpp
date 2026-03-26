@@ -9,6 +9,10 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
+#include <parson.h>
+#include <string>
+#include <filesystem>
+
 typedef enum MainState
 {
     MAIN_CREATION,
@@ -21,7 +25,42 @@ typedef enum MainState
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MAIN;
 
-static constexpr const char* GAME_SCENE = "Library/Scenes/LagiacrusScene.nous";
+struct GameConfig
+{
+    std::string startScene = "Library/Scenes/LagiacrusScene.nous";
+    float       targetFPS  = DEFAULT_TARGET_FPS;
+};
+
+static GameConfig LoadGameConfig(const char* argv0)
+{
+    GameConfig cfg;
+
+    const std::string configPath =
+        (std::filesystem::path(argv0).parent_path() / "game_config.json").string();
+
+    JSON_Value* root = json_parse_file(configPath.c_str());
+    if (!root)
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "game_config.json not found at '%s' — using defaults.", configPath.c_str());
+        return cfg;
+    }
+
+    const JSON_Object* obj = json_value_get_object(root);
+
+    if (const char* scene = json_object_get_string(obj, "startScene"))
+        cfg.startScene = scene;
+
+    const double fps = json_object_get_number(obj, "targetFPS");
+    if (fps > 0.0)
+        cfg.targetFPS = static_cast<float>(fps);
+
+    json_value_free(root);
+
+    NOUS_INFO_C(CURRENT_CHANNEL, "Loaded game_config.json: scene='%s', targetFPS=%.0f",
+        cfg.startScene.c_str(), cfg.targetFPS);
+
+    return cfg;
+}
 
 int main(int argc, char** argv)
 {
@@ -38,6 +77,7 @@ int main(int argc, char** argv)
     int mainReturn = EXIT_FAILURE;
     MainState nousState = MAIN_CREATION;
     Application* App = nullptr;
+    GameConfig cfg;
 
     // Track whether PressPlay has been called yet.
     bool gamePlaying = false;
@@ -54,7 +94,9 @@ int main(int argc, char** argv)
 
                 // Configure GAME mode before Awake() so every module can branch on it.
                 App->renderer->SetRenderMode(RenderMode::GAME);
-                App->SetGameMode(true);
+
+                cfg = LoadGameConfig(argv[0]);
+                App->SetTargetFPS(cfg.targetFPS);
 
                 nousState = MAIN_START;
                 break;
@@ -84,7 +126,7 @@ int main(int argc, char** argv)
                 App->window->SetFullscreen(true);
 
                 // Kick off async scene load. PressPlay is deferred until the job finishes.
-                App->scene->LoadScene(GAME_SCENE);
+                App->scene->LoadSceneAsync(cfg.startScene);
 
                 nousState = MAIN_UPDATE;
                 NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Update ----------");

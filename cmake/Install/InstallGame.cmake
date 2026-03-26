@@ -58,12 +58,17 @@ install(CODE "
     endforeach()
 " COMPONENT InstallGame)
 
+# Game configuration — start scene, target FPS, etc.
+install(FILES "${CMAKE_SOURCE_DIR}/Source/Game/game_config.json"
+        DESTINATION .
+        COMPONENT InstallGame
+)
+
 # Compiled resource cache (SPIR-V shaders, meshes, textures, materials, scenes).
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/Library/"
         DESTINATION Library
         COMPONENT InstallGame
         PATTERN "_simulation_snapshot.nous" EXCLUDE
-        PATTERN "game_config.json"          EXCLUDE
 )
 
 # .meta sidecar files — UID + library path mappings, no actual asset data.

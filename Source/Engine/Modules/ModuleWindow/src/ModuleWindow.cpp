@@ -5,6 +5,8 @@
 
 #include "Engine/Core/Application.h"
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
+#include "Engine/Renderer/Frontend/RendererFrontend.h"
 
 ModuleWindow::ModuleWindow(Application* app) : Module(app)
 {
@@ -48,7 +50,8 @@ bool ModuleWindow::Awake()
 
 bool ModuleWindow::Start()
 {
-    SDL_MaximizeWindow(window);
+    if (App->renderer->GetRendererFrontend()->GetRenderMode() == RenderMode::EDITOR)
+        SDL_MaximizeWindow(window);
 
     return true;
 }

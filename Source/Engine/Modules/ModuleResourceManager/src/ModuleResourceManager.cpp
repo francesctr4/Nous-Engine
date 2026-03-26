@@ -37,14 +37,14 @@ ModuleResourceManager::~ModuleResourceManager()
 
 bool ModuleResourceManager::Awake()
 {
-	// Always ensure directories exist — idempotent, safe to call every startup.
-	EnsureLibraryDirectories();
-
-	if (External->IsGameMode())
+	if (External->renderer->GetRendererFrontend()->GetRenderMode() == RenderMode::GAME)
 	{
 		// GAME mode: Library binaries are pre-built. No asset scanning/importing needed.
 		return true;
 	}
+
+	// Always ensure directories exist — idempotent, safe to call every startup.
+	EnsureLibraryDirectories();
 
 	// EDITOR mode: scan Assets/ on startup. ImportFile is a cheap no-op for assets
 	// whose library binary is already up-to-date (Case 3 timestamp check).
