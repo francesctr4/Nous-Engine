@@ -3,6 +3,7 @@
 
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
+#include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include <string>
 #include <vector>
 #include <mutex>
@@ -71,6 +72,9 @@ public:
 	NOUS_ENGINE_API bool            IsStopped()           const { return m_simulationState == SimulationState::STOPPED; }
 	NOUS_ENGINE_API SimulationState GetSimulationState()  const { return m_simulationState; }
 
+	// Returns the per-frame snapshot built in PostUpdate for consumption by the renderer.
+	NOUS_ENGINE_API const SceneRenderData& GetRenderData() const { return m_renderData; }
+
 public:
 
 	Scene*         activeScene    = nullptr;
@@ -79,6 +83,8 @@ public:
 	ScriptManager* scriptManager = nullptr;
 
 private:
+
+	SceneRenderData m_renderData;
 
 	// Flat registry of every live CScript component in the scene.
 	// Used for hot-reload and LateUpdate dispatch.

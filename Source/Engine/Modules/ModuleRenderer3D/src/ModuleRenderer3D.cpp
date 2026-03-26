@@ -11,7 +11,7 @@
 
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
@@ -117,25 +117,23 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	ZoneScoped;
 #endif
 
-	// Propagate parent transforms top-down before any world-matrix reads.
-	if (App->GetScene()->activeScene)
-		App->GetScene()->activeScene->UpdateWorldMatrices();
+	const SceneRenderData& sceneData = App->GetScene()->GetRenderData();
 
 	RenderPacket packet{};
-	packet.deltaTime = dt;
+	packet.deltaTime    = dt;
 	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? App->GetCamera()->GetCamera() : nullptr;
-	packet.gameCamera  = App->GetScene()->gameCamera;
+	packet.gameCamera   = sceneData.gameCamera;
 
 	// Editor-only: selection outline.
 	if (m_renderMode == RenderMode::EDITOR)
 	{
 		std::vector<GeometryRenderData> outlinedGeometries;
-		if (App->GetScene()->selectedGameObject && App->GetScene()->selectedGameObject->HasComponent<CMesh>())
+		if (sceneData.selectedObject && sceneData.selectedObject->HasComponent<CMesh>())
 		{
 			GeometryRenderData data{};
-			if (auto* t = App->GetScene()->selectedGameObject->TryGetComponent<CTransform>())
+			if (auto* t = sceneData.selectedObject->TryGetComponent<CTransform>())
 				data.model = t->worldMatrix;
-			if (auto* m = App->GetScene()->selectedGameObject->TryGetComponent<CMesh>())
+			if (auto* m = sceneData.selectedObject->TryGetComponent<CMesh>())
 				data.geometry = m->mesh;
 			outlinedGeometries.push_back(data);
 		}
@@ -150,10 +148,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	{
 		mMeshAABBCache.clear();
 
-		if (App->GetScene()->activeScene)
+		if (sceneData.hasActiveScene)
 		{
 		std::vector<BoundingBoxData> boundingBoxes;
-		const auto gameObjects = App->GetScene()->activeScene->GetGameObjectsSnapshot();
+		const auto& gameObjects = sceneData.gameObjects;
 
 		for (const auto& goPtr : gameObjects)
 		{
@@ -236,11 +234,9 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	{
 		std::vector<CameraFrustumData> frustums;
 
-		if (App->GetScene()->activeScene)
+		if (sceneData.hasActiveScene)
 		{
-			const auto gameObjects = App->GetScene()->activeScene->GetGameObjectsSnapshot();
-
-			for (const auto& goPtr : gameObjects)
+			for (const auto& goPtr : sceneData.gameObjects)
 			{
 				auto* cam       = goPtr->TryGetComponent<CCamera>();
 				auto* transform = goPtr->TryGetComponent<CTransform>();
@@ -286,7 +282,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetCameraFrustums(frustums);
 	}
 
-	if (BuildRenderPacket(&packet) && !App->IsMinimized())
+	if (BuildRenderPacket(&packet, sceneData) && !App->IsMinimized())
 	{
 		FrameResult result = mRendererFrontend->DrawFrame(&packet);
 
@@ -318,9 +314,7 @@ bool ModuleRenderer3D::CleanUp()
     // OnDestroy callbacks (CMesh, CMaterial) need the ResourceManager and
     // its Resource objects to still be alive so they can safely decrement
     // reference counts via UnloadResource().
-    App->GetScene()->selectedGameObject = nullptr;
-    if (App->GetScene()->activeScene)
-        App->GetScene()->activeScene->Clear();
+    App->GetScene()->ClearScene();
 
     // Destroy all GPU resources (textures, shaders, meshes, materials).
     // Safe because ReleaseFrameResources() already freed the CBs/FBs that
@@ -437,9 +431,9 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 	NOUS_INFO_C(CURRENT_CHANNEL, "Built-in shaders loaded from shader_manifest.json.");
 }
 
-bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
+bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRenderData& sceneData)
 {
-	if (!App->GetScene()->activeScene)
+	if (!sceneData.hasActiveScene)
 	{
 		NOUS_ERROR_C(CURRENT_CHANNEL, "Active scene is not defined. Render packet will not be built.");
 		return false;
@@ -458,12 +452,9 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
 		hasFrustum = true;
 	}
 
-	// Snapshot under mutex — guards against concurrent CreateGameObject() calls
-	// from the background LoadScene job reallocating the vector mid-iteration.
-	const auto gameObjects = App->GetScene()->activeScene->GetGameObjectsSnapshot();
-	packet->geometries.reserve(gameObjects.size());
+	packet->geometries.reserve(sceneData.gameObjects.size());
 
-	for (const auto& goPtr : gameObjects)
+	for (const auto& goPtr : sceneData.gameObjects)
 	{
 		if (!goPtr->HasComponent<CMesh>()) continue;
 

@@ -266,6 +266,18 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 			if (cs) cs->LateUpdate(TimeManager::simulationDeltaTime);
 	}
 
+	// Propagate parent transforms top-down before the renderer reads world matrices.
+	if (activeScene)
+		activeScene->UpdateWorldMatrices();
+
+	// Build per-frame render snapshot consumed by ModuleRenderer3D::PostUpdate.
+	m_renderData                = {};
+	m_renderData.hasActiveScene = (activeScene != nullptr);
+	m_renderData.gameCamera     = gameCamera;
+	m_renderData.selectedObject = selectedGameObject;
+	if (activeScene)
+		m_renderData.gameObjects = activeScene->GetGameObjectsSnapshot();
+
 	return UpdateStatus::CONTINUE;
 }
 

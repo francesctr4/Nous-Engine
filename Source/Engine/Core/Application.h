@@ -51,6 +51,8 @@ public:
     NOUS_ENGINE_API ModuleResourceManager*                GetResourceManager() const;
     NOUS_ENGINE_API ModuleScene*                          GetScene()           const;
     NOUS_ENGINE_API ModuleRenderer3D*                     GetRenderer()        const;
+
+	// ------------- MULTITHREADING ------------- //
     NOUS_ENGINE_API NOUS_Multithreading::NOUS_JobSystem*  GetJobSystem()       const;
 
     // ------------- STATE ACCESSORS ------------- //

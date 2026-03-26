@@ -28,6 +28,7 @@
 // Forward Declarations
 // ---------------------------------------------------------------------
 struct RenderPacket;
+struct SceneRenderData;
 class RendererFrontend;
 class Resource;
 
@@ -71,7 +72,7 @@ private:
 	// ---------------------------------------------------------------------
 	// Internal Methods
 	// ---------------------------------------------------------------------
-	[[nodiscard]] bool BuildRenderPacket(RenderPacket* packet);
+	[[nodiscard]] bool BuildRenderPacket(RenderPacket* packet, const SceneRenderData& sceneData);
 
 	// Writes Library/shader_manifest.json with the UIDs and library paths of the
 	// built-in shaders so GAME mode can load them without reading .meta files.
