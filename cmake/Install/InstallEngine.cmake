@@ -43,16 +43,20 @@ install(TARGETS Scripts
 )
 
 # Script build tools — RebuildScripts.bat/sh, ScriptTemplate.inl, SDK/ headers+src.
-# Excludes build artifacts (obj/, .exp, .lib, .rsp) that are only needed during compilation.
+# Excludes the Scripts shared library (already installed via install(TARGETS Scripts ...))
+# and build artifacts that are only needed during compilation.
 install(DIRECTORY "${CMAKE_BINARY_DIR}/bin/Library/Scripts/"
         DESTINATION Library/Scripts
         COMPONENT InstallEngine
-        PATTERN "*.dll" EXCLUDE
-        PATTERN "*.pdb" EXCLUDE
-        PATTERN "*.exp" EXCLUDE
-        PATTERN "*.lib" EXCLUDE
-        PATTERN "*.rsp" EXCLUDE
-        PATTERN "obj"   EXCLUDE
+        PATTERN "*.dll"    EXCLUDE   # Windows shared library
+        PATTERN "*.pdb"    EXCLUDE   # Windows debug symbols
+        PATTERN "*.exp"    EXCLUDE   # Windows export file
+        PATTERN "*.lib"    EXCLUDE   # Windows import library
+        PATTERN "*.so"     EXCLUDE   # Linux shared library
+        PATTERN "*.so.*"   EXCLUDE   # Linux versioned shared library (e.g. libFoo.so.1.0)
+        PATTERN "*.dylib"  EXCLUDE   # macOS shared library
+        PATTERN "*.rsp"    EXCLUDE   # compiler response file
+        PATTERN "obj"      EXCLUDE
 )
 
 # Runtime DLLs — scan PE import tables recursively
