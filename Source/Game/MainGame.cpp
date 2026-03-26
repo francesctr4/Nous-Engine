@@ -176,8 +176,7 @@ int main(int argc, char** argv)
         }
     }
 
-    // Clear the global pointer before NOUS_DELETE so no module dereferences it
-    // during destruction (App's destructor runs module destructors transitively).
+    // All jobs were drained in CleanUp(), so no in-flight lambda can race on this.
     External = nullptr;
 
     NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Destruction ----------");

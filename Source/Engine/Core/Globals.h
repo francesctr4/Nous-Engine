@@ -9,7 +9,8 @@
 constexpr const char* TITLE = "Nous Engine";
 constexpr int WINDOW_WIDTH = 800;
 constexpr int WINDOW_HEIGHT = 600;
-constexpr float DEFAULT_TARGET_FPS = 144.00f;
+constexpr float DEFAULT_TARGET_FPS    = 144.00f;
+constexpr float DEFAULT_SPIN_THRESHOLD = 0.002f;  // spin for the last 2ms before frame deadline
 
 // ---------- Type Definitions ---------- \\
 

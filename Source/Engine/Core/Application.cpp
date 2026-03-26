@@ -35,12 +35,12 @@ Application::Application()
     msTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
     updateTitleTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
 
-    listModules[0] = window = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION, this);
-    listModules[1] = input = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION, this);
-    listModules[2] = camera = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION, this);
-    listModules[3] = resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION, this);
-    listModules[4] = scene = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this);
-    listModules[5] = renderer = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this);
+    listModules.push_back(window          = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION, this));
+    listModules.push_back(input           = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION, this));
+    listModules.push_back(camera          = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION, this));
+    listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION, this));
+    listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this));
+    listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this));
 
     // ------------- MULTITHREADING ------------- //
     jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
@@ -48,14 +48,15 @@ Application::Application()
 
 Application::~Application()
 {
+    // CleanUp() already drained jobs; this is a safety net for abnormal exits.
     if (jobSystem)
         jobSystem->WaitForPendingJobs();
 
-    // Delete modules in REVERSE order (5→0), matching the CleanUp order.
-    // Forward order would free ModuleResourceManager (3) before ModuleScene (4),
+    // Delete modules in REVERSE registration order, matching the CleanUp order.
+    // Forward order would free ModuleResourceManager before ModuleScene,
     // causing use-after-free when ~ModuleScene destroys GameObjects whose
     // CMesh::OnDestroy still references the ResourceManager.
-    for (int i = NUM_MODULES - 1; i >= 0; --i)
+    for (int i = (int)listModules.size() - 1; i >= 0; --i)
         NOUS_DELETE(listModules[i], MemoryTag::APPLICATION);
 
     NOUS_DELETE(jobSystem, MemoryTag::THREAD);
@@ -69,7 +70,7 @@ bool Application::Awake() const
     bool ret = true;
 
     // Call Awake() in all modules
-    for (int i = 0; i < NUM_MODULES && ret; ++i)
+    for (int i = 0; i < static_cast<int>(listModules.size()) && ret; ++i)
     {
         if (listModules[i] != nullptr) 
         {
@@ -86,7 +87,7 @@ bool Application::Start() const
 
     // After all Awake calls we call Start() in all modules
     NOUS_INFO("-------------- Application Start --------------");
-    for (int i = 0; i < NUM_MODULES && ret; ++i)
+    for (int i = 0; i < (int)listModules.size() && ret; ++i)
     {
         if (listModules[i] != nullptr)
         {
@@ -132,7 +133,7 @@ UpdateStatus Application::Update()
 
     // -------------- PreUpdate --------------
 
-    for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
+    for (int i = 0; i < (int)listModules.size() && ret == UpdateStatus::CONTINUE; ++i)
     {
         if (listModules[i] != nullptr)
             ret = listModules[i]->PreUpdate(dt);
@@ -140,7 +141,7 @@ UpdateStatus Application::Update()
 
     // -------------- Update --------------
 
-    for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
+    for (int i = 0; i < (int)listModules.size() && ret == UpdateStatus::CONTINUE; ++i)
     {
         if (listModules[i] != nullptr)
             ret = listModules[i]->Update(dt);
@@ -148,7 +149,7 @@ UpdateStatus Application::Update()
 
     // -------------- PostUpdate --------------
 
-    for (int i = 0; i < NUM_MODULES && ret == UpdateStatus::CONTINUE; ++i)
+    for (int i = 0; i < (int)listModules.size() && ret == UpdateStatus::CONTINUE; ++i)
     {
         if (listModules[i] != nullptr)
             ret = listModules[i]->PostUpdate(dt);
@@ -171,23 +172,19 @@ void Application::FinishUpdate() const
 
     // Set Window Title with Debug Info
 
-    static float cachedDt = 0.0f;
-    static float cachedFPS = 0.0f;
-    static char buffer[256];
-
     if (updateTitleTimer->ReadMS() >= 100.0f)
     {
-        cachedDt = GetDT();
+        cachedDt  = GetDT();
         cachedFPS = GetFPS();
 
         updateTitleTimer->Start();
     }
 
-    snprintf(buffer, sizeof(buffer),
+    snprintf(titleBuffer, sizeof(titleBuffer),
         "%s | dt: %.3f s | FPS: %d | Graphics Timer: %.3f s | Frame Count: %d",
         TITLE, cachedDt, static_cast<int>(cachedFPS + 0.5f), TimeManager::graphicsTimer.ReadSec(), TimeManager::frameCount);
 
-    window->SetTitle(buffer);
+    window->SetTitle(titleBuffer);
 
     // -------------- Frame Finished --------------
 
@@ -201,11 +198,9 @@ void Application::FinishUpdate() const
 
     if (remaining > 0.0f)
     {
-        constexpr float spinThreshold = 0.002f; // spin for the last 2ms
-
-        if (remaining > spinThreshold)
+        if (remaining > DEFAULT_SPIN_THRESHOLD)
         {
-            SDL_Delay(static_cast<Uint32>((remaining - spinThreshold) * 1000.0f));
+            SDL_Delay(static_cast<Uint32>((remaining - DEFAULT_SPIN_THRESHOLD) * 1000.0f));
         }
 
         // Spin-wait for the final portion — burns CPU briefly but gives precise timing.
@@ -217,7 +212,14 @@ bool Application::CleanUp()
 {
     bool ret = true;
 
-    for (int i = (NUM_MODULES - 1); i >= 0 && ret; --i)
+    // Drain all in-flight jobs before any module starts tearing down.
+    // This ensures job lambdas that read External or module pointers complete
+    // while everything is still alive, so the External = nullptr that follows
+    // CleanUp() in main is safe.
+    if (jobSystem)
+        jobSystem->WaitForPendingJobs();
+
+    for (int i = (int)listModules.size() - 1; i >= 0 && ret; --i)
     {
         if (listModules[i] != nullptr) {
             ret = listModules[i]->CleanUp();
@@ -238,7 +240,7 @@ float Application::GetTargetFPS() const
 
 float Application::GetFPS() const
 {
-    return 1 / dt;
+    return (dt > 0.0001f) ? (1.0f / dt) : 0.0f;
 }
 
 float Application::GetDT() const

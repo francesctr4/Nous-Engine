@@ -126,10 +126,8 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? App->camera->GetCamera() : nullptr;
 	packet.gameCamera  = App->scene->gameCamera;
 
-	// Editor-only: outline, bounding boxes, camera frustums (skipped in GAME mode).
+	// Editor-only: selection outline.
 	if (m_renderMode == RenderMode::EDITOR)
-	{
-	// Populate the outline list from the currently selected GameObject.
 	{
 		std::vector<GeometryRenderData> outlinedGeometries;
 		if (App->scene->selectedGameObject && App->scene->selectedGameObject->HasComponent<CMesh>())
@@ -144,14 +142,17 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetOutlinedGeometries(outlinedGeometries);
 	}
 
-	// Compute AABB and OBB bounding boxes for all GameObjects with meshes.
-	// The world-space AABBs are cached in mMeshAABBCache for use by BuildRenderPacket.
+	// Build world-space AABB cache for frustum culling.
+	// Runs in EDITOR mode (always needed for bounding box overlays) and in any
+	// mode when frustum culling is enabled. Without this, BuildRenderPacket would
+	// find an empty cache and silently skip all culling in GAME mode.
+	if (m_renderMode == RenderMode::EDITOR || frustumCullingEnabled)
 	{
 		mMeshAABBCache.clear();
-		std::vector<BoundingBoxData> boundingBoxes;
 
 		if (App->scene->activeScene)
 		{
+		std::vector<BoundingBoxData> boundingBoxes;
 		const auto gameObjects = App->scene->activeScene->GetGameObjectsSnapshot();
 
 		for (const auto& goPtr : gameObjects)
@@ -183,7 +184,6 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			glm::mat4 obbTransform = worldMatrix
 				* glm::translate(glm::mat4(1.0f), localCenter)
 				* glm::scale(glm::mat4(1.0f), localExtents);
-			boundingBoxes.emplace_back(obbTransform, glm::vec4(0.3f, 0.6f, 1.0f, 1.0f)); // blue
 
 			// ── AABB: compute world-space axis-aligned bounds ──────────────────
 			// Transform all 8 local corners through the world matrix, then take min/max.
@@ -206,22 +206,33 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 				worldMax = glm::max(worldMax, c);
 			}
 
-			const glm::vec3 worldCenter  = (worldMin + worldMax) * 0.5f;
-			const glm::vec3 worldExtents = worldMax - worldMin;
-
-			glm::mat4 aabbTransform = glm::translate(glm::mat4(1.0f), worldCenter)
-				* glm::scale(glm::mat4(1.0f), worldExtents);
-			boundingBoxes.emplace_back(aabbTransform, glm::vec4(1.0f, 0.4f, 0.1f, 1.0f)); // orange-red
-
-			// Cache for frustum culling in BuildRenderPacket.
+			// Cache world-space AABB for frustum culling in BuildRenderPacket.
 			mMeshAABBCache[goPtr->GetID()] = { worldMin, worldMax };
-		}
-		} // if activeScene
 
-		mRendererFrontend->SetBoundingBoxes(boundingBoxes);
+			// Editor-only: generate OBB and AABB overlay geometry.
+			if (m_renderMode == RenderMode::EDITOR)
+			{
+				const glm::vec3 worldCenter  = (worldMin + worldMax) * 0.5f;
+				const glm::vec3 worldExtents = worldMax - worldMin;
+
+				boundingBoxes.emplace_back(obbTransform, glm::vec4(0.3f, 0.6f, 1.0f, 1.0f)); // blue
+				glm::mat4 aabbTransform = glm::translate(glm::mat4(1.0f), worldCenter)
+					* glm::scale(glm::mat4(1.0f), worldExtents);
+				boundingBoxes.emplace_back(aabbTransform, glm::vec4(1.0f, 0.4f, 0.1f, 1.0f)); // orange-red
+			}
+		}
+
+		if (m_renderMode == RenderMode::EDITOR)
+			mRendererFrontend->SetBoundingBoxes(boundingBoxes);
+		} // if activeScene
+	}
+	else
+	{
+		mMeshAABBCache.clear();
 	}
 
-	// Collect camera frustums from all GameObjects with a CCamera component.
+	// Editor-only: camera frustum overlays.
+	if (m_renderMode == RenderMode::EDITOR)
 	{
 		std::vector<CameraFrustumData> frustums;
 
@@ -274,8 +285,6 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 		mRendererFrontend->SetCameraFrustums(frustums);
 	}
-
-	} // end EDITOR-only block
 
 	if (BuildRenderPacket(&packet) && !App->isMinimized)
 	{

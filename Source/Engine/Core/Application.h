@@ -4,15 +4,13 @@
 #include "Engine/EngineExport.h"
 #include "Engine/Core/UpdateStatus.h"
 
-#include <array>
+#include <vector>
 
 // Forward declarations
 struct Event;
 class EventSystem;
 class Timer;
 namespace NOUS_Multithreading { class NOUS_JobSystem; }
-
-constexpr uint8_t NUM_MODULES = 6;
 
 class Module;
 class ModuleWindow;
@@ -69,13 +67,17 @@ public:
 
 private:
 
-	std::array<Module*, NUM_MODULES> listModules;
+	std::vector<Module*> listModules;
 
 	Timer* msTimer;
 	float dt;
 	float targetFPS;
 
 	Timer* updateTitleTimer;
+
+	mutable float cachedDt    = 0.0f;
+	mutable float cachedFPS   = 0.0f;
+	mutable char  titleBuffer[256] = {};
 };
 
 extern NOUS_ENGINE_API Application* External;

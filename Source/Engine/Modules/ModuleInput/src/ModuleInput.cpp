@@ -8,6 +8,13 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
 
+static KeyState AdvanceKeyState(KeyState current, bool pressed)
+{
+	if (pressed)
+		return (current == KeyState::IDLE) ? KeyState::DOWN : KeyState::REPEAT;
+	return (current == KeyState::REPEAT || current == KeyState::DOWN) ? KeyState::UP : KeyState::IDLE;
+}
+
 ModuleInput::ModuleInput(Application* app) : Module(app)
 {
 	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
@@ -57,30 +64,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
     const uint8* keys = reinterpret_cast<const uint8*>(SDL_GetKeyboardState(NULL));
 
 	for (int i = 0; i < MAX_KEYBOARD_KEYS; ++i)
-	{
-		if (keys[i] == 1)
-		{
-			if (keyboard[i] == KeyState::IDLE) 
-			{
-				keyboard[i] = KeyState::DOWN;
-			}
-			else 
-			{
-				keyboard[i] = KeyState::REPEAT;
-			}
-		}
-		else
-		{
-			if (keyboard[i] == KeyState::REPEAT || keyboard[i] == KeyState::DOWN) 
-			{
-				keyboard[i] = KeyState::UP;
-			}
-			else 
-			{
-				keyboard[i] = KeyState::IDLE;
-			}
-		}
-	}
+		keyboard[i] = AdvanceKeyState(keyboard[i], keys[i] == 1);
 
 	// --------------- Handle Mouse State --------------- \\
 
@@ -88,31 +72,8 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 
 	mouseZ = 0;
 
-	for (int i = 0; i < 5; ++i)
-	{
-		if (buttons & SDL_BUTTON_MASK(i))
-		{
-			if (mouseButtons[i] == KeyState::IDLE) 
-			{
-				mouseButtons[i] = KeyState::DOWN;
-			}
-			else 
-			{
-				mouseButtons[i] = KeyState::REPEAT;
-			}	
-		}
-		else
-		{
-			if (mouseButtons[i] == KeyState::REPEAT || mouseButtons[i] == KeyState::DOWN)
-			{
-				mouseButtons[i] = KeyState::UP;
-			}
-			else 
-			{
-				mouseButtons[i] = KeyState::IDLE;
-			}
-		}
-	}
+	for (int i = 0; i < MAX_MOUSE_BUTTONS; ++i)
+		mouseButtons[i] = AdvanceKeyState(mouseButtons[i], (buttons & SDL_BUTTON_MASK(i)) != 0);
 
 	mouseXMotion = 0;
 	mouseYMotion = 0;
@@ -128,38 +89,11 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 		{
 			case SDL_EVENT_KEY_DOWN:
 			{
-				// Handle key press event
-				/*KeyState state = GetKey(e.key.keysym.scancode);
-				App->BroadcastEvent(Event(EventType::KEY_PRESSED, { .int64 = {e.key.keysym.scancode, static_cast<int64>(state) }}));*/
-
 				if (GetKey(SDL_SCANCODE_ESCAPE) == KeyState::DOWN)
 				{
 					ret = UpdateStatus::STOP;
 				}
 
-				break;
-			}
-			case SDL_EVENT_KEY_UP:
-			{
-				// Handle key release event
-				/*KEY_STATE state = GetKey(e.key.keysym.scancode);
-				App->BroadcastEvent(Event(EventType::KEY_RELEASED, { .int64 = {e.key.keysym.scancode, state }));*/
-				//NOUS_ERROR(" ");
-				break;
-			}
-            case SDL_EVENT_MOUSE_BUTTON_DOWN:
-			{
-				// Handle mouse button press event
-				/*KEY_STATE state = GetMouseButton(e.button.button);
-				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_PRESSED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));*/
-				
-				break;
-			}
-			case SDL_EVENT_MOUSE_BUTTON_UP:
-			{
-				// Handle mouse button release event
-				/*KEY_STATE state = GetMouseButton(e.button.button);
-				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_RELEASED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));*/
 				break;
 			}
 			case SDL_EVENT_MOUSE_WHEEL:
@@ -170,7 +104,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			case SDL_EVENT_MOUSE_MOTION:
 			{
 				mouseX = e.motion.x;
-				mouseX = e.motion.y;
+				mouseY = e.motion.y;
 
 				mouseXMotion = e.motion.xrel;
 				mouseYMotion = e.motion.yrel;
