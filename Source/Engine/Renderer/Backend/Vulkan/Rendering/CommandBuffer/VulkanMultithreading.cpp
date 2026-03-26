@@ -14,7 +14,7 @@ bool NOUS_VulkanMultithreading::CreateWorkerCommandPools(VulkanContext* vkContex
         return false;
     }
 
-    const auto& threadPool = External->jobSystem->GetThreadPool();
+    const auto& threadPool = External->GetJobSystem()->GetThreadPool();
     const auto& threads = threadPool.GetThreads();
 
     VkCommandPoolCreateInfo commandPoolCreateInfo{};

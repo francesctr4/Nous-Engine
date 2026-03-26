@@ -27,7 +27,7 @@ void Resources::Draw()
     {
         if (ImGui::Begin(title, p_open))
         {
-            std::unordered_map<UID, Resource*> resourcesMap = External->resourceManager->GetResourcesMap();
+            std::unordered_map<UID, Resource*> resourcesMap = External->GetResourceManager()->GetResourcesMap();
             uint32 currentResourceCount = resourcesMap.size();
 
             ImGui::TextColored(

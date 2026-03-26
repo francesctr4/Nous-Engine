@@ -28,7 +28,7 @@ void JobQueue::Draw()
 
     if (ImGui::Begin(title, p_open))
     {
-        const auto& threadPool = External->jobSystem->GetThreadPool();
+        const auto& threadPool = External->GetJobSystem()->GetThreadPool();
         const auto& jobQueue = threadPool.GetJobQueue();
 
         // New Job Queue table

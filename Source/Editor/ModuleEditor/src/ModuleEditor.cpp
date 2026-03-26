@@ -50,8 +50,8 @@ ModuleEditor::ModuleEditor(Application* app) : Module(app),
 {
 	currentBackendType = RendererBackendType::UNKNOWN;
 
-    App->eventSystem->Subscribe(EventType::INPUT_EVENT, this);
-    App->eventSystem->Subscribe(EventType::IMGUI_RECREATION, this);
+    App->GetEventSystem()->Subscribe(EventType::INPUT_EVENT, this);
+    App->GetEventSystem()->Subscribe(EventType::IMGUI_RECREATION, this);
 }
 
 ModuleEditor::~ModuleEditor()
@@ -63,8 +63,8 @@ bool ModuleEditor::Awake()
 {
 	NOUS_FileManager::CopyFile(R"(Assets\Settings\imgui.ini)", "imgui.ini");
 
-	App->renderer->GetRendererFrontend()->SetEditorOverlay(this);
-	currentBackendType = App->renderer->GetRendererFrontend()->GetBackendType();
+	App->GetRenderer()->GetRendererFrontend()->SetEditorOverlay(this);
+	currentBackendType = App->GetRenderer()->GetRendererFrontend()->GetBackendType();
 
 	// Setup Dear ImGui_Temp context
 	IMGUI_CHECKVERSION();
@@ -89,7 +89,7 @@ bool ModuleEditor::Awake()
 			VulkanContext* vkContext = GetVulkanContext();
 
 			// Setup Platform/Renderer backends
-			ImGui_ImplSDL3_InitForVulkan(App->window->GetSDL_Window());
+			ImGui_ImplSDL3_InitForVulkan(App->GetWindow()->GetSDL_Window());
 
 			ImGui_ImplVulkan_InitInfo imGuiVulkanInitInfo{};
 
@@ -162,7 +162,7 @@ bool ModuleEditor::CleanUp()
 	// any Vulkan resources.  The last frame's command buffers still reference
 	// ImGui's vertex/index buffers, pipeline, and descriptor sets, and the
 	// framebuffers still reference the viewport image views.
-	App->renderer->GetRendererFrontend()->ReleaseFrameResources();
+	App->GetRenderer()->GetRendererFrontend()->ReleaseFrameResources();
 
 	switch (currentBackendType)
 	{
@@ -271,7 +271,7 @@ void ModuleEditor::InternalDrawEditor()
 	ImGui::ShowDemoWindow();
 
 	//ImGui_Temp::Begin("camerapos");
-	//ImGui_Temp::Text("%f,%f,%f", App->camera->GetCamera()->GetPos().x, App->camera->GetCamera()->GetPos().y, App->camera->GetCamera()->GetPos().z);
+	//ImGui_Temp::Text("%f,%f,%f", App->GetCamera()->GetCamera()->GetPos().x, App->GetCamera()->GetCamera()->GetPos().y, App->GetCamera()->GetCamera()->GetPos().z);
 	//ImGui_Temp::End();
 
 	for (auto& win : editorWindows)

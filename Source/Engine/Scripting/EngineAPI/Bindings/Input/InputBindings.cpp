@@ -7,40 +7,40 @@ void SetupInputBindings(InputAPI &input)
 {
     // Key state checking
     input.GetKey = [](int scancode) -> int {
-        if (!External || !External->input) {
+        if (!External || !External->GetInput()) {
             return 0; // Return IDLE if input system not available
         }
         // Cast the engine's KeyState to int for scripting
-        return static_cast<int>(External->input->GetKey(scancode));
+        return static_cast<int>(External->GetInput()->GetKey(scancode));
     };
 
     // Mouse button checking
     input.GetMouseButton = [](int button) -> int {
-        if (!External || !External->input) {
+        if (!External || !External->GetInput()) {
             return 0;
         }
-        return static_cast<int>(External->input->GetMouseButton(button));
+        return static_cast<int>(External->GetInput()->GetMouseButton(button));
     };
 
     // Mouse position
     input.GetMousePosition = [](int* x, int* y) {
-        if (!External || !External->input) {
+        if (!External || !External->GetInput()) {
             if (x) *x = 0;
             if (y) *y = 0;
             return;
         }
-        if (x) *x = External->input->GetMouseX();
-        if (y) *y = External->input->GetMouseY();
+        if (x) *x = External->GetInput()->GetMouseX();
+        if (y) *y = External->GetInput()->GetMouseY();
     };
 
     // Mouse motion
     input.GetMouseMotion = [](int* x, int* y) {
-        if (!External || !External->input) {
+        if (!External || !External->GetInput()) {
             if (x) *x = 0;
             if (y) *y = 0;
             return;
         }
-        if (x) *x = External->input->GetMouseXMotion();
-        if (y) *y = External->input->GetMouseYMotion();
+        if (x) *x = External->GetInput()->GetMouseXMotion();
+        if (y) *y = External->GetInput()->GetMouseYMotion();
     };
 }

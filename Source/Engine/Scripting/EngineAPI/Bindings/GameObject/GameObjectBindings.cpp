@@ -12,19 +12,19 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
 {
     // Create binding - converts const char* to GameObjectID
     gameObject.Create = [](const char* name) -> uint32_t {
-        if (!External->scene->activeScene) {
+        if (!External->GetScene()->activeScene) {
             NOUS_ERROR("No active scene to create GameObject in!");
             return 0; // 0 is invalid ID
         }
 
-        uint32_t newID = External->scene->activeScene->CreateGameObjectID(name ? name : "GameObject");
+        uint32_t newID = External->GetScene()->activeScene->CreateGameObjectID(name ? name : "GameObject");
         NOUS_DEBUG("Created GameObject '%s' with ID: %u", name, newID);
         return newID;
     };
 
     // Destroy binding - uses GameObjectID
     gameObject.Destroy = [](uint32_t id) {
-        if (!External->scene->activeScene) {
+        if (!External->GetScene()->activeScene) {
             NOUS_ERROR("No active scene to destroy GameObject from!");
             return;
         }
@@ -35,18 +35,18 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
         }
 
         NOUS_DEBUG("Destroying GameObject with ID: %u", id);
-        External->scene->activeScene->DestroyGameObjectByID(id);
+        External->GetScene()->activeScene->DestroyGameObjectByID(id);
     };
 
     // Bind the SetPosition function
     gameObject.SetPosition = [](uint32_t id, float x, float y, float z) {
-        if (!External || !External->scene || !External->scene->activeScene) {
+        if (!External || !External->GetScene() || !External->GetScene()->activeScene) {
             NOUS_ERROR("Scene not available for SetPosition!");
             return;
         }
 
         // 1. Get the GameObject by ID
-        GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
+        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
         if (!go) {
             NOUS_WARN("GameObject with ID %u not found for SetPosition!", id);
             return;
@@ -68,13 +68,13 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
 
     // Implement SetRotation, SetScale, GetPosition, etc. following the same pattern
     gameObject.SetRotation = [](uint32_t id, float x, float y, float z) {
-        if (!External || !External->scene || !External->scene->activeScene) {
+        if (!External || !External->GetScene() || !External->GetScene()->activeScene) {
             NOUS_ERROR("Scene not available for SetPosition!");
             return;
         }
 
         // 1. Get the GameObject by ID
-        GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
+        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
         if (!go) {
             NOUS_WARN("GameObject with ID %u not found for SetPosition!", id);
             return;
@@ -95,11 +95,11 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
     };
 
     gameObject.SetScale = [](uint32_t id, float x, float y, float z) {
-        if (!External || !External->scene || !External->scene->activeScene) {
+        if (!External || !External->GetScene() || !External->GetScene()->activeScene) {
             NOUS_ERROR("Scene not available for SetScale!");
             return;
         }
-        GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
+        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
         if (!go) { NOUS_WARN("GameObject ID %u not found for SetScale!", id); return; }
         if (!go->HasComponent<CTransform>()) {
             NOUS_WARN("GameObject %u has no Transform for SetScale!", id); return;
@@ -111,8 +111,8 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
     };
 
     gameObject.GetPosition = [](uint32_t id, float* x, float* y, float* z) {
-        if (!External || !External->scene || !External->scene->activeScene) return;
-        GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
+        if (!External || !External->GetScene() || !External->GetScene()->activeScene) return;
+        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
         if (!go || !go->HasComponent<CTransform>()) return;
         const auto& pos = go->GetComponent<CTransform>().position;
         if (x) *x = pos.x;
@@ -121,8 +121,8 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
     };
 
     gameObject.GetRotation = [](uint32_t id, float* x, float* y, float* z) {
-        if (!External || !External->scene || !External->scene->activeScene) return;
-        GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
+        if (!External || !External->GetScene() || !External->GetScene()->activeScene) return;
+        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
         if (!go || !go->HasComponent<CTransform>()) return;
         const glm::vec3 euler = go->GetComponent<CTransform>().GetEulerAngles();
         if (x) *x = euler.x;
@@ -131,8 +131,8 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
     };
 
     gameObject.GetScale = [](uint32_t id, float* x, float* y, float* z) {
-        if (!External || !External->scene || !External->scene->activeScene) return;
-        GameObject* go = External->scene->activeScene->GetGameObjectByID(id);
+        if (!External || !External->GetScene() || !External->GetScene()->activeScene) return;
+        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
         if (!go || !go->HasComponent<CTransform>()) return;
         const auto& sc = go->GetComponent<CTransform>().scale;
         if (x) *x = sc.x;
@@ -141,8 +141,8 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
     };
 
     gameObject.FindByName = [](const char* name) -> uint32_t {
-        if (!External || !External->scene || !External->scene->activeScene || !name) return 0;
-        auto results = External->scene->activeScene->FindGameObjectsByName(name);
+        if (!External || !External->GetScene() || !External->GetScene()->activeScene || !name) return 0;
+        auto results = External->GetScene()->activeScene->FindGameObjectsByName(name);
         return results.empty() ? 0 : results[0]->GetID();
     };
 }

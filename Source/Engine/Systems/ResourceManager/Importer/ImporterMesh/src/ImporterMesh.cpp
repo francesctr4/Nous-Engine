@@ -321,7 +321,7 @@ bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
 
     fh.Close();
 
-    return External->renderer->GetRendererFrontend()->CreateGeometry(
+    return External->GetRenderer()->GetRendererFrontend()->CreateGeometry(
         mesh->vertices.size(), mesh->vertices.data(),
         mesh->indices.size(), mesh->indices.data(), mesh);
 }
@@ -330,7 +330,7 @@ bool ImporterMesh::Unload(Resource* inResource)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
 
-    External->renderer->GetRendererFrontend()->DestroyGeometry(mesh);
+    External->GetRenderer()->GetRendererFrontend()->DestroyGeometry(mesh);
 
     mesh->ID         = INVALID_ID;
     mesh->internalID = INVALID_ID;

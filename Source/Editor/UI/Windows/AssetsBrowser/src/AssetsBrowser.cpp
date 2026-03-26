@@ -178,7 +178,7 @@ void AssetsBrowser::Draw()
             {
                 if (ImGui::MenuItem("Refresh Assets"))
                 {
-                    External->jobSystem->SubmitJob([this]()
+                    External->GetJobSystem()->SubmitJob([this]()
                         {
                             std::system("cmake --build ./ --target CopyAssets");
                             AddItemsFromDirectory(current_directory);
@@ -188,7 +188,7 @@ void AssetsBrowser::Draw()
 
                 if (ImGui::MenuItem("Regenerate Library"))
                 {
-//                    External->jobSystem->SubmitJob([]()
+//                    External->GetJobSystem()->SubmitJob([]()
 //                        {
 //                            NOUS_FileManager::DeleteDirectory("Library");
 //

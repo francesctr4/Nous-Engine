@@ -59,7 +59,7 @@ bool VulkanBackend::Initialize()
     vkContext->allocator = 0;
 
     // Get Framebuffer Size
-    External->window->GetFramebufferSize(&cachedFramebufferWidth, &cachedFramebufferHeight);
+    External->GetWindow()->GetFramebufferSize(&cachedFramebufferWidth, &cachedFramebufferHeight);
 
     vkContext->framebufferWidth = (cachedFramebufferWidth != 0) ? cachedFramebufferWidth : WINDOW_WIDTH;
     vkContext->framebufferHeight = (cachedFramebufferHeight != 0) ? cachedFramebufferHeight : WINDOW_HEIGHT;
@@ -1175,7 +1175,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     // Resolve material.
     ResourceMaterial* material = renderData.material
         ? renderData.material
-        : External->resourceManager->GetDefaultMaterial();
+        : External->GetResourceManager()->GetDefaultMaterial();
 
     // Per-instance descriptors (material UBO + texture sampler).
     if (material && material->internalID != INVALID_ID && vs->instancePool)
@@ -1194,7 +1194,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
         // has an invalid generation, or has not yet been uploaded to the GPU.
         ResourceTexture* texture = material->diffuseMap.texture;
         if (!texture || texture->generation == INVALID_ID || !texture->internalData)
-            texture = External->resourceManager->GetDefaultTexture();
+            texture = External->GetResourceManager()->GetDefaultTexture();
 
         if (texture && texture->internalData)
         {

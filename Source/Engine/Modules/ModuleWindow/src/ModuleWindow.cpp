@@ -50,7 +50,7 @@ bool ModuleWindow::Awake()
 
 bool ModuleWindow::Start()
 {
-    if (App->renderer->GetRendererFrontend()->GetRenderMode() == RenderMode::EDITOR)
+    if (App->GetRenderer()->GetRendererFrontend()->GetRenderMode() == RenderMode::EDITOR)
         SDL_MaximizeWindow(window);
 
     return true;

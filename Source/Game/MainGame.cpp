@@ -91,7 +91,7 @@ int main(int argc, char** argv)
                 App = NOUS_NEW<Application>(MemoryTag::APPLICATION);
 
                 // Configure GAME mode before Awake() so every module can branch on it.
-                App->renderer->SetRenderMode(RenderMode::GAME);
+                App->GetRenderer()->SetRenderMode(RenderMode::GAME);
 
                 cfg = LoadGameConfig(argv[0]);
                 App->SetTargetFPS(cfg.targetFPS);
@@ -121,10 +121,10 @@ int main(int argc, char** argv)
                 }
 
                 // Fullscreen after Start so the window/swapchain are fully initialized.
-                App->window->SetFullscreen(true);
+                App->GetWindow()->SetFullscreen(true);
 
                 // Kick off async scene load. PressPlay is deferred until the job finishes.
-                App->scene->LoadSceneAsync(cfg.startScene);
+                App->GetScene()->LoadSceneAsync(cfg.startScene);
 
                 NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Update ----------");
                 state = GameState::Update;
@@ -134,9 +134,9 @@ int main(int argc, char** argv)
             case GameState::Update:
             {
                 // Once the async scene load job completes, start simulation.
-                if (!sceneReady && App->jobSystem->GetPendingJobs() == 0)
+                if (!sceneReady && App->GetJobSystem()->GetPendingJobs() == 0)
                 {
-                    App->scene->PressPlay();
+                    App->GetScene()->PressPlay();
                     sceneReady = true;
                     NOUS_INFO_C(CURRENT_CHANNEL, "Scene loaded — simulation started.");
                 }

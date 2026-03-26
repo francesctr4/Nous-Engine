@@ -62,7 +62,7 @@ void SceneViewport::Draw()
 
         if (ImGui::Begin(title, p_open, windowFlags))
         {
-            External->camera->sceneViewportHovered = ImGui::IsWindowHovered();
+            External->GetCamera()->sceneViewportHovered = ImGui::IsWindowHovered();
 
             // Handle gizmo mode switching (W/E/R keys) when viewport is hovered
             if (ImGui::IsWindowHovered() || ImGui::IsWindowFocused())
@@ -128,8 +128,8 @@ void SceneViewport::Draw()
                 // ImGuizmo::IsOver() retains stale state from the previous frame when no
                 // gizmo was drawn (e.g. nothing selected). Only consult it when a gizmo is
                 // actually visible this frame, otherwise picking would be incorrectly blocked.
-                const bool gizmoVisible = External->scene->selectedGameObject != nullptr &&
-                                          External->scene->selectedGameObject->HasComponent<CTransform>();
+                const bool gizmoVisible = External->GetScene()->selectedGameObject != nullptr &&
+                                          External->GetScene()->selectedGameObject->HasComponent<CTransform>();
                 const bool gizmoBlocking = gizmoVisible && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
                 s_GizmoWasActive = gizmoBlocking;
 
@@ -173,7 +173,7 @@ void SceneViewport::Draw()
 
                                 if (path.find(".nous") != std::string::npos)
                                 {
-                                    External->scene->LoadScene(path);
+                                    External->GetScene()->LoadScene(path);
                                     continue;
                                 }
 
@@ -183,20 +183,20 @@ void SceneViewport::Draw()
                                 const std::string ext = NOUS_FileManager::GetExtension(path);
                                 if (Resource::GetTypeFromExtension(ext) == ResourceType::MESH)
                                 {
-                                    External->jobSystem->SubmitJob([path]()
+                                    External->GetJobSystem()->SubmitJob([path]()
                                     {
-                                        External->scene->SpawnMeshAsHierarchy(path);
+                                        External->GetScene()->SpawnMeshAsHierarchy(path);
                                     }, "Spawn Mesh Hierarchy");
                                 }
                                 else if (ext == ".nprefab")
                                 {
-                                    External->scene->InstantiatePrefab(path, nullptr);
+                                    External->GetScene()->InstantiatePrefab(path, nullptr);
                                 }
                                 else
                                 {
-                                    External->jobSystem->SubmitJob([path]()
+                                    External->GetJobSystem()->SubmitJob([path]()
                                     {
-                                        External->resourceManager->CreateResource(path);
+                                        External->GetResourceManager()->CreateResource(path);
                                     }, "Create Resource");
                                 }
                             }
@@ -218,18 +218,18 @@ void SceneViewport::Draw()
 void SceneViewport::HandleGizmoInput()
 {
     // Only switch gizmo mode when right mouse button is NOT held (camera uses RMB + WASD)
-    if (External->input->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::IDLE)
+    if (External->GetInput()->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::IDLE)
     {
-        if (External->input->GetKey(SDL_SCANCODE_W) == KeyState::DOWN)
+        if (External->GetInput()->GetKey(SDL_SCANCODE_W) == KeyState::DOWN)
             m_GizmoOperation = GizmoOperation::TRANSLATE;
-        if (External->input->GetKey(SDL_SCANCODE_E) == KeyState::DOWN)
+        if (External->GetInput()->GetKey(SDL_SCANCODE_E) == KeyState::DOWN)
             m_GizmoOperation = GizmoOperation::ROTATE;
-        if (External->input->GetKey(SDL_SCANCODE_R) == KeyState::DOWN)
+        if (External->GetInput()->GetKey(SDL_SCANCODE_R) == KeyState::DOWN)
             m_GizmoOperation = GizmoOperation::SCALE;
     }
 
     // Toggle local/world mode
-    if (External->input->GetKey(SDL_SCANCODE_T) == KeyState::DOWN)
+    if (External->GetInput()->GetKey(SDL_SCANCODE_T) == KeyState::DOWN)
     {
         m_GizmoSpace = (m_GizmoSpace == GizmoSpace::LOCAL)
             ? GizmoSpace::WORLD
@@ -237,17 +237,17 @@ void SceneViewport::HandleGizmoInput()
     }
 
     // Toggle snapping with Left Ctrl
-    m_UseSnap = (External->input->GetKey(SDL_SCANCODE_LCTRL) == KeyState::REPEAT
-              || External->input->GetKey(SDL_SCANCODE_LCTRL) == KeyState::DOWN);
+    m_UseSnap = (External->GetInput()->GetKey(SDL_SCANCODE_LCTRL) == KeyState::REPEAT
+              || External->GetInput()->GetKey(SDL_SCANCODE_LCTRL) == KeyState::DOWN);
 }
 
 void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportSize)
 {
-    GameObject* selected = External->scene->selectedGameObject;
+    GameObject* selected = External->GetScene()->selectedGameObject;
     if (!selected || !selected->HasComponent<CTransform>())
         return;
 
-    Camera* cam = External->camera->GetCamera();
+    Camera* cam = External->GetCamera()->GetCamera();
     if (!cam)
         return;
 
@@ -360,8 +360,8 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
     // Only respond to left mouse button click when the viewport is hovered and
     // right mouse button is NOT held (camera uses RMB + WASD).
     if (!ImGui::IsWindowHovered() ||
-        External->input->GetMouseButton(SDL_BUTTON_LEFT) != KeyState::DOWN ||
-        External->input->GetMouseButton(SDL_BUTTON_RIGHT) != KeyState::IDLE)
+        External->GetInput()->GetMouseButton(SDL_BUTTON_LEFT) != KeyState::DOWN ||
+        External->GetInput()->GetMouseButton(SDL_BUTTON_RIGHT) != KeyState::IDLE)
     {
         return;
     }
@@ -387,10 +387,10 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
                                 0, static_cast<int32_t>(vkContext->framebufferHeight - 1));
 
     // Build geometry list (same logic as ModuleRenderer3D::BuildRenderPacket)
-    if (!External->scene->activeScene)
+    if (!External->GetScene()->activeScene)
         return;
 
-    const auto gameObjects = External->scene->activeScene->GetGameObjectsSnapshot();
+    const auto gameObjects = External->GetScene()->activeScene->GetGameObjectsSnapshot();
     std::vector<GeometryRenderData> geometries;
     geometries.reserve(gameObjects.size());
 
@@ -412,40 +412,40 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
 
     if (geometries.empty())
     {
-        External->scene->selectedGameObject = nullptr;
+        External->GetScene()->selectedGameObject = nullptr;
         return;
     }
 
     // Use the camera's own projection matrix — must match what the scene pass renders
     // with, so the pick result aligns with the scene framebuffer.
     // The UV mapping above already accounts for the viewport panel's crop.
-    Camera* cam = External->camera->GetCamera();
+    Camera* cam = External->GetCamera()->GetCamera();
     if (!cam) return;
 
     glm::mat4 projection = cam->GetProjectionMatrix();
     glm::mat4 view = cam->GetViewMatrix();
 
     // Perform the pick
-    RendererFrontend* frontend = External->renderer->GetRendererFrontend();
+    RendererFrontend* frontend = External->GetRenderer()->GetRendererFrontend();
     uint32_t objectID = frontend->PickObjectAt(pixelX, pixelY, projection, view, geometries);
 
     // Select or deselect
     if (objectID != 0)
     {
-        GameObject* found = External->scene->activeScene->FindGameObjectByID(objectID);
+        GameObject* found = External->GetScene()->activeScene->FindGameObjectByID(objectID);
         if (found)
         {
-            External->scene->selectedGameObject = found;
+            External->GetScene()->selectedGameObject = found;
         }
         else
         {
             // objectID didn't match any live GO — stale pick result; deselect.
-            External->scene->selectedGameObject = nullptr;
+            External->GetScene()->selectedGameObject = nullptr;
         }
     }
     else
     {
-        External->scene->selectedGameObject = nullptr;
+        External->GetScene()->selectedGameObject = nullptr;
     }
 }
 

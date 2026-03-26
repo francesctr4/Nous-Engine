@@ -30,11 +30,11 @@ void CScript::OnStart()
 {
     // Always register so the component appears in the registry and can be found
     // by PressPlay() / hot-reload regardless of simulation state.
-    External->scene->RegisterScriptComponent(this);
+    External->GetScene()->RegisterScriptComponent(this);
     m_registered = true;
 
     // Defer instance creation to PressPlay() when the simulation is not running.
-    if (!External->scene->IsPlaying())
+    if (!External->GetScene()->IsPlaying())
         return;
 
     CreateInstances();
@@ -67,9 +67,9 @@ void CScript::OnDestroy()
 {
     // Unregister only if we actually registered — avoids calling into the scene
     // module if OnStart() was never reached (e.g., component destroyed mid-construction).
-    if (m_registered && External && External->scene)
+    if (m_registered && External && External->GetScene())
     {
-        External->scene->UnregisterScriptComponent(this);
+        External->GetScene()->UnregisterScriptComponent(this);
         m_registered = false;
     }
 
@@ -90,7 +90,7 @@ void CScript::AddScript(const std::string& scriptName)
 
     if (m_started && m_GameObject)
     {
-        ScriptManager* sm = External->scene->scriptManager;
+        ScriptManager* sm = External->GetScene()->scriptManager;
         IScript* inst = sm->CreateScriptInstance(scriptName);
         if (inst)
         {
@@ -162,9 +162,9 @@ void CScript::CreateInstances()
 {
     DestroyInstances();
 
-    if (!External || !External->scene || !External->scene->scriptManager) return;
+    if (!External || !External->GetScene() || !External->GetScene()->scriptManager) return;
 
-    ScriptManager* sm = External->scene->scriptManager;
+    ScriptManager* sm = External->GetScene()->scriptManager;
 
     for (const auto& name : m_scriptNames)
     {

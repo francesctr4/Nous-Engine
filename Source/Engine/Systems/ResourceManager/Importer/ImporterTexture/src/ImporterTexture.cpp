@@ -98,7 +98,7 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
         texture->generation = (currentGeneration == INVALID_ID) ? 0 : currentGeneration;
 
         // Acquire internal texture resources and upload to GPU.
-        if(!External->renderer->GetRendererFrontend()->CreateTexture(data, texture))
+        if(!External->GetRenderer()->GetRendererFrontend()->CreateTexture(data, texture))
         {
             NOUS_ERROR("Failed to acquire renderer resources for texture '%s'", texture->GetName().c_str());
             return false;
@@ -125,7 +125,7 @@ bool ImporterTexture::Unload(Resource* inResource)
 {
     ResourceTexture* texture = down_cast<ResourceTexture*>(inResource);
 
-    External->renderer->GetRendererFrontend()->DestroyTexture(texture);
+    External->GetRenderer()->GetRendererFrontend()->DestroyTexture(texture);
 
     return true;
 }

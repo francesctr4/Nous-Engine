@@ -262,3 +262,17 @@ void Application::BroadcastEvent(const Event &event) const
 {
     eventSystem->Broadcast(event);
 }
+
+EventSystem*           Application::GetEventSystem()     const { return eventSystem; }
+
+ModuleWindow*          Application::GetWindow()          const { return window; }
+ModuleInput*           Application::GetInput()           const { return input; }
+ModuleCamera3D*        Application::GetCamera()          const { return camera; }
+ModuleResourceManager* Application::GetResourceManager() const { return resourceManager; }
+ModuleScene*           Application::GetScene()           const { return scene; }
+ModuleRenderer3D*      Application::GetRenderer()        const { return renderer; }
+
+NOUS_Multithreading::NOUS_JobSystem* Application::GetJobSystem() const { return jobSystem; }
+
+bool Application::IsMinimized()          const { return isMinimized; }
+void Application::SetMinimized(bool value)     { isMinimized = value; }

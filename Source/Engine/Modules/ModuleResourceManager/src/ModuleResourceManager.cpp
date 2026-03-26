@@ -27,7 +27,7 @@ constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOU
 
 ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
 {
-	App->eventSystem->Subscribe(EventType::DROP_FILE, this);
+	App->GetEventSystem()->Subscribe(EventType::DROP_FILE, this);
 }
 
 ModuleResourceManager::~ModuleResourceManager()
@@ -37,7 +37,7 @@ ModuleResourceManager::~ModuleResourceManager()
 
 bool ModuleResourceManager::Awake()
 {
-	if (External->renderer->GetRendererFrontend()->GetRenderMode() == RenderMode::GAME)
+	if (External->GetRenderer()->GetRendererFrontend()->GetRenderMode() == RenderMode::GAME)
 	{
 		// GAME mode: Library binaries are pre-built. No asset scanning/importing needed.
 		return true;
@@ -138,7 +138,7 @@ bool ModuleResourceManager::Start()
 	mDefaultTexture->height = texDimension;
 	mDefaultTexture->channelCount = channels;
 
-	if (!App->renderer->GetRendererFrontend()->CreateTexture(pixels.data(), mDefaultTexture))
+	if (!App->GetRenderer()->GetRendererFrontend()->CreateTexture(pixels.data(), mDefaultTexture))
 	{
 		NOUS_FATAL("Failed to create default texture.");
 		return false;
@@ -161,7 +161,7 @@ bool ModuleResourceManager::Start()
 	mDefaultMaterial->diffuseMap.type = TextureMapType::DIFFUSE;
 	mDefaultMaterial->diffuseMap.texture = mDefaultTexture;
 
-	if (!App->renderer->GetRendererFrontend()->CreateMaterial(mDefaultMaterial))
+	if (!App->GetRenderer()->GetRendererFrontend()->CreateMaterial(mDefaultMaterial))
 	{
 		NOUS_FATAL("Failed to create default material.");
 		return false;
@@ -332,7 +332,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 			//AddResource(metaFileData.uid, resource);
 
 			//// Push to render packet
-			////External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
+			////External->GetRenderer()->geometries.push_back(static_cast<ResourceMesh*>(resource));
 		}
 		else 
 		{
@@ -386,7 +386,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 				//	AddResource(metaFileData.uid, resource);
 
 				//	// Push to render packet
-				//	//External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
+				//	//External->GetRenderer()->geometries.push_back(static_cast<ResourceMesh*>(resource));
 				//}
 				//else 
 				//{
@@ -454,7 +454,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 		//	AddResource(resource->GetUID(), resource);
 
 		//	// Push to render packet
-		//	//External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
+		//	//External->GetRenderer()->geometries.push_back(static_cast<ResourceMesh*>(resource));
 		//}
 		//else
 		//{
@@ -838,7 +838,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 	mesh->vertices = sub.vertices;
 	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
 
-	if (!App->renderer->GetRendererFrontend()->CreateGeometry(
+	if (!App->GetRenderer()->GetRendererFrontend()->CreateGeometry(
 	    mesh->vertices.size(), mesh->vertices.data(),
 	    mesh->indices.size(), mesh->indices.data(), mesh))
 	{
@@ -934,14 +934,14 @@ void ModuleResourceManager::ClearResources()
 
     if (mDefaultTexture)
     {
-        App->renderer->GetRendererFrontend()->DestroyTexture(mDefaultTexture);
+        App->GetRenderer()->GetRendererFrontend()->DestroyTexture(mDefaultTexture);
         NOUS_DELETE(mDefaultTexture, MemoryTag::RESOURCE_TEXTURE);
         mDefaultTexture = nullptr;
     }
 
     if (mDefaultMaterial)
     {
-        App->renderer->GetRendererFrontend()->DestroyMaterial(mDefaultMaterial);
+        App->GetRenderer()->GetRendererFrontend()->DestroyMaterial(mDefaultMaterial);
         NOUS_DELETE(mDefaultMaterial, MemoryTag::RESOURCE_MATERIAL);
         mDefaultMaterial = nullptr;
     }
@@ -1014,7 +1014,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
     mesh->indices.assign(sub.indices.begin(), sub.indices.end());
 
     // Upload geometry to the GPU.
-    if (!App->renderer->GetRendererFrontend()->CreateGeometry(
+    if (!App->GetRenderer()->GetRendererFrontend()->CreateGeometry(
         mesh->vertices.size(), mesh->vertices.data(),
         mesh->indices.size(), mesh->indices.data(), mesh))
     {

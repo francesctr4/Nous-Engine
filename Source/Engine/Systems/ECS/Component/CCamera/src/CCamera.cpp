@@ -44,7 +44,7 @@ void CCamera::OnUpdate(float /*deltaTime*/)
     if (!transform)
         return;
 
-    Camera* gameCamera = External->scene->gameCamera;
+    Camera* gameCamera = External->GetScene()->gameCamera;
     gameCamera->SetPos(transform->position);
     gameCamera->SetFront(transform->GetForward());
     gameCamera->SetUp(transform->GetUp());

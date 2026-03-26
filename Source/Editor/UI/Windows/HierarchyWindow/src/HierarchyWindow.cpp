@@ -24,7 +24,7 @@ HierarchyWindow::HierarchyWindow(const char* title, EditorContext* context, bool
 
 void HierarchyWindow::Init()
 {
-    SetScene(External->scene->activeScene);
+    SetScene(External->GetScene()->activeScene);
 }
 
 void HierarchyWindow::Draw() {
@@ -54,7 +54,7 @@ void HierarchyWindow::Draw() {
                             std::string path(data);
                             data += path.size() + 1;
                             if (std::filesystem::path(path).extension() == ".nprefab")
-                                External->scene->InstantiatePrefab(path, nullptr);
+                                External->GetScene()->InstantiatePrefab(path, nullptr);
                         }
                     }
                     ImGui::EndDragDropTarget();
@@ -64,13 +64,13 @@ void HierarchyWindow::Draw() {
                 if (ImGui::BeginPopupContextItem("##SceneContextMenu")) {
                     if (ImGui::MenuItem("Create Empty")) {
                         GameObject* go = m_Scene->CreateGameObject("GameObject", nullptr);
-                        External->scene->selectedGameObject = go;
+                        External->GetScene()->selectedGameObject = go;
                     }
                     if (ImGui::MenuItem("Create Camera")) {
                         GameObject* go = m_Scene->CreateGameObject("Main Camera", nullptr);
                         auto& cam = go->AddComponent<CCamera>();
                         cam.isMainCamera = true;
-                        External->scene->selectedGameObject = go;
+                        External->GetScene()->selectedGameObject = go;
                     }
                     ImGui::EndPopup();
                 }
@@ -78,7 +78,7 @@ void HierarchyWindow::Draw() {
                 if (opened) {
                     if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
                         if (!ImGui::IsAnyItemHovered()) {
-                            External->scene->selectedGameObject = nullptr;
+                            External->GetScene()->selectedGameObject = nullptr;
                         }
                     }
 
@@ -97,8 +97,8 @@ void HierarchyWindow::Draw() {
 
                 // Process deletion first
                 for (auto* go : m_ToDelete) {
-                    if (External->scene->selectedGameObject == go) {
-                        External->scene->selectedGameObject = nullptr;
+                    if (External->GetScene()->selectedGameObject == go) {
+                        External->GetScene()->selectedGameObject = nullptr;
                     }
                     m_Scene->DestroyGameObject(go);
                 }
@@ -125,7 +125,7 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go, bool insidePrefab) {
         flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
     // Highlight if selected
-    if (go == External->scene->selectedGameObject)
+    if (go == External->GetScene()->selectedGameObject)
         flags |= ImGuiTreeNodeFlags_Selected;
 
     // Blue tint for prefab instance roots and all their children
@@ -142,15 +142,15 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go, bool insidePrefab) {
 
     // Left-click to select
     if (ImGui::IsItemClicked()) {
-        External->scene->selectedGameObject = go;
+        External->GetScene()->selectedGameObject = go;
     }
 
     // Right-click menu
     if (ImGui::BeginPopupContextItem()) {
         if (ImGui::MenuItem("Delete")) {
             m_ToDelete.push_back(go);
-            if (External->scene->selectedGameObject == go)
-                External->scene->selectedGameObject = nullptr;
+            if (External->GetScene()->selectedGameObject == go)
+                External->GetScene()->selectedGameObject = nullptr;
         }
         ImGui::Separator();
         if (ImGui::MenuItem("Save As Prefab")) {
@@ -189,7 +189,7 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go, bool insidePrefab) {
                 std::string path(data);
                 data += path.size() + 1;
                 if (std::filesystem::path(path).extension() == ".nprefab")
-                    External->scene->InstantiatePrefab(path, go);
+                    External->GetScene()->InstantiatePrefab(path, go);
             }
         }
         ImGui::EndDragDropTarget();

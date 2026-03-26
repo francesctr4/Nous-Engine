@@ -40,43 +40,50 @@ public:
 	NOUS_ENGINE_API float GetMS() const;
 
     // Event System
-    NOUS_ENGINE_API void QueueEvent(const Event& event) const;
-    NOUS_ENGINE_API void BroadcastEvent(const Event& event) const;
+    NOUS_ENGINE_API void        QueueEvent(const Event& event)    const;
+    NOUS_ENGINE_API void        BroadcastEvent(const Event& event) const;
+    NOUS_ENGINE_API EventSystem* GetEventSystem()                  const;
+
+    // ------------- MODULE ACCESSORS ------------- //
+    NOUS_ENGINE_API ModuleWindow*                         GetWindow()          const;
+    NOUS_ENGINE_API ModuleInput*                          GetInput()           const;
+    NOUS_ENGINE_API ModuleCamera3D*                       GetCamera()          const;
+    NOUS_ENGINE_API ModuleResourceManager*                GetResourceManager() const;
+    NOUS_ENGINE_API ModuleScene*                          GetScene()           const;
+    NOUS_ENGINE_API ModuleRenderer3D*                     GetRenderer()        const;
+    NOUS_ENGINE_API NOUS_Multithreading::NOUS_JobSystem*  GetJobSystem()       const;
+
+    // ------------- STATE ACCESSORS ------------- //
+    NOUS_ENGINE_API bool IsMinimized()         const;
+    NOUS_ENGINE_API void SetMinimized(bool value);
 
 private:
 
 	UpdateStatus PrepareUpdate();
 	void FinishUpdate() const;
 
-public:
-
-	ModuleWindow* window;
-	ModuleInput* input;
-	ModuleCamera3D* camera;
+	ModuleWindow*          window;
+	ModuleInput*           input;
+	ModuleCamera3D*        camera;
 	ModuleResourceManager* resourceManager;
-	ModuleScene* scene;
-	ModuleRenderer3D* renderer;
+	ModuleScene*           scene;
+	ModuleRenderer3D*      renderer;
 
 	bool isMinimized;
 
-    // ------------- EVENT SYSTEM ------------- //
-    EventSystem* eventSystem;
-
-	// ------------- MULTITHREADING ------------- //
+	EventSystem*                         eventSystem;
 	NOUS_Multithreading::NOUS_JobSystem* jobSystem;
-
-private:
 
 	std::vector<Module*> listModules;
 
 	Timer* msTimer;
-	float dt;
-	float targetFPS;
+	float  dt;
+	float  targetFPS;
 
 	Timer* updateTitleTimer;
 
-	mutable float cachedDt    = 0.0f;
-	mutable float cachedFPS   = 0.0f;
+	mutable float cachedDt        = 0.0f;
+	mutable float cachedFPS       = 0.0f;
 	mutable char  titleBuffer[256] = {};
 };
 

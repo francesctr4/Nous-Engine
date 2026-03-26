@@ -280,7 +280,7 @@ bool ImporterShader::Load(const std::string& libraryPath, Resource* outResource)
               shader->stagesData.size(), shaderDir.c_str());
 
     // 4. Upload to the GPU backend (populates shader->internalData)
-    if (!External->renderer->GetRendererFrontend()->CreateShader(shader))
+    if (!External->GetRenderer()->GetRendererFrontend()->CreateShader(shader))
     {
         NOUS_ERROR("[ImporterShader] Backend failed to create GPU resources for shader '%s'.",
                    shaderDir.c_str());
@@ -295,7 +295,7 @@ bool ImporterShader::Unload(Resource* inResource)
     ResourceShader* shader = down_cast<ResourceShader*>(inResource);
 
     // Release GPU resources first, then clear CPU-side data
-    External->renderer->GetRendererFrontend()->DestroyShader(shader);
+    External->GetRenderer()->GetRendererFrontend()->DestroyShader(shader);
 
     shader->stagesData.clear();
     shader->reflection = {};

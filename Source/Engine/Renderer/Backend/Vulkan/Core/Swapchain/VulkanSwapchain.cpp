@@ -207,7 +207,7 @@ VkExtent2D NOUS_VulkanSwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR
     else 
     {
         int32 width, height;
-        External->window->GetFramebufferSize(&width, &height);
+        External->GetWindow()->GetFramebufferSize(&width, &height);
 
         VkExtent2D actualExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
 

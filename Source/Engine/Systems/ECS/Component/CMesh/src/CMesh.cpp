@@ -53,12 +53,12 @@ void CMesh::Deserialize(JSON_Object *obj) {
         // Try library path first (GAME mode / no .meta needed).
         if (!libraryPath.empty())
         {
-            mesh = External->resourceManager->RequestOrCreateSubMeshResourceFromLibrary(
+            mesh = External->GetResourceManager()->RequestOrCreateSubMeshResourceFromLibrary(
                 libraryPath, submeshIndex);
         }
         if (!mesh)
         {
-            mesh = External->resourceManager->RequestOrCreateSubMeshResource(assetPath, submeshIndex);
+            mesh = External->GetResourceManager()->RequestOrCreateSubMeshResource(assetPath, submeshIndex);
         }
     }
     else
@@ -68,13 +68,13 @@ void CMesh::Deserialize(JSON_Object *obj) {
         // Try library path first (GAME mode / no .meta needed).
         if (!libraryPath.empty() && resourceUID != 0)
         {
-            mesh = down_cast<ResourceMesh*>(External->resourceManager->CreateResourceFromLibrary(
+            mesh = down_cast<ResourceMesh*>(External->GetResourceManager()->CreateResourceFromLibrary(
                 resourceUID, ResourceType::MESH, NOUS_FileManager::GetFilename(assetPath),
                 assetPath, libraryPath));
         }
         if (!mesh)
         {
-            mesh = down_cast<ResourceMesh*>(External->resourceManager->CreateResource(assetPath));
+            mesh = down_cast<ResourceMesh*>(External->GetResourceManager()->CreateResource(assetPath));
         }
     }
 }
@@ -85,6 +85,6 @@ void CMesh::OnDestroy() {
     // ResourceManager is no longer reachable.
     if (External && mesh && mesh->IsValid())
     {
-        External->resourceManager->UnloadResource(mesh->GetUID());
+        External->GetResourceManager()->UnloadResource(mesh->GetUID());
     }
 }

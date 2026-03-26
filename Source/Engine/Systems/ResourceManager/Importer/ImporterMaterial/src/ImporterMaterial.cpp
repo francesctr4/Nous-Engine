@@ -40,8 +40,8 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
             std::replace(texPath.begin(), texPath.end(), '\\', '/');
 
             MetaFileData texMeta;
-            if (External && External->resourceManager &&
-                External->resourceManager->GetAssetMetaData(texPath, texMeta))
+            if (External && External->GetResourceManager() &&
+                External->GetResourceManager()->GetAssetMetaData(texPath, texMeta))
             {
                 // Normalize library path to forward slashes before storing.
                 std::string libPath = texMeta.libraryPath;
@@ -96,19 +96,19 @@ bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResourc
         const UID texUID = static_cast<UID>(texUIDDouble);
         const std::string texName = NOUS_FileManager::GetFilename(diffuseMapPath);
         diffuseTexture = down_cast<ResourceTexture*>(
-            External->resourceManager->CreateResourceFromLibrary(
+            External->GetResourceManager()->CreateResourceFromLibrary(
                 texUID, ResourceType::TEXTURE, texName, diffuseMapPath, texLibPath));
     }
     if (!diffuseTexture)
     {
         diffuseTexture = down_cast<ResourceTexture*>(
-            External->resourceManager->CreateResource(diffuseMapPath));
+            External->GetResourceManager()->CreateResource(diffuseMapPath));
     }
 
     material->diffuseMap.type = TextureMapType::DIFFUSE;
     material->diffuseMap.texture = diffuseTexture;
 
-    ret = External->renderer->GetRendererFrontend()->CreateMaterial(material);
+    ret = External->GetRenderer()->GetRendererFrontend()->CreateMaterial(material);
 
     return ret;
 }
@@ -119,11 +119,11 @@ bool ImporterMaterial::Unload(Resource* inResource)
 
     if (material->diffuseMap.texture != nullptr)
     {
-        External->resourceManager->UnloadResource(material->diffuseMap.texture->GetUID());
+        External->GetResourceManager()->UnloadResource(material->diffuseMap.texture->GetUID());
         material->diffuseMap.texture = nullptr;
     }
 
-    External->renderer->GetRendererFrontend()->DestroyMaterial(material);
+    External->GetRenderer()->GetRendererFrontend()->DestroyMaterial(material);
 
 	return true;
 }

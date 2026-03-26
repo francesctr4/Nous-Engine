@@ -336,7 +336,7 @@ void MainMenuBar::Draw()
 		// Centered simulation toolbar — Play / Pause / Stop / Step
 		// -----------------------------------------------------------------------
 		{
-			const SimulationState state = External->scene->GetSimulationState();
+			const SimulationState state = External->GetScene()->GetSimulationState();
 
 			constexpr float buttonW  = 52.0f;
 			constexpr float spacing  = 4.0f;
@@ -348,7 +348,7 @@ void MainMenuBar::Draw()
 			const bool canPlay = (state == SimulationState::STOPPED);
 			if (!canPlay) ImGui::BeginDisabled();
 			if (ImGui::Button("Play", { buttonW, 0 }))
-				External->scene->PressPlay();
+				External->GetScene()->PressPlay();
 			if (!canPlay) ImGui::EndDisabled();
 
 			ImGui::SameLine(0.0f, spacing);
@@ -359,7 +359,7 @@ void MainMenuBar::Draw()
 			if (!canPause) ImGui::BeginDisabled();
 			if (isPaused)  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.85f, 0.65f, 0.10f, 1.0f));
 			if (ImGui::Button("Pause", { buttonW, 0 }))
-				External->scene->PressPause();
+				External->GetScene()->PressPause();
 			if (isPaused)  ImGui::PopStyleColor();
 			if (!canPause) ImGui::EndDisabled();
 
@@ -369,7 +369,7 @@ void MainMenuBar::Draw()
 			const bool canStop = (state != SimulationState::STOPPED);
 			if (!canStop) ImGui::BeginDisabled();
 			if (ImGui::Button("Stop", { buttonW, 0 }))
-				External->scene->PressStop();
+				External->GetScene()->PressStop();
 			if (!canStop) ImGui::EndDisabled();
 
 			ImGui::SameLine(0.0f, spacing);
@@ -378,7 +378,7 @@ void MainMenuBar::Draw()
 			const bool canStep = (state == SimulationState::PAUSED);
 			if (!canStep) ImGui::BeginDisabled();
 			if (ImGui::Button("Step", { buttonW, 0 }))
-				External->scene->PressStep();
+				External->GetScene()->PressStep();
 			if (!canStep) ImGui::EndDisabled();
 		}
 

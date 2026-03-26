@@ -63,7 +63,7 @@ ModuleScene::ModuleScene(Application* app)
 	if (!scriptManager->LoadScriptLibrary(scriptsDllPath))
 		NOUS_ERROR("Failed to load script library on startup");
 
-	App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
+	App->GetEventSystem()->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
 ModuleScene::~ModuleScene()
@@ -87,7 +87,7 @@ bool ModuleScene::Start()
     // In GAME mode the GameApp controls which scene to load via an explicit
     // LoadSceneAsync() call after Start() returns.  Skip the auto-load here
     // to avoid a double-load race condition.
-    if (External->renderer->GetRendererFrontend()->GetRenderMode() != RenderMode::GAME)
+    if (External->GetRenderer()->GetRendererFrontend()->GetRenderMode() != RenderMode::GAME)
         LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
 
 	return true;
@@ -147,59 +147,59 @@ UpdateStatus ModuleScene::Update(float dt)
 	if (activeScene)
 		activeScene->Update(simDt);
 
-	if (App->input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
+	if (App->GetInput()->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
 	{
 		ScriptManager::GenerateScript("PRUEBA_CREAR_SCRIPT_DESDE_MOTOR");
 	}
 
-    if (App->input->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
+    if (App->GetInput()->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
     {
         SaveScene("Assets/Scenes/LagiacrusScene.nous");
     }
 
-	if (App->input->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
+	if (App->GetInput()->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
 	{
 		ClearScene();
 	}
 
-	if (App->input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN)
+	if (App->GetInput()->GetKey(SDL_SCANCODE_C) == KeyState::DOWN)
 	{
 		LoadScene("Assets/Scenes/LagiacrusScene.nous");
 	}
 
-    if (App->input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
+    if (App->GetInput()->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
     {
-        App->jobSystem->SubmitJob([this]()
+        App->GetJobSystem()->SubmitJob([this]()
         {
             SpawnMeshAsHierarchy("Assets/Meshes/Lagiacrus_Head.fbx");
         }, "Spawn Lagiacrus");
     }
 
-    if (App->input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
+    if (App->GetInput()->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
     {
-        App->jobSystem->SubmitJob([this]()
+        App->GetJobSystem()->SubmitJob([this]()
         {
             SpawnMeshAsHierarchy("Assets/Meshes/Cypher_S0_Skelmesh.fbx");
         }, "Spawn Cypher");
     }
 
-    if (App->input->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
+    if (App->GetInput()->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
     {
-        App->jobSystem->SubmitJob([this]()
+        App->GetJobSystem()->SubmitJob([this]()
         {
             SpawnMeshAsHierarchy("Assets/Meshes/Queen_Xenomorph.fbx");
         }, "Spawn Queen Xenomorph");
     }
 
-    if (App->input->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
+    if (App->GetInput()->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
     {
-        App->jobSystem->SubmitJob([this]()
+        App->GetJobSystem()->SubmitJob([this]()
         {
             SpawnMeshAsHierarchy("Assets/Meshes/Wolf.obj");
         }, "Spawn Wolf");
     }
 
-    if (App->input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN)
+    if (App->GetInput()->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN)
     {
         static const std::vector<std::string> meshPaths = {
             "Assets/Meshes/Lagiacrus_Head.fbx",
@@ -209,31 +209,31 @@ UpdateStatus ModuleScene::Update(float dt)
         };
         for (const auto& path : meshPaths)
         {
-            App->jobSystem->SubmitJob([this, path]()
+            App->GetJobSystem()->SubmitJob([this, path]()
             {
                 SpawnMeshAsHierarchy(path);
             }, "Spawn Model");
         }
     }
 
-	if (App->input->GetKey(SDL_SCANCODE_F6) == KeyState::DOWN)
+	if (App->GetInput()->GetKey(SDL_SCANCODE_F6) == KeyState::DOWN)
 	{
 		ClearScene();
 	}
 
-	if (App->input->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
+	if (App->GetInput()->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
 	{
-		App->jobSystem->SubmitJob([this]()
+		App->GetJobSystem()->SubmitJob([this]()
 								  {
 									  NOUS_Multithreading::NOUS_Thread::SleepMS(5000);
 								  }, "Test");
 	}
 
-	if (App->input->GetKey(SDL_SCANCODE_F8) == KeyState::DOWN)
+	if (App->GetInput()->GetKey(SDL_SCANCODE_F8) == KeyState::DOWN)
 	{
 		for (int i = 0; i < 100; ++i)
 		{
-			App->jobSystem->SubmitJob([]
+			App->GetJobSystem()->SubmitJob([]
 									  {
 										  std::chrono::milliseconds duration(500);
 										  auto start = std::chrono::steady_clock::now();
@@ -247,10 +247,10 @@ UpdateStatus ModuleScene::Update(float dt)
 		}
 	}
 
-	if (App->input->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
+	if (App->GetInput()->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
 	{
 		NOUS_INFO("Initiating script hot-reload...");
-		App->jobSystem->SubmitJob([this] { RecompileScripts(); }, "Scripts Hot-Reload");
+		App->GetJobSystem()->SubmitJob([this] { RecompileScripts(); }, "Scripts Hot-Reload");
 	}
 
 	return UpdateStatus::CONTINUE;
@@ -272,7 +272,7 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 bool ModuleScene::CleanUp()
 {
 	// Wait for any in-flight jobs (e.g. hot-reload) before touching scripts
-	App->jobSystem->WaitForPendingJobs();
+	App->GetJobSystem()->WaitForPendingJobs();
 
 	CleanupScripts();
 	scriptManager->UnloadScriptLibrary();
@@ -403,12 +403,12 @@ void ModuleScene::PressPlay()
 	// Without this, a rapid Stop → Play sequence would serialize a partially-constructed
 	// scene (CMesh/CMaterial resources not yet assigned), corrupting the snapshot and
 	// causing null Resource* dereferences the next time the snapshot is loaded.
-	App->jobSystem->WaitForPendingJobs();
+	App->GetJobSystem()->WaitForPendingJobs();
 
 	// Save a snapshot of the current scene so PressStop can restore it.
 	// Skipped in GAME mode — there is no editor Stop button, so the snapshot
 	// is never needed and writing it would pollute the game's working directory.
-	if (External->renderer->GetRendererFrontend()->GetRenderMode() != RenderMode::GAME)
+	if (External->GetRenderer()->GetRendererFrontend()->GetRenderMode() != RenderMode::GAME)
 	{
 		std::filesystem::create_directories(std::filesystem::path(m_snapshotPath).parent_path());
 		activeScene->Serialize(m_snapshotPath);
@@ -491,7 +491,7 @@ void ModuleScene::LoadScene(const std::string& path)
 	// Drain any in-flight jobs (e.g. debug hotkey loaders) before clearing the
 	// scene. Without this, a job that called CreateGameObjectDetached before the
 	// clear could still call RegisterGameObject afterward on a cleared scene.
-	App->jobSystem->WaitForPendingJobs();
+	App->GetJobSystem()->WaitForPendingJobs();
 
 	ClearScene();
 	activeScene->Deserialize(path);
@@ -504,11 +504,11 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 	// Drain any in-flight jobs (e.g. debug hotkey loaders) before clearing the
 	// scene. Without this, a job that called CreateGameObjectDetached before the
 	// clear could still call RegisterGameObject afterward on a cleared scene.
-	App->jobSystem->WaitForPendingJobs();
+	App->GetJobSystem()->WaitForPendingJobs();
 
 	ClearScene();
 
-	App->jobSystem->SubmitJob([this, path]
+	App->GetJobSystem()->SubmitJob([this, path]
 		{
 			activeScene->Deserialize(path);
 			EnsureMainCamera();
@@ -535,7 +535,7 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
 {
     // 1. Read meta to get library path and verify the asset exists.
     MetaFileData metaData;
-    if (!App->resourceManager->GetAssetMetaData(assetsPath, metaData))
+    if (!App->GetResourceManager()->GetAssetMetaData(assetsPath, metaData))
     {
         NOUS_ERROR("[SpawnMeshAsHierarchy] No meta file for '%s'. Import it first.", assetsPath.c_str());
         return;
@@ -559,7 +559,7 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
         const SubMeshData& sub = submeshes[static_cast<size_t>(i)];
 
         ResourceMesh* meshResource =
-            App->resourceManager->RequestOrCreateSubMeshResource(assetsPath, i);
+            App->GetResourceManager()->RequestOrCreateSubMeshResource(assetsPath, i);
         if (!meshResource)
         {
             NOUS_WARN("[SpawnMeshAsHierarchy] Failed to create sub-resource for submesh %d of '%s'.",
@@ -592,7 +592,7 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
 
         // Default material — user can reassign via Inspector.
         auto& matComp    = childGO->AddComponent<CMaterial>();
-        matComp.material = App->resourceManager->GetDefaultMaterial();
+        matComp.material = App->GetResourceManager()->GetDefaultMaterial();
 
         activeScene->RegisterGameObject(childGO);
     }

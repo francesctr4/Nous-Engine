@@ -47,20 +47,20 @@ void Multithreading::Draw()
         ImGui::SameLine();
         if (ImGui::Button("Resize Pool"))
         {
-            External->jobSystem->Resize(newSize);
+            External->GetJobSystem()->Resize(newSize);
             NOUS_VulkanMultithreading::RecreateWorkerCommandPools(VulkanBackend::GetVulkanContext());
         }
 
         ImGui::Separator();
         
-        static const auto& threadPool = External->jobSystem->GetThreadPool();
+        static const auto& threadPool = External->GetJobSystem()->GetThreadPool();
         static const auto& threads = threadPool.GetThreads();
         static const auto& jobQueue = threadPool.GetJobQueue();
 
         ImGui::Columns(2);
         ImGui::Text("Max Hardware Threads: %u", NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
         ImGui::Text("Total Worker Threads: %u", static_cast<uint8>(threads.size()));
-        ImGui::Text("Total Jobs: %u", External->jobSystem->GetPendingJobs());
+        ImGui::Text("Total Jobs: %u", External->GetJobSystem()->GetPendingJobs());
         ImGui::NextColumn();
 
         auto* mainThread = NOUS_Multithreading::GetMainThread();

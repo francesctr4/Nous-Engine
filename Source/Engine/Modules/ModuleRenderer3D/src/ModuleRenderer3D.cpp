@@ -39,7 +39,7 @@ constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_RENDERER3D
 
 ModuleRenderer3D::ModuleRenderer3D(Application* app) : Module(app)
 {
-	App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
+	App->GetEventSystem()->Subscribe(EventType::WINDOW_RESIZED, this);
 
 	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryTag::RENDERER);
 }
@@ -79,13 +79,13 @@ bool ModuleRenderer3D::Awake()
 	{
 		// EDITOR mode: load via asset path (reads .meta to resolve UID).
 		// Capture return values so we can persist the manifest for GAME mode.
-		Resource* matShader = App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
-		Resource* bgShader  = App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
+		Resource* matShader = App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
+		Resource* bgShader  = App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
 
-		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
-		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
-		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
-		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
+		App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
+		App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
+		App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
+		App->GetResourceManager()->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
 
 		if (matShader && bgShader)
 			WriteShaderManifest(matShader, bgShader);
@@ -118,24 +118,24 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 #endif
 
 	// Propagate parent transforms top-down before any world-matrix reads.
-	if (App->scene->activeScene)
-		App->scene->activeScene->UpdateWorldMatrices();
+	if (App->GetScene()->activeScene)
+		App->GetScene()->activeScene->UpdateWorldMatrices();
 
 	RenderPacket packet{};
 	packet.deltaTime = dt;
-	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? App->camera->GetCamera() : nullptr;
-	packet.gameCamera  = App->scene->gameCamera;
+	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? App->GetCamera()->GetCamera() : nullptr;
+	packet.gameCamera  = App->GetScene()->gameCamera;
 
 	// Editor-only: selection outline.
 	if (m_renderMode == RenderMode::EDITOR)
 	{
 		std::vector<GeometryRenderData> outlinedGeometries;
-		if (App->scene->selectedGameObject && App->scene->selectedGameObject->HasComponent<CMesh>())
+		if (App->GetScene()->selectedGameObject && App->GetScene()->selectedGameObject->HasComponent<CMesh>())
 		{
 			GeometryRenderData data{};
-			if (auto* t = App->scene->selectedGameObject->TryGetComponent<CTransform>())
+			if (auto* t = App->GetScene()->selectedGameObject->TryGetComponent<CTransform>())
 				data.model = t->worldMatrix;
-			if (auto* m = App->scene->selectedGameObject->TryGetComponent<CMesh>())
+			if (auto* m = App->GetScene()->selectedGameObject->TryGetComponent<CMesh>())
 				data.geometry = m->mesh;
 			outlinedGeometries.push_back(data);
 		}
@@ -150,10 +150,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	{
 		mMeshAABBCache.clear();
 
-		if (App->scene->activeScene)
+		if (App->GetScene()->activeScene)
 		{
 		std::vector<BoundingBoxData> boundingBoxes;
-		const auto gameObjects = App->scene->activeScene->GetGameObjectsSnapshot();
+		const auto gameObjects = App->GetScene()->activeScene->GetGameObjectsSnapshot();
 
 		for (const auto& goPtr : gameObjects)
 		{
@@ -236,9 +236,9 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	{
 		std::vector<CameraFrustumData> frustums;
 
-		if (App->scene->activeScene)
+		if (App->GetScene()->activeScene)
 		{
-			const auto gameObjects = App->scene->activeScene->GetGameObjectsSnapshot();
+			const auto gameObjects = App->GetScene()->activeScene->GetGameObjectsSnapshot();
 
 			for (const auto& goPtr : gameObjects)
 			{
@@ -286,7 +286,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetCameraFrustums(frustums);
 	}
 
-	if (BuildRenderPacket(&packet) && !App->isMinimized)
+	if (BuildRenderPacket(&packet) && !App->IsMinimized())
 	{
 		FrameResult result = mRendererFrontend->DrawFrame(&packet);
 
@@ -318,15 +318,15 @@ bool ModuleRenderer3D::CleanUp()
     // OnDestroy callbacks (CMesh, CMaterial) need the ResourceManager and
     // its Resource objects to still be alive so they can safely decrement
     // reference counts via UnloadResource().
-    App->scene->selectedGameObject = nullptr;
-    if (App->scene->activeScene)
-        App->scene->activeScene->Clear();
+    App->GetScene()->selectedGameObject = nullptr;
+    if (App->GetScene()->activeScene)
+        App->GetScene()->activeScene->Clear();
 
     // Destroy all GPU resources (textures, shaders, meshes, materials).
     // Safe because ReleaseFrameResources() already freed the CBs/FBs that
     // referenced these objects, and the scene has been cleared above so no
     // component still holds a reference to any Resource.
-    App->resourceManager->ClearResources();
+    App->GetResourceManager()->ClearResources();
 
     // Tear down the remaining Vulkan infrastructure (buffers, sync objects,
     // renderpasses, swapchain, device).
@@ -425,7 +425,7 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 		if (uid == 0 || !libPath)
 		{ NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: invalid data for '%s'.", key); return; }
 
-		App->resourceManager->CreateResourceFromLibrary(
+		App->GetResourceManager()->CreateResourceFromLibrary(
 			uid, ResourceType::SHADER, NOUS_FileManager::GetFilename(assetPath), assetPath, libPath);
 	};
 
@@ -439,7 +439,7 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 
 bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
 {
-	if (!App->scene->activeScene)
+	if (!App->GetScene()->activeScene)
 	{
 		NOUS_ERROR_C(CURRENT_CHANNEL, "Active scene is not defined. Render packet will not be built.");
 		return false;
@@ -460,7 +460,7 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)
 
 	// Snapshot under mutex — guards against concurrent CreateGameObject() calls
 	// from the background LoadScene job reallocating the vector mid-iteration.
-	const auto gameObjects = App->scene->activeScene->GetGameObjectsSnapshot();
+	const auto gameObjects = App->GetScene()->activeScene->GetGameObjectsSnapshot();
 	packet->geometries.reserve(gameObjects.size());
 
 	for (const auto& goPtr : gameObjects)

@@ -37,7 +37,7 @@ void InspectorWindow::Draw() {
     if (*p_open) {
         if (ImGui::Begin(title, p_open)) {
 
-            GameObject* go = External->scene->selectedGameObject;
+            GameObject* go = External->GetScene()->selectedGameObject;
             if (!go) {
                 ImGui::TextDisabled("No GameObject selected.");
                 ImGui::End();
@@ -213,8 +213,8 @@ void InspectorWindow::Draw() {
 
                                             // Resolve current name for the preview label
                                             std::string preview = "None";
-                                            if (*idPtr != 0 && External->scene->activeScene) {
-                                                auto* target = External->scene->activeScene->GetGameObjectByID(*idPtr);
+                                            if (*idPtr != 0 && External->GetScene()->activeScene) {
+                                                auto* target = External->GetScene()->activeScene->GetGameObjectByID(*idPtr);
                                                 preview = target ? target->GetName() : "(missing)";
                                             }
 
@@ -224,8 +224,8 @@ void InspectorWindow::Draw() {
                                                     *idPtr = 0;
 
                                                 // All scene GameObjects
-                                                if (External->scene->activeScene) {
-                                                    const auto gos = External->scene->activeScene->GetGameObjectsSnapshot();
+                                                if (External->GetScene()->activeScene) {
+                                                    const auto gos = External->GetScene()->activeScene->GetGameObjectsSnapshot();
                                                     for (auto* target : gos) {
                                                         const bool selected = (*idPtr == target->GetID());
                                                         if (ImGui::Selectable(target->GetName().c_str(), selected))
@@ -249,7 +249,7 @@ void InspectorWindow::Draw() {
                     // Add script from dropdown
                     ImGui::Spacing();
                     const std::vector<std::string> available =
-                        External->scene->scriptManager->GetAvailableScriptNames();
+                        External->GetScene()->scriptManager->GetAvailableScriptNames();
 
                     if (!available.empty()) {
                         static int s_selectedScript = 0;

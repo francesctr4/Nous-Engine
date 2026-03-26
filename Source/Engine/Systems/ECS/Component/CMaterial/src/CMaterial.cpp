@@ -43,14 +43,14 @@ void CMaterial::Deserialize(JSON_Object* obj) {
     // Try library path first (GAME mode / no .meta needed).
     if (!libraryPath.empty() && resourceUID != 0)
     {
-        material = down_cast<ResourceMaterial*>(External->resourceManager->CreateResourceFromLibrary(
+        material = down_cast<ResourceMaterial*>(External->GetResourceManager()->CreateResourceFromLibrary(
             resourceUID, ResourceType::MATERIAL, NOUS_FileManager::GetFilename(assetPath),
             assetPath, libraryPath));
     }
     if (!material)
     {
         material = down_cast<ResourceMaterial*>(
-            External->resourceManager->CreateResource(assetPath)
+            External->GetResourceManager()->CreateResource(assetPath)
         );
     }
 }
@@ -64,6 +64,6 @@ void CMaterial::OnDestroy()
     // destruction.  If we're called during shutdown after that point, the
     // ResourceManager is no longer reachable.
     if (External && material && material->IsValid()) {
-        External->resourceManager->UnloadResource(material->GetUID());
+        External->GetResourceManager()->UnloadResource(material->GetUID());
     }
 }

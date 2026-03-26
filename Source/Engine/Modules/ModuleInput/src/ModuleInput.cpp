@@ -126,13 +126,13 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
                 break;
             }
             case SDL_EVENT_WINDOW_MINIMIZED:
-            {
-                App->isMinimized = true;
+			{
+				App->SetMinimized(true);
                 break;
             }
             case SDL_EVENT_WINDOW_RESTORED:
             {
-                App->isMinimized = false;
+				App->SetMinimized(false);
                 break;
             }
 			case SDL_EVENT_DROP_FILE:
