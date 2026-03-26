@@ -29,6 +29,7 @@
 // ---------------------------------------------------------------------
 struct RenderPacket;
 class RendererFrontend;
+class Resource;
 
 class ModuleRenderer3D : public Module, public IEventListener
 {
@@ -71,6 +72,14 @@ private:
 	// Internal Methods
 	// ---------------------------------------------------------------------
 	[[nodiscard]] bool BuildRenderPacket(RenderPacket* packet);
+
+	// Writes Library/shader_manifest.json with the UIDs and library paths of the
+	// built-in shaders so GAME mode can load them without reading .meta files.
+	void WriteShaderManifest(const Resource* matShader, const Resource* bgShader) const;
+
+	// Reads Library/shader_manifest.json and loads built-in shaders via
+	// CreateResourceFromLibrary — no .meta files required.
+	void LoadShadersFromManifest();
 
 private:
 	// ---------------------------------------------------------------------

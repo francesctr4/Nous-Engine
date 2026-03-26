@@ -68,7 +68,9 @@ struct NOUS_ENGINE_API LogEntry
 // InitializeLogging() calls this automatically as a fallback if you forget.
 NOUS_ENGINE_API void StartLogTimer();
 
-NOUS_ENGINE_API bool InitializeLogging();
+// enableFileLog: write output to console.log alongside the executable.
+// Pass false for game builds where file logging is unwanted.
+NOUS_ENGINE_API bool InitializeLogging(bool enableFileLog = true);
 NOUS_ENGINE_API void ShutdownLogging();
 
 // ──────────────────────────────────────────────────────────────────────────────

@@ -22,6 +22,10 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/LogChannel.h"
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Core/FileSystem/FileSystem.h"
+
+#include <parson.h>
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Utils/Math/FrustumCulling.h"
@@ -65,17 +69,28 @@ bool ModuleRenderer3D::Awake()
 
 	// ------------------------------ SHADERS ------------------------------ //
 
-	// Always load shaders needed for game rendering.
-	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
-	App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
-
-	// Editor-only shaders — skip in GAME mode.
-	if (m_renderMode == RenderMode::EDITOR)
+	if (m_renderMode == RenderMode::GAME)
 	{
+		// GAME mode: load built-in shaders from the manifest written by the editor.
+		// No .meta files required — UIDs and library paths are stored in Library/.
+		LoadShadersFromManifest();
+	}
+	else
+	{
+		// EDITOR mode: load via asset path (reads .meta to resolve UID).
+		// Capture return values so we can persist the manifest for GAME mode.
+		Resource* matShader = App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
+		Resource* bgShader  = App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
+
 		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
 		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
 		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
 		App->resourceManager->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
+
+		if (matShader && bgShader)
+			WriteShaderManifest(matShader, bgShader);
+		else
+			NOUS_WARN_C(CURRENT_CHANNEL, "Could not write shader_manifest.json — one or more built-in shaders failed to load.");
 	}
 
 	return true;
@@ -350,6 +365,67 @@ void ModuleRenderer3D::OnEvent(const Event& event)
 RendererFrontend *ModuleRenderer3D::GetRendererFrontend() const
 {
 	return mRendererFrontend;
+}
+
+void ModuleRenderer3D::WriteShaderManifest(const Resource* matShader, const Resource* bgShader) const
+{
+	JSON_Value*  root    = json_value_init_object();
+	JSON_Object* rootObj = json_value_get_object(root);
+
+	auto addEntry = [&](const char* key, const Resource* shader)
+	{
+		JSON_Value*  entry    = json_value_init_object();
+		JSON_Object* entryObj = json_value_get_object(entry);
+		json_object_set_number(entryObj, "uid",         static_cast<double>(shader->GetUID()));
+		json_object_set_string(entryObj, "libraryPath", shader->GetLibraryPath().c_str());
+		json_object_set_value(rootObj, key, entry);
+	};
+
+	addEntry("MaterialShader",   matShader);
+	addEntry("BackgroundShader", bgShader);
+
+	if (json_serialize_to_file_pretty(root, "Library/shader_manifest.json") != JSONSuccess)
+		NOUS_WARN_C(CURRENT_CHANNEL, "Failed to write Library/shader_manifest.json.");
+	else
+		NOUS_INFO_C(CURRENT_CHANNEL, "Shader manifest written to Library/shader_manifest.json.");
+
+	json_value_free(root);
+}
+
+void ModuleRenderer3D::LoadShadersFromManifest()
+{
+	JSON_Value* root = json_parse_file("Library/shader_manifest.json");
+	if (!root)
+	{
+		NOUS_FATAL_C(CURRENT_CHANNEL,
+			"Library/shader_manifest.json not found. "
+			"Run the editor once to generate it before packaging the game.");
+		return;
+	}
+
+	const JSON_Object* rootObj = json_value_get_object(root);
+
+	auto loadShader = [&](const char* key, const char* assetPath)
+	{
+		const JSON_Object* entry   = json_object_get_object(rootObj, key);
+		if (!entry) { NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: missing entry '%s'.", key); return; }
+
+		const UID   uid     = static_cast<UID>(json_object_get_number(entry, "uid"));
+		const char* libPath = json_object_get_string(entry, "libraryPath");
+
+		if (uid == 0 || !libPath)
+		{ NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: invalid data for '%s'.", key); return; }
+
+		App->resourceManager->CreateResourceFromLibrary(
+			uid, ResourceType::SHADER, NOUS_FileManager::GetFilename(assetPath), assetPath, libPath);
+	};
+
+	loadShader("MaterialShader",   "Assets/Shaders/BuiltIn.MaterialShader.glsl");
+	loadShader("BackgroundShader", "Assets/Shaders/BuiltIn.BackgroundShader.glsl");
+
+	json_value_free(root);
+
+	NOUS_INFO_C(CURRENT_CHANNEL, "Built-in shaders loaded from shader_manifest.json.");
 }
 
 bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet)

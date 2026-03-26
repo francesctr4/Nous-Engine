@@ -14,6 +14,7 @@
 # =========================================================
 
 add_custom_target(InstallEngine
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${CMAKE_SOURCE_DIR}/Delivery/Engine"
         COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}"
                 --config $<CONFIG>
                 --component InstallEngine

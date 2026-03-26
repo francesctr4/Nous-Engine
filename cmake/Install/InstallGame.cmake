@@ -2,7 +2,8 @@
 # InstallGame install component
 #
 # Produces a self-contained Delivery/Game/ folder with the
-# minimum files needed to run the game (no Assets/ required).
+# minimum files needed to run the game. Only Library/ is required —
+# no Assets/ or .meta files are shipped.
 #
 # Included from Source/Game/CMakeLists.txt after GameApp is defined.
 #
@@ -13,6 +14,7 @@
 # =========================================================
 
 add_custom_target(InstallGame
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${CMAKE_SOURCE_DIR}/Delivery/Game"
         COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}"
                 --config $<CONFIG>
                 --component InstallGame
@@ -52,6 +54,7 @@ install(CODE "
         UNRESOLVED_DEPENDENCIES_VAR _unresolved
         PRE_EXCLUDE_REGEXES  \"api-ms-.*\" \"ext-ms-.*\"
         POST_EXCLUDE_REGEXES \".*[Ss]ystem32[/\\\\\\\\].*\\\\.dll\"
+                             \"vulkan-1\\\\.dll\"
     )
     foreach(_dep IN LISTS _deps)
         file(INSTALL \"\${_dep}\" DESTINATION \"\${CMAKE_INSTALL_PREFIX}\")
@@ -71,11 +74,3 @@ install(DIRECTORY "${CMAKE_SOURCE_DIR}/Library/"
         PATTERN "_simulation_snapshot.nous" EXCLUDE
 )
 
-# .meta sidecar files — UID + library path mappings, no actual asset data.
-# Required so CreateResource() can resolve asset paths to Library binaries
-# without needing the source assets (meshes, textures, shaders, etc.).
-install(DIRECTORY "${CMAKE_SOURCE_DIR}/Assets/"
-        DESTINATION Assets
-        COMPONENT InstallGame
-        FILES_MATCHING PATTERN "*.meta"
-)

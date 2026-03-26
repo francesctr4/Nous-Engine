@@ -413,9 +413,14 @@ void ModuleScene::PressPlay()
 	// causing null Resource* dereferences the next time the snapshot is loaded.
 	App->jobSystem->WaitForPendingJobs();
 
-	// Ensure the snapshot directory exists, then save the current scene state.
-	std::filesystem::create_directories(std::filesystem::path(m_snapshotPath).parent_path());
-	activeScene->Serialize(m_snapshotPath);
+	// Save a snapshot of the current scene so PressStop can restore it.
+	// Skipped in GAME mode — there is no editor Stop button, so the snapshot
+	// is never needed and writing it would pollute the game's working directory.
+	if (External->renderer->GetRendererFrontend()->GetRenderMode() != RenderMode::GAME)
+	{
+		std::filesystem::create_directories(std::filesystem::path(m_snapshotPath).parent_path());
+		activeScene->Serialize(m_snapshotPath);
+	}
 
 	// Start all registered CScript components (they were registered in OnStart but
 	// deferred instance creation because the simulation was stopped).

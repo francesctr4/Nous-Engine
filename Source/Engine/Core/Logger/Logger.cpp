@@ -299,15 +299,19 @@ void StartLogTimer()
     }
 }
 
-bool InitializeLogging()
+bool InitializeLogging(bool enableFileLog)
 {
     StartLogTimer(); // fallback: anchors to InitializeLogging() call if not called earlier
 
-    if (!s_logFile.Open("console.log", FileMode::WRITE, false)) {
-        // Can't use LogOutput yet — print directly to stderr.
-        fprintf(stderr, "[Logger] Unable to open console.log for writing.\n");
-        return false;
+    if (enableFileLog)
+    {
+        if (!s_logFile.Open("console.log", FileMode::WRITE, false)) {
+            // Can't use LogOutput yet — print directly to stderr.
+            fprintf(stderr, "[Logger] Unable to open console.log for writing.\n");
+            return false;
+        }
     }
+
     s_running = true;
     s_flushThread = std::thread(FlushThreadFunc);
     return true;

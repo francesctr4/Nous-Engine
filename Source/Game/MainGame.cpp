@@ -4,7 +4,6 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
@@ -13,15 +12,14 @@
 #include <string>
 #include <filesystem>
 
-typedef enum MainState
+enum class GameState
 {
-    MAIN_CREATION,
-    MAIN_START,
-    MAIN_UPDATE,
-    MAIN_FINISH,
-    MAIN_EXIT
-
-} MainState;
+    Creation,
+    Start,
+    Update,
+    Finish,
+    Exit,
+};
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MAIN;
 
@@ -70,23 +68,23 @@ int main(int argc, char** argv)
 
     NOUS_Multithreading::RegisterMainThread();
 
-    InitializeLogging();
+    InitializeLogging(false); // no console.log in game builds
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Starting GameApp '%s'...", TITLE);
 
     int mainReturn = EXIT_FAILURE;
-    MainState nousState = MAIN_CREATION;
+    GameState state = GameState::Creation;
     Application* App = nullptr;
     GameConfig cfg;
 
-    // Track whether PressPlay has been called yet.
-    bool gamePlaying = false;
+    // Guards PressPlay until the async scene load job finishes.
+    bool sceneReady = false;
 
-    while (nousState != MAIN_EXIT)
+    while (state != GameState::Exit)
     {
-        switch (nousState)
+        switch (state)
         {
-            case MAIN_CREATION:
+            case GameState::Creation:
             {
                 NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Creation ----------");
 
@@ -98,18 +96,18 @@ int main(int argc, char** argv)
                 cfg = LoadGameConfig(argv[0]);
                 App->SetTargetFPS(cfg.targetFPS);
 
-                nousState = MAIN_START;
+                state = GameState::Start;
                 break;
             }
 
-            case MAIN_START:
+            case GameState::Start:
             {
                 NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Awake ----------");
 
                 if (!App->Awake())
                 {
                     NOUS_ERROR_C(CURRENT_CHANNEL, "Application Awake exits with ERROR");
-                    nousState = MAIN_EXIT;
+                    state = GameState::Exit;
                     break;
                 }
 
@@ -118,7 +116,7 @@ int main(int argc, char** argv)
                 if (!App->Start())
                 {
                     NOUS_ERROR_C(CURRENT_CHANNEL, "Application Start exits with ERROR");
-                    nousState = MAIN_EXIT;
+                    state = GameState::Exit;
                     break;
                 }
 
@@ -128,18 +126,18 @@ int main(int argc, char** argv)
                 // Kick off async scene load. PressPlay is deferred until the job finishes.
                 App->scene->LoadSceneAsync(cfg.startScene);
 
-                nousState = MAIN_UPDATE;
                 NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Update ----------");
+                state = GameState::Update;
                 break;
             }
 
-            case MAIN_UPDATE:
+            case GameState::Update:
             {
                 // Once the async scene load job completes, start simulation.
-                if (!gamePlaying && App->jobSystem->GetPendingJobs() == 0)
+                if (!sceneReady && App->jobSystem->GetPendingJobs() == 0)
                 {
                     App->scene->PressPlay();
-                    gamePlaying = true;
+                    sceneReady = true;
                     NOUS_INFO_C(CURRENT_CHANNEL, "Scene loaded — simulation started.");
                 }
 
@@ -148,16 +146,16 @@ int main(int argc, char** argv)
                 if (updateReturn == UpdateStatus::ERROR)
                 {
                     NOUS_ERROR_C(CURRENT_CHANNEL, "Application Update exits with ERROR");
-                    nousState = MAIN_EXIT;
+                    state = GameState::Exit;
                 }
                 else if (updateReturn == UpdateStatus::STOP)
                 {
-                    nousState = MAIN_FINISH;
+                    state = GameState::Finish;
                 }
                 break;
             }
 
-            case MAIN_FINISH:
+            case GameState::Finish:
             {
                 NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application CleanUp ----------");
 
@@ -170,7 +168,7 @@ int main(int argc, char** argv)
                     mainReturn = EXIT_SUCCESS;
                 }
 
-                nousState = MAIN_EXIT;
+                state = GameState::Exit;
                 break;
             }
 
@@ -178,6 +176,8 @@ int main(int argc, char** argv)
         }
     }
 
+    // Clear the global pointer before NOUS_DELETE so no module dereferences it
+    // during destruction (App's destructor runs module destructors transitively).
     External = nullptr;
 
     NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Destruction ----------");
