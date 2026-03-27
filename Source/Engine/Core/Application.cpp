@@ -34,35 +34,58 @@ Application::Application(bool isGameMode)
     // ------------- MULTITHREADING ------------- //
     jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
 
-    // 1. WINDOW - No dependencies
+    // -----------------------------------------------------------------------
+    // Module construction order — LOAD-BEARING. Do not reorder.
+    //
+    // Each module receives its dependencies at construction time. A module
+    // must be constructed AFTER every module it depends on. The insertion
+    // order also defines the Awake/Start/Update call order and the REVERSE
+    // CleanUp/destruction order, so correctness depends on this sequence.
+    //
+    // Dependency graph:
+    //   WINDOW
+    //     └─ INPUT
+    //          └─ CAMERA
+    //   RESOURCE MANAGER  ←── SetGPUFactory (post-construction, see below)
+    //     └─ SCENE (also depends on INPUT)
+    //   RENDERER (depends on WINDOW, CAMERA, RESOURCE MANAGER, SCENE)
+    //   EDITOR   (depends on all of the above — constructed in MainEditor.cpp)
+    // -----------------------------------------------------------------------
+
+    // 1. WINDOW — no module dependencies.
     listModules.push_back(window          = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, m_isGameMode));
 
-    // 2. INPUT - Depends on WINDOW
+    // 2. INPUT — depends on WINDOW (reads SDL window handle for input polling).
     listModules.push_back(input           = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, window));
 
-    // 3. CAMERA - Depends on INPUT
+    // 3. CAMERA — depends on INPUT (reads input state for editor camera movement).
     listModules.push_back(camera          = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, input));
 
-    // 4. RESOURCE MANAGER - No direct dependencies, but requires setting rendererFrontend from RENDERER.
+    // 4. RESOURCE MANAGER — no module dependencies at construction.
+    //    GPU upload capability is wired after RENDERER is constructed (see SetGPUFactory below).
+    //    Must be constructed before SCENE and RENDERER so they can reference it.
     listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, m_isGameMode));
 
-    // 5. SCENE - Depends on INPUT and RESOURCE MANAGER.
+    // 5. SCENE — depends on INPUT (simulation controls) and RESOURCE MANAGER (asset loading).
     listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, m_isGameMode, input, resourceManager));
 
-    // 6. RENDERER - Depends on WINDOW, CAMERA, RESOURCE MANAGER and SCENE.
+    // 6. RENDERER — depends on WINDOW (surface), CAMERA (view/proj), RESOURCE MANAGER (GPU resources), SCENE (render data).
+    //    Must be last because RESOURCE MANAGER and SCENE must already exist.
     listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, m_isGameMode, window, camera, resourceManager, scene));
 
-    // TODO: Ideally resource manager should be GPU agnostic.
+    // Post-construction wiring: give RESOURCE MANAGER access to GPU upload/destroy capabilities.
+    // This cannot be a constructor parameter because RENDERER is created after RESOURCE MANAGER.
+    // TODO: eliminate this setter when the CPU/GPU resource split is implemented (Step 2).
     resourceManager->SetGPUFactory(renderer->GetGPUFactory());
 
-    // 7. EDITOR - Depends on ALL THE MODULES.
-    // The Module Editor goes here, after the renderer (it is being decoupled!).
+    // 7. EDITOR — depends on all modules above.
+    //    Constructed externally in MainEditor.cpp after this constructor returns.
 }
 
 Application::~Application()
