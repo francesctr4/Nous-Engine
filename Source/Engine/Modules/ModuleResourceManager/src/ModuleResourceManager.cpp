@@ -29,11 +29,6 @@ ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Mult
 	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
 
-void ModuleResourceManager::SetGPUFactory(IGPUResourceFactory* gpuFactory)
-{
-	mGPUFactory = gpuFactory;
-}
-
 ModuleResourceManager::~ModuleResourceManager()
 {
 
@@ -41,7 +36,7 @@ ModuleResourceManager::~ModuleResourceManager()
 
 bool ModuleResourceManager::Awake()
 {
-	ImporterManager::Init(this, mGPUFactory);
+	ImporterManager::Init(this);
 
 	if (m_isGameMode)
 	{
@@ -106,71 +101,56 @@ bool ModuleResourceManager::ImportDirectory(const std::string& directory)
 bool ModuleResourceManager::Start()
 {
 	// -----------------------
-	// Default Texture
+	// Default Texture (CPU)
 	// -----------------------
-	NOUS_INFO("Creating default checkerboard texture...");
+	// Build a checkerboard pixel buffer and store it on the resource for deferred
+	// GPU upload.  The GPU upload itself happens in ModuleRenderer3D::Start() which
+	// runs after this module and drains TakePendingUploads().
+	NOUS_INFO("Queuing default checkerboard texture for GPU upload...");
 
 	const uint32 texDimension = 256;
 	const uint32 channels = 4;
 	const uint32 pixelCount = texDimension * texDimension;
 	const uint32 squareSize = 16;
 
-	std::vector<uint8_t> pixels(pixelCount * channels, 255);
+	mDefaultTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mDefaultTexture->SetName("DefaultTexture");
+	mDefaultTexture->width        = texDimension;
+	mDefaultTexture->height       = texDimension;
+	mDefaultTexture->channelCount = channels;
+
+	mDefaultTexture->pixelData.resize(pixelCount * channels, 255);
 	for (uint32_t row = 0; row < texDimension; ++row)
 	{
 		for (uint32_t col = 0; col < texDimension; ++col)
 		{
-			uint32_t index = (row * texDimension) + col;
-			uint32_t indexBpp = index * channels;
+			const uint32_t indexBpp = ((row * texDimension) + col) * channels;
+			const bool isWhite = ((row / squareSize) % 2 == (col / squareSize) % 2);
 
-			bool isWhite = ((row / squareSize) % 2 == (col / squareSize) % 2);
-
-			if (isWhite) {
-				pixels[indexBpp + 0] = 255;
-				pixels[indexBpp + 1] = 255;
-				pixels[indexBpp + 2] = 255;
-			} else {
-				pixels[indexBpp + 0] = 0;
-				pixels[indexBpp + 1] = 0;
-				pixels[indexBpp + 2] = 255;
-			}
-			pixels[indexBpp + 3] = 255;
+			mDefaultTexture->pixelData[indexBpp + 0] = isWhite ? 255 : 0;
+			mDefaultTexture->pixelData[indexBpp + 1] = isWhite ? 255 : 0;
+			mDefaultTexture->pixelData[indexBpp + 2] = isWhite ? 255 : 255;
+			mDefaultTexture->pixelData[indexBpp + 3] = 255;
 		}
 	}
-
-	mDefaultTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
-	mDefaultTexture->SetName("DefaultTexture");
-	mDefaultTexture->width = texDimension;
-	mDefaultTexture->height = texDimension;
-	mDefaultTexture->channelCount = channels;
-
-	if (!mGPUFactory->CreateTexture(pixels.data(), mDefaultTexture))
-	{
-		NOUS_FATAL("Failed to create default texture.");
-		return false;
-	}
-
-	// Give the default texture a stable, valid ID and generation so the
-	// descriptor lazy-write cache (WriteInstanceSampler) can distinguish it
-	// from the "never written" sentinel (UINT32_MAX). Without this, every draw
-	// using the default texture re-fires vkUpdateDescriptorSets, which causes
-	// validation errors when multiple objects share the same material instance.
-	mDefaultTexture->ID         = 0;
-	mDefaultTexture->generation = 0;
+	mDefaultTexture->SetState(ResourceState::CPU_READY);
 
 	// -----------------------
-	// Default Material
+	// Default Material (CPU)
 	// -----------------------
 	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
 	mDefaultMaterial->SetName("DefaultMaterial");
-	mDefaultMaterial->diffuseColor = glm::vec4(1.0f);
-	mDefaultMaterial->diffuseMap.type = TextureMapType::DIFFUSE;
-	mDefaultMaterial->diffuseMap.texture = mDefaultTexture;
+	mDefaultMaterial->diffuseColor           = glm::vec4(1.0f);
+	mDefaultMaterial->diffuseMap.type        = TextureMapType::DIFFUSE;
+	mDefaultMaterial->diffuseMap.texture     = mDefaultTexture;
+	mDefaultMaterial->SetState(ResourceState::CPU_READY);
 
-	if (!mGPUFactory->CreateMaterial(mDefaultMaterial))
+	// Push both to the upload queue.  Texture must come first so it is GPU_READY
+	// before the material upload runs (CreateMaterial samples from it).
 	{
-		NOUS_FATAL("Failed to create default material.");
-		return false;
+		std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+		m_pendingUploads.emplace_back(ResourceType::TEXTURE,  mDefaultTexture);
+		m_pendingUploads.emplace_back(ResourceType::MATERIAL, mDefaultMaterial);
 	}
 
 	return true;
@@ -178,25 +158,6 @@ bool ModuleResourceManager::Start()
 
 UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
-	// Flush pending unloads — deferred from UnloadResource to avoid destroying
-	// GPU resources mid-frame (between command recording and vkQueueSubmit).
-	// By the time PreUpdate runs the previous frame has been fully submitted.
-	std::vector<UID> toDestroy;
-	{
-		std::lock_guard<std::mutex> lock(m_PendingUnloadsMutex);
-		std::swap(toDestroy, m_PendingUnloads);
-	}
-
-	for (const UID& uid : toDestroy)
-	{
-		if (!ResourceExists(uid)) continue;
-		Resource* resource = resources[uid];
-		if (!resource) continue; // still loading (placeholder); skip
-		if (resource->GetReferenceCount() > 0) continue; // re-acquired since queuing; skip
-		ImporterManager::Unload(resource->GetType(), resource);
-		DeleteResource(resource);
-	}
-
 	return UpdateStatus::CONTINUE;
 }
 
@@ -690,24 +651,31 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 		NOUS_INFO("Resource instantiated successfully (UID: %u, Name: %s). Loading from library...",
 				  metaFileData.uid, metaFileData.name.c_str());
 
-		if (!ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource))
+		if (!ImporterManager::Deserialize(metaFileData.resourceType, metaFileData.libraryPath, resource))
 		{
-			NOUS_ERROR("CreateResource ERROR: Failed to load resource from library: %s",
+			NOUS_ERROR("CreateResource ERROR: Failed to deserialize resource from library: %s",
 					   metaFileData.libraryPath.c_str());
 			std::lock_guard<std::mutex> lock(resourcesMutex);
 			resources.erase(metaFileData.uid);
 			return nullptr;
 		}
 
+		resource->SetState(ResourceState::CPU_READY);
+
 		{
 			std::lock_guard<std::mutex> lock(resourcesMutex);
 			resources[metaFileData.uid] = resource;
 		}
 
+		{
+			std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+			m_pendingUploads.emplace_back(metaFileData.resourceType, resource);
+		}
+
 		resource->IncreaseReferenceCount();
 		resource->Validate();
 
-		NOUS_INFO("Resource successfully created and loaded into memory.");
+		NOUS_INFO("Resource deserialized and queued for GPU upload.");
 		NOUS_INFO("Reference count: %u", resource->GetReferenceCount());
 		NOUS_INFO("========================================");
 
@@ -771,17 +739,24 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType
 		resource->SetAssetsPath(assetsPath);
 		resource->SetLibraryPath(libraryPath);
 
-		if (!ImporterManager::Load(type, libraryPath, resource))
+		if (!ImporterManager::Deserialize(type, libraryPath, resource))
 		{
-			NOUS_ERROR("CreateResourceFromLibrary: failed to load '%s' from '%s'", name.c_str(), libraryPath.c_str());
+			NOUS_ERROR("CreateResourceFromLibrary: failed to deserialize '%s' from '%s'", name.c_str(), libraryPath.c_str());
 			std::lock_guard<std::mutex> lock(resourcesMutex);
 			resources.erase(uid);
 			return nullptr;
 		}
 
+		resource->SetState(ResourceState::CPU_READY);
+
 		{
 			std::lock_guard<std::mutex> lock(resourcesMutex);
 			resources[uid] = resource;
+		}
+
+		{
+			std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+			m_pendingUploads.emplace_back(type, resource);
 		}
 
 		resource->IncreaseReferenceCount();
@@ -843,16 +818,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 
 	mesh->vertices = sub.vertices;
 	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
-
-	if (!mGPUFactory->CreateGeometry(
-	    mesh->vertices.size(), mesh->vertices.data(),
-	    mesh->indices.size(), mesh->indices.data(), mesh))
-	{
-		NOUS_ERROR("RequestOrCreateSubMeshResourceFromLibrary: GPU upload failed for submesh %d of '%s'",
-		    submeshIndex, libraryPath.c_str());
-		NOUS_DELETE(mesh, MemoryTag::RESOURCE_MESH);
-		return nullptr;
-	}
+	mesh->SetState(ResourceState::CPU_READY);
 
 	UID uid;
 	{
@@ -862,6 +828,11 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 
 		resources[uid] = mesh;
 		m_submeshUIDMap[key] = uid;
+	}
+
+	{
+		std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+		m_pendingUploads.emplace_back(ResourceType::MESH, mesh);
 	}
 
 	mesh->SetUID(uid);
@@ -879,13 +850,12 @@ bool ModuleResourceManager::UnloadResource(const UID& UID)
 	if (!tmpResource) return false; // still loading (placeholder); ignore
 	tmpResource->DecreaseReferenceCount();
 
-	// Only destroy GPU resources and delete the object when the last reference is
-	// released. Defer to PreUpdate so we never destroy GPU resources mid-frame
-	// (between command recording and vkQueueSubmit).
+	// Defer GPU Release + CPU Evict to the Renderer's PreUpdate so we never
+	// destroy GPU resources mid-frame (between command recording and vkQueueSubmit).
 	if (tmpResource->GetReferenceCount() == 0)
 	{
-		std::lock_guard<std::mutex> lock(m_PendingUnloadsMutex);
-		m_PendingUnloads.push_back(UID);
+		std::lock_guard<std::mutex> lock(m_pendingReleasesMutex);
+		m_pendingReleases.emplace_back(tmpResource->GetType(), tmpResource);
 	}
 
 	return true;
@@ -909,48 +879,95 @@ void ModuleResourceManager::AddResource(const UID& uid, Resource*& resource)
 	resources[uid] = resource;
 }
 
-void ModuleResourceManager::ClearResources()
+void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
 {
-    // Destroy shaders FIRST — DestroyShader() frees descriptor sets that reference
-    // texture imageViews. If textures are destroyed first, the imageViews are freed
-    // while descriptor sets still hold references → VUID-vkDestroyImageView-01026.
-    for (auto& [UID, Resource] : resources)
+    // Destroy shaders FIRST — descriptor sets reference texture image views;
+    // freeing textures first would leave dangling view references in the sets.
+    // VUID-vkDestroyImageView-01026
+    for (auto& [uid, res] : resources)
     {
-        if (!Resource || Resource->GetType() != ResourceType::SHADER) continue;
-        ImporterManager::Unload(ResourceType::SHADER, Resource);
-        NOUS_DELETE(Resource, MemoryTag::RESOURCE_SHADER);
+        if (!res || res->GetType() != ResourceType::SHADER) continue;
+        if (res->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyShader(down_cast<ResourceShader*>(res));
+        ImporterManager::Evict(ResourceType::SHADER, res);
+        NOUS_DELETE(res, MemoryTag::RESOURCE_SHADER);
     }
 
-    // Destroy remaining resources (mesh, texture, material) in any order.
-    for (auto& [UID, Resource] : resources)
+    // Materials next — destroy GPU handle, then clear the texture pointer directly
+    // (do NOT call UnloadResource here; the texture will be destroyed in the next pass).
+    for (auto& [uid, res] : resources)
     {
-        if (!Resource || Resource->GetType() == ResourceType::SHADER) continue;
-        ImporterManager::Unload(Resource->GetType(), Resource);
-
-        switch (Resource->GetType())
-        {
-            case ResourceType::MESH:     NOUS_DELETE(Resource, MemoryTag::RESOURCE_MESH);     break;
-            case ResourceType::MATERIAL: NOUS_DELETE(Resource, MemoryTag::RESOURCE_MATERIAL); break;
-            case ResourceType::TEXTURE:  NOUS_DELETE(Resource, MemoryTag::RESOURCE_TEXTURE);  break;
-            default: break;
-        }
+        if (!res || res->GetType() != ResourceType::MATERIAL) continue;
+        if (res->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyMaterial(down_cast<ResourceMaterial*>(res));
+        down_cast<ResourceMaterial*>(res)->diffuseMap.texture = nullptr;
+        NOUS_DELETE(res, MemoryTag::RESOURCE_MATERIAL);
     }
 
-	resources.clear();
+    // Textures
+    for (auto& [uid, res] : resources)
+    {
+        if (!res || res->GetType() != ResourceType::TEXTURE) continue;
+        if (res->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyTexture(down_cast<ResourceTexture*>(res));
+        ImporterManager::Evict(ResourceType::TEXTURE, res);
+        NOUS_DELETE(res, MemoryTag::RESOURCE_TEXTURE);
+    }
+
+    // Meshes
+    for (auto& [uid, res] : resources)
+    {
+        if (!res || res->GetType() != ResourceType::MESH) continue;
+        if (res->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyGeometry(down_cast<ResourceMesh*>(res));
+        ImporterManager::Evict(ResourceType::MESH, res);
+        NOUS_DELETE(res, MemoryTag::RESOURCE_MESH);
+    }
+
+    resources.clear();
+    m_submeshUIDMap.clear();
 
     if (mDefaultTexture)
     {
-        mGPUFactory->DestroyTexture(mDefaultTexture);
+        if (mDefaultTexture->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyTexture(mDefaultTexture);
         NOUS_DELETE(mDefaultTexture, MemoryTag::RESOURCE_TEXTURE);
         mDefaultTexture = nullptr;
     }
 
     if (mDefaultMaterial)
     {
-        mGPUFactory->DestroyMaterial(mDefaultMaterial);
+        if (mDefaultMaterial->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyMaterial(mDefaultMaterial);
         NOUS_DELETE(mDefaultMaterial, MemoryTag::RESOURCE_MATERIAL);
         mDefaultMaterial = nullptr;
     }
+
+    // Discard any stale queue entries — all resources are destroyed above.
+    { std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);  m_pendingUploads.clear(); }
+    { std::lock_guard<std::mutex> lock(m_pendingReleasesMutex); m_pendingReleases.clear(); }
+}
+
+std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingUploads()
+{
+    std::vector<std::pair<ResourceType, Resource*>> result;
+    std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+    std::swap(result, m_pendingUploads);
+    return result;
+}
+
+std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingReleases()
+{
+    std::vector<std::pair<ResourceType, Resource*>> result;
+    std::lock_guard<std::mutex> lock(m_pendingReleasesMutex);
+    std::swap(result, m_pendingReleases);
+    return result;
+}
+
+void ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
+{
+    ImporterManager::Evict(type, resource);
+    DeleteResource(resource);
 }
 
 ResourceTexture *ModuleResourceManager::GetDefaultTexture() const
@@ -1018,17 +1035,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
 
     mesh->vertices = sub.vertices;
     mesh->indices.assign(sub.indices.begin(), sub.indices.end());
-
-    // Upload geometry to the GPU.
-    if (!mGPUFactory->CreateGeometry(
-        mesh->vertices.size(), mesh->vertices.data(),
-        mesh->indices.size(), mesh->indices.data(), mesh))
-    {
-        NOUS_ERROR("RequestOrCreateSubMeshResource: GPU upload failed for submesh %d of %s",
-            submeshIndex, assetsPath.c_str());
-        NOUS_DELETE(mesh, MemoryTag::RESOURCE_MESH);
-        return nullptr;
-    }
+    mesh->SetState(ResourceState::CPU_READY);
 
     // Assign a unique UID, register in the resource map and the sub-resource map.
     UID uid;
@@ -1037,8 +1044,13 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
         do { uid = static_cast<UID>(Random::Generate()); }
         while (uid == 0 || resources.count(uid));
 
-        resources[uid]         = mesh;
-        m_submeshUIDMap[key]   = uid;
+        resources[uid]       = mesh;
+        m_submeshUIDMap[key] = uid;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+        m_pendingUploads.emplace_back(ResourceType::MESH, mesh);
     }
 
     mesh->SetUID(uid);

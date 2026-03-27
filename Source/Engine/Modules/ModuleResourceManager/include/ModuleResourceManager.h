@@ -28,7 +28,6 @@ public:
 
 	// Constructor
 	ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode);
-	void SetGPUFactory(IGPUResourceFactory* gpuFactory);
 
 	// Destructor
 	virtual ~ModuleResourceManager();
@@ -69,7 +68,20 @@ public:
 	// Safe to call from any thread (e.g. editor UI) concurrently with AddResource().
 	NOUS_ENGINE_API std::unordered_map<UID, Resource*> GetResourcesMap() const;
 
-	NOUS_ENGINE_API void ClearResources();
+	// Takes and clears the pending upload queue — called by Renderer::PreUpdate/Start.
+	// Each entry is a resource that has been Deserialized and needs GPU Upload.
+	NOUS_ENGINE_API std::vector<std::pair<ResourceType, Resource*>> TakePendingUploads();
+
+	// Takes and clears the pending release queue — called by Renderer::PreUpdate.
+	// Each entry is a resource whose ref count hit 0 and needs GPU Release + CPU Evict.
+	NOUS_ENGINE_API std::vector<std::pair<ResourceType, Resource*>> TakePendingReleases();
+
+	// Called by Renderer after GPU Release: evicts CPU data and deletes the resource object.
+	NOUS_ENGINE_API void EvictResource(ResourceType type, Resource* resource);
+
+	// Synchronous full teardown — caller must pass the GPU factory so GPU handles can
+	// be freed before Vulkan is shut down.  Only called from ModuleRenderer3D::CleanUp().
+	NOUS_ENGINE_API void ClearResources(IGPUResourceFactory* gpu);
 
     [[nodiscard]] ResourceTexture* GetDefaultTexture() const;
     [[nodiscard]] ResourceMaterial* GetDefaultMaterial() const;
@@ -106,17 +118,21 @@ private:
 	mutable std::mutex resourcesMutex;  // mutable: const methods (e.g. GetResourcesMap) can lock it
 	std::unordered_map<UID, Resource*> resources;
 
-	// UIDs whose refcount hit 0 during a frame and are waiting for safe GPU destruction.
-	// Flushed at the start of the next PreUpdate, before any command buffer recording.
-	std::mutex m_PendingUnloadsMutex;
-	std::vector<UID> m_PendingUnloads;
+	// Resources waiting for GPU upload — populated by CreateResource/Deserialize paths.
+	// Drained by Renderer::PreUpdate (and Start for the initial set).
+	std::mutex m_pendingUploadsMutex;
+	std::vector<std::pair<ResourceType, Resource*>> m_pendingUploads;
+
+	// Resources whose refcount hit 0 — waiting for GPU Release then CPU Evict.
+	// Drained by Renderer::PreUpdate each frame.
+	std::mutex m_pendingReleasesMutex;
+	std::vector<std::pair<ResourceType, Resource*>> m_pendingReleases;
 
 	// Maps (baseAssetUID, submeshIndex) → sub-resource UID.
 	// Allows RequestOrCreateSubMeshResource to reuse already-loaded sub-resources.
 	// Entry removed when the sub-resource is destroyed in DeleteResource().
 	std::map<std::pair<UID, int32_t>, UID> m_submeshUIDMap;
 
-	IGPUResourceFactory* mGPUFactory = nullptr;
 	bool m_isGameMode;
 
 	ResourceTexture* mDefaultTexture = nullptr;
