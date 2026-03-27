@@ -5,8 +5,8 @@
 
 #include "Engine/Core/Application.h"
 #include "Engine/Core/Logger/Logger.h"
-#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include "Engine/Core/EventSystem/EventSystem.h"
+#include "Engine/Core/EventSystem/Event/include/Event.h"
 
 ModuleWindow::ModuleWindow(Application* app) : Module(app)
 {
@@ -50,7 +50,7 @@ bool ModuleWindow::Awake()
 
 bool ModuleWindow::Start()
 {
-    if (App->GetRenderer()->GetRendererFrontend()->GetRenderMode() == RenderMode::EDITOR)
+    if (!App->IsGameMode())
         SDL_MaximizeWindow(window);
 
     return true;
@@ -87,6 +87,17 @@ void ModuleWindow::SetTitle(const char* title)
 void ModuleWindow::SetFullscreen(bool fullscreen)
 {
     SDL_SetWindowFullscreen(window, fullscreen);
+}
+
+void ModuleWindow::SetMinimized(bool value)
+{
+    mIsMinimized = value;
+    EventSystem->Broadcast(Event(EventType::WINDOW_MINIMIZED, SendContext(value)));
+}
+
+bool ModuleWindow::IsMinimized() const
+{
+    return mIsMinimized;
 }
 
 SDL_Window* ModuleWindow::GetSDL_Window()

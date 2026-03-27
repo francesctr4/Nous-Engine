@@ -6,6 +6,8 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 
+class RendererFrontend;
+
 #include <map>
 #include <mutex>
 #include <string>
@@ -26,6 +28,7 @@ public:
 
 	// Constructor
 	ModuleResourceManager(Application* app);
+	void SetRendererFrontend(RendererFrontend* rendererFrontend);
 
 	// Destructor
 	virtual ~ModuleResourceManager();
@@ -112,6 +115,8 @@ private:
 	// Allows RequestOrCreateSubMeshResource to reuse already-loaded sub-resources.
 	// Entry removed when the sub-resource is destroyed in DeleteResource().
 	std::map<std::pair<UID, int32_t>, UID> m_submeshUIDMap;
+
+	RendererFrontend* mRendererFrontend = nullptr;
 
 	ResourceTexture* mDefaultTexture = nullptr;
 	ResourceMaterial* mDefaultMaterial = nullptr;

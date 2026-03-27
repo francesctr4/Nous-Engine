@@ -64,7 +64,7 @@ ModuleScene::ModuleScene(Application* app, ModuleInput* moduleInput, ModuleResou
 	if (!scriptManager->LoadScriptLibrary(scriptsDllPath))
 		NOUS_ERROR("Failed to load script library on startup");
 
-	App->GetEventSystem()->Subscribe(EventType::WINDOW_RESIZED, this);
+	EventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
 ModuleScene::~ModuleScene()
@@ -88,7 +88,7 @@ bool ModuleScene::Start()
     // In GAME mode the GameApp controls which scene to load via an explicit
     // LoadSceneAsync() call after Start() returns.  Skip the auto-load here
     // to avoid a double-load race condition.
-    if (External->GetRenderer()->GetRendererFrontend()->GetRenderMode() != RenderMode::GAME)
+    if (!App->IsGameMode())
         LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
 
 	return true;
@@ -170,7 +170,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
     if (mModuleInput->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
     {
-        App->GetJobSystem()->SubmitJob([this]()
+        JobSystem->SubmitJob([this]()
         {
             SpawnMeshAsHierarchy("Assets/Meshes/Lagiacrus_Head.fbx");
         }, "Spawn Lagiacrus");
@@ -178,7 +178,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
     if (mModuleInput->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
     {
-        App->GetJobSystem()->SubmitJob([this]()
+        JobSystem->SubmitJob([this]()
         {
             SpawnMeshAsHierarchy("Assets/Meshes/Cypher_S0_Skelmesh.fbx");
         }, "Spawn Cypher");
@@ -186,7 +186,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
     if (mModuleInput->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
     {
-        App->GetJobSystem()->SubmitJob([this]()
+        JobSystem->SubmitJob([this]()
         {
             SpawnMeshAsHierarchy("Assets/Meshes/Queen_Xenomorph.fbx");
         }, "Spawn Queen Xenomorph");
@@ -194,7 +194,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
     if (mModuleInput->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
     {
-        App->GetJobSystem()->SubmitJob([this]()
+        JobSystem->SubmitJob([this]()
         {
             SpawnMeshAsHierarchy("Assets/Meshes/Wolf.obj");
         }, "Spawn Wolf");
@@ -210,7 +210,7 @@ UpdateStatus ModuleScene::Update(float dt)
         };
         for (const auto& path : meshPaths)
         {
-            App->GetJobSystem()->SubmitJob([this, path]()
+            JobSystem->SubmitJob([this, path]()
             {
                 SpawnMeshAsHierarchy(path);
             }, "Spawn Model");
@@ -224,7 +224,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
 	if (mModuleInput->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
 	{
-		App->GetJobSystem()->SubmitJob([this]()
+		JobSystem->SubmitJob([this]()
 								  {
 									  NOUS_Multithreading::NOUS_Thread::SleepMS(5000);
 								  }, "Test");
@@ -234,7 +234,7 @@ UpdateStatus ModuleScene::Update(float dt)
 	{
 		for (int i = 0; i < 100; ++i)
 		{
-			App->GetJobSystem()->SubmitJob([]
+			JobSystem->SubmitJob([]
 									  {
 										  std::chrono::milliseconds duration(500);
 										  auto start = std::chrono::steady_clock::now();
@@ -251,7 +251,7 @@ UpdateStatus ModuleScene::Update(float dt)
 	if (mModuleInput->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
 	{
 		NOUS_INFO("Initiating script hot-reload...");
-		App->GetJobSystem()->SubmitJob([this] { RecompileScripts(); }, "Scripts Hot-Reload");
+		JobSystem->SubmitJob([this] { RecompileScripts(); }, "Scripts Hot-Reload");
 	}
 
 	return UpdateStatus::CONTINUE;
@@ -285,7 +285,7 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 bool ModuleScene::CleanUp()
 {
 	// Wait for any in-flight jobs (e.g. hot-reload) before touching scripts
-	App->GetJobSystem()->WaitForPendingJobs();
+	JobSystem->WaitForPendingJobs();
 
 	CleanupScripts();
 	scriptManager->UnloadScriptLibrary();
@@ -416,12 +416,12 @@ void ModuleScene::PressPlay()
 	// Without this, a rapid Stop → Play sequence would serialize a partially-constructed
 	// scene (CMesh/CMaterial resources not yet assigned), corrupting the snapshot and
 	// causing null Resource* dereferences the next time the snapshot is loaded.
-	App->GetJobSystem()->WaitForPendingJobs();
+	JobSystem->WaitForPendingJobs();
 
 	// Save a snapshot of the current scene so PressStop can restore it.
 	// Skipped in GAME mode — there is no editor Stop button, so the snapshot
 	// is never needed and writing it would pollute the game's working directory.
-	if (External->GetRenderer()->GetRendererFrontend()->GetRenderMode() != RenderMode::GAME)
+	if (!App->IsGameMode())
 	{
 		std::filesystem::create_directories(std::filesystem::path(m_snapshotPath).parent_path());
 		activeScene->Serialize(m_snapshotPath);
@@ -504,7 +504,7 @@ void ModuleScene::LoadScene(const std::string& path)
 	// Drain any in-flight jobs (e.g. debug hotkey loaders) before clearing the
 	// scene. Without this, a job that called CreateGameObjectDetached before the
 	// clear could still call RegisterGameObject afterward on a cleared scene.
-	App->GetJobSystem()->WaitForPendingJobs();
+	JobSystem->WaitForPendingJobs();
 
 	ClearScene();
 	activeScene->Deserialize(path);
@@ -517,11 +517,11 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 	// Drain any in-flight jobs (e.g. debug hotkey loaders) before clearing the
 	// scene. Without this, a job that called CreateGameObjectDetached before the
 	// clear could still call RegisterGameObject afterward on a cleared scene.
-	App->GetJobSystem()->WaitForPendingJobs();
+	JobSystem->WaitForPendingJobs();
 
 	ClearScene();
 
-	App->GetJobSystem()->SubmitJob([this, path]
+	JobSystem->SubmitJob([this, path]
 		{
 			activeScene->Deserialize(path);
 			EnsureMainCamera();

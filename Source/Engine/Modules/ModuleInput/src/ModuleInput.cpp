@@ -15,7 +15,7 @@ static KeyState AdvanceKeyState(KeyState current, bool pressed)
 	return (current == KeyState::REPEAT || current == KeyState::DOWN) ? KeyState::UP : KeyState::IDLE;
 }
 
-ModuleInput::ModuleInput(Application* app) : Module(app)
+ModuleInput::ModuleInput(Application* app, ModuleWindow* moduleWindow) : Module(app), mModuleWindow(moduleWindow)
 {
 	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 
@@ -83,7 +83,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
 	{
-        App->BroadcastEvent(Event(EventType::INPUT_EVENT, SendContext(&e)));
+        EventSystem->Broadcast(Event(EventType::INPUT_EVENT, SendContext(&e)));
 
 		switch (e.type)
 		{
@@ -120,25 +120,25 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 					cachedFramebufferWidth = width;
 					cachedFramebufferHeight = height;
 
-					App->BroadcastEvent(Event(EventType::WINDOW_RESIZED, SendContext(cachedFramebufferWidth, cachedFramebufferHeight)));
+					EventSystem->Broadcast(Event(EventType::WINDOW_RESIZED, SendContext(cachedFramebufferWidth, cachedFramebufferHeight)));
                 }
 
                 break;
             }
             case SDL_EVENT_WINDOW_MINIMIZED:
 			{
-				App->SetMinimized(true);
+				mModuleWindow->SetMinimized(true);
                 break;
             }
             case SDL_EVENT_WINDOW_RESTORED:
             {
-				App->SetMinimized(false);
+				mModuleWindow->SetMinimized(false);
                 break;
             }
 			case SDL_EVENT_DROP_FILE:
 			{ 
 				const char* droppedFileDirectory = e.drop.data;
-				App->BroadcastEvent(Event(EventType::DROP_FILE, SendContext(e.drop.data)));
+				EventSystem->Broadcast(Event(EventType::DROP_FILE, SendContext(e.drop.data)));
 				SDL_free(&droppedFileDirectory);
 
 				break;

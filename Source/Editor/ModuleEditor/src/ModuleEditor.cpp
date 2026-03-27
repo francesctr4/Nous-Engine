@@ -44,14 +44,14 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
 
-ModuleEditor::ModuleEditor(Application* app) : Module(app),
-    editorWindows(MemoryTag::EDITOR),
-    fonts(MemoryTag::EDITOR)
+ModuleEditor::ModuleEditor(Application* app, ModuleWindow* moduleWindow, ModuleRenderer3D* moduleRenderer3D)
+: Module(app), mModuleWindow(moduleWindow), mModuleRenderer3D(moduleRenderer3D),
+	editorWindows(MemoryTag::EDITOR), fonts(MemoryTag::EDITOR)
 {
 	currentBackendType = RendererBackendType::UNKNOWN;
 
-    App->GetEventSystem()->Subscribe(EventType::INPUT_EVENT, this);
-    App->GetEventSystem()->Subscribe(EventType::IMGUI_RECREATION, this);
+    EventSystem->Subscribe(EventType::INPUT_EVENT, this);
+    EventSystem->Subscribe(EventType::IMGUI_RECREATION, this);
 }
 
 ModuleEditor::~ModuleEditor()
@@ -63,8 +63,8 @@ bool ModuleEditor::Awake()
 {
 	NOUS_FileManager::CopyFile(R"(Assets\Settings\imgui.ini)", "imgui.ini");
 
-	App->GetRenderer()->GetRendererFrontend()->SetEditorOverlay(this);
-	currentBackendType = App->GetRenderer()->GetRendererFrontend()->GetBackendType();
+	mModuleRenderer3D->GetRendererFrontend()->SetEditorOverlay(this);
+	currentBackendType = mModuleRenderer3D->GetRendererFrontend()->GetBackendType();
 
 	// Setup Dear ImGui_Temp context
 	IMGUI_CHECKVERSION();
@@ -89,7 +89,7 @@ bool ModuleEditor::Awake()
 			VulkanContext* vkContext = GetVulkanContext();
 
 			// Setup Platform/Renderer backends
-			ImGui_ImplSDL3_InitForVulkan(App->GetWindow()->GetSDL_Window());
+			ImGui_ImplSDL3_InitForVulkan(mModuleWindow->GetSDL_Window());
 
 			ImGui_ImplVulkan_InitInfo imGuiVulkanInitInfo{};
 
@@ -162,7 +162,7 @@ bool ModuleEditor::CleanUp()
 	// any Vulkan resources.  The last frame's command buffers still reference
 	// ImGui's vertex/index buffers, pipeline, and descriptor sets, and the
 	// framebuffers still reference the viewport image views.
-	App->GetRenderer()->GetRendererFrontend()->ReleaseFrameResources();
+	mModuleRenderer3D->GetRendererFrontend()->ReleaseFrameResources();
 
 	switch (currentBackendType)
 	{

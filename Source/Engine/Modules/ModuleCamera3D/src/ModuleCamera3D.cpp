@@ -19,7 +19,7 @@ ModuleCamera3D::ModuleCamera3D(Application* app, ModuleInput* moduleInput) : Mod
 
 	camera = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 
-    App->GetEventSystem()->Subscribe(EventType::WINDOW_RESIZED, this);
+    EventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
 ModuleCamera3D::~ModuleCamera3D()

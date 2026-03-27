@@ -28,6 +28,8 @@ public:
 
 	void SetTitle(const char* title);
 	NOUS_ENGINE_API void SetFullscreen(bool fullscreen);
+	NOUS_ENGINE_API void SetMinimized(bool value);
+	NOUS_ENGINE_API bool IsMinimized() const;
 
     NOUS_ENGINE_API SDL_Window* GetSDL_Window();
     void GetFramebufferSize(int32* width, int32* height);
@@ -35,6 +37,7 @@ public:
 private:
 
 	SDL_Window* window;
+	bool mIsMinimized = false;
 
 };
 

@@ -20,12 +20,16 @@ struct ImGuiIO;
 struct ImFont;
 class IEditorWindow;
 
+// Dependency Injection
+class ModuleWindow;
+class ModuleRenderer3D;
+
 class ModuleEditor : public Module, public IEditorOverlay, public IEventListener, public EditorContext
 {
 public:
 
 	// Constructor
-	NOUS_EDITOR_API ModuleEditor(Application* app);
+	NOUS_EDITOR_API ModuleEditor(Application* app, ModuleWindow* moduleWindow, ModuleRenderer3D* moduleRenderer3D);
 
 	// Destructor
 	NOUS_EDITOR_API virtual ~ModuleEditor();
@@ -52,6 +56,10 @@ private:
     static VulkanContext* GetVulkanContext();
 
 private:
+
+	// Dependency Injection
+	ModuleWindow* mModuleWindow;
+	ModuleRenderer3D* mModuleRenderer3D;
 
 	RendererBackendType currentBackendType;
 

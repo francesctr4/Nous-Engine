@@ -97,6 +97,7 @@ private:
 	// ---------------------------------------------------------------------
 	RendererFrontend* mRendererFrontend;
 	RenderMode m_renderMode = RenderMode::EDITOR;
+	bool mIsMinimized = false;
 
 	// Dependency Injection
 	ModuleCamera3D* mModuleCamera3D;

@@ -43,7 +43,8 @@ ModuleRenderer3D::ModuleRenderer3D(Application* app, ModuleCamera3D* moduleCamer
 		mModuleScene(moduleScene)
 
 {
-	App->GetEventSystem()->Subscribe(EventType::WINDOW_RESIZED, this);
+	EventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
+	EventSystem->Subscribe(EventType::WINDOW_MINIMIZED, this);
 
 	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryTag::RENDERER);
 }
@@ -286,7 +287,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetCameraFrustums(frustums);
 	}
 
-	if (BuildRenderPacket(&packet, sceneData) && !App->IsMinimized())
+	if (BuildRenderPacket(&packet, sceneData) && !mIsMinimized)
 	{
 		FrameResult result = mRendererFrontend->DrawFrame(&packet);
 
@@ -350,6 +351,11 @@ void ModuleRenderer3D::OnEvent(const Event& event)
 
 			break;
 		}
+		case EventType::WINDOW_MINIMIZED:
+		{
+			mIsMinimized = event.ctx.u8[0] != 0;
+			break;
+		}
         case EventType::NONE:
         case EventType::TEST:
         case EventType::KEY_PRESSED:
@@ -357,7 +363,6 @@ void ModuleRenderer3D::OnEvent(const Event& event)
         case EventType::DROP_FILE:
         case EventType::INPUT_EVENT:
         case EventType::IMGUI_RECREATION:
-        case EventType::WINDOW_MINIMIZED:
         case EventType::KEY_RELEASED:
         case EventType::MOUSE_BUTTON:
         case EventType::MOUSE_MOVED:

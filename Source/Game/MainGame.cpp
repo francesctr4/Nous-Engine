@@ -3,7 +3,6 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
-#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
@@ -91,7 +90,7 @@ int main(int argc, char** argv)
                 App = NOUS_NEW<Application>(MemoryTag::APPLICATION);
 
                 // Configure GAME mode before Awake() so every module can branch on it.
-                App->GetRenderer()->SetRenderMode(RenderMode::GAME);
+                App->SetGameMode(true);
 
                 cfg = LoadGameConfig(argv[0]);
                 App->SetTargetFPS(cfg.targetFPS);

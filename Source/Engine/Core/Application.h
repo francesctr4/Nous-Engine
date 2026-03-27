@@ -35,6 +35,9 @@ public:
 	NOUS_ENGINE_API void SetTargetFPS(float FPS);
 	NOUS_ENGINE_API float GetTargetFPS() const;
 
+	NOUS_ENGINE_API void SetGameMode(bool isGame);
+	NOUS_ENGINE_API bool IsGameMode() const;
+
 	NOUS_ENGINE_API float GetFPS() const;
 	NOUS_ENGINE_API float GetDT() const;
 	NOUS_ENGINE_API float GetMS() const;
@@ -55,9 +58,6 @@ public:
 	// ------------- MULTITHREADING ------------- //
     NOUS_ENGINE_API NOUS_Multithreading::NOUS_JobSystem*  GetJobSystem()       const;
 
-    // ------------- STATE ACCESSORS ------------- //
-    NOUS_ENGINE_API bool IsMinimized()         const;
-    NOUS_ENGINE_API void SetMinimized(bool value);
 
 private:
 
@@ -71,7 +71,7 @@ private:
 	ModuleScene*           scene;
 	ModuleRenderer3D*      renderer;
 
-	bool isMinimized;
+	bool m_isGameMode;
 
 	EventSystem*                         eventSystem;
 	NOUS_Multithreading::NOUS_JobSystem* jobSystem;

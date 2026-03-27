@@ -4,8 +4,10 @@
 #include "Engine/Core/UpdateStatus.h"
 #include "Engine/EngineExport.h"
 
-struct Event;
+// Forward Declarations
 class Application;
+class EventSystem;
+namespace NOUS_Multithreading { class NOUS_JobSystem; }
 
 class Module
 {
@@ -26,7 +28,9 @@ public:
 protected:
 
 	Application* App;
-	
+	EventSystem* EventSystem;
+	NOUS_Multithreading::NOUS_JobSystem* JobSystem;
+
 };
 
 #endif // MODULE_H

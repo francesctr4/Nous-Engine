@@ -1,6 +1,11 @@
 #include "Module.h"
+#include "Engine/Core/Application.h"
 
-Module::Module(Application* app) : App(app) {}
+Module::Module(Application* app) :
+    App(app),
+    EventSystem(app->GetEventSystem()),
+    JobSystem(app->GetJobSystem())
+{}
 
 Module::~Module() = default;
 

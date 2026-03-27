@@ -25,7 +25,7 @@ Application::Application()
 {
 	External = this;
 
-    isMinimized = false;
+    m_isGameMode = false;
 
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
@@ -35,25 +35,37 @@ Application::Application()
     msTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
     updateTitleTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
 
-    // TODO ModuleWindow: Remove dependency on ModuleRenderer
+    // ------------- MULTITHREADING ------------- //
+    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
+
+    // 1. WINDOW - No dependencies
     listModules.push_back(window          = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION, this));
 
-    listModules.push_back(input           = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION, this));
+    // 2. INPUT - Depends on WINDOW
+    listModules.push_back(input           = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION, this,
+        window));
 
+    // 3. CAMERA - Depends on INPUT
     listModules.push_back(camera          = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION, this,
         input));
 
-    // TODO ModuleResourceManager: Remove dependency on ModuleRenderer
+    // 4. RESOURCE MANAGER - No direct dependencies, but requires setting rendererFrontend from RENDERER.
     listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION, this));
 
+    // 5. SCENE - Depends on INPUT and RESOURCE MANAGER.
     listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this,
         input, resourceManager));
 
+    // 6. RENDERER - Depends on CAMERA, RESOURCE MANAGER and SCENE.
     listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this,
         camera, resourceManager, scene));
 
-    // ------------- MULTITHREADING ------------- //
-    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
+    // TODO: Ideally resource manager should be GPU agnostic.
+    resourceManager->SetRendererFrontend(renderer->GetRendererFrontend());
+
+    // 7. EDITOR - Depends on WINDOW and RENDERER.
+    // The Module Editor goes here, after the renderer (it is being decoupled!).
+    // Editor = NOUS_NEW<ModuleEditor>(MemoryTag::EDITOR, App, App->GetWindow(), App->GetRenderer());
 }
 
 Application::~Application()
@@ -238,6 +250,17 @@ bool Application::CleanUp()
     return ret;
 }
 
+void Application::SetGameMode(bool isGame)
+{
+    m_isGameMode = isGame;
+    renderer->SetRenderMode(isGame ? RenderMode::GAME : RenderMode::EDITOR);
+}
+
+bool Application::IsGameMode() const
+{
+    return m_isGameMode;
+}
+
 void Application::SetTargetFPS(float FPS)
 {
     targetFPS = FPS;
@@ -284,5 +307,3 @@ ModuleRenderer3D*      Application::GetRenderer()        const { return renderer
 
 NOUS_Multithreading::NOUS_JobSystem* Application::GetJobSystem() const { return jobSystem; }
 
-bool Application::IsMinimized()          const { return isMinimized; }
-void Application::SetMinimized(bool value)     { isMinimized = value; }
