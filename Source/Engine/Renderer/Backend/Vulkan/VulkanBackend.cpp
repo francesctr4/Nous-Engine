@@ -30,7 +30,6 @@
 
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/Utils/Math/Vertex.inl"
-#include <Engine/Core/Application.h>
 #include <Engine/Core/EventSystem/EventSystem.h>
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
@@ -49,6 +48,18 @@ VulkanBackend::~VulkanBackend()
     NOUS_DELETE(vkContext, MemoryTag::RENDERER);
 }
 
+void VulkanBackend::InjectDependencies(
+    EventSystem* eventSystem,
+    NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+    ModuleWindow* window,
+    ModuleResourceManager* resourceManager)
+{
+    vkContext->eventSystem     = eventSystem;
+    vkContext->jobSystem       = jobSystem;
+    vkContext->window          = window;
+    vkContext->resourceManager = resourceManager;
+}
+
 bool VulkanBackend::Initialize()
 {
     bool ret = true;
@@ -59,7 +70,7 @@ bool VulkanBackend::Initialize()
     vkContext->allocator = 0;
 
     // Get Framebuffer Size
-    External->GetWindow()->GetFramebufferSize(&cachedFramebufferWidth, &cachedFramebufferHeight);
+    vkContext->window->GetFramebufferSize(&cachedFramebufferWidth, &cachedFramebufferHeight);
 
     vkContext->framebufferWidth = (cachedFramebufferWidth != 0) ? cachedFramebufferWidth : WINDOW_WIDTH;
     vkContext->framebufferHeight = (cachedFramebufferHeight != 0) ? cachedFramebufferHeight : WINDOW_HEIGHT;
@@ -1026,7 +1037,7 @@ bool VulkanBackend::RecreateResources()
     vkContext->framebufferWidth = cachedFramebufferWidth;
     vkContext->framebufferHeight = cachedFramebufferHeight;
 
-    External->BroadcastEvent(Event(EventType::IMGUI_RECREATION, {}));
+    vkContext->eventSystem->Broadcast(Event(EventType::IMGUI_RECREATION, {}));
 
     cachedFramebufferWidth = 0;
     cachedFramebufferHeight = 0;
@@ -1175,7 +1186,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     // Resolve material.
     ResourceMaterial* material = renderData.material
         ? renderData.material
-        : External->GetResourceManager()->GetDefaultMaterial();
+        : vkContext->resourceManager->GetDefaultMaterial();
 
     // Per-instance descriptors (material UBO + texture sampler).
     if (material && material->internalID != INVALID_ID && vs->instancePool)
@@ -1194,7 +1205,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
         // has an invalid generation, or has not yet been uploaded to the GPU.
         ResourceTexture* texture = material->diffuseMap.texture;
         if (!texture || texture->generation == INVALID_ID || !texture->internalData)
-            texture = External->GetResourceManager()->GetDefaultTexture();
+            texture = vkContext->resourceManager->GetDefaultTexture();
 
         if (texture && texture->internalData)
         {

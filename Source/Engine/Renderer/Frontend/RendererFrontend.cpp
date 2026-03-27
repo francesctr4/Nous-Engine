@@ -21,6 +21,20 @@ RendererFrontend::~RendererFrontend()
 	NOUS_DELETE(mBackend, MemoryTag::RENDERER);
 }
 
+void RendererFrontend::InjectDependencies(
+    ModuleWindow* window,
+    EventSystem* eventSystem,
+    NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+    ModuleResourceManager* resourceManager)
+{
+    // Cache here — backend interface doesn't exist yet (Create() hasn't been called).
+    // Applied in Initialize() after Create().
+    m_window          = window;
+    m_eventSystem     = eventSystem;
+    m_jobSystem       = jobSystem;
+    m_resourceManager = resourceManager;
+}
+
 bool RendererFrontend::Initialize(RendererBackendType backendType)
 {
 	mBackendType = backendType;
@@ -30,6 +44,9 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 		NOUS_ERROR_C(CURRENT_CHANNEL, "Renderer backend failed to create. Aborting application...");
 		return false;
 	}
+
+	// Backend interface now exists — forward cached dependencies into VulkanContext.
+	mBackend->InjectDependencies(m_eventSystem, m_jobSystem, m_window, m_resourceManager);
 
 	// Apply render mode now that the backend exists (created inside Create()).
 	// This must happen before Initialize() which uses renderMode during setup.

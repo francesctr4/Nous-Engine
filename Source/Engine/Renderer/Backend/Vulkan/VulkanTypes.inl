@@ -14,6 +14,12 @@
 
 class Freelist;
 
+// Forward declarations for injected dependencies
+class ModuleWindow;
+class ModuleResourceManager;
+class EventSystem;
+namespace NOUS_Multithreading { class NOUS_JobSystem; }
+
 struct VulkanImage
 {
     VkImage handle;
@@ -325,6 +331,12 @@ struct VulkanContext
     std::condition_variable submitQueueCV;
 
     bool isShuttingDown = false;
+
+    // ── Injected dependencies (set before Initialize(), not owned) ─────────────
+    ModuleWindow*                              window          = nullptr;
+    EventSystem*                               eventSystem     = nullptr;
+    NOUS_Multithreading::NOUS_JobSystem*        jobSystem       = nullptr;
+    ModuleResourceManager*                     resourceManager = nullptr;
 };
 
 struct VulkanTextureData 

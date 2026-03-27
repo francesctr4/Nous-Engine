@@ -36,6 +36,7 @@ class Resource;
 class ModuleCamera3D;
 class ModuleResourceManager;
 class ModuleScene;
+class ModuleWindow;
 
 class ModuleRenderer3D : public Module, public IEventListener
 {
@@ -44,6 +45,7 @@ public:
 	// Constructor / Destructor
 	// ---------------------------------------------------------------------
 	explicit ModuleRenderer3D(Application* app,
+		ModuleWindow* moduleWindow,
 		ModuleCamera3D* moduleCamera3D,
 		ModuleResourceManager* moduleResourceManager,
 		ModuleScene* moduleScene
@@ -100,6 +102,7 @@ private:
 	bool mIsMinimized = false;
 
 	// Dependency Injection
+	ModuleWindow* mModuleWindow;
 	ModuleCamera3D* mModuleCamera3D;
 	ModuleResourceManager* mModuleResourceManager;
 	ModuleScene* mModuleScene;

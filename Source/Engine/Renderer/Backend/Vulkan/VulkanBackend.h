@@ -22,6 +22,12 @@ public:
 	VulkanBackend();
 	~VulkanBackend() override;
 
+	void InjectDependencies(
+		EventSystem* eventSystem,
+		NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+		ModuleWindow* window,
+		ModuleResourceManager* resourceManager) override;
+
 	bool Initialize() override;
 	void Shutdown() noexcept override;
 	void SetRenderMode(RenderMode mode) noexcept override;

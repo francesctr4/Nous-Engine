@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
+#include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
@@ -35,10 +36,11 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_RENDERER3D;
 
-ModuleRenderer3D::ModuleRenderer3D(Application* app, ModuleCamera3D* moduleCamera,
-	ModuleResourceManager* moduleResourceManager, ModuleScene* moduleScene) :
-		Module(app), mModuleCamera3D(moduleCamera), mModuleResourceManager(moduleResourceManager),
-		mModuleScene(moduleScene)
+ModuleRenderer3D::ModuleRenderer3D(Application* app, ModuleWindow* moduleWindow,
+	ModuleCamera3D* moduleCamera, ModuleResourceManager* moduleResourceManager,
+	ModuleScene* moduleScene) :
+		Module(app), mModuleWindow(moduleWindow), mModuleCamera3D(moduleCamera),
+		mModuleResourceManager(moduleResourceManager), mModuleScene(moduleScene)
 
 {
 	EventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
@@ -62,6 +64,8 @@ void ModuleRenderer3D::SetRenderMode(RenderMode mode) noexcept
 bool ModuleRenderer3D::Awake()
 {
 	mRendererFrontend->SetBackendType(RendererBackendType::VULKAN);
+
+	mRendererFrontend->InjectDependencies(mModuleWindow, EventSystem, JobSystem, mModuleResourceManager);
 
 	if (!mRendererFrontend->Initialize(mRendererFrontend->GetBackendType()))
 	{

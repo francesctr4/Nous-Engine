@@ -56,6 +56,16 @@ void RendererBackend::Destroy()
     }
 }
 
+void RendererBackend::InjectDependencies(
+    EventSystem* eventSystem,
+    NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+    ModuleWindow* window,
+    ModuleResourceManager* resourceManager)
+{
+    if (mBackendInterface)
+        mBackendInterface->InjectDependencies(eventSystem, jobSystem, window, resourceManager);
+}
+
 bool RendererBackend::Initialize()
 {
     if (!mBackendInterface)

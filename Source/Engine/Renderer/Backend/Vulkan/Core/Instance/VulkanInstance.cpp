@@ -5,7 +5,6 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
 
-#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 
 bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
@@ -107,7 +106,7 @@ void NOUS_VulkanInstance::DestroyInstance(VulkanContext* vkContext)
 
 bool NOUS_VulkanInstance::CreateSurface(VulkanContext* vkContext)
 {
-    return SDL_Vulkan_CreateSurface(External->GetWindow()->GetSDL_Window(), vkContext->instance, vkContext->allocator, &vkContext->surface);
+    return SDL_Vulkan_CreateSurface(vkContext->window->GetSDL_Window(), vkContext->instance, vkContext->allocator, &vkContext->surface);
 }
 
 void NOUS_VulkanInstance::DestroySurface(VulkanContext* vkContext)

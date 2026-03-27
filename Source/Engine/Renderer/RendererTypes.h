@@ -159,6 +159,12 @@ enum class RendererBackendType
     DIRECTX = 2
 };
 
+// Forward declarations for dependency injection
+class ModuleWindow;
+class ModuleResourceManager;
+class EventSystem;
+namespace NOUS_Multithreading { class NOUS_JobSystem; }
+
 // -----------------------------------------------------------------------------
 // Renderer backend interface
 // -----------------------------------------------------------------------------
@@ -173,6 +179,13 @@ enum class RendererBackendType
 struct IRendererBackend
 {
     virtual ~IRendererBackend() noexcept = default;
+
+    // ─────────────────────────────── Dependency Injection ────────────────────
+    virtual void InjectDependencies(
+        EventSystem* eventSystem,
+        NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+        ModuleWindow* window,
+        ModuleResourceManager* resourceManager) = 0;
 
     // ─────────────────────────────── Lifecycle ───────────────────────────────
     [[nodiscard]] virtual bool Initialize() = 0;

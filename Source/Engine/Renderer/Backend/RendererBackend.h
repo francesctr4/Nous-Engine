@@ -21,6 +21,13 @@ public:
 	RendererBackend();
 	virtual ~RendererBackend();
 
+	// ─────────────────────────────── Dependency Injection ────────────────────
+	void InjectDependencies(
+		EventSystem* eventSystem,
+		NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+		ModuleWindow* window,
+		ModuleResourceManager* resourceManager);
+
 	// ─────────────────────────────── Lifecycle ───────────────────────────────
 	[[nodiscard]] bool Create(RendererBackendType type);
 	void Destroy();

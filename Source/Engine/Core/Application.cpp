@@ -56,9 +56,9 @@ Application::Application(bool isGameMode)
     listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this,
         input, resourceManager));
 
-    // 6. RENDERER - Depends on CAMERA, RESOURCE MANAGER and SCENE.
+    // 6. RENDERER - Depends on WINDOW, CAMERA, RESOURCE MANAGER and SCENE.
     listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this,
-        camera, resourceManager, scene));
+        window, camera, resourceManager, scene));
 
     // TODO: Ideally resource manager should be GPU agnostic.
     resourceManager->SetRendererFrontend(renderer->GetRendererFrontend());
