@@ -8,9 +8,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
-#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Core/Application.h"
 
 // ShaderSystem — using Parser + Compiler + Reflection directly to avoid
 // a circular CMake dependency (ShaderLoader returns ResourceShader*).
@@ -280,7 +278,7 @@ bool ImporterShader::Load(const std::string& libraryPath, Resource* outResource)
               shader->stagesData.size(), shaderDir.c_str());
 
     // 4. Upload to the GPU backend (populates shader->internalData)
-    if (!External->GetRenderer()->GetRendererFrontend()->CreateShader(shader))
+    if (!mRendererFrontend->CreateShader(shader))
     {
         NOUS_ERROR("[ImporterShader] Backend failed to create GPU resources for shader '%s'.",
                    shaderDir.c_str());
@@ -295,7 +293,7 @@ bool ImporterShader::Unload(Resource* inResource)
     ResourceShader* shader = down_cast<ResourceShader*>(inResource);
 
     // Release GPU resources first, then clear CPU-side data
-    External->GetRenderer()->GetRendererFrontend()->DestroyShader(shader);
+    mRendererFrontend->DestroyShader(shader);
 
     shader->stagesData.clear();
     shader->reflection = {};

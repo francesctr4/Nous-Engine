@@ -40,6 +40,8 @@ ModuleResourceManager::~ModuleResourceManager()
 
 bool ModuleResourceManager::Awake()
 {
+	ImporterManager::Init(this, mRendererFrontend);
+
 	if (IsGameMode)
 	{
 		// GAME mode: Library binaries are pre-built. No asset scanning/importing needed.

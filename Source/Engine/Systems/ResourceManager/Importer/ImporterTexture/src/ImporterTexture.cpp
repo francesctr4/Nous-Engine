@@ -3,13 +3,10 @@
 #include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
-#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Core/Application.h"
-
 #if defined(_WIN32) || defined(_WIN64)
 #define STB_IMAGE_IMPLEMENTATION
 #endif
@@ -98,7 +95,7 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
         texture->generation = (currentGeneration == INVALID_ID) ? 0 : currentGeneration;
 
         // Acquire internal texture resources and upload to GPU.
-        if(!External->GetRenderer()->GetRendererFrontend()->CreateTexture(data, texture))
+        if(!mRendererFrontend->CreateTexture(data, texture))
         {
             NOUS_ERROR("Failed to acquire renderer resources for texture '%s'", texture->GetName().c_str());
             return false;
@@ -125,7 +122,7 @@ bool ImporterTexture::Unload(Resource* inResource)
 {
     ResourceTexture* texture = down_cast<ResourceTexture*>(inResource);
 
-    External->GetRenderer()->GetRendererFrontend()->DestroyTexture(texture);
+    mRendererFrontend->DestroyTexture(texture);
 
     return true;
 }

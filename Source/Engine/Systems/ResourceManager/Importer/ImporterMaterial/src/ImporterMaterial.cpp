@@ -2,8 +2,8 @@
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Renderer/Frontend/RendererFrontend.h"
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
@@ -13,9 +13,7 @@
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Core/Logger/Logger.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
 
 bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 {
@@ -40,8 +38,7 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
             std::replace(texPath.begin(), texPath.end(), '\\', '/');
 
             MetaFileData texMeta;
-            if (External && External->GetResourceManager() &&
-                External->GetResourceManager()->GetAssetMetaData(texPath, texMeta))
+            if (mResourceManager->GetAssetMetaData(texPath, texMeta))
             {
                 // Normalize library path to forward slashes before storing.
                 std::string libPath = texMeta.libraryPath;
@@ -96,19 +93,19 @@ bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResourc
         const UID texUID = static_cast<UID>(texUIDDouble);
         const std::string texName = NOUS_FileManager::GetFilename(diffuseMapPath);
         diffuseTexture = down_cast<ResourceTexture*>(
-            External->GetResourceManager()->CreateResourceFromLibrary(
+            mResourceManager->CreateResourceFromLibrary(
                 texUID, ResourceType::TEXTURE, texName, diffuseMapPath, texLibPath));
     }
     if (!diffuseTexture)
     {
         diffuseTexture = down_cast<ResourceTexture*>(
-            External->GetResourceManager()->CreateResource(diffuseMapPath));
+            mResourceManager->CreateResource(diffuseMapPath));
     }
 
     material->diffuseMap.type = TextureMapType::DIFFUSE;
     material->diffuseMap.texture = diffuseTexture;
 
-    ret = External->GetRenderer()->GetRendererFrontend()->CreateMaterial(material);
+    ret = mRendererFrontend->CreateMaterial(material);
 
     return ret;
 }
@@ -119,11 +116,11 @@ bool ImporterMaterial::Unload(Resource* inResource)
 
     if (material->diffuseMap.texture != nullptr)
     {
-        External->GetResourceManager()->UnloadResource(material->diffuseMap.texture->GetUID());
+        mResourceManager->UnloadResource(material->diffuseMap.texture->GetUID());
         material->diffuseMap.texture = nullptr;
     }
 
-    External->GetRenderer()->GetRendererFrontend()->DestroyMaterial(material);
+    mRendererFrontend->DestroyMaterial(material);
 
 	return true;
 }

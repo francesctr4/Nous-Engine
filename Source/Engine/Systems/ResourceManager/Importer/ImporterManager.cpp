@@ -19,6 +19,15 @@ const std::array<std::unique_ptr<Importer>, c_NUM_IMPORTERS> ImporterManager::im
     std::make_unique<ImporterShader>()
 };
 
+void ImporterManager::Init(ModuleResourceManager* resourceManager, RendererFrontend* rendererFrontend)
+{
+    for (auto& importer : importers)
+    {
+        importer->mRendererFrontend = rendererFrontend;
+        importer->mResourceManager  = resourceManager;
+    }
+}
+
 bool ImporterManager::Import(const ResourceType& type, const MetaFileData& metaFileData)
 {
     return importers[Resource::GetIndexFromType(type)]->Import(metaFileData);

@@ -6,6 +6,8 @@
 
 class Resource;
 struct MetaFileData;
+class RendererFrontend;
+class ModuleResourceManager;
 
 struct Importer
 {
@@ -15,6 +17,9 @@ struct Importer
     virtual bool Save(const MetaFileData& metaFileData, Resource*& inResource) = 0;
     virtual bool Load(const std::string& libraryPath, Resource* outResource) = 0;
     virtual bool Unload(Resource* inResource) = 0;
+
+    RendererFrontend*      mRendererFrontend = nullptr;
+    ModuleResourceManager* mResourceManager  = nullptr;
 };
 
 #endif // IMPORTER_INL

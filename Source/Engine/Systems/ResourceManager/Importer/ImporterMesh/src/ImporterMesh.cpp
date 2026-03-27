@@ -8,13 +8,11 @@
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 
-#include "Engine/Core/Application.h"
 #include "Engine/Core/Logger/Logger.h"
 
 // Assimp
@@ -321,7 +319,7 @@ bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
 
     fh.Close();
 
-    return External->GetRenderer()->GetRendererFrontend()->CreateGeometry(
+    return mRendererFrontend->CreateGeometry(
         mesh->vertices.size(), mesh->vertices.data(),
         mesh->indices.size(), mesh->indices.data(), mesh);
 }
@@ -330,7 +328,7 @@ bool ImporterMesh::Unload(Resource* inResource)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
 
-    External->GetRenderer()->GetRendererFrontend()->DestroyGeometry(mesh);
+    mRendererFrontend->DestroyGeometry(mesh);
 
     mesh->ID         = INVALID_ID;
     mesh->internalID = INVALID_ID;
