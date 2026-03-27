@@ -6,7 +6,7 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 
-class RendererFrontend;
+class IGPUResourceFactory;
 
 #include <map>
 #include <mutex>
@@ -28,7 +28,7 @@ public:
 
 	// Constructor
 	ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode);
-	void SetRendererFrontend(RendererFrontend* rendererFrontend);
+	void SetGPUFactory(IGPUResourceFactory* gpuFactory);
 
 	// Destructor
 	virtual ~ModuleResourceManager();
@@ -116,7 +116,7 @@ private:
 	// Entry removed when the sub-resource is destroyed in DeleteResource().
 	std::map<std::pair<UID, int32_t>, UID> m_submeshUIDMap;
 
-	RendererFrontend* mRendererFrontend = nullptr;
+	IGPUResourceFactory* mGPUFactory = nullptr;
 	bool m_isGameMode;
 
 	ResourceTexture* mDefaultTexture = nullptr;

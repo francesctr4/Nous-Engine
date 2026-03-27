@@ -4,7 +4,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include <filesystem>
@@ -29,9 +29,9 @@ ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Mult
 	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
 
-void ModuleResourceManager::SetRendererFrontend(RendererFrontend* rendererFrontend)
+void ModuleResourceManager::SetGPUFactory(IGPUResourceFactory* gpuFactory)
 {
-	mRendererFrontend = rendererFrontend;
+	mGPUFactory = gpuFactory;
 }
 
 ModuleResourceManager::~ModuleResourceManager()
@@ -41,7 +41,7 @@ ModuleResourceManager::~ModuleResourceManager()
 
 bool ModuleResourceManager::Awake()
 {
-	ImporterManager::Init(this, mRendererFrontend);
+	ImporterManager::Init(this, mGPUFactory);
 
 	if (m_isGameMode)
 	{
@@ -144,7 +144,7 @@ bool ModuleResourceManager::Start()
 	mDefaultTexture->height = texDimension;
 	mDefaultTexture->channelCount = channels;
 
-	if (!mRendererFrontend->CreateTexture(pixels.data(), mDefaultTexture))
+	if (!mGPUFactory->CreateTexture(pixels.data(), mDefaultTexture))
 	{
 		NOUS_FATAL("Failed to create default texture.");
 		return false;
@@ -167,7 +167,7 @@ bool ModuleResourceManager::Start()
 	mDefaultMaterial->diffuseMap.type = TextureMapType::DIFFUSE;
 	mDefaultMaterial->diffuseMap.texture = mDefaultTexture;
 
-	if (!mRendererFrontend->CreateMaterial(mDefaultMaterial))
+	if (!mGPUFactory->CreateMaterial(mDefaultMaterial))
 	{
 		NOUS_FATAL("Failed to create default material.");
 		return false;
@@ -844,7 +844,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 	mesh->vertices = sub.vertices;
 	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
 
-	if (!mRendererFrontend->CreateGeometry(
+	if (!mGPUFactory->CreateGeometry(
 	    mesh->vertices.size(), mesh->vertices.data(),
 	    mesh->indices.size(), mesh->indices.data(), mesh))
 	{
@@ -940,14 +940,14 @@ void ModuleResourceManager::ClearResources()
 
     if (mDefaultTexture)
     {
-        mRendererFrontend->DestroyTexture(mDefaultTexture);
+        mGPUFactory->DestroyTexture(mDefaultTexture);
         NOUS_DELETE(mDefaultTexture, MemoryTag::RESOURCE_TEXTURE);
         mDefaultTexture = nullptr;
     }
 
     if (mDefaultMaterial)
     {
-        mRendererFrontend->DestroyMaterial(mDefaultMaterial);
+        mGPUFactory->DestroyMaterial(mDefaultMaterial);
         NOUS_DELETE(mDefaultMaterial, MemoryTag::RESOURCE_MATERIAL);
         mDefaultMaterial = nullptr;
     }
@@ -1020,7 +1020,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
     mesh->indices.assign(sub.indices.begin(), sub.indices.end());
 
     // Upload geometry to the GPU.
-    if (!mRendererFrontend->CreateGeometry(
+    if (!mGPUFactory->CreateGeometry(
         mesh->vertices.size(), mesh->vertices.data(),
         mesh->indices.size(), mesh->indices.data(), mesh))
     {

@@ -1,5 +1,5 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterTexture/include/ImporterTexture.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
@@ -95,7 +95,7 @@ bool ImporterTexture::Load(const std::string& libraryPath, Resource* outResource
         texture->generation = (currentGeneration == INVALID_ID) ? 0 : currentGeneration;
 
         // Acquire internal texture resources and upload to GPU.
-        if(!mRendererFrontend->CreateTexture(data, texture))
+        if(!mGPUFactory->CreateTexture(data, texture))
         {
             NOUS_ERROR("Failed to acquire renderer resources for texture '%s'", texture->GetName().c_str());
             return false;
@@ -122,7 +122,7 @@ bool ImporterTexture::Unload(Resource* inResource)
 {
     ResourceTexture* texture = down_cast<ResourceTexture*>(inResource);
 
-    mRendererFrontend->DestroyTexture(texture);
+    mGPUFactory->DestroyTexture(texture);
 
     return true;
 }

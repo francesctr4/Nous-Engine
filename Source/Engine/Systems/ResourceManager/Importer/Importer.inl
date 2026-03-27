@@ -6,7 +6,7 @@
 
 class Resource;
 struct MetaFileData;
-class RendererFrontend;
+class IGPUResourceFactory;
 class ModuleResourceManager;
 
 struct Importer
@@ -18,8 +18,8 @@ struct Importer
     virtual bool Load(const std::string& libraryPath, Resource* outResource) = 0;
     virtual bool Unload(Resource* inResource) = 0;
 
-    RendererFrontend*      mRendererFrontend = nullptr;
-    ModuleResourceManager* mResourceManager  = nullptr;
+    IGPUResourceFactory*   mGPUFactory      = nullptr;
+    ModuleResourceManager* mResourceManager = nullptr;
 };
 
 #endif // IMPORTER_INL

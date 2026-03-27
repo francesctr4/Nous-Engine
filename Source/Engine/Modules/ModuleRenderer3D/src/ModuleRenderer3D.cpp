@@ -378,7 +378,12 @@ void ModuleRenderer3D::OnEvent(const Event& event)
     }
 }
 
-RendererFrontend *ModuleRenderer3D::GetRendererFrontend() const
+RendererFrontend* ModuleRenderer3D::GetRendererFrontend() const
+{
+	return mRendererFrontend;
+}
+
+IGPUResourceFactory* ModuleRenderer3D::GetGPUFactory() const
 {
 	return mRendererFrontend;
 }

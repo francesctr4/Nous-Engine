@@ -59,7 +59,7 @@ Application::Application(bool isGameMode)
         eventSystem, jobSystem, m_isGameMode, window, camera, resourceManager, scene));
 
     // TODO: Ideally resource manager should be GPU agnostic.
-    resourceManager->SetRendererFrontend(renderer->GetRendererFrontend());
+    resourceManager->SetGPUFactory(renderer->GetGPUFactory());
 
     // 7. EDITOR - Depends on ALL THE MODULES.
     // The Module Editor goes here, after the renderer (it is being decoupled!).

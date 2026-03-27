@@ -3,7 +3,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include "Engine/Renderer/IGPUResourceFactory.h"
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
@@ -105,7 +105,7 @@ bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResourc
     material->diffuseMap.type = TextureMapType::DIFFUSE;
     material->diffuseMap.texture = diffuseTexture;
 
-    ret = mRendererFrontend->CreateMaterial(material);
+    ret = mGPUFactory->CreateMaterial(material);
 
     return ret;
 }
@@ -120,7 +120,7 @@ bool ImporterMaterial::Unload(Resource* inResource)
         material->diffuseMap.texture = nullptr;
     }
 
-    mRendererFrontend->DestroyMaterial(material);
+    mGPUFactory->DestroyMaterial(material);
 
 	return true;
 }

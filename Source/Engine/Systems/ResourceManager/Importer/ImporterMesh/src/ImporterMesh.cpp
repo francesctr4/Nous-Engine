@@ -8,7 +8,7 @@
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
@@ -319,7 +319,7 @@ bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
 
     fh.Close();
 
-    return mRendererFrontend->CreateGeometry(
+    return mGPUFactory->CreateGeometry(
         mesh->vertices.size(), mesh->vertices.data(),
         mesh->indices.size(), mesh->indices.data(), mesh);
 }
@@ -328,7 +328,7 @@ bool ImporterMesh::Unload(Resource* inResource)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
 
-    mRendererFrontend->DestroyGeometry(mesh);
+    mGPUFactory->DestroyGeometry(mesh);
 
     mesh->ID         = INVALID_ID;
     mesh->internalID = INVALID_ID;

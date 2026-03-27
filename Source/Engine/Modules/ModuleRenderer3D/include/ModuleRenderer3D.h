@@ -19,6 +19,7 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Renderer/RendererTypes.h"
+#include "Engine/Renderer/IGPUResourceFactory.h"
 
 #include <glm/glm.hpp>
 #include <unordered_map>
@@ -72,7 +73,8 @@ public:
 	// ---------------------------------------------------------------------
 	// Accessors
 	// ---------------------------------------------------------------------
-	[[nodiscard]] NOUS_ENGINE_API RendererFrontend* GetRendererFrontend() const;
+	[[nodiscard]] NOUS_ENGINE_API RendererFrontend*      GetRendererFrontend() const;
+	[[nodiscard]] NOUS_ENGINE_API IGPUResourceFactory*   GetGPUFactory()       const;
 
 	// Toggle frustum culling against the game camera. Default: disabled.
 	bool frustumCullingEnabled = false;

@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_RENDERER_FRONTEND_H
 
 #include "Engine/Renderer/RendererTypes.h"
+#include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/EngineExport.h"
 
 #include <functional>
@@ -24,7 +25,7 @@ namespace NOUS_Multithreading { class NOUS_JobSystem; }
  *
  * Orchestrates frame rendering, render passes, and delegates GPU operations to RendererBackend.
  */
-class RendererFrontend
+class RendererFrontend : public IGPUResourceFactory
 {
 public:
     NOUS_ENGINE_API RendererFrontend();
@@ -55,18 +56,18 @@ public:
 	// ---------------------------------------------------------------------
 	// GPU Resource Management
 	// ---------------------------------------------------------------------
-	[[nodiscard]] NOUS_ENGINE_API bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture);
-	NOUS_ENGINE_API void DestroyTexture(ResourceTexture* texture);
+	[[nodiscard]] NOUS_ENGINE_API bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture) override;
+	NOUS_ENGINE_API void DestroyTexture(ResourceTexture* texture) override;
 
-	[[nodiscard]] NOUS_ENGINE_API bool CreateMaterial(ResourceMaterial* material);
-	NOUS_ENGINE_API void DestroyMaterial(ResourceMaterial* material);
+	[[nodiscard]] NOUS_ENGINE_API bool CreateMaterial(ResourceMaterial* material) override;
+	NOUS_ENGINE_API void DestroyMaterial(ResourceMaterial* material) override;
 
 	[[nodiscard]] NOUS_ENGINE_API bool CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices,
-									  uint32_t indexCount, const uint32_t* indices, ResourceMesh* outGeometry);
-	NOUS_ENGINE_API void DestroyGeometry(ResourceMesh* geometry);
+									  uint32_t indexCount, const uint32_t* indices, ResourceMesh* outGeometry) override;
+	NOUS_ENGINE_API void DestroyGeometry(ResourceMesh* geometry) override;
 
-	[[nodiscard]] NOUS_ENGINE_API bool CreateShader(ResourceShader* shader);
-	NOUS_ENGINE_API void DestroyShader(ResourceShader* shader);
+	[[nodiscard]] NOUS_ENGINE_API bool CreateShader(ResourceShader* shader) override;
+	NOUS_ENGINE_API void DestroyShader(ResourceShader* shader) override;
 
 	// ---------------------------------------------------------------------
 	// Mouse Picking

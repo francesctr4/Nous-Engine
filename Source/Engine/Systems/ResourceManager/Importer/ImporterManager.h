@@ -9,7 +9,7 @@ enum class ResourceType;
 
 struct Importer;
 struct MetaFileData;
-class RendererFrontend;
+class IGPUResourceFactory;
 class ModuleResourceManager;
 
 constexpr int16 c_NUM_IMPORTERS = 4;
@@ -18,7 +18,7 @@ class ImporterManager
 {
 public:
 
-    static void Init(ModuleResourceManager* resourceManager, RendererFrontend* rendererFrontend);
+    static void Init(ModuleResourceManager* resourceManager, IGPUResourceFactory* gpuFactory);
 
     static bool Import(const ResourceType& type, const MetaFileData& metaFileData);
     static bool Save(const ResourceType& type, const MetaFileData& metaFileData, Resource*& inResource);

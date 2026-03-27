@@ -19,12 +19,12 @@ const std::array<std::unique_ptr<Importer>, c_NUM_IMPORTERS> ImporterManager::im
     std::make_unique<ImporterShader>()
 };
 
-void ImporterManager::Init(ModuleResourceManager* resourceManager, RendererFrontend* rendererFrontend)
+void ImporterManager::Init(ModuleResourceManager* resourceManager, IGPUResourceFactory* gpuFactory)
 {
     for (auto& importer : importers)
     {
-        importer->mRendererFrontend = rendererFrontend;
-        importer->mResourceManager  = resourceManager;
+        importer->mGPUFactory      = gpuFactory;
+        importer->mResourceManager = resourceManager;
     }
 }
 
