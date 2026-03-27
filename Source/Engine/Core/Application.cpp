@@ -46,7 +46,7 @@ Application::Application(bool isGameMode)
     //   WINDOW
     //     └─ INPUT
     //          └─ CAMERA
-    //   RESOURCE MANAGER  ←── SetGPUFactory (post-construction, see below)
+    //   RESOURCE MANAGER
     //     └─ SCENE (also depends on INPUT)
     //   RENDERER (depends on WINDOW, CAMERA, RESOURCE MANAGER, SCENE)
     //   EDITOR   (depends on all of the above — constructed in MainEditor.cpp)
@@ -65,7 +65,6 @@ Application::Application(bool isGameMode)
         eventSystem, jobSystem, input));
 
     // 4. RESOURCE MANAGER — no module dependencies at construction.
-    //    GPU upload capability is wired after RENDERER is constructed (see SetGPUFactory below).
     //    Must be constructed before SCENE and RENDERER so they can reference it.
     listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, m_isGameMode));
@@ -78,11 +77,6 @@ Application::Application(bool isGameMode)
     //    Must be last because RESOURCE MANAGER and SCENE must already exist.
     listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, m_isGameMode, window, camera, resourceManager, scene));
-
-    // Post-construction wiring: give RESOURCE MANAGER access to GPU upload/destroy capabilities.
-    // This cannot be a constructor parameter because RENDERER is created after RESOURCE MANAGER.
-    // TODO: eliminate this setter when the CPU/GPU resource split is implemented (Step 2).
-    resourceManager->SetGPUFactory(renderer->GetGPUFactory());
 
     // 7. EDITOR — depends on all modules above.
     //    Constructed externally in MainEditor.cpp after this constructor returns.

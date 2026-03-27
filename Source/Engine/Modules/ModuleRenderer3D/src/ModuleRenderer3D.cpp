@@ -22,6 +22,8 @@
 #include "Engine/Core/Logger/LogChannel.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
 #include <parson.h>
@@ -107,11 +109,48 @@ bool ModuleRenderer3D::Awake()
 
 bool ModuleRenderer3D::Start()
 {
+	// Drain the initial upload queue — includes the default texture/material (queued
+	// by ResourceManager::Start) and all shaders loaded during Awake.  All must be
+	// GPU_READY before the first frame renders.
+	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
+	{
+		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
+			NOUS_ERROR("ModuleRenderer3D::Start() — failed to upload resource '%s'.", resource->GetName().c_str());
+		resource->SetState(ResourceState::GPU_READY);
+	}
+
+	// Give the default texture a stable ID/generation for the descriptor lazy-write
+	// cache (WriteInstanceSampler).  Without this, every draw using the default
+	// texture re-fires vkUpdateDescriptorSets, causing validation errors.
+	ResourceTexture* defaultTex = mModuleResourceManager->GetDefaultTexture();
+	if (defaultTex)
+	{
+		defaultTex->ID         = 0;
+		defaultTex->generation = 0;
+	}
+
 	return true;
 }
 
 UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 {
+	// Upload CPU_READY resources that were deserialized since the last frame.
+	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
+	{
+		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
+			NOUS_ERROR("ModuleRenderer3D::PreUpdate() — failed to upload resource '%s'.", resource->GetName().c_str());
+		resource->SetState(ResourceState::GPU_READY);
+	}
+
+	// Release GPU handles for retired resources, then hand back for CPU eviction.
+	for (auto& [type, resource] : mModuleResourceManager->TakePendingReleases())
+	{
+		if (resource->GetReferenceCount() > 0) continue; // re-acquired since queuing; skip
+		ImporterManager::Release(type, resource, mRendererFrontend);
+		resource->SetState(ResourceState::CPU_READY);
+		mModuleResourceManager->EvictResource(type, resource);
+	}
+
 	return UpdateStatus::CONTINUE;
 }
 
@@ -329,7 +368,7 @@ bool ModuleRenderer3D::CleanUp()
     // Safe because ReleaseFrameResources() already freed the CBs/FBs that
     // referenced these objects, and the scene has been cleared above so no
     // component still holds a reference to any Resource.
-    mModuleResourceManager->ClearResources();
+    mModuleResourceManager->ClearResources(mRendererFrontend);
 
     // Tear down the remaining Vulkan infrastructure (buffers, sync objects,
     // renderpasses, swapchain, device).

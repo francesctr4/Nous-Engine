@@ -88,20 +88,22 @@ bool NOUS_VulkanMultithreading::DestroyWorkerCommandPools(VulkanContext* vkConte
 
 VkCommandPool NOUS_VulkanMultithreading::GetThreadCommandPool(VulkanContext* vkContext, uint32 threadID)
 {
-    try 
+    // The main (render) thread always uses the main graphics command pool — no lookup needed.
+    if (NOUS_Multithreading::GetMainThread()->GetID() == threadID)
+        return vkContext->device.mainGraphicsCommandPool;
+
+    try
     {
         return vkContext->device.workerCommandPools.at(threadID);
     }
-    catch (const std::out_of_range&) 
+    catch (const std::out_of_range&)
     {
-        // Fallback to main command pool
-        NOUS_INFO("Worker command pool not found for this worker thread. Falling back to main graphics command pool.");
+        NOUS_WARN("Worker command pool not found for thread %u. Falling back to main graphics command pool.", threadID);
         return vkContext->device.mainGraphicsCommandPool;
     }
-    catch (...) 
+    catch (...)
     {
-        // Catch any other unexpected errors
-        NOUS_WARN("Unexpected error accessing worker command pools. Falling back to main graphics pool.");
+        NOUS_WARN("Unexpected error accessing worker command pools for thread %u. Falling back to main graphics pool.", threadID);
         return vkContext->device.mainGraphicsCommandPool;
     }
 }
