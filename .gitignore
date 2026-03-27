@@ -8,6 +8,9 @@ cmake-build-*
 build
 /docs
 
+# Generated reports
+clang_tidy_report.html
+
 #ignore temp files
 console.log
 imgui.ini
