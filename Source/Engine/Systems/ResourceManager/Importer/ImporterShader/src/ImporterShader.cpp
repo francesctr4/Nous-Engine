@@ -192,7 +192,7 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
     return ret;
 }
 
-bool ImporterShader::Load(const std::string& libraryPath, Resource* outResource)
+bool ImporterShader::Deserialize(const std::string& libraryPath, Resource* outResource)
 {
     ResourceShader* shader = down_cast<ResourceShader*>(outResource);
 
@@ -274,29 +274,32 @@ bool ImporterShader::Load(const std::string& libraryPath, Resource* outResource)
         shader->reflection = NOUS_ShaderSystem::MergeReflections(reflections);
     }
 
-    NOUS_INFO("[ImporterShader] Loaded %zu stage(s) from '%s'.",
+    NOUS_INFO("[ImporterShader] Deserialized %zu stage(s) from '%s'.",
               shader->stagesData.size(), shaderDir.c_str());
-
-    // 4. Upload to the GPU backend (populates shader->internalData)
-    if (!mGPUFactory->CreateShader(shader))
-    {
-        NOUS_ERROR("[ImporterShader] Backend failed to create GPU resources for shader '%s'.",
-                   shaderDir.c_str());
-        return false;
-    }
-
     return true;
 }
 
-bool ImporterShader::Unload(Resource* inResource)
+bool ImporterShader::Upload(Resource* outResource, IGPUResourceFactory* gpu)
+{
+    ResourceShader* shader = down_cast<ResourceShader*>(outResource);
+    if (!gpu->CreateShader(shader))
+    {
+        NOUS_ERROR("[ImporterShader] Backend failed to create GPU resources for shader '%s'.",
+                   shader->GetName().c_str());
+        return false;
+    }
+    return true;
+}
+
+void ImporterShader::Release(Resource* inResource, IGPUResourceFactory* gpu)
 {
     ResourceShader* shader = down_cast<ResourceShader*>(inResource);
+    gpu->DestroyShader(shader);
+}
 
-    // Release GPU resources first, then clear CPU-side data
-    mGPUFactory->DestroyShader(shader);
-
+void ImporterShader::Evict(Resource* inResource)
+{
+    ResourceShader* shader = down_cast<ResourceShader*>(inResource);
     shader->stagesData.clear();
     shader->reflection = {};
-
-    return true;
 }

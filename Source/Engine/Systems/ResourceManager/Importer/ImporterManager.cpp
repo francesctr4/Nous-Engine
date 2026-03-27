@@ -19,13 +19,10 @@ const std::array<std::unique_ptr<Importer>, c_NUM_IMPORTERS> ImporterManager::im
     std::make_unique<ImporterShader>()
 };
 
-void ImporterManager::Init(ModuleResourceManager* resourceManager, IGPUResourceFactory* gpuFactory)
+void ImporterManager::Init(ModuleResourceManager* resourceManager)
 {
     for (auto& importer : importers)
-    {
-        importer->mGPUFactory      = gpuFactory;
         importer->mResourceManager = resourceManager;
-    }
 }
 
 bool ImporterManager::Import(const ResourceType& type, const MetaFileData& metaFileData)
@@ -38,12 +35,22 @@ bool ImporterManager::Save(const ResourceType& type, const MetaFileData& metaFil
     return importers[Resource::GetIndexFromType(type)]->Save(metaFileData, inResource);
 }
 
-bool ImporterManager::Load(const ResourceType& type, const std::string& libraryPath, Resource* outResource)
+bool ImporterManager::Deserialize(const ResourceType& type, const std::string& libraryPath, Resource* resource)
 {
-    return importers[Resource::GetIndexFromType(type)]->Load(libraryPath, outResource);
+    return importers[Resource::GetIndexFromType(type)]->Deserialize(libraryPath, resource);
 }
 
-bool ImporterManager::Unload(const ResourceType& type, Resource* inResource)
+void ImporterManager::Evict(const ResourceType& type, Resource* resource)
 {
-    return importers[Resource::GetIndexFromType(type)]->Unload(inResource);
+    importers[Resource::GetIndexFromType(type)]->Evict(resource);
+}
+
+bool ImporterManager::Upload(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu)
+{
+    return importers[Resource::GetIndexFromType(type)]->Upload(resource, gpu);
+}
+
+void ImporterManager::Release(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu)
+{
+    importers[Resource::GetIndexFromType(type)]->Release(resource, gpu);
 }

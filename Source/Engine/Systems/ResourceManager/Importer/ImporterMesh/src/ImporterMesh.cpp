@@ -240,9 +240,9 @@ bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
     return ret;
 }
 
-bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
+bool ImporterMesh::Deserialize(const std::string& libraryPath, Resource* outResource)
 {
-    // Loads the library binary into a single merged ResourceMesh.
+    // Loads the library binary into a single merged ResourceMesh (CPU only).
     // Supports both the legacy V1 format and the current V2 multi-submesh format.
     ResourceMesh* mesh = down_cast<ResourceMesh*>(outResource);
 
@@ -252,7 +252,6 @@ bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
 
     uint64_t bytesRead = 0;
 
-    // Detect format by reading the first 4 bytes.
     uint32_t header4 = 0;
     if (!fh.ReadBytes(4, reinterpret_cast<char*>(&header4), &bytesRead))
         return false;
@@ -318,26 +317,31 @@ bool ImporterMesh::Load(const std::string& libraryPath, Resource* outResource)
     }
 
     fh.Close();
+    return true;
+}
 
-    return mGPUFactory->CreateGeometry(
+bool ImporterMesh::Upload(Resource* outResource, IGPUResourceFactory* gpu)
+{
+    ResourceMesh* mesh = down_cast<ResourceMesh*>(outResource);
+    return gpu->CreateGeometry(
         mesh->vertices.size(), mesh->vertices.data(),
         mesh->indices.size(), mesh->indices.data(), mesh);
 }
 
-bool ImporterMesh::Unload(Resource* inResource)
+void ImporterMesh::Release(Resource* inResource, IGPUResourceFactory* gpu)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
-
-    mGPUFactory->DestroyGeometry(mesh);
-
+    gpu->DestroyGeometry(mesh);
     mesh->ID         = INVALID_ID;
     mesh->internalID = INVALID_ID;
     mesh->generation = INVALID_ID;
+}
 
+void ImporterMesh::Evict(Resource* inResource)
+{
+    ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
     mesh->vertices.clear();
     mesh->indices.clear();
-
-    return true;
 }
 
 // ─── LoadHierarchy ────────────────────────────────────────────────────────────

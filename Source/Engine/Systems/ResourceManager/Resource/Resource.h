@@ -8,6 +8,13 @@
 
 using UID = uint32;
 
+enum class ResourceState
+{
+    UNLOADED,   // No data loaded
+    CPU_READY,  // CPU data loaded; waiting for GPU upload
+    GPU_READY   // Fully resident on GPU; safe to render
+};
+
 enum class ResourceType 
 {
 	UNKNOWN = -1,
@@ -50,6 +57,9 @@ public:
 	NOUS_ENGINE_API void Validate();
 	NOUS_ENGINE_API void Invalidate();
 
+	NOUS_ENGINE_API ResourceState GetState() const;
+	NOUS_ENGINE_API void SetState(ResourceState newState);
+
 	NOUS_ENGINE_API static int16 GetIndexFromType(const ResourceType& type);
 	NOUS_ENGINE_API static std::string GetLibraryExtensionFromType(ResourceType type);
 	NOUS_ENGINE_API static ResourceType GetTypeFromExtension(const std::string& extension);
@@ -59,6 +69,7 @@ public:
 private:
 
 	bool valid;
+	ResourceState state;
 
 	std::string name;
 	UID uID;

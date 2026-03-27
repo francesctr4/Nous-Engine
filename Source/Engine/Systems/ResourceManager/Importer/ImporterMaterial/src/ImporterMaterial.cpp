@@ -56,34 +56,32 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
     return NOUS_FileManager::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
 }
 
-bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResource)
+bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* outResource)
 {
     ResourceMaterial* material = down_cast<ResourceMaterial*>(outResource);
 
     JsonFile jsonFile;
-
     if (!jsonFile.LoadFromFile(libraryPath.c_str()))
     {
-        NOUS_ERROR("Error in ImporterMaterial::Load(). Unable to load the file");
+        NOUS_ERROR("ImporterMaterial::Deserialize() failed to load file '%s'", libraryPath.c_str());
         return false;
     }
 
     if (!jsonFile.GetValue("diffuse_color", material->diffuseColor))
     {
-        NOUS_ERROR("Error in ImporterMaterial::Load(). Missing or invalid diffuse_color field");
+        NOUS_ERROR("ImporterMaterial::Deserialize() missing diffuse_color in '%s'", libraryPath.c_str());
         return false;
     }
 
     std::string diffuseMapPath;
     if (!jsonFile.GetValue("diffuse_map_path", diffuseMapPath))
     {
-        NOUS_ERROR("Error in ImporterMaterial::Load(). Missing or invalid diffuse_map_path field");
+        NOUS_ERROR("ImporterMaterial::Deserialize() missing diffuse_map_path in '%s'", libraryPath.c_str());
         return false;
     }
 
-    bool ret = true;
-
-    // Diffuse Texture — prefer library-only path (GAME mode / no Assets/).
+    // Resolve diffuse texture dependency (CPU side — may push texture to upload queue).
+    // Prefer library-only path (GAME mode / no Assets/).
     ResourceTexture* diffuseTexture = nullptr;
     double texUIDDouble = 0.0;
     std::string texLibPath;
@@ -102,25 +100,30 @@ bool ImporterMaterial::Load(const std::string& libraryPath, Resource* outResourc
             mResourceManager->CreateResource(diffuseMapPath));
     }
 
-    material->diffuseMap.type = TextureMapType::DIFFUSE;
+    material->diffuseMap.type    = TextureMapType::DIFFUSE;
     material->diffuseMap.texture = diffuseTexture;
 
-    ret = mGPUFactory->CreateMaterial(material);
-
-    return ret;
+    return true;
 }
 
-bool ImporterMaterial::Unload(Resource* inResource)
+bool ImporterMaterial::Upload(Resource* outResource, IGPUResourceFactory* gpu)
 {
-	ResourceMaterial* material = down_cast<ResourceMaterial*>(inResource);
+    ResourceMaterial* material = down_cast<ResourceMaterial*>(outResource);
+    return gpu->CreateMaterial(material);
+}
 
-    if (material->diffuseMap.texture != nullptr)
+void ImporterMaterial::Release(Resource* inResource, IGPUResourceFactory* gpu)
+{
+    ResourceMaterial* material = down_cast<ResourceMaterial*>(inResource);
+    gpu->DestroyMaterial(material);
+}
+
+void ImporterMaterial::Evict(Resource* inResource)
+{
+    ResourceMaterial* material = down_cast<ResourceMaterial*>(inResource);
+    if (material->diffuseMap.texture)
     {
         mResourceManager->UnloadResource(material->diffuseMap.texture->GetUID());
         material->diffuseMap.texture = nullptr;
     }
-
-    mGPUFactory->DestroyMaterial(material);
-
-	return true;
 }

@@ -3,6 +3,7 @@
 
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include <vector>
 
 class ResourceTexture : public Resource
 {
@@ -24,6 +25,10 @@ public:
 
     uint8 channelCount;
     bool hasTransparency;
+
+    // Temporary CPU pixel buffer — populated by ImporterTexture::Deserialize,
+    // consumed and cleared by ImporterTexture::Upload/Evict.
+    std::vector<uint8_t> pixelData;
 };
 
 #endif // RESOURCETEXTURE_H

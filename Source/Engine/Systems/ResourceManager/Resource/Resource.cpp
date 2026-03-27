@@ -48,7 +48,7 @@ Resource::Resource()
 	this->type = ResourceType::UNKNOWN;
 	this->uID = 0;
 	this->referenceCount = 0;
-
+	this->state = ResourceState::UNLOADED;
 	this->valid = false;
 }
 
@@ -57,7 +57,7 @@ Resource::Resource(UID uID, ResourceType type)
 	this->type = type;
 	this->uID = uID;
 	this->referenceCount = 0;
-
+	this->state = ResourceState::UNLOADED;
 	this->valid = false;
 }
 
@@ -142,6 +142,16 @@ void Resource::Validate()
 void Resource::Invalidate()
 {
 	valid = false;
+}
+
+ResourceState Resource::GetState() const
+{
+	return state;
+}
+
+void Resource::SetState(ResourceState newState)
+{
+	state = newState;
 }
 
 std::string Resource::GetAssetsPath() const

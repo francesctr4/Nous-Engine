@@ -18,12 +18,19 @@ class ImporterManager
 {
 public:
 
-    static void Init(ModuleResourceManager* resourceManager, IGPUResourceFactory* gpuFactory);
+    static void Init(ModuleResourceManager* resourceManager);
 
+    // Asset pipeline
     static bool Import(const ResourceType& type, const MetaFileData& metaFileData);
     static bool Save(const ResourceType& type, const MetaFileData& metaFileData, Resource*& inResource);
-    static bool Load(const ResourceType& type, const std::string& libraryPath, Resource* outResource);
-    static bool Unload(const ResourceType& type, Resource* inResource);
+
+    // CPU only — safe to call from a job thread
+    static bool Deserialize(const ResourceType& type, const std::string& libraryPath, Resource* resource);
+    static void Evict(const ResourceType& type, Resource* resource);
+
+    // GPU only — must be called from the render thread
+    static bool Upload(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu);
+    static void Release(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu);
 
 private:
 
