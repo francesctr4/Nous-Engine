@@ -7,7 +7,7 @@ class Multithreading : public IEditorWindow
 {
 public:
 
-    explicit Multithreading(const char* title, EditorContext* context, bool start_open = true);
+    explicit Multithreading(const char* title, ::EditorContext* context, bool start_open = true);
 
     void Init() override;
     void Draw() override;

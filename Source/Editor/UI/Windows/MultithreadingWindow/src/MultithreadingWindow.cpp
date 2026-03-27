@@ -1,6 +1,5 @@
 #include "Editor/UI/Windows/MultithreadingWindow/include/MultithreadingWindow.h"
 
-#include "Engine/Core/Application.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
@@ -13,7 +12,7 @@
 
 #include "imgui.h"
 
-Multithreading::Multithreading(const char* title, EditorContext* context, bool start_open)
+Multithreading::Multithreading(const char* title, ::EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
@@ -47,20 +46,20 @@ void Multithreading::Draw()
         ImGui::SameLine();
         if (ImGui::Button("Resize Pool"))
         {
-            External->GetJobSystem()->Resize(newSize);
+            EditorContext->GetJobSystem()->Resize(newSize);
             NOUS_VulkanMultithreading::RecreateWorkerCommandPools(VulkanBackend::GetVulkanContext());
         }
 
         ImGui::Separator();
         
-        static const auto& threadPool = External->GetJobSystem()->GetThreadPool();
-        static const auto& threads = threadPool.GetThreads();
-        static const auto& jobQueue = threadPool.GetJobQueue();
+        const auto& threadPool = EditorContext->GetJobSystem()->GetThreadPool();
+        const auto& threads = threadPool.GetThreads();
+        const auto& jobQueue = threadPool.GetJobQueue();
 
         ImGui::Columns(2);
         ImGui::Text("Max Hardware Threads: %u", NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
         ImGui::Text("Total Worker Threads: %u", static_cast<uint8>(threads.size()));
-        ImGui::Text("Total Jobs: %u", External->GetJobSystem()->GetPendingJobs());
+        ImGui::Text("Total Jobs: %u", EditorContext->GetJobSystem()->GetPendingJobs());
         ImGui::NextColumn();
 
         auto* mainThread = NOUS_Multithreading::GetMainThread();

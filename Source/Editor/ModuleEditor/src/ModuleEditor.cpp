@@ -2,6 +2,10 @@
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
+#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
+#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
@@ -42,9 +46,16 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
 
-ModuleEditor::ModuleEditor(Application* app, ModuleWindow* moduleWindow, ModuleRenderer3D* moduleRenderer3D)
-: Module(app), mModuleWindow(moduleWindow), mModuleRenderer3D(moduleRenderer3D),
-	editorWindows(MemoryTag::EDITOR), fonts(MemoryTag::EDITOR)
+ModuleEditor::ModuleEditor(Application* app,
+	ModuleWindow* moduleWindow,
+	ModuleInput* moduleInput,
+	ModuleCamera3D* moduleCamera3D,
+	ModuleResourceManager* moduleResourceManager,
+	ModuleScene* moduleScene,
+	ModuleRenderer3D* moduleRenderer3D)
+: Module(app), mModuleWindow(moduleWindow), mModuleInput(moduleInput), mModuleCamera3D(moduleCamera3D),
+   mModuleResourceManager(moduleResourceManager), mModuleScene(moduleScene), mModuleRenderer3D(moduleRenderer3D),
+  editorWindows(MemoryTag::EDITOR), fonts(MemoryTag::EDITOR)
 {
 	currentBackendType = RendererBackendType::UNKNOWN;
 
@@ -358,6 +369,11 @@ void ModuleEditor::OnEvent(const Event &event)
 		}
 		default: break;
 	}
+}
+
+RendererFrontend* ModuleEditor::GetRendererFrontend() const
+{
+    return mModuleRenderer3D->GetRendererFrontend();
 }
 
 ImFont *ModuleEditor::GetFont(size_t index) const

@@ -22,6 +22,10 @@ class IEditorWindow;
 
 // Dependency Injection
 class ModuleWindow;
+class ModuleInput;
+class ModuleCamera3D;
+class ModuleResourceManager;
+class ModuleScene;
 class ModuleRenderer3D;
 
 class ModuleEditor : public Module, public IEditorOverlay, public IEventListener, public EditorContext
@@ -29,7 +33,13 @@ class ModuleEditor : public Module, public IEditorOverlay, public IEventListener
 public:
 
 	// Constructor
-	NOUS_EDITOR_API ModuleEditor(Application* app, ModuleWindow* moduleWindow, ModuleRenderer3D* moduleRenderer3D);
+	NOUS_EDITOR_API ModuleEditor(Application* app,
+		ModuleWindow* moduleWindow,
+		ModuleInput* moduleInput,
+		ModuleCamera3D* moduleCamera3D,
+		ModuleResourceManager* moduleResourceManager,
+		ModuleScene* moduleScene,
+		ModuleRenderer3D* moduleRenderer3D);
 
 	// Destructor
 	NOUS_EDITOR_API virtual ~ModuleEditor();
@@ -40,7 +50,14 @@ public:
 	NOUS_EDITOR_API void DrawEditor() override;
 	NOUS_EDITOR_API void OnEvent(const Event& event) override;
 
-    ImFont* GetFont(size_t index) const override;
+    // EditorContext implementation
+    ImFont*                GetFont(size_t index)        const override;
+    ModuleScene*           GetScene()                   const override { return mModuleScene; }
+    ModuleCamera3D*        GetCamera()                  const override { return mModuleCamera3D; }
+    ModuleInput*           GetInput()                   const override { return mModuleInput; }
+    ModuleResourceManager* GetResourceManager()         const override { return mModuleResourceManager; }
+    RendererFrontend*      GetRendererFrontend()        const override;
+    NOUS_Multithreading::NOUS_JobSystem* GetJobSystem() const override { return JobSystem; }
 
 private:
 
@@ -58,8 +75,12 @@ private:
 private:
 
 	// Dependency Injection
-	ModuleWindow* mModuleWindow;
-	ModuleRenderer3D* mModuleRenderer3D;
+	ModuleWindow*          mModuleWindow;
+	ModuleInput*           mModuleInput;
+	ModuleCamera3D*        mModuleCamera3D;
+	ModuleResourceManager* mModuleResourceManager;
+	ModuleScene*           mModuleScene;
+	ModuleRenderer3D*      mModuleRenderer3D;
 
 	RendererBackendType currentBackendType;
 

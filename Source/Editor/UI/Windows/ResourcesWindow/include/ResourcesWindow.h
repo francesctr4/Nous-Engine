@@ -11,7 +11,7 @@ class Resources : public IEditorWindow
 {
 public:
 
-    explicit Resources(const char* title, EditorContext* context, bool start_open = true);
+    explicit Resources(const char* title, ::EditorContext* context, bool start_open = true);
 
     void Init() override;
     void Draw() override;

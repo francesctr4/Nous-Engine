@@ -1,7 +1,6 @@
 #include "Editor/UI/Windows/MainMenuBar/include/MainMenuBar.h"
 
 #include "imgui.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 
 #ifdef _WIN32
@@ -40,7 +39,7 @@ static bool RequestBrowser(const char* url)
 #endif
 }
 
-MainMenuBar::MainMenuBar(const char* title, EditorContext* context, bool start_open)
+MainMenuBar::MainMenuBar(const char* title, ::EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
 	Init();
@@ -249,12 +248,12 @@ void MainMenuBar::Draw()
 
 			if (ImGui::MenuItem("Scene")) 
 			{
-				//External->editor->GetEditorWindowByName("Scene")->Open();
+
 			}
 
 			if (ImGui::MenuItem("Game")) 
 			{
-				//External->editor->GetEditorWindowByName("Game")->Open();
+
 			}
 
 			if (ImGui::MenuItem("Resources")) {
@@ -336,7 +335,7 @@ void MainMenuBar::Draw()
 		// Centered simulation toolbar — Play / Pause / Stop / Step
 		// -----------------------------------------------------------------------
 		{
-			const SimulationState state = External->GetScene()->GetSimulationState();
+			const SimulationState state = EditorContext->GetScene()->GetSimulationState();
 
 			constexpr float buttonW  = 52.0f;
 			constexpr float spacing  = 4.0f;
@@ -348,7 +347,7 @@ void MainMenuBar::Draw()
 			const bool canPlay = (state == SimulationState::STOPPED);
 			if (!canPlay) ImGui::BeginDisabled();
 			if (ImGui::Button("Play", { buttonW, 0 }))
-				External->GetScene()->PressPlay();
+				EditorContext->GetScene()->PressPlay();
 			if (!canPlay) ImGui::EndDisabled();
 
 			ImGui::SameLine(0.0f, spacing);
@@ -359,7 +358,7 @@ void MainMenuBar::Draw()
 			if (!canPause) ImGui::BeginDisabled();
 			if (isPaused)  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.85f, 0.65f, 0.10f, 1.0f));
 			if (ImGui::Button("Pause", { buttonW, 0 }))
-				External->GetScene()->PressPause();
+				EditorContext->GetScene()->PressPause();
 			if (isPaused)  ImGui::PopStyleColor();
 			if (!canPause) ImGui::EndDisabled();
 
@@ -369,7 +368,7 @@ void MainMenuBar::Draw()
 			const bool canStop = (state != SimulationState::STOPPED);
 			if (!canStop) ImGui::BeginDisabled();
 			if (ImGui::Button("Stop", { buttonW, 0 }))
-				External->GetScene()->PressStop();
+				EditorContext->GetScene()->PressStop();
 			if (!canStop) ImGui::EndDisabled();
 
 			ImGui::SameLine(0.0f, spacing);
@@ -378,7 +377,7 @@ void MainMenuBar::Draw()
 			const bool canStep = (state == SimulationState::PAUSED);
 			if (!canStep) ImGui::BeginDisabled();
 			if (ImGui::Button("Step", { buttonW, 0 }))
-				External->GetScene()->PressStep();
+				EditorContext->GetScene()->PressStep();
 			if (!canStep) ImGui::EndDisabled();
 		}
 

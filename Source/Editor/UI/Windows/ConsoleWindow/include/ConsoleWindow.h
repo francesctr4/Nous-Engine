@@ -9,7 +9,7 @@
 class ConsoleWindow : public IEditorWindow
 {
 public:
-    explicit ConsoleWindow(const char* title, EditorContext* context, bool start_open = true);
+    explicit ConsoleWindow(const char* title, ::EditorContext* context, bool start_open = true);
     ~ConsoleWindow() override = default;
 
     void Init() override;

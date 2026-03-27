@@ -2,13 +2,12 @@
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
-#include "Engine/Core/Application.h"
 
 #include <unordered_map>
 
 #include "imgui.h"
 
-Resources::Resources(const char* title, EditorContext* context, bool start_open)
+Resources::Resources(const char* title, ::EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
@@ -27,7 +26,7 @@ void Resources::Draw()
     {
         if (ImGui::Begin(title, p_open))
         {
-            std::unordered_map<UID, Resource*> resourcesMap = External->GetResourceManager()->GetResourcesMap();
+            std::unordered_map<UID, Resource*> resourcesMap = EditorContext->GetResourceManager()->GetResourcesMap();
             uint32 currentResourceCount = resourcesMap.size();
 
             ImGui::TextColored(

@@ -29,7 +29,7 @@ static constexpr ImVec4 k_LevelColors[] = {
 // Construction
 // ──────────────────────────────────────────────────────────────────────────────
 
-ConsoleWindow::ConsoleWindow(const char* title, EditorContext* context, bool start_open)
+ConsoleWindow::ConsoleWindow(const char* title, ::EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     for (bool& b : showChannel) b = true;

@@ -66,7 +66,7 @@ Application::Application(bool isGameMode)
     if (m_isGameMode)
         renderer->SetRenderMode(RenderMode::GAME);
 
-    // 7. EDITOR - Depends on WINDOW and RENDERER.
+    // 7. EDITOR - Depends on ALL THE MODULES.
     // The Module Editor goes here, after the renderer (it is being decoupled!).
 }
 

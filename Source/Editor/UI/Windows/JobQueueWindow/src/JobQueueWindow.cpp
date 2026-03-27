@@ -1,6 +1,5 @@
 #include "Editor/UI/Windows/JobQueueWindow/include/JobQueueWindow.h"
 
-#include "Engine/Core/Application.h"
 #include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
@@ -11,7 +10,7 @@
 #include <format>
 #include <queue>
 
-JobQueue::JobQueue(const char* title, EditorContext* context, bool start_open)
+JobQueue::JobQueue(const char* title, ::EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
@@ -28,7 +27,7 @@ void JobQueue::Draw()
 
     if (ImGui::Begin(title, p_open))
     {
-        const auto& threadPool = External->GetJobSystem()->GetThreadPool();
+        const auto& threadPool = EditorContext->GetJobSystem()->GetThreadPool();
         const auto& jobQueue = threadPool.GetJobQueue();
 
         // New Job Queue table

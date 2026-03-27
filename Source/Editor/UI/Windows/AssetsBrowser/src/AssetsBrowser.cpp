@@ -1,11 +1,9 @@
 #include "Editor/UI/Windows/AssetsBrowser/include/AssetsBrowser.h"
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
 
-#include <cmath>
 #include <format>
 
 #include "Engine/Core/FileSystem/FileSystem.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Scripting/ScriptManager.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -22,7 +20,7 @@ static void HelpMarker(const char* desc)
     }
 }
 
-AssetsBrowser::AssetsBrowser(const char* title, EditorContext* context, bool start_open)
+AssetsBrowser::AssetsBrowser(const char* title, ::EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
@@ -178,7 +176,7 @@ void AssetsBrowser::Draw()
             {
                 if (ImGui::MenuItem("Refresh Assets"))
                 {
-                    External->GetJobSystem()->SubmitJob([this]()
+                    EditorContext->GetJobSystem()->SubmitJob([this]()
                         {
                             std::system("cmake --build ./ --target CopyAssets");
                             AddItemsFromDirectory(current_directory);
@@ -188,18 +186,7 @@ void AssetsBrowser::Draw()
 
                 if (ImGui::MenuItem("Regenerate Library"))
                 {
-//                    External->GetJobSystem()->SubmitJob([]()
-//                        {
-//                            NOUS_FileManager::DeleteDirectory("Library");
-//
-//                            External->fileSystem->CreateLibraryFolder();
-//
-//                            External->fileSystem->ImportDirectory("Assets");
-//
-//                            // Cross-platform shader compilation
-//                            External->fileSystem->CompileShaders();
-//
-//                        }, "Regenerate Library");
+
                 }
 
                 if (ImGui::MenuItem("Add 10000 items"))
@@ -600,7 +587,7 @@ void AssetsBrowser::Draw()
                                 ImVec2 label_pos = ImVec2(pos.x, pos.y + LayoutItemSize.y + 4);  // Adjust vertical position
 
                                 // Render text with a smaller font
-                                ImGui::PushFont(context->GetFont(1)); // Use smaller font for title
+                                ImGui::PushFont(EditorContext->GetFont(1)); // Use smaller font for title
                                 draw_list->AddText(label_pos, label_col, title.c_str());
                                 ImGui::PopFont();
                             }

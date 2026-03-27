@@ -224,7 +224,7 @@ public:
     int             LayoutColumnCount = 0;
     int             LayoutLineCount = 0;
 
-    explicit AssetsBrowser(const char* title, EditorContext* context, bool start_open = true);
+    explicit AssetsBrowser(const char* title, ::EditorContext* context, bool start_open = true);
     void Init() override;
     void Draw() override;
 

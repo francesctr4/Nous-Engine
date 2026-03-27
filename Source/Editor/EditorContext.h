@@ -5,6 +5,14 @@
 
 class ImFont;
 
+// Forward declarations
+class ModuleScene;
+class ModuleCamera3D;
+class ModuleInput;
+class ModuleResourceManager;
+class RendererFrontend;
+namespace NOUS_Multithreading { class NOUS_JobSystem; }
+
 class EditorContext
 {
 public:
@@ -12,6 +20,13 @@ public:
     virtual ~EditorContext() = default;
 
     [[nodiscard]] virtual ImFont* GetFont(size_t index) const = 0;
+
+    [[nodiscard]] virtual ModuleScene*                          GetScene()            const = 0;
+    [[nodiscard]] virtual ModuleCamera3D*                       GetCamera()           const = 0;
+    [[nodiscard]] virtual ModuleInput*                          GetInput()            const = 0;
+    [[nodiscard]] virtual ModuleResourceManager*                GetResourceManager()  const = 0;
+    [[nodiscard]] virtual RendererFrontend*                     GetRendererFrontend() const = 0;
+    [[nodiscard]] virtual NOUS_Multithreading::NOUS_JobSystem*  GetJobSystem()        const = 0;
 
 };
 

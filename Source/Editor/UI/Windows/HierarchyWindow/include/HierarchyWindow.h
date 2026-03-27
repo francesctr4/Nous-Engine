@@ -18,7 +18,7 @@ class HierarchyWindow : public IEditorWindow
 {
 public:
 
-    explicit HierarchyWindow(const char* title, EditorContext* context, bool start_open = true);
+    explicit HierarchyWindow(const char* title, ::EditorContext* context, bool start_open = true);
 
     void Init() override;
     void Draw() override;

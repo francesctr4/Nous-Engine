@@ -7,7 +7,7 @@ class JobQueue : public IEditorWindow
 {
 public:
 
-    explicit JobQueue(const char* title, EditorContext* context, bool start_open = true);
+    explicit JobQueue(const char* title, ::EditorContext* context, bool start_open = true);
 
     void Init() override;
     void Draw() override;
