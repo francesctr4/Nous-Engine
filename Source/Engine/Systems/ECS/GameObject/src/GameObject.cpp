@@ -161,13 +161,14 @@ JSON_Value* GameObject::Serialize() const {
     return objVal;
 }
 
-GameObject* GameObject::Deserialize(JSON_Object* obj) {
+GameObject* GameObject::Deserialize(JSON_Object* obj, Scene* scene) {
     uint32_t uid = static_cast<uint32_t>(json_object_get_number(obj, "uid"));
     const char* name = json_object_get_string(obj, "name");
     uint32_t parentID = static_cast<uint32_t>(json_object_get_number(obj, "parent"));
 
     GameObject* go = NOUS_NEW<GameObject>(MemoryTag::GAMEOBJECT, uid, name ? name : "");
     go->m_ParentID = parentID;
+    go->m_Scene = scene;
 
     NOUS_INFO("Deserializing: %s (ID: %u) -> Parent ID: %u", name ? name : "", uid, parentID);
 
@@ -181,8 +182,9 @@ GameObject* GameObject::Deserialize(JSON_Object* obj) {
             if (type) {
                 auto component = Component::CreateComponent(type);
                 if (component) {
+                    component->m_GameObject = go;
                     component->Deserialize(compObj);
-                    go->AddComponent(std::move(component));
+                    go->AddComponent(component);
                 }
             }
         }

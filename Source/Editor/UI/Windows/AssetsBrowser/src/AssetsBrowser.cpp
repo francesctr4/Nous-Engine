@@ -2,6 +2,7 @@
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
 
 #include <format>
+#include <cmath> // Required for LINUX GCC
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Scripting/ScriptManager.h"

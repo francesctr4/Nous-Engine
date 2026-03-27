@@ -5,8 +5,8 @@
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 #include "Engine/Scripting/Internal/IScript.inl"   // ScriptProperty, GetProperties()
 #include "Engine/Scripting/ScriptManager.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Core/Logger/Logger.h"
 
@@ -30,11 +30,11 @@ void CScript::OnStart()
 {
     // Always register so the component appears in the registry and can be found
     // by PressPlay() / hot-reload regardless of simulation state.
-    External->GetScene()->RegisterScriptComponent(this);
+    m_GameObject->GetScene()->GetModuleScene()->RegisterScriptComponent(this);
     m_registered = true;
 
     // Defer instance creation to PressPlay() when the simulation is not running.
-    if (!External->GetScene()->IsPlaying())
+    if (!m_GameObject->GetScene()->GetModuleScene()->IsPlaying())
         return;
 
     CreateInstances();
@@ -67,9 +67,9 @@ void CScript::OnDestroy()
 {
     // Unregister only if we actually registered — avoids calling into the scene
     // module if OnStart() was never reached (e.g., component destroyed mid-construction).
-    if (m_registered && External && External->GetScene())
+    if (m_registered && m_GameObject && m_GameObject->GetScene())
     {
-        External->GetScene()->UnregisterScriptComponent(this);
+        m_GameObject->GetScene()->GetModuleScene()->UnregisterScriptComponent(this);
         m_registered = false;
     }
 
@@ -90,7 +90,7 @@ void CScript::AddScript(const std::string& scriptName)
 
     if (m_started && m_GameObject)
     {
-        ScriptManager* sm = External->GetScene()->scriptManager;
+        ScriptManager* sm = m_GameObject->GetScene()->GetModuleScene()->scriptManager;
         IScript* inst = sm->CreateScriptInstance(scriptName);
         if (inst)
         {
@@ -162,9 +162,9 @@ void CScript::CreateInstances()
 {
     DestroyInstances();
 
-    if (!External || !External->GetScene() || !External->GetScene()->scriptManager) return;
-
-    ScriptManager* sm = External->GetScene()->scriptManager;
+    if (!m_GameObject || !m_GameObject->GetScene() || !m_GameObject->GetScene()->GetModuleScene()) return;
+    ScriptManager* sm = m_GameObject->GetScene()->GetModuleScene()->scriptManager;
+    if (!sm) return;
 
     for (const auto& name : m_scriptNames)
     {

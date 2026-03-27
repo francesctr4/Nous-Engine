@@ -42,7 +42,7 @@ ModuleScene::ModuleScene(Application* app, ModuleInput* moduleInput, ModuleResou
     : Module(app), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager), 
 	m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
 {
-	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE);
+	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager);
 	gameCamera    = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM, mModuleInput, this);
 

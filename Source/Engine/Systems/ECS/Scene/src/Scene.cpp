@@ -2,7 +2,6 @@
 
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -13,8 +12,9 @@
 // -----------------------------------------------------------------------------
 // Constructor / Destructor
 // -----------------------------------------------------------------------------
-Scene::Scene(const std::string& name)
-        : m_Name(name), m_GameObjects(MemoryTag::GAMEOBJECT) {}
+Scene::Scene(const std::string& name, ModuleScene* moduleScene, ModuleResourceManager* resourceManager)
+        : m_Name(name), m_GameObjects(MemoryTag::GAMEOBJECT),
+          m_ModuleScene(moduleScene), m_ResourceManager(resourceManager) {}
 
 Scene::~Scene() {
     Clear();
@@ -27,6 +27,7 @@ GameObject* Scene::CreateGameObject(const std::string& name, GameObject* parent)
     std::lock_guard<std::mutex> lock(m_Mutex);
     auto id = GenerateUniqueID();
     auto* go = NOUS_NEW<GameObject>(MemoryTag::GAMEOBJECT, id, name);
+    go->m_Scene = this;
 
     go->AddComponent<CTransform>();
 
@@ -48,6 +49,7 @@ GameObject* Scene::CreateGameObjectDetached(const std::string& name, GameObject*
     }
 
     auto* go = NOUS_NEW<GameObject>(MemoryTag::GAMEOBJECT, id, name);
+    go->m_Scene = this;
     go->AddComponent<CTransform>();
 
     if (parent)
@@ -59,6 +61,7 @@ GameObject* Scene::CreateGameObjectDetached(const std::string& name, GameObject*
 void Scene::RegisterGameObject(GameObject* go)
 {
     if (!go) return;
+    go->m_Scene = this;
     std::lock_guard<std::mutex> lock(m_Mutex);
     m_GameObjects.push_back(go);
 }
@@ -230,7 +233,7 @@ void Scene::Deserialize(const std::string& filepath)
 
     for (size_t i = 0; i < count; ++i) {
         JSON_Object* obj = json_array_get_object(arr, i);
-        auto* gameObject = GameObject::Deserialize(obj);
+        auto* gameObject = GameObject::Deserialize(obj, this);
         if (gameObject)
             gameObjectsWithParents.push_back({gameObject, gameObject->GetParentID()});
     }
@@ -309,8 +312,8 @@ void Scene::CollectGameObjectTree(GameObject* root, NOUS_Vector<GameObject*>& co
 void Scene::DestroySingleGameObject(GameObject* go) {
     if (!go) return;
 
-    if (External && External->GetScene() && External->GetScene()->selectedGameObject == go)
-        External->GetScene()->selectedGameObject = nullptr;
+    if (m_ModuleScene && m_ModuleScene->selectedGameObject == go)
+        m_ModuleScene->selectedGameObject = nullptr;
 
     if (auto* parent = go->GetParent())
         parent->RemoveChild(go);

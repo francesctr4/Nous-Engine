@@ -1,7 +1,7 @@
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 
-#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
@@ -44,7 +44,7 @@ void CCamera::OnUpdate(float /*deltaTime*/)
     if (!transform)
         return;
 
-    Camera* gameCamera = External->GetScene()->gameCamera;
+    Camera* gameCamera = m_GameObject->GetScene()->GetModuleScene()->gameCamera;
     gameCamera->SetPos(transform->position);
     gameCamera->SetFront(transform->GetForward());
     gameCamera->SetUp(transform->GetUp());

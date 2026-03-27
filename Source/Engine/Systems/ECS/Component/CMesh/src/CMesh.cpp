@@ -1,5 +1,6 @@
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
-#include "Engine/Core/Application.h"
+#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
@@ -53,12 +54,12 @@ void CMesh::Deserialize(JSON_Object *obj) {
         // Try library path first (GAME mode / no .meta needed).
         if (!libraryPath.empty())
         {
-            mesh = External->GetResourceManager()->RequestOrCreateSubMeshResourceFromLibrary(
+            mesh = m_GameObject->GetScene()->GetResourceManager()->RequestOrCreateSubMeshResourceFromLibrary(
                 libraryPath, submeshIndex);
         }
         if (!mesh)
         {
-            mesh = External->GetResourceManager()->RequestOrCreateSubMeshResource(assetPath, submeshIndex);
+            mesh = m_GameObject->GetScene()->GetResourceManager()->RequestOrCreateSubMeshResource(assetPath, submeshIndex);
         }
     }
     else
@@ -68,23 +69,20 @@ void CMesh::Deserialize(JSON_Object *obj) {
         // Try library path first (GAME mode / no .meta needed).
         if (!libraryPath.empty() && resourceUID != 0)
         {
-            mesh = down_cast<ResourceMesh*>(External->GetResourceManager()->CreateResourceFromLibrary(
+            mesh = down_cast<ResourceMesh*>(m_GameObject->GetScene()->GetResourceManager()->CreateResourceFromLibrary(
                 resourceUID, ResourceType::MESH, NOUS_FileManager::GetFilename(assetPath),
                 assetPath, libraryPath));
         }
         if (!mesh)
         {
-            mesh = down_cast<ResourceMesh*>(External->GetResourceManager()->CreateResource(assetPath));
+            mesh = down_cast<ResourceMesh*>(m_GameObject->GetScene()->GetResourceManager()->CreateResource(assetPath));
         }
     }
 }
 
 void CMesh::OnDestroy() {
-    // Guard: External is set to nullptr in MainEditor.cpp before Application
-    // destruction.  If we're called during shutdown after that point, the
-    // ResourceManager is no longer reachable.
-    if (External && mesh && mesh->IsValid())
+    if (mesh && mesh->IsValid() && m_GameObject && m_GameObject->GetScene())
     {
-        External->GetResourceManager()->UnloadResource(mesh->GetUID());
+        m_GameObject->GetScene()->GetResourceManager()->UnloadResource(mesh->GetUID());
     }
 }

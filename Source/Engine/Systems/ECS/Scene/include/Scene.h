@@ -9,10 +9,17 @@
 #include <string>
 
 class GameObject;
+class ModuleScene;
+class ModuleResourceManager;
 
 class Scene {
 public:
-    NOUS_ENGINE_API explicit Scene(const std::string& name = "Untitled Scene");
+    NOUS_ENGINE_API explicit Scene(const std::string& name = "Untitled Scene",
+                                   ModuleScene* moduleScene = nullptr,
+                                   ModuleResourceManager* resourceManager = nullptr);
+
+    ModuleScene*           GetModuleScene()     const { return m_ModuleScene; }
+    ModuleResourceManager* GetResourceManager() const { return m_ResourceManager; }
     NOUS_ENGINE_API ~Scene();
 
     NOUS_ENGINE_API GameObject* CreateGameObject(const std::string& name = "GameObject", GameObject* parent = nullptr);
@@ -59,6 +66,9 @@ private:
     std::string m_Name;
     NOUS_Vector<GameObject*> m_GameObjects;
     mutable std::mutex m_Mutex;
+
+    ModuleScene*           m_ModuleScene     = nullptr;
+    ModuleResourceManager* m_ResourceManager = nullptr;
 };
 
 #endif // NOUS_ENGINE_SCENE_H

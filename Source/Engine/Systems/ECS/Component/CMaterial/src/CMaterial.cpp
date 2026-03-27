@@ -1,6 +1,7 @@
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 
-#include "Engine/Core/Application.h"
+#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
@@ -43,14 +44,14 @@ void CMaterial::Deserialize(JSON_Object* obj) {
     // Try library path first (GAME mode / no .meta needed).
     if (!libraryPath.empty() && resourceUID != 0)
     {
-        material = down_cast<ResourceMaterial*>(External->GetResourceManager()->CreateResourceFromLibrary(
+        material = down_cast<ResourceMaterial*>(m_GameObject->GetScene()->GetResourceManager()->CreateResourceFromLibrary(
             resourceUID, ResourceType::MATERIAL, NOUS_FileManager::GetFilename(assetPath),
             assetPath, libraryPath));
     }
     if (!material)
     {
         material = down_cast<ResourceMaterial*>(
-            External->GetResourceManager()->CreateResource(assetPath)
+            m_GameObject->GetScene()->GetResourceManager()->CreateResource(assetPath)
         );
     }
 }
@@ -60,10 +61,8 @@ void CMaterial::Deserialize(JSON_Object* obj) {
 // -----------------------------------------------------------------------------
 void CMaterial::OnDestroy()
 {
-    // Guard: External is set to nullptr in MainEditor.cpp before Application
-    // destruction.  If we're called during shutdown after that point, the
-    // ResourceManager is no longer reachable.
-    if (External && material && material->IsValid()) {
-        External->GetResourceManager()->UnloadResource(material->GetUID());
+    if (material && material->IsValid() && m_GameObject && m_GameObject->GetScene())
+    {
+        m_GameObject->GetScene()->GetResourceManager()->UnloadResource(material->GetUID());
     }
 }

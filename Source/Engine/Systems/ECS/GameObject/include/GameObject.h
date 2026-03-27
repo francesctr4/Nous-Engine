@@ -14,7 +14,7 @@ typedef struct json_object_t JSON_Object;
 typedef struct json_array_t  JSON_Array;
 typedef struct json_value_t  JSON_Value;
 
-// Forward declaration
+// Forward declarations
 class Scene;
 class Component;
 
@@ -39,6 +39,9 @@ public:
     void UpdateComponents(float deltaTime);
     NOUS_Vector<Component*> GetAllComponents();
 
+    // ---------- Scene ----------
+    Scene* GetScene() const { return m_Scene; }
+
     // ---------- Basic Info ----------
     NOUS_ENGINE_API uint32_t GetID() const;
     NOUS_ENGINE_API void SetName(const std::string& name);
@@ -56,18 +59,21 @@ public:
 
     // ---------- Serialization ----------
     JSON_Value* Serialize() const;
-    static GameObject* Deserialize(JSON_Object* obj);
+    static GameObject* Deserialize(JSON_Object* obj, Scene* scene = nullptr);
 
     // For deserialization parent resolution
     uint32_t GetParentID() const;
 
 private:
+    friend class Scene;
+
     uint32_t m_ID = 0;
     std::string m_Name;
     GameObject* m_Parent = nullptr;
     NOUS_Vector<GameObject*> m_Children;
     std::unordered_map<std::type_index, Component*> m_Components;
     uint32_t m_ParentID = 0;
+    Scene* m_Scene = nullptr;
 };
 
 // -----------------------------------------------------------------------------
