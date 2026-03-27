@@ -172,9 +172,6 @@ int main(int argc, char** argv)
         }
     }
 
-    // All jobs were drained in CleanUp(), so no in-flight lambda can race on this.
-    External = nullptr;
-
     NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Destruction ----------");
     NOUS_DELETE(App, MemoryTag::APPLICATION);
 

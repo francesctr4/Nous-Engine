@@ -130,8 +130,6 @@ int main(int argc, char** argv)
         }
     }
 
-    External = nullptr;
-
     NOUS_INFO_C(CURRENT_CHANNEL, "-------------- Application Destruction --------------");
     NOUS_DELETE(Editor, MemoryTag::EDITOR);
     NOUS_DELETE(App, MemoryTag::APPLICATION);

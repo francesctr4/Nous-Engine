@@ -19,12 +19,8 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-NOUS_ENGINE_API Application* External = nullptr;
-
 Application::Application(bool isGameMode)
 {
-	External = this;
-
     m_isGameMode = isGameMode;
 
     targetFPS = DEFAULT_TARGET_FPS;
@@ -237,9 +233,7 @@ bool Application::CleanUp()
     bool ret = true;
 
     // Drain all in-flight jobs before any module starts tearing down.
-    // This ensures job lambdas that read External or module pointers complete
-    // while everything is still alive, so the External = nullptr that follows
-    // CleanUp() in main is safe.
+    // This ensures all in-flight job lambdas complete while everything is still alive.
     if (jobSystem)
         jobSystem->WaitForPendingJobs();
 

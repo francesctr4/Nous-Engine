@@ -88,6 +88,4 @@ private:
 	mutable char  titleBuffer[256] = {};
 };
 
-extern NOUS_ENGINE_API Application* External;
-
 #endif // APPLICATION_H
