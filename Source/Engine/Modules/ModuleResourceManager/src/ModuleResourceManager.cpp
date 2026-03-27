@@ -24,7 +24,7 @@
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
 ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode)
-    : Module(eventSystem, jobSystem, isGameMode)
+    : Module(eventSystem, jobSystem), m_isGameMode(isGameMode)
 {
 	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
@@ -43,7 +43,7 @@ bool ModuleResourceManager::Awake()
 {
 	ImporterManager::Init(this, mRendererFrontend);
 
-	if (IsGameMode)
+	if (m_isGameMode)
 	{
 		// GAME mode: Library binaries are pre-built. No asset scanning/importing needed.
 		return true;

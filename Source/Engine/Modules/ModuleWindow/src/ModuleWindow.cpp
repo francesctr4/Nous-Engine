@@ -7,7 +7,7 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 
 ModuleWindow::ModuleWindow(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode)
-    : Module(eventSystem, jobSystem, isGameMode)
+    : Module(eventSystem, jobSystem), m_isGameMode(isGameMode)
 {
     window = nullptr;
 }
@@ -49,7 +49,7 @@ bool ModuleWindow::Awake()
 
 bool ModuleWindow::Start()
 {
-    if (!IsGameMode)
+    if (!m_isGameMode)
         SDL_MaximizeWindow(window);
 
     return true;

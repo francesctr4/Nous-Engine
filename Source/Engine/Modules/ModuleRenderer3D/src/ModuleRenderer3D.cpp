@@ -39,14 +39,16 @@ constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_RENDERER3D
 ModuleRenderer3D::ModuleRenderer3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
 	ModuleWindow* moduleWindow, ModuleCamera3D* moduleCamera,
 	ModuleResourceManager* moduleResourceManager, ModuleScene* moduleScene) :
-		Module(eventSystem, jobSystem, isGameMode), mModuleWindow(moduleWindow), mModuleCamera3D(moduleCamera),
+		Module(eventSystem, jobSystem), mModuleWindow(moduleWindow), mModuleCamera3D(moduleCamera),
 		mModuleResourceManager(moduleResourceManager), mModuleScene(moduleScene)
-
 {
 	eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 	eventSystem->Subscribe(EventType::WINDOW_MINIMIZED, this);
 
 	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryTag::RENDERER);
+
+	if (isGameMode)
+		SetRenderMode(RenderMode::GAME);
 }
 
 ModuleRenderer3D::~ModuleRenderer3D()

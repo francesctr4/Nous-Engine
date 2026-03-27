@@ -93,6 +93,7 @@ private:
 	// Dependency Injection
 	ModuleInput* mModuleInput;
 	ModuleResourceManager* mModuleResourceManager;
+	bool m_isGameMode;
 
 	SceneRenderData m_renderData;
 

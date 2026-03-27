@@ -40,7 +40,7 @@
 
 ModuleScene::ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
     ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager)
-    : Module(eventSystem, jobSystem, isGameMode), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager),
+    : Module(eventSystem, jobSystem), m_isGameMode(isGameMode), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager),
 	m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
 {
 	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager);
@@ -85,7 +85,7 @@ bool ModuleScene::Start()
     // In GAME mode the GameApp controls which scene to load via an explicit
     // LoadSceneAsync() call after Start() returns.  Skip the auto-load here
     // to avoid a double-load race condition.
-    if (!IsGameMode)
+    if (!m_isGameMode)
         LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
 
 	return true;
@@ -418,7 +418,7 @@ void ModuleScene::PressPlay()
 	// Save a snapshot of the current scene so PressStop can restore it.
 	// Skipped in GAME mode — there is no editor Stop button, so the snapshot
 	// is never needed and writing it would pollute the game's working directory.
-	if (!IsGameMode)
+	if (!m_isGameMode)
 	{
 		std::filesystem::create_directories(std::filesystem::path(m_snapshotPath).parent_path());
 		activeScene->Serialize(m_snapshotPath);

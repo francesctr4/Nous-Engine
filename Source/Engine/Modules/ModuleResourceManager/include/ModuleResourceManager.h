@@ -117,6 +117,7 @@ private:
 	std::map<std::pair<UID, int32_t>, UID> m_submeshUIDMap;
 
 	RendererFrontend* mRendererFrontend = nullptr;
+	bool m_isGameMode;
 
 	ResourceTexture* mDefaultTexture = nullptr;
 	ResourceMaterial* mDefaultMaterial = nullptr;

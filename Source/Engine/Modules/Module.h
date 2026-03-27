@@ -12,7 +12,7 @@ class Module
 {
 public:
 
-	NOUS_ENGINE_API Module(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode);
+	NOUS_ENGINE_API Module(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
 	NOUS_ENGINE_API virtual ~Module();
 
 	NOUS_ENGINE_API virtual bool Awake();
@@ -28,7 +28,6 @@ protected:
 
 	EventSystem* eventSystem;
 	NOUS_Multithreading::NOUS_JobSystem* JobSystem;
-	bool IsGameMode;
 
 };
 

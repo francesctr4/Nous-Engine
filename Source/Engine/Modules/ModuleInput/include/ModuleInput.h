@@ -23,7 +23,7 @@ class ModuleInput : public Module, public IEventListener
 {
 public: 
 
-	ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode, ModuleWindow* moduleWindow);
+	ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, ModuleWindow* moduleWindow);
 	virtual ~ModuleInput();
 
 	bool Awake() override;

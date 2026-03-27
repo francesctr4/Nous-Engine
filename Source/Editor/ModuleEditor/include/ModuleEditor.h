@@ -33,7 +33,7 @@ class ModuleEditor : public Module, public IEditorOverlay, public IEventListener
 public:
 
 	// Constructor
-	NOUS_EDITOR_API ModuleEditor(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
+	NOUS_EDITOR_API ModuleEditor(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
 		ModuleWindow* moduleWindow,
 		ModuleInput* moduleInput,
 		ModuleCamera3D* moduleCamera3D,

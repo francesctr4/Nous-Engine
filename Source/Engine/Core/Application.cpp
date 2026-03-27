@@ -40,11 +40,11 @@ Application::Application(bool isGameMode)
 
     // 2. INPUT - Depends on WINDOW
     listModules.push_back(input           = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, m_isGameMode, window));
+        eventSystem, jobSystem, window));
 
     // 3. CAMERA - Depends on INPUT
     listModules.push_back(camera          = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, m_isGameMode, input));
+        eventSystem, jobSystem, input));
 
     // 4. RESOURCE MANAGER - No direct dependencies, but requires setting rendererFrontend from RENDERER.
     listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION,
@@ -60,9 +60,6 @@ Application::Application(bool isGameMode)
 
     // TODO: Ideally resource manager should be GPU agnostic.
     resourceManager->SetRendererFrontend(renderer->GetRendererFrontend());
-
-    if (m_isGameMode)
-        renderer->SetRenderMode(RenderMode::GAME);
 
     // 7. EDITOR - Depends on ALL THE MODULES.
     // The Module Editor goes here, after the renderer (it is being decoupled!).

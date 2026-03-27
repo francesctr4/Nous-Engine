@@ -46,14 +46,14 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
 
-ModuleEditor::ModuleEditor(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
+ModuleEditor::ModuleEditor(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
 	ModuleWindow* moduleWindow,
 	ModuleInput* moduleInput,
 	ModuleCamera3D* moduleCamera3D,
 	ModuleResourceManager* moduleResourceManager,
 	ModuleScene* moduleScene,
 	ModuleRenderer3D* moduleRenderer3D)
-: Module(eventSystem, jobSystem, isGameMode), mModuleWindow(moduleWindow), mModuleInput(moduleInput), mModuleCamera3D(moduleCamera3D),
+: Module(eventSystem, jobSystem), mModuleWindow(moduleWindow), mModuleInput(moduleInput), mModuleCamera3D(moduleCamera3D),
    mModuleResourceManager(moduleResourceManager), mModuleScene(moduleScene), mModuleRenderer3D(moduleRenderer3D),
   editorWindows(MemoryTag::EDITOR), fonts(MemoryTag::EDITOR)
 {

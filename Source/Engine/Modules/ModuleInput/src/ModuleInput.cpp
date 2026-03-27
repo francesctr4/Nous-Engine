@@ -14,8 +14,8 @@ static KeyState AdvanceKeyState(KeyState current, bool pressed)
 	return (current == KeyState::REPEAT || current == KeyState::DOWN) ? KeyState::UP : KeyState::IDLE;
 }
 
-ModuleInput::ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode, ModuleWindow* moduleWindow)
-    : Module(eventSystem, jobSystem, isGameMode), mModuleWindow(moduleWindow)
+ModuleInput::ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, ModuleWindow* moduleWindow)
+    : Module(eventSystem, jobSystem), mModuleWindow(moduleWindow)
 {
 	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 

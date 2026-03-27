@@ -38,6 +38,7 @@ private:
 
 	SDL_Window* window;
 	bool mIsMinimized = false;
+	bool m_isGameMode;
 
 };
 

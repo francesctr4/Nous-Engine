@@ -1,9 +1,8 @@
 #include "Module.h"
 
-Module::Module(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode) :
+Module::Module(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem) :
     eventSystem(eventSystem),
-    JobSystem(jobSystem),
-    IsGameMode(isGameMode)
+    JobSystem(jobSystem)
 {}
 
 Module::~Module() = default;
