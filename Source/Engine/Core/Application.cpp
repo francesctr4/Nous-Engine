@@ -21,11 +21,11 @@
 
 NOUS_ENGINE_API Application* External = nullptr;
 
-Application::Application()
+Application::Application(bool isGameMode)
 {
 	External = this;
 
-    m_isGameMode = false;
+    m_isGameMode = isGameMode;
 
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
@@ -63,9 +63,11 @@ Application::Application()
     // TODO: Ideally resource manager should be GPU agnostic.
     resourceManager->SetRendererFrontend(renderer->GetRendererFrontend());
 
+    if (m_isGameMode)
+        renderer->SetRenderMode(RenderMode::GAME);
+
     // 7. EDITOR - Depends on WINDOW and RENDERER.
     // The Module Editor goes here, after the renderer (it is being decoupled!).
-    // Editor = NOUS_NEW<ModuleEditor>(MemoryTag::EDITOR, App, App->GetWindow(), App->GetRenderer());
 }
 
 Application::~Application()
@@ -248,12 +250,6 @@ bool Application::CleanUp()
         }
     }
     return ret;
-}
-
-void Application::SetGameMode(bool isGame)
-{
-    m_isGameMode = isGame;
-    renderer->SetRenderMode(isGame ? RenderMode::GAME : RenderMode::EDITOR);
 }
 
 bool Application::IsGameMode() const

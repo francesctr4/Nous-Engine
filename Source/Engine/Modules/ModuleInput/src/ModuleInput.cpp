@@ -1,5 +1,4 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"

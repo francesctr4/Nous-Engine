@@ -87,10 +87,7 @@ int main(int argc, char** argv)
             {
                 NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Creation ----------");
 
-                App = NOUS_NEW<Application>(MemoryTag::APPLICATION);
-
-                // Configure GAME mode before Awake() so every module can branch on it.
-                App->SetGameMode(true);
+                App = NOUS_NEW<Application>(MemoryTag::APPLICATION, true);
 
                 cfg = LoadGameConfig(argv[0]);
                 App->SetTargetFPS(cfg.targetFPS);

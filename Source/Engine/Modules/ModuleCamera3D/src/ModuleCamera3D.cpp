@@ -1,7 +1,6 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include <algorithm>
 

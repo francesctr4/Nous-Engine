@@ -24,7 +24,7 @@ class Application
 {
 public:
 
-	NOUS_ENGINE_API Application();
+	NOUS_ENGINE_API explicit Application(bool isGameMode = false);
 	NOUS_ENGINE_API ~Application();
 
 	NOUS_ENGINE_API bool Awake() const;
@@ -35,7 +35,6 @@ public:
 	NOUS_ENGINE_API void SetTargetFPS(float FPS);
 	NOUS_ENGINE_API float GetTargetFPS() const;
 
-	NOUS_ENGINE_API void SetGameMode(bool isGame);
 	NOUS_ENGINE_API bool IsGameMode() const;
 
 	NOUS_ENGINE_API float GetFPS() const;

@@ -13,7 +13,7 @@ class Module
 {
 public:
 
-	NOUS_ENGINE_API explicit Module(Application* app);
+	NOUS_ENGINE_API explicit Module(const Application* app);
 	NOUS_ENGINE_API virtual ~Module();
 
 	NOUS_ENGINE_API virtual bool Awake();
@@ -27,9 +27,9 @@ public:
 
 protected:
 
-	Application* App;
 	EventSystem* EventSystem;
 	NOUS_Multithreading::NOUS_JobSystem* JobSystem;
+	bool IsGameMode;
 
 };
 

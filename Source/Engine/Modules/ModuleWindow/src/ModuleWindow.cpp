@@ -3,10 +3,8 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
 
-#include "Engine/Core/Application.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/Core/EventSystem/Event/include/Event.h"
 
 ModuleWindow::ModuleWindow(Application* app) : Module(app)
 {
@@ -50,7 +48,7 @@ bool ModuleWindow::Awake()
 
 bool ModuleWindow::Start()
 {
-    if (!App->IsGameMode())
+    if (!IsGameMode)
         SDL_MaximizeWindow(window);
 
     return true;

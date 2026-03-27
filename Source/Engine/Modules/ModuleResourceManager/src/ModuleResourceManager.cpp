@@ -4,7 +4,6 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
@@ -41,7 +40,7 @@ ModuleResourceManager::~ModuleResourceManager()
 
 bool ModuleResourceManager::Awake()
 {
-	if (App->IsGameMode())
+	if (IsGameMode)
 	{
 		// GAME mode: Library binaries are pre-built. No asset scanning/importing needed.
 		return true;

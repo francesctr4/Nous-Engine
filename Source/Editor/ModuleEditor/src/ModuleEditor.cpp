@@ -1,9 +1,7 @@
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"

@@ -1,7 +1,5 @@
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 
-#include "Engine/Core/Application.h"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>

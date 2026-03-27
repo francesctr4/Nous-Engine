@@ -1,10 +1,10 @@
 #include "Module.h"
 #include "Engine/Core/Application.h"
 
-Module::Module(Application* app) :
-    App(app),
+Module::Module(const Application* app) :
     EventSystem(app->GetEventSystem()),
-    JobSystem(app->GetJobSystem())
+    JobSystem(app->GetJobSystem()),
+	IsGameMode(app->IsGameMode())
 {}
 
 Module::~Module() = default;
