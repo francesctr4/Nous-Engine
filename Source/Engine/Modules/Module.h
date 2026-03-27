@@ -5,7 +5,6 @@
 #include "Engine/EngineExport.h"
 
 // Forward Declarations
-class Application;
 class EventSystem;
 namespace NOUS_Multithreading { class NOUS_JobSystem; }
 
@@ -13,7 +12,7 @@ class Module
 {
 public:
 
-	NOUS_ENGINE_API explicit Module(const Application* app);
+	NOUS_ENGINE_API Module(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode);
 	NOUS_ENGINE_API virtual ~Module();
 
 	NOUS_ENGINE_API virtual bool Awake();

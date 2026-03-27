@@ -38,8 +38,9 @@
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
-ModuleScene::ModuleScene(Application* app, ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager)
-    : Module(app), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager), 
+ModuleScene::ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
+    ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager)
+    : Module(eventSystem, jobSystem, isGameMode), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager),
 	m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
 {
 	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager);

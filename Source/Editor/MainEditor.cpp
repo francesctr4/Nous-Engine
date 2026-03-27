@@ -45,7 +45,8 @@ int main(int argc, char** argv)
 
                 NOUS_INFO_C(CURRENT_CHANNEL, "-------------- Application Creation --------------");
                 App = NOUS_NEW<Application>(MemoryTag::APPLICATION);
-                Editor = NOUS_NEW<ModuleEditor>(MemoryTag::EDITOR, App,
+                Editor = NOUS_NEW<ModuleEditor>(MemoryTag::EDITOR,
+                    App->GetEventSystem(), App->GetJobSystem(), App->IsGameMode(),
                     App->GetWindow(), App->GetInput(), App->GetCamera(),
                     App->GetResourceManager(), App->GetScene(), App->GetRenderer());
 

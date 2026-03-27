@@ -6,7 +6,8 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 
-ModuleWindow::ModuleWindow(Application* app) : Module(app)
+ModuleWindow::ModuleWindow(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode)
+    : Module(eventSystem, jobSystem, isGameMode)
 {
     window = nullptr;
 }

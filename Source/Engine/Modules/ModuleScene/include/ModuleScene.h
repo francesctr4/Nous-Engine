@@ -29,7 +29,7 @@ class ModuleScene : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleScene(Application* app,
+	ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
 		ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager);
 
 	// Destructor

@@ -12,7 +12,8 @@
 #include "glm/gtc/quaternion.hpp"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-ModuleCamera3D::ModuleCamera3D(Application* app, ModuleInput* moduleInput) : Module(app), mModuleInput(moduleInput)
+ModuleCamera3D::ModuleCamera3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode, ModuleInput* moduleInput)
+    : Module(eventSystem, jobSystem, isGameMode), mModuleInput(moduleInput)
 {
 	sceneViewportHovered = false;
 

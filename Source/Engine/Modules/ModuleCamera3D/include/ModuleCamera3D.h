@@ -15,7 +15,7 @@ class ModuleCamera3D : public Module, public IEventListener
 {
 public:
 
-	explicit ModuleCamera3D(Application* app, ModuleInput* moduleInput);
+	explicit ModuleCamera3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode, ModuleInput* moduleInput);
 	~ModuleCamera3D() override;
 
 	bool Awake() override;

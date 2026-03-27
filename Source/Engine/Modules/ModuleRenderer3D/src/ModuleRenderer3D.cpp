@@ -36,10 +36,10 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_RENDERER3D;
 
-ModuleRenderer3D::ModuleRenderer3D(Application* app, ModuleWindow* moduleWindow,
-	ModuleCamera3D* moduleCamera, ModuleResourceManager* moduleResourceManager,
-	ModuleScene* moduleScene) :
-		Module(app), mModuleWindow(moduleWindow), mModuleCamera3D(moduleCamera),
+ModuleRenderer3D::ModuleRenderer3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
+	ModuleWindow* moduleWindow, ModuleCamera3D* moduleCamera,
+	ModuleResourceManager* moduleResourceManager, ModuleScene* moduleScene) :
+		Module(eventSystem, jobSystem, isGameMode), mModuleWindow(moduleWindow), mModuleCamera3D(moduleCamera),
 		mModuleResourceManager(moduleResourceManager), mModuleScene(moduleScene)
 
 {

@@ -13,7 +13,7 @@ class ModuleWindow : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleWindow(Application* app);
+	ModuleWindow(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode);
 
 	// Destructor
 	virtual ~ModuleWindow();

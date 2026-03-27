@@ -27,7 +27,7 @@ class ModuleResourceManager : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleResourceManager(Application* app);
+	ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode);
 	void SetRendererFrontend(RendererFrontend* rendererFrontend);
 
 	// Destructor

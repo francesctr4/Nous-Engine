@@ -1,10 +1,9 @@
 #include "Module.h"
-#include "Engine/Core/Application.h"
 
-Module::Module(const Application* app) :
-    eventSystem(app->GetEventSystem()),
-    JobSystem(app->GetJobSystem()),
-	IsGameMode(app->IsGameMode())
+Module::Module(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode) :
+    eventSystem(eventSystem),
+    JobSystem(jobSystem),
+    IsGameMode(isGameMode)
 {}
 
 Module::~Module() = default;

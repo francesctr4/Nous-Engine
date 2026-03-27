@@ -23,7 +23,8 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
-ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
+ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode)
+    : Module(eventSystem, jobSystem, isGameMode)
 {
 	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }

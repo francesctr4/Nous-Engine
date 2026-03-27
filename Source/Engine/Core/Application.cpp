@@ -35,26 +35,28 @@ Application::Application(bool isGameMode)
     jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
 
     // 1. WINDOW - No dependencies
-    listModules.push_back(window          = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION, this));
+    listModules.push_back(window          = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem, m_isGameMode));
 
     // 2. INPUT - Depends on WINDOW
-    listModules.push_back(input           = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION, this,
-        window));
+    listModules.push_back(input           = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem, m_isGameMode, window));
 
     // 3. CAMERA - Depends on INPUT
-    listModules.push_back(camera          = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION, this,
-        input));
+    listModules.push_back(camera          = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem, m_isGameMode, input));
 
     // 4. RESOURCE MANAGER - No direct dependencies, but requires setting rendererFrontend from RENDERER.
-    listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION, this));
+    listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem, m_isGameMode));
 
     // 5. SCENE - Depends on INPUT and RESOURCE MANAGER.
-    listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION, this,
-        input, resourceManager));
+    listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem, m_isGameMode, input, resourceManager));
 
     // 6. RENDERER - Depends on WINDOW, CAMERA, RESOURCE MANAGER and SCENE.
-    listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION, this,
-        window, camera, resourceManager, scene));
+    listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem, m_isGameMode, window, camera, resourceManager, scene));
 
     // TODO: Ideally resource manager should be GPU agnostic.
     resourceManager->SetRendererFrontend(renderer->GetRendererFrontend());
