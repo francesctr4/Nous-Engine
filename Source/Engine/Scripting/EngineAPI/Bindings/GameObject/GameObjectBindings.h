@@ -22,7 +22,9 @@ struct GameObjectAPI
     uint32_t (*FindByName)(const char* name) = nullptr;
 };
 
+class ModuleScene;
+
 // Setup function for this specific API
-void SetupGameObjectBindings(GameObjectAPI& gameObject);
+void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene);
 
 #endif //NOUS_ENGINE_GAMEOBJECTBINDINGS_H

@@ -12,12 +12,12 @@ void ScriptBindings::InitializeBindings(EngineAPI*& api)
     api->GameObject = NOUS_NEW<GameObjectAPI>(MemoryTag::SCRIPTING_SYSTEM);
 }
 
-void ScriptBindings::SetupAllBindings(EngineAPI& api)
+void ScriptBindings::SetupAllBindings(EngineAPI& api, ModuleInput* moduleInput, ModuleScene* moduleScene)
 {
     // Each subsystem handles its own bindings
     SetupLoggerBindings(*api.Logger);
-    SetupInputBindings(*api.Input);
-    SetupGameObjectBindings(*api.GameObject);
+    SetupInputBindings(*api.Input, moduleInput);
+    SetupGameObjectBindings(*api.GameObject, moduleScene);
 }
 
 void ScriptBindings::DeleteBindings(EngineAPI*& api)

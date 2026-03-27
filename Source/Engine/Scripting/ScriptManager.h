@@ -11,12 +11,14 @@
 class IScript;
 struct EngineAPI;
 class ScriptRegistry;
+class ModuleInput;
+class ModuleScene;
 
 class ScriptManager
 {
 public:
 
-    ScriptManager();
+    ScriptManager(ModuleInput* moduleInput, ModuleScene* moduleScene);
     ~ScriptManager();
 
     // Hot-reload functionality
@@ -44,6 +46,9 @@ private:
     void* m_libraryHandle;
     ScriptRegistry* m_scriptRegistry;
     EngineAPI* api;
+
+    ModuleInput* m_moduleInput;
+    ModuleScene* m_moduleScene;
 
 };
 

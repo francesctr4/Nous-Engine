@@ -1,109 +1,78 @@
 #include "Engine/Scripting/EngineAPI/Bindings/GameObject/GameObjectBindings.h"
 
-#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Core/Logger/Logger.h"
 
-void SetupGameObjectBindings(GameObjectAPI &gameObject)
+static ModuleScene* s_scene = nullptr;
+
+void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene)
 {
+    s_scene = moduleScene;
+
     // Create binding - converts const char* to GameObjectID
     gameObject.Create = [](const char* name) -> uint32_t {
-        if (!External->GetScene()->activeScene) {
+        if (!s_scene->activeScene) {
             NOUS_ERROR("No active scene to create GameObject in!");
-            return 0; // 0 is invalid ID
+            return 0;
         }
-
-        uint32_t newID = External->GetScene()->activeScene->CreateGameObjectID(name ? name : "GameObject");
+        uint32_t newID = s_scene->activeScene->CreateGameObjectID(name ? name : "GameObject");
         NOUS_DEBUG("Created GameObject '%s' with ID: %u", name, newID);
         return newID;
     };
 
     // Destroy binding - uses GameObjectID
     gameObject.Destroy = [](uint32_t id) {
-        if (!External->GetScene()->activeScene) {
+        if (!s_scene->activeScene) {
             NOUS_ERROR("No active scene to destroy GameObject from!");
             return;
         }
-
         if (id == 0) {
             NOUS_WARN("Attempted to destroy GameObject with invalid ID 0");
             return;
         }
-
         NOUS_DEBUG("Destroying GameObject with ID: %u", id);
-        External->GetScene()->activeScene->DestroyGameObjectByID(id);
+        s_scene->activeScene->DestroyGameObjectByID(id);
     };
 
-    // Bind the SetPosition function
     gameObject.SetPosition = [](uint32_t id, float x, float y, float z) {
-        if (!External || !External->GetScene() || !External->GetScene()->activeScene) {
+        if (!s_scene || !s_scene->activeScene) {
             NOUS_ERROR("Scene not available for SetPosition!");
             return;
         }
-
-        // 1. Get the GameObject by ID
-        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
-        if (!go) {
-            NOUS_WARN("GameObject with ID %u not found for SetPosition!", id);
-            return;
-        }
-
-        // 2. Check for and get the Transform component
-        if (!go->HasComponent<CTransform>()) {
-            NOUS_WARN("GameObject %u has no Transform component!", id);
-            return;
-        }
-
-        // 3. Set the new position
+        GameObject* go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go) { NOUS_WARN("GameObject with ID %u not found for SetPosition!", id); return; }
+        if (!go->HasComponent<CTransform>()) { NOUS_WARN("GameObject %u has no Transform component!", id); return; }
         auto& transform = go->GetComponent<CTransform>();
         transform.position = glm::vec3(x, y, z);
         transform.UpdateMatrix();
-
         NOUS_DEBUG("Set position of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
     };
 
-    // Implement SetRotation, SetScale, GetPosition, etc. following the same pattern
     gameObject.SetRotation = [](uint32_t id, float x, float y, float z) {
-        if (!External || !External->GetScene() || !External->GetScene()->activeScene) {
-            NOUS_ERROR("Scene not available for SetPosition!");
+        if (!s_scene || !s_scene->activeScene) {
+            NOUS_ERROR("Scene not available for SetRotation!");
             return;
         }
-
-        // 1. Get the GameObject by ID
-        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
-        if (!go) {
-            NOUS_WARN("GameObject with ID %u not found for SetPosition!", id);
-            return;
-        }
-
-        // 2. Check for and get the Transform component
-        if (!go->HasComponent<CTransform>()) {
-            NOUS_WARN("GameObject %u has no Transform component!", id);
-            return;
-        }
-
-        // 3. Set the new position
+        GameObject* go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go) { NOUS_WARN("GameObject with ID %u not found for SetRotation!", id); return; }
+        if (!go->HasComponent<CTransform>()) { NOUS_WARN("GameObject %u has no Transform component!", id); return; }
         auto& transform = go->GetComponent<CTransform>();
         transform.SetEulerRotation(glm::vec3(x, y, z));
         transform.UpdateMatrix();
-
         NOUS_TRACE("Set rotation of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
     };
 
     gameObject.SetScale = [](uint32_t id, float x, float y, float z) {
-        if (!External || !External->GetScene() || !External->GetScene()->activeScene) {
+        if (!s_scene || !s_scene->activeScene) {
             NOUS_ERROR("Scene not available for SetScale!");
             return;
         }
-        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
+        GameObject* go = s_scene->activeScene->GetGameObjectByID(id);
         if (!go) { NOUS_WARN("GameObject ID %u not found for SetScale!", id); return; }
-        if (!go->HasComponent<CTransform>()) {
-            NOUS_WARN("GameObject %u has no Transform for SetScale!", id); return;
-        }
+        if (!go->HasComponent<CTransform>()) { NOUS_WARN("GameObject %u has no Transform for SetScale!", id); return; }
         auto& transform = go->GetComponent<CTransform>();
         transform.scale = glm::vec3(x, y, z);
         transform.UpdateMatrix();
@@ -111,8 +80,8 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
     };
 
     gameObject.GetPosition = [](uint32_t id, float* x, float* y, float* z) {
-        if (!External || !External->GetScene() || !External->GetScene()->activeScene) return;
-        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->activeScene) return;
+        GameObject* go = s_scene->activeScene->GetGameObjectByID(id);
         if (!go || !go->HasComponent<CTransform>()) return;
         const auto& pos = go->GetComponent<CTransform>().position;
         if (x) *x = pos.x;
@@ -121,8 +90,8 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
     };
 
     gameObject.GetRotation = [](uint32_t id, float* x, float* y, float* z) {
-        if (!External || !External->GetScene() || !External->GetScene()->activeScene) return;
-        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->activeScene) return;
+        GameObject* go = s_scene->activeScene->GetGameObjectByID(id);
         if (!go || !go->HasComponent<CTransform>()) return;
         const glm::vec3 euler = go->GetComponent<CTransform>().GetEulerAngles();
         if (x) *x = euler.x;
@@ -131,8 +100,8 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
     };
 
     gameObject.GetScale = [](uint32_t id, float* x, float* y, float* z) {
-        if (!External || !External->GetScene() || !External->GetScene()->activeScene) return;
-        GameObject* go = External->GetScene()->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->activeScene) return;
+        GameObject* go = s_scene->activeScene->GetGameObjectByID(id);
         if (!go || !go->HasComponent<CTransform>()) return;
         const auto& sc = go->GetComponent<CTransform>().scale;
         if (x) *x = sc.x;
@@ -141,8 +110,8 @@ void SetupGameObjectBindings(GameObjectAPI &gameObject)
     };
 
     gameObject.FindByName = [](const char* name) -> uint32_t {
-        if (!External || !External->GetScene() || !External->GetScene()->activeScene || !name) return 0;
-        auto results = External->GetScene()->activeScene->FindGameObjectsByName(name);
+        if (!s_scene || !s_scene->activeScene || !name) return 0;
+        auto results = s_scene->activeScene->FindGameObjectsByName(name);
         return results.empty() ? 0 : results[0]->GetID();
     };
 }

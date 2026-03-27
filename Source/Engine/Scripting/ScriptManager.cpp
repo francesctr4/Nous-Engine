@@ -182,7 +182,9 @@ static std::filesystem::path GetExeDir()
 #endif
 }
 
-ScriptManager::ScriptManager() : m_libraryHandle(nullptr), m_scriptRegistry(nullptr)
+ScriptManager::ScriptManager(ModuleInput* moduleInput, ModuleScene* moduleScene)
+    : m_libraryHandle(nullptr), m_scriptRegistry(nullptr),
+      m_moduleInput(moduleInput), m_moduleScene(moduleScene)
 {
     ScriptBindings::InitializeBindings(api);
 }
@@ -219,7 +221,7 @@ bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
         return false;
     }
 
-    ScriptBindings::SetupAllBindings(*api);
+    ScriptBindings::SetupAllBindings(*api, m_moduleInput, m_moduleScene);
 
     // Set the API pointer inside the scripts DLL
     using SetEngineAPIFunc = void(*)(EngineAPI*);

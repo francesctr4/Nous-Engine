@@ -7,12 +7,14 @@
 #include <Engine/Scripting/EngineAPI/Bindings/GameObject/GameObjectBindings.h>
 
 struct EngineAPI;
+class ModuleInput;
+class ModuleScene;
 
 class ScriptBindings
 {
 public:
     static void InitializeBindings(EngineAPI*& api);
-    static void SetupAllBindings(EngineAPI& api);
+    static void SetupAllBindings(EngineAPI& api, ModuleInput* moduleInput, ModuleScene* moduleScene);
     static void DeleteBindings(EngineAPI*& api);
 };
 
