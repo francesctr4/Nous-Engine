@@ -7,7 +7,7 @@
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
-GameViewport::GameViewport(const char* title, ::EditorContext* context, bool start_open)
+GameViewport::GameViewport(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();

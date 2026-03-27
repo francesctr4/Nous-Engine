@@ -20,7 +20,7 @@ struct MemoryUsageHistory
 
 static MemoryUsageHistory history;
 
-MemoryWindow::MemoryWindow(const char* title, ::EditorContext* context, bool start_open)
+MemoryWindow::MemoryWindow(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();

@@ -35,7 +35,7 @@
 
 #include "SDL3/SDL.h"
 
-SceneViewport::SceneViewport(const char* title, ::EditorContext* context, bool start_open)
+SceneViewport::SceneViewport(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
@@ -59,7 +59,7 @@ void SceneViewport::Draw()
 
         if (ImGui::Begin(title, p_open, windowFlags))
         {
-            EditorContext->GetCamera()->sceneViewportHovered = ImGui::IsWindowHovered();
+            editorContext->GetCamera()->sceneViewportHovered = ImGui::IsWindowHovered();
 
             // Handle gizmo mode switching (W/E/R keys) when viewport is hovered
             if (ImGui::IsWindowHovered() || ImGui::IsWindowFocused())
@@ -125,8 +125,8 @@ void SceneViewport::Draw()
                 // ImGuizmo::IsOver() retains stale state from the previous frame when no
                 // gizmo was drawn (e.g. nothing selected). Only consult it when a gizmo is
                 // actually visible this frame, otherwise picking would be incorrectly blocked.
-                const bool gizmoVisible = EditorContext->GetScene()->selectedGameObject != nullptr &&
-                                          EditorContext->GetScene()->selectedGameObject->HasComponent<CTransform>();
+                const bool gizmoVisible = editorContext->GetScene()->selectedGameObject != nullptr &&
+                                          editorContext->GetScene()->selectedGameObject->HasComponent<CTransform>();
                 const bool gizmoBlocking = gizmoVisible && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
                 s_GizmoWasActive = gizmoBlocking;
 
@@ -170,7 +170,7 @@ void SceneViewport::Draw()
 
                                 if (path.find(".nous") != std::string::npos)
                                 {
-                                    EditorContext->GetScene()->LoadScene(path);
+                                    editorContext->GetScene()->LoadScene(path);
                                     continue;
                                 }
 
@@ -180,20 +180,20 @@ void SceneViewport::Draw()
                                 const std::string ext = NOUS_FileManager::GetExtension(path);
                                 if (Resource::GetTypeFromExtension(ext) == ResourceType::MESH)
                                 {
-                                    EditorContext->GetJobSystem()->SubmitJob([path, this]()
+                                    editorContext->GetJobSystem()->SubmitJob([path, this]()
                                     {
-                                        EditorContext->GetScene()->SpawnMeshAsHierarchy(path);
+                                        editorContext->GetScene()->SpawnMeshAsHierarchy(path);
                                     }, "Spawn Mesh Hierarchy");
                                 }
                                 else if (ext == ".nprefab")
                                 {
-                                    EditorContext->GetScene()->InstantiatePrefab(path, nullptr);
+                                    editorContext->GetScene()->InstantiatePrefab(path, nullptr);
                                 }
                                 else
                                 {
-                                    EditorContext->GetJobSystem()->SubmitJob([path, this]()
+                                    editorContext->GetJobSystem()->SubmitJob([path, this]()
                                     {
-                                        EditorContext->GetResourceManager()->CreateResource(path);
+                                        editorContext->GetResourceManager()->CreateResource(path);
                                     }, "Create Resource");
                                 }
                             }
@@ -215,18 +215,18 @@ void SceneViewport::Draw()
 void SceneViewport::HandleGizmoInput()
 {
     // Only switch gizmo mode when right mouse button is NOT held (camera uses RMB + WASD)
-    if (EditorContext->GetInput()->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::IDLE)
+    if (editorContext->GetInput()->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::IDLE)
     {
-        if (EditorContext->GetInput()->GetKey(SDL_SCANCODE_W) == KeyState::DOWN)
+        if (editorContext->GetInput()->GetKey(SDL_SCANCODE_W) == KeyState::DOWN)
             m_GizmoOperation = GizmoOperation::TRANSLATE;
-        if (EditorContext->GetInput()->GetKey(SDL_SCANCODE_E) == KeyState::DOWN)
+        if (editorContext->GetInput()->GetKey(SDL_SCANCODE_E) == KeyState::DOWN)
             m_GizmoOperation = GizmoOperation::ROTATE;
-        if (EditorContext->GetInput()->GetKey(SDL_SCANCODE_R) == KeyState::DOWN)
+        if (editorContext->GetInput()->GetKey(SDL_SCANCODE_R) == KeyState::DOWN)
             m_GizmoOperation = GizmoOperation::SCALE;
     }
 
     // Toggle local/world mode
-    if (EditorContext->GetInput()->GetKey(SDL_SCANCODE_T) == KeyState::DOWN)
+    if (editorContext->GetInput()->GetKey(SDL_SCANCODE_T) == KeyState::DOWN)
     {
         m_GizmoSpace = (m_GizmoSpace == GizmoSpace::LOCAL)
             ? GizmoSpace::WORLD
@@ -234,17 +234,17 @@ void SceneViewport::HandleGizmoInput()
     }
 
     // Toggle snapping with Left Ctrl
-    m_UseSnap = (EditorContext->GetInput()->GetKey(SDL_SCANCODE_LCTRL) == KeyState::REPEAT
-              || EditorContext->GetInput()->GetKey(SDL_SCANCODE_LCTRL) == KeyState::DOWN);
+    m_UseSnap = (editorContext->GetInput()->GetKey(SDL_SCANCODE_LCTRL) == KeyState::REPEAT
+              || editorContext->GetInput()->GetKey(SDL_SCANCODE_LCTRL) == KeyState::DOWN);
 }
 
 void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportSize)
 {
-    GameObject* selected = EditorContext->GetScene()->selectedGameObject;
+    GameObject* selected = editorContext->GetScene()->selectedGameObject;
     if (!selected || !selected->HasComponent<CTransform>())
         return;
 
-    Camera* cam = EditorContext->GetCamera()->GetCamera();
+    Camera* cam = editorContext->GetCamera()->GetCamera();
     if (!cam)
         return;
 
@@ -357,8 +357,8 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
     // Only respond to left mouse button click when the viewport is hovered and
     // right mouse button is NOT held (camera uses RMB + WASD).
     if (!ImGui::IsWindowHovered() ||
-        EditorContext->GetInput()->GetMouseButton(SDL_BUTTON_LEFT) != KeyState::DOWN ||
-        EditorContext->GetInput()->GetMouseButton(SDL_BUTTON_RIGHT) != KeyState::IDLE)
+        editorContext->GetInput()->GetMouseButton(SDL_BUTTON_LEFT) != KeyState::DOWN ||
+        editorContext->GetInput()->GetMouseButton(SDL_BUTTON_RIGHT) != KeyState::IDLE)
     {
         return;
     }
@@ -384,10 +384,10 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
                                 0, static_cast<int32_t>(vkContext->framebufferHeight - 1));
 
     // Build geometry list (same logic as ModuleRenderer3D::BuildRenderPacket)
-    if (!EditorContext->GetScene()->activeScene)
+    if (!editorContext->GetScene()->activeScene)
         return;
 
-    const auto gameObjects = EditorContext->GetScene()->activeScene->GetGameObjectsSnapshot();
+    const auto gameObjects = editorContext->GetScene()->activeScene->GetGameObjectsSnapshot();
     std::vector<GeometryRenderData> geometries;
     geometries.reserve(gameObjects.size());
 
@@ -409,40 +409,40 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
 
     if (geometries.empty())
     {
-        EditorContext->GetScene()->selectedGameObject = nullptr;
+        editorContext->GetScene()->selectedGameObject = nullptr;
         return;
     }
 
     // Use the camera's own projection matrix — must match what the scene pass renders
     // with, so the pick result aligns with the scene framebuffer.
     // The UV mapping above already accounts for the viewport panel's crop.
-    Camera* cam = EditorContext->GetCamera()->GetCamera();
+    Camera* cam = editorContext->GetCamera()->GetCamera();
     if (!cam) return;
 
     glm::mat4 projection = cam->GetProjectionMatrix();
     glm::mat4 view = cam->GetViewMatrix();
 
     // Perform the pick
-    RendererFrontend* frontend = EditorContext->GetRendererFrontend();
+    RendererFrontend* frontend = editorContext->GetRendererFrontend();
     uint32_t objectID = frontend->PickObjectAt(pixelX, pixelY, projection, view, geometries);
 
     // Select or deselect
     if (objectID != 0)
     {
-        GameObject* found = EditorContext->GetScene()->activeScene->FindGameObjectByID(objectID);
+        GameObject* found = editorContext->GetScene()->activeScene->FindGameObjectByID(objectID);
         if (found)
         {
-            EditorContext->GetScene()->selectedGameObject = found;
+            editorContext->GetScene()->selectedGameObject = found;
         }
         else
         {
             // objectID didn't match any live GO — stale pick result; deselect.
-            EditorContext->GetScene()->selectedGameObject = nullptr;
+            editorContext->GetScene()->selectedGameObject = nullptr;
         }
     }
     else
     {
-        EditorContext->GetScene()->selectedGameObject = nullptr;
+        editorContext->GetScene()->selectedGameObject = nullptr;
     }
 }
 

@@ -7,7 +7,7 @@
 
 #include "imgui.h"
 
-Resources::Resources(const char* title, ::EditorContext* context, bool start_open)
+Resources::Resources(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
@@ -26,7 +26,7 @@ void Resources::Draw()
     {
         if (ImGui::Begin(title, p_open))
         {
-            std::unordered_map<UID, Resource*> resourcesMap = EditorContext->GetResourceManager()->GetResourcesMap();
+            std::unordered_map<UID, Resource*> resourcesMap = editorContext->GetResourceManager()->GetResourcesMap();
             uint32 currentResourceCount = resourcesMap.size();
 
             ImGui::TextColored(

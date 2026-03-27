@@ -90,7 +90,7 @@ void ModuleWindow::SetFullscreen(bool fullscreen)
 void ModuleWindow::SetMinimized(bool value)
 {
     mIsMinimized = value;
-    EventSystem->Broadcast(Event(EventType::WINDOW_MINIMIZED, SendContext(value)));
+    eventSystem->Broadcast(Event(EventType::WINDOW_MINIMIZED, SendContext(value)));
 }
 
 bool ModuleWindow::IsMinimized() const

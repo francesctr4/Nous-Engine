@@ -10,7 +10,7 @@
 #include <format>
 #include <queue>
 
-JobQueue::JobQueue(const char* title, ::EditorContext* context, bool start_open)
+JobQueue::JobQueue(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
@@ -27,7 +27,7 @@ void JobQueue::Draw()
 
     if (ImGui::Begin(title, p_open))
     {
-        const auto& threadPool = EditorContext->GetJobSystem()->GetThreadPool();
+        const auto& threadPool = editorContext->GetJobSystem()->GetThreadPool();
         const auto& jobQueue = threadPool.GetJobQueue();
 
         // New Job Queue table

@@ -82,7 +82,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
 	{
-        EventSystem->Broadcast(Event(EventType::INPUT_EVENT, SendContext(&e)));
+        eventSystem->Broadcast(Event(EventType::INPUT_EVENT, SendContext(&e)));
 
 		switch (e.type)
 		{
@@ -119,7 +119,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 					cachedFramebufferWidth = width;
 					cachedFramebufferHeight = height;
 
-					EventSystem->Broadcast(Event(EventType::WINDOW_RESIZED, SendContext(cachedFramebufferWidth, cachedFramebufferHeight)));
+					eventSystem->Broadcast(Event(EventType::WINDOW_RESIZED, SendContext(cachedFramebufferWidth, cachedFramebufferHeight)));
                 }
 
                 break;
@@ -137,7 +137,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			case SDL_EVENT_DROP_FILE:
 			{ 
 				const char* droppedFileDirectory = e.drop.data;
-				EventSystem->Broadcast(Event(EventType::DROP_FILE, SendContext(e.drop.data)));
+				eventSystem->Broadcast(Event(EventType::DROP_FILE, SendContext(e.drop.data)));
 				SDL_free(&droppedFileDirectory);
 
 				break;

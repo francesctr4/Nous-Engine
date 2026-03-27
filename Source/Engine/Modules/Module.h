@@ -27,7 +27,7 @@ public:
 
 protected:
 
-	EventSystem* EventSystem;
+	EventSystem* eventSystem;
 	NOUS_Multithreading::NOUS_JobSystem* JobSystem;
 	bool IsGameMode;
 

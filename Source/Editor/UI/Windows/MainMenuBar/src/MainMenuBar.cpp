@@ -39,7 +39,7 @@ static bool RequestBrowser(const char* url)
 #endif
 }
 
-MainMenuBar::MainMenuBar(const char* title, ::EditorContext* context, bool start_open)
+MainMenuBar::MainMenuBar(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
 	Init();
@@ -335,7 +335,7 @@ void MainMenuBar::Draw()
 		// Centered simulation toolbar — Play / Pause / Stop / Step
 		// -----------------------------------------------------------------------
 		{
-			const SimulationState state = EditorContext->GetScene()->GetSimulationState();
+			const SimulationState state = editorContext->GetScene()->GetSimulationState();
 
 			constexpr float buttonW  = 52.0f;
 			constexpr float spacing  = 4.0f;
@@ -347,7 +347,7 @@ void MainMenuBar::Draw()
 			const bool canPlay = (state == SimulationState::STOPPED);
 			if (!canPlay) ImGui::BeginDisabled();
 			if (ImGui::Button("Play", { buttonW, 0 }))
-				EditorContext->GetScene()->PressPlay();
+				editorContext->GetScene()->PressPlay();
 			if (!canPlay) ImGui::EndDisabled();
 
 			ImGui::SameLine(0.0f, spacing);
@@ -358,7 +358,7 @@ void MainMenuBar::Draw()
 			if (!canPause) ImGui::BeginDisabled();
 			if (isPaused)  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.85f, 0.65f, 0.10f, 1.0f));
 			if (ImGui::Button("Pause", { buttonW, 0 }))
-				EditorContext->GetScene()->PressPause();
+				editorContext->GetScene()->PressPause();
 			if (isPaused)  ImGui::PopStyleColor();
 			if (!canPause) ImGui::EndDisabled();
 
@@ -368,7 +368,7 @@ void MainMenuBar::Draw()
 			const bool canStop = (state != SimulationState::STOPPED);
 			if (!canStop) ImGui::BeginDisabled();
 			if (ImGui::Button("Stop", { buttonW, 0 }))
-				EditorContext->GetScene()->PressStop();
+				editorContext->GetScene()->PressStop();
 			if (!canStop) ImGui::EndDisabled();
 
 			ImGui::SameLine(0.0f, spacing);
@@ -377,7 +377,7 @@ void MainMenuBar::Draw()
 			const bool canStep = (state == SimulationState::PAUSED);
 			if (!canStep) ImGui::BeginDisabled();
 			if (ImGui::Button("Step", { buttonW, 0 }))
-				EditorContext->GetScene()->PressStep();
+				editorContext->GetScene()->PressStep();
 			if (!canStep) ImGui::EndDisabled();
 		}
 

@@ -59,8 +59,8 @@ ModuleEditor::ModuleEditor(Application* app,
 {
 	currentBackendType = RendererBackendType::UNKNOWN;
 
-    EventSystem->Subscribe(EventType::INPUT_EVENT, this);
-    EventSystem->Subscribe(EventType::IMGUI_RECREATION, this);
+    eventSystem->Subscribe(EventType::INPUT_EVENT, this);
+    eventSystem->Subscribe(EventType::IMGUI_RECREATION, this);
 }
 
 ModuleEditor::~ModuleEditor()

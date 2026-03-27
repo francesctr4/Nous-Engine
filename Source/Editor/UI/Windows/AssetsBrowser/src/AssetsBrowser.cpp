@@ -20,7 +20,7 @@ static void HelpMarker(const char* desc)
     }
 }
 
-AssetsBrowser::AssetsBrowser(const char* title, ::EditorContext* context, bool start_open)
+AssetsBrowser::AssetsBrowser(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     Init();
@@ -176,7 +176,7 @@ void AssetsBrowser::Draw()
             {
                 if (ImGui::MenuItem("Refresh Assets"))
                 {
-                    EditorContext->GetJobSystem()->SubmitJob([this]()
+                    editorContext->GetJobSystem()->SubmitJob([this]()
                         {
                             std::system("cmake --build ./ --target CopyAssets");
                             AddItemsFromDirectory(current_directory);
@@ -587,7 +587,7 @@ void AssetsBrowser::Draw()
                                 ImVec2 label_pos = ImVec2(pos.x, pos.y + LayoutItemSize.y + 4);  // Adjust vertical position
 
                                 // Render text with a smaller font
-                                ImGui::PushFont(EditorContext->GetFont(1)); // Use smaller font for title
+                                ImGui::PushFont(editorContext->GetFont(1)); // Use smaller font for title
                                 draw_list->AddText(label_pos, label_col, title.c_str());
                                 ImGui::PopFont();
                             }

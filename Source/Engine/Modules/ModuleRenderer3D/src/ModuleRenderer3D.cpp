@@ -43,8 +43,8 @@ ModuleRenderer3D::ModuleRenderer3D(Application* app, ModuleWindow* moduleWindow,
 		mModuleResourceManager(moduleResourceManager), mModuleScene(moduleScene)
 
 {
-	EventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
-	EventSystem->Subscribe(EventType::WINDOW_MINIMIZED, this);
+	eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
+	eventSystem->Subscribe(EventType::WINDOW_MINIMIZED, this);
 
 	mRendererFrontend = NOUS_NEW<RendererFrontend>(MemoryTag::RENDERER);
 }
@@ -65,7 +65,7 @@ bool ModuleRenderer3D::Awake()
 {
 	mRendererFrontend->SetBackendType(RendererBackendType::VULKAN);
 
-	mRendererFrontend->InjectDependencies(mModuleWindow, EventSystem, JobSystem, mModuleResourceManager);
+	mRendererFrontend->InjectDependencies(mModuleWindow, eventSystem, JobSystem, mModuleResourceManager);
 
 	if (!mRendererFrontend->Initialize(mRendererFrontend->GetBackendType()))
 	{

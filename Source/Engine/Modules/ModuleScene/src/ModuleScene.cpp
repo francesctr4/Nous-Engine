@@ -60,7 +60,7 @@ ModuleScene::ModuleScene(Application* app, ModuleInput* moduleInput, ModuleResou
 	if (!scriptManager->LoadScriptLibrary(scriptsDllPath))
 		NOUS_ERROR("Failed to load script library on startup");
 
-	EventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
+	eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
 ModuleScene::~ModuleScene()

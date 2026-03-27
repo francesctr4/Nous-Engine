@@ -22,7 +22,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
-InspectorWindow::InspectorWindow(const char* title, ::EditorContext* context, bool start_open)
+InspectorWindow::InspectorWindow(const char* title, EditorContext* context, bool start_open)
         : IEditorWindow(title, context, nullptr, start_open) {
     Init();
 }
@@ -36,7 +36,7 @@ void InspectorWindow::Draw() {
     if (*p_open) {
         if (ImGui::Begin(title, p_open)) {
 
-            GameObject* go = EditorContext->GetScene()->selectedGameObject;
+            GameObject* go = editorContext->GetScene()->selectedGameObject;
             if (!go) {
                 ImGui::TextDisabled("No GameObject selected.");
                 ImGui::End();
@@ -212,8 +212,8 @@ void InspectorWindow::Draw() {
 
                                             // Resolve current name for the preview label
                                             std::string preview = "None";
-                                            if (*idPtr != 0 && EditorContext->GetScene()->activeScene) {
-                                                auto* target = EditorContext->GetScene()->activeScene->GetGameObjectByID(*idPtr);
+                                            if (*idPtr != 0 && editorContext->GetScene()->activeScene) {
+                                                auto* target = editorContext->GetScene()->activeScene->GetGameObjectByID(*idPtr);
                                                 preview = target ? target->GetName() : "(missing)";
                                             }
 
@@ -223,8 +223,8 @@ void InspectorWindow::Draw() {
                                                     *idPtr = 0;
 
                                                 // All scene GameObjects
-                                                if (EditorContext->GetScene()->activeScene) {
-                                                    const auto gos = EditorContext->GetScene()->activeScene->GetGameObjectsSnapshot();
+                                                if (editorContext->GetScene()->activeScene) {
+                                                    const auto gos = editorContext->GetScene()->activeScene->GetGameObjectsSnapshot();
                                                     for (auto* target : gos) {
                                                         const bool selected = (*idPtr == target->GetID());
                                                         if (ImGui::Selectable(target->GetName().c_str(), selected))
@@ -248,7 +248,7 @@ void InspectorWindow::Draw() {
                     // Add script from dropdown
                     ImGui::Spacing();
                     const std::vector<std::string> available =
-                        EditorContext->GetScene()->scriptManager->GetAvailableScriptNames();
+                        editorContext->GetScene()->scriptManager->GetAvailableScriptNames();
 
                     if (!available.empty()) {
                         static int s_selectedScript = 0;

@@ -25,7 +25,7 @@ constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOU
 
 ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
 {
-	EventSystem->Subscribe(EventType::DROP_FILE, this);
+	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
 
 void ModuleResourceManager::SetRendererFrontend(RendererFrontend* rendererFrontend)

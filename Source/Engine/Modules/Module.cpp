@@ -2,7 +2,7 @@
 #include "Engine/Core/Application.h"
 
 Module::Module(const Application* app) :
-    EventSystem(app->GetEventSystem()),
+    eventSystem(app->GetEventSystem()),
     JobSystem(app->GetJobSystem()),
 	IsGameMode(app->IsGameMode())
 {}
