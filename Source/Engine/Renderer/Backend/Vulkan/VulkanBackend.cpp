@@ -1283,7 +1283,7 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
 
     VulkanCommandBuffer tempCommandBuffer;
     VkCommandPool pool = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()));
-    VkQueue queue = vkContext->device.graphicsQueue;
+    VkQueue queue = vkContext->device.transferQueue;
 
     NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(vkContext, pool, &tempCommandBuffer);
 
@@ -1490,7 +1490,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     }
 
     VkCommandPool pool = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()));
-    VkQueue queue = vkContext->device.graphicsQueue;
+    VkQueue queue = vkContext->device.transferQueue;
 
     // Vertex data.
     internalData->vertexCount = vertexCount;
@@ -2368,7 +2368,10 @@ void VulkanBackend::ProcessPendingSubmissions()
 
         lock.unlock(); // Unlock while processing
 
-        std::lock_guard<std::mutex> queueLock(vkContext->device.graphicsQueueMutex);
+        std::mutex& queueMutex = (task.queue == vkContext->device.transferQueue)
+            ? vkContext->device.transferQueueMutex
+            : vkContext->device.graphicsQueueMutex;
+        std::lock_guard<std::mutex> queueLock(queueMutex);
         VkResult result = vkQueueSubmit(task.queue, task.submitCount, task.pSubmits, task.fence);
 
         bool success = (result == VK_SUCCESS);

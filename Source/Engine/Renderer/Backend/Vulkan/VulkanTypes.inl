@@ -140,8 +140,10 @@ struct VulkanDevice
     bool supportsDeviceLocalHostVisible;
 
     VkCommandPool mainGraphicsCommandPool;
+    VkCommandPool mainTransferCommandPool;
 
     /* MULTITHREADING */
+    std::mutex workerCommandPoolsMutex;
     std::unordered_map<uint32, VkCommandPool> workerCommandPools;
 
     VkQueue graphicsQueue;
@@ -150,6 +152,7 @@ struct VulkanDevice
     VkQueue presentQueue;
     VkQueue computeQueue;
     VkQueue transferQueue;
+    std::mutex transferQueueMutex;
 
     VkPhysicalDeviceProperties properties;
     VkPhysicalDeviceFeatures features;
@@ -328,7 +331,6 @@ struct VulkanContext
 
     std::deque<VulkanSubmitTask> submitQueue;
     std::mutex submitQueueMutex;
-    std::condition_variable submitQueueCV;
 
     bool isShuttingDown = false;
 

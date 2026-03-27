@@ -12,7 +12,6 @@ namespace NOUS_VulkanMultithreading
 
     VkCommandPool GetThreadCommandPool(VulkanContext* vkContext, uint32 threadID);
 
-	bool QueueSubmitThreadSafe(VulkanContext* vkContext, VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence, bool waitIdle);
 	bool CreateQueueSubmitTask(VulkanContext* vkContext, VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence, bool waitIdle);
 }
 

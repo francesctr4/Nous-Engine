@@ -466,17 +466,19 @@ bool NOUS_VulkanDevice::CreateLogicalDevice(VulkanContext* vkContext)
 
 void NOUS_VulkanDevice::CreateCommandPool(VulkanContext* vkContext)
 {
-    // Create Command Pool
     VkCommandPoolCreateInfo commandPoolCreateInfo{};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-
-    commandPoolCreateInfo.queueFamilyIndex = vkContext->device.graphicsQueueIndex;
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
+    commandPoolCreateInfo.queueFamilyIndex = vkContext->device.graphicsQueueIndex;
     VK_CHECK(vkCreateCommandPool(vkContext->device.logicalDevice, &commandPoolCreateInfo,
         vkContext->allocator, &vkContext->device.mainGraphicsCommandPool));
-
     NOUS_DEBUG("Graphics Command Pool Created");
+
+    commandPoolCreateInfo.queueFamilyIndex = vkContext->device.transferQueueIndex;
+    VK_CHECK(vkCreateCommandPool(vkContext->device.logicalDevice, &commandPoolCreateInfo,
+        vkContext->allocator, &vkContext->device.mainTransferCommandPool));
+    NOUS_DEBUG("Transfer Command Pool Created");
 }
 
 void NOUS_VulkanDevice::DestroyLogicalDevice(VulkanContext* vkContext)
@@ -486,8 +488,9 @@ void NOUS_VulkanDevice::DestroyLogicalDevice(VulkanContext* vkContext)
     vkContext->device.computeQueue = 0;
     vkContext->device.transferQueue = 0;
 
-    NOUS_DEBUG("Destroying Command Pool...");
+    NOUS_DEBUG("Destroying Command Pools...");
     vkDestroyCommandPool(vkContext->device.logicalDevice, vkContext->device.mainGraphicsCommandPool, vkContext->allocator);
+    vkDestroyCommandPool(vkContext->device.logicalDevice, vkContext->device.mainTransferCommandPool, vkContext->allocator);
 
     NOUS_DEBUG("Destroying Vulkan Logical Device...");
     vkDestroyDevice(vkContext->device.logicalDevice, vkContext->allocator);
