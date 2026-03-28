@@ -78,7 +78,14 @@ bool ModuleRenderer3D::Awake()
 		return false;
 	}
 
+	return true;
+}
+
+bool ModuleRenderer3D::Start()
+{
 	// ------------------------------ SHADERS ------------------------------ //
+	// Library/ is fully populated by the time Start() runs (ResourceManager::Awake
+	// + ScanAndImportAssets already completed), so CreateResource is safe here.
 
 	if (m_renderMode == RenderMode::GAME)
 	{
@@ -104,13 +111,8 @@ bool ModuleRenderer3D::Awake()
 			NOUS_WARN_C(CURRENT_CHANNEL, "Could not write shader_manifest.json — one or more built-in shaders failed to load.");
 	}
 
-	return true;
-}
-
-bool ModuleRenderer3D::Start()
-{
 	// Drain the initial upload queue — includes the default texture/material (queued
-	// by ResourceManager::Start) and all shaders loaded during Awake.  All must be
+	// by ResourceManager::Start) and all shaders loaded above.  All must be
 	// GPU_READY before the first frame renders.
 	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
 	{

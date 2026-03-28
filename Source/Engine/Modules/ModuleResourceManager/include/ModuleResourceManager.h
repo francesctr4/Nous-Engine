@@ -28,7 +28,7 @@ class ModuleResourceManager : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode);
+	ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
 
 	// Destructor
 	virtual ~ModuleResourceManager();
@@ -48,6 +48,10 @@ public:
 
 	NOUS_ENGINE_API bool ImportFile(const std::string& path);
 	NOUS_ENGINE_API bool ImportDirectory(const std::string& directory);
+
+	// Editor-only: scans Assets/, imports everything, and mirrors scene files to Library/.
+	// Called by Application::Awake() when not in game mode.
+	NOUS_ENGINE_API void ScanAndImportAssets();
 
 	NOUS_ENGINE_API bool ResourceExists(const UID& uid);
 	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath);
@@ -141,8 +145,6 @@ private:
 	// Allows RequestOrCreateSubMeshResource to reuse already-loaded sub-resources.
 	// Entry removed when the sub-resource is destroyed in DeleteResource().
 	std::map<std::pair<UID, int32_t>, UID> m_submeshUIDMap;
-
-	bool m_isGameMode;
 
 	ResourceTexture* mDefaultTexture = nullptr;
 	ResourceMaterial* mDefaultMaterial = nullptr;

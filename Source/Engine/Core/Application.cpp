@@ -67,7 +67,7 @@ Application::Application(bool isGameMode)
     // 4. RESOURCE MANAGER — no module dependencies at construction.
     //    Must be constructed before SCENE and RENDERER so they can reference it.
     listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, m_isGameMode));
+        eventSystem, jobSystem));
 
     // 5. SCENE — depends on INPUT (simulation controls) and RESOURCE MANAGER (asset loading).
     listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION,
@@ -108,11 +108,15 @@ bool Application::Awake() const
     // Call Awake() in all modules
     for (int i = 0; i < static_cast<int>(listModules.size()) && ret; ++i)
     {
-        if (listModules[i] != nullptr) 
-        {
+        if (listModules[i] != nullptr)
             ret = listModules[i]->Awake();
-        }
     }
+
+    // Editor-only: scan Assets/ and compile shaders into Library/.
+    // Runs after all Awakes and before Start(), so Renderer::Start() can safely
+    // call CreateResource() with a fully populated Library/.
+    if (ret && !m_isGameMode)
+        resourceManager->ScanAndImportAssets();
 
     return ret;
 }

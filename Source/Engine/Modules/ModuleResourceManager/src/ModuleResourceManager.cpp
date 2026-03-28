@@ -27,8 +27,8 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
-ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode)
-    : Module(eventSystem, jobSystem), m_isGameMode(isGameMode)
+ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
+    : Module(eventSystem, jobSystem)
 {
 	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
@@ -42,16 +42,15 @@ bool ModuleResourceManager::Awake()
 {
 	ImporterManager::Init(this);
 
-	if (m_isGameMode)
-	{
-		// GAME mode: Library binaries are pre-built. No asset scanning/importing needed.
-		return true;
-	}
-
-	// Always ensure directories exist — idempotent, safe to call every startup.
+	// Always ensure directories exist — idempotent, safe to call in any mode.
 	EnsureLibraryDirectories();
 
-	// EDITOR mode: scan Assets/ on startup. ImportFile is a cheap no-op for assets
+	return true;
+}
+
+void ModuleResourceManager::ScanAndImportAssets()
+{
+	// Scan Assets/ on startup. ImportFile is a cheap no-op for assets
 	// whose library binary is already up-to-date (Case 3 timestamp check).
 	ImportDirectory("Assets");
 
@@ -69,8 +68,6 @@ bool ModuleResourceManager::Awake()
 			}
 		}
 	}
-
-	return true;
 }
 
 bool ModuleResourceManager::EnsureLibraryDirectories()
