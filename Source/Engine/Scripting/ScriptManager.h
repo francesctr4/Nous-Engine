@@ -5,10 +5,13 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 
 #include "Engine/EngineExport.h"
+#include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
 class IScript;
+class CScript;
 struct EngineAPI;
 class ScriptRegistry;
 class ModuleInput;
@@ -26,6 +29,9 @@ public:
     void UnloadScriptLibrary();
     bool ReloadScriptLibrary(const std::string& dllPath);
 
+    // Recompiles Scripts.dll and hot-reloads all live CScript instances.
+    NOUS_ENGINE_API void RecompileScripts();
+
     // Script management
     IScript* CreateScriptInstance(const std::string& scriptName);
 
@@ -34,6 +40,21 @@ public:
 
     // Script generation
     NOUS_ENGINE_API static bool GenerateScript(const std::string& className);
+
+    // ---------------------------------------------------------------------------
+    // CScript component registry — called by CScript::OnStart / OnDestroy
+    // ---------------------------------------------------------------------------
+    void RegisterScriptComponent(CScript* component);
+    void UnregisterScriptComponent(CScript* component);
+
+    // Dispatches IScript::LateUpdate to all live components. Called from ModuleScene::PostUpdate.
+    void DispatchLateUpdate(float dt);
+
+    // Calls RecreateInstances() on every registered component. Called from ModuleScene::PressPlay.
+    void RecreateAllInstances();
+
+    // Destroys all DLL instances and clears the registry. Called from ModuleScene::CleanUp.
+    void CleanupScripts();
 
 private:
 
@@ -49,6 +70,11 @@ private:
 
     ModuleInput* m_moduleInput;
     ModuleScene* m_moduleScene;
+
+    // Flat registry of every live CScript component in the scene.
+    // Used for hot-reload, LateUpdate dispatch, and cleanup.
+    NOUS_Vector<CScript*> m_scriptComponents;
+    std::mutex            m_scriptComponentsMutex;
 
 };
 

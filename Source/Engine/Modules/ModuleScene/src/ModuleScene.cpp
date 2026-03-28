@@ -18,7 +18,6 @@
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
-#include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -42,8 +41,7 @@
 
 ModuleScene::ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
     ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager)
-    : Module(eventSystem, jobSystem), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager),
-	m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
+    : Module(eventSystem, jobSystem), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager)
 {
 	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager);
 	gameCamera    = NOUS_NEW<Camera>(MemoryTag::CAMERA);
@@ -148,11 +146,7 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 {
 	// Dispatch LateUpdate only when the simulation actually ticked this frame.
 	if (m_simulationState == SimulationState::PLAYING || m_didStepThisFrame)
-	{
-		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
-		for (auto* cs : m_scriptComponents)
-			if (cs) cs->LateUpdate(TimeManager::simulationDeltaTime);
-	}
+		scriptManager->DispatchLateUpdate(TimeManager::simulationDeltaTime);
 
 	// Propagate parent transforms top-down before the renderer reads world matrices.
 	if (activeScene)
@@ -174,7 +168,7 @@ bool ModuleScene::CleanUp()
 	// Wait for any in-flight jobs (e.g. hot-reload) before touching scripts
 	JobSystem->WaitForPendingJobs();
 
-	CleanupScripts();
+	scriptManager->CleanupScripts();
 	scriptManager->UnloadScriptLibrary();
 
 	return true;
@@ -212,78 +206,12 @@ void ModuleScene::OnEvent(const Event& event)
 }
 
 // ---------------------------------------------------------------------------
-// CScript component registry — called by CScript::OnStart / OnDestroy
-// ---------------------------------------------------------------------------
-
-void ModuleScene::RegisterScriptComponent(CScript* component)
-{
-	std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
-	m_scriptComponents.push_back(component);
-}
-
-void ModuleScene::UnregisterScriptComponent(CScript* component)
-{
-	std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
-	auto it = std::find(m_scriptComponents.begin(), m_scriptComponents.end(), component);
-	if (it != m_scriptComponents.end())
-		m_scriptComponents.erase(it);
-}
-
-// ---------------------------------------------------------------------------
-// Hot-reload
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // Hot-reload
 // ---------------------------------------------------------------------------
 
 void ModuleScene::RecompileScripts()
 {
-	const std::string dllPath =
-		(std::filesystem::path(SDL_GetBasePath()) / "Library" / "Scripts" / "Scripts.dll").string();
-
-	{
-		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
-		for (auto* cs : m_scriptComponents)
-			if (cs) cs->ClearInstances();
-	}
-
-	if (scriptManager->ReloadScriptLibrary(dllPath))
-	{
-		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
-		for (auto* cs : m_scriptComponents)
-			if (cs) cs->RecreateInstances();
-		NOUS_INFO("Script hot-reload completed successfully");
-	}
-	else
-	{
-		NOUS_ERROR("Script hot-reload failed");
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Cleanup (called from CleanUp() before UnloadScriptLibrary)
-// ---------------------------------------------------------------------------
-
-void ModuleScene::CleanupScripts()
-{
-	std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
-
-	// Destroy DLL-allocated instances and mark each component as unregistered.
-	// ClearRegistrationState() ensures that the subsequent OnDestroy() calls
-	// (from ~ModuleScene() → NOUS_DELETE(activeScene)) skip the UnregisterScriptComponent
-	// call entirely — the scene module may be in a partially-destroyed state at that point.
-	for (auto* cs : m_scriptComponents)
-	{
-		if (cs)
-		{
-			cs->ClearInstances();
-			cs->ClearRegistrationState();
-		}
-	}
-
-	m_scriptComponents.clear();
-	NOUS_INFO("Cleaned up all CScript instances");
+	scriptManager->RecompileScripts();
 }
 
 // ---------------------------------------------------------------------------
@@ -314,11 +242,7 @@ void ModuleScene::PressPlay()
 
 	// Start all registered CScript components (they were registered in OnStart but
 	// deferred instance creation because the simulation was stopped).
-	{
-		std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
-		for (auto* cs : m_scriptComponents)
-			if (cs) cs->RecreateInstances();
-	}
+	scriptManager->RecreateAllInstances();
 
 	m_simulationState = SimulationState::PLAYING;
 

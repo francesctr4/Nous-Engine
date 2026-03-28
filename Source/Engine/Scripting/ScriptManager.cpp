@@ -6,6 +6,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>
 #include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
+#include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 
 #include <fstream>
 #include <sstream>
@@ -184,7 +185,8 @@ static std::filesystem::path GetExeDir()
 
 ScriptManager::ScriptManager(ModuleInput* moduleInput, ModuleScene* moduleScene)
     : m_libraryHandle(nullptr), m_scriptRegistry(nullptr),
-      m_moduleInput(moduleInput), m_moduleScene(moduleScene)
+      m_moduleInput(moduleInput), m_moduleScene(moduleScene),
+      m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
 {
     ScriptBindings::InitializeBindings(api);
 }
@@ -419,6 +421,81 @@ void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
     return dlsym(handle, symbol.c_str());
 #endif
 }
+
+// ---------------------------------------------------------------------------
+// CScript component registry
+// ---------------------------------------------------------------------------
+
+void ScriptManager::RegisterScriptComponent(CScript* component)
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    m_scriptComponents.push_back(component);
+}
+
+void ScriptManager::UnregisterScriptComponent(CScript* component)
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    auto it = std::find(m_scriptComponents.begin(), m_scriptComponents.end(), component);
+    if (it != m_scriptComponents.end())
+        m_scriptComponents.erase(it);
+}
+
+void ScriptManager::DispatchLateUpdate(float dt)
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+        if (cs) cs->LateUpdate(dt);
+}
+
+void ScriptManager::RecreateAllInstances()
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+        if (cs) cs->RecreateInstances();
+}
+
+void ScriptManager::CleanupScripts()
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+    {
+        if (cs)
+        {
+            cs->ClearInstances();
+            cs->ClearRegistrationState();
+        }
+    }
+    m_scriptComponents.clear();
+    NOUS_INFO("Cleaned up all CScript instances");
+}
+
+void ScriptManager::RecompileScripts()
+{
+    const std::string dllPath =
+        (GetExeDir() / "Library" / "Scripts" / "Scripts.dll").string();
+
+    {
+        std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+        for (auto* cs : m_scriptComponents)
+            if (cs) cs->ClearInstances();
+    }
+
+    if (ReloadScriptLibrary(dllPath))
+    {
+        std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+        for (auto* cs : m_scriptComponents)
+            if (cs) cs->RecreateInstances();
+        NOUS_INFO("Script hot-reload completed successfully");
+    }
+    else
+    {
+        NOUS_ERROR("Script hot-reload failed");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Script generation
+// ---------------------------------------------------------------------------
 
 bool ScriptManager::GenerateScript(const std::string& className)
 {

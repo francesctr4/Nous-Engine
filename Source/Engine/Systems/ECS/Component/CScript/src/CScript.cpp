@@ -30,7 +30,7 @@ void CScript::OnStart()
 {
     // Always register so the component appears in the registry and can be found
     // by PressPlay() / hot-reload regardless of simulation state.
-    m_GameObject->GetScene()->GetModuleScene()->RegisterScriptComponent(this);
+    m_GameObject->GetScene()->GetModuleScene()->scriptManager->RegisterScriptComponent(this);
     m_registered = true;
 
     // Defer instance creation to PressPlay() when the simulation is not running.
@@ -69,7 +69,7 @@ void CScript::OnDestroy()
     // module if OnStart() was never reached (e.g., component destroyed mid-construction).
     if (m_registered && m_GameObject && m_GameObject->GetScene())
     {
-        m_GameObject->GetScene()->GetModuleScene()->UnregisterScriptComponent(this);
+        m_GameObject->GetScene()->GetModuleScene()->scriptManager->UnregisterScriptComponent(this);
         m_registered = false;
     }
 

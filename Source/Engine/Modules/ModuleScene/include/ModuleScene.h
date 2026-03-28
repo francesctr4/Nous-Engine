@@ -6,16 +6,13 @@
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include <string>
 #include <vector>
-#include <mutex>
 #include <atomic>
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
 class Scene;
 class GameObject;
 class Camera;
-class CScript;
 class ScriptManager;
 
 // Dependency Injection
@@ -61,10 +58,6 @@ public:
 	// Safe to call from a job thread via CreateGameObjectDetached + RegisterGameObject.
 	NOUS_ENGINE_API void SpawnMeshAsHierarchy(const std::string& assetsPath);
 
-	// Called by CScript::OnStart / CScript::OnDestroy to maintain the live registry
-	NOUS_ENGINE_API void RegisterScriptComponent(CScript* component);
-	NOUS_ENGINE_API void UnregisterScriptComponent(CScript* component);
-
 	// ---------------------------------------------------------------------------
 	// Simulation controls
 	// ---------------------------------------------------------------------------
@@ -102,11 +95,6 @@ private:
 
 	SceneRenderData m_renderData;
 
-	// Flat registry of every live CScript component in the scene.
-	// Used for hot-reload and LateUpdate dispatch.
-	NOUS_Vector<CScript*> m_scriptComponents;
-	std::mutex            m_scriptComponentsMutex;
-
 	// ---------------------------------------------------------------------------
 	// Simulation state
 	// ---------------------------------------------------------------------------
@@ -117,8 +105,6 @@ private:
 	std::atomic<bool> m_pendingPrefabRefresh = false;  // set by LoadSceneAsync job, consumed in PreUpdate() on main thread
 	std::atomic<bool> m_isLoadingScene       = false;  // true while a LoadSceneAsync job is in flight; guards re-entrancy
 	std::string     m_snapshotPath     = "Library/_simulation_snapshot.nous";
-
-	void CleanupScripts();
 
 	// After a scene is deserialized, re-instantiates any GO that carries a CPrefab
 	// component from its source .nprefab file, replacing stale inline children.
