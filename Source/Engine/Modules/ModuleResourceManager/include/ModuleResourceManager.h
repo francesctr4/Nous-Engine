@@ -8,6 +8,7 @@
 
 class IGPUResourceFactory;
 
+#include <future>
 #include <map>
 #include <mutex>
 #include <string>
@@ -96,6 +97,14 @@ public:
     // and registers it in the resource map with a generated UID.
     NOUS_ENGINE_API ResourceMesh* RequestOrCreateSubMeshResource(const std::string& assetsPath,
                                                                   int32_t submeshIndex);
+
+    // Scans a .nous scene file for all CMesh resource requests and submits one parallel
+    // Deserialize job per unique (assetPath, submeshIndex) pair.
+    // Returns futures — wait on all before calling Scene::Deserialize() so CMesh::Deserialize()
+    // hits the resource cache instead of blocking on disk I/O.
+    NOUS_ENGINE_API std::vector<std::future<void>> PreloadSceneResourcesAsync(
+        NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+        const std::string& sceneFilePath);
 
 private:
 

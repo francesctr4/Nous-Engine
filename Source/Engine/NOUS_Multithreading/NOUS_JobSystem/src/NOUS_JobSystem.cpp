@@ -5,7 +5,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING_JOBSYSTEM;
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING;
 
 /// @brief NOUS_JobSystem constructor.
 /// @param size: Number of worker threads available inside the thread pool.

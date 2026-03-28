@@ -1184,9 +1184,16 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
         VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &renderData.model);
 
     // Resolve material.
-    ResourceMaterial* material = renderData.material
-        ? renderData.material
-        : vkContext->resourceManager->GetDefaultMaterial();
+    // Fall back to the default if the material is null or has not been uploaded to the GPU yet
+    // (internalID == INVALID_ID means CreateMaterial hasn't run for this resource).
+    // This handles the one-frame window where RegisterGameObject runs on a job thread
+    // after Renderer::PreUpdate has already drained the pending-upload queue — the
+    // material sits in CPU_READY state until the *next* PreUpdate uploads it.
+    // Without this guard, DrawGeometry would skip BindInstanceDescriptorSet while the
+    // pipeline still statically uses set 1, triggering VUID-vkCmdDrawIndexed-None-08600.
+    ResourceMaterial* material = renderData.material;
+    if (!material || material->internalID == INVALID_ID)
+        material = vkContext->resourceManager->GetDefaultMaterial();
 
     // Per-instance descriptors (material UBO + texture sampler).
     if (material && material->internalID != INVALID_ID && vs->instancePool)

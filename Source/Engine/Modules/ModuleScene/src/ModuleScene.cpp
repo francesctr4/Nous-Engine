@@ -26,13 +26,15 @@
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
+#include <future>
+
 #include "Engine/Core/TimeManager/TimeManager.h"
 
 #include <SDL3/SDL.h>
 #include <filesystem>
 #include <algorithm>
 
-#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
@@ -162,7 +164,7 @@ UpdateStatus ModuleScene::Update(float dt)
 
 	if (mModuleInput->GetKey(SDL_SCANCODE_C) == KeyState::DOWN)
 	{
-		LoadScene("Assets/Scenes/LagiacrusScene.nous");
+		LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
 	}
 
     if (mModuleInput->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
@@ -504,6 +506,13 @@ void ModuleScene::LoadScene(const std::string& path)
 	JobSystem->WaitForPendingJobs();
 
 	ClearScene();
+
+	// Pre-load all mesh resources in parallel before building the scene graph.
+	// CMesh::Deserialize() will hit the resource cache (no disk I/O) instead of
+	// blocking serially on each binary file read.
+	auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, path);
+	for (auto& f : futures) f.get();
+
 	activeScene->Deserialize(path);
 	EnsureMainCamera();
 	RefreshPrefabInstances();
@@ -511,6 +520,13 @@ void ModuleScene::LoadScene(const std::string& path)
 
 void ModuleScene::LoadSceneAsync(const std::string& path)
 {
+	// Re-entrancy guard: if a load is already in flight, ignore the new request.
+	// Without this, spamming the hotkey clears the scene while the in-flight job
+	// still holds pointers into it → use-after-free.
+	bool expected = false;
+	if (!m_isLoadingScene.compare_exchange_strong(expected, true))
+		return;
+
 	// Drain any in-flight jobs (e.g. debug hotkey loaders) before clearing the
 	// scene. Without this, a job that called CreateGameObjectDetached before the
 	// clear could still call RegisterGameObject afterward on a cleared scene.
@@ -520,12 +536,26 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 
 	JobSystem->SubmitJob([this, path]
 		{
+			// Pre-load all mesh resources in parallel only when there are at least 2 worker
+			// threads. This job occupies 1 thread while it blocks on future.get() — with only
+			// 1 worker thread available the sub-jobs could never start, causing a deadlock.
+			// With 0 threads the job system runs everything synchronously on the main thread,
+			// so futures complete immediately and are also safe (but parallel gains nothing).
+			if (JobSystem->GetThreadPool().GetThreads().size() >= 2)
+			{
+				auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, path);
+				for (auto& f : futures) f.get();
+			}
+
+			// Scene graph construction — resource lookups hit the cache if preload ran,
+			// or load serially here if the pool was too small to parallelise.
 			activeScene->Deserialize(path);
 			EnsureMainCamera();
 			// RefreshPrefabInstances() must NOT run on the job thread — it calls
 			// DestroyGameObject → CMesh::OnDestroy → vkDeviceWaitIdle, which deadlocks
 			// when the main thread is rendering. Defer to PreUpdate() instead.
 			m_pendingPrefabRefresh = true;
+			m_isLoadingScene       = false;
 		}
 	);
 }
@@ -559,17 +589,50 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
         return;
     }
 
-    // 3. Root GO — named after the file, no mesh of its own.
+    // 3. Load all submesh resources in parallel.
+    //    SpawnMeshAsHierarchy is always called from a job thread, so futures are used
+    //    instead of WaitForPendingJobs() (which would deadlock — see LoadSceneAsync).
+    //    Guard: requires >= 2 worker threads; with only 1 this job would block on
+    //    future.get() while sub-jobs sit in the queue with no thread to run them.
+    const int32_t submeshCount = static_cast<int32_t>(submeshes.size());
+    std::vector<ResourceMesh*> meshResources(submeshCount, nullptr);
+
+    if (JobSystem->GetThreadPool().GetThreads().size() >= 2)
+    {
+        std::vector<std::promise<void>> promises(submeshCount);
+        std::vector<std::future<void>>  futures;
+        futures.reserve(submeshCount);
+
+        for (int32_t i = 0; i < submeshCount; ++i)
+        {
+            futures.push_back(promises[i].get_future());
+            auto* promPtr = &promises[i];
+
+            JobSystem->SubmitJob([this, &assetsPath, &meshResources, i, promPtr]()
+            {
+                meshResources[i] = mModuleResourceManager->RequestOrCreateSubMeshResource(assetsPath, i);
+                promPtr->set_value();
+            }, "Load Submesh " + std::to_string(i));
+        }
+
+        for (auto& f : futures) f.get();
+    }
+    else
+    {
+        for (int32_t i = 0; i < submeshCount; ++i)
+            meshResources[i] = mModuleResourceManager->RequestOrCreateSubMeshResource(assetsPath, i);
+    }
+
+    // 4. Root GO — named after the file, no mesh of its own.
     const std::string modelName = std::filesystem::path(assetsPath).filename().string();
     GameObject* rootGO = activeScene->CreateGameObjectDetached(modelName);
 
-    // 4. One child GO per submesh.
-    for (int32_t i = 0; i < static_cast<int32_t>(submeshes.size()); ++i)
+    // 5. One child GO per submesh — hierarchy construction uses preloaded resources.
+    for (int32_t i = 0; i < submeshCount; ++i)
     {
         const SubMeshData& sub = submeshes[static_cast<size_t>(i)];
 
-        ResourceMesh* meshResource =
-            mModuleResourceManager->RequestOrCreateSubMeshResource(assetsPath, i);
+        ResourceMesh* meshResource = meshResources[i];
         if (!meshResource)
         {
             NOUS_WARN("[SpawnMeshAsHierarchy] Failed to create sub-resource for submesh %d of '%s'.",
@@ -607,7 +670,7 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
         activeScene->RegisterGameObject(childGO);
     }
 
-    // 5. Register root last so children are already in the scene list.
+    // 6. Register root last so children are already in the scene list.
     activeScene->RegisterGameObject(rootGO);
 
     NOUS_INFO("[SpawnMeshAsHierarchy] Spawned '%s' with %zu submesh(es).",

@@ -110,6 +110,7 @@ private:
 	bool            m_didStepThisFrame = false;  // propagates to PostUpdate() for LateUpdate gating
 	std::atomic<bool> m_pendingStop          = false;  // deferred LoadScene flag — set by PressStop(), consumed in PreUpdate()
 	std::atomic<bool> m_pendingPrefabRefresh = false;  // set by LoadSceneAsync job, consumed in PreUpdate() on main thread
+	std::atomic<bool> m_isLoadingScene       = false;  // true while a LoadSceneAsync job is in flight; guards re-entrancy
 	std::string     m_snapshotPath     = "Library/_simulation_snapshot.nous";
 
 	void RecompileScripts();

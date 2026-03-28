@@ -39,10 +39,7 @@
     /* ============================ ECS ============================ */ \
     \
     /* ============================ MULTITHREADING ============================ */ \
-    X(NOUS_ENGINE_MULTITHREADING_JOB, "NOUS_Job.cpp") \
-    X(NOUS_ENGINE_MULTITHREADING_JOBSYSTEM, "NOUS_JobSystem.cpp") \
-    X(NOUS_ENGINE_MULTITHREADING_THREAD, "NOUS_Thread.cpp") \
-    X(NOUS_ENGINE_MULTITHREADING_THREADPOOL, "NOUS_ThreadPool.cpp") \
+    X(NOUS_ENGINE_MULTITHREADING, "NOUS_Multithreading") \
     \
     /* ============================ RENDERER FRONTEND ============================ */ \
     X(NOUS_ENGINE_RENDERER_FRONTEND, "RendererFrontend.cpp") \

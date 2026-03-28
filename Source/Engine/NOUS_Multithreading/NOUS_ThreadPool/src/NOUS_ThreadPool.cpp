@@ -9,7 +9,7 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING_THREADPOOL;
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING;
 
 /// @brief NOUS_ThreadPool constructor.
 /// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.

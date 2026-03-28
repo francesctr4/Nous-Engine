@@ -19,6 +19,10 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
+#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+
+#include <future>
+#include <parson.h>
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
@@ -552,12 +556,17 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 	UID uid = resource->GetUID();
 
 	// Remove any sub-resource map entry that points to this UID.
-	for (auto it = m_submeshUIDMap.begin(); it != m_submeshUIDMap.end(); )
+	// Must hold resourcesMutex — RequestOrCreateSubMeshResource reads/writes this
+	// map under the same lock from worker threads.
 	{
-		if (it->second == uid)
-			it = m_submeshUIDMap.erase(it);
-		else
-			++it;
+		std::lock_guard<std::mutex> lock(resourcesMutex);
+		for (auto it = m_submeshUIDMap.begin(); it != m_submeshUIDMap.end(); )
+		{
+			if (it->second == uid)
+				it = m_submeshUIDMap.erase(it);
+			else
+				++it;
+		}
 	}
 
 	switch (resource->GetType())
@@ -585,7 +594,9 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 		default: break;
 	}
 
-	resources.erase(uid);
+	// NOTE: resources.erase(uid) is intentionally NOT here.
+	// EvictResource removes the entry under resourcesMutex before calling DeleteResource,
+	// so the map is clean before we reach this point.
 }
 
 bool ModuleResourceManager::ResourceExists(const UID& uid)
@@ -686,18 +697,34 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 		NOUS_INFO("Resource with UID %u already exists. Requesting existing instance...", metaFileData.uid);
 
 		// Spin-wait if another thread is still loading (slot is claimed but pointer is nullptr).
+		// The IncreaseReferenceCount MUST happen inside the same lock acquisition as the pointer
+		// read so EvictResource cannot free the object between the two operations.
 		Resource* existingResource = nullptr;
 		while (true)
 		{
 			{
 				std::lock_guard<std::mutex> lock(resourcesMutex);
-				existingResource = resources.count(metaFileData.uid) ? resources.at(metaFileData.uid) : nullptr;
+				auto it = resources.find(metaFileData.uid);
+				if (it == resources.end())
+				{
+					// Entry was evicted and erased from the map while we were waiting.
+					// Fall through to the creation path by returning nullptr here — the
+					// caller (CMaterial::Deserialize etc.) will re-try via CreateResource.
+					NOUS_WARN("Resource UID %u was evicted before we could acquire it; caller should retry.",
+					          metaFileData.uid);
+					return nullptr;
+				}
+				existingResource = it->second;
+				if (existingResource != nullptr)
+				{
+					// Bump refcount under the lock to close the eviction race window.
+					existingResource->IncreaseReferenceCount();
+					break;
+				}
 			}
-			if (existingResource != nullptr) break;
 			NOUS_Multithreading::NOUS_Thread::SleepMS(1); // yield while other thread loads
 		}
 
-		existingResource->IncreaseReferenceCount();
 		existingResource->Validate();
 
 		NOUS_INFO("Existing resource retrieved successfully (Name: %s, RefCount: %u).",
@@ -770,12 +797,18 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType
 		{
 			{
 				std::lock_guard<std::mutex> lock(resourcesMutex);
-				existing = resources.count(uid) ? resources.at(uid) : nullptr;
+				auto it = resources.find(uid);
+				if (it == resources.end())
+					return nullptr; // evicted; caller should retry
+				existing = it->second;
+				if (existing != nullptr)
+				{
+					existing->IncreaseReferenceCount(); // under lock — closes the eviction race
+					break;
+				}
 			}
-			if (existing) break;
 			NOUS_Multithreading::NOUS_Thread::SleepMS(1);
 		}
-		existing->IncreaseReferenceCount();
 		return existing;
 	}
 }
@@ -966,6 +999,15 @@ std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendi
 
 void ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
 {
+    // Final refcount check + map erasure under the same lock so that a concurrent
+    // CreateResource thread cannot bump the refcount between our check and the delete.
+    {
+        std::lock_guard<std::mutex> lock(resourcesMutex);
+        if (resource->GetReferenceCount() > 0)
+            return; // re-acquired since TakePendingReleases; do not evict
+        resources.erase(resource->GetUID());
+    }
+
     ImporterManager::Evict(type, resource);
     DeleteResource(resource);
 }
@@ -1058,6 +1100,110 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
     mesh->Validate();
 
     return mesh;
+}
+
+std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync(
+    NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+    const std::string& sceneFilePath)
+{
+    std::vector<std::future<void>> futures;
+
+    JSON_Value* root = json_parse_file(sceneFilePath.c_str());
+    if (!root)
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "PreloadSceneResourcesAsync: failed to parse '%s'", sceneFilePath.c_str());
+        return futures;
+    }
+
+    JSON_Object* rootObj    = json_value_get_object(root);
+    JSON_Array*  gameObjects = json_object_get_array(rootObj, "GameObjects");
+
+    if (!gameObjects)
+    {
+        json_value_free(root);
+        return futures;
+    }
+
+    // Collect every unique CMesh resource request in the scene file.
+    // Key: (assetPath, submeshIndex) — same deduplication the ResourceManager uses internally.
+    struct MeshRequest
+    {
+        std::string assetPath;
+        std::string libraryPath;
+        UID         uid          = 0;
+        int32_t     submeshIndex = -1;
+    };
+
+    std::map<std::pair<std::string, int32_t>, MeshRequest> uniqueRequests;
+
+    const size_t goCount = json_array_get_count(gameObjects);
+    for (size_t i = 0; i < goCount; ++i)
+    {
+        JSON_Object* goObj     = json_array_get_object(gameObjects, i);
+        JSON_Array*  comps     = json_object_get_array(goObj, "components");
+        if (!comps) continue;
+
+        const size_t compCount = json_array_get_count(comps);
+        for (size_t j = 0; j < compCount; ++j)
+        {
+            JSON_Object* compObj = json_array_get_object(comps, j);
+            const char*  type    = json_object_get_string(compObj, "type");
+            if (!type || std::strcmp(type, "CMesh") != 0) continue;
+
+            const char* assetPath = json_object_get_string(compObj, "assetPath");
+            if (!assetPath || assetPath[0] == '\0') continue;
+
+            const char*        libRaw   = json_object_get_string(compObj, "libraryPath");
+            const JSON_Value*  uidVal   = json_object_get_value(compObj, "resourceUID");
+            const JSON_Value*  subIdxV  = json_object_get_value(compObj, "submeshIndex");
+
+            MeshRequest req;
+            req.assetPath    = assetPath;
+            req.libraryPath  = libRaw ? libRaw : "";
+            req.uid          = uidVal   ? static_cast<UID>(json_value_get_number(uidVal))   : 0;
+            req.submeshIndex = subIdxV  ? static_cast<int32_t>(json_value_get_number(subIdxV)) : -1;
+
+            uniqueRequests[{req.assetPath, req.submeshIndex}] = std::move(req);
+        }
+    }
+
+    json_value_free(root);
+
+    // Submit one parallel Deserialize job per unique resource.
+    futures.reserve(uniqueRequests.size());
+
+    for (const auto& [key, req] : uniqueRequests)
+    {
+        auto prom = std::make_shared<std::promise<void>>();
+        futures.push_back(prom->get_future());
+
+        jobSystem->SubmitJob([this, req, prom]()
+        {
+            if (req.submeshIndex >= 0)
+            {
+                if (!req.libraryPath.empty())
+                    RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex);
+                else
+                    RequestOrCreateSubMeshResource(req.assetPath, req.submeshIndex);
+            }
+            else
+            {
+                if (!req.libraryPath.empty() && req.uid != 0)
+                    CreateResourceFromLibrary(req.uid, ResourceType::MESH,
+                        std::filesystem::path(req.assetPath).filename().string(),
+                        req.assetPath, req.libraryPath);
+                else
+                    CreateResource(req.assetPath);
+            }
+            prom->set_value();
+        }, "Preload: " + req.assetPath);
+    }
+
+    NOUS_INFO_C(CURRENT_CHANNEL,
+        "PreloadSceneResourcesAsync: submitted %zu parallel jobs for '%s'",
+        uniqueRequests.size(), sceneFilePath.c_str());
+
+    return futures;
 }
 
 //std::string ModuleResourceManager::GetLibraryPath(const std::string& assetsPath)
