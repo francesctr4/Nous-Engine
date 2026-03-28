@@ -14,6 +14,13 @@
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include <Engine/Core/EventSystem/EventSystem.h>
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Scripting/ScriptManager.h"
+#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
+
+#include <chrono>
+#include <cmath>
+#include <vector>
+#include <string>
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>
@@ -165,6 +172,74 @@ UpdateStatus Application::PrepareUpdate()
     return UpdateStatus::CONTINUE;
 }
 
+// ---------------------------------------------------------------------------
+// DEBUG — temporary development shortcuts. Remove when editor UI covers these.
+// ---------------------------------------------------------------------------
+static void HandleDebugKeys(ModuleInput* input, ModuleScene* scene, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
+{
+    if (input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
+        ScriptManager::GenerateScript("PRUEBA_CREAR_SCRIPT_DESDE_MOTOR");
+
+    if (input->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
+        scene->SaveScene("Assets/Scenes/LagiacrusScene.nous");
+
+    if (input->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
+        scene->ClearScene();
+
+    if (input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN)
+        scene->LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
+
+    if (input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
+        jobSystem->SubmitJob([scene]() { scene->SpawnMeshAsHierarchy("Assets/Meshes/Lagiacrus_Head.fbx"); },    "Spawn Lagiacrus");
+
+    if (input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
+        jobSystem->SubmitJob([scene]() { scene->SpawnMeshAsHierarchy("Assets/Meshes/Cypher_S0_Skelmesh.fbx"); }, "Spawn Cypher");
+
+    if (input->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
+        jobSystem->SubmitJob([scene]() { scene->SpawnMeshAsHierarchy("Assets/Meshes/Queen_Xenomorph.fbx"); },   "Spawn Queen Xenomorph");
+
+    if (input->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
+        jobSystem->SubmitJob([scene]() { scene->SpawnMeshAsHierarchy("Assets/Meshes/Wolf.obj"); },              "Spawn Wolf");
+
+    if (input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN)
+    {
+        static const std::vector<std::string> meshPaths = {
+            "Assets/Meshes/Lagiacrus_Head.fbx",
+            "Assets/Meshes/Cypher_S0_Skelmesh.fbx",
+            "Assets/Meshes/Queen_Xenomorph.fbx",
+            "Assets/Meshes/Wolf.obj"
+        };
+        for (const auto& path : meshPaths)
+            jobSystem->SubmitJob([scene, path]() { scene->SpawnMeshAsHierarchy(path); }, "Spawn Model");
+    }
+
+    if (input->GetKey(SDL_SCANCODE_F6) == KeyState::DOWN)
+        scene->ClearScene();
+
+    if (input->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
+        jobSystem->SubmitJob([]() { NOUS_Multithreading::NOUS_Thread::SleepMS(5000); }, "Test Sleep");
+
+    if (input->GetKey(SDL_SCANCODE_F8) == KeyState::DOWN)
+    {
+        for (int i = 0; i < 100; ++i)
+        {
+            jobSystem->SubmitJob([]()
+            {
+                const std::chrono::milliseconds duration(500);
+                const auto start = std::chrono::steady_clock::now();
+                while (std::chrono::steady_clock::now() - start < duration)
+                    (void)std::sqrt(123.456);
+            }, "Stress Test");
+        }
+    }
+
+    if (input->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
+    {
+        NOUS_INFO("Initiating script hot-reload...");
+        jobSystem->SubmitJob([scene]() { scene->RecompileScripts(); }, "Scripts Hot-Reload");
+    }
+}
+
 UpdateStatus Application::Update()
 {
     UpdateStatus ret = UpdateStatus::CONTINUE;
@@ -192,6 +267,9 @@ UpdateStatus Application::Update()
         if (listModules[i] != nullptr)
             ret = listModules[i]->Update(dt);
     }
+
+    if (ret == UpdateStatus::CONTINUE)
+        HandleDebugKeys(input, scene, jobSystem);
 
     // -------------- PostUpdate --------------
 

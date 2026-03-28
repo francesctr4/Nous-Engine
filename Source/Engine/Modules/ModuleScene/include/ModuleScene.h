@@ -70,6 +70,8 @@ public:
 	// ---------------------------------------------------------------------------
 	NOUS_ENGINE_API void SetSnapshotEnabled(bool enabled) { m_snapshotEnabled = enabled; }
 
+	NOUS_ENGINE_API void RecompileScripts();
+
 	NOUS_ENGINE_API void PressPlay();   // STOPPED → PLAYING
 	NOUS_ENGINE_API void PressStop();   // PLAYING/PAUSED → STOPPED (restores scene snapshot)
 	NOUS_ENGINE_API void PressPause();  // PLAYING ↔ PAUSED toggle
@@ -116,7 +118,6 @@ private:
 	std::atomic<bool> m_isLoadingScene       = false;  // true while a LoadSceneAsync job is in flight; guards re-entrancy
 	std::string     m_snapshotPath     = "Library/_simulation_snapshot.nous";
 
-	void RecompileScripts();
 	void CleanupScripts();
 
 	// After a scene is deserialized, re-instantiates any GO that carries a CPrefab
