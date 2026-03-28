@@ -3,19 +3,17 @@
 
 #include "Engine/Modules/Module.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
+#include "Engine/Core/Input/IInputReader.h"
 
 #include <glm/glm.hpp>
 
 class Camera;
 
-// Dependency Injection
-class ModuleInput;
-
 class ModuleCamera3D : public Module, public IEventListener
 {
 public:
 
-	explicit ModuleCamera3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, ModuleInput* moduleInput);
+	explicit ModuleCamera3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, IInputReader* moduleInput);
 	~ModuleCamera3D() override;
 
 	bool Awake() override;
@@ -44,7 +42,7 @@ private:
 	Camera* camera;
 
 	// Dependency Injection
-	ModuleInput* mModuleInput;
+	IInputReader* mModuleInput;
 
 };
 

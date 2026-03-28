@@ -1,5 +1,4 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
-#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include <algorithm>
@@ -12,7 +11,7 @@
 #include "glm/gtc/quaternion.hpp"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-ModuleCamera3D::ModuleCamera3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, ModuleInput* moduleInput)
+ModuleCamera3D::ModuleCamera3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, IInputReader* moduleInput)
     : Module(eventSystem, jobSystem), mModuleInput(moduleInput)
 {
 	sceneViewportHovered = false;

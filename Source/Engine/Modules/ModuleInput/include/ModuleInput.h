@@ -4,21 +4,14 @@
 #include "Engine/Modules/Module.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
+#include "Engine/Core/Input/IInputReader.h"
 
 #define MAX_KEYBOARD_KEYS 300
 #define MAX_MOUSE_BUTTONS 5
 
-enum class KeyState
+class ModuleInput : public Module, public IEventListener, public IInputReader
 {
-	IDLE,
-	DOWN,
-	REPEAT,
-	UP
-};
-
-class ModuleInput : public Module, public IEventListener
-{
-public: 
+public:
 
 	ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
 	virtual ~ModuleInput();
@@ -30,15 +23,15 @@ public:
 
 	void OnEvent(const Event& event) override;
 
-	NOUS_ENGINE_API KeyState GetKey(int id) const;
-	NOUS_ENGINE_API KeyState GetMouseButton(int id) const;
+	NOUS_ENGINE_API KeyState GetKey(int id) const override;
+	NOUS_ENGINE_API KeyState GetMouseButton(int id) const override;
 
 	int32 GetMouseX() const;
 	int32 GetMouseY() const;
-	int32 GetMouseZ() const;
+	int32 GetMouseZ() const override;
 
-	int32 GetMouseXMotion() const;
-	int32 GetMouseYMotion() const;
+	int32 GetMouseXMotion() const override;
+	int32 GetMouseYMotion() const override;
 
 private:
 
