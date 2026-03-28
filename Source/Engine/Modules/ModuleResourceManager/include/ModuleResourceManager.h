@@ -82,7 +82,8 @@ public:
 	NOUS_ENGINE_API std::vector<std::pair<ResourceType, Resource*>> TakePendingReleases();
 
 	// Called by Renderer after GPU Release: evicts CPU data and deletes the resource object.
-	NOUS_ENGINE_API void EvictResource(ResourceType type, Resource* resource);
+	// Returns true if the resource was evicted, false if it was re-acquired (and re-queued for upload).
+	NOUS_ENGINE_API bool EvictResource(ResourceType type, Resource* resource);
 
 	// Synchronous full teardown — caller must pass the GPU factory so GPU handles can
 	// be freed before Vulkan is shut down.  Only called from ModuleRenderer3D::CleanUp().

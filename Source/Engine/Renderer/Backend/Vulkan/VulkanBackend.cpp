@@ -1195,8 +1195,12 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     if (!material || material->internalID == INVALID_ID)
         material = vkContext->resourceManager->GetDefaultMaterial();
 
+    // Even the default material isn't GPU-ready yet, or the instance pool isn't initialised.
+    // Skip the draw — issuing it would leave set #1 unbound and trigger VUID-vkCmdDrawIndexed-None-08600.
+    if (!material || material->internalID == INVALID_ID || !vs->instancePool)
+        return true;
+
     // Per-instance descriptors (material UBO + texture sampler).
-    if (material && material->internalID != INVALID_ID && vs->instancePool)
     {
         const uint32_t instanceID  = material->internalID;
         const uint32_t imageIndex  = vkContext->imageIndex;
@@ -1386,26 +1390,29 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
         ? vkContext->builtInMaterialShader
         : vkContext->builtInGameShader;
 
-    if (primaryShader && primaryShader->internalData)
+    if (!primaryShader || !primaryShader->internalData)
     {
-        auto* vs = down_cast<VulkanShader*>(primaryShader->internalData);
-        uint32_t instanceID = 0;
-        if (!NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vs, &instanceID))
-        {
-            NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() - Instance pool full.");
-            return false;
-        }
-        material->internalID = instanceID;
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() — no shader/instance pool ready yet; will retry after shaders init.");
+        return false;
+    }
 
-        // In EDITOR mode also acquire the matching slot in the game shader so
-        // both pools stay in sync (they share the same GLSL/layout).
-        if (vkContext->builtInMaterialShader
-            && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
-        {
-            auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
-            uint32_t gameID = 0;
-            NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vsGame, &gameID);
-        }
+    auto* vs = down_cast<VulkanShader*>(primaryShader->internalData);
+    uint32_t instanceID = 0;
+    if (!NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vs, &instanceID))
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() - Instance pool full.");
+        return false;
+    }
+    material->internalID = instanceID;
+
+    // In EDITOR mode also acquire the matching slot in the game shader so
+    // both pools stay in sync (they share the same GLSL/layout).
+    if (vkContext->builtInMaterialShader
+        && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
+    {
+        auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
+        uint32_t gameID = 0;
+        NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vsGame, &gameID);
     }
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Material created (instance %u).", material->internalID);

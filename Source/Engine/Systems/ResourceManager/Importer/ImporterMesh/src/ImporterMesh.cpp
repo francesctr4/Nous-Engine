@@ -331,10 +331,13 @@ bool ImporterMesh::Upload(Resource* outResource, IGPUResourceFactory* gpu)
 void ImporterMesh::Release(Resource* inResource, IGPUResourceFactory* gpu)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
-    gpu->DestroyGeometry(mesh);
-    mesh->ID         = INVALID_ID;
-    mesh->internalID = INVALID_ID;
-    mesh->generation = INVALID_ID;
+    if (mesh->internalID != INVALID_ID)
+    {
+        gpu->DestroyGeometry(mesh);
+        mesh->ID         = INVALID_ID;
+        mesh->internalID = INVALID_ID;
+        mesh->generation = INVALID_ID;
+    }
 }
 
 void ImporterMesh::Evict(Resource* inResource)

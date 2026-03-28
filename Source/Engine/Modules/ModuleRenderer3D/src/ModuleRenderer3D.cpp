@@ -111,7 +111,20 @@ bool ModuleRenderer3D::Start()
 	// Drain the initial upload queue — includes the default texture/material (queued
 	// by ResourceManager::Start) and all shaders loaded above.  All must be
 	// GPU_READY before the first frame renders.
+	//
+	// Materials depend on shader instance pools, but shaders are queued AFTER the
+	// default material. Collect failed materials and retry after the full drain.
+	std::vector<std::pair<ResourceType, Resource*>> deferredUploads;
 	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
+	{
+		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
+			deferredUploads.emplace_back(type, resource);
+		else
+			resource->SetState(ResourceState::GPU_READY);
+	}
+
+	// Retry deferred uploads — shaders (and their instance pools) are now ready.
+	for (auto& [type, resource] : deferredUploads)
 	{
 		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
 			NOUS_ERROR("ModuleRenderer3D::Start() — failed to upload resource '%s'.", resource->GetName().c_str());

@@ -994,19 +994,26 @@ std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendi
     return result;
 }
 
-void ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
+bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
 {
     // Final refcount check + map erasure under the same lock so that a concurrent
     // CreateResource thread cannot bump the refcount between our check and the delete.
     {
         std::lock_guard<std::mutex> lock(resourcesMutex);
         if (resource->GetReferenceCount() > 0)
-            return; // re-acquired since TakePendingReleases; do not evict
+        {
+            // Re-acquired since TakePendingReleases. ImporterManager::Release already
+            // freed the GPU resources, so re-queue for upload to restore GPU state.
+            std::lock_guard<std::mutex> uploadLock(m_pendingUploadsMutex);
+            m_pendingUploads.emplace_back(type, resource);
+            return false;
+        }
         resources.erase(resource->GetUID());
     }
 
     ImporterManager::Evict(type, resource);
     DeleteResource(resource);
+    return true;
 }
 
 ResourceTexture *ModuleResourceManager::GetDefaultTexture() const
@@ -1176,22 +1183,27 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
 
         jobSystem->SubmitJob([this, req, prom]()
         {
+            Resource* res = nullptr;
             if (req.submeshIndex >= 0)
             {
                 if (!req.libraryPath.empty())
-                    RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex);
+                    res = RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex);
                 else
-                    RequestOrCreateSubMeshResource(req.assetPath, req.submeshIndex);
+                    res = RequestOrCreateSubMeshResource(req.assetPath, req.submeshIndex);
             }
             else
             {
                 if (!req.libraryPath.empty() && req.uid != 0)
-                    CreateResourceFromLibrary(req.uid, ResourceType::MESH,
+                    res = CreateResourceFromLibrary(req.uid, ResourceType::MESH,
                         std::filesystem::path(req.assetPath).filename().string(),
                         req.assetPath, req.libraryPath);
                 else
-                    CreateResource(req.assetPath);
+                    res = CreateResource(req.assetPath);
             }
+            // Release the preload's reference. The resource stays in the map so
+            // CMesh::Deserialize() hits the fast path, but the preload does not
+            // hold an extra ref that would prevent eviction.
+            if (res) res->DecreaseReferenceCount();
             prom->set_value();
         }, "Preload: " + req.assetPath);
     }

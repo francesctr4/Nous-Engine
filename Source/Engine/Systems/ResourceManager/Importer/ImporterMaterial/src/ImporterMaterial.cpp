@@ -115,7 +115,10 @@ bool ImporterMaterial::Upload(Resource* outResource, IGPUResourceFactory* gpu)
 void ImporterMaterial::Release(Resource* inResource, IGPUResourceFactory* gpu)
 {
     ResourceMaterial* material = down_cast<ResourceMaterial*>(inResource);
-    gpu->DestroyMaterial(material);
+    // Guard: the resource may never have been GPU-uploaded (e.g. scene cleared
+    // before the pending upload was processed). Only release if it has a valid slot.
+    if (material->internalID != INVALID_ID)
+        gpu->DestroyMaterial(material);
 }
 
 void ImporterMaterial::Evict(Resource* inResource)
