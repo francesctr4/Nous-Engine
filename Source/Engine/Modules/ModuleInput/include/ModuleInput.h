@@ -5,9 +5,6 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
 
-// Dependency Injection
-class ModuleWindow;
-
 #define MAX_KEYBOARD_KEYS 300
 #define MAX_MOUSE_BUTTONS 5
 
@@ -23,7 +20,7 @@ class ModuleInput : public Module, public IEventListener
 {
 public: 
 
-	ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, ModuleWindow* moduleWindow);
+	ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
 	virtual ~ModuleInput();
 
 	bool Awake() override;
@@ -44,9 +41,6 @@ public:
 	int32 GetMouseYMotion() const;
 
 private:
-
-	// Dependency Injection
-	ModuleWindow* mModuleWindow;
 
 	KeyState* keyboard;
 	KeyState mouseButtons[MAX_MOUSE_BUTTONS];

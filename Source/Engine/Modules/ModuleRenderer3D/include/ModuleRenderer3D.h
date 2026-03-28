@@ -45,7 +45,7 @@ public:
 	// ---------------------------------------------------------------------
 	// Constructor / Destructor
 	// ---------------------------------------------------------------------
-	explicit ModuleRenderer3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
+	explicit ModuleRenderer3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
 		ModuleWindow* moduleWindow,
 		ModuleCamera3D* moduleCamera3D,
 		ModuleResourceManager* moduleResourceManager,

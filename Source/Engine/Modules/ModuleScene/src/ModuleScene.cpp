@@ -40,9 +40,9 @@
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
-ModuleScene::ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
+ModuleScene::ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
     ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager)
-    : Module(eventSystem, jobSystem), m_isGameMode(isGameMode), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager),
+    : Module(eventSystem, jobSystem), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager),
 	m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
 {
 	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager);
@@ -84,12 +84,6 @@ bool ModuleScene::Awake()
 
 bool ModuleScene::Start()
 {
-    // In GAME mode the GameApp controls which scene to load via an explicit
-    // LoadSceneAsync() call after Start() returns.  Skip the auto-load here
-    // to avoid a double-load race condition.
-    if (!m_isGameMode)
-        LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
-
 	return true;
 }
 
@@ -417,10 +411,8 @@ void ModuleScene::PressPlay()
 	// causing null Resource* dereferences the next time the snapshot is loaded.
 	JobSystem->WaitForPendingJobs();
 
-	// Save a snapshot of the current scene so PressStop can restore it.
-	// Skipped in GAME mode — there is no editor Stop button, so the snapshot
-	// is never needed and writing it would pollute the game's working directory.
-	if (!m_isGameMode)
+	// Save a snapshot so PressStop can restore the scene to its pre-play state.
+	if (m_snapshotEnabled)
 	{
 		std::filesystem::create_directories(std::filesystem::path(m_snapshotPath).parent_path());
 		activeScene->Serialize(m_snapshotPath);

@@ -2,7 +2,6 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
@@ -14,8 +13,8 @@ static KeyState AdvanceKeyState(KeyState current, bool pressed)
 	return (current == KeyState::REPEAT || current == KeyState::DOWN) ? KeyState::UP : KeyState::IDLE;
 }
 
-ModuleInput::ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, ModuleWindow* moduleWindow)
-    : Module(eventSystem, jobSystem), mModuleWindow(moduleWindow)
+ModuleInput::ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
+    : Module(eventSystem, jobSystem)
 {
 	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 
@@ -127,12 +126,12 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
             }
             case SDL_EVENT_WINDOW_MINIMIZED:
 			{
-				mModuleWindow->SetMinimized(true);
+				eventSystem->Broadcast(Event(EventType::WINDOW_MINIMIZED, SendContext(true)));
                 break;
             }
             case SDL_EVENT_WINDOW_RESTORED:
             {
-				mModuleWindow->SetMinimized(false);
+				eventSystem->Broadcast(Event(EventType::WINDOW_MINIMIZED, SendContext(false)));
                 break;
             }
 			case SDL_EVENT_DROP_FILE:

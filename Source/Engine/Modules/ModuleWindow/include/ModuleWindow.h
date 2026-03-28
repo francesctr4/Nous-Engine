@@ -13,7 +13,7 @@ class ModuleWindow : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleWindow(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode);
+	ModuleWindow(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
 
 	// Destructor
 	virtual ~ModuleWindow();
@@ -27,6 +27,7 @@ public:
 	// ---------------------------------------- \\
 
 	void SetTitle(const char* title);
+	void Maximize() const;
 	NOUS_ENGINE_API void SetFullscreen(bool fullscreen);
 	NOUS_ENGINE_API void SetMinimized(bool value);
 	NOUS_ENGINE_API bool IsMinimized() const;
@@ -38,7 +39,6 @@ private:
 
 	SDL_Window* window;
 	bool mIsMinimized = false;
-	bool m_isGameMode;
 
 };
 

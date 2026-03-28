@@ -29,7 +29,7 @@ class ModuleScene : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode,
+	ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
 		ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager);
 
 	// Destructor
@@ -68,6 +68,8 @@ public:
 	// ---------------------------------------------------------------------------
 	// Simulation controls
 	// ---------------------------------------------------------------------------
+	NOUS_ENGINE_API void SetSnapshotEnabled(bool enabled) { m_snapshotEnabled = enabled; }
+
 	NOUS_ENGINE_API void PressPlay();   // STOPPED → PLAYING
 	NOUS_ENGINE_API void PressStop();   // PLAYING/PAUSED → STOPPED (restores scene snapshot)
 	NOUS_ENGINE_API void PressPause();  // PLAYING ↔ PAUSED toggle
@@ -93,7 +95,8 @@ private:
 	// Dependency Injection
 	ModuleInput* mModuleInput;
 	ModuleResourceManager* mModuleResourceManager;
-	bool m_isGameMode;
+
+	bool m_snapshotEnabled = false;
 
 	SceneRenderData m_renderData;
 

@@ -5,9 +5,10 @@
 
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
+#include "Engine/Core/EventSystem/Event/include/Event.h"
 
-ModuleWindow::ModuleWindow(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, bool isGameMode)
-    : Module(eventSystem, jobSystem), m_isGameMode(isGameMode)
+ModuleWindow::ModuleWindow(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
+    : Module(eventSystem, jobSystem)
 {
     window = nullptr;
 }
@@ -20,6 +21,8 @@ ModuleWindow::~ModuleWindow()
 bool ModuleWindow::Awake()
 {
     bool ret = true;
+
+    eventSystem->Subscribe(EventType::WINDOW_MINIMIZED, this);
 
     // Initialize SDL
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
@@ -49,10 +52,12 @@ bool ModuleWindow::Awake()
 
 bool ModuleWindow::Start()
 {
-    if (!m_isGameMode)
-        SDL_MaximizeWindow(window);
-
     return true;
+}
+
+void ModuleWindow::Maximize() const
+{
+    SDL_MaximizeWindow(window);
 }
 
 bool ModuleWindow::CleanUp()
@@ -73,6 +78,9 @@ void ModuleWindow::OnEvent(const Event &event)
 {
     switch (event.type)
     {
+        case EventType::WINDOW_MINIMIZED:
+            mIsMinimized = event.ctx.u8[0];
+            break;
         default:
             break;
     }

@@ -54,11 +54,11 @@ Application::Application(bool isGameMode)
 
     // 1. WINDOW — no module dependencies.
     listModules.push_back(window          = NOUS_NEW<ModuleWindow>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, m_isGameMode));
+        eventSystem, jobSystem));
 
-    // 2. INPUT — depends on WINDOW (reads SDL window handle for input polling).
+    // 2. INPUT — no module dependencies.
     listModules.push_back(input           = NOUS_NEW<ModuleInput>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, window));
+        eventSystem, jobSystem));
 
     // 3. CAMERA — depends on INPUT (reads input state for editor camera movement).
     listModules.push_back(camera          = NOUS_NEW<ModuleCamera3D>(MemoryTag::APPLICATION,
@@ -71,12 +71,15 @@ Application::Application(bool isGameMode)
 
     // 5. SCENE — depends on INPUT (simulation controls) and RESOURCE MANAGER (asset loading).
     listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, m_isGameMode, input, resourceManager));
+        eventSystem, jobSystem, input, resourceManager));
 
     // 6. RENDERER — depends on WINDOW (surface), CAMERA (view/proj), RESOURCE MANAGER (GPU resources), SCENE (render data).
     //    Must be last because RESOURCE MANAGER and SCENE must already exist.
     listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, m_isGameMode, window, camera, resourceManager, scene));
+        eventSystem, jobSystem, window, camera, resourceManager, scene));
+
+    if (m_isGameMode)
+        renderer->SetRenderMode(RenderMode::GAME);
 
     // 7. EDITOR — depends on all modules above.
     //    Constructed externally in MainEditor.cpp after this constructor returns.
@@ -112,11 +115,14 @@ bool Application::Awake() const
             ret = listModules[i]->Awake();
     }
 
-    // Editor-only: scan Assets/ and compile shaders into Library/.
-    // Runs after all Awakes and before Start(), so Renderer::Start() can safely
-    // call CreateResource() with a fully populated Library/.
+    // Editor-only setup: runs after all Awakes and before Start().
     if (ret && !m_isGameMode)
+    {
+        window->Maximize();
         resourceManager->ScanAndImportAssets();
+        scene->SetSnapshotEnabled(true);
+        scene->LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
+    }
 
     return ret;
 }
