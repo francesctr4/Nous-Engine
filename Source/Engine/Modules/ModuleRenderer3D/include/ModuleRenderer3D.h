@@ -17,6 +17,7 @@
 
 #include "Engine/Modules/Module.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
+#include "Engine/Core/FileWatcher/FileWatcher.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Renderer/RendererTypes.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
@@ -112,6 +113,10 @@ private:
 	// World-space AABBs computed each frame in the bounding-box loop.
 	// Keyed by GameObject ID; consumed by BuildRenderPacket for frustum culling.
 	std::unordered_map<uint32_t, std::pair<glm::vec3, glm::vec3>> mMeshAABBCache;
+
+	// Watches Assets/Shaders/*.glsl for changes and triggers hot reload.
+	// Populated in Start() (EDITOR mode only); Poll() called in PreUpdate().
+	FileWatcher m_shaderWatcher;
 };
 
 #endif // NOUS_ENGINE_MODULE_RENDERER3D_H

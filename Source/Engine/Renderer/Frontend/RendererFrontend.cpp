@@ -4,6 +4,8 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
+#include <filesystem>
+
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -343,6 +345,37 @@ void RendererFrontend::ReloadAllShaders()
         NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Reloaded %d shader(s) successfully.", reloaded);
     else
         NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Reloaded %d shader(s); %d failed (see errors above).", reloaded, failed);
+}
+
+bool RendererFrontend::ReloadShaderByPath(const std::string& path)
+{
+    if (!m_resourceManager)
+        return false;
+
+    // Normalize separator so forward/back-slash differences don't cause a miss
+    const std::string normalizedIncoming = std::filesystem::path(path).generic_string();
+
+    const auto resources = m_resourceManager->GetResourcesMap();
+    for (auto& [uid, resource] : resources)
+    {
+        if (resource->GetType() != ResourceType::SHADER)
+            continue;
+
+        const std::string normalizedStored =
+            std::filesystem::path(resource->GetAssetsPath()).generic_string();
+
+        if (normalizedIncoming != normalizedStored)
+            continue;
+
+        auto* shader = static_cast<ResourceShader*>(resource);
+        const bool ok = mBackend->ReloadShader(shader);
+        if (!ok)
+            NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to reload '%s'.", path.c_str());
+        return ok;
+    }
+
+    NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] No loaded shader found for path '%s'.", path.c_str());
+    return false;
 }
 
 uint32_t RendererFrontend::PickObjectAt(int32_t pixelX, int32_t pixelY,

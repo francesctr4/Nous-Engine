@@ -70,8 +70,11 @@ public:
 	NOUS_ENGINE_API void DestroyShader(ResourceShader* shader) override;
 
 	// Recompile and rebuild all currently-loaded shaders from source.
-	// No-op stub until Phase 3 (ShaderHotReload orchestration) is implemented.
 	NOUS_ENGINE_API void ReloadAllShaders();
+
+	// Recompile and rebuild a single shader identified by its asset path.
+	// Returns false if no matching shader is found or if compilation fails.
+	NOUS_ENGINE_API bool ReloadShaderByPath(const std::string& path);
 
 	// ---------------------------------------------------------------------
 	// Mouse Picking
