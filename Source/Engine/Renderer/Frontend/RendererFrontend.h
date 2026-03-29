@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <glm/glm.hpp>
+#include <string>
 
 // Forward declarations
 class RendererBackend;
@@ -69,8 +70,14 @@ public:
 	[[nodiscard]] NOUS_ENGINE_API bool CreateShader(ResourceShader* shader) override;
 	NOUS_ENGINE_API void DestroyShader(ResourceShader* shader) override;
 
-	// Recompile and rebuild all currently-loaded shaders from source.
+	// Queue a full reload of all currently-loaded shaders.
+	// Safe to call from inside a renderpass (e.g. UI/menu callbacks) — the actual
+	// reload is deferred and executed on the next call to FlushPendingReloads().
 	NOUS_ENGINE_API void ReloadAllShaders();
+
+	// Execute any queued reload requests. Must be called between frames, before
+	// BeginFrame() — ModuleRenderer3D::PreUpdate() is the intended call site.
+	NOUS_ENGINE_API void FlushPendingReloads();
 
 	// Recompile and rebuild a single shader identified by its asset path.
 	// Returns false if no matching shader is found or if compilation fails.
@@ -168,6 +175,9 @@ private:
 	ModuleResourceManager*               m_resourceManager = nullptr;
 
 	IEditorOverlay* mEditorOverlay;
+
+	// Deferred reload flag — set by ReloadAllShaders(), consumed by FlushPendingReloads().
+	bool m_pendingReloadAll = false;
 
 	// Outlined geometries — populated each frame by SetOutlinedGeometries().
 	std::vector<GeometryRenderData> mOutlinedGeometries;

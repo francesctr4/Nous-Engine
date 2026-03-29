@@ -319,6 +319,20 @@ void RendererFrontend::DestroyShader(ResourceShader* shader)
 
 void RendererFrontend::ReloadAllShaders()
 {
+    // Defer the actual work to FlushPendingReloads(), which is called from
+    // ModuleRenderer3D::PreUpdate() — safely between frames, before BeginFrame().
+    // This method may be called from inside a renderpass (e.g. UI menu callback),
+    // where vkDeviceWaitIdle + pipeline destruction would corrupt in-flight command buffers.
+    m_pendingReloadAll = true;
+}
+
+void RendererFrontend::FlushPendingReloads()
+{
+    if (!m_pendingReloadAll)
+        return;
+
+    m_pendingReloadAll = false;
+
     if (!m_resourceManager)
     {
         NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] No ResourceManager — cannot reload shaders.");

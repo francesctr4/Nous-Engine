@@ -1836,6 +1836,21 @@ bool VulkanBackend::ReloadShader(ResourceShader* shader) noexcept
                                          useLineTopology, noDepthTest);
     };
 
+    // Helper: re-acquires descriptor-set instance slots for every loaded material.
+    // Must be called after the MaterialShader pools are destroyed+recreated — old
+    // descriptor sets are gone with the old pool, so each material needs a fresh slot.
+    auto reacquireMaterialInstances = [&]()
+    {
+        if (!vkContext->resourceManager) return;
+        for (auto& [uid, resource] : vkContext->resourceManager->GetResourcesMap())
+        {
+            if (resource->GetType() != ResourceType::MATERIAL) continue;
+            auto* mat = static_cast<ResourceMaterial*>(resource);
+            mat->internalID = INVALID_ID;   // bypass the "already acquired" guard
+            CreateMaterial(mat);
+        }
+    };
+
     // ── 4. Recreate GPU resources (mirrors CreateShader path selection) ────────
 
     // ── BuiltIn.MaterialShader ────────────────────────────────────────────────
@@ -1848,6 +1863,7 @@ bool VulkanBackend::ReloadShader(ResourceShader* shader) noexcept
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (GAME mode).");
                 return false;
             }
+            reacquireMaterialInstances();
             NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] MaterialShader reloaded (GAME mode, gen=%u).", shader->generation);
             return true;
         }
@@ -1878,6 +1894,10 @@ bool VulkanBackend::ReloadShader(ResourceShader* shader) noexcept
             if (!recreate(vkContext->builtInPickShader, &vkContext->pickRenderpass, true, false, false, false))
                 NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate pick shader clone.");
         }
+
+        // Re-acquire descriptor-set slots for all materials — old slots were destroyed
+        // with the previous shader pool and must be reallocated from the new one.
+        reacquireMaterialInstances();
 
         NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] MaterialShader reloaded (EDITOR mode, gen=%u).", shader->generation);
         return true;

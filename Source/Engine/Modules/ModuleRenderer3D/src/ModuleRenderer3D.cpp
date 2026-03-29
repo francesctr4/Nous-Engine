@@ -175,6 +175,10 @@ bool ModuleRenderer3D::Start()
 
 UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 {
+	// Flush any deferred shader reload requests (e.g. from the "Reload Shaders" menu item).
+	// Must run before m_shaderWatcher.Poll() and before DrawFrame() so no renderpass is open.
+	mRendererFrontend->FlushPendingReloads();
+
 	// Poll for shader file changes before any GPU work this frame (EDITOR only).
 	// Safe here: previous frame's EndFrame has already been submitted; DrawFrame
 	// is called later in PostUpdate, so no renderpass is open at this point.
