@@ -45,6 +45,9 @@ private:
 	int32 mouseXMotion;
 	int32 mouseYMotion;
 
+	int32 m_lastWindowWidth  = 0;
+	int32 m_lastWindowHeight = 0;
+
 };
 
 #endif // MODULEINPUT_H

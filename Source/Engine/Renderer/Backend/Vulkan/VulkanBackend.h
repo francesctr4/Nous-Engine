@@ -104,6 +104,9 @@ private:
 	static VulkanContext* vkContext;
 	bool m_frameResourcesReleased = false;
 
+	int32 m_cachedFramebufferWidth  = 0;
+	int32 m_cachedFramebufferHeight = 0;
+
 };
 
 #endif // VULKANBACKEND_H

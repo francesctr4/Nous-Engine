@@ -114,12 +114,12 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
                 int width = e.window.data1;
                 int height = e.window.data2;
 
-                if (width != cachedFramebufferWidth || height != cachedFramebufferHeight)
+                if (width != m_lastWindowWidth || height != m_lastWindowHeight)
                 {
-					cachedFramebufferWidth = width;
-					cachedFramebufferHeight = height;
+					m_lastWindowWidth  = width;
+					m_lastWindowHeight = height;
 
-					eventSystem->Broadcast(Event(EventType::WINDOW_RESIZED, SendContext(cachedFramebufferWidth, cachedFramebufferHeight)));
+					eventSystem->Broadcast(Event(EventType::WINDOW_RESIZED, SendContext(width, height)));
                 }
 
                 break;

@@ -26,14 +26,11 @@ using int64 = std::int64_t;
 
 // -------------------------------------- \\
 
-static int32 cachedFramebufferWidth = 0;
-static int32 cachedFramebufferHeight = 0;
-
 /**
  * @brief Any id set to this should be considered invalid,
  * and not actually pointing to a real object.
  */
-constexpr unsigned int INVALID_ID = 4294967295U;
+constexpr uint32 INVALID_ID = std::numeric_limits<uint32>::max();
 
 // Gibibytes (2^30)
 constexpr uint64 GiB(uint64 amount) 

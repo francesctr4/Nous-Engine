@@ -70,13 +70,11 @@ bool VulkanBackend::Initialize()
     vkContext->allocator = 0;
 
     // Get Framebuffer Size
-    vkContext->window->GetFramebufferSize(&cachedFramebufferWidth, &cachedFramebufferHeight);
+    int32 initialWidth = 0, initialHeight = 0;
+    vkContext->window->GetFramebufferSize(&initialWidth, &initialHeight);
 
-    vkContext->framebufferWidth = (cachedFramebufferWidth != 0) ? cachedFramebufferWidth : WINDOW_WIDTH;
-    vkContext->framebufferHeight = (cachedFramebufferHeight != 0) ? cachedFramebufferHeight : WINDOW_HEIGHT;
-
-    cachedFramebufferWidth = 0;
-    cachedFramebufferWidth = 0;
+    vkContext->framebufferWidth  = (initialWidth  != 0) ? initialWidth  : WINDOW_WIDTH;
+    vkContext->framebufferHeight = (initialHeight != 0) ? initialHeight : WINDOW_HEIGHT;
 
     // Instance
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan instance...");
@@ -635,8 +633,8 @@ void VulkanBackend::Resized(uint16 width, uint16 height) noexcept
     // Update the "framebuffer size generation", a counter which indicates when the
     // framebuffer size has been updated.
 
-    cachedFramebufferWidth = width;
-    cachedFramebufferHeight = height;
+    m_cachedFramebufferWidth  = width;
+    m_cachedFramebufferHeight = height;
 
     vkContext->framebufferSizeGeneration++;
 
@@ -1031,16 +1029,16 @@ bool VulkanBackend::RecreateResources()
     vkContext->device.swapChainSupport = NOUS_VulkanDevice::QuerySwapChainSupport(vkContext->device.physicalDevice, vkContext);
     vkContext->device.depthFormat = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
 
-    NOUS_VulkanSwapChain::RecreateSwapChain(vkContext, cachedFramebufferWidth, cachedFramebufferHeight, &vkContext->swapChain);
+    NOUS_VulkanSwapChain::RecreateSwapChain(vkContext, m_cachedFramebufferWidth, m_cachedFramebufferHeight, &vkContext->swapChain);
 
     // Sync the framebuffer size with the cached sizes.
-    vkContext->framebufferWidth = cachedFramebufferWidth;
-    vkContext->framebufferHeight = cachedFramebufferHeight;
+    vkContext->framebufferWidth  = m_cachedFramebufferWidth;
+    vkContext->framebufferHeight = m_cachedFramebufferHeight;
 
     vkContext->eventSystem->Broadcast(Event(EventType::IMGUI_RECREATION, {}));
 
-    cachedFramebufferWidth = 0;
-    cachedFramebufferHeight = 0;
+    m_cachedFramebufferWidth  = 0;
+    m_cachedFramebufferHeight = 0;
 
     // Update framebuffer size generation.
     vkContext->framebufferSizeLastGeneration = vkContext->framebufferSizeGeneration;
