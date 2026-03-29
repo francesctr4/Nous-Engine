@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Renderer/Frontend/RendererFrontend.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -179,6 +180,16 @@ void MainMenuBar::Draw()
 
 			ImGui::EndMenu();
 
+		}
+
+		if (ImGui::BeginMenu("Renderer")) {
+
+			if (ImGui::MenuItem("Reload Shaders", "Ctrl+R"))
+			{
+				editorContext->GetRendererFrontend()->ReloadAllShaders();
+			}
+
+			ImGui::EndMenu();
 		}
 
 		if (ImGui::BeginMenu("GameObject")) {

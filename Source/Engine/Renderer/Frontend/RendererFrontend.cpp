@@ -312,6 +312,12 @@ void RendererFrontend::DestroyShader(ResourceShader* shader)
 	mBackend->DestroyShader(shader);
 }
 
+void RendererFrontend::ReloadAllShaders()
+{
+    // TODO (Phase 3): invoke ShaderHotReload::ReloadAll() here.
+    NOUS_INFO_C(LogChannel::NOUS_ENGINE_RENDERER_FRONTEND, "[ShaderHotReload] Reload triggered — implementation pending (Phase 3).");
+}
+
 uint32_t RendererFrontend::PickObjectAt(int32_t pixelX, int32_t pixelY,
                                         const glm::mat4& projection, const glm::mat4& view,
                                         const std::vector<GeometryRenderData>& geometries)

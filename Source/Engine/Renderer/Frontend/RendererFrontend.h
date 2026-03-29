@@ -69,6 +69,10 @@ public:
 	[[nodiscard]] NOUS_ENGINE_API bool CreateShader(ResourceShader* shader) override;
 	NOUS_ENGINE_API void DestroyShader(ResourceShader* shader) override;
 
+	// Recompile and rebuild all currently-loaded shaders from source.
+	// No-op stub until Phase 3 (ShaderHotReload orchestration) is implemented.
+	NOUS_ENGINE_API void ReloadAllShaders();
+
 	// ---------------------------------------------------------------------
 	// Mouse Picking
 	// ---------------------------------------------------------------------
