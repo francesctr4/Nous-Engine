@@ -25,6 +25,8 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
+#include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/Shader/VulkanShader.h"
 
@@ -1785,6 +1787,201 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     auto* vs = down_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
     shader->internalData = nullptr;
+}
+
+bool VulkanBackend::ReloadShader(ResourceShader* shader) noexcept
+{
+    if (!shader)
+        return false;
+
+    const std::string& assetPath = shader->GetAssetsPath();
+    NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Reloading '%s'...", assetPath.c_str());
+
+    // ── 1. Recompile from source (CPU only — no GPU work yet) ─────────────────
+    const ShaderCompilerConfig config;
+    ShaderLoadResult loadResult = NOUS_ShaderSystem::LoadShaderFromFile(assetPath, config);
+
+    if (!loadResult.success)
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Compile failed for '%s': %s",
+                     assetPath.c_str(), loadResult.errorMessage.c_str());
+        if (loadResult.shader)
+            NOUS_DELETE(loadResult.shader, MemoryTag::RESOURCE_SHADER);
+        return false;   // old GPU pipeline left intact
+    }
+
+    // ── 2. Single GPU drain for all destroy/create work below ─────────────────
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
+    // ── 3. Swap CPU data on the primary ResourceShader ────────────────────────
+    shader->stagesData = std::move(loadResult.shader->stagesData);
+    shader->reflection = std::move(loadResult.shader->reflection);
+    shader->generation++;
+    NOUS_DELETE(loadResult.shader, MemoryTag::RESOURCE_SHADER);
+
+    // Helper: destroys existing GPU data on `s` (if any) and recreates it.
+    // GPU is already idle — caller is responsible for vkDeviceWaitIdle.
+    auto recreate = [&](ResourceShader* s, VulkanRenderpass* rp,
+                        bool disableBlending, bool createOutlinePipelines,
+                        bool useLineTopology, bool noDepthTest) -> bool
+    {
+        if (s->internalData)
+        {
+            auto* oldVS = static_cast<VulkanShader*>(s->internalData);
+            NOUS_VulkanShader::Destroy(vkContext, oldVS);
+            s->internalData = nullptr;
+        }
+        return NOUS_VulkanShader::Create(vkContext, rp, s,
+                                         disableBlending, createOutlinePipelines,
+                                         useLineTopology, noDepthTest);
+    };
+
+    // ── 4. Recreate GPU resources (mirrors CreateShader path selection) ────────
+
+    // ── BuiltIn.MaterialShader ────────────────────────────────────────────────
+    if (assetPath.find("BuiltIn.MaterialShader") != std::string::npos)
+    {
+        if (vkContext->renderMode == RenderMode::GAME)
+        {
+            if (!recreate(shader, &vkContext->gameSwapchainRenderpass, false, false, false, false))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (GAME mode).");
+                return false;
+            }
+            NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] MaterialShader reloaded (GAME mode, gen=%u).", shader->generation);
+            return true;
+        }
+
+        // EDITOR mode: primary on sceneRenderpass.
+        if (!recreate(shader, &vkContext->sceneRenderpass, false, false, false, false))
+        {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (scene).");
+            return false;
+        }
+
+        // Game clone on gameRenderpass.
+        if (vkContext->builtInGameShader)
+        {
+            vkContext->builtInGameShader->stagesData = shader->stagesData;
+            vkContext->builtInGameShader->reflection = shader->reflection;
+            vkContext->builtInGameShader->generation = shader->generation;
+            if (!recreate(vkContext->builtInGameShader, &vkContext->gameRenderpass, false, false, false, false))
+                NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader game clone.");
+        }
+
+        // Pick clone on pickRenderpass (blending disabled).
+        if (vkContext->builtInPickShader)
+        {
+            vkContext->builtInPickShader->stagesData = shader->stagesData;
+            vkContext->builtInPickShader->reflection = shader->reflection;
+            vkContext->builtInPickShader->generation = shader->generation;
+            if (!recreate(vkContext->builtInPickShader, &vkContext->pickRenderpass, true, false, false, false))
+                NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate pick shader clone.");
+        }
+
+        NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] MaterialShader reloaded (EDITOR mode, gen=%u).", shader->generation);
+        return true;
+    }
+
+    // ── BuiltIn.PickShader ────────────────────────────────────────────────────
+    //    The ResourceManager holds CPU metadata; GPU lives in builtInPickShader clone.
+    if (assetPath.find("BuiltIn.PickShader") != std::string::npos)
+    {
+        if (vkContext->builtInPickShader)
+        {
+            vkContext->builtInPickShader->stagesData = shader->stagesData;
+            vkContext->builtInPickShader->reflection = shader->reflection;
+            vkContext->builtInPickShader->generation = shader->generation;
+            if (!recreate(vkContext->builtInPickShader, &vkContext->pickRenderpass, true, false, false, false))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate PickShader.");
+                return false;
+            }
+        }
+        NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] PickShader reloaded.");
+        return true;
+    }
+
+    // ── BuiltIn.OutlineShader ─────────────────────────────────────────────────
+    if (assetPath.find("BuiltIn.OutlineShader") != std::string::npos)
+    {
+        if (!recreate(shader, &vkContext->sceneRenderpass, false, true, false, false))
+        {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate OutlineShader.");
+            return false;
+        }
+        NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] OutlineShader reloaded.");
+        return true;
+    }
+
+    // ── BuiltIn.GridShader ────────────────────────────────────────────────────
+    if (assetPath.find("BuiltIn.GridShader") != std::string::npos)
+    {
+        if (!recreate(shader, &vkContext->sceneRenderpass, false, false, true, false))
+        {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate GridShader.");
+            return false;
+        }
+        NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] GridShader reloaded.");
+        return true;
+    }
+
+    // ── BuiltIn.BackgroundShader ──────────────────────────────────────────────
+    if (assetPath.find("BuiltIn.BackgroundShader") != std::string::npos)
+    {
+        if (vkContext->renderMode == RenderMode::GAME)
+        {
+            if (!recreate(shader, &vkContext->gameSwapchainRenderpass, false, false, false, true))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader (GAME mode).");
+                return false;
+            }
+            NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] BackgroundShader reloaded (GAME mode).");
+            return true;
+        }
+
+        // EDITOR mode: primary on sceneRenderpass.
+        if (!recreate(shader, &vkContext->sceneRenderpass, false, false, false, true))
+        {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader (scene).");
+            return false;
+        }
+
+        // Game background clone on gameRenderpass.
+        if (vkContext->builtInGameBackgroundShader)
+        {
+            vkContext->builtInGameBackgroundShader->stagesData = shader->stagesData;
+            vkContext->builtInGameBackgroundShader->reflection = shader->reflection;
+            vkContext->builtInGameBackgroundShader->generation = shader->generation;
+            if (!recreate(vkContext->builtInGameBackgroundShader, &vkContext->gameRenderpass, false, false, false, true))
+                NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader game clone.");
+        }
+
+        NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] BackgroundShader reloaded (EDITOR mode).");
+        return true;
+    }
+
+    // ── BuiltIn.BoundingBoxShader ─────────────────────────────────────────────
+    if (assetPath.find("BuiltIn.BoundingBoxShader") != std::string::npos)
+    {
+        if (!recreate(shader, &vkContext->sceneRenderpass, false, false, true, false))
+        {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BoundingBoxShader.");
+            return false;
+        }
+        NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] BoundingBoxShader reloaded.");
+        return true;
+    }
+
+    // ── Default: user-defined shader → sceneRenderpass ───────────────────────
+    if (!recreate(shader, &vkContext->sceneRenderpass, false, false, false, false))
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate shader '%s'.", assetPath.c_str());
+        return false;
+    }
+
+    NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Shader '%s' reloaded (gen=%u).", assetPath.c_str(), shader->generation);
+    return true;
 }
 
 uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,

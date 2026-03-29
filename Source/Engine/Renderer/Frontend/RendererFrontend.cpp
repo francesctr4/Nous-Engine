@@ -1,6 +1,9 @@
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Renderer/Backend/RendererBackend.h"
 
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -314,8 +317,32 @@ void RendererFrontend::DestroyShader(ResourceShader* shader)
 
 void RendererFrontend::ReloadAllShaders()
 {
-    // TODO (Phase 3): invoke ShaderHotReload::ReloadAll() here.
-    NOUS_INFO_C(LogChannel::NOUS_ENGINE_RENDERER_FRONTEND, "[ShaderHotReload] Reload triggered — implementation pending (Phase 3).");
+    if (!m_resourceManager)
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] No ResourceManager — cannot reload shaders.");
+        return;
+    }
+
+    const auto resources = m_resourceManager->GetResourcesMap();
+    int reloaded = 0;
+    int failed   = 0;
+
+    for (auto& [uid, resource] : resources)
+    {
+        if (resource->GetType() != ResourceType::SHADER)
+            continue;
+
+        auto* shader = static_cast<ResourceShader*>(resource);
+        if (mBackend->ReloadShader(shader))
+            ++reloaded;
+        else
+            ++failed;
+    }
+
+    if (failed == 0)
+        NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Reloaded %d shader(s) successfully.", reloaded);
+    else
+        NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Reloaded %d shader(s); %d failed (see errors above).", reloaded, failed);
 }
 
 uint32_t RendererFrontend::PickObjectAt(int32_t pixelX, int32_t pixelY,

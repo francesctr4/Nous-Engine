@@ -240,6 +240,11 @@ struct IRendererBackend
     [[nodiscard]] virtual bool CreateShader(ResourceShader* shader) = 0;
     virtual void DestroyShader(ResourceShader* shader) noexcept = 0;
 
+    // Recompile from source and rebuild the GPU pipeline for the given shader.
+    // Calls vkDeviceWaitIdle internally. Returns false (and leaves the old shader
+    // intact) if compilation fails.
+    virtual bool ReloadShader(ResourceShader* shader) noexcept = 0;
+
     // ─────────────────────────────── Picking ────────────────────────────────
     /**
      * @brief Render the scene to a pick buffer and read back the object ID

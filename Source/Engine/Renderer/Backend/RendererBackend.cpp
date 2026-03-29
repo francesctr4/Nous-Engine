@@ -188,6 +188,11 @@ void RendererBackend::DestroyShader(ResourceShader* shader)
         mBackendInterface->DestroyShader(shader);
 }
 
+bool RendererBackend::ReloadShader(ResourceShader* shader) noexcept
+{
+    return mBackendInterface && mBackendInterface->ReloadShader(shader);
+}
+
 void RendererBackend::DestroyGeometry(ResourceMesh* geometry)
 {
     if (mBackendInterface)

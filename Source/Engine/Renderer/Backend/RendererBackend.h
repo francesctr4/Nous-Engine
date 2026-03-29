@@ -69,6 +69,7 @@ public:
 
 	[[nodiscard]] bool CreateShader(ResourceShader* shader);
 	void DestroyShader(ResourceShader* shader);
+	bool ReloadShader(ResourceShader* shader) noexcept;
 
 	// ─────────────────────────────── Picking ────────────────────────────────
 	uint32_t PickObjectAt(int32_t pixelX, int32_t pixelY,
