@@ -3,6 +3,7 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 
@@ -33,7 +34,8 @@ Application::Application(bool isGameMode)
     targetFPS = DEFAULT_TARGET_FPS;
     dt = 0.0f;
 
-    eventSystem = NOUS_NEW<EventSystem>(MemoryTag::APPLICATION);
+    eventSystem       = NOUS_NEW<EventSystem>(MemoryTag::APPLICATION);
+    importerManager   = NOUS_NEW<ImporterManager>(MemoryTag::APPLICATION);
 
     msTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
     updateTitleTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
@@ -74,7 +76,7 @@ Application::Application(bool isGameMode)
     // 4. RESOURCE MANAGER — no module dependencies at construction.
     //    Must be constructed before SCENE and RENDERER so they can reference it.
     listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem));
+        eventSystem, jobSystem, importerManager));
 
     // 5. SCENE — depends on INPUT (simulation controls) and RESOURCE MANAGER (asset loading).
     listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION,
@@ -107,6 +109,7 @@ Application::~Application()
 
     NOUS_DELETE(jobSystem, MemoryTag::THREAD);
     NOUS_DELETE(eventSystem, MemoryTag::APPLICATION);
+    NOUS_DELETE(importerManager, MemoryTag::APPLICATION);
     NOUS_DELETE(msTimer, MemoryTag::APPLICATION);
     NOUS_DELETE(updateTitleTimer, MemoryTag::APPLICATION);
 }

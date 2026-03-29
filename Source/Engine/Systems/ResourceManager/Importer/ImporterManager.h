@@ -4,6 +4,8 @@
 #include <Engine/Core/Globals.h>
 #include <memory>
 
+#include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
+
 class Resource;
 enum class ResourceType;
 
@@ -14,21 +16,20 @@ class ModuleResourceManager;
 
 constexpr int16 c_NUM_IMPORTERS = 4;
 
-class ImporterManager
+class ImporterManager : public IImporterManager
 {
 public:
 
-    static void Init(ModuleResourceManager* resourceManager);
+    // IImporterManager — CPU-side, virtual, injectable
+    void Init(ModuleResourceManager* resourceManager) override;
+    bool Import(const ResourceType& type, const MetaFileData& metaFileData) override;
+    bool Deserialize(const ResourceType& type, const std::string& libraryPath, Resource* resource) override;
+    void Evict(const ResourceType& type, Resource* resource) override;
 
-    // Asset pipeline
-    static bool Import(const ResourceType& type, const MetaFileData& metaFileData);
+    // Asset pipeline (non-virtual)
     static bool Save(const ResourceType& type, const MetaFileData& metaFileData, Resource*& inResource);
 
-    // CPU only — safe to call from a job thread
-    static bool Deserialize(const ResourceType& type, const std::string& libraryPath, Resource* resource);
-    static void Evict(const ResourceType& type, Resource* resource);
-
-    // GPU only — must be called from the render thread
+    // GPU only — must be called from the render thread (used directly by ModuleRenderer3D)
     static bool Upload(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu);
     static void Release(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu);
 

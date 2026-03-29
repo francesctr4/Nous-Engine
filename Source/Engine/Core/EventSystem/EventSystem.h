@@ -16,8 +16,8 @@ class Logger;
 class EventSystem
 {
 public:
-    EventSystem();
-    ~EventSystem();
+    NOUS_ENGINE_API EventSystem();
+    NOUS_ENGINE_API ~EventSystem();
 
     // Non-copyable
     EventSystem(const EventSystem&) = delete;

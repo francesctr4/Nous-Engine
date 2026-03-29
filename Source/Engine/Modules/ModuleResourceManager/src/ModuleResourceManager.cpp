@@ -16,6 +16,7 @@
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
+#include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
@@ -27,8 +28,9 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
-ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
-    : Module(eventSystem, jobSystem)
+ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+                                             IImporterManager* importerManager)
+    : Module(eventSystem, jobSystem), mImporterManager(importerManager)
 {
 	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
@@ -40,7 +42,7 @@ ModuleResourceManager::~ModuleResourceManager()
 
 bool ModuleResourceManager::Awake()
 {
-	ImporterManager::Init(this);
+	mImporterManager->Init(this);
 
 	// Always ensure directories exist — idempotent, safe to call in any mode.
 	EnsureLibraryDirectories();
@@ -271,7 +273,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 			}
 
 			// Manage inside: Import Resource and Save into Library
-			ImporterManager::Import(metaFileData.resourceType, metaFileData);
+			mImporterManager->Import(metaFileData.resourceType, metaFileData);
 
 			// Here we finish importing the file, and we start creating the resource.
 
@@ -322,7 +324,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 				// Reimport to create library file with the same UID and data from meta file
 
 				// Manage inside: Import Resource and Save into Library
-				ImporterManager::Import(metaFileData.resourceType, metaFileData);
+				mImporterManager->Import(metaFileData.resourceType, metaFileData);
 
 				// Here we finish importing the file, and we start creating the resource.
 
@@ -380,7 +382,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 						"[ImportFile] '%s' modified since last import — regenerating library binary.",
 						metaFileData.name.c_str());
 
-					ImporterManager::Import(metaFileData.resourceType, metaFileData);
+					mImporterManager->Import(metaFileData.resourceType, metaFileData);
 				}
 				// else: library is up to date — nothing to do.
 			}
@@ -659,7 +661,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 		NOUS_INFO("Resource instantiated successfully (UID: %u, Name: %s). Loading from library...",
 				  metaFileData.uid, metaFileData.name.c_str());
 
-		if (!ImporterManager::Deserialize(metaFileData.resourceType, metaFileData.libraryPath, resource))
+		if (!mImporterManager->Deserialize(metaFileData.resourceType, metaFileData.libraryPath, resource))
 		{
 			NOUS_ERROR("CreateResource ERROR: Failed to deserialize resource from library: %s",
 					   metaFileData.libraryPath.c_str());
@@ -763,9 +765,10 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType
 		resource->SetAssetsPath(assetsPath);
 		resource->SetLibraryPath(libraryPath);
 
-		if (!ImporterManager::Deserialize(type, libraryPath, resource))
+		if (!mImporterManager->Deserialize(type, libraryPath, resource))
 		{
 			NOUS_ERROR("CreateResourceFromLibrary: failed to deserialize '%s' from '%s'", name.c_str(), libraryPath.c_str());
+			DeleteResource(resource);
 			std::lock_guard<std::mutex> lock(resourcesMutex);
 			resources.erase(uid);
 			return nullptr;
@@ -919,7 +922,7 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
         if (!res || res->GetType() != ResourceType::SHADER) continue;
         if (res->GetState() == ResourceState::GPU_READY)
             gpu->DestroyShader(down_cast<ResourceShader*>(res));
-        ImporterManager::Evict(ResourceType::SHADER, res);
+        mImporterManager->Evict(ResourceType::SHADER, res);
         NOUS_DELETE(res, MemoryTag::RESOURCE_SHADER);
     }
 
@@ -940,7 +943,7 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
         if (!res || res->GetType() != ResourceType::TEXTURE) continue;
         if (res->GetState() == ResourceState::GPU_READY)
             gpu->DestroyTexture(down_cast<ResourceTexture*>(res));
-        ImporterManager::Evict(ResourceType::TEXTURE, res);
+        mImporterManager->Evict(ResourceType::TEXTURE, res);
         NOUS_DELETE(res, MemoryTag::RESOURCE_TEXTURE);
     }
 
@@ -950,7 +953,7 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
         if (!res || res->GetType() != ResourceType::MESH) continue;
         if (res->GetState() == ResourceState::GPU_READY)
             gpu->DestroyGeometry(down_cast<ResourceMesh*>(res));
-        ImporterManager::Evict(ResourceType::MESH, res);
+        mImporterManager->Evict(ResourceType::MESH, res);
         NOUS_DELETE(res, MemoryTag::RESOURCE_MESH);
     }
 
@@ -1011,7 +1014,7 @@ bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
         resources.erase(resource->GetUID());
     }
 
-    ImporterManager::Evict(type, resource);
+    mImporterManager->Evict(type, resource);
     DeleteResource(resource);
     return true;
 }

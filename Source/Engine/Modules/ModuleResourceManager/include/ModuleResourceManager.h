@@ -7,6 +7,7 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 
 class IGPUResourceFactory;
+class IImporterManager;
 
 #include <future>
 #include <map>
@@ -28,7 +29,8 @@ class ModuleResourceManager : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
+	NOUS_ENGINE_API ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+	                                      IImporterManager* importerManager);
 
 	// Destructor
 	virtual ~ModuleResourceManager();
@@ -149,6 +151,9 @@ private:
 
 	ResourceTexture* mDefaultTexture = nullptr;
 	ResourceMaterial* mDefaultMaterial = nullptr;
+
+	// Injected dependencies
+	IImporterManager* mImporterManager = nullptr;
 
 };
 

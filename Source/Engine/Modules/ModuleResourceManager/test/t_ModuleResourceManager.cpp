@@ -1,32 +1,247 @@
 #include <gtest/gtest.h>
 
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
+#include "Engine/Core/EventSystem/EventSystem.h"
+#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include "Engine/Core/Globals.h"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+
 // =====================================================
-// 🧩 Minimal Test Fixture Template
+// Mock
 // =====================================================
 
-// This fixture provides a clean setup/teardown structure
-class t_ModuleResourceManager : public ::testing::Test {
-protected:
-    // Called before each test
-    void SetUp() override {
-        // Initialize resources or objects here
-        initialized = true;
-    }
+class MockImporterManager : public IImporterManager
+{
+public:
+    bool initCalled = false;
 
-    // Called after each test
-    void TearDown() override {
-        // Clean up resources here
-        initialized = false;
-    }
+    bool deserializeResult = true;
 
-    bool initialized = false;
+    void Init(ModuleResourceManager*) override                              { initCalled = true; }
+    bool Import(const ResourceType&, const MetaFileData&) override         { return true; }
+    bool Deserialize(const ResourceType&, const std::string&, Resource*) override { return deserializeResult; }
+    void Evict(const ResourceType&, Resource*) override                    {}
 };
 
 // =====================================================
-// 🧪 Example Tests
+// Fixture
 // =====================================================
 
-// Sanity test to check fixture setup
-TEST_F(t_ModuleResourceManager, TEST) {
-    EXPECT_TRUE(initialized);
+class t_ModuleResourceManager : public ::testing::Test
+{
+protected:
+    static constexpr uint64 kMemoryPoolSize = MiB(64);
+
+    EventSystem*          eventSystem = nullptr;
+    NOUS_Multithreading::NOUS_JobSystem* jobSystem = nullptr; // single-threaded: jobs run inline
+    MockImporterManager   mockImporter;
+    ModuleResourceManager* rm = nullptr;
+
+    void SetUp() override
+    {
+        MemoryManager::InitializeMemory(kMemoryPoolSize);
+        eventSystem = new EventSystem();
+        jobSystem   = new NOUS_Multithreading::NOUS_JobSystem(0);
+        rm = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
+    }
+
+    void TearDown() override
+    {
+        CleanupAllResources();
+        delete rm;
+        rm = nullptr;
+        delete jobSystem;
+        jobSystem = nullptr;
+        delete eventSystem;
+        eventSystem = nullptr;
+        MemoryManager::ShutdownMemory();
+    }
+
+    // Evicts every resource still in the map so ShutdownMemory finds zero outstanding allocations.
+    void CleanupAllResources()
+    {
+        rm->TakePendingUploads(); // drain so re-queue logic in EvictResource doesn't re-add
+
+        auto snapshot = rm->GetResourcesMap();
+        for (auto& [uid, res] : snapshot)
+        {
+            if (!res) continue;
+            while (res->GetReferenceCount() > 0)
+                rm->UnloadResource(uid);
+        }
+
+        auto releases = rm->TakePendingReleases();
+        for (auto& [type, res] : releases)
+            rm->EvictResource(type, res);
+
+        // Second pass: evict resources that hit refcount==0 and whose pending-release
+        // entry was already drained by the test body (e.g. tests that call
+        // TakePendingReleases() themselves without following up with EvictResource).
+        snapshot = rm->GetResourcesMap();
+        for (auto& [uid, res] : snapshot)
+        {
+            if (res && res->GetReferenceCount() == 0)
+                rm->EvictResource(res->GetType(), res);
+        }
+    }
+};
+
+// =====================================================
+// Tests
+// =====================================================
+
+TEST_F(t_ModuleResourceManager, ResourceDoesNotExistInitially)
+{
+    EXPECT_FALSE(rm->ResourceExists(9999));
+}
+
+TEST_F(t_ModuleResourceManager, AwakeCallsImporterInit)
+{
+    rm->Awake();
+    EXPECT_TRUE(mockImporter.initCalled);
+}
+
+TEST_F(t_ModuleResourceManager, CreateResourceFromLibraryRegistersResource)
+{
+    const UID uid = 42;
+    Resource* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "testMesh",
+                                                  "Assets/test.fbx", "Library/Meshes/42.nmesh");
+    ASSERT_NE(res, nullptr);
+    EXPECT_TRUE(rm->ResourceExists(uid));
+}
+
+TEST_F(t_ModuleResourceManager, CreateResourceFromLibraryInitialRefCountIsOne)
+{
+    Resource* res = rm->CreateResourceFromLibrary(1, ResourceType::MESH, "testMesh",
+                                                  "Assets/test.fbx", "Library/Meshes/1.nmesh");
+    ASSERT_NE(res, nullptr);
+    EXPECT_EQ(res->GetReferenceCount(), 1u);
+}
+
+TEST_F(t_ModuleResourceManager, CreateResourceFromLibraryDeduplicates)
+{
+    const UID uid = 7;
+    Resource* first  = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "mesh",
+                                                     "Assets/a.fbx", "Library/Meshes/7.nmesh");
+    Resource* second = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "mesh",
+                                                     "Assets/a.fbx", "Library/Meshes/7.nmesh");
+
+    ASSERT_NE(first, nullptr);
+    EXPECT_EQ(first, second);
+    EXPECT_EQ(first->GetReferenceCount(), 2u);
+    EXPECT_EQ(rm->GetResourcesMap().size(), 1u);
+}
+
+TEST_F(t_ModuleResourceManager, CreateResourceFromLibraryQueuesPendingUpload)
+{
+    rm->CreateResourceFromLibrary(10, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+
+    auto uploads = rm->TakePendingUploads();
+    EXPECT_EQ(uploads.size(), 1u);
+}
+
+TEST_F(t_ModuleResourceManager, TakePendingUploadsClearsQueue)
+{
+    rm->CreateResourceFromLibrary(10, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+
+    rm->TakePendingUploads();
+    EXPECT_TRUE(rm->TakePendingUploads().empty());
+}
+
+TEST_F(t_ModuleResourceManager, UnloadResourceAtZeroRefQueuesPendingRelease)
+{
+    const UID uid = 20;
+    rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    rm->TakePendingUploads();
+
+    rm->UnloadResource(uid); // refcount 1 → 0
+
+    auto releases = rm->TakePendingReleases();
+    EXPECT_EQ(releases.size(), 1u);
+}
+
+TEST_F(t_ModuleResourceManager, UnloadResourceAboveZeroRefDoesNotQueueRelease)
+{
+    const UID uid = 21;
+    rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh"); // refcount = 2
+    rm->TakePendingUploads();
+
+    rm->UnloadResource(uid); // refcount 2 → 1, should NOT queue release
+
+    EXPECT_TRUE(rm->TakePendingReleases().empty());
+}
+
+TEST_F(t_ModuleResourceManager, TakePendingReleasesClearsQueue)
+{
+    const UID uid = 30;
+    rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    rm->UnloadResource(uid);
+
+    rm->TakePendingReleases();
+    EXPECT_TRUE(rm->TakePendingReleases().empty());
+}
+
+TEST_F(t_ModuleResourceManager, GetResourcesMapReturnsAllRegistered)
+{
+    rm->CreateResourceFromLibrary(100, ResourceType::MESH,     "m1", "a1.fbx",  "l1.nmesh");
+    rm->CreateResourceFromLibrary(200, ResourceType::MATERIAL, "m2", "a2.nmat", "l2.nmat");
+
+    auto map = rm->GetResourcesMap();
+    EXPECT_EQ(map.size(), 2u);
+    EXPECT_NE(map.find(100), map.end());
+    EXPECT_NE(map.find(200), map.end());
+}
+
+TEST_F(t_ModuleResourceManager, EvictResourceRemovesFromMap)
+{
+    const UID uid = 50;
+    Resource* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    rm->TakePendingUploads();
+
+    rm->UnloadResource(uid);       // refcount → 0
+    rm->TakePendingReleases();     // simulate renderer draining queue
+
+    bool evicted = rm->EvictResource(ResourceType::MESH, res);
+
+    EXPECT_TRUE(evicted);
+    EXPECT_FALSE(rm->ResourceExists(uid));
+}
+
+TEST_F(t_ModuleResourceManager, UnloadResourceReturnsFalseForUnknownUID)
+{
+    EXPECT_FALSE(rm->UnloadResource(9999));
+}
+
+TEST_F(t_ModuleResourceManager, EvictResourceReQueuesUploadWhenReacquired)
+{
+    const UID uid = 60;
+    Resource* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    rm->TakePendingUploads();
+
+    rm->UnloadResource(uid);     // refcount → 0, queued for release
+    rm->TakePendingReleases();   // renderer drains queue
+
+    // Simulate re-acquisition before EvictResource is called
+    rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh"); // refcount → 1
+
+    bool evicted = rm->EvictResource(ResourceType::MESH, res);
+
+    EXPECT_FALSE(evicted);                             // should NOT delete — resource is live again
+    EXPECT_TRUE(rm->ResourceExists(uid));              // still in map
+    EXPECT_EQ(rm->TakePendingUploads().size(), 1u);   // re-queued for GPU upload
+}
+
+TEST_F(t_ModuleResourceManager, DeserializeFailureReturnsNullAndDoesNotRegister)
+{
+    mockImporter.deserializeResult = false;
+
+    const UID uid = 70;
+    Resource* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+
+    EXPECT_EQ(res, nullptr);
+    EXPECT_FALSE(rm->ResourceExists(uid));
+    EXPECT_TRUE(rm->GetResourcesMap().empty());
 }

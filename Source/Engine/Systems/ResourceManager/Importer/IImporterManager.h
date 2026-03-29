@@ -1,0 +1,22 @@
+#ifndef IIMPORTERMANAGER_H
+#define IIMPORTERMANAGER_H
+
+#include <string>
+
+class Resource;
+enum class ResourceType;
+struct MetaFileData;
+class ModuleResourceManager;
+
+class IImporterManager
+{
+public:
+    virtual ~IImporterManager() = default;
+
+    virtual void Init(ModuleResourceManager* resourceManager) = 0;
+    virtual bool Import(const ResourceType& type, const MetaFileData& metaFileData) = 0;
+    virtual bool Deserialize(const ResourceType& type, const std::string& libraryPath, Resource* resource) = 0;
+    virtual void Evict(const ResourceType& type, Resource* resource) = 0;
+};
+
+#endif // IIMPORTERMANAGER_H

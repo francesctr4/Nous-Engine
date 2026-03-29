@@ -19,6 +19,7 @@ class ModuleCamera3D;
 class ModuleResourceManager;
 class ModuleScene;
 class ModuleRenderer3D;
+class IImporterManager;
 
 class Application
 {
@@ -74,6 +75,7 @@ private:
 
 	EventSystem*                         eventSystem;
 	NOUS_Multithreading::NOUS_JobSystem* jobSystem;
+	IImporterManager*                    importerManager;
 
 	std::vector<Module*> listModules;
 
