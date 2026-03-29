@@ -3,18 +3,19 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include <parson.h>
+#include <ranges>
 
 // -----------------------------------------------------------------------------
 // Constructors / Destructor
 // -----------------------------------------------------------------------------
 GameObject::GameObject() = default;
 
-GameObject::GameObject(uint32_t id, const std::string& name)
+GameObject::GameObject(const uint32_t id, const std::string& name)
         : m_ID(id), m_Name(name), m_Children(MemoryTag::GAMEOBJECT) {}
 
 GameObject::~GameObject()
 {
-    for (auto& [type, component] : m_Components)
+    for (auto& component : m_Components | std::views::values)
     {
         component->OnDestroy();
         NOUS_DELETE(component, MemoryTag::COMPONENT);
@@ -31,12 +32,10 @@ void GameObject::AddComponent(Component* component) {
     if (!component) return;
 
     component->m_GameObject = this;
-    auto type = std::type_index(typeid(*component));
+    const auto type = std::type_index(typeid(*component));
 
-    auto it = m_Components.find(type);
-    if (it != m_Components.end()) {
-        Component* old = it->second;
-        if (old) {
+    if (const auto it = m_Components.find(type); it != m_Components.end()) {
+        if (Component* old = it->second) {
             old->OnDestroy();
             NOUS_DELETE(old, MemoryTag::COMPONENT);
         }
@@ -48,11 +47,9 @@ void GameObject::AddComponent(Component* component) {
     component->OnStart();
 }
 
-void GameObject::RemoveComponent(std::type_index typeIndex) {
-    auto it = m_Components.find(typeIndex);
-    if (it != m_Components.end()) {
-        Component* comp = it->second;
-        if (comp) {
+void GameObject::RemoveComponent(const std::type_index typeIndex) {
+    if (const auto it = m_Components.find(typeIndex); it != m_Components.end()) {
+        if (Component* comp = it->second) {
             comp->OnDestroy();
             NOUS_DELETE(comp, MemoryTag::COMPONENT);
         }
@@ -60,14 +57,14 @@ void GameObject::RemoveComponent(std::type_index typeIndex) {
     }
 }
 
-void GameObject::UpdateComponents(float deltaTime) {
-    for (auto& [type, component] : m_Components)
+void GameObject::UpdateComponents(const float deltaTime) {
+    for (const auto& component : m_Components | std::views::values)
         component->OnUpdate(deltaTime);
 }
 
 NOUS_Vector<Component*> GameObject::GetAllComponents() {
     NOUS_Vector<Component*> components(MemoryTag::COMPONENT);
-    for (auto& [type, component] : m_Components)
+    for (auto& component : m_Components | std::views::values)
         components.push_back(component);
     return components;
 }
@@ -76,7 +73,7 @@ NOUS_Vector<Component*> GameObject::GetAllComponents() {
 // Info
 // -----------------------------------------------------------------------------
 uint32_t GameObject::GetID() const { return m_ID; }
-void GameObject::SetName(const std::string& name) { m_Name = name; }
+void GameObject::SetName(const std::string_view name) { m_Name = name; }
 const std::string& GameObject::GetName() const { return m_Name; }
 
 // -----------------------------------------------------------------------------
@@ -106,8 +103,7 @@ void GameObject::AddChild(GameObject* child) {
 
 void GameObject::RemoveChild(GameObject* child) {
     if (child) {
-        auto it = std::find(m_Children.begin(), m_Children.end(), child);
-        if (it != m_Children.end()) {
+        if (const auto it = std::ranges::find(m_Children, child); it != m_Children.end()) {
             m_Children.erase(it);
             child->m_Parent = nullptr;
         }
@@ -115,19 +111,17 @@ void GameObject::RemoveChild(GameObject* child) {
 }
 
 void GameObject::ClearChildren() {
-    auto childrenCopy = m_Children;
-    for (auto* child : childrenCopy)
+    for (auto childrenCopy = m_Children; auto* child : childrenCopy)
         RemoveChild(child);
 }
 
-GameObject* GameObject::FindChildByName(const std::string& name, bool recursive) {
+GameObject* GameObject::FindChildByName(const std::string& name, const bool recursive) {
     for (auto* child : m_Children) {
         if (child->GetName() == name)
             return child;
 
         if (recursive) {
-            GameObject* found = child->FindChildByName(name, true);
-            if (found) return found;
+            if (GameObject* found = child->FindChildByName(name, true)) return found;
         }
     }
     return nullptr;
@@ -142,7 +136,7 @@ JSON_Value* GameObject::Serialize() const {
 
     json_object_set_number(obj, "uid", m_ID);
     json_object_set_string(obj, "name", m_Name.c_str());
-    uint32_t parentID = m_Parent ? m_Parent->GetID() : 0;
+    const uint32_t parentID = m_Parent ? m_Parent->GetID() : 0;
     json_object_set_number(obj, "parent", parentID);
 
     NOUS_INFO("Serializing: %s (ID: %u) -> Parent ID: %u", m_Name.c_str(), m_ID, parentID);
@@ -150,10 +144,9 @@ JSON_Value* GameObject::Serialize() const {
     JSON_Value* componentsVal = json_value_init_array();
     JSON_Array* componentsArr = json_value_get_array(componentsVal);
 
-    for (const auto& [type, component] : m_Components)
+    for (const auto& component : m_Components | std::views::values)
     {
-        JSON_Value* serialized = component->Serialize();
-        if (serialized)
+        if (JSON_Value* serialized = component->Serialize())
             json_array_append_value(componentsArr, serialized);
     }
 
@@ -161,10 +154,10 @@ JSON_Value* GameObject::Serialize() const {
     return objVal;
 }
 
-GameObject* GameObject::Deserialize(JSON_Object* obj, Scene* scene) {
-    uint32_t uid = static_cast<uint32_t>(json_object_get_number(obj, "uid"));
+GameObject* GameObject::Deserialize(const JSON_Object* obj, Scene* scene) {
+    auto uid = static_cast<uint32_t>(json_object_get_number(obj, "uid"));
     const char* name = json_object_get_string(obj, "name");
-    uint32_t parentID = static_cast<uint32_t>(json_object_get_number(obj, "parent"));
+    const auto parentID = static_cast<uint32_t>(json_object_get_number(obj, "parent"));
 
     GameObject* go = NOUS_NEW<GameObject>(MemoryTag::GAMEOBJECT, uid, name ? name : "");
     go->m_ParentID = parentID;
@@ -172,16 +165,17 @@ GameObject* GameObject::Deserialize(JSON_Object* obj, Scene* scene) {
 
     NOUS_INFO("Deserializing: %s (ID: %u) -> Parent ID: %u", name ? name : "", uid, parentID);
 
-    JSON_Array* comps = json_object_get_array(obj, "components");
-    if (comps) {
-        size_t count = json_array_get_count(comps);
-        for (size_t i = 0; i < count; ++i) {
+    if (const JSON_Array* comps = json_object_get_array(obj, "components"))
+    {
+        const size_t count = json_array_get_count(comps);
+        for (size_t i = 0; i < count; ++i)
+        {
             JSON_Object* compObj = json_array_get_object(comps, i);
-            const char* type = json_object_get_string(compObj, "type");
 
-            if (type) {
-                auto component = Component::CreateComponent(type);
-                if (component) {
+            if (const char* type = json_object_get_string(compObj, "type"))
+            {
+                if (const auto component = Component::CreateComponent(type))
+                {
                     component->m_GameObject = go;
                     component->Deserialize(compObj);
                     go->AddComponent(component);

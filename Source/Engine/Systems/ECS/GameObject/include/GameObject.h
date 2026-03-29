@@ -1,5 +1,4 @@
-#ifndef NOUS_ENGINE_GAMEOBJECT_H
-#define NOUS_ENGINE_GAMEOBJECT_H
+#pragma once
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/EngineExport.h"
@@ -10,9 +9,9 @@
 #include <typeindex>
 #include <stdexcept>
 
-typedef struct json_object_t JSON_Object;
-typedef struct json_array_t  JSON_Array;
-typedef struct json_value_t  JSON_Value;
+using JSON_Object = json_object_t;
+using JSON_Array = json_array_t;
+using JSON_Value = json_value_t;
 
 // Forward declarations
 class Scene;
@@ -21,7 +20,7 @@ class Component;
 class GameObject {
 public:
     GameObject();
-    GameObject(uint32_t id, const std::string& name = "GameObject");
+    explicit GameObject(uint32_t id, const std::string& name = "GameObject");
     ~GameObject();
 
     // ---------- Components ----------
@@ -44,7 +43,7 @@ public:
 
     // ---------- Basic Info ----------
     NOUS_ENGINE_API uint32_t GetID() const;
-    NOUS_ENGINE_API void SetName(const std::string& name);
+    NOUS_ENGINE_API void SetName(std::string_view name);
     NOUS_ENGINE_API const std::string& GetName() const;
 
     // ---------- Hierarchy ----------
@@ -59,7 +58,7 @@ public:
 
     // ---------- Serialization ----------
     JSON_Value* Serialize() const;
-    static GameObject* Deserialize(JSON_Object* obj, Scene* scene = nullptr);
+    static GameObject* Deserialize(const JSON_Object* obj, Scene* scene = nullptr);
 
     // For deserialization parent resolution
     uint32_t GetParentID() const;
@@ -81,15 +80,13 @@ private:
 // -----------------------------------------------------------------------------
 template<typename T, typename... Args>
 T& GameObject::AddComponent(Args&&... args) {
-    static_assert(std::is_base_of<Component, T>::value, "T must inherit from Component");
+    static_assert(std::is_base_of_v<Component, T>, "T must inherit from Component");
 
     T* component = NOUS_NEW<T>(MemoryTag::COMPONENT, std::forward<Args>(args)...);
     component->m_GameObject = this;
 
-    auto it = m_Components.find(typeid(T));
-    if (it != m_Components.end()) {
-        Component* old = it->second;
-        if (old) {
+    if (const auto it = m_Components.find(typeid(T)); it != m_Components.end()) {
+        if (Component* old = it->second) {
             old->OnDestroy();
             NOUS_DELETE(old, MemoryTag::COMPONENT);
         }
@@ -104,24 +101,24 @@ T& GameObject::AddComponent(Args&&... args) {
 
 template<typename T>
 bool GameObject::HasComponent() const {
-    static_assert(std::is_base_of<Component, T>::value, "T must inherit from Component");
-    return m_Components.find(typeid(T)) != m_Components.end();
+    static_assert(std::is_base_of_v<Component, T>, "T must inherit from Component");
+    return m_Components.contains(typeid(T));
 }
 
 template<typename T>
 T& GameObject::GetComponent() {
-    static_assert(std::is_base_of<Component, T>::value, "T must inherit from Component");
-    auto it = m_Components.find(typeid(T));
+    static_assert(std::is_base_of_v<Component, T>, "T must inherit from Component");
+    const auto it = m_Components.find(typeid(T));
     if (it == m_Components.end()) {
-        throw std::runtime_error("Component not found: " + std::string(typeid(T).name()));
+        throw std::invalid_argument("Component not found: " + std::string(typeid(T).name()));
     }
     return *static_cast<T*>(it->second);
 }
 
 template<typename T>
 T* GameObject::TryGetComponent() {
-    static_assert(std::is_base_of<Component, T>::value, "T must inherit from Component");
-    auto it = m_Components.find(typeid(T));
+    static_assert(std::is_base_of_v<Component, T>, "T must inherit from Component");
+    const auto it = m_Components.find(typeid(T));
     if (it == m_Components.end()) {
         return nullptr;
     }
@@ -130,16 +127,12 @@ T* GameObject::TryGetComponent() {
 
 template<typename T>
 void GameObject::RemoveComponent() {
-    static_assert(std::is_base_of<Component, T>::value, "T must inherit from Component");
-    auto it = m_Components.find(typeid(T));
-    if (it != m_Components.end()) {
-        Component* comp = it->second;
-        if (comp) {
+    static_assert(std::is_base_of_v<Component, T>, "T must inherit from Component");
+    if (const auto it = m_Components.find(typeid(T)); it != m_Components.end()) {
+        if (Component* comp = it->second) {
             comp->OnDestroy();
             NOUS_DELETE(comp, MemoryTag::COMPONENT);
         }
         m_Components.erase(it);
     }
 }
-
-#endif // NOUS_ENGINE_GAMEOBJECT_H

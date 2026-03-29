@@ -15,12 +15,11 @@ public:
     using value_type = T;
     using allocator_type = NOUS_STLAllocator<T>;
     using vector_type = std::vector<T, allocator_type>;
-    using iterator = typename vector_type::iterator;
-    using const_iterator = typename vector_type::const_iterator;
-    using reverse_iterator = typename vector_type::reverse_iterator;
-    using const_reverse_iterator = typename vector_type::const_reverse_iterator;
+    using iterator = vector_type::iterator;
+    using const_iterator = vector_type::const_iterator;
+    using reverse_iterator = vector_type::reverse_iterator;
+    using const_reverse_iterator = vector_type::const_reverse_iterator;
 
-public:
     // Default constructor -> uses UNKNOWN tag
     NOUS_Vector()
             : internal_(allocator_type(MemoryTag::UNKNOWN))
