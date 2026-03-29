@@ -8,6 +8,19 @@ cmake-build-*
 build
 /docs
 
+# Generated reports
+clang_tidy_report.html
+
+#ignore temp files
+console.log
+imgui.ini
+Library
+Delivery
+vc140.pdb
+
+#Ignore Claude Metadata
+.claude
+
 # Covers JetBrains IDEs: IntelliJ, GoLand, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
