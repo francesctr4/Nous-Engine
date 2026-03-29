@@ -59,11 +59,11 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 	SDL_PumpEvents();
 
 	// --------------- Handle Keyboard State --------------- \\
-	
+
     const uint8* keys = reinterpret_cast<const uint8*>(SDL_GetKeyboardState(NULL));
 
 	for (int i = 0; i < MAX_KEYBOARD_KEYS; ++i)
-		keyboard[i] = AdvanceKeyState(keyboard[i], keys[i] == 1);
+		keyboard[i] = m_imguiCaptureKeyboard ? AdvanceKeyState(keyboard[i], false) : AdvanceKeyState(keyboard[i], keys[i] == 1);
 
 	// --------------- Handle Mouse State --------------- \\
 
@@ -178,6 +178,12 @@ KeyState ModuleInput::GetMouseButton(int id) const
 {
 	return mouseButtons[id];
 }
+
+void ModuleInput::SetImGuiCaptureKeyboard(bool captured)
+{
+	m_imguiCaptureKeyboard = captured;
+}
+
 
 int32 ModuleInput::GetMouseX() const
 {

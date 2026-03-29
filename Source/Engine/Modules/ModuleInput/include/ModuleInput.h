@@ -26,6 +26,8 @@ public:
 	NOUS_ENGINE_API KeyState GetKey(int id) const override;
 	NOUS_ENGINE_API KeyState GetMouseButton(int id) const override;
 
+	NOUS_ENGINE_API void SetImGuiCaptureKeyboard(bool captured);
+
 	int32 GetMouseX() const;
 	int32 GetMouseY() const;
 	int32 GetMouseZ() const override;
@@ -47,6 +49,8 @@ private:
 
 	int32 m_lastWindowWidth  = 0;
 	int32 m_lastWindowHeight = 0;
+
+	bool m_imguiCaptureKeyboard = false;
 
 };
 

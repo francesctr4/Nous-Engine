@@ -35,6 +35,7 @@
 #include "Editor/UI/Windows/InspectorWindow/include/InspectorWindow.h"
 #include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
 #include "Editor/UI/Windows/MemoryWindow/include/MemoryWindow.h"
+#include "Editor/UI/Windows/ShaderEditorWindow/include/ShaderEditorWindow.h"
 
 #pragma endregion
 
@@ -147,6 +148,7 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(NOUS_NEW<InspectorWindow>(MemoryTag::EDITOR, "Inspector", this));
 	AddEditorWindow(NOUS_NEW<ConsoleWindow>(MemoryTag::EDITOR, "Console", this));
 	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryTag::EDITOR, "Memory Manager", this));
+	AddEditorWindow(NOUS_NEW<ShaderEditorWindow>(MemoryTag::EDITOR, "Shader Editor", this));
 
 	return true;
 }
@@ -163,6 +165,8 @@ void ModuleEditor::DrawEditor()
 	InternalDrawEditor();
 
 	EndFrame(currentBackendType);
+
+	mModuleInput->SetImGuiCaptureKeyboard(ImGui::GetIO().WantCaptureKeyboard);
 }
 
 bool ModuleEditor::CleanUp()
