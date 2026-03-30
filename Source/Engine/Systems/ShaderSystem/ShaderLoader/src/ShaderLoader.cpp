@@ -87,7 +87,7 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromFile(
     ShaderLoadResult err;
 
     FileHandle file;
-    if (!file.Open(path, FileMode::READ, false))
+    if (!file.Open(path, FileMode::READ, true))
     {
         err.errorMessage = "LoadShaderFromFile: cannot open '" + path + "'";
         NOUS_ERROR_C(CURRENT_CHANNEL, "Cannot open shader file '%s'", path.c_str());

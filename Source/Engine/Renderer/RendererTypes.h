@@ -245,6 +245,11 @@ struct IRendererBackend
     // intact) if compilation fails.
     virtual bool ReloadShader(ResourceShader* shader) noexcept = 0;
 
+    // GPU-swap only — caller has already updated shader->stagesData, shader->reflection,
+    // and shader->generation. Calls vkDeviceWaitIdle, then destroys and recreates all
+    // GPU resources. Used by the async compile path (RendererFrontend::FlushCompletedReloads).
+    virtual bool ApplyCompiledShader(ResourceShader* shader) noexcept = 0;
+
     // ─────────────────────────────── Picking ────────────────────────────────
     /**
      * @brief Render the scene to a pick buffer and read back the object ID

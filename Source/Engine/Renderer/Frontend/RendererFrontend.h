@@ -3,11 +3,16 @@
 
 #include "Engine/Renderer/RendererTypes.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
+#include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
 #include "Engine/EngineExport.h"
 
+#include <atomic>
 #include <functional>
 #include <glm/glm.hpp>
+#include <mutex>
 #include <string>
+#include <unordered_set>
+#include <vector>
 
 // Forward declarations
 class RendererBackend;
@@ -75,9 +80,16 @@ public:
 	// reload is deferred and executed on the next call to FlushPendingReloads().
 	NOUS_ENGINE_API void ReloadAllShaders();
 
-	// Execute any queued reload requests. Must be called between frames, before
-	// BeginFrame() — ModuleRenderer3D::PreUpdate() is the intended call site.
+	// Execute any queued reload requests. Dispatches async compile jobs to the
+	// JobSystem — returns immediately, no GPU work done here.
+	// Call from ModuleRenderer3D::PreUpdate() before m_shaderWatcher.Poll().
 	NOUS_ENGINE_API void FlushPendingReloads();
+
+	// Apply GPU swaps for all compile jobs that have finished since last frame.
+	// Must be called between frames (before BeginFrame). Executes vkDeviceWaitIdle
+	// once for the whole batch, then calls ApplyCompiledShader for each ready shader.
+	// Call from ModuleRenderer3D::PreUpdate() BEFORE FlushPendingReloads().
+	NOUS_ENGINE_API void FlushCompletedReloads();
 
 	// Recompile and rebuild a single shader identified by its asset path.
 	// Returns false if no matching shader is found or if compilation fails.
@@ -162,6 +174,10 @@ private:
 
 	void DrawEditor();
 
+	// Dispatch a background compile job for the given shader path/pointer.
+	// No-op if a compile for this path is already in-flight.
+	void DispatchCompileJob(const std::string& path, ResourceShader* shader);
+
 private:
 
 	RendererBackend* mBackend;
@@ -178,6 +194,20 @@ private:
 
 	// Deferred reload flag — set by ReloadAllShaders(), consumed by FlushPendingReloads().
 	bool m_pendingReloadAll = false;
+
+	// ── Async compile pipeline ────────────────────────────────────────────────
+	// Worker threads push completed compile results here; main thread drains it
+	// in FlushCompletedReloads() each PreUpdate.
+	struct PendingGPUSwap
+	{
+	    ResourceShader*  shader;
+	    ShaderLoadResult compileResult;
+	};
+
+	std::mutex                      m_swapQueueMutex;
+	std::vector<PendingGPUSwap>     m_readySwaps;     // worker → main thread handoff
+	std::unordered_set<std::string> m_inFlightPaths;  // paths with an active compile job
+	std::atomic<int>                m_inFlightJobCount { 0 }; // used by Shutdown to drain
 
 	// Outlined geometries — populated each frame by SetOutlinedGeometries().
 	std::vector<GeometryRenderData> mOutlinedGeometries;

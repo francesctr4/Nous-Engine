@@ -1810,17 +1810,29 @@ bool VulkanBackend::ReloadShader(ResourceShader* shader) noexcept
         return false;   // old GPU pipeline left intact
     }
 
-    // ── 2. Single GPU drain for all destroy/create work below ─────────────────
-    vkDeviceWaitIdle(vkContext->device.logicalDevice);
-
-    // ── 3. Swap CPU data on the primary ResourceShader ────────────────────────
+    // ── 2. Swap CPU data on the primary ResourceShader ────────────────────────
     shader->stagesData = std::move(loadResult.shader->stagesData);
     shader->reflection = std::move(loadResult.shader->reflection);
     shader->generation++;
     NOUS_DELETE(loadResult.shader, MemoryTag::RESOURCE_SHADER);
 
+    // ── 3. GPU swap ───────────────────────────────────────────────────────────
+    return ApplyCompiledShader(shader);
+}
+
+bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
+{
+    if (!shader)
+        return false;
+
+    const std::string& assetPath = shader->GetAssetsPath();
+
+    // ── GPU drain ─────────────────────────────────────────────────────────────
+    // Called once here; covers all destroy/create work below.
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
     // Helper: destroys existing GPU data on `s` (if any) and recreates it.
-    // GPU is already idle — caller is responsible for vkDeviceWaitIdle.
+    // GPU is already idle — vkDeviceWaitIdle was called above.
     auto recreate = [&](ResourceShader* s, VulkanRenderpass* rp,
                         bool disableBlending, bool createOutlinePipelines,
                         bool useLineTopology, bool noDepthTest) -> bool
@@ -1851,7 +1863,7 @@ bool VulkanBackend::ReloadShader(ResourceShader* shader) noexcept
         }
     };
 
-    // ── 4. Recreate GPU resources (mirrors CreateShader path selection) ────────
+    // ── Recreate GPU resources (mirrors CreateShader path selection) ──────────
 
     // ── BuiltIn.MaterialShader ────────────────────────────────────────────────
     if (assetPath.find("BuiltIn.MaterialShader") != std::string::npos)
