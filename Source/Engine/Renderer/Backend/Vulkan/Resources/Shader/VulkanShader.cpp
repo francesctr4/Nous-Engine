@@ -946,6 +946,7 @@ void NOUS_VulkanShader::WriteInstanceSampler(VulkanContext* vkContext, VulkanSha
                                               uint32_t resourceID, uint32_t resourceGeneration)
 {
     if (!vs->instancePool || instanceID >= VULKAN_SHADER_MAX_INSTANCE_COUNT) return;
+    if (!vs->instanceStates[instanceID].inUse) return;
 
     // A generation of UINT32_MAX means this binding has never been written — always
     // force the first write even if the resource ID/generation happen to match that

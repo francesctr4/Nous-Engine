@@ -26,6 +26,7 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
+#include <filesystem>
 #include <parson.h>
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
@@ -141,11 +142,53 @@ bool ModuleRenderer3D::Start()
 		defaultTex->generation = 0;
 	}
 
+	// Register all .glsl files in Assets/Shaders/ for hot reload (EDITOR only).
+	// Changes are detected by Poll() in PreUpdate() and trigger a per-file reload.
+	if (m_renderMode == RenderMode::EDITOR)
+	{
+		namespace fs = std::filesystem;
+		std::error_code ec;
+		int watchCount = 0;
+
+		for (const auto& entry : fs::directory_iterator("Assets/Shaders", ec))
+		{
+			if (entry.path().extension() != ".glsl")
+				continue;
+
+			// Normalize to forward slashes — must match the paths in ResourceManager.
+			const std::string normalizedPath = entry.path().generic_string();
+			m_shaderWatcher.Watch(normalizedPath, [this, normalizedPath](const std::string&)
+			{
+				mRendererFrontend->ReloadShaderByPath(normalizedPath);
+			});
+			++watchCount;
+		}
+
+		if (!ec)
+			NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Watching %d shader file(s) in Assets/Shaders/.", watchCount);
+		else
+			NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Could not open Assets/Shaders/ for watching: %s", ec.message().c_str());
+	}
+
 	return true;
 }
 
 UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 {
+	// Apply GPU swaps for compile jobs that completed since last frame (async path).
+	// Must run before FlushPendingReloads and before DrawFrame — no renderpass open here.
+	mRendererFrontend->FlushCompletedReloads();
+
+	// Dispatch compile jobs for any queued/deferred reload requests.
+	// Returns immediately — jobs run on worker threads.
+	mRendererFrontend->FlushPendingReloads();
+
+	// Poll for shader file changes before any GPU work this frame (EDITOR only).
+	// Safe here: previous frame's EndFrame has already been submitted; DrawFrame
+	// is called later in PostUpdate, so no renderpass is open at this point.
+	if (m_renderMode == RenderMode::EDITOR)
+		m_shaderWatcher.Poll();
+
 	// Upload CPU_READY resources that were deserialized since the last frame.
 	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
 	{

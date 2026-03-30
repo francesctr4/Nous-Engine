@@ -64,7 +64,7 @@ set(NOUS_ENGINE_STATIC_LIBS
     # Top-level aggregates
     Core Modules NOUS_Multithreading Renderer Scripting Systems Utils
     # Core sub-libraries
-    MemoryManager EventSystem FileSystem Logger TimeManager
+    MemoryManager EventSystem FileSystem FileWatcher Logger TimeManager
     # Modules sub-libraries
     ModuleCamera3D ModuleInput ModuleRenderer3D ModuleResourceManager ModuleScene ModuleWindow
     # Renderer sub-libraries

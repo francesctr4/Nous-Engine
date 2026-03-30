@@ -27,7 +27,7 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-Application::Application(bool isGameMode)
+Application::Application(const bool isGameMode)
 {
     m_isGameMode = isGameMode;
 
@@ -104,7 +104,7 @@ Application::~Application()
     // Forward order would free ModuleResourceManager before ModuleScene,
     // causing use-after-free when ~ModuleScene destroys GameObjects whose
     // CMesh::OnDestroy still references the ResourceManager.
-    for (int i = (int)listModules.size() - 1; i >= 0; --i)
+    for (int i = static_cast<int>(listModules.size()) - 1; i >= 0; --i)
         NOUS_DELETE(listModules[i], MemoryTag::APPLICATION);
 
     NOUS_DELETE(jobSystem, MemoryTag::THREAD);
@@ -143,7 +143,7 @@ bool Application::Start() const
 
     // After all Awake calls we call Start() in all modules
     NOUS_INFO("-------------- Application Start --------------");
-    for (int i = 0; i < (int)listModules.size() && ret; ++i)
+    for (int i = 0; i < static_cast<int>(listModules.size()) && ret; ++i)
     {
         if (listModules[i] != nullptr)
         {
@@ -178,7 +178,7 @@ UpdateStatus Application::PrepareUpdate()
 // ---------------------------------------------------------------------------
 // DEBUG — temporary development shortcuts. Remove when editor UI covers these.
 // ---------------------------------------------------------------------------
-static void HandleDebugKeys(ModuleInput* input, ModuleScene* scene, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
+static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
 {
     if (input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
         ScriptManager::GenerateScript("PRUEBA_CREAR_SCRIPT_DESDE_MOTOR");
@@ -193,42 +193,43 @@ static void HandleDebugKeys(ModuleInput* input, ModuleScene* scene, NOUS_Multith
         scene->LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
 
     if (input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
-        jobSystem->SubmitJob([scene]() { scene->SpawnMeshAsHierarchy("Assets/Meshes/Lagiacrus_Head.fbx"); },    "Spawn Lagiacrus");
+        jobSystem->SubmitJob([scene] { scene->SpawnMeshAsHierarchy("Assets/Meshes/Lagiacrus_Head.fbx"); },    "Spawn Lagiacrus");
 
     if (input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
-        jobSystem->SubmitJob([scene]() { scene->SpawnMeshAsHierarchy("Assets/Meshes/Cypher_S0_Skelmesh.fbx"); }, "Spawn Cypher");
+        jobSystem->SubmitJob([scene] { scene->SpawnMeshAsHierarchy("Assets/Meshes/Cypher_S0_Skelmesh.fbx"); }, "Spawn Cypher");
 
     if (input->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
-        jobSystem->SubmitJob([scene]() { scene->SpawnMeshAsHierarchy("Assets/Meshes/Queen_Xenomorph.fbx"); },   "Spawn Queen Xenomorph");
+        jobSystem->SubmitJob([scene] { scene->SpawnMeshAsHierarchy("Assets/Meshes/Queen_Xenomorph.fbx"); },   "Spawn Queen Xenomorph");
 
     if (input->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
-        jobSystem->SubmitJob([scene]() { scene->SpawnMeshAsHierarchy("Assets/Meshes/Wolf.obj"); },              "Spawn Wolf");
+        jobSystem->SubmitJob([scene] { scene->SpawnMeshAsHierarchy("Assets/Meshes/Wolf.obj"); },              "Spawn Wolf");
 
     if (input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN)
     {
-        static const std::vector<std::string> meshPaths = {
+        constexpr auto meshPaths = std::to_array<std::string_view>({
             "Assets/Meshes/Lagiacrus_Head.fbx",
             "Assets/Meshes/Cypher_S0_Skelmesh.fbx",
             "Assets/Meshes/Queen_Xenomorph.fbx",
             "Assets/Meshes/Wolf.obj"
-        };
+        });
+
         for (const auto& path : meshPaths)
-            jobSystem->SubmitJob([scene, path]() { scene->SpawnMeshAsHierarchy(path); }, "Spawn Model");
+            jobSystem->SubmitJob([scene, path] { scene->SpawnMeshAsHierarchy(path.data()); }, "Spawn Model");
     }
 
     if (input->GetKey(SDL_SCANCODE_F6) == KeyState::DOWN)
         scene->ClearScene();
 
     if (input->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
-        jobSystem->SubmitJob([]() { NOUS_Multithreading::NOUS_Thread::SleepMS(5000); }, "Test Sleep");
+        jobSystem->SubmitJob([] { NOUS_Multithreading::NOUS_Thread::SleepMS(5000); }, "Test Sleep");
 
     if (input->GetKey(SDL_SCANCODE_F8) == KeyState::DOWN)
     {
         for (int i = 0; i < 100; ++i)
         {
-            jobSystem->SubmitJob([]()
+            jobSystem->SubmitJob([]
             {
-                const std::chrono::milliseconds duration(500);
+                constexpr std::chrono::milliseconds duration(500);
                 const auto start = std::chrono::steady_clock::now();
                 while (std::chrono::steady_clock::now() - start < duration)
                     (void)std::sqrt(123.456);
@@ -239,13 +240,13 @@ static void HandleDebugKeys(ModuleInput* input, ModuleScene* scene, NOUS_Multith
     if (input->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
     {
         NOUS_INFO("Initiating script hot-reload...");
-        jobSystem->SubmitJob([scene]() { scene->RecompileScripts(); }, "Scripts Hot-Reload");
+        jobSystem->SubmitJob([scene] { scene->RecompileScripts(); }, "Scripts Hot-Reload");
     }
 }
 
 UpdateStatus Application::Update()
 {
-    UpdateStatus ret = UpdateStatus::CONTINUE;
+    auto ret = UpdateStatus::CONTINUE;
 
 #ifdef _PROFILING
     ZoneScoped;
@@ -257,7 +258,7 @@ UpdateStatus Application::Update()
 
     // -------------- PreUpdate --------------
 
-    for (int i = 0; i < (int)listModules.size() && ret == UpdateStatus::CONTINUE; ++i)
+    for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
     {
         if (listModules[i] != nullptr)
             ret = listModules[i]->PreUpdate(dt);
@@ -265,7 +266,7 @@ UpdateStatus Application::Update()
 
     // -------------- Update --------------
 
-    for (int i = 0; i < (int)listModules.size() && ret == UpdateStatus::CONTINUE; ++i)
+    for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
     {
         if (listModules[i] != nullptr)
             ret = listModules[i]->Update(dt);
@@ -276,7 +277,7 @@ UpdateStatus Application::Update()
 
     // -------------- PostUpdate --------------
 
-    for (int i = 0; i < (int)listModules.size() && ret == UpdateStatus::CONTINUE; ++i)
+    for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
     {
         if (listModules[i] != nullptr)
             ret = listModules[i]->PostUpdate(dt);
@@ -321,9 +322,8 @@ void Application::FinishUpdate() const
     // then spin-wait for sub-millisecond precision on the final stretch.
 
     const float targetFrameTime = 1.0f / targetFPS;
-    const float remaining = targetFrameTime - msTimer->ReadSec();
 
-    if (remaining > 0.0f)
+    if (const float remaining = targetFrameTime - msTimer->ReadSec(); remaining > 0.0f)
     {
         if (remaining > DEFAULT_SPIN_THRESHOLD)
         {
@@ -331,11 +331,15 @@ void Application::FinishUpdate() const
         }
 
         // Spin-wait for the final portion — burns CPU briefly but gives precise timing.
-        while (msTimer->ReadSec() < targetFrameTime) {}
+        while (true)
+        {
+            if (msTimer->ReadSec() >= targetFrameTime)
+                break;
+        }
     }
 }
 
-bool Application::CleanUp()
+bool Application::CleanUp() const
 {
     bool ret = true;
 
@@ -344,7 +348,7 @@ bool Application::CleanUp()
     if (jobSystem)
         jobSystem->WaitForPendingJobs();
 
-    for (int i = (int)listModules.size() - 1; i >= 0 && ret; --i)
+    for (int i = static_cast<int>(listModules.size()) - 1; i >= 0 && ret; --i)
     {
         if (listModules[i] != nullptr) {
             ret = listModules[i]->CleanUp();
@@ -358,7 +362,7 @@ bool Application::IsGameMode() const
     return m_isGameMode;
 }
 
-void Application::SetTargetFPS(float FPS)
+void Application::SetTargetFPS(const float FPS)
 {
     targetFPS = FPS;
 }
@@ -370,7 +374,7 @@ float Application::GetTargetFPS() const
 
 float Application::GetFPS() const
 {
-    return (dt > 0.0001f) ? (1.0f / dt) : 0.0f;
+    return dt > 0.0001f ? 1.0f / dt : 0.0f;
 }
 
 float Application::GetDT() const

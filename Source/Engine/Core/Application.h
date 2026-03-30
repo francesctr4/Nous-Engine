@@ -31,7 +31,7 @@ public:
 	NOUS_ENGINE_API bool Awake() const;
 	NOUS_ENGINE_API bool Start() const;
 	NOUS_ENGINE_API UpdateStatus Update();
-	NOUS_ENGINE_API bool CleanUp();
+	NOUS_ENGINE_API bool CleanUp() const;
 
 	NOUS_ENGINE_API void SetTargetFPS(float FPS);
 	NOUS_ENGINE_API float GetTargetFPS() const;

@@ -4,6 +4,7 @@
 
 add_subdirectory(EventSystem)
 add_subdirectory(FileSystem)
+add_subdirectory(FileWatcher)
 add_subdirectory(Logger)
 add_subdirectory(MemoryManager)
 add_subdirectory(TimeManager)
@@ -30,6 +31,7 @@ target_compile_definitions(Core PRIVATE NOUS_ENGINE_EXPORTS)
 target_link_libraries(Core PUBLIC
         EventSystem
         FileSystem
+        FileWatcher
         TimeManager
         Logger
         MemoryManager

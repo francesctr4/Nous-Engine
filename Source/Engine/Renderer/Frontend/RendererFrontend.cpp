@@ -1,6 +1,14 @@
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Renderer/Backend/RendererBackend.h"
 
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
+#include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
+#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+
+#include <filesystem>
+
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -66,6 +74,10 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 void RendererFrontend::Shutdown()
 {
 	if (!mBackend) return;
+
+	// Wait for any in-flight compile jobs to finish before tearing down GPU resources.
+	// Jobs hold a ResourceShader* and push to m_readySwaps — both must remain valid.
+	while (m_inFlightJobCount.load(std::memory_order_acquire) > 0) { /* spin */ }
 
 	mBackend->Shutdown();
 	mBackend->Destroy();
@@ -310,6 +322,151 @@ bool RendererFrontend::CreateShader(ResourceShader* shader)
 void RendererFrontend::DestroyShader(ResourceShader* shader)
 {
 	mBackend->DestroyShader(shader);
+}
+
+void RendererFrontend::ReloadAllShaders()
+{
+    // Defer the actual work to FlushPendingReloads(), which is called from
+    // ModuleRenderer3D::PreUpdate() — safely between frames, before BeginFrame().
+    // This method may be called from inside a renderpass (e.g. UI menu callback).
+    m_pendingReloadAll = true;
+}
+
+void RendererFrontend::FlushPendingReloads()
+{
+    if (!m_pendingReloadAll)
+        return;
+
+    m_pendingReloadAll = false;
+
+    if (!m_resourceManager || !m_jobSystem)
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] No ResourceManager/JobSystem — cannot dispatch compile jobs.");
+        return;
+    }
+
+    for (auto& [uid, resource] : m_resourceManager->GetResourcesMap())
+    {
+        if (resource->GetType() != ResourceType::SHADER)
+            continue;
+
+        auto* shader = static_cast<ResourceShader*>(resource);
+        const std::string normalized =
+            std::filesystem::path(shader->GetAssetsPath()).generic_string();
+        DispatchCompileJob(normalized, shader);
+    }
+}
+
+void RendererFrontend::FlushCompletedReloads()
+{
+    // Drain the ready queue under the lock, then release it before doing GPU work.
+    std::vector<PendingGPUSwap> toApply;
+    {
+        std::lock_guard<std::mutex> lock(m_swapQueueMutex);
+        if (m_readySwaps.empty()) return;
+        toApply = std::move(m_readySwaps);
+        m_readySwaps.clear();
+    }
+
+    int applied = 0;
+    int failed  = 0;
+
+    for (auto& pending : toApply)
+    {
+        ResourceShader* shader = pending.shader;
+        ShaderLoadResult& result = pending.compileResult;
+
+        // Move compiled CPU data into the live shader and free the temporary one.
+        shader->stagesData = std::move(result.shader->stagesData);
+        shader->reflection = std::move(result.shader->reflection);
+        shader->generation++;
+        NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+
+        // GPU swap (vkDeviceWaitIdle + Destroy + Create).
+        if (mBackend->ApplyCompiledShader(shader))
+            ++applied;
+        else
+        {
+            ++failed;
+            NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] GPU swap failed for '%s'.",
+                        shader->GetAssetsPath().c_str());
+        }
+    }
+
+    if (applied > 0 || failed > 0)
+    {
+        if (failed == 0)
+            NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Applied %d compiled shader(s).", applied);
+        else
+            NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Applied %d shader(s); %d GPU swap(s) failed.", applied, failed);
+    }
+}
+
+void RendererFrontend::DispatchCompileJob(const std::string& path, ResourceShader* shader)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_swapQueueMutex);
+        if (m_inFlightPaths.count(path))
+            return;  // compile already in-flight for this path — skip duplicate
+        m_inFlightPaths.insert(path);
+    }
+
+    m_inFlightJobCount.fetch_add(1, std::memory_order_relaxed);
+
+    m_jobSystem->SubmitJob([this, path, shader]()
+    {
+        NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Compiling '%s'...", path.c_str());
+
+        const ShaderCompilerConfig config;
+        ShaderLoadResult result = NOUS_ShaderSystem::LoadShaderFromFile(path, config);
+
+        {
+            std::lock_guard<std::mutex> lock(m_swapQueueMutex);
+            m_inFlightPaths.erase(path);
+
+            if (result.success)
+            {
+                m_readySwaps.push_back({ shader, std::move(result) });
+            }
+            else
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Compile failed for '%s': %s",
+                             path.c_str(), result.errorMessage.c_str());
+                if (result.shader)
+                    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+            }
+        }
+
+        m_inFlightJobCount.fetch_sub(1, std::memory_order_release);
+
+    }, "Compiling: " + path);
+}
+
+bool RendererFrontend::ReloadShaderByPath(const std::string& path)
+{
+    if (!m_resourceManager)
+        return false;
+
+    const std::string normalizedIncoming = std::filesystem::path(path).generic_string();
+
+    for (auto& [uid, resource] : m_resourceManager->GetResourcesMap())
+    {
+        if (resource->GetType() != ResourceType::SHADER)
+            continue;
+
+        const std::string normalizedStored =
+            std::filesystem::path(resource->GetAssetsPath()).generic_string();
+
+        if (normalizedIncoming != normalizedStored)
+            continue;
+
+        auto* shader = static_cast<ResourceShader*>(resource);
+        DispatchCompileJob(normalizedIncoming, shader);
+        return true;  // job dispatched (shader found)
+    }
+
+    NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] No loaded shader found for path '%s'.", path.c_str());
+    return false;
 }
 
 uint32_t RendererFrontend::PickObjectAt(int32_t pixelX, int32_t pixelY,

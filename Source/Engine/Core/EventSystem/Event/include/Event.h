@@ -60,8 +60,8 @@ struct Event
     EventContext ctx {};
 
     Event() = default;
-    explicit Event(EventType t) : type(t) {}
-    Event(EventType t, const EventContext& c) : type(t), ctx(c) {}
+    explicit Event(const EventType t) : type(t) {}
+    Event(const EventType t, const EventContext& c) : type(t), ctx(c) {}
 };
 
 // ------------------------------------------------------------
@@ -96,7 +96,7 @@ EventContext SendContext(int64_t a, int64_t b = 0);
 
 // Template getter for pointer types
 template<typename T>
-inline T* GetEventPointer(const Event& evt)
+T* GetEventPointer(const Event& evt)
 {
     return reinterpret_cast<T*>(evt.ctx.u64[0]);
 }
