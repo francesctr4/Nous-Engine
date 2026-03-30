@@ -31,22 +31,35 @@ void ShaderEditorWindow::Draw()
         ImGui::Separator();
         ImGui::Spacing();
 
-        // When this window (or any child) has focus, keep SDL text input active.
-        // TextEditor sets io.WantTextInput inside its BeginChild, but ImGui::NewFrame()
-        // clears it every frame. Setting it here as well ensures ImGui_ImplSDL3_NewFrame()
-        // always sees it and keeps SDL_StartTextInput running.
-        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
-            ImGui::GetIO().WantTextInput = true;
-
-        // Forward outer-window focus to the TextEditor child so the user doesn't
-        // have to click twice (once on the title bar and once on the text area).
-        if (ImGui::IsWindowFocused() && !ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
-            ImGui::SetNextWindowFocus();
-
         mTextEditor.Render("##ShaderEditorText", ImGui::GetContentRegionAvail());
+
+        // ImGuiColorTextEdit doesn't set io.WantTextInput like standard ImGui
+        // widgets do. Set it manually when the TextEditor's child window is focused
+        // so that ImGui_ImplSDL3_NewFrame() keeps SDL_StartTextInput() active.
+        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+            ImGui::GetIO().WantTextInput = true;
 
         if (mTextEditor.IsTextChanged())
             mHasUnsavedChanges = true;
+
+        // Accept .glsl files dragged from the AssetsBrowser.
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+            {
+                const char* data = static_cast<const char*>(payload->Data);
+                const char* end  = data + payload->DataSize;
+                while (data < end)
+                {
+                    std::string path(data);
+                    data += path.size() + 1;
+
+                    if (std::filesystem::path(path).extension() == k_GlslExtension)
+                        LoadShader(path);
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
     }
     ImGui::End();
 }

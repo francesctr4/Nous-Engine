@@ -41,6 +41,7 @@
 
 #include <vector>
 #include <memory>
+#include <SDL3/SDL_keyboard.h>
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -166,7 +167,17 @@ void ModuleEditor::DrawEditor()
 
 	EndFrame(currentBackendType);
 
-	mModuleInput->SetImGuiCaptureKeyboard(ImGui::GetIO().WantCaptureKeyboard);
+	// The ImGui SDL3 backend (v1.91+) only calls SDL_StartTextInput/SDL_StopTextInput
+	// through its IME callback, which only fires for built-in InputText widgets.
+	// Custom text widgets (e.g. ImGuiColorTextEdit) set io.WantTextInput but get no
+	// SDL text input, so typed characters never arrive. Bridge the gap here.
+	ImGuiIO& io = ImGui::GetIO();
+	if (io.WantTextInput)
+		SDL_StartTextInput(mModuleWindow->GetSDL_Window());
+	else
+		SDL_StopTextInput(mModuleWindow->GetSDL_Window());
+
+	mModuleInput->SetImGuiCaptureKeyboard(io.WantTextInput);
 }
 
 bool ModuleEditor::CleanUp()

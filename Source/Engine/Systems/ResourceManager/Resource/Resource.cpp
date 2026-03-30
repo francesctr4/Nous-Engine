@@ -1,5 +1,6 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include <unordered_map>
+#include <utility>
 
 #pragma region UTILITY MAPS
 
