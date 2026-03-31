@@ -9,6 +9,7 @@
 #include <stack>
 #include <vector>
 #include <memory>
+#include <filesystem>
 
 // ImGui_Temp
 #include "imgui.h"
@@ -241,6 +242,11 @@ public:
 
     std::string current_directory = "Assets";
     std::stack<std::string> directory_stack;
+
+    // Directory hot-reload
+    std::filesystem::file_time_type m_lastDirWriteTime;
+    float m_dirPollTimer = 0.0f;
+    static constexpr float c_dirPollInterval = 0.5f; // seconds
 
     // Script creation
     bool show_create_script_popup = false;
