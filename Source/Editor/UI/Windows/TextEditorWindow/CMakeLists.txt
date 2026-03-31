@@ -1,4 +1,4 @@
-set(CLASS_NAME "ShaderEditorWindow")
+set(CLASS_NAME "TextEditorWindow")
 
 target_sources(EditorUI PRIVATE
         include/${CLASS_NAME}.h

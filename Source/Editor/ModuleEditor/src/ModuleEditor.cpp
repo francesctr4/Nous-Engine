@@ -35,7 +35,7 @@
 #include "Editor/UI/Windows/InspectorWindow/include/InspectorWindow.h"
 #include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
 #include "Editor/UI/Windows/MemoryWindow/include/MemoryWindow.h"
-#include "Editor/UI/Windows/ShaderEditorWindow/include/ShaderEditorWindow.h"
+#include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
 
 #pragma endregion
 
@@ -149,7 +149,7 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(NOUS_NEW<InspectorWindow>(MemoryTag::EDITOR, "Inspector", this));
 	AddEditorWindow(NOUS_NEW<ConsoleWindow>(MemoryTag::EDITOR, "Console", this));
 	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryTag::EDITOR, "Memory Manager", this));
-	AddEditorWindow(NOUS_NEW<ShaderEditorWindow>(MemoryTag::EDITOR, "Shader Editor", this));
+	AddEditorWindow(NOUS_NEW<TextEditorWindow>(MemoryTag::EDITOR, "Text Editor", this));
 
 	return true;
 }
