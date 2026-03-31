@@ -164,16 +164,26 @@ void AssetsBrowser::Draw()
 {
     if (*p_open)
     {
-        // Poll the current directory for changes and hot-reload if it was modified
+        // Poll the current directory for changes on a background thread to avoid
+        // blocking the main thread (last_write_time can stall for seconds on OneDrive paths).
         m_dirPollTimer += ImGui::GetIO().DeltaTime;
-        if (m_dirPollTimer >= c_dirPollInterval)
+        if (m_dirPollTimer >= c_dirPollInterval && !m_pollInFlight.load())
         {
             m_dirPollTimer = 0.0f;
-            std::error_code ec;
-            auto writeTime = std::filesystem::last_write_time(current_directory, ec);
-            if (!ec && writeTime != m_lastDirWriteTime)
-                AddItemsFromDirectory(current_directory);
+            m_pollInFlight.store(true);
+            const std::string          dirSnapshot  = current_directory;
+            const auto                 timeSnapshot = m_lastDirWriteTime;
+            editorContext->GetJobSystem()->SubmitJob([this, dirSnapshot, timeSnapshot]()
+            {
+                std::error_code ec;
+                auto writeTime = std::filesystem::last_write_time(dirSnapshot, ec);
+                if (!ec && writeTime != timeSnapshot)
+                    m_dirChanged.store(true);
+                m_pollInFlight.store(false);
+            }, "AssetsBrowser DirPoll");
         }
+        if (m_dirChanged.exchange(false))
+            AddItemsFromDirectory(current_directory);
 
         ImGui::SetNextWindowSize(ImVec2(IconSize * 25, IconSize * 15), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin(title, p_open, ImGuiWindowFlags_MenuBar))
