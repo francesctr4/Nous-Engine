@@ -1173,11 +1173,10 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
 
     if (!baseShader || !baseShader->internalData) return false;
 
-    // Custom shaders only activate in the SCENE renderpass — they are compiled against the
-    // scene renderpass and would violate Vulkan renderpass compatibility in GAME mode.
+    // Custom shader pipeline: compiled against sceneRenderpass, which is structurally
+    // identical to gameRenderpass (same format/sample count) — Vulkan compatible in both.
     ResourceShader* drawShader = baseShader;
-    if (renderpassID != RenderpassType::GAME &&
-        renderData.material != nullptr &&
+    if (renderData.material != nullptr &&
         renderData.material->shader != nullptr &&
         renderData.material->shader->internalData != nullptr &&
         renderData.material->shader->GetState() == ResourceState::GPU_READY)
