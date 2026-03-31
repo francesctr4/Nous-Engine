@@ -1799,6 +1799,8 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     if (shader == vkContext->builtInGameShader)             vkContext->builtInGameShader             = nullptr;
     if (shader == vkContext->builtInGameBackgroundShader)   vkContext->builtInGameBackgroundShader   = nullptr;
 
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
     auto* vs = down_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
     shader->internalData = nullptr;
