@@ -78,6 +78,7 @@ void AssetsBrowser::UpdateLayoutSizes(float avail_width)
     LayoutSelectableSpacing = NOUS_MathUtils::MAX(floorf(LayoutItemSpacing) - IconHitSpacing, 0.0f);
     LayoutOuterPadding = floorf(LayoutItemSpacing * 0.5f);
 }
+#include <filesystem>
 
 int DetermineTypeFromDirectory(const std::string& directory_name) {
     if (directory_name == "Textures") 
@@ -101,8 +102,6 @@ int DetermineTypeFromDirectory(const std::string& directory_name) {
 void AssetsBrowser::AddItemsFromDirectory(const std::string& directoryPath)
 {
     Items.clear();
-
-    m_lastDirWriteTime = std::filesystem::last_write_time(directoryPath);
 
     for (const auto& entry : std::filesystem::directory_iterator(directoryPath))
     {
@@ -162,19 +161,8 @@ ExampleAsset* AssetsBrowser::GetItemByID(ImGuiID ID)
 
 void AssetsBrowser::Draw()
 {
-    if (*p_open)
+    if (*p_open) 
     {
-        // Poll the current directory for changes and hot-reload if it was modified
-        m_dirPollTimer += ImGui::GetIO().DeltaTime;
-        if (m_dirPollTimer >= c_dirPollInterval)
-        {
-            m_dirPollTimer = 0.0f;
-            std::error_code ec;
-            auto writeTime = std::filesystem::last_write_time(current_directory, ec);
-            if (!ec && writeTime != m_lastDirWriteTime)
-                AddItemsFromDirectory(current_directory);
-        }
-
         ImGui::SetNextWindowSize(ImVec2(IconSize * 25, IconSize * 15), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin(title, p_open, ImGuiWindowFlags_MenuBar))
         {
