@@ -14,8 +14,13 @@
 #include "Engine/Scripting/ScriptManager.h"
 #include "Engine/Scripting/Internal/IScript.inl"
 
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterMaterial/include/ImporterMaterial.h"
+#include "Engine/Core/Logger/Logger.h"
+
 #include "imgui.h"
 #include <glm/glm.hpp>
+#include <filesystem>
 #include <vector>
 #include <string>
 
@@ -150,12 +155,74 @@ void InspectorWindow::Draw() {
                         ImGui::Text("Assets Path: %s", mat.material->GetAssetsPath().c_str());
                         ImGui::Text("Library Path: %s", mat.material->GetLibraryPath().c_str());
 
+                        ImGui::SeparatorText("SHADER");
+
+                        const std::string currentShaderLabel = (mat.material->shader == nullptr)
+                            ? "Default (MaterialShader)"
+                            : mat.material->shader->GetName();
+
+                        if (ImGui::BeginCombo("Shader", currentShaderLabel.c_str()))
+                        {
+                            auto* rm = go->GetScene()->GetResourceManager();
+
+                            // Default entry — clears any custom shader assignment.
+                            const bool defaultSelected = (mat.material->shader == nullptr);
+                            if (ImGui::Selectable("Default (MaterialShader)", defaultSelected))
+                            {
+                                if (mat.material->shader != nullptr)
+                                {
+                                    rm->UnloadResource(mat.material->shader->GetUID());
+                                    mat.material->shader    = nullptr;
+                                    mat.material->shaderUID = INVALID_ID;
+                                }
+                            }
+                            if (defaultSelected) ImGui::SetItemDefaultFocus();
+
+                            // Scan Assets/Shaders/ for .glsl files.
+                            const std::string shadersDir = "Assets/Shaders/";
+                            if (std::filesystem::exists(shadersDir))
+                            {
+                                for (const auto& entry : std::filesystem::directory_iterator(shadersDir))
+                                {
+                                    if (!entry.is_regular_file()) continue;
+                                    if (entry.path().extension() != ".glsl") continue;
+
+                                    const std::string fullPath = entry.path().generic_string();
+                                    const std::string fileName = entry.path().filename().string();
+                                    const bool isSelected = (mat.material->shader != nullptr &&
+                                                             mat.material->shader->GetAssetsPath() == fullPath);
+
+                                    if (ImGui::Selectable(fileName.c_str(), isSelected))
+                                    {
+                                        Resource* r = rm->CreateResource(fullPath);
+                                        if (r)
+                                        {
+                                            if (mat.material->shader != nullptr)
+                                                rm->UnloadResource(mat.material->shader->GetUID());
+                                            mat.material->shader    = down_cast<ResourceShader*>(r);
+                                            mat.material->shaderUID = mat.material->shader->GetUID();
+                                        }
+                                        else
+                                        {
+                                            NOUS_ERROR("InspectorWindow — failed to load shader '%s'.", fullPath.c_str());
+                                        }
+                                    }
+                                    if (isSelected) ImGui::SetItemDefaultFocus();
+                                }
+                            }
+
+                            ImGui::EndCombo();
+                        }
+
                         ImGui::SeparatorText("Texture Maps");
                         if (mat.material->diffuseMap.texture) {
                             ImGui::Text("Diffuse: %s", mat.material->diffuseMap.texture->GetName().c_str());
                         } else {
                             ImGui::TextDisabled("No diffuse texture assigned.");
                         }
+
+                        if (ImGui::Button("Save Material"))
+                            ImporterMaterial::SaveMaterialToAssets(mat.material);
                     }
                 }
             }
