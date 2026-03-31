@@ -1166,21 +1166,35 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID)
         return true;
 
-    ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
+    // The base shader owns the instance pool and descriptor state.
+    ResourceShader* baseShader = (renderpassID == RenderpassType::GAME)
         ? vkContext->builtInGameShader
         : vkContext->builtInMaterialShader;
 
-    if (!rShader || !rShader->internalData) return false;
+    if (!baseShader || !baseShader->internalData) return false;
+
+    // Custom shaders only activate in the SCENE renderpass — they are compiled against the
+    // scene renderpass and would violate Vulkan renderpass compatibility in GAME mode.
+    ResourceShader* drawShader = baseShader;
+    if (renderpassID != RenderpassType::GAME &&
+        renderData.material != nullptr &&
+        renderData.material->shader != nullptr &&
+        renderData.material->shader->internalData != nullptr &&
+        renderData.material->shader->GetState() == ResourceState::GPU_READY)
+    {
+        drawShader = renderData.material->shader;
+    }
 
     VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
-    VulkanShader*        vs            = static_cast<VulkanShader*>(rShader->internalData);
+    VulkanShader* vsBase = static_cast<VulkanShader*>(baseShader->internalData);
+    VulkanShader* vsDraw = static_cast<VulkanShader*>(drawShader->internalData);
     VulkanGeometryData*  bufferData    = &vkContext->geometries[renderData.geometry->internalID];
 
-    // Bind pipeline.
-    NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
+    // Bind pipeline — use custom shader's VkPipeline if assigned, else base shader.
+    NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vsDraw);
 
-    // Push model matrix via push constants.
-    vkCmdPushConstants(commandBuffer->handle, vs->pipeline.pipelineLayout,
+    // Push model matrix via push constants — use base shader's layout (compatible with draw shader).
+    vkCmdPushConstants(commandBuffer->handle, vsBase->pipeline.pipelineLayout,
         VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &renderData.model);
 
     // Resolve material.
@@ -1197,18 +1211,19 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
 
     // Even the default material isn't GPU-ready yet, or the instance pool isn't initialised.
     // Skip the draw — issuing it would leave set #1 unbound and trigger VUID-vkCmdDrawIndexed-None-08600.
-    if (!material || material->internalID == INVALID_ID || !vs->instancePool)
+    if (!material || material->internalID == INVALID_ID || !vsBase->instancePool)
         return true;
 
     // Per-instance descriptors (material UBO + texture sampler).
+    // All descriptor state is owned by vsBase (the instance pool owner).
     {
         const uint32_t instanceID  = material->internalID;
         const uint32_t imageIndex  = vkContext->imageIndex;
 
         // Write diffuse colour to instance UBO (binding 0).
         struct InstanceUBO { glm::vec4 diffuseColor; } ubo{ material->diffuseColor };
-        auto& uboGen = vs->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
-        NOUS_VulkanShader::WriteInstanceUBO(vkContext, vs, imageIndex, instanceID,
+        auto& uboGen = vsBase->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
+        NOUS_VulkanShader::WriteInstanceUBO(vkContext, vsBase, imageIndex, instanceID,
             &ubo, sizeof(ubo), &uboGen);
 
         // Write diffuse texture sampler (binding 1), lazy update.
@@ -1221,13 +1236,13 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
         if (texture && texture->internalData)
         {
             VulkanTextureData* texData = static_cast<VulkanTextureData*>(texture->internalData);
-            auto& samplerGen = vs->instanceStates[instanceID].descriptorStates[1].generations[imageIndex];
-            auto& samplerID  = vs->instanceStates[instanceID].descriptorStates[1].ids[imageIndex];
-            NOUS_VulkanShader::WriteInstanceSampler(vkContext, vs, imageIndex, instanceID,
+            auto& samplerGen = vsBase->instanceStates[instanceID].descriptorStates[1].generations[imageIndex];
+            auto& samplerID  = vsBase->instanceStates[instanceID].descriptorStates[1].ids[imageIndex];
+            NOUS_VulkanShader::WriteInstanceSampler(vkContext, vsBase, imageIndex, instanceID,
                 1, texData->image.view, texData->sampler,
                 &samplerGen, &samplerID, texture->ID, texture->generation);
         }
-        else if (vs->instanceStates[instanceID].descriptorStates[1].generations[imageIndex] == UINT32_MAX)
+        else if (vsBase->instanceStates[instanceID].descriptorStates[1].generations[imageIndex] == UINT32_MAX)
         {
             // Binding 1 has never been written for this image index (fresh slot, no
             // valid texture yet including no default). Drawing now would violate
@@ -1235,7 +1250,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
             return true;
         }
 
-        NOUS_VulkanShader::BindInstanceDescriptorSet(commandBuffer->handle, vs, imageIndex, instanceID);
+        NOUS_VulkanShader::BindInstanceDescriptorSet(commandBuffer->handle, vsBase, imageIndex, instanceID);
     }
 
     // Bind vertex buffer.
