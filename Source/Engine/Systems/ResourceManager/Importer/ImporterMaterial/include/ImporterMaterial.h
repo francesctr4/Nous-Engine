@@ -2,6 +2,9 @@
 #define IMPORTERMATERIAL_H
 
 #include "Engine/Systems/ResourceManager/Importer/Importer.inl"
+#include "Engine/EngineExport.h"
+
+class ResourceMaterial;
 
 struct ImporterMaterial : Importer
 {
@@ -11,6 +14,8 @@ struct ImporterMaterial : Importer
     void Evict(Resource* resource) override;
     bool Upload(Resource* resource, IGPUResourceFactory* gpu) override;
     void Release(Resource* resource, IGPUResourceFactory* gpu) override;
+
+    static NOUS_ENGINE_API bool SaveMaterialToAssets(ResourceMaterial* material);
 };
 
 #endif // IMPORTERMATERIAL_H

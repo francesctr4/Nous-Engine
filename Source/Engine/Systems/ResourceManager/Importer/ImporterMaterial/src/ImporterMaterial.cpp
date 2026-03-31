@@ -2,6 +2,7 @@
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
 
@@ -103,6 +104,42 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
     material->diffuseMap.type    = TextureMapType::DIFFUSE;
     material->diffuseMap.texture = diffuseTexture;
 
+    // Resolve optional shader dependency.
+    double shaderUIDDouble = 0.0;
+    std::string shaderAssetPath, shaderLibPath;
+    if (jsonFile.GetValue("shader_uid",       shaderUIDDouble) &&
+        jsonFile.GetValue("shader_asset_path", shaderAssetPath))
+    {
+        const UID         shaderUID  = static_cast<UID>(shaderUIDDouble);
+        const std::string shaderName = NOUS_FileManager::GetFilename(shaderAssetPath);
+        ResourceShader*   loadedShader = nullptr;
+
+        // Prefer library path (GAME mode / no Assets/).
+        if (jsonFile.GetValue("shader_library_path", shaderLibPath))
+        {
+            Resource* r = mResourceManager->CreateResourceFromLibrary(
+                shaderUID, ResourceType::SHADER, shaderName,
+                shaderAssetPath, shaderLibPath);
+            if (r) loadedShader = down_cast<ResourceShader*>(r);
+        }
+        if (!loadedShader)
+        {
+            Resource* r = mResourceManager->CreateResource(shaderAssetPath);
+            if (r) loadedShader = down_cast<ResourceShader*>(r);
+        }
+
+        if (loadedShader)
+        {
+            material->shader    = loadedShader;
+            material->shaderUID = loadedShader->GetUID();
+        }
+        else
+        {
+            NOUS_WARN("ImporterMaterial::Deserialize() — shader '%s' could not be loaded; falling back to built-in.",
+                      shaderAssetPath.c_str());
+        }
+    }
+
     return true;
 }
 
@@ -129,4 +166,51 @@ void ImporterMaterial::Evict(Resource* inResource)
         mResourceManager->UnloadResource(material->diffuseMap.texture->GetUID());
         material->diffuseMap.texture = nullptr;
     }
+    if (material->shader)
+    {
+        mResourceManager->UnloadResource(material->shader->GetUID());
+        material->shader    = nullptr;
+        material->shaderUID = INVALID_ID;
+    }
+}
+
+bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
+{
+    if (!material) return false;
+
+    // Read a .nmat JSON file, update shader keys, and write it back.
+    auto updateFile = [&](const std::string& filePath) -> bool
+    {
+        JSON_Value* val = json_parse_file(filePath.c_str());
+        if (!val)
+        {
+            NOUS_ERROR("ImporterMaterial::SaveMaterialToAssets() — could not open '%s'", filePath.c_str());
+            return false;
+        }
+        JSON_Object* obj = json_value_get_object(val);
+
+        if (material->shader)
+        {
+            json_object_set_number(obj, "shader_uid",
+                static_cast<double>(material->shaderUID));
+            json_object_set_string(obj, "shader_asset_path",
+                material->shader->GetAssetsPath().c_str());
+            json_object_set_string(obj, "shader_library_path",
+                material->shader->GetLibraryPath().c_str());
+        }
+        else
+        {
+            json_object_remove(obj, "shader_uid");
+            json_object_remove(obj, "shader_asset_path");
+            json_object_remove(obj, "shader_library_path");
+        }
+
+        const bool ok = (json_serialize_to_file_pretty(val, filePath.c_str()) == JSONSuccess);
+        json_value_free(val);
+        return ok;
+    };
+
+    bool ok = updateFile(material->GetAssetsPath());
+    ok     &= updateFile(material->GetLibraryPath());
+    return ok;
 }
