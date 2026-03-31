@@ -1779,8 +1779,12 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         return true;
     }
 
-    // ── Default: scene renderpass for user-defined shaders ────────────────────
-    return NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader);
+    // ── Default: user-defined shaders — target the active renderpass ─────────
+    //    In GAME mode sceneRenderpass is VK_NULL_HANDLE; use the swapchain renderpass instead.
+    VulkanRenderpass* targetRenderpass = (vkContext->renderMode == RenderMode::GAME)
+        ? &vkContext->gameSwapchainRenderpass
+        : &vkContext->sceneRenderpass;
+    return NOUS_VulkanShader::Create(vkContext, targetRenderpass, shader);
 }
 
 void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
