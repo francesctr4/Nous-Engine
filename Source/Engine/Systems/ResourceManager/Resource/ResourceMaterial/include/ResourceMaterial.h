@@ -8,6 +8,7 @@
 #include "glm/glm.hpp"
 
 class ResourceTexture;
+class ResourceShader;
 
 class ResourceMaterial : public Resource
 {
@@ -25,7 +26,10 @@ public:
     uint32 generation;
 
     TextureMap diffuseMap;
-    glm::vec4 diffuseColor;
+    glm::vec4  diffuseColor;
+
+    ResourceShader* shader    = nullptr;    // null = use built-in MaterialShader
+    uint32          shaderUID = INVALID_ID; // for serialisation / reload
 
 };
 
