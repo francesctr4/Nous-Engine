@@ -143,9 +143,8 @@ bool ModuleResourceManager::Start()
 	// -----------------------
 	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
 	mDefaultMaterial->SetName("DefaultMaterial");
-	mDefaultMaterial->diffuseColor           = glm::vec4(1.0f);
-	mDefaultMaterial->diffuseMap.type        = TextureMapType::DIFFUSE;
-	mDefaultMaterial->diffuseMap.texture     = mDefaultTexture;
+	mDefaultMaterial->diffuseColor = glm::vec4(1.0f);
+	mDefaultMaterial->textureMaps["diffuseSampler"] = TextureMap{ TextureMapType::UNKNOWN, mDefaultTexture };
 	mDefaultMaterial->SetState(ResourceState::CPU_READY);
 
 	// Push both to the upload queue.  Texture must come first so it is GPU_READY
@@ -933,7 +932,9 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
         if (!res || res->GetType() != ResourceType::MATERIAL) continue;
         if (res->GetState() == ResourceState::GPU_READY)
             gpu->DestroyMaterial(down_cast<ResourceMaterial*>(res));
-        down_cast<ResourceMaterial*>(res)->diffuseMap.texture = nullptr;
+        auto* mat = down_cast<ResourceMaterial*>(res);
+        for (auto& [name, map] : mat->textureMaps)
+            map.texture = nullptr;
         NOUS_DELETE(res, MemoryTag::RESOURCE_MATERIAL);
     }
 
