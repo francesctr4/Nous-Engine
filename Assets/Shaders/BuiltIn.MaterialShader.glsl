@@ -13,10 +13,18 @@ layout(location = 0) out struct DataTransferObject
     vec2 texCoord;
 } outDTO;
 
-layout(set = 0, binding = 0) uniform globalUniformObject
+struct DirectionalLight { vec4 direction; vec4 color; };
+struct PointLight        { vec4 position; vec4 color; };
+
+layout(set = 0, binding = 0) uniform GlobalUBO
 {
-    mat4 projection;
-    mat4 view;
+    mat4             projection;
+    mat4             view;
+    vec4             viewPosition;
+    vec4             ambientColor;
+    DirectionalLight dirLight;
+    ivec4            lightCountAndPad;
+    PointLight       pointLights[16];
 } globalUBO;
 
 layout(push_constant) uniform pushConstantObject
@@ -47,10 +55,24 @@ layout(location = 0) in struct DataTransferObject
 
 layout(location = 0) out vec4 fragColor;
 
-layout(set = 1, binding = 0) uniform localUniformObject
+struct DirectionalLight { vec4 direction; vec4 color; };
+struct PointLight        { vec4 position; vec4 color; };
+
+layout(set = 0, binding = 0) uniform GlobalUBO
+{
+    mat4             projection;
+    mat4             view;
+    vec4             viewPosition;
+    vec4             ambientColor;
+    DirectionalLight dirLight;
+    ivec4            lightCountAndPad;
+    PointLight       pointLights[16];
+} globalUBO;
+
+layout(set = 1, binding = 0) uniform InstanceUBO
 {
     vec4 diffuseColor;
-} localUBO;
+} instanceUBO;
 
 // Samplers
 layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
@@ -58,7 +80,7 @@ layout(set = 1, binding = 2) uniform sampler2D normalSampler;
 
 void main()
 {
-    vec4 diffuse = localUBO.diffuseColor * texture(diffuseSampler, inDTO.texCoord);
+    vec4 diffuse = instanceUBO.diffuseColor * texture(diffuseSampler, inDTO.texCoord);
     vec3 normalSample = texture(normalSampler, inDTO.texCoord).rgb;
     fragColor = diffuse * vec4(normalSample, 1.0);
 }

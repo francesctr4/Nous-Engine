@@ -1,0 +1,7 @@
+{
+    "Name": "BlinnPhong",
+    "UID": 3417879832,
+    "Resource Type": 3,
+    "Assets Path": "Assets\\Shaders\\BlinnPhong.glsl",
+    "Library Path": "Library\\Shaders\\3417879832"
+}
