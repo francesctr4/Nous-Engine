@@ -3,6 +3,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 
@@ -69,6 +70,11 @@ void HierarchyWindow::Draw() {
                         GameObject* go = m_Scene->CreateGameObject("Main Camera", nullptr);
                         auto& cam = go->AddComponent<CCamera>();
                         cam.isMainCamera = true;
+                        editorContext->GetScene()->selectedGameObject = go;
+                    }
+                    if (ImGui::MenuItem("Create Light")) {
+                        GameObject* go = m_Scene->CreateGameObject("Directional Light", nullptr);
+                        go->AddComponent<CLight>();
                         editorContext->GetScene()->selectedGameObject = go;
                     }
                     ImGui::EndPopup();

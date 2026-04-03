@@ -7,6 +7,7 @@
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
@@ -144,6 +145,32 @@ void InspectorWindow::Draw() {
                         cam.farPlane = glm::max(cam.farPlane, cam.nearPlane + 0.01f);
 
                     ImGui::DragFloat("Aspect Ratio", &cam.aspectRatio, 0.01f, 0.1f, 10.0f, "%.3f");
+
+                    ImGui::Unindent();
+                }
+            }
+
+            // --- Light Component ---
+            if (go->HasComponent<CLight>()) {
+                if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    auto& light = go->GetComponent<CLight>();
+
+                    ImGui::Indent();
+
+                    const char* lightTypeNames[] = { "Directional", "Point" };
+                    int currentType = static_cast<int>(light.type);
+                    if (ImGui::Combo("Type", &currentType, lightTypeNames, 2))
+                        light.type = static_cast<LightType>(currentType);
+
+                    ImGui::ColorEdit3("Color", &light.color.r);
+
+                    ImGui::DragFloat("Intensity", &light.intensity, 0.01f, 0.0f, 100.0f, "%.2f");
+                    light.intensity = glm::max(light.intensity, 0.0f);
+
+                    if (light.type == LightType::Point) {
+                        ImGui::DragFloat("Range", &light.range, 0.1f, 0.1f, 10000.0f, "%.1f");
+                        light.range = glm::max(light.range, 0.1f);
+                    }
 
                     ImGui::Unindent();
                 }
