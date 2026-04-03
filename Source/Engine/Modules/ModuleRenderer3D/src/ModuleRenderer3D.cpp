@@ -16,6 +16,7 @@
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
@@ -558,6 +559,8 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	}
 
 	packet->geometries.clear();
+	packet->hasDirectionalLight   = false;
+	packet->activePointLightCount = 0;
 
 	// Extract frustum planes from the game camera for per-mesh culling.
 	// Meshes whose world-space AABB is completely outside the frustum are skipped.
@@ -602,6 +605,46 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 		}
 
 		packet->geometries.emplace_back(data);
+	}
+
+	// ── Light gathering ───────────────────────────────────────────────────────────
+	for (const auto& goPtr : sceneData.gameObjects)
+	{
+		auto* light     = goPtr->TryGetComponent<CLight>();
+		auto* transform = goPtr->TryGetComponent<CTransform>();
+		if (!light || !transform) continue;
+
+		if (light->type == LightType::Directional)
+		{
+			if (!packet->hasDirectionalLight)
+			{
+				const glm::vec3 forward = glm::normalize(
+					transform->orientation * glm::vec3(0.f, -1.f, 0.f));
+				packet->directionalLight.direction = glm::vec4(forward, 0.f);
+				packet->directionalLight.color     = glm::vec4(light->color, light->intensity);
+				packet->hasDirectionalLight        = true;
+			}
+			else
+			{
+				NOUS_WARN_C(CURRENT_CHANNEL,
+					"Scene has more than one directional light; only the first is used.");
+			}
+		}
+		else if (light->type == LightType::Point)
+		{
+			if (packet->activePointLightCount < c_maxPointLights)
+			{
+				PointLight& pl = packet->pointLights[packet->activePointLightCount++];
+				pl.position    = glm::vec4(transform->position, light->range);
+				pl.color       = glm::vec4(light->color, light->intensity);
+			}
+			else
+			{
+				NOUS_WARN_C(CURRENT_CHANNEL,
+					"Point light limit (%u) reached; light on '%s' ignored.",
+					c_maxPointLights, goPtr->GetName().c_str());
+			}
+		}
 	}
 
 	return true;
