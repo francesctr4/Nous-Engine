@@ -94,6 +94,12 @@ public:
     [[nodiscard]] ResourceTexture* GetDefaultTexture() const;
     [[nodiscard]] ResourceMaterial* GetDefaultMaterial() const;
 
+    // Returns the resource pointer WITHOUT bumping the reference count (borrowed reference).
+    // Use for read-only access (e.g. Inspector UI) where the caller does not own the resource.
+    // Do NOT call UnloadResource on the returned pointer.
+    // Returns nullptr if the resource is not currently loaded.
+    NOUS_ENGINE_API Resource* GetLoadedResource(UID uid);
+
     // Reads the .meta sidecar for assetsPath and fills outData.
     // Returns false if the meta file is missing or malformed.
     NOUS_ENGINE_API bool GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData);

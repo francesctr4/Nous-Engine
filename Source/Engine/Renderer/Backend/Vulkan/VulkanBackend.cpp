@@ -1938,15 +1938,9 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
                 NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader game clone.");
         }
 
-        // Pick clone on pickRenderpass (blending disabled).
-        if (vkContext->builtInPickShader)
-        {
-            vkContext->builtInPickShader->stagesData = shader->stagesData;
-            vkContext->builtInPickShader->reflection = shader->reflection;
-            vkContext->builtInPickShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInPickShader, &vkContext->pickRenderpass, true, false, false, false))
-                NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate pick shader clone.");
-        }
+        // NOTE: builtInPickShader is NOT updated here. It is a separate independent shader
+        // (BuiltIn.PickShader.glsl) that outputs object IDs for mouse picking — it is NOT
+        // a clone of the material shader and must not be overwritten with material shader data.
 
         // Re-acquire descriptor-set slots for all materials — old slots were destroyed
         // with the previous shader pool and must be reallocated from the new one.

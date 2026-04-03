@@ -1030,6 +1030,15 @@ ResourceMaterial *ModuleResourceManager::GetDefaultMaterial() const
     return mDefaultMaterial;
 }
 
+Resource* ModuleResourceManager::GetLoadedResource(UID uid)
+{
+    std::lock_guard<std::mutex> lock(resourcesMutex);
+    auto it = resources.find(uid);
+    if (it == resources.end() || it->second == nullptr)
+        return nullptr;
+    return it->second;
+}
+
 bool ModuleResourceManager::GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData)
 {
     return ReadMetaFile(assetsPath + ".meta", outData);

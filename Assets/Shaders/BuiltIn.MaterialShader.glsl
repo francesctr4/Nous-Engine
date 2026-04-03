@@ -54,8 +54,11 @@ layout(set = 1, binding = 0) uniform localUniformObject
 
 // Samplers
 layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
+layout(set = 1, binding = 2) uniform sampler2D normalSampler;
 
 void main()
 {
-    fragColor = /* vec4(inDTO.outColor, 1.0f) * */ localUBO.diffuseColor * texture(diffuseSampler, inDTO.texCoord);
+    vec4 diffuse = localUBO.diffuseColor * texture(diffuseSampler, inDTO.texCoord);
+    vec3 normalSample = texture(normalSampler, inDTO.texCoord).rgb;
+    fragColor = diffuse * vec4(normalSample, 1.0);
 }

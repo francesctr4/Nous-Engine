@@ -17,6 +17,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMaterial/include/ImporterMaterial.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
+#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Core/Logger/Logger.h"
 
 #include "imgui.h"
@@ -223,8 +224,20 @@ void InspectorWindow::Draw() {
                         // CreateResource is idempotent — returns the already-loaded resource.
                         ResourceShader* effectiveShader = mat.material->shader;
                         if (!effectiveShader)
-                            effectiveShader = down_cast<ResourceShader*>(
-                                rm->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl"));
+                        {
+                            // Use GetLoadedResource (no ref-count bump) — the built-in material
+                            // shader is always loaded by the renderer, so we just borrow it.
+                            static UID s_builtInMatShaderUID = 0;
+                            if (s_builtInMatShaderUID == 0)
+                            {
+                                MetaFileData meta;
+                                if (rm->GetAssetMetaData("Assets/Shaders/BuiltIn.MaterialShader.glsl", meta))
+                                    s_builtInMatShaderUID = meta.uid;
+                            }
+                            if (s_builtInMatShaderUID != 0)
+                                effectiveShader = down_cast<ResourceShader*>(
+                                    rm->GetLoadedResource(s_builtInMatShaderUID));
+                        }
 
                         if (!effectiveShader || effectiveShader->GetState() != ResourceState::GPU_READY)
                         {
