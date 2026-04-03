@@ -16,6 +16,7 @@
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMaterial/include/ImporterMaterial.h"
+#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 #include "Engine/Core/Logger/Logger.h"
 
 #include "imgui.h"
@@ -23,6 +24,8 @@
 #include <filesystem>
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <cctype>
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
@@ -150,6 +153,8 @@ void InspectorWindow::Draw() {
                 if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
                     auto& mat = go->GetComponent<CMaterial>();
                     if (mat.material) {
+                        auto* rm = go->GetScene()->GetResourceManager();
+
                         ImGui::Text("Name: %s", mat.material->GetName().c_str());
                         ImGui::Text("UID: %u", mat.material->GetUID());
                         ImGui::Text("Assets Path: %s", mat.material->GetAssetsPath().c_str());
@@ -163,8 +168,6 @@ void InspectorWindow::Draw() {
 
                         if (ImGui::BeginCombo("Shader", currentShaderLabel.c_str()))
                         {
-                            auto* rm = go->GetScene()->GetResourceManager();
-
                             // Default entry — clears any custom shader assignment.
                             const bool defaultSelected = (mat.material->shader == nullptr);
                             if (ImGui::Selectable("Default (MaterialShader)", defaultSelected))
@@ -215,10 +218,105 @@ void InspectorWindow::Draw() {
                         }
 
                         ImGui::SeparatorText("Texture Maps");
-                        if (mat.material->diffuseMap.texture) {
-                            ImGui::Text("Diffuse: %s", mat.material->diffuseMap.texture->GetName().c_str());
-                        } else {
-                            ImGui::TextDisabled("No diffuse texture assigned.");
+
+                        // Determine effective shader: custom if assigned, otherwise built-in.
+                        // CreateResource is idempotent — returns the already-loaded resource.
+                        ResourceShader* effectiveShader = mat.material->shader;
+                        if (!effectiveShader)
+                            effectiveShader = down_cast<ResourceShader*>(
+                                rm->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl"));
+
+                        if (!effectiveShader || effectiveShader->GetState() != ResourceState::GPU_READY)
+                        {
+                            ImGui::TextDisabled("Shader not ready.");
+                        }
+                        else
+                        {
+                            const auto& setIt = effectiveShader->reflection.descriptorSets.find(1);
+                            bool hasSamplers = (setIt != effectiveShader->reflection.descriptorSets.end());
+                            if (hasSamplers)
+                            {
+                                // Collect and sort samplers by binding index for stable display order.
+                                std::vector<const ReflectedBinding*> samplers;
+                                for (const auto& rb : setIt->second)
+                                    if (rb.type == DescriptorType::CombinedImageSampler)
+                                        samplers.push_back(&rb);
+                                std::sort(samplers.begin(), samplers.end(),
+                                    [](const ReflectedBinding* a, const ReflectedBinding* b){
+                                        return a->binding < b->binding; });
+
+                                hasSamplers = !samplers.empty();
+
+                                for (const ReflectedBinding* rb : samplers)
+                                {
+                                    ImGui::PushID(static_cast<int>(rb->binding));
+
+                                    // Current texture for this slot (may be null)
+                                    ResourceTexture* currentTex = nullptr;
+                                    auto texIt = mat.material->textureMaps.find(rb->name);
+                                    if (texIt != mat.material->textureMaps.end())
+                                        currentTex = texIt->second.texture;
+
+                                    // Label + drop button
+                                    ImGui::TextUnformatted((rb->name + ":").c_str());
+                                    ImGui::SameLine();
+                                    const std::string btnLabel = currentTex ? currentTex->GetName() : "(none — drop here)";
+                                    ImGui::Button(btnLabel.c_str(), ImVec2(200.0f, 0.0f));
+
+                                    if (ImGui::BeginDragDropTarget())
+                                    {
+                                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+                                        {
+                                            // Take the first path in the multi-item payload
+                                            std::string droppedPath(static_cast<const char*>(payload->Data));
+                                            std::replace(droppedPath.begin(), droppedPath.end(), '\\', '/');
+
+                                            // Validate texture extension
+                                            const size_t dotPos = droppedPath.find_last_of('.');
+                                            std::string ext = (dotPos != std::string::npos) ? droppedPath.substr(dotPos) : "";
+                                            for (char& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+                                            static const char* s_texExts[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga" };
+                                            bool isTexture = false;
+                                            for (const char* e : s_texExts)
+                                                if (ext == e) { isTexture = true; break; }
+
+                                            if (isTexture)
+                                            {
+                                                Resource* r = rm->CreateResource(droppedPath);
+                                                if (r)
+                                                {
+                                                    if (currentTex)
+                                                        rm->UnloadResource(currentTex->GetUID());
+                                                    mat.material->textureMaps[rb->name].texture =
+                                                        down_cast<ResourceTexture*>(r);
+                                                }
+                                                else
+                                                {
+                                                    NOUS_ERROR("InspectorWindow — failed to load texture '%s'.", droppedPath.c_str());
+                                                }
+                                            }
+                                        }
+                                        ImGui::EndDragDropTarget();
+                                    }
+
+                                    // [x] clear button — only shown when a texture is assigned
+                                    if (currentTex)
+                                    {
+                                        ImGui::SameLine();
+                                        if (ImGui::SmallButton("x"))
+                                        {
+                                            rm->UnloadResource(currentTex->GetUID());
+                                            mat.material->textureMaps[rb->name].texture = nullptr;
+                                        }
+                                    }
+
+                                    ImGui::PopID();
+                                }
+                            }
+
+                            if (!hasSamplers)
+                                ImGui::TextDisabled("No texture slots in this shader.");
                         }
 
                         if (ImGui::Button("Save Material"))
