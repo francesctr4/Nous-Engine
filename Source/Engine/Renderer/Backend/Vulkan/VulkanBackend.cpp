@@ -1108,9 +1108,7 @@ bool VulkanBackend::RecreateResources()
 
 bool VulkanBackend::UpdateGlobalWorldState(
         RenderpassType renderpassID,
-        const glm::mat4& projection, const glm::mat4& view,
-        const glm::vec3& viewPosition, const glm::vec4& ambientColor,
-        int32 mode)
+        const GlobalUBO& globalUBO)
 {
     ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
         ? vkContext->builtInGameShader
@@ -1122,10 +1120,8 @@ bool VulkanBackend::UpdateGlobalWorldState(
     VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
 
     NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
-
-    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
     NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
-        vkContext->imageIndex, &ubo, sizeof(ubo));
+        vkContext->imageIndex, &globalUBO, sizeof(GlobalUBO));
 
     return true;
 }

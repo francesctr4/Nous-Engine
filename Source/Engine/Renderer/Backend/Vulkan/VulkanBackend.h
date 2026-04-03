@@ -45,9 +45,7 @@ public:
 
 	bool UpdateGlobalWorldState(
             RenderpassType renderpassID,
-            const glm::mat4& projection, const glm::mat4& view,
-            const glm::vec3& viewPosition, const glm::vec4& ambientColor,
-            int32 mode) override;
+            const GlobalUBO& globalUBO) override;
 
 	bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData) override;
 

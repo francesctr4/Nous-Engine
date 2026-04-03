@@ -7,6 +7,7 @@
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
+#include <algorithm>
 #include <filesystem>
 
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
@@ -144,6 +145,22 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 
 	bool success = true;
 
+	// Assembles the full GlobalUBO from camera + light data in the render packet.
+	auto MakeGlobalUBO = [&](Camera* camera) -> GlobalUBO
+	{
+		GlobalUBO ubo{};
+		ubo.projection    = camera->GetProjectionMatrix();
+		ubo.view          = camera->GetViewMatrix();
+		ubo.viewPosition  = glm::vec4(camera->GetPos(), 0.f);
+		ubo.ambientColor  = glm::vec4(1.f, 1.f, 1.f, 0.1f);
+		ubo.directionalLight = packet->directionalLight;
+		ubo.lightCountAndPad.x = static_cast<int32_t>(packet->activePointLightCount);
+		std::copy(packet->pointLights,
+		          packet->pointLights + packet->activePointLightCount,
+		          ubo.pointLights);
+		return ubo;
+	};
+
 	// --- SCENE PASS (EDITOR mode only) ---
 	if (mRenderMode == RenderMode::EDITOR)
 	{
@@ -154,12 +171,8 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 				packet->editorCamera->GetProjectionMatrix(),
 				packet->editorCamera->GetViewMatrix());
 
-			success &= mBackend->UpdateGlobalWorldState(
-					sceneRenderpass,
-					packet->editorCamera->GetProjectionMatrix(),
-					packet->editorCamera->GetViewMatrix(),
-					packet->editorCamera->GetPos(),
-					glm::vec4(1.0f), 0);
+			success &= mBackend->UpdateGlobalWorldState(sceneRenderpass,
+				MakeGlobalUBO(packet->editorCamera));
 
 			success &= mBackend->DrawGrid(
 					sceneRenderpass,
@@ -210,12 +223,8 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 			packet->gameCamera->GetProjectionMatrix(),
 			packet->gameCamera->GetViewMatrix());
 
-        success &= mBackend->UpdateGlobalWorldState(
-				gameRenderpass,
-				packet->gameCamera->GetProjectionMatrix(),
-				packet->gameCamera->GetViewMatrix(),
-				packet->gameCamera->GetPos(),
-				glm::vec4(1.0f), 0);
+        success &= mBackend->UpdateGlobalWorldState(gameRenderpass,
+            MakeGlobalUBO(packet->gameCamera));
 
 		for (auto& geometry : packet->geometries)
 		{

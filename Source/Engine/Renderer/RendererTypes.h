@@ -60,6 +60,41 @@ enum class RenderpassType
     UI
 };
 
+// -----------------------------------------------------------------------------
+// Light data (std140-safe: all members use vec4/ivec4, no vec3)
+// -----------------------------------------------------------------------------
+constexpr uint32_t c_maxPointLights = 16;
+
+struct DirectionalLight
+{
+    glm::vec4 direction;  // xyz = world-space direction (normalised), w = unused
+    glm::vec4 color;      // xyz = RGB, w = intensity
+};
+
+struct PointLight
+{
+    glm::vec4 position;   // xyz = world-space position, w = range
+    glm::vec4 color;      // xyz = RGB, w = intensity
+};
+
+// GPU-side global uniform buffer object.
+// Layout must mirror the GLSL GlobalUBO block exactly (std140).
+// IMPORTANT: Never use glm::vec3 here — in std140, vec3 has 16-byte alignment
+// while glm::vec3 has 4-byte alignment in C++, causing silent layout mismatch.
+// Use glm::ivec4 for the count field so both sides agree on 16-byte size + alignment.
+struct GlobalUBO
+{
+    glm::mat4        projection;                    //  64 bytes, offset   0
+    glm::mat4        view;                          //  64 bytes, offset  64
+    glm::vec4        viewPosition;                  //  16 bytes, offset 128 (w = unused)
+    glm::vec4        ambientColor;                  //  16 bytes, offset 144 (w = intensity)
+    DirectionalLight directionalLight;              //  32 bytes, offset 160
+    glm::ivec4       lightCountAndPad;              //  16 bytes, offset 192 (x = activePointLightCount)
+    PointLight       pointLights[c_maxPointLights]; // 512 bytes, offset 208
+};                                                  // = 720 bytes total
+static_assert(sizeof(GlobalUBO) == 720,
+    "GlobalUBO size changed — update the GLSL block and this assert together.");
+
 struct RenderPacket
 {
     RenderPacket() : editorCamera(nullptr), gameCamera(nullptr), deltaTime(0.0f) {}
@@ -69,6 +104,11 @@ struct RenderPacket
     float deltaTime;
 
     std::vector<GeometryRenderData> geometries;
+
+    DirectionalLight directionalLight              = {};
+    bool             hasDirectionalLight           = false;
+    PointLight       pointLights[c_maxPointLights] = {};
+    uint32_t         activePointLightCount         = 0;
 };
 
 struct OutlineSettings
@@ -216,9 +256,7 @@ struct IRendererBackend
 
     [[nodiscard]] virtual bool UpdateGlobalWorldState(
             RenderpassType renderpassID,
-            const glm::mat4& projection, const glm::mat4& view,
-            const glm::vec3& viewPosition, const glm::vec4& ambientColor,
-            int32_t mode) = 0;
+            const GlobalUBO& globalUBO) = 0;
 
     [[nodiscard]] virtual bool DrawGeometry(
             RenderpassType renderpassID,
