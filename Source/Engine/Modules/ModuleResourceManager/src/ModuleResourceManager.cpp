@@ -144,7 +144,7 @@ bool ModuleResourceManager::Start()
 	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
 	mDefaultMaterial->SetName("DefaultMaterial");
 	mDefaultMaterial->diffuseColor = glm::vec4(1.0f);
-	mDefaultMaterial->textureMaps["diffuseSampler"] = TextureMap{ TextureMapType::UNKNOWN, mDefaultTexture };
+	mDefaultMaterial->textureMaps["diffuseSampler"].texture = mDefaultTexture;
 	mDefaultMaterial->SetState(ResourceState::CPU_READY);
 
 	// Push both to the upload queue.  Texture must come first so it is GPU_READY
