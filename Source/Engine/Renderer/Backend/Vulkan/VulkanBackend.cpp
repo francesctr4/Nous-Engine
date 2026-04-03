@@ -1225,28 +1225,49 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
         NOUS_VulkanShader::WriteInstanceUBO(vkContext, vsBase, imageIndex, instanceID,
             &ubo, sizeof(ubo), &uboGen);
 
-        // Write diffuse texture sampler (binding 1), lazy update.
-        // Fall back to the default texture if the material's texture is missing,
-        // has an invalid generation, or has not yet been uploaded to the GPU.
-        ResourceTexture* texture = material->diffuseMap.texture;
-        if (!texture || texture->generation == INVALID_ID || !texture->internalData)
-            texture = vkContext->resourceManager->GetDefaultTexture();
+        // Write sampler bindings from baseShader reflection — no hardcoded binding indices.
+        // For each CombinedImageSampler in set=1, look up the texture by binding name from
+        // the material's textureMaps, falling back to the default texture if missing.
+        {
+            const auto& setIt = baseShader->reflection.descriptorSets.find(1);
+            if (setIt != baseShader->reflection.descriptorSets.end())
+            {
+                // Sort samplers by binding index to match the descriptor layout order.
+                std::vector<const ReflectedBinding*> samplers;
+                for (const auto& rb : setIt->second)
+                    if (rb.type == DescriptorType::CombinedImageSampler)
+                        samplers.push_back(&rb);
+                std::sort(samplers.begin(), samplers.end(),
+                    [](const ReflectedBinding* a, const ReflectedBinding* b){
+                        return a->binding < b->binding; });
 
-        if (texture && texture->internalData)
-        {
-            VulkanTextureData* texData = static_cast<VulkanTextureData*>(texture->internalData);
-            auto& samplerGen = vsBase->instanceStates[instanceID].descriptorStates[1].generations[imageIndex];
-            auto& samplerID  = vsBase->instanceStates[instanceID].descriptorStates[1].ids[imageIndex];
-            NOUS_VulkanShader::WriteInstanceSampler(vkContext, vsBase, imageIndex, instanceID,
-                1, texData->image.view, texData->sampler,
-                &samplerGen, &samplerID, texture->ID, texture->generation);
-        }
-        else if (vsBase->instanceStates[instanceID].descriptorStates[1].generations[imageIndex] == UINT32_MAX)
-        {
-            // Binding 1 has never been written for this image index (fresh slot, no
-            // valid texture yet including no default). Drawing now would violate
-            // VUID-vkCmdDrawIndexed-None-08114 — skip until a texture is available.
-            return true;
+                for (const ReflectedBinding* rb : samplers)
+                {
+                    ResourceTexture* texture = nullptr;
+                    auto texIt = material->textureMaps.find(rb->name);
+                    if (texIt != material->textureMaps.end())
+                        texture = texIt->second.texture;
+
+                    if (!texture || texture->generation == INVALID_ID || !texture->internalData)
+                        texture = vkContext->resourceManager->GetDefaultTexture();
+
+                    if (texture && texture->internalData)
+                    {
+                        VulkanTextureData* texData = static_cast<VulkanTextureData*>(texture->internalData);
+                        auto& samplerGen = vsBase->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex];
+                        auto& samplerID  = vsBase->instanceStates[instanceID].descriptorStates[rb->binding].ids[imageIndex];
+                        NOUS_VulkanShader::WriteInstanceSampler(vkContext, vsBase, imageIndex, instanceID,
+                            rb->binding, texData->image.view, texData->sampler,
+                            &samplerGen, &samplerID, texture->ID, texture->generation);
+                    }
+                    else if (vsBase->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex] == UINT32_MAX)
+                    {
+                        // This binding has never been written and no valid texture is available.
+                        // Drawing now would violate VUID-vkCmdDrawIndexed-None-08114 — skip.
+                        return true;
+                    }
+                }
+            }
         }
 
         NOUS_VulkanShader::BindInstanceDescriptorSet(commandBuffer->handle, vsBase, imageIndex, instanceID);
