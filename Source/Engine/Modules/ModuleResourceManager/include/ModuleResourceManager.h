@@ -92,6 +92,7 @@ public:
 	NOUS_ENGINE_API void ClearResources(IGPUResourceFactory* gpu);
 
     [[nodiscard]] ResourceTexture* GetDefaultTexture() const;
+    [[nodiscard]] ResourceTexture* GetWhiteTexture() const;
     [[nodiscard]] ResourceMaterial* GetDefaultMaterial() const;
 
     // Returns the resource pointer WITHOUT bumping the reference count (borrowed reference).
@@ -156,6 +157,7 @@ private:
 	std::map<std::pair<UID, int32_t>, UID> m_submeshUIDMap;
 
 	ResourceTexture* mDefaultTexture = nullptr;
+	ResourceTexture* mWhiteTexture   = nullptr;
 	ResourceMaterial* mDefaultMaterial = nullptr;
 
 	// Injected dependencies

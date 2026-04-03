@@ -139,6 +139,20 @@ bool ModuleResourceManager::Start()
 	mDefaultTexture->SetState(ResourceState::CPU_READY);
 
 	// -----------------------
+	// White Texture (CPU)
+	// -----------------------
+	// 1×1 pure-white texture used as a neutral/identity fallback for optional sampler
+	// slots (e.g. normalSampler) when no texture has been assigned. Multiplying by
+	// white (1,1,1,1) has no effect on the diffuse result.
+	mWhiteTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mWhiteTexture->SetName("WhiteTexture");
+	mWhiteTexture->width        = 1;
+	mWhiteTexture->height       = 1;
+	mWhiteTexture->channelCount = 4;
+	mWhiteTexture->pixelData    = { 255, 255, 255, 255 };
+	mWhiteTexture->SetState(ResourceState::CPU_READY);
+
+	// -----------------------
 	// Default Material (CPU)
 	// -----------------------
 	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
@@ -147,11 +161,12 @@ bool ModuleResourceManager::Start()
 	mDefaultMaterial->textureMaps["diffuseSampler"].texture = mDefaultTexture;
 	mDefaultMaterial->SetState(ResourceState::CPU_READY);
 
-	// Push both to the upload queue.  Texture must come first so it is GPU_READY
-	// before the material upload runs (CreateMaterial samples from it).
+	// Push to the upload queue.  Textures must come before the material so they
+	// are GPU_READY before CreateMaterial samples from them.
 	{
 		std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
 		m_pendingUploads.emplace_back(ResourceType::TEXTURE,  mDefaultTexture);
+		m_pendingUploads.emplace_back(ResourceType::TEXTURE,  mWhiteTexture);
 		m_pendingUploads.emplace_back(ResourceType::MATERIAL, mDefaultMaterial);
 	}
 
@@ -969,6 +984,14 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
         mDefaultTexture = nullptr;
     }
 
+    if (mWhiteTexture)
+    {
+        if (mWhiteTexture->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyTexture(mWhiteTexture);
+        NOUS_DELETE(mWhiteTexture, MemoryTag::RESOURCE_TEXTURE);
+        mWhiteTexture = nullptr;
+    }
+
     if (mDefaultMaterial)
     {
         if (mDefaultMaterial->GetState() == ResourceState::GPU_READY)
@@ -1023,6 +1046,11 @@ bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
 ResourceTexture *ModuleResourceManager::GetDefaultTexture() const
 {
     return mDefaultTexture;
+}
+
+ResourceTexture *ModuleResourceManager::GetWhiteTexture() const
+{
+    return mWhiteTexture;
 }
 
 ResourceMaterial *ModuleResourceManager::GetDefaultMaterial() const

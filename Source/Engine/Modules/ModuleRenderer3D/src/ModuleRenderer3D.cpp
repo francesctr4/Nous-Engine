@@ -132,14 +132,20 @@ bool ModuleRenderer3D::Start()
 		resource->SetState(ResourceState::GPU_READY);
 	}
 
-	// Give the default texture a stable ID/generation for the descriptor lazy-write
-	// cache (WriteInstanceSampler).  Without this, every draw using the default
-	// texture re-fires vkUpdateDescriptorSets, causing validation errors.
+	// Give the default and white textures stable ID/generation values for the
+	// descriptor lazy-write cache (WriteInstanceSampler). Without this, every
+	// draw using these textures re-fires vkUpdateDescriptorSets.
 	ResourceTexture* defaultTex = mModuleResourceManager->GetDefaultTexture();
 	if (defaultTex)
 	{
 		defaultTex->ID         = 0;
 		defaultTex->generation = 0;
+	}
+	ResourceTexture* whiteTex = mModuleResourceManager->GetWhiteTexture();
+	if (whiteTex)
+	{
+		whiteTex->ID         = 1;
+		whiteTex->generation = 0;
 	}
 
 	// Register all .glsl files in Assets/Shaders/ for hot reload (EDITOR only).

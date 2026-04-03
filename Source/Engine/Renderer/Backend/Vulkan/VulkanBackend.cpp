@@ -1249,7 +1249,17 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
                         texture = texIt->second.texture;
 
                     if (!texture || texture->generation == INVALID_ID || !texture->internalData)
-                        texture = vkContext->resourceManager->GetDefaultTexture();
+                    {
+                        // Diffuse slots fall back to the checkerboard default (visible "missing
+                        // texture" signal). All other slots (normals, specular, etc.) fall back
+                        // to a plain white texture so they have no effect when unassigned.
+                        const bool isDiffuse =
+                            rb->name.find("diffuse") != std::string::npos ||
+                            rb->name.find("Diffuse") != std::string::npos;
+                        texture = isDiffuse
+                            ? vkContext->resourceManager->GetDefaultTexture()
+                            : vkContext->resourceManager->GetWhiteTexture();
+                    }
 
                     if (texture && texture->internalData)
                     {
