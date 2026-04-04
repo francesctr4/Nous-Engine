@@ -843,6 +843,28 @@ void NOUS_VulkanShader::UpdateGlobal(VulkanContext* vkContext, VkCommandBuffer c
 {
     if (!vs->globalPool || imageIndex >= vs->globalDescriptorSets.size()) return;
 
+    // Guardrail against reflected-vs-CPU UBO size mismatches.
+    // The reflected block size (globalUBOStride) determines both the UBO buffer's
+    // allocated size and the descriptor range. If shaderc's --eliminate-dead-members
+    // strips unused trailing members from the shader's GlobalUBO declaration, the
+    // reflected block shrinks, but the CPU side still uploads the full struct.
+    // Consequences: host-side buffer overflow on LoadData, and any custom shader
+    // that relies on layout-compatibility to read the same set=0 buffer sees zeros
+    // past the truncated range (lights go black, ambient goes dark, etc.).
+    // Log LOUDLY so the mismatch can't be missed at load time.
+    if (size > static_cast<uint64_t>(vs->globalUBOStride))
+    {
+        NOUS_ERROR("[VulkanShader] GlobalUBO size mismatch: CPU uploads %llu bytes but "
+                   "shader's reflected block is only %u bytes. The SPIR-V optimizer "
+                   "likely stripped unused trailing UBO members. Reference every UBO "
+                   "member in the shader (or disable --eliminate-dead-members) so the "
+                   "reflected layout matches the CPU struct.",
+                   static_cast<unsigned long long>(size),
+                   vs->globalUBOStride);
+        // Clamp the upload to the buffer's actual size to avoid corrupting host memory.
+        size = vs->globalUBOStride;
+    }
+
     NOUS_VulkanBuffer::LoadData(vkContext, &vs->globalUBOBuffers[imageIndex],
         0, size, 0, const_cast<void*>(data));
 

@@ -173,13 +173,23 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 				packet->editorCamera->GetProjectionMatrix(),
 				packet->editorCamera->GetViewMatrix());
 
-			success &= mBackend->UpdateGlobalWorldState(sceneRenderpass,
-				MakeGlobalUBO(packet->editorCamera));
-
+			// IMPORTANT: DrawGrid (and DrawBackground above) each call UpdateGlobal on
+			// their own shader, which rebinds set=0 to their own tiny UBO buffer. Because
+			// the set=0 layouts are structurally compatible (one UBO at binding 0) across
+			// all shaders in this pass, Vulkan PRESERVES the set=0 binding when pipelines
+			// switch. If UpdateGlobalWorldState runs before DrawGrid, the grid call will
+			// clobber the MaterialShader's set=0 binding, and subsequent DrawGeometry
+			// calls will read light data (offsets > 128 bytes) past the grid UBO's range
+			// — they see zeros, lights go dark. Run UpdateGlobalWorldState AFTER all
+			// scenery draws that manage their own set=0, so the last binding on the main
+			// command buffer is MaterialShader's full 720-byte GlobalUBO.
 			success &= mBackend->DrawGrid(
 					sceneRenderpass,
 					packet->editorCamera->GetProjectionMatrix(),
 					packet->editorCamera->GetViewMatrix());
+
+			success &= mBackend->UpdateGlobalWorldState(sceneRenderpass,
+				MakeGlobalUBO(packet->editorCamera));
 
 			for (auto& geometry : packet->geometries)
 			{
