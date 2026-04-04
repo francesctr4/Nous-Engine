@@ -11,6 +11,8 @@
 #include <vector>
 #include <memory>
 #include <filesystem>
+#include <thread>
+#include <mutex>
 
 // ImGui_Temp
 #include "imgui.h"
@@ -227,6 +229,7 @@ public:
     int             LayoutLineCount = 0;
 
     explicit AssetsBrowser(const char* title, ::EditorContext* context, bool start_open = true);
+    ~AssetsBrowser() override;
     void Init() override;
     void Draw() override;
 
@@ -244,12 +247,18 @@ public:
     std::string current_directory = "Assets";
     std::stack<std::string> directory_stack;
 
-    // Directory hot-reload
-    std::filesystem::file_time_type m_lastDirWriteTime;
-    float m_dirPollTimer = 0.0f;
-    static constexpr float c_dirPollInterval = 0.5f; // seconds
-    std::atomic<bool> m_pollInFlight { false };  // true while a background last_write_time check is running
-    std::atomic<bool> m_dirChanged  { false };   // set by background job; consumed on main thread
+    // Directory hot-reload — dedicated watcher thread owned by this window.
+    // The thread sleeps 500ms between polls and only signals m_dirChanged when
+    // the watched directory's last_write_time changes. Isolated from NOUS_JobSystem
+    // so the worker pool is not polluted by a perpetual poller.
+    void StartDirectoryWatcher();
+    void StopDirectoryWatcher();
+
+    std::thread        m_pollThread;
+    std::atomic<bool>  m_pollThreadStop { false };
+    std::atomic<bool>  m_dirChanged     { false };   // set by watcher thread; consumed on main thread
+    std::mutex         m_watchedDirMutex;
+    std::string        m_watchedDir;                 // guarded by m_watchedDirMutex
 
     // Script creation
     bool show_create_script_popup = false;

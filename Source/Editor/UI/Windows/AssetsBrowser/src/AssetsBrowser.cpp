@@ -3,6 +3,7 @@
 
 #include <format>
 #include <cmath> // Required for LINUX GCC
+#include <chrono>
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Scripting/ScriptManager.h"
@@ -27,9 +28,64 @@ AssetsBrowser::AssetsBrowser(const char* title, EditorContext* context, bool sta
     Init();
 }
 
+AssetsBrowser::~AssetsBrowser()
+{
+    StopDirectoryWatcher();
+}
+
 void AssetsBrowser::Init()
 {
     AddItemsFromDirectory(current_directory);
+    StartDirectoryWatcher();
+}
+
+void AssetsBrowser::StartDirectoryWatcher()
+{
+    if (m_pollThread.joinable())
+        return;
+
+    m_pollThreadStop.store(false);
+    m_pollThread = std::thread([this]()
+    {
+        using namespace std::chrono_literals;
+        std::filesystem::file_time_type last{};
+        std::string currentWatched;
+
+        while (!m_pollThreadStop.load(std::memory_order_relaxed))
+        {
+            {
+                std::lock_guard<std::mutex> lk(m_watchedDirMutex);
+                if (m_watchedDir != currentWatched)
+                {
+                    currentWatched = m_watchedDir;
+                    last = {}; // baseline reset on navigation, first stat won't fire
+                }
+            }
+
+            if (!currentWatched.empty())
+            {
+                std::error_code ec;
+                auto writeTime = std::filesystem::last_write_time(currentWatched, ec);
+                if (!ec && writeTime != last)
+                {
+                    if (last != std::filesystem::file_time_type{})
+                        m_dirChanged.store(true, std::memory_order_release);
+                    last = writeTime;
+                }
+            }
+
+            // Sleep in small slices so shutdown is responsive (~50ms latency max).
+            for (int i = 0; i < 10 && !m_pollThreadStop.load(std::memory_order_relaxed); ++i)
+                std::this_thread::sleep_for(50ms);
+        }
+    });
+}
+
+void AssetsBrowser::StopDirectoryWatcher()
+{
+    m_pollThreadStop.store(true);
+    if (m_pollThread.joinable())
+        m_pollThread.join();
 }
 
 // Logic would be written in the main code BeginChild() and outputing to local variables.
@@ -102,7 +158,10 @@ void AssetsBrowser::AddItemsFromDirectory(const std::string& directoryPath)
 {
     Items.clear();
 
-    m_lastDirWriteTime = std::filesystem::last_write_time(directoryPath);
+    {
+        std::lock_guard<std::mutex> lk(m_watchedDirMutex);
+        m_watchedDir = directoryPath;
+    }
 
     for (const auto& entry : std::filesystem::directory_iterator(directoryPath))
     {
@@ -164,25 +223,10 @@ void AssetsBrowser::Draw()
 {
     if (*p_open)
     {
-        // Poll the current directory for changes on a background thread to avoid
-        // blocking the main thread (last_write_time can stall for seconds on OneDrive paths).
-        m_dirPollTimer += ImGui::GetIO().DeltaTime;
-        if (m_dirPollTimer >= c_dirPollInterval && !m_pollInFlight.load())
-        {
-            m_dirPollTimer = 0.0f;
-            m_pollInFlight.store(true);
-            const std::string          dirSnapshot  = current_directory;
-            const auto                 timeSnapshot = m_lastDirWriteTime;
-            editorContext->GetJobSystem()->SubmitJob([this, dirSnapshot, timeSnapshot]()
-            {
-                std::error_code ec;
-                auto writeTime = std::filesystem::last_write_time(dirSnapshot, ec);
-                if (!ec && writeTime != timeSnapshot)
-                    m_dirChanged.store(true);
-                m_pollInFlight.store(false);
-            }, "AssetsBrowser DirPoll");
-        }
-        if (m_dirChanged.exchange(false))
+        // Drain the directory-change signal from the dedicated watcher thread.
+        // The thread polls last_write_time off the main thread (important for
+        // OneDrive paths, where the stat can stall for seconds).
+        if (m_dirChanged.exchange(false, std::memory_order_acquire))
             AddItemsFromDirectory(current_directory);
 
         ImGui::SetNextWindowSize(ImVec2(IconSize * 25, IconSize * 15), ImGuiCond_FirstUseEver);
