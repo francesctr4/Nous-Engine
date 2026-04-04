@@ -1255,15 +1255,33 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
 
                     if (!texture || texture->generation == INVALID_ID || !texture->internalData)
                     {
-                        // Diffuse slots fall back to the checkerboard default (visible "missing
-                        // texture" signal). All other slots (normals, specular, etc.) fall back
-                        // to a plain white texture so they have no effect when unassigned.
-                        const bool isDiffuse =
-                            rb->name.find("diffuse") != std::string::npos ||
-                            rb->name.find("Diffuse") != std::string::npos;
-                        texture = isDiffuse
-                            ? vkContext->resourceManager->GetDefaultTexture()
-                            : vkContext->resourceManager->GetWhiteTexture();
+                        // Each slot falls back to a semantically neutral texture so unassigned
+                        // maps have no visible effect on the final result.
+                        const std::string& n = rb->name;
+                        if (n.find("diffuse") != std::string::npos ||
+                            n.find("Diffuse") != std::string::npos)
+                        {
+                            // Checkerboard — visible "missing texture" signal.
+                            texture = vkContext->resourceManager->GetDefaultTexture();
+                        }
+                        else if (n.find("normal") != std::string::npos ||
+                                 n.find("Normal") != std::string::npos)
+                        {
+                            // (128,128,255) decodes to tangent-space (0,0,1) → geometry normal passthrough.
+                            texture = vkContext->resourceManager->GetFlatNormalTexture();
+                        }
+                        else if (n.find("emissive") != std::string::npos ||
+                                 n.find("Emissive") != std::string::npos)
+                        {
+                            // Black → adds nothing to the final colour.
+                            texture = vkContext->resourceManager->GetBlackTexture();
+                        }
+                        else
+                        {
+                            // White → multiplicative identity (specular strength = 1,
+                            // shininess = max, AO = 1 / no occlusion).
+                            texture = vkContext->resourceManager->GetWhiteTexture();
+                        }
                     }
 
                     if (texture && texture->internalData)

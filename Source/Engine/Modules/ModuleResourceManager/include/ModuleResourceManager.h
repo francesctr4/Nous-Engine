@@ -93,6 +93,8 @@ public:
 
     [[nodiscard]] ResourceTexture* GetDefaultTexture() const;
     [[nodiscard]] ResourceTexture* GetWhiteTexture() const;
+    [[nodiscard]] ResourceTexture* GetBlackTexture() const;
+    [[nodiscard]] ResourceTexture* GetFlatNormalTexture() const;
     [[nodiscard]] ResourceMaterial* GetDefaultMaterial() const;
 
     // Returns the resource pointer WITHOUT bumping the reference count (borrowed reference).
@@ -156,9 +158,11 @@ private:
 	// Entry removed when the sub-resource is destroyed in DeleteResource().
 	std::map<std::pair<UID, int32_t>, UID> m_submeshUIDMap;
 
-	ResourceTexture* mDefaultTexture = nullptr;
-	ResourceTexture* mWhiteTexture   = nullptr;
-	ResourceMaterial* mDefaultMaterial = nullptr;
+	ResourceTexture*  mDefaultTexture    = nullptr;
+	ResourceTexture*  mWhiteTexture      = nullptr;
+	ResourceTexture*  mBlackTexture      = nullptr;
+	ResourceTexture*  mFlatNormalTexture = nullptr;
+	ResourceMaterial* mDefaultMaterial   = nullptr;
 
 	// Injected dependencies
 	IImporterManager* mImporterManager = nullptr;

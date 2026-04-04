@@ -136,6 +136,12 @@ bool ModuleRenderer3D::Start()
 	// Give the default and white textures stable ID/generation values for the
 	// descriptor lazy-write cache (WriteInstanceSampler). Without this, every
 	// draw using these textures re-fires vkUpdateDescriptorSets.
+	// Give all built-in fallback textures stable, unique ID/generation values so the
+	// descriptor lazy-write cache (WriteInstanceSampler) can skip redundant writes.
+	// Without this, generation stays UINT32_MAX after every write (treated as "never
+	// written"), causing vkUpdateDescriptorSets to fire every draw call — and in EDITOR
+	// mode the GAME pass update then hits a descriptor already recorded in the SCENE
+	// command buffer, triggering a validation error.
 	ResourceTexture* defaultTex = mModuleResourceManager->GetDefaultTexture();
 	if (defaultTex)
 	{
@@ -147,6 +153,18 @@ bool ModuleRenderer3D::Start()
 	{
 		whiteTex->ID         = 1;
 		whiteTex->generation = 0;
+	}
+	ResourceTexture* blackTex = mModuleResourceManager->GetBlackTexture();
+	if (blackTex)
+	{
+		blackTex->ID         = 2;
+		blackTex->generation = 0;
+	}
+	ResourceTexture* flatNormalTex = mModuleResourceManager->GetFlatNormalTexture();
+	if (flatNormalTex)
+	{
+		flatNormalTex->ID         = 3;
+		flatNormalTex->generation = 0;
 	}
 
 	// Register all .glsl files in Assets/Shaders/ for hot reload (EDITOR only).

@@ -141,9 +141,8 @@ bool ModuleResourceManager::Start()
 	// -----------------------
 	// White Texture (CPU)
 	// -----------------------
-	// 1×1 pure-white texture used as a neutral/identity fallback for optional sampler
-	// slots (e.g. normalSampler) when no texture has been assigned. Multiplying by
-	// white (1,1,1,1) has no effect on the diffuse result.
+	// 1×1 pure-white (1,1,1,1). Neutral identity for multiplicative slots (specular
+	// strength, shininess, AO) — multiplying by 1 has no effect.
 	mWhiteTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
 	mWhiteTexture->SetName("WhiteTexture");
 	mWhiteTexture->width        = 1;
@@ -151,6 +150,33 @@ bool ModuleResourceManager::Start()
 	mWhiteTexture->channelCount = 4;
 	mWhiteTexture->pixelData    = { 255, 255, 255, 255 };
 	mWhiteTexture->SetState(ResourceState::CPU_READY);
+
+	// -----------------------
+	// Black Texture (CPU)
+	// -----------------------
+	// 1×1 pure-black (0,0,0,1). Neutral identity for additive slots (emissive) —
+	// adding 0 has no effect.
+	mBlackTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mBlackTexture->SetName("BlackTexture");
+	mBlackTexture->width        = 1;
+	mBlackTexture->height       = 1;
+	mBlackTexture->channelCount = 4;
+	mBlackTexture->pixelData    = { 0, 0, 0, 255 };
+	mBlackTexture->SetState(ResourceState::CPU_READY);
+
+	// -----------------------
+	// Flat Normal Texture (CPU)
+	// -----------------------
+	// 1×1 tangent-space flat normal (128,128,255,255). Decoded as (0,0,1) in [-1,1],
+	// which after TBN multiplication gives the unperturbed geometry normal. Using the
+	// white texture as a normal-map fallback would produce a 45° tilt instead.
+	mFlatNormalTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mFlatNormalTexture->SetName("FlatNormalTexture");
+	mFlatNormalTexture->width        = 1;
+	mFlatNormalTexture->height       = 1;
+	mFlatNormalTexture->channelCount = 4;
+	mFlatNormalTexture->pixelData    = { 128, 128, 255, 255 };
+	mFlatNormalTexture->SetState(ResourceState::CPU_READY);
 
 	// -----------------------
 	// Default Material (CPU)
@@ -167,6 +193,8 @@ bool ModuleResourceManager::Start()
 		std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
 		m_pendingUploads.emplace_back(ResourceType::TEXTURE,  mDefaultTexture);
 		m_pendingUploads.emplace_back(ResourceType::TEXTURE,  mWhiteTexture);
+		m_pendingUploads.emplace_back(ResourceType::TEXTURE,  mBlackTexture);
+		m_pendingUploads.emplace_back(ResourceType::TEXTURE,  mFlatNormalTexture);
 		m_pendingUploads.emplace_back(ResourceType::MATERIAL, mDefaultMaterial);
 	}
 
@@ -992,6 +1020,22 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
         mWhiteTexture = nullptr;
     }
 
+    if (mBlackTexture)
+    {
+        if (mBlackTexture->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyTexture(mBlackTexture);
+        NOUS_DELETE(mBlackTexture, MemoryTag::RESOURCE_TEXTURE);
+        mBlackTexture = nullptr;
+    }
+
+    if (mFlatNormalTexture)
+    {
+        if (mFlatNormalTexture->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyTexture(mFlatNormalTexture);
+        NOUS_DELETE(mFlatNormalTexture, MemoryTag::RESOURCE_TEXTURE);
+        mFlatNormalTexture = nullptr;
+    }
+
     if (mDefaultMaterial)
     {
         if (mDefaultMaterial->GetState() == ResourceState::GPU_READY)
@@ -1051,6 +1095,16 @@ ResourceTexture *ModuleResourceManager::GetDefaultTexture() const
 ResourceTexture *ModuleResourceManager::GetWhiteTexture() const
 {
     return mWhiteTexture;
+}
+
+ResourceTexture *ModuleResourceManager::GetBlackTexture() const
+{
+    return mBlackTexture;
+}
+
+ResourceTexture *ModuleResourceManager::GetFlatNormalTexture() const
+{
+    return mFlatNormalTexture;
 }
 
 ResourceMaterial *ModuleResourceManager::GetDefaultMaterial() const
