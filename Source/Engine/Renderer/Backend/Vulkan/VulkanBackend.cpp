@@ -2104,6 +2104,16 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
         return false;
     }
 
+    // Custom shaders own their own instance pool when used as poolOwnerShader for a
+    // material (see CreateMaterial: it picks the custom shader's pool if it is
+    // GPU_READY). Recreating the VulkanShader above destroyed that pool, so every
+    // material whose poolOwnerShader pointed at this shader now holds a stale
+    // internalID slot referencing a destroyed VkDescriptorSet. Drawing those
+    // materials triggers VUID-vkCmdBindDescriptorSets-graphicsPipelineLibrary-06754
+    // ("pDescriptorSets[0] (VkDescriptorSet 0x0[])"). Re-acquire slots from the
+    // freshly created pool — the same pattern used for MaterialShader reloads.
+    reacquireMaterialInstances();
+
     NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Shader '%s' reloaded (gen=%u).", assetPath.c_str(), shader->generation);
     return true;
 }
