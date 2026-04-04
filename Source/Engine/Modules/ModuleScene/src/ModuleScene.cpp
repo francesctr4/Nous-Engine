@@ -43,9 +43,9 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_Job
     ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager)
     : Module(eventSystem, jobSystem), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager)
 {
+	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM, mModuleInput, this);
 	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager);
 	gameCamera    = NOUS_NEW<Camera>(MemoryTag::CAMERA);
-	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM, mModuleInput, this);
 
 	// Load the script library — path is exe-relative so it works regardless of working directory.
 	// SDL3's SDL_GetBasePath() returns a const char* managed internally by SDL — do NOT free it.
@@ -66,11 +66,10 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_Job
 
 ModuleScene::~ModuleScene()
 {
-    selectedGameObject = nullptr;
-
+	selectedGameObject = nullptr;
 	NOUS_DELETE(gameCamera, MemoryTag::CAMERA);
-	NOUS_DELETE(scriptManager, MemoryTag::SCRIPTING_SYSTEM);
 	NOUS_DELETE(activeScene, MemoryTag::SCENE);
+	NOUS_DELETE(scriptManager, MemoryTag::SCRIPTING_SYSTEM);
 }
 
 bool ModuleScene::Awake()
