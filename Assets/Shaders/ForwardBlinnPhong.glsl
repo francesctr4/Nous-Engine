@@ -5,14 +5,17 @@ layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec3 inColor;
 layout(location = 3) in vec2 inTexCoord;
+// location 4 = smoothNormal (outline only, not used here)
+layout(location = 5) in vec4 inTangent; // xyz = tangent direction, w = bitangent handedness sign (±1)
 
-// Data Transfer Object
 layout(location = 0) out struct DataTransferObject
 {
     vec3 outColor;
     vec2 texCoord;
-    vec3 fragPos;
-    vec3 normal;
+    vec3 fragPos;  // world-space fragment position
+    vec3 T;        // world-space tangent
+    vec3 B;        // world-space bitangent
+    vec3 N;        // world-space geometry normal
 } outDTO;
 
 struct DirectionalLight { vec4 direction; vec4 color; };
@@ -37,12 +40,26 @@ layout(push_constant) uniform PushConstants
 
 void main()
 {
-    vec4 worldPos     = pushConstants.model * vec4(inPosition, 1.0);
-    outDTO.outColor   = inColor;
-    outDTO.texCoord   = inTexCoord;
-    outDTO.fragPos    = worldPos.xyz;
-    outDTO.normal     = mat3(transpose(inverse(pushConstants.model))) * inNormal;
-    gl_Position       = globalUBO.projection * globalUBO.view * worldPos;
+    vec4 worldPos   = pushConstants.model * vec4(inPosition, 1.0);
+    outDTO.outColor = inColor;
+    outDTO.texCoord = inTexCoord;
+    outDTO.fragPos  = worldPos.xyz;
+
+    // Build world-space TBN.
+    // The normal matrix (transpose of inverse) handles non-uniform scaling correctly.
+    // Tangent is a direction vector and transforms with the model matrix directly.
+    mat3 normalMat = mat3(transpose(inverse(pushConstants.model)));
+    vec3 N = normalize(normalMat * inNormal);
+    vec3 T = normalize(mat3(pushConstants.model) * inTangent.xyz);
+    // Gram-Schmidt re-orthogonalization: removes any drift from non-orthogonal transforms.
+    T = normalize(T - dot(T, N) * N);
+    vec3 B = cross(N, T) * inTangent.w; // handedness sign flips B for mirrored UVs
+
+    outDTO.T = T;
+    outDTO.B = B;
+    outDTO.N = N;
+
+    gl_Position = globalUBO.projection * globalUBO.view * worldPos;
 }
 
 // ------------------------------------------------------------------------------------------------------
@@ -50,13 +67,14 @@ void main()
 #pragma stage fragment
 #version 450
 
-// Data Transfer Object
 layout(location = 0) in struct DataTransferObject
 {
     vec3 outColor;
     vec2 texCoord;
     vec3 fragPos;
-    vec3 normal;
+    vec3 T;
+    vec3 B;
+    vec3 N;
 } inDTO;
 
 layout(location = 0) out vec4 fragColor;
@@ -68,6 +86,10 @@ layout(set = 1, binding = 0) uniform InstanceUBO
 } instanceUBO;
 
 layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
+// Normal map must be a tangent-space map (OpenGL convention: +Y = up in tangent space).
+// The engine falls back to a white texture when no normal map is assigned; to get correct
+// geometry-normal shading in that case, replace the fallback with a flat normal map
+// (RGB = 128, 128, 255) in the resource manager.
 layout(set = 1, binding = 2) uniform sampler2D normalSampler;
 layout(set = 1, binding = 3) uniform sampler2D specularSampler;
 layout(set = 1, binding = 4) uniform sampler2D shininessSampler;
@@ -94,7 +116,7 @@ vec3 CalcDirectionalLight(vec4 dirAndUnused, vec4 colorAndIntensity,
                           vec3 normal, vec3 viewDir,
                           vec3 albedo, float specStrength, float shininess)
 {
-    vec3  lightDir = normalize(-dirAndUnused.xyz);
+    vec3  lightDir = normalize(-dirAndUnused.xyz); // dirAndUnused points toward the scene
     float diff     = max(dot(normal, lightDir), 0.0);
     vec3  halfway  = normalize(lightDir + viewDir);
     float spec     = pow(max(dot(normal, halfway), 0.0), shininess);
@@ -138,11 +160,16 @@ void main()
     float ao           = texture(aoSampler,         uv).r;
     vec3  emissive     = texture(emissiveSampler,   uv).rgb;
 
-    // --- NORMAL MAP (object-space; TBN transform deferred to future task) ---
-    vec3 normal  = normalize(texture(normalSampler, uv).rgb * 2.0 - 1.0);
+    // --- NORMAL MAP (tangent space → world space via TBN) ---
+    // Reconstruct the TBN matrix from the interpolated per-vertex vectors.
+    // Each column is re-normalized after interpolation to remove length drift.
+    mat3 TBN = mat3(normalize(inDTO.T), normalize(inDTO.B), normalize(inDTO.N));
+    vec3 normalSample = texture(normalSampler, uv).rgb * 2.0 - 1.0; // [0,1] → [-1,1]
+    vec3 normal       = normalize(TBN * normalSample); // tangent space → world space
+
     vec3 viewDir = normalize(globalUBO.viewPosition.xyz - inDTO.fragPos);
 
-    // --- AMBIENT ---
+    // --- AMBIENT (AO only attenuates ambient, not direct lights) ---
     vec3 result = globalUBO.ambientColor.rgb * globalUBO.ambientColor.w * albedo * ao;
 
     // --- DIRECTIONAL LIGHT ---
