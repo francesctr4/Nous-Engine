@@ -1183,7 +1183,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
     VulkanShader* vsBase = static_cast<VulkanShader*>(baseShader->internalData);
     VulkanShader* vsDraw = static_cast<VulkanShader*>(drawShader->internalData);
-    VulkanGeometryData*  bufferData    = &vkContext->geometries[renderData.geometry->internalID];
+    VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
 
     // Bind pipeline — use custom shader's VkPipeline if assigned, else base shader.
     NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vsDraw);
@@ -1204,9 +1204,18 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     if (!material || material->internalID == INVALID_ID)
         material = vkContext->resourceManager->GetDefaultMaterial();
 
+    // vsInstance is the shader whose instance pool holds this material's descriptor slot.
+    // Use poolOwnerShader as the authoritative source — it was set at CreateMaterial time
+    // and reflects exactly which pool this material's internalID slot was acquired from.
+    // Falling back to heuristics (e.g. vsDraw->instancePool) gives the wrong answer when
+    // the reslot fires before the custom shader is GPU_READY, causing a NULL descriptor set.
+    VulkanShader* vsInstance = vsBase; // safe default
+    if (material && material->poolOwnerShader && material->poolOwnerShader->internalData)
+        vsInstance = static_cast<VulkanShader*>(material->poolOwnerShader->internalData);
+
     // Even the default material isn't GPU-ready yet, or the instance pool isn't initialised.
     // Skip the draw — issuing it would leave set #1 unbound and trigger VUID-vkCmdDrawIndexed-None-08600.
-    if (!material || material->internalID == INVALID_ID || !vsBase->instancePool)
+    if (!material || material->internalID == INVALID_ID || !vsInstance->instancePool)
         return true;
 
     // Per-instance descriptors (material UBO + texture sampler).
@@ -1217,16 +1226,16 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
 
         // Write diffuse colour to instance UBO (binding 0).
         struct InstanceUBO { glm::vec4 diffuseColor; } ubo{ material->diffuseColor };
-        auto& uboGen = vsBase->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
-        NOUS_VulkanShader::WriteInstanceUBO(vkContext, vsBase, imageIndex, instanceID,
+        auto& uboGen = vsInstance->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
+        NOUS_VulkanShader::WriteInstanceUBO(vkContext, vsInstance, imageIndex, instanceID,
             &ubo, sizeof(ubo), &uboGen);
 
         // Write sampler bindings from baseShader reflection — no hardcoded binding indices.
         // For each CombinedImageSampler in set=1, look up the texture by binding name from
         // the material's textureMaps, falling back to the default texture if missing.
         {
-            const auto& setIt = baseShader->reflection.descriptorSets.find(1);
-            if (setIt != baseShader->reflection.descriptorSets.end())
+            const auto& setIt = drawShader->reflection.descriptorSets.find(1);
+            if (setIt != drawShader->reflection.descriptorSets.end())
             {
                 // Sort samplers by binding index to match the descriptor layout order.
                 std::vector<const ReflectedBinding*> samplers;
@@ -1260,13 +1269,13 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
                     if (texture && texture->internalData)
                     {
                         VulkanTextureData* texData = static_cast<VulkanTextureData*>(texture->internalData);
-                        auto& samplerGen = vsBase->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex];
-                        auto& samplerID  = vsBase->instanceStates[instanceID].descriptorStates[rb->binding].ids[imageIndex];
-                        NOUS_VulkanShader::WriteInstanceSampler(vkContext, vsBase, imageIndex, instanceID,
+                        auto& samplerGen = vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex];
+                        auto& samplerID  = vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].ids[imageIndex];
+                        NOUS_VulkanShader::WriteInstanceSampler(vkContext, vsInstance, imageIndex, instanceID,
                             rb->binding, texData->image.view, texData->sampler,
                             &samplerGen, &samplerID, texture->ID, texture->generation);
                     }
-                    else if (vsBase->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex] == UINT32_MAX)
+                    else if (vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex] == UINT32_MAX)
                     {
                         // This binding has never been written and no valid texture is available.
                         // Drawing now would violate VUID-vkCmdDrawIndexed-None-08114 — skip.
@@ -1276,7 +1285,14 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
             }
         }
 
-        NOUS_VulkanShader::BindInstanceDescriptorSet(commandBuffer->handle, vsBase, imageIndex, instanceID);
+        // When the material's slot lives in vsDraw's own pool (poolOwnerShader == drawShader),
+        // vsInstance == vsDraw and the descriptor set layout already matches the pipeline — no override.
+        // When the slot lives in a different pool (e.g. vsBase fallback), override to vsDraw's
+        // pipeline layout so Vulkan uses the correct layout for the bind point.
+        const VkPipelineLayout bindLayout = (vsInstance != vsDraw)
+                                            ? vsDraw->pipeline.pipelineLayout
+                                            : VK_NULL_HANDLE;
+        NOUS_VulkanShader::BindInstanceDescriptorSet(commandBuffer->handle, vsInstance, imageIndex, instanceID, bindLayout);
     }
 
     // Bind vertex buffer.
@@ -1424,31 +1440,41 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
     if (material->internalID != INVALID_ID)
         return true;
 
-    // Acquire an instance slot from the primary shader.
-    // EDITOR mode: primary = builtInMaterialShader; also acquire a matching slot in builtInGameShader.
-    // GAME mode:   builtInMaterialShader is null; primary = builtInGameShader.
-    ResourceShader* primaryShader = vkContext->builtInMaterialShader
-        ? vkContext->builtInMaterialShader
-        : vkContext->builtInGameShader;
+    // Resolve pool owner: use material's custom shader if it is GPU-ready and has a pool.
+    // Falls back to the built-in material shader (or game shader in GAME mode).
+    ResourceShader* poolOwner = nullptr;
+    if (material->shader && material->shader->internalData &&
+        material->shader->GetState() == ResourceState::GPU_READY)
+    {
+        auto* vs = static_cast<VulkanShader*>(material->shader->internalData);
+        if (vs->instancePool)
+            poolOwner = material->shader;
+    }
+    if (!poolOwner)
+        poolOwner = vkContext->builtInMaterialShader
+                    ? vkContext->builtInMaterialShader
+                    : vkContext->builtInGameShader;
 
-    if (!primaryShader || !primaryShader->internalData)
+    if (!poolOwner || !poolOwner->internalData)
     {
         NOUS_DEBUG_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() — no shader/instance pool ready yet; will retry after shaders init.");
         return false;
     }
 
-    auto* vs = down_cast<VulkanShader*>(primaryShader->internalData);
+    auto* vs = down_cast<VulkanShader*>(poolOwner->internalData);
     uint32_t instanceID = 0;
     if (!NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vs, &instanceID))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() - Instance pool full.");
         return false;
     }
-    material->internalID = instanceID;
+    material->internalID      = instanceID;
+    material->poolOwnerShader = poolOwner;
 
-    // In EDITOR mode also acquire the matching slot in the game shader so
-    // both pools stay in sync (they share the same GLSL/layout).
-    if (vkContext->builtInMaterialShader
+    // In EDITOR mode, also acquire a matching slot in the game shader clone so both
+    // pools stay in sync — but only for materials using the built-in shader.
+    // Custom-shader materials are drawn directly from their own pool in both renderpasses.
+    if (poolOwner == vkContext->builtInMaterialShader
         && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
     {
         auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
@@ -1456,40 +1482,46 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
         NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vsGame, &gameID);
     }
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "Material created (instance %u).", material->internalID);
+    NOUS_INFO_C(CURRENT_CHANNEL, "Material created (instance %u, pool: %s).",
+                material->internalID, poolOwner->GetName().c_str());
     return true;
 }
 
 void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
 {
-    if (material)
-    {
-        if (material->internalID != INVALID_ID)
-        {
-            // Ensure descriptor sets are no longer referenced by any in-flight command buffers.
-            vkDeviceWaitIdle(vkContext->device.logicalDevice);
-
-            if (vkContext->builtInMaterialShader && vkContext->builtInMaterialShader->internalData)
-            {
-                VulkanShader* vs = static_cast<VulkanShader*>(vkContext->builtInMaterialShader->internalData);
-                NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vs, material->internalID);
-            }
-            if (vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
-            {
-                VulkanShader* vsGame = static_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
-                NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vsGame, material->internalID);
-            }
-            material->internalID = INVALID_ID;
-        }
-        else
-        {
-            NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with INVALID_ID.");
-        }
-    }
-    else 
+    if (!material)
     {
         NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with nullptr. Nothing was done.");
+        return;
     }
+
+    if (material->internalID == INVALID_ID)
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with INVALID_ID.");
+        return;
+    }
+
+    // Ensure descriptor sets are no longer referenced by any in-flight command buffers.
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
+    // Release from the owning pool.
+    if (material->poolOwnerShader && material->poolOwnerShader->internalData)
+    {
+        auto* vs = static_cast<VulkanShader*>(material->poolOwnerShader->internalData);
+        NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vs, material->internalID);
+    }
+
+    // Release game clone slot only for built-in shader materials (custom shaders share
+    // one pool between scene and game renderpasses — no clone slot to release).
+    if (material->poolOwnerShader == vkContext->builtInMaterialShader
+        && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
+    {
+        auto* vsGame = static_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
+        NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vsGame, material->internalID);
+    }
+
+    material->internalID      = INVALID_ID;
+    material->poolOwnerShader = nullptr;
 }
 
 bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry)
@@ -1905,7 +1937,8 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
         {
             if (resource->GetType() != ResourceType::MATERIAL) continue;
             auto* mat = static_cast<ResourceMaterial*>(resource);
-            mat->internalID = INVALID_ID;   // bypass the "already acquired" guard
+            mat->internalID      = INVALID_ID;  // bypass the "already acquired" guard
+            mat->poolOwnerShader = nullptr;      // let CreateMaterial re-derive the pool owner
             CreateMaterial(mat);
         }
     };

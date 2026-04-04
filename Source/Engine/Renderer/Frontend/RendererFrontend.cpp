@@ -3,9 +3,11 @@
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include "Engine/Core/Logger/Asserts.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -408,6 +410,30 @@ void RendererFrontend::FlushCompletedReloads()
             NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Applied %d compiled shader(s).", applied);
         else
             NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Applied %d shader(s); %d GPU swap(s) failed.", applied, failed);
+    }
+}
+
+void RendererFrontend::RequestMaterialShaderChange(ResourceMaterial* material,
+                                                    ResourceShader* newShader)
+{
+    std::lock_guard<std::mutex> lock(m_reslotMutex);
+    m_pendingReslots.push_back({material, newShader});
+}
+
+void RendererFrontend::FlushPendingReslots()
+{
+    std::vector<PendingReslot> pending;
+    {
+        std::lock_guard<std::mutex> lock(m_reslotMutex);
+        pending.swap(m_pendingReslots);
+    }
+
+    for (auto& [mat, newShader] : pending)
+    {
+        mBackend->DestroyMaterial(mat);
+        mat->shader    = newShader;
+        mat->shaderUID = newShader ? newShader->GetUID() : INVALID_ID;
+        NOUS_ASSERT(mBackend->CreateMaterial(mat));
     }
 }
 

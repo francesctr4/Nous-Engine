@@ -186,6 +186,23 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 	// Must run before FlushPendingReloads and before DrawFrame — no renderpass open here.
 	mRendererFrontend->FlushCompletedReloads();
 
+	// Upload CPU_READY resources before processing reslots so that a newly-imported
+	// custom shader is GPU_READY when FlushPendingReslots calls CreateMaterial.
+	// Without this ordering, a reslot that fires in the same frame the target shader
+	// is first uploaded would see the shader as not-GPU_READY and fall back to vsBase's
+	// instance pool — causing a NULL descriptor-set error on the first draw call.
+	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
+	{
+		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
+			NOUS_ERROR("ModuleRenderer3D::PreUpdate() — failed to upload resource '%s'.", resource->GetName().c_str());
+		resource->SetState(ResourceState::GPU_READY);
+	}
+
+	// Process queued material shader changes (Inspector reslots). Must run after
+	// FlushCompletedReloads (hot-reload GPU swaps) and TakePendingUploads (first-load
+	// shader uploads) so the target shader is always GPU-ready when CreateMaterial runs.
+	mRendererFrontend->FlushPendingReslots();
+
 	// Dispatch compile jobs for any queued/deferred reload requests.
 	// Returns immediately — jobs run on worker threads.
 	mRendererFrontend->FlushPendingReloads();
@@ -195,14 +212,6 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 	// is called later in PostUpdate, so no renderpass is open at this point.
 	if (m_renderMode == RenderMode::EDITOR)
 		m_shaderWatcher.Poll();
-
-	// Upload CPU_READY resources that were deserialized since the last frame.
-	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
-	{
-		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
-			NOUS_ERROR("ModuleRenderer3D::PreUpdate() — failed to upload resource '%s'.", resource->GetName().c_str());
-		resource->SetState(ResourceState::GPU_READY);
-	}
 
 	// Release GPU handles for retired resources, then hand back for CPU eviction.
 	for (auto& [type, resource] : mModuleResourceManager->TakePendingReleases())

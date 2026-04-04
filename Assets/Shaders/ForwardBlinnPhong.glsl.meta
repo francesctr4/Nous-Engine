@@ -1,0 +1,7 @@
+{
+    "Name": "ForwardBlinnPhong",
+    "UID": 4126860508,
+    "Resource Type": 3,
+    "Assets Path": "Assets\\Shaders\\ForwardBlinnPhong.glsl",
+    "Library Path": "Library\\Shaders\\4126860508"
+}

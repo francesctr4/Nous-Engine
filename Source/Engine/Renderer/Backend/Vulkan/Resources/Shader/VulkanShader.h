@@ -147,9 +147,13 @@ namespace NOUS_VulkanShader
                                uint32_t* inOutGeneration, uint32_t* inOutID,
                                uint32_t resourceID, uint32_t resourceGeneration);
 
-    /** @brief Bind the set=1 descriptor set for this instance + image index. */
+    /** @brief Bind the set=1 descriptor set for this instance + image index.
+     *  @param overrideLayout  If not VK_NULL_HANDLE, use this pipeline layout for the bind
+     *                         instead of vs->pipeline.pipelineLayout. Pass vsDraw's layout
+     *                         when the active pipeline was created from a different shader. */
     void BindInstanceDescriptorSet(VkCommandBuffer cmdBuffer, VulkanShader* vs,
-                                   uint32_t imageIndex, uint32_t instanceID);
+                                   uint32_t imageIndex, uint32_t instanceID,
+                                   VkPipelineLayout overrideLayout = VK_NULL_HANDLE);
 }
 
 #endif // VULKANSHADER_H

@@ -6,15 +6,15 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Core/Input/IInputReader.h"
 
-#define MAX_KEYBOARD_KEYS 300
-#define MAX_MOUSE_BUTTONS 5
+constexpr int32 MAX_KEYBOARD_KEYS = 300;
+constexpr int32 MAX_MOUSE_BUTTONS = 5;
 
 class ModuleInput : public Module, public IEventListener, public IInputReader
 {
 public:
 
 	ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
-	virtual ~ModuleInput();
+	~ModuleInput() override;
 
 	bool Awake() override;
 	bool Start() override;

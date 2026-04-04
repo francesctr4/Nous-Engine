@@ -222,7 +222,15 @@ static bool AllocateInstanceResources(VulkanContext* vkContext, VulkanShader* vs
         if (rb.type == DescriptorType::UniformBuffer) { uboBlockSize = rb.blockSize; break; }
 
     vs->instanceUBOStride    = AlignUBOStride(vkContext, uboBlockSize);
-    vs->instanceBindingCount = static_cast<uint32_t>(set1.size());
+
+    // Size descriptorStates by max binding index + 1, not by count.
+    // Bindings may be non-contiguous after shader optimization strips unused ones
+    // (e.g. surviving bindings 0, 1, 5, 6 → count=4 but max index=6).
+    // Indexing by rb.binding into a count-sized vector causes OOB crash.
+    uint32_t maxBinding = 0;
+    for (const auto& rb : set1)
+        maxBinding = std::max(maxBinding, rb.binding);
+    vs->instanceBindingCount = maxBinding + 1;
 
     constexpr uint32_t imageCount   = 3;
     constexpr uint32_t maxInstances = VULKAN_SHADER_MAX_INSTANCE_COUNT;
@@ -347,7 +355,22 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
                 b.binding            = rb.binding;
                 b.descriptorType     = ToVkDescriptorType(rb.type);
                 b.descriptorCount    = rb.count;
-                b.stageFlags         = StageMaskToVkFlags(rb.stageMask);
+                // The GlobalUBO (set=0, UBO) is declared in the vertex stage of all shaders,
+                // but some shaders (e.g. the built-in material shader) declare it in the
+                // fragment stage without actually using it — the SPIR-V optimizer then strips
+                // it, leaving only VK_SHADER_STAGE_VERTEX_BIT in the reflection.
+                // Custom shaders that DO use the GlobalUBO in the fragment stage (e.g. for
+                // lighting) end up with VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT.
+                // Different stageFlags produce non-identical VkDescriptorSetLayout objects,
+                // which makes the pipeline layouts incompatible for set=0.  When DrawGeometry
+                // switches from the base-shader pipeline to a custom-shader pipeline, Vulkan
+                // invalidates the previously bound set=0, causing VUID-vkCmdDrawIndexed-None-08600.
+                // Fix: force set=0 UBOs to VERTEX|FRAGMENT in every shader so the layouts are
+                // structurally identical and set=0 stays bound across pipeline switches.
+                if (setIdx == 0 && rb.type == DescriptorType::UniformBuffer)
+                    b.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+                else
+                    b.stageFlags = StageMaskToVkFlags(rb.stageMask);
                 b.pImmutableSamplers = nullptr;
                 layoutBindings.push_back(b);
             }
@@ -977,11 +1000,15 @@ void NOUS_VulkanShader::WriteInstanceSampler(VulkanContext* vkContext, VulkanSha
 }
 
 void NOUS_VulkanShader::BindInstanceDescriptorSet(VkCommandBuffer cmdBuffer, VulkanShader* vs,
-                                                   uint32_t imageIndex, uint32_t instanceID)
+                                                   uint32_t imageIndex, uint32_t instanceID,
+                                                   VkPipelineLayout overrideLayout)
 {
     if (!vs->instancePool || instanceID >= VULKAN_SHADER_MAX_INSTANCE_COUNT) return;
 
+    const VkPipelineLayout layout = (overrideLayout != VK_NULL_HANDLE)
+                                    ? overrideLayout
+                                    : vs->pipeline.pipelineLayout;
     vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        vs->pipeline.pipelineLayout, 1, 1,
+        layout, 1, 1,
         &vs->instanceStates[instanceID].descriptorSets[imageIndex], 0, nullptr);
 }

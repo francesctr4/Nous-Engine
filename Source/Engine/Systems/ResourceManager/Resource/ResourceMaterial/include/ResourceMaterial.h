@@ -30,8 +30,9 @@ public:
     std::unordered_map<std::string, TextureMap> textureMaps; // key = GLSL binding name (e.g. "diffuseSampler")
     glm::vec4  diffuseColor;
 
-    ResourceShader* shader    = nullptr;    // null = use built-in MaterialShader
-    uint32          shaderUID = INVALID_ID; // for serialisation / reload
+    ResourceShader* shader          = nullptr;    // null = use built-in MaterialShader
+    uint32          shaderUID       = INVALID_ID; // for serialisation / reload
+    ResourceShader* poolOwnerShader = nullptr;    // runtime only — which shader's pool owns internalID
 
 };
 

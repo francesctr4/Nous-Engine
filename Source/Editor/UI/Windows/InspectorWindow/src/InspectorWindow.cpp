@@ -16,6 +16,7 @@
 #include "Engine/Scripting/Internal/IScript.inl"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMaterial/include/ImporterMaterial.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
@@ -203,8 +204,8 @@ void InspectorWindow::Draw() {
                                 if (mat.material->shader != nullptr)
                                 {
                                     rm->UnloadResource(mat.material->shader->GetUID());
-                                    mat.material->shader    = nullptr;
-                                    mat.material->shaderUID = INVALID_ID;
+                                    editorContext->GetRendererFrontend()->RequestMaterialShaderChange(
+                                        mat.material, nullptr);
                                 }
                             }
                             if (defaultSelected) ImGui::SetItemDefaultFocus();
@@ -230,8 +231,8 @@ void InspectorWindow::Draw() {
                                         {
                                             if (mat.material->shader != nullptr)
                                                 rm->UnloadResource(mat.material->shader->GetUID());
-                                            mat.material->shader    = down_cast<ResourceShader*>(r);
-                                            mat.material->shaderUID = mat.material->shader->GetUID();
+                                            editorContext->GetRendererFrontend()->RequestMaterialShaderChange(
+                                                mat.material, down_cast<ResourceShader*>(r));
                                         }
                                         else
                                         {

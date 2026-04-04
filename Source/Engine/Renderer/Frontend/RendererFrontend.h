@@ -80,6 +80,16 @@ public:
 	// reload is deferred and executed on the next call to FlushPendingReloads().
 	NOUS_ENGINE_API void ReloadAllShaders();
 
+	// Queue a material shader change to be processed at the start of the next PreUpdate.
+	// Safe to call from the Inspector (ImGui callback) — the actual GPU work (DestroyMaterial +
+	// CreateMaterial) happens between frames in FlushPendingReslots().
+	NOUS_ENGINE_API void RequestMaterialShaderChange(ResourceMaterial* material,
+	                                                 ResourceShader* newShader);
+
+	// Drain the reslot queue: DestroyMaterial + reassign shader + CreateMaterial for each entry.
+	// Called from ModuleRenderer3D::PreUpdate after FlushCompletedReloads.
+	NOUS_ENGINE_API void FlushPendingReslots();
+
 	// Execute any queued reload requests. Dispatches async compile jobs to the
 	// JobSystem — returns immediately, no GPU work done here.
 	// Call from ModuleRenderer3D::PreUpdate() before m_shaderWatcher.Poll().
@@ -194,6 +204,12 @@ private:
 
 	// Deferred reload flag — set by ReloadAllShaders(), consumed by FlushPendingReloads().
 	bool m_pendingReloadAll = false;
+
+	// ── Material reslot queue ─────────────────────────────────────────────────
+	// Queued by RequestMaterialShaderChange(); drained each PreUpdate before resource uploads.
+	struct PendingReslot { ResourceMaterial* material; ResourceShader* newShader; };
+	std::vector<PendingReslot> m_pendingReslots;
+	std::mutex                 m_reslotMutex;
 
 	// ── Async compile pipeline ────────────────────────────────────────────────
 	// Worker threads push completed compile results here; main thread drains it
