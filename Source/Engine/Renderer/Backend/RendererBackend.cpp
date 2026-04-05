@@ -243,3 +243,9 @@ bool RendererBackend::DrawCameraFrustums(RenderpassType renderpassID, const glm:
 {
     return mBackendInterface && mBackendInterface->DrawCameraFrustums(renderpassID, projection, view, frustums, globalAlreadySet);
 }
+
+bool RendererBackend::DrawPointLightDebugs(RenderpassType renderpassID, const glm::mat4& projection,
+    const glm::mat4& view, const std::vector<BoundingBoxData>& lightDebugs, bool globalAlreadySet)
+{
+    return mBackendInterface && mBackendInterface->DrawPointLightDebugs(renderpassID, projection, view, lightDebugs, globalAlreadySet);
+}

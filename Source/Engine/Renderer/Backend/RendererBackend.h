@@ -102,6 +102,13 @@ public:
 	                        const std::vector<CameraFrustumData>& frustums,
 	                        bool globalAlreadySet = false);
 
+	// ─────────────────────────────── Point Light Debugs ──────────────────────
+	bool DrawPointLightDebugs(RenderpassType renderpassID,
+	                          const glm::mat4& projection,
+	                          const glm::mat4& view,
+	                          const std::vector<BoundingBoxData>& lightDebugs,
+	                          bool globalAlreadySet = false);
+
 public:
 
 	uint64_t mFrameNumber;

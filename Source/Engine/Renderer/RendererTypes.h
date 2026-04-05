@@ -362,6 +362,26 @@ struct IRendererBackend
                                     const glm::mat4& view,
                                     const std::vector<CameraFrustumData>& frustums,
                                     bool globalAlreadySet = false) = 0;
+
+    // ─────────────────────────────── Point Light Debugs ──────────────────────
+    /**
+     * @brief Render wireframe debug spheres for point lights in the Scene View.
+     *        Only draws when renderpassID == SCENE (editor viewport).
+     *
+     * Reuses the bounding-box shader (LINE_LIST, mat4+vec4 push constants) and
+     * a shared unit-sphere vertex buffer. Each BoundingBoxData carries a
+     * translate+scale transform and the light color.
+     *
+     * @param globalAlreadySet  Pass true when the bounding-box shader's global
+     *        descriptor set was already updated this frame (e.g. DrawBoundingBoxes
+     *        or DrawCameraFrustums ran). Avoids "descriptor set updated while
+     *        bound" validation errors.
+     */
+    virtual bool DrawPointLightDebugs(RenderpassType renderpassID,
+                                      const glm::mat4& projection,
+                                      const glm::mat4& view,
+                                      const std::vector<BoundingBoxData>& lightDebugs,
+                                      bool globalAlreadySet = false) = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

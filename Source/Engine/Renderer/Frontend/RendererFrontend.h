@@ -164,6 +164,17 @@ public:
 	NOUS_ENGINE_API void SetCameraFrustums(const std::vector<CameraFrustumData>& frustums);
 
 	// ---------------------------------------------------------------------
+	// Point Light Debug Spheres
+	// ---------------------------------------------------------------------
+	/**
+	 * @brief Sets the point light debug sphere draws for the next frame.
+	 *        Each entry carries a translate+scale transform (maps unit sphere
+	 *        to world-space marker/range sphere) and a color.
+	 *        Passing an empty vector disables point light debug rendering.
+	 */
+	NOUS_ENGINE_API void SetPointLightDebugs(const std::vector<BoundingBoxData>& lightDebugs);
+
+	// ---------------------------------------------------------------------
 	// Accessors
 	// ---------------------------------------------------------------------
 	NOUS_ENGINE_API void SetBackendType(RendererBackendType backendType) noexcept;
@@ -234,6 +245,9 @@ private:
 
 	// Camera frustums — populated each frame by SetCameraFrustums().
 	std::vector<CameraFrustumData> mCameraFrustums;
+
+	// Point light debug spheres — populated each frame by SetPointLightDebugs().
+	std::vector<BoundingBoxData> mPointLightDebugs;
 
 };
 

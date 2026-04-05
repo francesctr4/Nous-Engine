@@ -321,6 +321,11 @@ struct VulkanContext
     VulkanBuffer frustumVertexBuffer{};
     uint32       frustumVertexCapacity = 0; // in vertices
 
+    // ── Point light debug sphere wireframe (static, shared for all lights) ─────
+    // 3 great-circle rings (XY, XZ, YZ planes) as line lists; scaled per-draw.
+    VulkanBuffer pointLightSphereVertexBuffer{};
+    uint32       pointLightSphereVertexCount = 0;
+
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
     std::mutex geometriesMutex;     // guards slot scan + ID assignment in CreateGeometry/DestroyGeometry

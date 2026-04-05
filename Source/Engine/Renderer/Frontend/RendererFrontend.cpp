@@ -229,6 +229,16 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 					mCameraFrustums,
 					/*globalAlreadySet=*/ !mBoundingBoxes.empty());
 			}
+
+			if (!mPointLightDebugs.empty())
+			{
+				success &= mBackend->DrawPointLightDebugs(
+					sceneRenderpass,
+					packet->editorCamera->GetProjectionMatrix(),
+					packet->editorCamera->GetViewMatrix(),
+					mPointLightDebugs,
+					/*globalAlreadySet=*/ !mBoundingBoxes.empty() || !mCameraFrustums.empty());
+			}
 		});
 	}
 
@@ -546,6 +556,11 @@ void RendererFrontend::SetBoundingBoxes(const std::vector<BoundingBoxData>& boxe
 void RendererFrontend::SetCameraFrustums(const std::vector<CameraFrustumData>& frustums)
 {
 	mCameraFrustums = frustums;
+}
+
+void RendererFrontend::SetPointLightDebugs(const std::vector<BoundingBoxData>& lightDebugs)
+{
+	mPointLightDebugs = lightDebugs;
 }
 
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)

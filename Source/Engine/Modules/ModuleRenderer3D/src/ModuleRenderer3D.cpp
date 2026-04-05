@@ -408,6 +408,46 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetCameraFrustums(frustums);
 	}
 
+	// Editor-only: point light debug spheres.
+	//   Small marker sphere at every point light's position (always visible).
+	//   Larger range sphere shown only when the light's GameObject is selected.
+	if (m_renderMode == RenderMode::EDITOR)
+	{
+		std::vector<BoundingBoxData> pointLightDebugs;
+
+		if (sceneData.hasActiveScene)
+		{
+			constexpr float c_markerRadius = 0.25f;
+
+			for (const auto& goPtr : sceneData.gameObjects)
+			{
+				auto* light     = goPtr->TryGetComponent<CLight>();
+				auto* transform = goPtr->TryGetComponent<CTransform>();
+				if (!light || !transform) continue;
+				if (light->type != LightType::Point) continue;
+
+				const glm::vec4 color = glm::vec4(light->color, 1.0f);
+
+				// Always: small fixed-size marker sphere.
+				pointLightDebugs.emplace_back(
+					glm::translate(glm::mat4(1.0f), transform->position) *
+					glm::scale(glm::mat4(1.0f), glm::vec3(c_markerRadius)),
+					color);
+
+				// Only for the selected light: range sphere.
+				if (sceneData.selectedObject == goPtr)
+				{
+					pointLightDebugs.emplace_back(
+						glm::translate(glm::mat4(1.0f), transform->position) *
+						glm::scale(glm::mat4(1.0f), glm::vec3(light->range)),
+						color);
+				}
+			}
+		}
+
+		mRendererFrontend->SetPointLightDebugs(pointLightDebugs);
+	}
+
 	if (BuildRenderPacket(&packet, sceneData) && !mIsMinimized)
 	{
 		FrameResult result = mRendererFrontend->DrawFrame(&packet);

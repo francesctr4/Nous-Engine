@@ -15,6 +15,8 @@
 #include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
+#include <cmath>
 
 #include <Engine/Core/FileSystem/FileSystem.h>
 
@@ -437,6 +439,63 @@ bool VulkanBackend::Initialize()
         }
     }
 
+    // ── Create point light debug unit-sphere wireframe vertex buffer ──────────
+    // 3 great-circle rings (XY, XZ, YZ planes) as LINE_LIST; scaled per-draw
+    // via push-constant model matrix (translate + uniform scale).
+    {
+        constexpr uint32 k_RingSegments = 24;
+        std::vector<Vertex3D> sphereVerts;
+        sphereVerts.reserve(k_RingSegments * 2 * 3);
+
+        for (uint32 plane = 0; plane < 3; ++plane)
+        {
+            for (uint32 i = 0; i < k_RingSegments; ++i)
+            {
+                const float a0 = (2.0f * glm::pi<float>() * static_cast<float>(i))     / static_cast<float>(k_RingSegments);
+                const float a1 = (2.0f * glm::pi<float>() * static_cast<float>(i + 1)) / static_cast<float>(k_RingSegments);
+                const float c0 = std::cos(a0), s0 = std::sin(a0);
+                const float c1 = std::cos(a1), s1 = std::sin(a1);
+
+                Vertex3D v0{}, v1{};
+                switch (plane)
+                {
+                    case 0: // XY ring
+                        v0.position = { c0, s0, 0.0f };
+                        v1.position = { c1, s1, 0.0f };
+                        break;
+                    case 1: // XZ ring
+                        v0.position = { c0, 0.0f, s0 };
+                        v1.position = { c1, 0.0f, s1 };
+                        break;
+                    case 2: // YZ ring
+                        v0.position = { 0.0f, c0, s0 };
+                        v1.position = { 0.0f, c1, s1 };
+                        break;
+                }
+                sphereVerts.push_back(v0);
+                sphereVerts.push_back(v1);
+            }
+        }
+
+        vkContext->pointLightSphereVertexCount = static_cast<uint32>(sphereVerts.size());
+        const uint64 sphereBufSize = sphereVerts.size() * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, sphereBufSize,
+            VkBufferUsageFlagBits(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->pointLightSphereVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create point light sphere vertex buffer.");
+        }
+        else
+        {
+            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->pointLightSphereVertexBuffer,
+                0, sphereBufSize, 0, sphereVerts.data());
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Point light debug sphere vertex buffer created (%u vertices).",
+                vkContext->pointLightSphereVertexCount);
+        }
+    }
+
     // ── Create camera frustum wireframe vertex buffer (dynamic, host-visible) ─
     // Capacity: 8 frustums × 24 vertices (12 edges × 2 endpoints per frustum).
     {
@@ -581,6 +640,14 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->frustumVertexBuffer);
         vkContext->frustumVertexBuffer.handle = VK_NULL_HANDLE;
         vkContext->frustumVertexCapacity = 0;
+    }
+
+    // Destroy the point light debug sphere vertex buffer (not managed by ResourceManager).
+    if (vkContext->pointLightSphereVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->pointLightSphereVertexBuffer);
+        vkContext->pointLightSphereVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->pointLightSphereVertexCount = 0;
     }
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
@@ -2578,6 +2645,71 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
             VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(FrustumPushConstants), &pc);
 
         vkCmdDraw(cmdBuf->handle, 24, 1, i * 24, 0);
+    }
+
+    return true;
+}
+
+bool VulkanBackend::DrawPointLightDebugs(RenderpassType renderpassID,
+                                          const glm::mat4& projection,
+                                          const glm::mat4& view,
+                                          const std::vector<BoundingBoxData>& lightDebugs,
+                                          bool globalAlreadySet)
+{
+    // Point light debug spheres are scene-viewport only.
+    if (renderpassID != RenderpassType::SCENE)
+        return true;
+
+    if (lightDebugs.empty())
+        return true;
+
+    // Reuse the bounding box shader: same vertex format (Vertex3D.position),
+    // same GlobalUBO (projection + view), same push constants (model + color).
+    ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
+    if (!rShader || !rShader->internalData)
+        return true;
+
+    if (vkContext->pointLightSphereVertexBuffer.handle == VK_NULL_HANDLE ||
+        vkContext->pointLightSphereVertexCount == 0)
+        return true;
+
+    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
+
+    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+
+    if (globalAlreadySet)
+    {
+        // A previous scenery draw (bounding boxes / frustums) already updated
+        // the global descriptor set this frame. Just rebind it; updating again
+        // while bound would invalidate the command buffer.
+        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vs->pipeline.pipelineLayout, 0, 1,
+            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+    }
+    else
+    {
+        struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+            vkContext->imageIndex, &ubo, sizeof(ubo));
+    }
+
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->pointLightSphereVertexBuffer.handle, &offset);
+
+    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
+
+    struct SpherePushConstants { glm::mat4 model; glm::vec4 color; };
+
+    for (const BoundingBoxData& ld : lightDebugs)
+    {
+        SpherePushConstants pc{ ld.transform, ld.color };
+        vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT,
+            0, sizeof(SpherePushConstants), &pc);
+
+        vkCmdDraw(cmdBuf->handle, vkContext->pointLightSphereVertexCount, 1, 0, 0);
     }
 
     return true;
