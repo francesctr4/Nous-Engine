@@ -298,13 +298,23 @@ void ModuleScene::PressStep()
 
 void ModuleScene::SaveScene(const std::string& path)
 {
+    // Name the in-memory scene after the file stem so the Inspector/Hierarchy
+    // reflect the saved name without requiring a reload.
+    const std::string filename = NOUS_FileManager::GetFilename(path);
+    const std::string stem = std::filesystem::path(filename).stem().string();
+    if (!stem.empty())
+        activeScene->SetName(stem);
+
+    std::filesystem::create_directories(std::filesystem::path(path).parent_path());
     activeScene->Serialize(path);
 
     // Mirror the saved scene to Library/Scenes/ so GameApp can load it
     // from Library without needing Assets/.
-    const std::string filename = NOUS_FileManager::GetFilename(path);
     const std::string libraryPath = "Library/Scenes/" + filename;
+    std::filesystem::create_directories("Library/Scenes");
     NOUS_FileManager::CopyFile(path, libraryPath);
+
+    m_currentScenePath = path;
 }
 
 void ModuleScene::LoadScene(const std::string& path)
@@ -325,6 +335,11 @@ void ModuleScene::LoadScene(const std::string& path)
 	activeScene->Deserialize(path);
 	EnsureMainCamera();
 	RefreshPrefabInstances();
+
+	// Don't treat the simulation snapshot as the user's active scene — otherwise
+	// pressing Stop would make Save overwrite Library/_simulation_snapshot.nous.
+	if (path != m_snapshotPath)
+		m_currentScenePath = path;
 }
 
 void ModuleScene::LoadSceneAsync(const std::string& path)
@@ -342,6 +357,11 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 	JobSystem->WaitForPendingJobs();
 
 	ClearScene();
+
+	// Track the scene path up-front — the worker thread only does deserialization,
+	// and skipping snapshot reloads keeps PressStop from hijacking the active path.
+	if (path != m_snapshotPath)
+		m_currentScenePath = path;
 
 	JobSystem->SubmitJob([this, path]
 		{
@@ -378,6 +398,20 @@ void ModuleScene::ClearScene()
 {
     selectedGameObject = nullptr;
     activeScene->Clear();
+}
+
+void ModuleScene::NewScene(const std::string& name)
+{
+    // Drain in-flight scene jobs before clearing — same reasoning as LoadScene.
+    JobSystem->WaitForPendingJobs();
+
+    ClearScene();
+    activeScene->SetName(name);
+    m_currentScenePath.clear();
+
+    EnsureMainCamera();
+
+    NOUS_INFO("[Scene] New scene '%s' created.", name.c_str());
 }
 
 void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)

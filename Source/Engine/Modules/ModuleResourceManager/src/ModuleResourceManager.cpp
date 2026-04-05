@@ -864,7 +864,7 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType
 }
 
 ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
-    const std::string& libraryPath, int32_t submeshIndex)
+    const std::string& libraryPath, int32_t submeshIndex, const std::string& assetsPath)
 {
 	// Use hash(libraryPath) as a stable synthetic base UID for dedup.
 	const UID baseUID = static_cast<UID>(std::hash<std::string>{}(libraryPath) & 0xFFFFFFFF);
@@ -878,6 +878,10 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 			auto resIt = resources.find(mapIt->second);
 			if (resIt != resources.end() && resIt->second)
 			{
+				// Cache hit: back-fill assetsPath if the earlier caller didn't have it
+				// (e.g. GAME-mode load) but this caller does (EDITOR-mode scene load).
+				if (!assetsPath.empty() && resIt->second->GetAssetsPath().empty())
+					resIt->second->SetAssetsPath(assetsPath);
 				resIt->second->IncreaseReferenceCount();
 				return down_cast<ResourceMesh*>(resIt->second);
 			}
@@ -898,6 +902,8 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 	mesh->SetName(sub.name);
 	mesh->SetType(ResourceType::MESH);
 	mesh->SetLibraryPath(libraryPath);
+	if (!assetsPath.empty())
+		mesh->SetAssetsPath(assetsPath);
 
 	mesh->vertices = sub.vertices;
 	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
@@ -1290,7 +1296,7 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
             if (req.submeshIndex >= 0)
             {
                 if (!req.libraryPath.empty())
-                    res = RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex);
+                    res = RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex, req.assetPath);
                 else
                     res = RequestOrCreateSubMeshResource(req.assetPath, req.submeshIndex);
             }

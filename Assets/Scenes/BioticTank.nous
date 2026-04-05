@@ -1,0 +1,160 @@
+{
+    "name": "BioticTank",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 1706283788,
+            "name": "Main Camera",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        120.5,
+                        410.01998901367188
+                    ],
+                    "orientation": [
+                        0.99737811088562012,
+                        0.072367854416370392,
+                        -0,
+                        -0
+                    ],
+                    "rotation": [
+                        8.3000001907348633,
+                        -0,
+                        -0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CCamera",
+                    "fov": 60.000003814697266,
+                    "nearPlane": 0.10000000149011612,
+                    "farPlane": 10000,
+                    "aspectRatio": 1.8879055976867676,
+                    "isMainCamera": true
+                }
+            ]
+        },
+        {
+            "uid": 1071002006,
+            "name": "PROP_Liquid_Tank",
+            "parent": 2090891372,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\PROP_Biotic_Liquid_Tank.fbx",
+                    "libraryPath": "Library\\Meshes\\17960336.nmesh",
+                    "resourceUID": 2086335572,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "",
+                    "libraryPath": "",
+                    "resourceUID": 0
+                }
+            ]
+        },
+        {
+            "uid": 2090891372,
+            "name": "PROP_Biotic_Liquid_Tank.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "uid": 2206181870,
+            "name": "Directional Light",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CLight",
+                    "lightType": "Directional",
+                    "colorR": 1,
+                    "colorG": 1,
+                    "colorB": 1,
+                    "intensity": 1,
+                    "range": 10
+                }
+            ]
+        }
+    ]
+}

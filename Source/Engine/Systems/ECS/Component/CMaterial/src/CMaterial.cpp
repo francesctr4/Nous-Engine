@@ -32,7 +32,10 @@ JSON_Value* CMaterial::Serialize() const {
 void CMaterial::Deserialize(JSON_Object* obj) {
     const char* assetPath = json_object_get_string(obj, "assetPath");
     if (!assetPath || strlen(assetPath) == 0) {
-        material = nullptr;
+        // No on-disk material was referenced — this GO used the in-memory default
+        // material (no assetPath, UID=0). Restore it so the mesh still renders
+        // after a snapshot round-trip, instead of leaving material=nullptr.
+        material = m_GameObject->GetScene()->GetResourceManager()->GetDefaultMaterial();
         return;
     }
 

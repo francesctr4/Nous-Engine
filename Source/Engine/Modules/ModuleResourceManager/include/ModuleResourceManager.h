@@ -65,8 +65,13 @@ public:
 	                                                    const std::string& libraryPath);
 
 	// GAME mode variant: load a submesh by library path + index, no .meta required.
+	// `assetsPath` is optional: when provided (EDITOR path), it is stamped onto the
+	// created resource so later serialization (Scene snapshot, Save Scene) can write
+	// a non-empty assetPath back out. Without it the resource would carry an empty
+	// assetsPath and CMesh::Deserialize would drop the reference on the next load.
 	NOUS_ENGINE_API ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(
-	    const std::string& libraryPath, int32_t submeshIndex);
+	    const std::string& libraryPath, int32_t submeshIndex,
+	    const std::string& assetsPath = "");
 
 	NOUS_ENGINE_API bool UnloadResource(const UID& UID);
 
