@@ -116,7 +116,12 @@ bool ModuleResourceManager::Start()
 	const uint32 pixelCount = texDimension * texDimension;
 	const uint32 squareSize = 16;
 
+	// Reserved UIDs for built-in fallback textures. Placed at the top of the uint32
+	// range so they cannot collide with randomly-generated asset UIDs in .meta files.
+	// These UIDs are what the descriptor lazy-write dedup (WriteInstanceSampler) keys
+	// off via Resource::GetUID(), so each fallback must be uniquely identifiable.
 	mDefaultTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mDefaultTexture->SetUID(INVALID_ID - 1);
 	mDefaultTexture->SetName("DefaultTexture");
 	mDefaultTexture->width        = texDimension;
 	mDefaultTexture->height       = texDimension;
@@ -144,6 +149,7 @@ bool ModuleResourceManager::Start()
 	// 1×1 pure-white (1,1,1,1). Neutral identity for multiplicative slots (specular
 	// strength, shininess, AO) — multiplying by 1 has no effect.
 	mWhiteTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mWhiteTexture->SetUID(INVALID_ID - 2);
 	mWhiteTexture->SetName("WhiteTexture");
 	mWhiteTexture->width        = 1;
 	mWhiteTexture->height       = 1;
@@ -157,6 +163,7 @@ bool ModuleResourceManager::Start()
 	// 1×1 pure-black (0,0,0,1). Neutral identity for additive slots (emissive) —
 	// adding 0 has no effect.
 	mBlackTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mBlackTexture->SetUID(INVALID_ID - 3);
 	mBlackTexture->SetName("BlackTexture");
 	mBlackTexture->width        = 1;
 	mBlackTexture->height       = 1;
@@ -171,6 +178,7 @@ bool ModuleResourceManager::Start()
 	// which after TBN multiplication gives the unperturbed geometry normal. Using the
 	// white texture as a normal-map fallback would produce a 45° tilt instead.
 	mFlatNormalTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mFlatNormalTexture->SetUID(INVALID_ID - 4);
 	mFlatNormalTexture->SetName("FlatNormalTexture");
 	mFlatNormalTexture->width        = 1;
 	mFlatNormalTexture->height       = 1;

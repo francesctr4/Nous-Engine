@@ -2,7 +2,6 @@
 
 ResourceTexture::ResourceTexture(UID uid) : Resource(uid, ResourceType::TEXTURE)
 {
-	ID = INVALID_ID;
     internalData = nullptr;
 	generation = INVALID_ID;
 

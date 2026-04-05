@@ -1291,7 +1291,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
                         auto& samplerID  = vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].ids[imageIndex];
                         NOUS_VulkanShader::WriteInstanceSampler(vkContext, vsInstance, imageIndex, instanceID,
                             rb->binding, texData->image.view, texData->sampler,
-                            &samplerGen, &samplerID, texture->ID, texture->generation);
+                            &samplerGen, &samplerID, texture->GetUID(), texture->generation);
                     }
                     else if (vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex] == UINT32_MAX)
                     {
