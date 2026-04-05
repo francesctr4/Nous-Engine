@@ -50,8 +50,12 @@ public:
     // Dispatches IScript::LateUpdate to all live components. Called from ModuleScene::PostUpdate.
     void DispatchLateUpdate(float dt);
 
-    // Calls RecreateInstances() on every registered component. Called from ModuleScene::PressPlay.
+    // Calls RecreateInstances() on every registered component. Called during script hot-reload.
     void RecreateAllInstances();
+
+    // Calls StartInstances() on every registered component (Awake/Start).
+    // Called from ModuleScene::PressPlay — instances already exist from edit mode.
+    void StartAllInstances();
 
     // Destroys all DLL instances and clears the registry. Called from ModuleScene::CleanUp.
     void CleanupScripts();

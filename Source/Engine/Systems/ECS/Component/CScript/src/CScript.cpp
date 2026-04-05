@@ -30,24 +30,19 @@ void CScript::OnStart()
 {
     // Always register so the component appears in the registry and can be found
     // by PressPlay() / hot-reload regardless of simulation state.
-    m_GameObject->GetScene()->GetModuleScene()->scriptManager->RegisterScriptComponent(this);
+    ModuleScene* moduleScene = m_GameObject->GetScene()->GetModuleScene();
+    moduleScene->scriptManager->RegisterScriptComponent(this);
     m_registered = true;
 
-    // Defer instance creation to PressPlay() when the simulation is not running.
-    if (!m_GameObject->GetScene()->GetModuleScene()->IsPlaying())
-        return;
-
+    // Always create instances — even in edit mode — so the Inspector can
+    // display/edit SCRIPT_FIELD values. ApplyProperties() inside CreateInstances()
+    // loads any values previously restored from disk or a hot-reload snapshot.
     CreateInstances();
-    m_started = true;
 
-    for (auto* inst : m_instances)
-    {
-        if (inst)
-        {
-            inst->Awake();
-            inst->Start();
-        }
-    }
+    // Only fire the Awake/Start lifecycle when the simulation is actually running
+    // (covers scene loads that happen mid-play).
+    if (!moduleScene->IsStopped())
+        StartInstances();
 }
 
 void CScript::OnUpdate(float dt)
@@ -73,11 +68,9 @@ void CScript::OnDestroy()
         m_registered = false;
     }
 
-    if (m_started)
-    {
-        DestroyInstances();
-        m_started = false;
-    }
+    // Instances now exist in both edit and play modes — always tear them down.
+    DestroyInstances();
+    m_started = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -88,23 +81,33 @@ void CScript::AddScript(const std::string& scriptName)
 {
     m_scriptNames.push_back(scriptName);
 
-    if (m_started && m_GameObject)
+    if (!m_GameObject) return;
+
+    ModuleScene* moduleScene = m_GameObject->GetScene()->GetModuleScene();
+    ScriptManager* sm = moduleScene->scriptManager;
+    IScript* inst = sm->CreateScriptInstance(scriptName);
+    if (!inst)
     {
-        ScriptManager* sm = m_GameObject->GetScene()->GetModuleScene()->scriptManager;
-        IScript* inst = sm->CreateScriptInstance(scriptName);
-        if (inst)
-        {
-            inst->SetOwnerID(m_GameObject->GetID());
-            m_instances.push_back(inst);
-            inst->Awake();
-            inst->Start();
-            NOUS_INFO("[CScript] Added and started script '%s' on '%s'",
-                      scriptName.c_str(), m_GameObject->GetName().c_str());
-        }
-        else
-        {
-            NOUS_WARN("[CScript] Failed to add script '%s' — not found in registry", scriptName.c_str());
-        }
+        NOUS_WARN("[CScript] Failed to add script '%s' — not found in registry", scriptName.c_str());
+        return;
+    }
+
+    inst->SetOwnerID(m_GameObject->GetID());
+    m_instances.push_back(inst);
+
+    // Only invoke the lifecycle when the simulation is live; otherwise the
+    // instance just sits waiting for PressPlay (but its fields are editable now).
+    if (!moduleScene->IsStopped())
+    {
+        inst->Awake();
+        inst->Start();
+        NOUS_INFO("[CScript] Added and started script '%s' on '%s'",
+                  scriptName.c_str(), m_GameObject->GetName().c_str());
+    }
+    else
+    {
+        NOUS_INFO("[CScript] Added script '%s' on '%s' (will start on Play)",
+                  scriptName.c_str(), m_GameObject->GetName().c_str());
     }
 }
 
@@ -121,7 +124,7 @@ void CScript::RemoveScript(const std::string& scriptName)
         IScript* inst = m_instances[idx];
         if (inst)
         {
-            inst->OnDestroy();
+            if (m_started) inst->OnDestroy();
             inst->Destroy();
         }
         m_instances.erase(m_instances.begin() + static_cast<ptrdiff_t>(idx));
@@ -142,7 +145,18 @@ void CScript::ClearInstances()
 void CScript::RecreateInstances()
 {
     CreateInstances();
-    m_started = true;
+
+    // Only re-enter the lifecycle when the simulation is live; in edit mode
+    // we just want the fresh instances available for Inspector editing.
+    if (!m_GameObject || m_GameObject->GetScene()->GetModuleScene()->IsStopped())
+        return;
+
+    StartInstances();
+}
+
+void CScript::StartInstances()
+{
+    if (m_started) return;
 
     for (auto* inst : m_instances)
     {
@@ -152,6 +166,7 @@ void CScript::RecreateInstances()
             inst->Start();
         }
     }
+    m_started = true;
 }
 
 // ---------------------------------------------------------------------------

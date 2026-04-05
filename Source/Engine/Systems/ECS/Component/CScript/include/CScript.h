@@ -51,8 +51,12 @@ public:
     // Called by ModuleScene during hot-reload (destroys DLL instances, keeps names intact)
     void ClearInstances();
 
-    // Called by ModuleScene during hot-reload (recreates instances + Awake + Start, no re-registration)
+    // Called by ModuleScene during hot-reload (recreates instances; Awake/Start only if simulation is live)
     void RecreateInstances();
+
+    // Calls Awake/Start on existing instances. Called by ModuleScene::PressPlay.
+    // Safe to call multiple times (no-op if already started).
+    void StartInstances();
 
     // Called by ModuleScene::CleanupScripts() during engine shutdown — marks the component
     // as unregistered so that the subsequent OnDestroy() (from scene destruction) does not

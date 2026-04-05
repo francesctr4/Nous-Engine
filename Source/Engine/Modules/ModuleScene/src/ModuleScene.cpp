@@ -239,9 +239,9 @@ void ModuleScene::PressPlay()
 		activeScene->Serialize(m_snapshotPath);
 	}
 
-	// Start all registered CScript components (they were registered in OnStart but
-	// deferred instance creation because the simulation was stopped).
-	scriptManager->RecreateAllInstances();
+	// Instances already exist (created in edit mode at CScript::OnStart so the
+	// Inspector could edit their fields). Just fire Awake/Start on them.
+	scriptManager->StartAllInstances();
 
 	m_simulationState = SimulationState::PLAYING;
 

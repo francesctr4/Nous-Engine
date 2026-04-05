@@ -11,24 +11,24 @@
                     "type": "CTransform",
                     "position": [
                         0,
-                        120.5,
-                        410.01998901367188
+                        32.761692047119141,
+                        54.166206359863281
                     ],
                     "orientation": [
-                        0.99737811088562012,
-                        0.072367854416370392,
-                        -0,
-                        -0
+                        0.99119430780410767,
+                        -0.13241550326347351,
+                        0,
+                        0
                     ],
                     "rotation": [
-                        8.3000001907348633,
-                        -0,
-                        -0
+                        -15.21839427947998,
+                        0,
+                        0
                     ],
                     "scale": [
                         1,
-                        1,
-                        1
+                        0.99999815225601196,
+                        0.99999815225601196
                     ]
                 },
                 {
@@ -77,16 +77,16 @@
             ]
         },
         {
-            "uid": 2206181870,
-            "name": "Directional Light",
+            "uid": 3796635500,
+            "name": "Point Light",
             "parent": 0,
             "components": [
                 {
                     "type": "CTransform",
                     "position": [
                         0,
-                        0,
-                        0
+                        20.049531936645508,
+                        16.803581237792969
                     ],
                     "orientation": [
                         1,
@@ -106,18 +106,36 @@
                     ]
                 },
                 {
+                    "type": "CScript",
+                    "scripts": [
+                        "OrbitLight"
+                    ],
+                    "properties": {
+                        "OrbitLight": {
+                            "m_radius": {
+                                "type": 0,
+                                "value": 14.899999618530273
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 3.5999999046325684
+                            }
+                        }
+                    }
+                },
+                {
                     "type": "CLight",
-                    "lightType": "Directional",
+                    "lightType": "Point",
                     "colorR": 1,
-                    "colorG": 1,
-                    "colorB": 1,
-                    "intensity": 1,
-                    "range": 10
+                    "colorG": 0,
+                    "colorB": 0,
+                    "intensity": 10,
+                    "range": 20
                 }
             ]
         },
         {
-            "uid": 450856582,
+            "uid": 3913023362,
             "name": "PROP_Liquid_Tank",
             "parent": 2090891372,
             "components": [
@@ -149,7 +167,7 @@
                     "type": "CMesh",
                     "assetPath": "Assets\\Meshes\\PROP_Biotic_Liquid_Tank.fbx",
                     "libraryPath": "Library\\Meshes\\17960336.nmesh",
-                    "resourceUID": 1597524134,
+                    "resourceUID": 2719763944,
                     "submeshIndex": 0
                 },
                 {
