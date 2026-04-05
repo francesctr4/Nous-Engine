@@ -347,8 +347,8 @@ void PrefabManager::ReloadPrefabInstance(GameObject* instanceRoot, Scene* scene)
                     Component* comp = Component::CreateComponent(typeName);
                     if (comp)
                     {
+                        instanceRoot->AddComponent(comp); // replaces if already present; also sets comp->m_GameObject
                         comp->Deserialize(compObj);
-                        instanceRoot->AddComponent(comp); // replaces if already present
                     }
                 }
             }
@@ -372,8 +372,8 @@ void PrefabManager::ReloadPrefabInstance(GameObject* instanceRoot, Scene* scene)
                     Component* comp = Component::CreateComponent(typeName);
                     if (comp)
                     {
+                        go->AddComponent(comp); // sets comp->m_GameObject before Deserialize needs it
                         comp->Deserialize(compObj);
-                        go->AddComponent(comp);
                     }
                 }
             }

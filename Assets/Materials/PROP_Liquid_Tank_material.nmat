@@ -8,33 +8,33 @@
     "texture_maps": [
         {
             "name": "aoSampler",
-            "asset_path": "Assets\\Textures\\TEX_PROP_LiquidTank_A.png",
+            "asset_path": "Assets\/Textures\/TEX_PROP_LiquidTank_A.png",
             "uid": 2364040611,
-            "library_path": "Library\\Textures\\2364040611.png"
+            "library_path": "Library\/Textures\/2364040611.png"
         },
         {
             "name": "diffuseSampler",
-            "asset_path": "Assets\\Textures\\TEX_PROP_LiquidTank_D.png",
+            "asset_path": "Assets\/Textures\/TEX_PROP_LiquidTank_D.png",
             "uid": 2308381605,
-            "library_path": "Library\\Textures\\2308381605.png"
+            "library_path": "Library\/Textures\/2308381605.png"
         },
         {
             "name": "emissiveSampler",
-            "asset_path": "Assets\\Textures\\TEX_PROP_LiquidTank_E.png",
+            "asset_path": "Assets\/Textures\/TEX_PROP_LiquidTank_E.png",
             "uid": 948151468,
-            "library_path": "Library\\Textures\\948151468.png"
+            "library_path": "Library\/Textures\/948151468.png"
         },
         {
             "name": "normalSampler",
-            "asset_path": "Assets\\Textures\\TEX_PROP_LiquidTank_N.png",
+            "asset_path": "Assets\/Textures\/TEX_PROP_LiquidTank_N.png",
             "uid": 543104358,
-            "library_path": "Library\\Textures\\543104358.png"
+            "library_path": "Library\/Textures\/543104358.png"
         },
         {
             "name": "specularSampler",
-            "asset_path": "Assets\\Textures\\TEX_PROP_LiquidTank_S.png",
+            "asset_path": "Assets\/Textures\/TEX_PROP_LiquidTank_S.png",
             "uid": 321034430,
-            "library_path": "Library\\Textures\\321034430.png"
+            "library_path": "Library\/Textures\/321034430.png"
         }
     ],
     "shader_uid": 4126860508,
