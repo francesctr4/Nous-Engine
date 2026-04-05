@@ -183,11 +183,66 @@ void InspectorWindow::Draw() {
                     auto& mat = go->GetComponent<CMaterial>();
                     if (mat.material) {
                         auto* rm = go->GetScene()->GetResourceManager();
+                        const bool isDefaultMaterial = (mat.material == rm->GetDefaultMaterial());
 
                         ImGui::Text("Name: %s", mat.material->GetName().c_str());
                         ImGui::Text("UID: %u", mat.material->GetUID());
                         ImGui::Text("Assets Path: %s", mat.material->GetAssetsPath().c_str());
                         ImGui::Text("Library Path: %s", mat.material->GetLibraryPath().c_str());
+
+                        if (isDefaultMaterial)
+                        {
+                            ImGui::Spacing();
+                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.78f, 0.33f, 1.0f));
+                            ImGui::TextUnformatted("Using Default Material (read-only).");
+                            ImGui::TextUnformatted("Create a material asset to assign textures / shaders that persist with the scene.");
+                            ImGui::PopStyleColor();
+                            ImGui::Spacing();
+
+                            if (ImGui::Button("Create Material Asset"))
+                            {
+                                // Build a safe filename from the GameObject name.
+                                std::string safeName = go->GetName();
+                                if (safeName.empty()) safeName = "Material";
+                                for (char& c : safeName)
+                                {
+                                    // Replace characters invalid on Windows file systems with '_'.
+                                    if (c == '/' || c == '\\' || c == ':' || c == '*' || c == '?' ||
+                                        c == '"' || c == '<' || c == '>' || c == '|' || c == ' ')
+                                        c = '_';
+                                }
+
+                                const std::string dir  = "Assets/Materials/";
+                                std::string assetPath  = dir + safeName + "_material.nmat";
+
+                                // Ensure uniqueness: append _1, _2, ... until we find a free path.
+                                int suffix = 1;
+                                while (std::filesystem::exists(assetPath))
+                                {
+                                    assetPath = dir + safeName + "_material_" + std::to_string(suffix++) + ".nmat";
+                                    if (suffix > 1000) break; // safety guard
+                                }
+
+                                if (!ImporterMaterial::CreateNewMaterialFile(assetPath))
+                                {
+                                    NOUS_ERROR("InspectorWindow — failed to write new material file '%s'.", assetPath.c_str());
+                                }
+                                else if (!rm->ImportFile(assetPath))
+                                {
+                                    NOUS_ERROR("InspectorWindow — failed to import new material file '%s'.", assetPath.c_str());
+                                }
+                                else
+                                {
+                                    Resource* r = rm->CreateResource(assetPath);
+                                    if (r)
+                                        mat.material = down_cast<ResourceMaterial*>(r);
+                                    else
+                                        NOUS_ERROR("InspectorWindow — failed to load new material '%s'.", assetPath.c_str());
+                                }
+                            }
+                        }
+                        else
+                        {
 
                         ImGui::SeparatorText("SHADER");
 
@@ -362,6 +417,8 @@ void InspectorWindow::Draw() {
 
                         if (ImGui::Button("Save Material"))
                             ImporterMaterial::SaveMaterialToAssets(mat.material);
+
+                        } // end else (non-default material)
                     }
                 }
             }

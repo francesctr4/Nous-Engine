@@ -100,7 +100,7 @@ public:
     [[nodiscard]] ResourceTexture* GetWhiteTexture() const;
     [[nodiscard]] ResourceTexture* GetBlackTexture() const;
     [[nodiscard]] ResourceTexture* GetFlatNormalTexture() const;
-    [[nodiscard]] ResourceMaterial* GetDefaultMaterial() const;
+    [[nodiscard]] NOUS_ENGINE_API ResourceMaterial* GetDefaultMaterial() const;
 
     // Returns the resource pointer WITHOUT bumping the reference count (borrowed reference).
     // Use for read-only access (e.g. Inspector UI) where the caller does not own the resource.

@@ -74,14 +74,14 @@
                     "type": "CMesh",
                     "assetPath": "Assets\\Meshes\\PROP_Biotic_Liquid_Tank.fbx",
                     "libraryPath": "Library\\Meshes\\17960336.nmesh",
-                    "resourceUID": 2086335572,
+                    "resourceUID": 3379484804,
                     "submeshIndex": 0
                 },
                 {
                     "type": "CMaterial",
-                    "assetPath": "",
-                    "libraryPath": "",
-                    "resourceUID": 0
+                    "assetPath": "Assets\\Materials\\PROP_Liquid_Tank_material.nmat",
+                    "libraryPath": "Library\\Materials\\2017331328.nmat",
+                    "resourceUID": 2017331328
                 }
             ]
         },

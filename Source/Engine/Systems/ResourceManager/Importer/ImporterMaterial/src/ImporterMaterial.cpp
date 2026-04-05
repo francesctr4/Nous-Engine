@@ -298,6 +298,10 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
         for (const auto& [name, map] : material->textureMaps)
         {
             if (!map.texture) continue;
+            // Skip in-memory fallbacks (default checkerboard, white, black, flat-normal)
+            // — they have no asset on disk, so persisting an entry for them would
+            // produce a broken reference on the next load.
+            if (map.texture->GetAssetsPath().empty()) continue;
             JSON_Value*  entryVal = json_value_init_object();
             JSON_Object* entry    = json_value_get_object(entryVal);
             json_object_set_string(entry, "name",         name.c_str());
@@ -332,5 +336,32 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
 
     bool ok = updateFile(material->GetAssetsPath());
     ok     &= updateFile(material->GetLibraryPath());
+    return ok;
+}
+
+bool ImporterMaterial::CreateNewMaterialFile(const std::string& assetPath)
+{
+    if (assetPath.empty()) return false;
+
+    // Ensure parent directory exists (e.g. Assets/Materials/).
+    NOUS_FileManager::CreateDirectory(NOUS_FileManager::GetDirectory(assetPath));
+
+    JSON_Value*  rootVal = json_value_init_object();
+    JSON_Object* root    = json_value_get_object(rootVal);
+
+    JSON_Value*  colorVal = json_value_init_array();
+    JSON_Array*  colorArr = json_value_get_array(colorVal);
+    json_array_append_number(colorArr, 1.0);
+    json_array_append_number(colorArr, 1.0);
+    json_array_append_number(colorArr, 1.0);
+    json_array_append_number(colorArr, 1.0);
+    json_object_set_value(root, "diffuse_color", colorVal);
+
+    // Empty texture_maps array — the user will populate it via the Inspector.
+    JSON_Value* mapsVal = json_value_init_array();
+    json_object_set_value(root, "texture_maps", mapsVal);
+
+    const bool ok = json_serialize_to_file_pretty(rootVal, assetPath.c_str()) == JSONSuccess;
+    json_value_free(rootVal);
     return ok;
 }
