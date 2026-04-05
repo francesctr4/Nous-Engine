@@ -1224,8 +1224,13 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
         const uint32_t instanceID  = material->internalID;
         const uint32_t imageIndex  = vkContext->imageIndex;
 
-        // Write diffuse colour to instance UBO (binding 0).
-        struct InstanceUBO { glm::vec4 diffuseColor; } ubo{ material->diffuseColor };
+        // Write per-instance params to UBO (binding 0). Layout must match the GLSL InstanceUBO block
+        // in ForwardBlinnPhong.glsl and BuiltIn.MaterialShader.glsl (48 bytes, three vec4s).
+        struct InstanceUBO {
+            glm::vec4 diffuseColor;
+            glm::vec4 emissiveColor;
+            glm::vec4 materialParams;
+        } ubo{ material->diffuseColor, material->emissiveColor, material->materialParams };
         auto& uboGen = vsInstance->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
         NOUS_VulkanShader::WriteInstanceUBO(vkContext, vsInstance, imageIndex, instanceID,
             &ubo, sizeof(ubo), &uboGen);

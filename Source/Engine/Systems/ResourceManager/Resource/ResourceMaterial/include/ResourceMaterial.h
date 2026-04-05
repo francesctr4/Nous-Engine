@@ -28,7 +28,9 @@ public:
     uint32 generation;
 
     std::unordered_map<std::string, TextureMap> textureMaps; // key = GLSL binding name (e.g. "diffuseSampler")
-    glm::vec4  diffuseColor;
+    glm::vec4  diffuseColor   = glm::vec4(1.0f);
+    glm::vec4  emissiveColor  = glm::vec4(1.0f); // rgb = tint, a = intensity
+    glm::vec4  materialParams = glm::vec4(1.0f); // x=aoIntensity, y=normalStrength, z=specularIntensity, w=shininessScale
 
     ResourceShader* shader          = nullptr;    // null = use built-in MaterialShader
     uint32          shaderUID       = INVALID_ID; // for serialisation / reload

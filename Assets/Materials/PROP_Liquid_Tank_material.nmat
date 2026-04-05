@@ -5,6 +5,18 @@
         1,
         1
     ],
+    "emissive_color": [
+        1,
+        1,
+        1,
+        1
+    ],
+    "material_params": [
+        1,
+        1,
+        1,
+        1
+    ],
     "texture_maps": [
         {
             "name": "aoSampler",

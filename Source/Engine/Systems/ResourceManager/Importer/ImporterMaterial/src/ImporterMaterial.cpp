@@ -125,6 +125,29 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
         static_cast<float>(json_array_get_number(colorArr, 2)),
         static_cast<float>(json_array_get_number(colorArr, 3)));
 
+    // emissive_color (optional, defaults to (1,1,1,1) = neutral when absent)
+    if (JSON_Array* emissiveArr = json_object_get_array(root, "emissive_color");
+        emissiveArr && json_array_get_count(emissiveArr) >= 4)
+    {
+        material->emissiveColor = glm::vec4(
+            static_cast<float>(json_array_get_number(emissiveArr, 0)),
+            static_cast<float>(json_array_get_number(emissiveArr, 1)),
+            static_cast<float>(json_array_get_number(emissiveArr, 2)),
+            static_cast<float>(json_array_get_number(emissiveArr, 3)));
+    }
+
+    // material_params (optional, defaults to (1,1,1,1) = neutral when absent)
+    // x=aoIntensity, y=normalStrength, z=specularIntensity, w=shininessScale
+    if (JSON_Array* paramsArr = json_object_get_array(root, "material_params");
+        paramsArr && json_array_get_count(paramsArr) >= 4)
+    {
+        material->materialParams = glm::vec4(
+            static_cast<float>(json_array_get_number(paramsArr, 0)),
+            static_cast<float>(json_array_get_number(paramsArr, 1)),
+            static_cast<float>(json_array_get_number(paramsArr, 2)),
+            static_cast<float>(json_array_get_number(paramsArr, 3)));
+    }
+
     // ── Texture maps ─────────────────────────────────────────────────────────
     // New format: texture_maps array
     JSON_Array* texMapsArr = json_object_get_array(root, "texture_maps");

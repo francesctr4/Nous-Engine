@@ -73,7 +73,9 @@ layout(set = 0, binding = 0) uniform GlobalUBO
 
 layout(set = 1, binding = 0) uniform InstanceUBO
 {
-    vec4 diffuseColor;
+    vec4 diffuseColor;     // rgb = tint, a = opacity (unused)
+    vec4 emissiveColor;    // rgb = color, a = intensity (unused here)
+    vec4 materialParams;   // x=aoIntensity, y=normalStrength, z=specularIntensity, w=shininessScale (unused here)
 } instanceUBO;
 
 // Samplers
