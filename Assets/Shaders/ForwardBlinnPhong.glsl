@@ -30,6 +30,7 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     DirectionalLight dirLight;
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
+    vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime
 } globalUBO;
 
 layout(push_constant) uniform PushConstants
@@ -108,6 +109,7 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     DirectionalLight dirLight;
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
+    vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime
 } globalUBO;
 
 // ── Blinn-Phong helpers ───────────────────────────────────────────────────────

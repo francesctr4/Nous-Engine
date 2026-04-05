@@ -10,6 +10,7 @@
 #include "Engine/Core/Logger/Asserts.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
@@ -160,6 +161,10 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 		std::copy(packet->pointLights,
 		          packet->pointLights + packet->activePointLightCount,
 		          ubo.pointLights);
+		ubo.time = glm::vec4(packet->totalTime,
+		                     std::sin(packet->totalTime),
+		                     std::cos(packet->totalTime),
+		                     packet->deltaTime);
 		return ubo;
 	};
 

@@ -242,8 +242,11 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 	const SceneRenderData& sceneData = mModuleScene->GetRenderData();
 
+	m_totalTime += dt;
+
 	RenderPacket packet{};
 	packet.deltaTime    = dt;
+	packet.totalTime    = m_totalTime;
 	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? mModuleCamera3D->GetCamera() : nullptr;
 	packet.gameCamera   = sceneData.gameCamera;
 

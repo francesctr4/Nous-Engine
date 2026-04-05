@@ -104,6 +104,9 @@ private:
 	RenderMode m_renderMode = RenderMode::EDITOR;
 	bool mIsMinimized = false;
 
+	// Accumulated seconds since app start; fed to GlobalUBO.time each frame.
+	float m_totalTime = 0.f;
+
 	// Dependency Injection
 	ModuleWindow* mModuleWindow;
 	ModuleCamera3D* mModuleCamera3D;

@@ -91,17 +91,19 @@ struct GlobalUBO
     DirectionalLight directionalLight;              //  32 bytes, offset 160
     glm::ivec4       lightCountAndPad;              //  16 bytes, offset 192 (x = activePointLightCount)
     PointLight       pointLights[c_maxPointLights]; // 512 bytes, offset 208
-};                                                  // = 720 bytes total
-static_assert(sizeof(GlobalUBO) == 720,
+    glm::vec4        time;                           //  16 bytes, offset 720 (x=totalTime, y=sin(t), z=cos(t), w=deltaTime)
+};                                                  // = 736 bytes total
+static_assert(sizeof(GlobalUBO) == 736,
     "GlobalUBO size changed — update the GLSL block and this assert together.");
 
 struct RenderPacket
 {
-    RenderPacket() : editorCamera(nullptr), gameCamera(nullptr), deltaTime(0.0f) {}
+    RenderPacket() : editorCamera(nullptr), gameCamera(nullptr), deltaTime(0.0f), totalTime(0.0f) {}
 
     Camera* editorCamera;
     Camera* gameCamera;
     float deltaTime;
+    float totalTime;  // seconds since app start (accumulated dt)
 
     std::vector<GeometryRenderData> geometries;
 
