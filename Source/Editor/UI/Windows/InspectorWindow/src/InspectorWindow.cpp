@@ -436,15 +436,21 @@ void InspectorWindow::Draw() {
                     {
                         const std::string& sName = scriptNames[i];
 
-                        // Script header with remove button
+                        // Script header with remove button.
+                        // Render the Remove button first (right-aligned) so it gets
+                        // click priority over the CollapsingHeader that spans the row.
                         ImGui::PushID(i);
-                        bool open = ImGui::CollapsingHeader(sName.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-                        ImGui::SameLine();
+                        float removeWidth = ImGui::CalcTextSize("Remove").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+                        float availWidth  = ImGui::GetContentRegionAvail().x;
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + availWidth - removeWidth);
                         if (ImGui::SmallButton("Remove")) {
                             cs.RemoveScript(sName);
                             ImGui::PopID();
                             break; // iterator invalidated — skip rest of frame
                         }
+                        ImGui::SameLine(0.0f, 0.0f);
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() - availWidth);
+                        bool open = ImGui::CollapsingHeader(sName.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
 
                         // Properties (if script has any)
                         if (open) {
