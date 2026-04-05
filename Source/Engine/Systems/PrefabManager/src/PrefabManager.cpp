@@ -158,8 +158,8 @@ GameObject* PrefabManager::InstantiatePrefab(const std::string& filePath, Scene*
                 Component* comp = Component::CreateComponent(typeName);
                 if (comp)
                 {
+                    go->AddComponent(comp); // sets comp->m_GameObject before Deserialize needs it
                     comp->Deserialize(compObj);
-                    go->AddComponent(comp);
                 }
             }
         }
