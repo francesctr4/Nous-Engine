@@ -48,7 +48,7 @@ union EventContext
 
     const char* c; // string pointer
 
-    EventContext() { std::memset(this, 0, sizeof(EventContext)); }
+    EventContext() : u64{0,0} { std::memset(this, 0, sizeof(EventContext)); }
 };
 
 // ------------------------------------------------------------
@@ -91,14 +91,15 @@ EventContext SendContext(double a, double b);
 // Boolean, string, pointer, and 64-bit helpers
 EventContext SendContext(bool value);
 EventContext SendContext(const char* str);
-EventContext SendContext(void* ptr);
 EventContext SendContext(int64_t a, int64_t b = 0);
 
-// Template getter for pointer types
+// -------- [pointer] --------
 template<typename T>
-T* GetEventPointer(const Event& evt)
+EventContext SendContext(T* ptr)
 {
-    return reinterpret_cast<T*>(evt.ctx.u64[0]);
+    EventContext ctx;
+    ctx.u64[0] = reinterpret_cast<uintptr_t>(ptr);
+    return ctx;
 }
 
 #endif // NOUS_ENGINE_EVENT_H

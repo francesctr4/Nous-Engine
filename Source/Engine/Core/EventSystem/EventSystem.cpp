@@ -1,8 +1,9 @@
 #include "EventSystem.h"
 #include "Engine/Core/Logger/Logger.h"   // uses your NOUS_INFO / NOUS_WARN macros
 #include <algorithm>
+#include <ranges>
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_EVENTSYSTEM;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_EVENTSYSTEM;
 
 // --------------------------------------------------
 // Constructor / Destructor
@@ -25,8 +26,7 @@ void EventSystem::Subscribe(EventType type, IEventListener* listener)
 {
     std::scoped_lock lock(m_Mutex);
 
-    auto& list = m_Listeners[type];
-    if (std::find(list.begin(), list.end(), listener) == list.end())
+    if (auto& list = m_Listeners[type]; std::ranges::find(list, listener) == list.end())
     {
         list.push_back(listener);
         NOUS_INFO("Listener subscribed to event type: %d", static_cast<int>(type));
@@ -41,11 +41,10 @@ void EventSystem::Unsubscribe(EventType type, IEventListener* listener)
 {
     std::scoped_lock lock(m_Mutex);
 
-    auto it = m_Listeners.find(type);
-    if (it != m_Listeners.end())
+    if (const auto it = m_Listeners.find(type); it != m_Listeners.end())
     {
         auto& vec = it->second;
-        vec.erase(std::remove(vec.begin(), vec.end(), listener), vec.end());
+        std::erase(vec, listener);
         NOUS_INFO("Listener unsubscribed from event type: %d", static_cast<int>(type));
     }
     else
@@ -61,8 +60,7 @@ void EventSystem::Broadcast(const Event& evt)
 {
     std::scoped_lock lock(m_Mutex);
 
-    auto it = m_Listeners.find(evt.type);
-    if (it != m_Listeners.end())
+    if (const auto it = m_Listeners.find(evt.type); it != m_Listeners.end())
     {
         for (IEventListener* listener : it->second)
         {
@@ -118,7 +116,7 @@ void EventSystem::Clear()
     std::scoped_lock lock(m_Mutex);
 
     size_t listenerCount = 0;
-    for (const auto& [_, vec] : m_Listeners)
+    for (const auto& vec : m_Listeners | std::views::values)
         listenerCount += vec.size();
 
     m_Listeners.clear();
