@@ -5,6 +5,7 @@
 #include <string>
 #include <functional>
 #include <cstdio>
+#include <utility>
 
 // Export macros
 #if defined(_WIN32) || defined(_WIN64)
@@ -24,7 +25,7 @@ public:
     using Factory = std::function<IScript*()>;
 
     void Register(const std::string& name, Factory factory) {
-        factories[name] = factory;
+        factories[name] = std::move(factory);
         printf("[ScriptRegistry] Registered: %s", name.c_str());
     }
 

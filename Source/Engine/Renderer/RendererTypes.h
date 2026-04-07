@@ -136,7 +136,7 @@ struct CameraFrustumData
 {
     CameraFrustumData() : corners{}, color(0.0f, 1.0f, 0.0f, 1.0f) {}
     CameraFrustumData(const glm::vec3 c[8], const glm::vec4& col)
-        : color(col) { for (int i = 0; i < 8; ++i) corners[i] = c[i]; }
+        : corners{}, color(col) { for (int i = 0; i < 8; ++i) corners[i] = c[i]; }
 
     glm::vec3 corners[8];
     glm::vec4 color;

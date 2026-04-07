@@ -50,11 +50,11 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_Job
 	// Load the script library — path is exe-relative so it works regardless of working directory.
 	// SDL3's SDL_GetBasePath() returns a const char* managed internally by SDL — do NOT free it.
 #if defined(_WIN32)
-	constexpr const char* kScriptsLib = "Scripts.dll";
+	constexpr auto kScriptsLib = "Scripts.dll";
 #elif defined(__APPLE__)
-	constexpr const char* kScriptsLib = "Scripts.dylib";
+	constexpr auto kScriptsLib = "Scripts.dylib";
 #else
-	constexpr const char* kScriptsLib = "Scripts.so";
+	constexpr auto kScriptsLib = "Scripts.so";
 #endif
 	const std::string scriptsDllPath =
         (std::filesystem::path(SDL_GetBasePath()) / "Library" / "Scripts" / kScriptsLib).string();
@@ -107,7 +107,7 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 	return UpdateStatus::CONTINUE;
 }
 
-UpdateStatus ModuleScene::Update(float dt)
+UpdateStatus ModuleScene::Update(const float dt)
 {
 	// Compute simulation dt — non-zero only when simulation is ticking.
 	m_didStepThisFrame = false;
@@ -153,7 +153,7 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 
 	// Build per-frame render snapshot consumed by ModuleRenderer3D::PostUpdate.
 	m_renderData                = {};
-	m_renderData.hasActiveScene = (activeScene != nullptr);
+	m_renderData.hasActiveScene = activeScene != nullptr;
 	m_renderData.gameCamera     = gameCamera;
 	m_renderData.selectedObject = selectedGameObject;
 	if (activeScene)
@@ -182,7 +182,7 @@ void ModuleScene::OnEvent(const Event& event)
 			NOUS_DEBUG("WINDOW RESIZED EVENT");
 			NOUS_DEBUG("Received context: %d, %d", event.ctx.i32[0], event.ctx.i32[1]);
 
-			const float newAspect = (float)event.ctx.i32[0] / (float)event.ctx.i32[1];
+			const float newAspect = static_cast<float>(event.ctx.i32[0]) / static_cast<float>(event.ctx.i32[1]);
 
 			// Update the legacy fallback camera.
 			gameCamera->SetAspectRatio(newAspect);
@@ -190,8 +190,7 @@ void ModuleScene::OnEvent(const Event& event)
 			// Also update any CCamera components so the frustum visualization stays correct.
 			if (activeScene)
 			{
-				const auto gos = activeScene->GetGameObjectsSnapshot();
-				for (const auto& go : gos)
+				for (const auto gos = activeScene->GetGameObjectsSnapshot(); const auto& go : gos)
 				{
 					if (auto* cam = go->TryGetComponent<CCamera>())
 						cam->aspectRatio = newAspect;
@@ -208,7 +207,7 @@ void ModuleScene::OnEvent(const Event& event)
 // Hot-reload
 // ---------------------------------------------------------------------------
 
-void ModuleScene::RecompileScripts()
+void ModuleScene::RecompileScripts() const
 {
 	scriptManager->RecompileScripts();
 }
@@ -301,8 +300,7 @@ void ModuleScene::SaveScene(const std::string& path)
     // Name the in-memory scene after the file stem so the Inspector/Hierarchy
     // reflect the saved name without requiring a reload.
     const std::string filename = NOUS_FileManager::GetFilename(path);
-    const std::string stem = std::filesystem::path(filename).stem().string();
-    if (!stem.empty())
+    if (const std::string stem = std::filesystem::path(filename).stem().string(); !stem.empty())
         activeScene->SetName(stem);
 
     std::filesystem::create_directories(std::filesystem::path(path).parent_path());
@@ -329,8 +327,8 @@ void ModuleScene::LoadScene(const std::string& path)
 	// Pre-load all mesh resources in parallel before building the scene graph.
 	// CMesh::Deserialize() will hit the resource cache (no disk I/O) instead of
 	// blocking serially on each binary file read.
-	auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, path);
-	for (auto& f : futures) f.get();
+	for (auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, path); auto& f : futures)
+		f.get();
 
 	activeScene->Deserialize(path);
 	EnsureMainCamera();
@@ -347,8 +345,7 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 	// Re-entrancy guard: if a load is already in flight, ignore the new request.
 	// Without this, spamming the hotkey clears the scene while the in-flight job
 	// still holds pointers into it → use-after-free.
-	bool expected = false;
-	if (!m_isLoadingScene.compare_exchange_strong(expected, true))
+	if (bool expected = false; !m_isLoadingScene.compare_exchange_strong(expected, true))
 		return;
 
 	// Drain any in-flight jobs (e.g. debug hotkey loaders) before clearing the
@@ -372,8 +369,8 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 			// so futures complete immediately and are also safe (but parallel gains nothing).
 			if (JobSystem->GetThreadPool().GetThreads().size() >= 2)
 			{
-				auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, path);
-				for (auto& f : futures) f.get();
+				for (auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, path); auto& f : futures)
+					f.get();
 			}
 
 			// Scene graph construction — resource lookups hit the cache if preload ran,
@@ -389,7 +386,7 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 	);
 }
 
-GameObject* ModuleScene::InstantiatePrefab(const std::string& path, GameObject* parentGO)
+GameObject* ModuleScene::InstantiatePrefab(const std::string& path, GameObject* parentGO) const
 {
 	return PrefabManager::InstantiatePrefab(path, activeScene, parentGO);
 }
@@ -414,11 +411,11 @@ void ModuleScene::NewScene(const std::string& name)
     NOUS_INFO("[Scene] New scene '%s' created.", name.c_str());
 }
 
-void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
+void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
 {
     // 1. Read meta to get library path and verify the asset exists.
     MetaFileData metaData;
-    if (!mModuleResourceManager->GetAssetMetaData(assetsPath, metaData))
+    if (!ModuleResourceManager::GetAssetMetaData(assetsPath, metaData))
     {
         NOUS_ERROR("[SpawnMeshAsHierarchy] No meta file for '%s'. Import it first.", assetsPath.c_str());
         return;
@@ -437,7 +434,7 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
     //    instead of WaitForPendingJobs() (which would deadlock — see LoadSceneAsync).
     //    Guard: requires >= 2 worker threads; with only 1 this job would block on
     //    future.get() while sub-jobs sit in the queue with no thread to run them.
-    const int32_t submeshCount = static_cast<int32_t>(submeshes.size());
+    const auto submeshCount = static_cast<int32_t>(submeshes.size());
     std::vector<ResourceMesh*> meshResources(submeshCount, nullptr);
 
     if (JobSystem->GetThreadPool().GetThreads().size() >= 2)
@@ -451,7 +448,7 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
             futures.push_back(promises[i].get_future());
             auto* promPtr = &promises[i];
 
-            JobSystem->SubmitJob([this, &assetsPath, &meshResources, i, promPtr]()
+            JobSystem->SubmitJob([this, &assetsPath, &meshResources, i, promPtr]
             {
                 meshResources[i] = mModuleResourceManager->RequestOrCreateSubMeshResource(assetsPath, i);
                 promPtr->set_value();
@@ -520,16 +517,15 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath)
         modelName.c_str(), submeshes.size());
 }
 
-void ModuleScene::EnsureMainCamera()
+void ModuleScene::EnsureMainCamera() const
 {
     if (!activeScene)
         return;
 
     // Check whether the loaded scene already has a main camera.
-    const auto gameObjects = activeScene->GetGameObjectsSnapshot();
-    for (const auto& go : gameObjects)
+    for (const auto gameObjects = activeScene->GetGameObjectsSnapshot(); const auto& go : gameObjects)
     {
-        if (auto* cam = go->TryGetComponent<CCamera>())
+        if (const auto* cam = go->TryGetComponent<CCamera>())
         {
             if (cam->isMainCamera)
                 return; // Found one — nothing to do.
@@ -563,7 +559,7 @@ void ModuleScene::EnsureMainCamera()
     cam.aspectRatio  = gameCamera->GetAspectRatio();
 }
 
-void ModuleScene::RefreshPrefabInstances()
+void ModuleScene::RefreshPrefabInstances() const
 {
     if (!activeScene) return;
 
@@ -572,8 +568,7 @@ void ModuleScene::RefreshPrefabInstances()
     // children that are also in the snapshot, leaving dangling pointers.
     NOUS_Vector<GameObject*> prefabRoots(MemoryTag::SCENE);
     {
-        const auto snapshot = activeScene->GetGameObjectsSnapshot();
-        for (auto* go : snapshot)
+	    for (const auto snapshot = activeScene->GetGameObjectsSnapshot(); auto* go : snapshot)
         {
             if (go->HasComponent<CPrefab>())
                 prefabRoots.push_back(go);

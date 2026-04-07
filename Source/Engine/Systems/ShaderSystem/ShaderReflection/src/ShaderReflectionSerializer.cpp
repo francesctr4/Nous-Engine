@@ -254,7 +254,7 @@ bool NOUS_ShaderSystem::DeserializeReflection(const std::string& jsonPath,
         for (size_t i = 0; i < setCount; ++i)
         {
             JSON_Object* setObj   = json_array_get_object(dsets, i);
-            uint32_t     setIndex = static_cast<uint32_t>(json_object_get_number(setObj, "set"));
+            auto     setIndex = static_cast<uint32_t>(json_object_get_number(setObj, "set"));
 
             std::vector<ReflectedBinding>& bindings = outReflection.descriptorSets[setIndex];
             JSON_Array* bindingsArr = json_object_get_array(setObj, "bindings");

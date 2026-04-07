@@ -2,7 +2,8 @@
 #define MEMORYMANAGER_H
 
 #include <string>
-#include <vector>
+#include <utility>
+#include <array>
 
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
@@ -58,7 +59,7 @@ namespace MemoryManager
 	{
 		uint64 totalAllocated;
 		uint64 totalAllocations;
-		uint64 taggedAllocations[static_cast<uint64>(MemoryTag::MAX)];
+		std::array<uint64, static_cast<uint64>(std::to_underlying(MemoryTag::MAX))> taggedAllocations;
 	};
 
 	NOUS_ENGINE_API MemoryStatsSnapshot GetMemoryStats();

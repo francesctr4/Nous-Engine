@@ -35,7 +35,7 @@ class RendererFrontend : public IGPUResourceFactory
 {
 public:
     NOUS_ENGINE_API RendererFrontend();
-	NOUS_ENGINE_API ~RendererFrontend();
+	NOUS_ENGINE_API ~RendererFrontend() override;
 
 	// ---------------------------------------------------------------------
 	// Dependency Injection (call before Initialize)
@@ -50,14 +50,14 @@ public:
 	// Lifecycle
 	// ---------------------------------------------------------------------
 	[[nodiscard]] NOUS_ENGINE_API bool Initialize(RendererBackendType backendType);
-	NOUS_ENGINE_API void Shutdown();
-	NOUS_ENGINE_API void ReleaseFrameResources() noexcept;
-	NOUS_ENGINE_API void OnResized(uint16_t width, uint16_t height);
+	NOUS_ENGINE_API void Shutdown() const;
+	NOUS_ENGINE_API void ReleaseFrameResources() const noexcept;
+	NOUS_ENGINE_API void OnResized(uint16_t width, uint16_t height) const;
 
 	// ---------------------------------------------------------------------
 	// Rendering
 	// ---------------------------------------------------------------------
-	[[nodiscard]] NOUS_ENGINE_API enum FrameResult DrawFrame(RenderPacket* packet);
+	[[nodiscard]] NOUS_ENGINE_API enum FrameResult DrawFrame(RenderPacket* packet) const;
 
 	// ---------------------------------------------------------------------
 	// GPU Resource Management
@@ -119,7 +119,7 @@ public:
 	 */
 	NOUS_ENGINE_API uint32_t PickObjectAt(int32_t pixelX, int32_t pixelY,
 										  const glm::mat4& projection, const glm::mat4& view,
-										  const std::vector<GeometryRenderData>& geometries);
+										  const std::vector<GeometryRenderData>& geometries) const;
 
 	// ---------------------------------------------------------------------
 	// Object Outlining
@@ -188,12 +188,12 @@ private:
 	// ---------------------------------------------------------------------
 	// Internal helpers
 	// ---------------------------------------------------------------------
-	[[nodiscard]] FrameResult BeginFrame(float dt);
-	[[nodiscard]] FrameResult EndFrame(float dt);
+	[[nodiscard]] FrameResult BeginFrame(float dt) const;
+	[[nodiscard]] FrameResult EndFrame(float dt) const;
 
-	[[nodiscard]] bool ExecuteRenderpass(RenderpassType pass, const std::function<void()>& drawCommands);
+	[[nodiscard]] bool ExecuteRenderpass(RenderpassType pass, const std::function<void()>& drawCommands) const;
 
-	void DrawEditor();
+	void DrawEditor() const;
 
 	// Dispatch a background compile job for the given shader path/pointer.
 	// No-op if a compile for this path is already in-flight.
@@ -227,7 +227,7 @@ private:
 	// in FlushCompletedReloads() each PreUpdate.
 	struct PendingGPUSwap
 	{
-	    ResourceShader*  shader;
+	    ResourceShader*  shader{};
 	    ShaderLoadResult compileResult;
 	};
 

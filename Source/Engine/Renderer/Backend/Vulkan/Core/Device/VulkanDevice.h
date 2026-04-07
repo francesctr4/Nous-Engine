@@ -35,7 +35,7 @@ struct VkPhysicalDeviceRequirements
 	bool extensionsSupported;
 	bool swapChainAdequate;
 
-	bool Completed()
+	bool Completed() const
 	{
 #ifdef __APPLE__
 		// MoltenVK/Apple Silicon: no discrete GPU, no geometry shader support
@@ -57,16 +57,16 @@ namespace NOUS_VulkanDevice
 
 	bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
-	VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& physicalDevice, const VulkanContext* vkContext);
 
-	bool CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	bool CheckDeviceExtensionSupport(const VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
-	VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	VkSwapChainSupportDetails QuerySwapChainSupport(const VkPhysicalDevice& physicalDevice, const VulkanContext* vkContext);
 
-	int32 FindMemoryIndex(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties);
+	int32 FindMemoryIndex(const VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties);
 
-	VkFormat FindDepthFormat(VkPhysicalDevice& physicalDevice);
-	VkFormat FindSupportedFormat(VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat FindDepthFormat(const VkPhysicalDevice& physicalDevice);
+	VkFormat FindSupportedFormat(const VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 	VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties); // Multisampling
 

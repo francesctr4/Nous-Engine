@@ -18,7 +18,7 @@ public:
 
 	// Constructor & Destructor
 
-	ResourceMaterial(UID uid = 0);
+	explicit ResourceMaterial(UID uid = 0);
 	~ResourceMaterial() override;
 
 public:

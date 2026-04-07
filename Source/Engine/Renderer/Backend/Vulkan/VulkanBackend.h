@@ -101,9 +101,8 @@ public:
 
 	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 
-	void ProcessPendingSubmissions();
-
-	VulkanCommandBuffer* GetCommandBufferByRenderpassID(RenderpassType renderpassID);
+	static void ProcessPendingSubmissions();
+	static VulkanCommandBuffer* GetCommandBufferByRenderpassID(RenderpassType renderpassID);
 
 private:
 

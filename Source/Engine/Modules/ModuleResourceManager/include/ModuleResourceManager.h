@@ -6,9 +6,6 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 
-class IGPUResourceFactory;
-class IImporterManager;
-
 #include <future>
 #include <map>
 #include <mutex>
@@ -16,6 +13,9 @@ class IImporterManager;
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+class IGPUResourceFactory;
+class IImporterManager;
 
 using UID = uint32_t;
 struct MetaFileData;
@@ -33,7 +33,7 @@ public:
 	                                      IImporterManager* importerManager);
 
 	// Destructor
-	virtual ~ModuleResourceManager();
+	~ModuleResourceManager() override;
 
 	bool Awake() override;
 	bool Start() override;
@@ -55,7 +55,7 @@ public:
 	// Called by Application::Awake() when not in game mode.
 	NOUS_ENGINE_API void ScanAndImportAssets();
 
-	NOUS_ENGINE_API bool ResourceExists(const UID& uid);
+	NOUS_ENGINE_API bool ResourceExists(const UID& uid) const;
 	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath);
 
 	// GAME mode variant: load directly from a known library path without reading a .meta file.
@@ -110,7 +110,7 @@ public:
 
     // Reads the .meta sidecar for assetsPath and fills outData.
     // Returns false if the meta file is missing or malformed.
-    NOUS_ENGINE_API bool GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData);
+    static NOUS_ENGINE_API bool GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData) ;
 
     // Returns the ResourceMesh for a specific submesh within a source asset.
     // If already loaded this session, bumps the ref count and returns it.
@@ -129,21 +129,15 @@ public:
 
 private:
 
-	bool EnsureLibraryDirectories();
+	static bool EnsureLibraryDirectories();
+	static bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
+	static bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
 
-	bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
-	bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
-
-
-	Resource* InstantiateResource(const ResourceType& type);
+	static Resource* InstantiateResource(const ResourceType& type);
 	void DeleteResource(Resource*& resource);
 
 	Resource* RequestResource(const UID& uid);
 	void AddResource(const UID& uid, Resource*& resource);
-
-	//std::string GetLibraryPath(const std::string& assetsPath);
-
-private:
 
 	mutable std::mutex resourcesMutex;  // mutable: const methods (e.g. GetResourcesMap) can lock it
 	std::unordered_map<UID, Resource*> resources;

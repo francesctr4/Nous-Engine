@@ -338,7 +338,7 @@ void CScript::Deserialize(JSON_Object* obj)
         for (size_t i = 0; i < count; ++i)
         {
             const char* name = json_array_get_string(arr, i);
-            if (name) m_scriptNames.push_back(name);
+            if (name) m_scriptNames.emplace_back(name);
         }
     }
 

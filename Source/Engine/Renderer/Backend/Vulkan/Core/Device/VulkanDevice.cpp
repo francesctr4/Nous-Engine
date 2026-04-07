@@ -24,9 +24,9 @@ bool NOUS_VulkanDevice::PickPhysicalDevice(VulkanContext* vkContext)
     std::vector<VkPhysicalDevice> devices(deviceCount);
     VK_CHECK(vkEnumeratePhysicalDevices(vkContext->instance, &deviceCount, devices.data()));
 
-    for (int i = 0; i < devices.size(); ++i)
+    for (auto & device : devices)
     {
-        if (IsPhysicalDeviceSuitable(devices[i], vkContext))
+        if (IsPhysicalDeviceSuitable(device, vkContext))
         {
             LogInfoAboutDevice(vkContext);
             break;
@@ -130,7 +130,7 @@ bool NOUS_VulkanDevice::IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevic
     return ret;
 }
 
-VkPhysicalDeviceQueueFamilyIndices NOUS_VulkanDevice::FindQueueFamilies(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
+VkPhysicalDeviceQueueFamilyIndices NOUS_VulkanDevice::FindQueueFamilies(const VkPhysicalDevice& physicalDevice, const VulkanContext* vkContext)
 {
     VkPhysicalDeviceQueueFamilyIndices indices;
 
@@ -176,7 +176,7 @@ VkPhysicalDeviceQueueFamilyIndices NOUS_VulkanDevice::FindQueueFamilies(VkPhysic
     return indices;
 }
 
-bool NOUS_VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
+bool NOUS_VulkanDevice::CheckDeviceExtensionSupport(const VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
 {
     uint32 extensionCount;
     VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr));
@@ -194,7 +194,7 @@ bool NOUS_VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDe
     return requiredExtensions.empty();
 }
 
-VkSwapChainSupportDetails NOUS_VulkanDevice::QuerySwapChainSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
+VkSwapChainSupportDetails NOUS_VulkanDevice::QuerySwapChainSupport(const VkPhysicalDevice& physicalDevice, const VulkanContext* vkContext)
 {
     VkSwapChainSupportDetails details;
 
@@ -227,7 +227,7 @@ VkSwapChainSupportDetails NOUS_VulkanDevice::QuerySwapChainSupport(VkPhysicalDev
     return details;
 }
 
-int32 NOUS_VulkanDevice::FindMemoryIndex(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties)
+int32 NOUS_VulkanDevice::FindMemoryIndex(const VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties)
 {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -245,7 +245,7 @@ int32 NOUS_VulkanDevice::FindMemoryIndex(VkPhysicalDevice& physicalDevice, uint3
     return -1;
 }
 
-VkFormat NOUS_VulkanDevice::FindDepthFormat(VkPhysicalDevice& physicalDevice)
+VkFormat NOUS_VulkanDevice::FindDepthFormat(const VkPhysicalDevice& physicalDevice)
 {
     // Prefer formats that include a stencil component (required for stencil-buffer effects
     // such as object outlining). Fall back to depth-only if no stencil format is available.
@@ -255,7 +255,7 @@ VkFormat NOUS_VulkanDevice::FindDepthFormat(VkPhysicalDevice& physicalDevice)
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkFormat NOUS_VulkanDevice::FindSupportedFormat(VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+VkFormat NOUS_VulkanDevice::FindSupportedFormat(const VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
     for (VkFormat format : candidates) 
     {
@@ -483,10 +483,10 @@ void NOUS_VulkanDevice::CreateCommandPool(VulkanContext* vkContext)
 
 void NOUS_VulkanDevice::DestroyLogicalDevice(VulkanContext* vkContext)
 {
-    vkContext->device.graphicsQueue = 0;
-    vkContext->device.presentQueue = 0;
-    vkContext->device.computeQueue = 0;
-    vkContext->device.transferQueue = 0;
+    vkContext->device.graphicsQueue = nullptr;
+    vkContext->device.presentQueue = nullptr;
+    vkContext->device.computeQueue = nullptr;
+    vkContext->device.transferQueue = nullptr;
 
     NOUS_DEBUG("Destroying Command Pools...");
     vkDestroyCommandPool(vkContext->device.logicalDevice, vkContext->device.mainGraphicsCommandPool, vkContext->allocator);
@@ -496,5 +496,5 @@ void NOUS_VulkanDevice::DestroyLogicalDevice(VulkanContext* vkContext)
     vkDestroyDevice(vkContext->device.logicalDevice, vkContext->allocator);
 
     NOUS_DEBUG("Releasing Vulkan Physical Device...");
-    vkContext->device.physicalDevice = 0;
+    vkContext->device.physicalDevice = nullptr;
 }
