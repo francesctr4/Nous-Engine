@@ -42,7 +42,7 @@ public:
 		ModuleRenderer3D* moduleRenderer3D);
 
 	// Destructor
-	NOUS_EDITOR_API virtual ~ModuleEditor();
+	NOUS_EDITOR_API ~ModuleEditor() override;
 
 	NOUS_EDITOR_API bool Awake() override;
     NOUS_EDITOR_API bool Start() override;
@@ -61,18 +61,18 @@ public:
 
 private:
 
-	void InitFrame(RendererBackendType backendType);
+	static void InitFrame(RendererBackendType backendType);
 	void InternalDrawEditor();
-	void EndFrame(RendererBackendType backendType);
+	static void EndFrame(RendererBackendType backendType);
 
-    IEditorWindow* GetEditorWindowByName(std::string name);
+    IEditorWindow* GetEditorWindowByName(const std::string& name);
 
     void AddEditorWindow(IEditorWindow* editorWindow);
 
     // Vulkan Specific
     static VulkanContext* GetVulkanContext();
 
-private:
+	// --------------------------------------------------------------
 
 	// Dependency Injection
 	ModuleWindow*          mModuleWindow;
