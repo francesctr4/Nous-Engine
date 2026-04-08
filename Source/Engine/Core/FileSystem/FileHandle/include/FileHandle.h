@@ -7,7 +7,7 @@
 #include <memory>
 #include <fstream>
 
-enum class FileMode
+enum class FileMode : int8_t
 {
 	UNKNOWN = -1,
 
@@ -30,7 +30,7 @@ public:
 	bool ReadAllBytes(char** outBytes, uint64* outBytesRead);
 	
 	bool ReadLine(std::string& outLine);
-	bool WriteLine(std::string line);
+	bool WriteLine(const std::string& line);
 	 
 	bool Write(uint64 dataSize, const void* data, uint64* outBytesWritten);
 

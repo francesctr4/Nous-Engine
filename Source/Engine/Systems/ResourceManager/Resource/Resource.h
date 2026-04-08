@@ -7,14 +7,14 @@
 
 using UID = uint32;
 
-enum class ResourceState
+enum class ResourceState : uint8_t
 {
     UNLOADED,   // No data loaded
     CPU_READY,  // CPU data loaded; waiting for GPU upload
     GPU_READY   // Fully resident on GPU; safe to render
 };
 
-enum class ResourceType 
+enum class ResourceType : int8_t
 {
 	UNKNOWN = -1,
 

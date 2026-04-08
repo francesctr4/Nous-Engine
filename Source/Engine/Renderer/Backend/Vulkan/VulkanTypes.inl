@@ -30,7 +30,7 @@ struct VulkanImage
     uint32 height;
 };
 
-enum class VulkanRenderPassState 
+enum class VulkanRenderPassState : uint8_t
 {
     READY,
     RECORDING,
@@ -100,7 +100,7 @@ struct VkSwapChainSupportDetails
     VkSurfaceCapabilitiesKHR capabilities;
 };
 
-enum class VulkanCommandBufferState
+enum class VulkanCommandBufferState : uint8_t
 {
     READY,
     RECORDING,

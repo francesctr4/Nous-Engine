@@ -48,7 +48,6 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
         auto& transform = go->GetComponent<CTransform>();
         transform.position = glm::vec3(x, y, z);
         transform.UpdateMatrix();
-        NOUS_DEBUG("Set position of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
     };
 
     gameObject.SetRotation = [](uint32_t id, float x, float y, float z) {
@@ -62,7 +61,6 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
         auto& transform = go->GetComponent<CTransform>();
         transform.SetEulerRotation(glm::vec3(x, y, z));
         transform.UpdateMatrix();
-        NOUS_TRACE("Set rotation of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
     };
 
     gameObject.SetScale = [](uint32_t id, float x, float y, float z) {
@@ -76,7 +74,6 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
         auto& transform = go->GetComponent<CTransform>();
         transform.scale = glm::vec3(x, y, z);
         transform.UpdateMatrix();
-        NOUS_TRACE("Set scale of GameObject %u to (%.2f, %.2f, %.2f)", id, x, y, z);
     };
 
     gameObject.GetPosition = [](uint32_t id, float* x, float* y, float* z) {

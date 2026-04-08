@@ -18,7 +18,7 @@ class ScriptManager;
 class ModuleInput;
 class ModuleResourceManager;
 
-enum class SimulationState { STOPPED, PLAYING, PAUSED };
+enum class SimulationState : uint8_t { STOPPED, PLAYING, PAUSED };
 
 class ModuleScene : public Module, public IEventListener
 {

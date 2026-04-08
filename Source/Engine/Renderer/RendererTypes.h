@@ -18,7 +18,7 @@ class ResourceShader;
 // -----------------------------------------------------------------------------
 // Texture Maps
 // -----------------------------------------------------------------------------
-enum class TextureMapType
+enum class TextureMapType : int8_t
 {
     UNKNOWN = -1,
     DIFFUSE
@@ -53,7 +53,7 @@ struct GeometryRenderData
     glm::vec4 color;
 };
 
-enum class RenderpassType
+enum class RenderpassType : uint8_t
 {
     SCENE,
     GAME,
@@ -192,7 +192,7 @@ enum class RenderMode : uint8_t
 // -----------------------------------------------------------------------------
 // Renderer backend type
 // -----------------------------------------------------------------------------
-enum class RendererBackendType
+enum class RendererBackendType : int8_t
 {
     UNKNOWN = -1,
 

@@ -92,7 +92,7 @@
 // ------------------------------------------------------------
 // Enum generation
 // ------------------------------------------------------------
-enum class LogChannel : uint16_t
+enum class LogChannel : uint8_t
 {
 #define X(NAME, STRING) NAME,
     LOG_CHANNEL_LIST

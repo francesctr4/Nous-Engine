@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <string>
 
-enum class TextEditorMode { Shader, Script };
+enum class TextEditorMode : uint8_t { Shader, Script };
 
 class TextEditorWindow : public IEditorWindow
 {

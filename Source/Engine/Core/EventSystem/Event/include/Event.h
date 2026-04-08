@@ -47,6 +47,7 @@ union EventContext
     uint8_t   u8[16];
 
     const char* c; // string pointer
+    void* ptr[2];
 
     EventContext() : u64{0,0} { std::memset(this, 0, sizeof(EventContext)); }
 };
@@ -98,7 +99,7 @@ template<typename T>
 EventContext SendContext(T* ptr)
 {
     EventContext ctx;
-    ctx.u64[0] = reinterpret_cast<uintptr_t>(ptr);
+    ctx.ptr[0] = static_cast<void*>(ptr);
     return ctx;
 }
 

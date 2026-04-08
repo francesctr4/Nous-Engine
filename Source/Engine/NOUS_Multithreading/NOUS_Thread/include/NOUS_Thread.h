@@ -16,7 +16,7 @@ namespace NOUS_Multithreading
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Available thread states during its lifecycle.
 	///////////////////////////////////////////////////////////////////////////
-	enum class ThreadState
+	enum class ThreadState : uint8_t
 	{
 		READY = 0,		// Idle and waiting for a job.
 		RUNNING = 1		// Actively executing a job.

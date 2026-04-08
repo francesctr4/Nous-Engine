@@ -3,7 +3,7 @@
 
 #include "Engine/Core/Globals.h"
 
-enum class KeyState
+enum class KeyState : uint8_t
 {
     IDLE,
     DOWN,

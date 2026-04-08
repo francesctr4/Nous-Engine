@@ -347,8 +347,8 @@ void ModuleEditor::OnEvent(const Event &event)
 	{
 		case EventType::INPUT_EVENT:
 		{
-			const auto* sdlEvent = reinterpret_cast<SDL_Event*>(event.ctx.u64[0]);
-            ImGui_ImplSDL3_ProcessEvent(sdlEvent);
+			const SDL_Event* sdlEvent = static_cast<SDL_Event*>(event.ctx.ptr[0]);
+			ImGui_ImplSDL3_ProcessEvent(sdlEvent);
 			break;
 		}
 		case EventType::IMGUI_RECREATION:

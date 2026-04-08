@@ -11,7 +11,7 @@
 #include <string>
 #include <filesystem>
 
-enum class GameState
+enum class GameState : uint8_t
 {
     Creation,
     Start,

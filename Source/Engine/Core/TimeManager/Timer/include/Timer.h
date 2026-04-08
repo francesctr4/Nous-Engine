@@ -4,7 +4,7 @@
 #include "Engine/EngineExport.h"
 #include <chrono>
 
-enum class TimerState
+enum class TimerState : uint8_t
 {
 	STOPPED,
 	RUNNING,

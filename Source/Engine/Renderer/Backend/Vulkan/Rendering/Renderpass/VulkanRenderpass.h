@@ -3,7 +3,7 @@
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
 
-enum RenderpassClearFlag
+enum RenderpassClearFlag: uint8_t
 {
     NO_CLEAR,
 

@@ -4,7 +4,7 @@
 #include <string>
 
 class Resource;
-enum class ResourceType;
+enum class ResourceType : int8_t;
 struct MetaFileData;
 class ModuleResourceManager;
 

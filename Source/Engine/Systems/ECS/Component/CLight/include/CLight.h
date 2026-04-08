@@ -6,7 +6,7 @@
 
 #include <glm/glm.hpp>
 
-enum class LightType { Directional, Point };
+enum class LightType : uint8_t { Directional, Point };
 
 /**
  * @brief Light component. Attach to a GameObject to make it a light source.

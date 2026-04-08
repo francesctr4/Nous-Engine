@@ -67,12 +67,10 @@ void EventSystem::Broadcast(const Event& evt)
             if (listener)
                 listener->OnEvent(evt);
         }
-
-        NOUS_TRACE("Broadcasted event type: %d to %zu listener(s)", static_cast<int>(evt.type), it->second.size());
     }
     else
     {
-        NOUS_TRACE("Broadcasted event type: %d (no listeners registered)", static_cast<int>(evt.type));
+        NOUS_WARN("Broadcasted event type: %d (but no listeners registered...)", static_cast<int>(evt.type));
     }
 }
 

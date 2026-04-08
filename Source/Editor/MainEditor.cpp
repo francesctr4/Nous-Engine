@@ -7,7 +7,7 @@
 // Editor
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
 
-typedef enum MainState
+typedef enum MainState : uint8_t
 {
     MAIN_START,
     MAIN_UPDATE,

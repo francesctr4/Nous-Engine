@@ -1,6 +1,8 @@
 #ifndef NOUS_ENGINE_INPUTBINDINGS_H
 #define NOUS_ENGINE_INPUTBINDINGS_H
 
+#include <cstdint>
+
 // In EngineAPI.h - update the InputAPI struct
 struct InputAPI
 {
@@ -13,7 +15,7 @@ struct InputAPI
     void (*GetMouseMotion)(int* x, int* y) = nullptr;
 
     // Key state constants (matching your engine's KeyState)
-    typedef enum KeyState
+    typedef enum KeyState : std::uint8_t
     {
         IDLE = 0,
         DOWN = 1,
@@ -21,7 +23,7 @@ struct InputAPI
         UP = 3
     } KeyState;
 
-    typedef enum SDL_Scancode
+    typedef enum SDL_Scancode : std::uint16_t
     {
         SDL_SCANCODE_UNKNOWN = 0,
 

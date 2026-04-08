@@ -8,7 +8,7 @@
 struct ImVec2;
 struct VulkanContext;
 
-enum class GizmoOperation
+enum class GizmoOperation : uint8_t
 {
     TRANSLATE,
     ROTATE,
@@ -16,7 +16,7 @@ enum class GizmoOperation
 };
 
 // Maps to ImGuizmo::MODE values
-enum class GizmoSpace
+enum class GizmoSpace : uint8_t
 {
     LOCAL = 0,
     WORLD = 1

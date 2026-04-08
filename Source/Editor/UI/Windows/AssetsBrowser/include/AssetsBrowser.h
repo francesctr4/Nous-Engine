@@ -8,9 +8,9 @@
 #include <atomic>
 #include <unordered_map>
 #include <stack>
+#include <utility>
 #include <vector>
 #include <memory>
-#include <filesystem>
 #include <thread>
 #include <mutex>
 
@@ -57,7 +57,7 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
     // - Call after EndMultiSelect()
     // - We cannot provide this logic in core Dear ImGui_Temp because we don't have access to your items, nor to selection data.
     template<typename ITEM_TYPE>
-    void ApplyDeletionPostLoop(ImGuiMultiSelectIO* ms_io, std::vector<ITEM_TYPE>& items, int item_curr_idx_to_select)
+    void ApplyDeletionPostLoop(ImGuiMultiSelectIO* ms_io, std::vector<ITEM_TYPE>& items, const int item_curr_idx_to_select)
     {
         // Rewrite item list (delete items) + convert old selection index (before deletion) to new selection index (after selection).
         // If NavId was not part of selection, we will stay on the same item.
@@ -82,7 +82,7 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
     }
 };
 
-enum class FileType
+enum class FileType : int8_t
 {
     UNKNOWN = -1,
 
@@ -158,8 +158,8 @@ struct ExampleAsset
     std::string path;
     FileType fileType;
 
-    ExampleAsset(ImGuiID ID, std::string path, std::string name, FileType fileType = FileType::UNKNOWN)
-        : ID(ID), path(path), name(name), fileType(fileType) {}
+    ExampleAsset(const ImGuiID ID, std::string path, std::string name, const FileType fileType = FileType::UNKNOWN)
+        : ID(ID), name(std::move(name)), path(std::move(path)), fileType(fileType) {}
 
     static const ImGuiTableSortSpecs* s_current_sort_specs;
 
@@ -191,7 +191,7 @@ struct ExampleAsset
             if (delta < 0)
                 return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? -1 : +1;
         }
-        return ((int)a->ID - (int)b->ID);
+        return (int)a->ID - (int)b->ID;
     }
 
 #pragma endregion
@@ -228,7 +228,7 @@ public:
     int             LayoutColumnCount = 0;
     int             LayoutLineCount = 0;
 
-    explicit AssetsBrowser(const char* title, ::EditorContext* context, bool start_open = true);
+    explicit AssetsBrowser(const char* title, EditorContext* context, bool start_open = true);
     ~AssetsBrowser() override;
     void Init() override;
     void Draw() override;
