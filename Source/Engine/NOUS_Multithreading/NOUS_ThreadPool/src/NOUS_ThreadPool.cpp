@@ -9,7 +9,7 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING;
 
 /// @brief NOUS_ThreadPool constructor.
 /// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
@@ -23,7 +23,8 @@ NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8_t numThreads) :
 	{
 		mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryTag::THREAD));
 
-		mThreads[i]->Start([this, i]() {
+		mThreads[i]->Start([this, i]
+		{
 			mThreads[i]->SetName("Worker Thread " + std::to_string(i + 1));
 			WorkerLoop(mThreads[i]);
 			});
@@ -41,7 +42,7 @@ NOUS_Multithreading::NOUS_ThreadPool::~NOUS_ThreadPool()
 void NOUS_Multithreading::NOUS_ThreadPool::SubmitJob(NOUS_Job* job)
 {
 	{
-		std::lock_guard<std::mutex> lock(mMutex);
+		std::lock_guard lock(mMutex);
 		mJobQueue.push(job);
 	}
 	mConditionVar.notify_one();
@@ -102,11 +103,12 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 		NOUS_Job* job = nullptr;
 
 		{
-			std::unique_lock<std::mutex> lock(mMutex);
+			std::unique_lock lock(mMutex);
 
 			thread->SetThreadState(ThreadState::READY);
 
-			mConditionVar.wait(lock, [this]() {
+			mConditionVar.wait(lock, [this]
+			{
 				return !mJobQueue.empty() || mShutdown; // Threads sleep when there's no work.
 				});
 
@@ -134,7 +136,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 
 		NOUS_DEBUG_C(CURRENT_CHANNEL, "Job '%s' completed successfully on thread '%s' (%u) in %.3f s",
 				   job->GetName().c_str(), thread->GetName().c_str(),
-				   thread->GetID(), (thread->GetExecutionTimeMS() / 1000.0f));
+				   thread->GetID(), thread->GetExecutionTimeMS() / 1000.0f);
 
 		NOUS_DELETE(job, MemoryTag::THREAD);
 

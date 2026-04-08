@@ -16,6 +16,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
+#include <algorithm>
 
 #include <Engine/Core/FileSystem/FileSystem.h>
 

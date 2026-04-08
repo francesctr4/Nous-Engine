@@ -5,7 +5,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING;
 
 /// @brief NOUS_JobSystem constructor.
 /// @param size: Number of worker threads available inside the thread pool.
@@ -31,10 +31,10 @@ NOUS_Multithreading::NOUS_JobSystem::~NOUS_JobSystem()
 /// @param jobName: Optional name identifier.
 void NOUS_Multithreading::NOUS_JobSystem::SubmitJob(const std::function<void()>& userJob, const std::string& jobName)
 {
-	mPendingJobs++;
+	++mPendingJobs;
 
-	std::function<void()> wrappedJob = [this, userJob]() {
-
+	std::function<void()> wrappedJob = [this, userJob]
+	{
 		userJob();
 
 		if (mPendingJobs-- == 1)
@@ -62,8 +62,8 @@ void NOUS_Multithreading::NOUS_JobSystem::SubmitJob(const std::function<void()>&
 /// @brief Blocks until all submitted jobs complete.
 void NOUS_Multithreading::NOUS_JobSystem::WaitForPendingJobs()
 {
-	std::unique_lock<std::mutex> lock(mWaitMutex);
-	mWaitCondition.wait(lock, [this]() { return mPendingJobs == 0; });
+	std::unique_lock lock(mWaitMutex);
+	mWaitCondition.wait(lock, [this] { return mPendingJobs == 0; });
 }
 
 /// @brief Resizes the thread pool to the specified number of threads.

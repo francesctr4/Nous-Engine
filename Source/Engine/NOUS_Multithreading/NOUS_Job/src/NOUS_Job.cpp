@@ -8,7 +8,7 @@ NOUS_Multithreading::NOUS_Job::NOUS_Job(std::string name, std::function<void()> 
 }
 
 /// @brief Executes the stored function inside the job.
-void NOUS_Multithreading::NOUS_Job::Execute() 
+void NOUS_Multithreading::NOUS_Job::Execute() const
 { 
 	mFunction(); 
 }
