@@ -161,7 +161,7 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* obj, const bool insidePrefa
         if (ImGui::MenuItem("Save As Prefab")) {
             m_prefabSaveTarget = obj;
             // Pre-fill the name buffer with the GO name
-            strncpy_s(m_prefabNameBuffer, obj->GetName().c_str(), sizeof(m_prefabNameBuffer) - 1);
+            std::strncpy(m_prefabNameBuffer, obj->GetName().c_str(), sizeof(m_prefabNameBuffer) - 1);
             m_prefabNameBuffer[sizeof(m_prefabNameBuffer) - 1] = '\0';
             m_showSaveAsPrefabPopup = true;
         }

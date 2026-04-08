@@ -72,7 +72,7 @@ void InspectorWindow::Draw() {
             }
 
             static char buffer[256];
-            strncpy_s(buffer, go->GetName().c_str(), sizeof(buffer) - 1);
+            std::strncpy(buffer, go->GetName().c_str(), sizeof(buffer) - 1);
             buffer[sizeof(buffer) - 1] = '\0';
             if (cprefab) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
             if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
