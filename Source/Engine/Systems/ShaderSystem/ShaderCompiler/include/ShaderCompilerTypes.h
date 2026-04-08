@@ -33,4 +33,4 @@ struct ShaderCompileResult
     ShaderSource shaderSource;
 };
 
-#endif //NOUS_ENGINE_SHADERCOMPILERTYPES_H
+#endif //NOUS_ENGINE_SHADER_COMPILER_TYPES_H

@@ -138,4 +138,4 @@ struct PipelineReflectionResult
     std::vector<ReflectedOutput>       fragmentOutputs; // ver punto 2
 };
 
-#endif //NOUS_ENGINE_SHADERREFLECTIONTYPES_H
+#endif //NOUS_ENGINE_SHADER_REFLECTION_TYPES_H

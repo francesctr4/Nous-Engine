@@ -33,7 +33,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
-InspectorWindow::InspectorWindow(const char* title, EditorContext* context, bool start_open)
+InspectorWindow::InspectorWindow(const char* title, EditorContext* context, const bool start_open)
         : IEditorWindow(title, context, nullptr, start_open) {
     Init();
 }
@@ -55,7 +55,7 @@ void InspectorWindow::Draw() {
             }
 
             // --- GameObject Header ---
-            CPrefab* cprefab = go->TryGetComponent<CPrefab>();
+            auto* cprefab = go->TryGetComponent<CPrefab>();
             if (cprefab)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
@@ -72,7 +72,7 @@ void InspectorWindow::Draw() {
             }
 
             static char buffer[256];
-            strncpy(buffer, go->GetName().c_str(), sizeof(buffer) - 1);
+            strncpy_s(buffer, go->GetName().c_str(), sizeof(buffer) - 1);
             buffer[sizeof(buffer) - 1] = '\0';
             if (cprefab) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
             if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
@@ -112,8 +112,9 @@ void InspectorWindow::Draw() {
             // --- Mesh Component ---
             if (go->HasComponent<CMesh>()) {
                 if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    auto& mesh = go->GetComponent<CMesh>();
-                    if (mesh.mesh) {
+                    if (auto& mesh = go->GetComponent<CMesh>();
+                        mesh.mesh)
+                    {
                         ImGui::Text("Name: %s", mesh.mesh->GetName().c_str());
                         ImGui::Text("UID: %u", mesh.mesh->GetUID());
                         ImGui::Text("Assets Path: %s", mesh.mesh->GetAssetsPath().c_str());
@@ -180,8 +181,9 @@ void InspectorWindow::Draw() {
             // --- Material Component ---
             if (go->HasComponent<CMaterial>()) {
                 if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    auto& mat = go->GetComponent<CMaterial>();
-                    if (mat.material) {
+                    if (auto& mat = go->GetComponent<CMaterial>();
+                        mat.material)
+                    {
                         auto* rm = go->GetScene()->GetResourceManager();
                         const bool isDefaultMaterial = (mat.material == rm->GetDefaultMaterial());
 
@@ -495,7 +497,7 @@ void InspectorWindow::Draw() {
                                                 if (editorContext->GetScene()->activeScene) {
                                                     const auto gos = editorContext->GetScene()->activeScene->GetGameObjectsSnapshot();
                                                     for (auto* target : gos) {
-                                                        const bool selected = (*idPtr == target->GetID());
+                                                        const bool selected = *idPtr == target->GetID();
                                                         if (ImGui::Selectable(target->GetName().c_str(), selected))
                                                             *idPtr = target->GetID();
                                                         if (selected) ImGui::SetItemDefaultFocus();

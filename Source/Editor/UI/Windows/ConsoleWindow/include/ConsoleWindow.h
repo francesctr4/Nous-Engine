@@ -9,7 +9,7 @@
 class ConsoleWindow : public IEditorWindow
 {
 public:
-    explicit ConsoleWindow(const char* title, ::EditorContext* context, bool start_open = true);
+    explicit ConsoleWindow(const char* title, EditorContext* context, bool start_open = true);
     ~ConsoleWindow() override = default;
 
     void Init() override;
@@ -47,7 +47,7 @@ private:
     size_t           m_lastCheckedSize = 0;     // logBuffer size at last incremental update
 
     // ── Channel presence (incremental) ──────────────────────────────────────
-    bool m_channelUsed[(int)LogChannel::MAX_CHANNELS] = {};
+    bool m_channelUsed[static_cast<int>(LogChannel::MAX_CHANNELS)] = {};
 
     // ── Cached UI strings ───────────────────────────────────────────────────
     std::string m_levelSummary;
@@ -65,8 +65,8 @@ private:
     bool scrollToBottom = false;
 
     // ── Level / channel filters ──────────────────────────────────────────────
-    bool showLevel  [(int)LogLevel::LOG_LEVEL_MAX]   = { true, true, true, true, true, false };
-    bool showChannel[(int)LogChannel::MAX_CHANNELS]  = {};  // all initialised to true in ctor
+    bool showLevel  [static_cast<int>(LOG_LEVEL_MAX)]   = { true, true, true, true, true, false };
+    bool showChannel[static_cast<int>(LogChannel::MAX_CHANNELS)]  = {};  // all initialised to true in ctor
 
     // ── Command line ─────────────────────────────────────────────────────────
     std::vector<std::string> commandHistory;

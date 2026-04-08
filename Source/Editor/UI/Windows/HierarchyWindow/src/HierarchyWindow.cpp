@@ -15,7 +15,7 @@
 #include <filesystem>
 #include <string>
 
-HierarchyWindow::HierarchyWindow(const char* title, EditorContext* context, bool start_open)
+HierarchyWindow::HierarchyWindow(const char* title, EditorContext* context, const bool start_open)
         : IEditorWindow(title, context, nullptr, start_open),
         m_ToDelete(MemoryTag::SCENE), m_ToReparent(MemoryTag::SCENE)
 {
@@ -35,7 +35,7 @@ void HierarchyWindow::Draw() {
             if (m_Scene)
             {
                 // Root node = Scene itself
-                bool opened = ImGui::TreeNodeEx((void*)m_Scene,
+                const bool opened = ImGui::TreeNodeEx(m_Scene,
                                                 ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow,
                                                 "%s", m_Scene->GetName().c_str());
 
@@ -43,12 +43,12 @@ void HierarchyWindow::Draw() {
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
                         IM_ASSERT(payload->DataSize == sizeof(GameObject*));
-                        GameObject* draggedGO = *(GameObject**)payload->Data;
+                        GameObject* draggedGO = *static_cast<GameObject**>(payload->Data);
                         m_ToReparent.push_back({ draggedGO, nullptr });
                     }
                     // Accept .nprefab files dragged from the AssetsBrowser
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS")) {
-                        const char* data = static_cast<const char*>(payload->Data);
+                        auto data = static_cast<const char*>(payload->Data);
                         const char* end  = data + payload->DataSize;
                         while (data < end) {
                             std::string path(data);
@@ -89,8 +89,8 @@ void HierarchyWindow::Draw() {
 
                     // Snapshot under mutex — guards against concurrent CreateGameObject() calls
                     // from the background LoadScene job reallocating the vector mid-iteration.
-                    const auto gameObjects = m_Scene->GetGameObjectsSnapshot();
-                    for (auto& goPtr : gameObjects)
+                    for (const auto gameObjects = m_Scene->GetGameObjectsSnapshot();
+                        auto& goPtr : gameObjects)
                     {
                         if (!goPtr->GetParent())
                         {
@@ -123,45 +123,45 @@ void HierarchyWindow::Draw() {
     }
 }
 
-void HierarchyWindow::DrawGameObjectNode(GameObject* go, bool insidePrefab) {
+void HierarchyWindow::DrawGameObjectNode(GameObject* obj, const bool insidePrefab) {
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen;
 
-    if (go->GetChildren().empty())
+    if (obj->GetChildren().empty())
         flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
     // Highlight if selected
-    if (go == editorContext->GetScene()->selectedGameObject)
+    if (obj == editorContext->GetScene()->selectedGameObject)
         flags |= ImGuiTreeNodeFlags_Selected;
 
     // Blue tint for prefab instance roots and all their children
-    const bool isPrefab = go->HasComponent<CPrefab>();
+    const bool isPrefab = obj->HasComponent<CPrefab>();
     const bool applyTint = isPrefab || insidePrefab;
     if (applyTint)
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
 
-    std::string label = go->GetName() + "###" + std::to_string(go->GetID());
-    bool open = ImGui::TreeNodeEx(label.c_str(), flags);
+    const std::string label = obj->GetName() + "###" + std::to_string(obj->GetID());
+    const bool open = ImGui::TreeNodeEx(label.c_str(), flags);
 
     if (applyTint)
         ImGui::PopStyleColor();
 
     // Left-click to select
     if (ImGui::IsItemClicked()) {
-        editorContext->GetScene()->selectedGameObject = go;
+        editorContext->GetScene()->selectedGameObject = obj;
     }
 
     // Right-click menu
     if (ImGui::BeginPopupContextItem()) {
         if (ImGui::MenuItem("Delete")) {
-            m_ToDelete.push_back(go);
-            if (editorContext->GetScene()->selectedGameObject == go)
+            m_ToDelete.push_back(obj);
+            if (editorContext->GetScene()->selectedGameObject == obj)
                 editorContext->GetScene()->selectedGameObject = nullptr;
         }
         ImGui::Separator();
         if (ImGui::MenuItem("Save As Prefab")) {
-            m_prefabSaveTarget = go;
+            m_prefabSaveTarget = obj;
             // Pre-fill the name buffer with the GO name
-            strncpy(m_prefabNameBuffer, go->GetName().c_str(), sizeof(m_prefabNameBuffer) - 1);
+            strncpy_s(m_prefabNameBuffer, obj->GetName().c_str(), sizeof(m_prefabNameBuffer) - 1);
             m_prefabNameBuffer[sizeof(m_prefabNameBuffer) - 1] = '\0';
             m_showSaveAsPrefabPopup = true;
         }
@@ -170,8 +170,8 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go, bool insidePrefab) {
 
     // 🔹 Drag source
     if (ImGui::BeginDragDropSource()) {
-        ImGui::SetDragDropPayload("DND_GAMEOBJECT", &go, sizeof(GameObject*));
-        ImGui::Text("%s", go->GetName().c_str());
+        ImGui::SetDragDropPayload("DND_GAMEOBJECT", &obj, sizeof(GameObject*));
+        ImGui::Text("%s", obj->GetName().c_str());
         ImGui::EndDragDropSource();
     }
 
@@ -179,37 +179,38 @@ void HierarchyWindow::DrawGameObjectNode(GameObject* go, bool insidePrefab) {
     if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT")) {
             IM_ASSERT(payload->DataSize == sizeof(GameObject*));
-            GameObject* draggedGO = *(GameObject**)payload->Data;
 
             // Don't allow dropping onto itself or any of its own children
-            if (draggedGO != go && !IsChildOf(draggedGO, go)) {
-                m_ToReparent.push_back({ draggedGO, go });
+            if (GameObject* draggedGO = *static_cast<GameObject**>(payload->Data);
+                draggedGO != obj && !IsChildOf(draggedGO, obj))
+            {
+                m_ToReparent.push_back({ draggedGO, obj });
             }
         }
         // Accept .nprefab files dragged from the AssetsBrowser (instantiate as child of go)
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS")) {
-            const char* data = static_cast<const char*>(payload->Data);
+            auto data = static_cast<const char*>(payload->Data);
             const char* end  = data + payload->DataSize;
             while (data < end) {
                 std::string path(data);
                 data += path.size() + 1;
                 if (std::filesystem::path(path).extension() == ".nprefab")
-                    editorContext->GetScene()->InstantiatePrefab(path, go);
+                    editorContext->GetScene()->InstantiatePrefab(path, obj);
             }
         }
         ImGui::EndDragDropTarget();
     }
 
-    if (open && !go->GetChildren().empty()) {
-        for (GameObject* child : go->GetChildren()) {
+    if (open && !obj->GetChildren().empty()) {
+        for (GameObject* child : obj->GetChildren()) {
             DrawGameObjectNode(child, applyTint);
         }
         ImGui::TreePop();
     }
 }
 
-bool HierarchyWindow::IsChildOf(GameObject* parent, GameObject* child) {
-    GameObject* current = child->GetParent();
+bool HierarchyWindow::IsChildOf(const GameObject* parent, const GameObject* child) {
+    const GameObject* current = child->GetParent();
     while (current) {
         if (current == parent) return true;
         current = current->GetParent();
@@ -243,7 +244,7 @@ void HierarchyWindow::DrawSaveAsPrefabPopup()
         {
             if (!nameEmpty && m_prefabSaveTarget)
             {
-                std::string filePath = std::string("Assets/Prefabs/") + m_prefabNameBuffer + ".nprefab";
+                const std::string filePath = std::string("Assets/Prefabs/") + m_prefabNameBuffer + ".nprefab";
                 PrefabManager::SavePrefab(m_prefabSaveTarget, filePath);
 
                 // Mark this GO as a prefab instance immediately.

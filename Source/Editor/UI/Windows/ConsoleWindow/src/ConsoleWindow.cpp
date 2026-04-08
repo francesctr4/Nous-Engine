@@ -3,7 +3,6 @@
 #include "imgui.h"
 
 #include <algorithm>
-#include <cstring>
 
 // Returns just the filename portion of a full path (no allocation, no runtime search needed
 // since the path was already resolved to just the filename at compile time via NOUS_SOURCE_FILE).
@@ -29,11 +28,11 @@ static constexpr ImVec4 k_LevelColors[] = {
 // Construction
 // ──────────────────────────────────────────────────────────────────────────────
 
-ConsoleWindow::ConsoleWindow(const char* title, EditorContext* context, bool start_open)
+ConsoleWindow::ConsoleWindow(const char* title, EditorContext* context, const bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
     for (bool& b : showChannel) b = true;
-    Init();
+    ConsoleWindow::Init();
 }
 
 void ConsoleWindow::Init()
@@ -46,8 +45,7 @@ void ConsoleWindow::Init()
 
     // Populate channelUsed from seeded entries.
     for (const auto& e : logBuffer) {
-        int ch = (int)e.channel;
-        if (ch >= 0 && ch < (int)LogChannel::MAX_CHANNELS)
+        if (const int ch = static_cast<int>(e.channel); ch >= 0 && ch < static_cast<int>(LogChannel::MAX_CHANNELS))
             m_channelUsed[ch] = true;
     }
 
@@ -69,9 +67,11 @@ void ConsoleWindow::PullNewEntries()
     if (logBuffer.size() == prevSize) return; // nothing new
 
     // Update channel presence incrementally (no O(n) full scan).
-    for (size_t i = prevSize; i < logBuffer.size(); ++i) {
-        const int ch = (int)logBuffer[i].channel;
-        if (ch >= 0 && ch < (int)LogChannel::MAX_CHANNELS && !m_channelUsed[ch]) {
+    for (size_t i = prevSize; i < logBuffer.size(); ++i)
+    {
+        if (const int ch = static_cast<int>(logBuffer[i].channel);
+            ch >= 0 && ch < static_cast<int>(LogChannel::MAX_CHANNELS) && !m_channelUsed[ch])
+        {
             m_channelUsed[ch]     = true;
             m_channelSummaryDirty = true;
         }
@@ -80,7 +80,7 @@ void ConsoleWindow::PullNewEntries()
     // Cap the display buffer to avoid unbounded growth across a long session.
     if (logBuffer.size() > k_MaxDisplayEntries) {
         const size_t excess = logBuffer.size() - k_MaxDisplayEntries;
-        logBuffer.erase(logBuffer.begin(), logBuffer.begin() + (ptrdiff_t)excess);
+        logBuffer.erase(logBuffer.begin(), logBuffer.begin() + static_cast<ptrdiff_t>(excess));
 
         // All stored indices are stale — force a full rebuild.
         m_filterDirty     = true;
@@ -89,8 +89,7 @@ void ConsoleWindow::PullNewEntries()
         // Recompute channelUsed from scratch (rare path).
         memset(m_channelUsed, 0, sizeof(m_channelUsed));
         for (const auto& e : logBuffer) {
-            const int ch = (int)e.channel;
-            if (ch >= 0 && ch < (int)LogChannel::MAX_CHANNELS)
+            if (const int ch = static_cast<int>(e.channel); ch >= 0 && ch < static_cast<int>(LogChannel::MAX_CHANNELS))
                 m_channelUsed[ch] = true;
         }
         m_channelSummaryDirty = true;
@@ -105,16 +104,14 @@ void ConsoleWindow::PullNewEntries()
 
 bool ConsoleWindow::PassesFilters(const LogEntry& entry) const
 {
-    if (!showLevel  [(int)entry.level  ]) return false;
-    if (!showChannel[(int)entry.channel]) return false;
+    if (!showLevel  [static_cast<int>(entry.level)  ]) return false;
+    if (!showChannel[static_cast<int>(entry.channel)]) return false;
 
     if (!m_searchLower.empty()) {
         // Case-insensitive search with no heap allocation:
         // needle (m_searchLower) is already lowercased; tolower each haystack char inline.
-        auto it = std::search(
-            entry.message.begin(), entry.message.end(),
-            m_searchLower.begin(), m_searchLower.end(),
-            [](unsigned char a, unsigned char b) { return std::tolower(a) == b; });
+        const auto it = std::ranges::search(entry.message, m_searchLower,
+            [](const unsigned char a, const unsigned char b) { return std::tolower(a) == b; }).begin();
 
         if (it == entry.message.end()) return false;
     }
@@ -127,7 +124,7 @@ void ConsoleWindow::RebuildFilteredIndices()
     m_filteredIndices.clear();
     m_filteredIndices.reserve(logBuffer.size());
 
-    for (int i = 0; i < (int)logBuffer.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(logBuffer.size()); ++i) {
         if (PassesFilters(logBuffer[i]))
             m_filteredIndices.push_back(i);
     }
@@ -136,11 +133,11 @@ void ConsoleWindow::RebuildFilteredIndices()
     m_lastCheckedSize = logBuffer.size();
 }
 
-void ConsoleWindow::UpdateFilteredIndicesIncremental(size_t fromIndex)
+void ConsoleWindow::UpdateFilteredIndicesIncremental(const size_t fromIndex)
 {
     for (size_t i = fromIndex; i < logBuffer.size(); ++i) {
         if (PassesFilters(logBuffer[i]))
-            m_filteredIndices.push_back((int)i);
+            m_filteredIndices.push_back(static_cast<int>(i));
     }
     m_lastCheckedSize = logBuffer.size();
 }
@@ -172,14 +169,14 @@ void ConsoleWindow::RebuildLevelSummary()
     int active = 0;
     m_levelSummary.clear();
 
-    for (int i = 0; i < (int)LogLevel::LOG_LEVEL_MAX; ++i) {
+    for (int i = 0; i < static_cast<int>(LOG_LEVEL_MAX); ++i) {
         if (!showLevel[i]) continue;
         if (!m_levelSummary.empty()) m_levelSummary += ", ";
         m_levelSummary += k_LevelNames[i];
         ++active;
     }
 
-    if (active == (int)LogLevel::LOG_LEVEL_MAX) m_levelSummary = "All Levels";
+    if (active == static_cast<int>(LOG_LEVEL_MAX)) m_levelSummary = "All Levels";
     else if (active == 0)                       m_levelSummary = "No Level Selected";
 }
 
@@ -188,14 +185,14 @@ void ConsoleWindow::RebuildChannelSummary()
     int active = 0;
     m_channelSummary.clear();
 
-    for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i) {
+    for (int i = 0; i < static_cast<int>(LogChannel::MAX_CHANNELS); ++i) {
         if (!showChannel[i]) continue;
         if (!m_channelSummary.empty()) m_channelSummary += ", ";
         m_channelSummary += LOG_CHANNEL_NAMES[i];
         ++active;
     }
 
-    if (active == (int)LogChannel::MAX_CHANNELS) m_channelSummary = "All Channels";
+    if (active == static_cast<int>(LogChannel::MAX_CHANNELS)) m_channelSummary = "All Channels";
     else if (active == 0)                        m_channelSummary = "No Channel Selected";
 }
 
@@ -212,12 +209,12 @@ void ConsoleWindow::Draw()
 
     // 2. Detect search text change — update lowercased needle and mark dirty.
     if (strcmp(searchBuffer, m_lastSearchStr) != 0) {
-        strncpy(m_lastSearchStr, searchBuffer, sizeof(m_lastSearchStr) - 1);
+        strncpy_s(m_lastSearchStr, searchBuffer, sizeof(m_lastSearchStr) - 1);
         m_lastSearchStr[sizeof(m_lastSearchStr) - 1] = '\0';
         m_searchLower = searchBuffer;
-        std::transform(m_searchLower.begin(), m_searchLower.end(),
-                       m_searchLower.begin(),
-                       [](unsigned char c) { return (char)std::tolower(c); });
+        std::ranges::transform(m_searchLower,
+                               m_searchLower.begin(),
+                               [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
         m_filterDirty = true;
     }
 
@@ -271,22 +268,22 @@ void ConsoleWindow::DrawMenuBar()
     if (ImGui::BeginCombo("##LevelFilter", m_levelSummary.c_str()))
     {
         if (ImGui::Selectable("Select All", false)) {
-            for (int i = 0; i < (int)LogLevel::LOG_LEVEL_MAX; ++i)
-                showLevel[i] = true;
+            for (bool & i : showLevel)
+                i = true;
             m_filterDirty = m_levelSummaryDirty = true;
         }
         if (ImGui::Selectable("Deselect All", false)) {
-            for (int i = 0; i < (int)LogLevel::LOG_LEVEL_MAX; ++i)
-                showLevel[i] = false;
+            for (bool & i : showLevel)
+                i = false;
             m_filterDirty = m_levelSummaryDirty = true;
         }
 
         ImGui::Separator();
 
-        for (int i = 0; i < (int)LogLevel::LOG_LEVEL_MAX; ++i) {
+        for (int i = 0; i < static_cast<int>(LOG_LEVEL_MAX); ++i) {
             ImGui::PushStyleColor(ImGuiCol_Text, k_LevelColors[i]);
             if (ImGui::Selectable(k_LevelNames[i], &showLevel[i], ImGuiSelectableFlags_DontClosePopups)) {
-                SetLogLevelEnabled((LogLevel)i, showLevel[i]);
+                SetLogLevelEnabled(static_cast<LogLevel>(i), showLevel[i]);
                 m_filterDirty = m_levelSummaryDirty = true;
             }
             ImGui::PopStyleColor();
@@ -309,7 +306,7 @@ void ConsoleWindow::DrawMenuBar()
     if (ImGui::BeginCombo("##ChannelFilter", m_channelSummary.c_str(), ImGuiComboFlags_HeightLargest))
     {
         if (ImGui::Selectable("Select All", false)) {
-            for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i)
+            for (int i = 0; i < static_cast<int>(LogChannel::MAX_CHANNELS); ++i)
                 if (m_channelUsed[i]) showChannel[i] = true;
             m_filterDirty = m_channelSummaryDirty = true;
         }
@@ -321,7 +318,7 @@ void ConsoleWindow::DrawMenuBar()
         ImGui::Separator();
 
         // Only show channels that have actually appeared in the log.
-        for (int i = 0; i < (int)LogChannel::MAX_CHANNELS; ++i) {
+        for (int i = 0; i < static_cast<int>(LogChannel::MAX_CHANNELS); ++i) {
             if (!m_channelUsed[i]) continue;
             if (ImGui::Selectable(LOG_CHANNEL_NAMES[i], &showChannel[i], ImGuiSelectableFlags_DontClosePopups))
                 m_filterDirty = m_channelSummaryDirty = true;
@@ -355,56 +352,58 @@ void ConsoleWindow::DrawLogPanel()
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
 
     ImGuiListClipper clipper;
-    clipper.Begin((int)m_filteredIndices.size());
+    clipper.Begin(static_cast<int>(m_filteredIndices.size()));
 
     while (clipper.Step())
     {
         for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row)
         {
-            const LogEntry& entry = logBuffer[m_filteredIndices[row]];
+            const auto& [level, channel,
+                timestamp, message, file,
+                line, function, threadId]
+            = logBuffer[m_filteredIndices[row]];
 
             // Format timestamp (seconds → MM:SS:mmm) — stack only, no allocation.
-            const int totalMs = static_cast<int>(entry.timestamp * 1000.0);
+            const int totalMs = static_cast<int>(timestamp * 1000.0);
             char timeBuffer[16];
             snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d:%03d",
-                     (totalMs / 1000) / 60,
-                     (totalMs / 1000) % 60,
+                     totalMs / 1000 / 60,
+                     totalMs / 1000 % 60,
                      totalMs % 1000);
 
             // Strip "[LEVEL]: " prefix from the stored message — level is shown separately.
-            const char* msgText = entry.message.c_str();
-            const char* sep = strstr(msgText, "]: ");
-            if (sep) msgText = sep + 3;
+            const char* msgText = message.c_str();
+            if (const char* sep = strstr(msgText, "]: ")) msgText = sep + 3;
 
-            ImGui::PushStyleColor(ImGuiCol_Text, k_LevelColors[(int)entry.level]);
+            ImGui::PushStyleColor(ImGuiCol_Text, k_LevelColors[static_cast<int>(level)]);
 
-            if (m_showDetails && (entry.file || entry.threadId != 0))
+            if (m_showDetails && (file || threadId != 0))
             {
                 // Metadata prefix in a dimmer colour.
                 // Format: [time] [LEVEL] [channel] file:line [func] (tid:N)
                 ImGui::PopStyleColor();
 
                 char metaBuffer[128];
-                if (entry.file)
+                if (file)
                     snprintf(metaBuffer, sizeof(metaBuffer), "%s:%d [%s] (tid:%llu)",
-                             GetFileName(entry.file), entry.line,
-                             entry.function ? entry.function : "",
-                             static_cast<unsigned long long>(entry.threadId));
+                             GetFileName(file), line,
+                             function ? function : "",
+                             static_cast<unsigned long long>(threadId));
                 else
                     snprintf(metaBuffer, sizeof(metaBuffer), "(tid:%llu)",
-                             static_cast<unsigned long long>(entry.threadId));
+                             static_cast<unsigned long long>(threadId));
 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
                 ImGui::Text("[%s] %s [%s] %s",
                             timeBuffer,
-                            k_LevelNames[(int)entry.level],
-                            LOG_CHANNEL_NAMES[(int)entry.channel],
+                            k_LevelNames[static_cast<int>(level)],
+                            LOG_CHANNEL_NAMES[static_cast<int>(channel)],
                             metaBuffer);
                 ImGui::PopStyleColor();
 
                 // Message on the same row in level colour.
                 ImGui::SameLine(0, 8);
-                ImGui::PushStyleColor(ImGuiCol_Text, k_LevelColors[(int)entry.level]);
+                ImGui::PushStyleColor(ImGuiCol_Text, k_LevelColors[static_cast<int>(level)]);
                 ImGui::TextUnformatted(msgText);
                 ImGui::PopStyleColor();
             }
@@ -412,8 +411,8 @@ void ConsoleWindow::DrawLogPanel()
             {
                 ImGui::Text("[%s] %s [%s] %s",
                             timeBuffer,
-                            k_LevelNames[(int)entry.level],
-                            LOG_CHANNEL_NAMES[(int)entry.channel],
+                            k_LevelNames[static_cast<int>(level)],
+                            LOG_CHANNEL_NAMES[static_cast<int>(channel)],
                             msgText);
                 ImGui::PopStyleColor();
             }

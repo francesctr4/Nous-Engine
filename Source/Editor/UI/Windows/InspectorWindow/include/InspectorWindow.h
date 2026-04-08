@@ -7,7 +7,7 @@ class InspectorWindow : public IEditorWindow
 {
 public:
 
-    explicit InspectorWindow(const char* title, ::EditorContext* context, bool start_open = true);
+    explicit InspectorWindow(const char* title, EditorContext* context, bool start_open = true);
 
     void Init() override;
     void Draw() override;

@@ -1,11 +1,10 @@
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
 #include "Engine/Core/Logger/Logger.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 #include <shaderc/shaderc.hpp>
 
-#include <cstdint>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -17,22 +16,22 @@ namespace
         std::ifstream f(path, std::ios::binary);
         if (!f) return false;
 
-        out.assign(std::istreambuf_iterator<char>(f),
+        out.assign(std::istreambuf_iterator(f),
                    std::istreambuf_iterator<char>());
         return true;
     }
 
-    bool WriteBinaryFile(const std::string& path, const void* data, size_t size)
+    bool WriteBinaryFile(const std::string& path, const void* data, const size_t size)
     {
         std::ofstream f(path, std::ios::binary);
         if (!f) return false;
 
-        f.write(reinterpret_cast<const char*>(data),
+        f.write(static_cast<const char*>(data),
                 static_cast<std::streamsize>(size));
         return f.good();
     }
 
-    shaderc_shader_kind ToShadercKind(ShaderStage stage)
+    shaderc_shader_kind ToShadercKind(const ShaderStage stage)
     {
         switch (stage)
         {
@@ -46,13 +45,13 @@ namespace
         }
     }
 
-    shaderc_optimization_level ToShadercOpt(ShaderOptimizationLevel opt)
+    shaderc_optimization_level ToShadercOpt(const ShaderOptimizationLevel opt)
     {
         switch (opt)
         {
             case ShaderOptimizationLevel::Zero:        return shaderc_optimization_level_zero;
             case ShaderOptimizationLevel::Size:        return shaderc_optimization_level_size;
-            case ShaderOptimizationLevel::Performance: return shaderc_optimization_level_performance;
+            case ShaderOptimizationLevel::Performance:
             default:                                   return shaderc_optimization_level_performance;
         }
     }
@@ -73,8 +72,8 @@ namespace NOUS_ShaderSystem
 {
     bool CompileGlslFileToSpirvFile(const std::string& glslPath,
                                     const std::string& spvPath,
-                                    bool optimize,
-                                    bool debugInfo)
+                                    const bool optimize,
+                                    const bool debugInfo)
     {
         NOUS_DEBUG_C(CURRENT_CHANNEL, "Compiling '%s' -> '%s'", glslPath.c_str(), spvPath.c_str());
 
@@ -85,7 +84,7 @@ namespace NOUS_ShaderSystem
             return false;
         }
 
-        shaderc::Compiler compiler;
+        const shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
         options.SetTargetEnvironment(shaderc_target_env_vulkan,
@@ -101,7 +100,7 @@ namespace NOUS_ShaderSystem
 
         const shaderc_shader_kind kind = InferKindFromExtension(glslPath);
 
-        shaderc::SpvCompilationResult result =
+        const shaderc::SpvCompilationResult result =
                 compiler.CompileGlslToSpv(source,
                                           kind,
                                           glslPath.c_str(),
@@ -115,7 +114,7 @@ namespace NOUS_ShaderSystem
             return false;
         }
 
-        std::vector<uint32_t> spirv(result.cbegin(), result.cend());
+        const std::vector spirv(result.cbegin(), result.cend());
 
         if (!WriteBinaryFile(spvPath,
                              spirv.data(),
@@ -129,8 +128,8 @@ namespace NOUS_ShaderSystem
         return true;
     }
 
-    ShaderCompileResult CompileGlslStringToSpirv(std::string_view glsl, ShaderStage stage,
-    const ShaderCompilerConfig &config, std::string_view virtualPath)
+    ShaderCompileResult CompileGlslStringToSpirv(std::string_view glsl, const ShaderStage stage,
+    const ShaderCompilerConfig &config, const std::string_view virtualPath)
     {
         ShaderCompileResult out{};
         out.success = false;
@@ -157,7 +156,7 @@ namespace NOUS_ShaderSystem
             return out;
         }
 
-        shaderc::Compiler compiler;
+        const shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
         options.SetTargetEnvironment(shaderc_target_env_vulkan,
@@ -174,7 +173,7 @@ namespace NOUS_ShaderSystem
 
         const shaderc_shader_kind kind = ToShadercKind(stage);
 
-        shaderc::SpvCompilationResult result =
+        const shaderc::SpvCompilationResult result =
                 compiler.CompileGlslToSpv(
                     out.shaderSource.glslSource,                 // must be std::string
                     kind,

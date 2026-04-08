@@ -27,13 +27,13 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
     // - We don't actually manipulate the ImVector<> here, only in ApplyDeletionPostLoop(), but using similar API for consistency and flexibility.
     // - Important: Deletion only works if the underlying ImGuiID for your items are stable: aka not depend on their index, but on e.g. item id/ptr.
     // FIXME-MULTISELECT: Doesn't take account of the possibility focus target will be moved during deletion. Need refocus or scroll offset.
-    int ApplyDeletionPreLoop(ImGuiMultiSelectIO* ms_io, int items_count)
+    int ApplyDeletionPreLoop(ImGuiMultiSelectIO* ms_io, const int items_count)
     {
         if (Size == 0)
             return -1;
 
         // If focused item is not selected...
-        const int focused_idx = (int)ms_io->NavIdItem;  // Index of currently focused item
+        const int focused_idx = static_cast<int>(ms_io->NavIdItem);  // Index of currently focused item
         if (ms_io->NavIdSelected == false)  // This is merely a shortcut, == Contains(adapter->IndexToStorage(items, focused_idx))
         {
             ms_io->RangeSrcReset = true;    // Request to recover RangeSrc from NavId next frame. Would be ok to reset even when NavIdSelected==true, but it would take an extra frame to recover RangeSrc when deleting a selected item.
@@ -67,7 +67,7 @@ struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
 
         for (size_t idx = 0; idx < items.size(); ++idx)
         {
-            if (!Contains(GetStorageIdFromIndex(idx)))
+            if (!Contains(GetStorageIdFromIndex(static_cast<int>(idx))))
                 new_items.push_back(std::move(items[idx])); // Use std::move for efficiency if ITEM_TYPE is movable
             if (item_curr_idx_to_select == static_cast<int>(idx))
                 item_next_idx_to_select = static_cast<int>(new_items.size() - 1);
@@ -165,33 +165,33 @@ struct ExampleAsset
 
 #pragma region ASSET SORTING
 
-    static void SortWithSortSpecs(ImGuiTableSortSpecs* sort_specs, ExampleAsset* items, int items_count)
+    static void SortWithSortSpecs(const ImGuiTableSortSpecs* sort_specs, ExampleAsset* items, const int items_count)
     {
         s_current_sort_specs = sort_specs; // Store in variable accessible by the sort function.
         if (items_count > 1)
-            qsort(items, (size_t)items_count, sizeof(items[0]), ExampleAsset::CompareWithSortSpecs);
-        s_current_sort_specs = NULL;
+            qsort(items, static_cast<size_t>(items_count), sizeof(items[0]), CompareWithSortSpecs);
+        s_current_sort_specs = nullptr;
     }
 
     // Compare function to be used by qsort()
     static int CompareWithSortSpecs(const void* lhs, const void* rhs)
     {
-        const ExampleAsset* a = (const ExampleAsset*)lhs;
-        const ExampleAsset* b = (const ExampleAsset*)rhs;
+        const auto* a = static_cast<const ExampleAsset*>(lhs);
+        const auto* b = static_cast<const ExampleAsset*>(rhs);
         for (int n = 0; n < s_current_sort_specs->SpecsCount; n++)
         {
             const ImGuiTableColumnSortSpecs* sort_spec = &s_current_sort_specs->Specs[n];
             int delta = 0;
             if (sort_spec->ColumnIndex == 0)
-                delta = ((int)a->ID - (int)b->ID);
+                delta = static_cast<int>(a->ID) - static_cast<int>(b->ID);
             else if (sort_spec->ColumnIndex == 1)
-                delta = (static_cast<int>(a->fileType) - static_cast<int>(b->fileType));
+                delta = static_cast<int>(a->fileType) - static_cast<int>(b->fileType);
             if (delta > 0)
-                return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? +1 : -1;
+                return sort_spec->SortDirection == ImGuiSortDirection_Ascending ? +1 : -1;
             if (delta < 0)
-                return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? -1 : +1;
+                return sort_spec->SortDirection == ImGuiSortDirection_Ascending ? -1 : +1;
         }
-        return (int)a->ID - (int)b->ID;
+        return static_cast<int>(a->ID) - static_cast<int>(b->ID);
     }
 
 #pragma endregion
