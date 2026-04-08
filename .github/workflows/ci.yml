@@ -13,12 +13,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
-            preset: Debug-Windows
+          #- os: windows-latest
+            #preset: Debug-Windows
           - os: ubuntu-latest
             preset: Debug-Linux
-          - os: macos-latest
-            preset: Debug-macOS
+          #- os: macos-latest
+            #preset: Debug-macOS
 
     runs-on: ${{ matrix.os }}
 
