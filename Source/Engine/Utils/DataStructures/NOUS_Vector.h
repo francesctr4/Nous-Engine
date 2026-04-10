@@ -72,11 +72,11 @@ public:
     const vector_type& raw() const { return internal_; }
 
     iterator erase(const_iterator pos) {
-        return internal_.erase(pos);
+        return internal_.erase(std::move(pos));
     }
 
     iterator erase(const_iterator first, const_iterator last) {
-        return internal_.erase(first, last);
+        return internal_.erase(std::move(first), std::move(last));
     }
 
     reverse_iterator rbegin() { return internal_.rbegin(); }

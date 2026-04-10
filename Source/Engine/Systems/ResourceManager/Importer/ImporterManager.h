@@ -7,7 +7,7 @@
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 
 class Resource;
-enum class ResourceType;
+enum class ResourceType : int8_t;
 
 struct Importer;
 struct MetaFileData;

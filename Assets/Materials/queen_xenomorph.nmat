@@ -1,9 +1,22 @@
 {
-  "diffuse_color": [
-    1,
-    1,
-    1,
-    1
-  ],
-  "diffuse_map_path": "Assets\\Textures\\TEX_CHAR_Boss_D.png"
+    "uniforms": [
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        }
+    ],
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/Textures\/TEX_CHAR_Boss_D.png",
+            "uid": 2515585195,
+            "library_path": "Library\/Textures\/2515585195.png"
+        }
+    ]
 }

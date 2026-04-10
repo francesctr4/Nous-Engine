@@ -2,8 +2,8 @@
 
 /// @brief NOUS_Thread constructor.
 NOUS_Multithreading::NOUS_Thread::NOUS_Thread() :
-	mThreadID(0), mIsRunning(false), mCurrentJob(nullptr),
-    mThreadState(ThreadState::READY), mTimerRunning(false)
+	mThreadID(0), mThreadState(ThreadState::READY), mIsRunning(false),
+    mCurrentJob(nullptr), mTimerRunning(false)
 {
 
 }
@@ -22,7 +22,8 @@ void NOUS_Multithreading::NOUS_Thread::Start(const std::function<void()>& func)
 
 	mIsRunning = true;
 
-	mThreadHandle = std::thread([this, func]() {
+	mThreadHandle = std::thread([this, func]
+	{
 		func();
 		mIsRunning = false;
 		});
@@ -53,7 +54,7 @@ const std::string& NOUS_Multithreading::NOUS_Thread::GetName() const
 	return mThreadName; 
 }
 
-void NOUS_Multithreading::NOUS_Thread::SetThreadState(ThreadState state) 
+void NOUS_Multithreading::NOUS_Thread::SetThreadState(const ThreadState state)
 { 
 	mThreadState.store(state); 
 }
@@ -103,15 +104,12 @@ double NOUS_Multithreading::NOUS_Thread::GetExecutionTimeMS() const
     {
         return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(std::chrono::steady_clock::now() - mStartTime).count();
     }
-    else
-    {
-        return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(mEndTime - mStartTime).count();
-    }
+    return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(mEndTime - mStartTime).count();
 }
 
 /// @brief Sets a std::thread::id to this NOUS_Thread.
 /// @note Used mainly for registering main thread.
-void NOUS_Multithreading::NOUS_Thread::SetThreadID(std::thread::id id)
+void NOUS_Multithreading::NOUS_Thread::SetThreadID(const std::thread::id id)
 {
 	std::stringstream ss;
 	ss << id;
@@ -120,7 +118,7 @@ void NOUS_Multithreading::NOUS_Thread::SetThreadID(std::thread::id id)
 
 /// @brief Converts a std::thread::id to a numeric uint32_t.
 /// @note Relies on string conversion; platform-dependent.
-uint32_t NOUS_Multithreading::NOUS_Thread::GetThreadID(std::thread::id id)
+uint32_t NOUS_Multithreading::NOUS_Thread::GetThreadID(const std::thread::id id)
 {
 	std::stringstream ss;
 	ss << id;

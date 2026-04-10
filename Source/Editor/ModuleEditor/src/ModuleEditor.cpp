@@ -2,10 +2,7 @@
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
@@ -17,7 +14,6 @@
 
 // ImGui_Temp
 #include "imgui.h"
-#include "imgui_stdlib.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
 #include <ImGuizmo.h>
@@ -35,16 +31,18 @@
 #include "Editor/UI/Windows/InspectorWindow/include/InspectorWindow.h"
 #include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
 #include "Editor/UI/Windows/MemoryWindow/include/MemoryWindow.h"
+#include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
 
 #pragma endregion
 
 #include <vector>
 #include <memory>
+#include <SDL3/SDL_keyboard.h>
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Core/Logger/Logger.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
 
 ModuleEditor::ModuleEditor(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
 	ModuleWindow* moduleWindow,
@@ -63,10 +61,7 @@ ModuleEditor::ModuleEditor(EventSystem* eventSystem, NOUS_Multithreading::NOUS_J
     eventSystem->Subscribe(EventType::IMGUI_RECREATION, this);
 }
 
-ModuleEditor::~ModuleEditor()
-{
-
-}
+ModuleEditor::~ModuleEditor() = default;
 
 bool ModuleEditor::Awake()
 {
@@ -95,7 +90,7 @@ bool ModuleEditor::Awake()
 		case RendererBackendType::VULKAN:
 		{
             NOUS_INFO_C(CURRENT_CHANNEL, "Using Renderer Backend: %d (Vulkan)", currentBackendType);
-			VulkanContext* vkContext = GetVulkanContext();
+			const VulkanContext* vkContext = GetVulkanContext();
 
 			// Setup Platform/Renderer backends
 			ImGui_ImplSDL3_InitForVulkan(mModuleWindow->GetSDL_Window());
@@ -119,16 +114,16 @@ bool ModuleEditor::Awake()
 			NOUS_ASSERT(ImGui_ImplVulkan_Init(&imGuiVulkanInitInfo))
 			break;
 		}
-		case RendererBackendType::OPENGL:
-		{
-
-			break;
-		}
-		case RendererBackendType::DIRECTX:
-		{
-
-			break;
-		}
+		// case RendererBackendType::OPENGL:
+		// {
+		//
+		// 	break;
+		// }
+		// case RendererBackendType::DIRECTX:
+		// {
+		//
+		// 	break;
+		// }
 		default:
 		{
 
@@ -147,6 +142,7 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(NOUS_NEW<InspectorWindow>(MemoryTag::EDITOR, "Inspector", this));
 	AddEditorWindow(NOUS_NEW<ConsoleWindow>(MemoryTag::EDITOR, "Console", this));
 	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryTag::EDITOR, "Memory Manager", this));
+	AddEditorWindow(NOUS_NEW<TextEditorWindow>(MemoryTag::EDITOR, "Text Editor", this));
 
 	return true;
 }
@@ -163,6 +159,18 @@ void ModuleEditor::DrawEditor()
 	InternalDrawEditor();
 
 	EndFrame(currentBackendType);
+
+	// The ImGui SDL3 backend (v1.91+) only calls SDL_StartTextInput/SDL_StopTextInput
+	// through its IME callback, which only fires for built-in InputText widgets.
+	// Custom text widgets (e.g. ImGuiColorTextEdit) set io.WantTextInput but get no
+	// SDL text input, so typed characters never arrive. Bridge the gap here.
+	const ImGuiIO& io = ImGui::GetIO();
+	if (io.WantTextInput)
+		SDL_StartTextInput(mModuleWindow->GetSDL_Window());
+	else
+		SDL_StopTextInput(mModuleWindow->GetSDL_Window());
+
+	mModuleInput->SetImGuiCaptureKeyboard(io.WantTextInput);
 }
 
 bool ModuleEditor::CleanUp()
@@ -182,17 +190,16 @@ bool ModuleEditor::CleanUp()
 
 			break;
 		}
-
-		case RendererBackendType::OPENGL:
-		{
-
-			break;
-		}
-		case RendererBackendType::DIRECTX:
-		{
-
-			break;
-		}
+		// case RendererBackendType::OPENGL:
+		// {
+		//
+		// 	break;
+		// }
+		// case RendererBackendType::DIRECTX:
+		// {
+		//
+		// 	break;
+		// }
 		default:
 		{
 
@@ -212,7 +219,7 @@ bool ModuleEditor::CleanUp()
 	return true;
 }
 
-void ModuleEditor::InitFrame(RendererBackendType backendType)
+void ModuleEditor::InitFrame(const RendererBackendType backendType)
 {
 	switch (backendType)
 	{
@@ -221,17 +228,16 @@ void ModuleEditor::InitFrame(RendererBackendType backendType)
 			ImGui_ImplVulkan_NewFrame();
 			break;
 		}
-
-		case RendererBackendType::OPENGL:
-		{
-
-			break;
-		}
-		case RendererBackendType::DIRECTX:
-		{
-
-			break;
-		}
+		// case RendererBackendType::OPENGL:
+		// {
+		//
+		// 	break;
+		// }
+		// case RendererBackendType::DIRECTX:
+		// {
+		//
+		// 	break;
+		// }
 		default:
 		{
 
@@ -247,12 +253,12 @@ void ModuleEditor::InitFrame(RendererBackendType backendType)
 void ModuleEditor::InternalDrawEditor()
 {
 	// Set DockSpace Invisible Window Flags
-	ImGuiWindowFlags window = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
+	constexpr ImGuiWindowFlags window = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
 	// Get Window Viewport
-	ImGuiViewport* viewport = ImGui::GetWindowViewport();
+	const ImGuiViewport* viewport = ImGui::GetWindowViewport();
 
 	// Set Window Parameters
 	ImGui::SetNextWindowPos(viewport->Pos);
@@ -266,7 +272,7 @@ void ModuleEditor::InternalDrawEditor()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 	// Begin DockSpace Invisible Window with the flags
-	ImGui::Begin("Dockspace", 0, window);
+	ImGui::Begin("Dockspace", nullptr, window);
 
 	// Apply Window Style Parameters
 	ImGui::PopStyleVar(3);
@@ -279,13 +285,13 @@ void ModuleEditor::InternalDrawEditor()
 
 	ImGui::ShowDemoWindow();
 
-	for (auto& win : editorWindows)
+	for (const auto& win : editorWindows)
 	{
 		win->Draw();
 	}
 }
 
-void ModuleEditor::EndFrame(RendererBackendType backendType)
+void ModuleEditor::EndFrame(const RendererBackendType backendType)
 {
 	ImGui::Render();
 
@@ -297,17 +303,16 @@ void ModuleEditor::EndFrame(RendererBackendType backendType)
 
 			break;
 		}
-
-		case RendererBackendType::OPENGL:
-		{
-
-			break;
-		}
-		case RendererBackendType::DIRECTX:
-		{
-
-			break;
-		}
+		// case RendererBackendType::OPENGL:
+		// {
+		//
+		// 	break;
+		// }
+		// case RendererBackendType::DIRECTX:
+		// {
+		//
+		// 	break;
+		// }
 		default:
 		{
 
@@ -326,7 +331,7 @@ void ModuleEditor::AddEditorWindow(IEditorWindow* editorWindow)
 	editorWindows.push_back(editorWindow);
 }
 
-IEditorWindow* ModuleEditor::GetEditorWindowByName(std::string name)
+IEditorWindow* ModuleEditor::GetEditorWindowByName(const std::string& name)
 {
 	for (auto* w : editorWindows)
 	{
@@ -342,8 +347,8 @@ void ModuleEditor::OnEvent(const Event &event)
 	{
 		case EventType::INPUT_EVENT:
 		{
-			auto* sdlEvent = reinterpret_cast<SDL_Event*>(event.ctx.u64[0]);
-            ImGui_ImplSDL3_ProcessEvent(sdlEvent);
+			const SDL_Event* sdlEvent = static_cast<SDL_Event*>(event.ctx.ptr[0]);
+			ImGui_ImplSDL3_ProcessEvent(sdlEvent);
 			break;
 		}
 		case EventType::IMGUI_RECREATION:
@@ -376,7 +381,7 @@ RendererFrontend* ModuleEditor::GetRendererFrontend() const
     return mModuleRenderer3D->GetRendererFrontend();
 }
 
-ImFont *ModuleEditor::GetFont(size_t index) const
+ImFont *ModuleEditor::GetFont(const size_t index) const
 {
     if (index >= fonts.size())
     {

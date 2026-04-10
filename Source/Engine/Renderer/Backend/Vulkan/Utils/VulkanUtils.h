@@ -25,13 +25,13 @@ NOUS_ENGINE_API bool VkResultIsSuccess(VkResult result);
  */
 #define VK_CHECK(expr)					\
 {										\
-	NOUS_ASSERT(expr == VK_SUCCESS);	\
+	NOUS_ASSERT((expr) == VK_SUCCESS);	\
 }	
 
  /**
   * @brief Checks the given expression's return value against VK_SUCCESS.
   */
-static void VK_CHECK_IMGUI(VkResult expr)
+static void VK_CHECK_IMGUI(const VkResult expr)
 {
 	if (expr != VK_SUCCESS) 
 	{
@@ -46,7 +46,7 @@ static void VK_CHECK_IMGUI(VkResult expr)
   */
 #define VK_CHECK_MSG(expr, message)					\
 {													\
-	NOUS_ASSERT_MSG(expr == VK_SUCCESS, message);	\
+	NOUS_ASSERT_MSG((expr) == VK_SUCCESS, message);	\
 }
 
 #endif // VULKANUTILS_H

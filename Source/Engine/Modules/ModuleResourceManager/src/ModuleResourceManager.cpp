@@ -24,9 +24,12 @@
 
 #include <future>
 #include <parson.h>
+#include <ranges>
+#include <utility>
+
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
 ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
                                              IImporterManager* importerManager)
@@ -35,10 +38,7 @@ ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Mult
 	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
 
-ModuleResourceManager::~ModuleResourceManager()
-{
-
-}
+ModuleResourceManager::~ModuleResourceManager() = default;
 
 bool ModuleResourceManager::Awake()
 {
@@ -111,12 +111,16 @@ bool ModuleResourceManager::Start()
 	// runs after this module and drains TakePendingUploads().
 	NOUS_INFO("Queuing default checkerboard texture for GPU upload...");
 
-	const uint32 texDimension = 256;
-	const uint32 channels = 4;
-	const uint32 pixelCount = texDimension * texDimension;
-	const uint32 squareSize = 16;
+	constexpr uint32 texDimension = 256;
+	constexpr uint32 channels = 4;
+	constexpr uint32 pixelCount = texDimension * texDimension;
 
+	// Reserved UIDs for built-in fallback textures. Placed at the top of the uint32
+	// range so they cannot collide with randomly-generated asset UIDs in .meta files.
+	// These UIDs are what the descriptor lazy-write dedup (WriteInstanceSampler) keys
+	// off via Resource::GetUID(), so each fallback must be uniquely identifiable.
 	mDefaultTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mDefaultTexture->SetUID(INVALID_ID - 1);
 	mDefaultTexture->SetName("DefaultTexture");
 	mDefaultTexture->width        = texDimension;
 	mDefaultTexture->height       = texDimension;
@@ -127,33 +131,86 @@ bool ModuleResourceManager::Start()
 	{
 		for (uint32_t col = 0; col < texDimension; ++col)
 		{
-			const uint32_t indexBpp = ((row * texDimension) + col) * channels;
-			const bool isWhite = ((row / squareSize) % 2 == (col / squareSize) % 2);
+			constexpr uint32 squareSize = 16;
+			const uint32_t indexBpp = (row * texDimension + col) * channels;
+			const bool isWhite = row / squareSize % 2 == col / squareSize % 2;
 
 			mDefaultTexture->pixelData[indexBpp + 0] = isWhite ? 255 : 0;
 			mDefaultTexture->pixelData[indexBpp + 1] = isWhite ? 255 : 0;
-			mDefaultTexture->pixelData[indexBpp + 2] = isWhite ? 255 : 255;
+			mDefaultTexture->pixelData[indexBpp + 2] = 255;
 			mDefaultTexture->pixelData[indexBpp + 3] = 255;
 		}
 	}
 	mDefaultTexture->SetState(ResourceState::CPU_READY);
 
 	// -----------------------
+	// White Texture (CPU)
+	// -----------------------
+	// 1×1 pure-white (1,1,1,1). Neutral identity for multiplicative slots (specular
+	// strength, shininess, AO) — multiplying by 1 has no effect.
+	mWhiteTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mWhiteTexture->SetUID(INVALID_ID - 2);
+	mWhiteTexture->SetName("WhiteTexture");
+	mWhiteTexture->width        = 1;
+	mWhiteTexture->height       = 1;
+	mWhiteTexture->channelCount = 4;
+	mWhiteTexture->pixelData    = { 255, 255, 255, 255 };
+	mWhiteTexture->SetState(ResourceState::CPU_READY);
+
+	// -----------------------
+	// Black Texture (CPU)
+	// -----------------------
+	// 1×1 pure-black (0,0,0,1). Neutral identity for additive slots (emissive) —
+	// adding 0 has no effect.
+	mBlackTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mBlackTexture->SetUID(INVALID_ID - 3);
+	mBlackTexture->SetName("BlackTexture");
+	mBlackTexture->width        = 1;
+	mBlackTexture->height       = 1;
+	mBlackTexture->channelCount = 4;
+	mBlackTexture->pixelData    = { 0, 0, 0, 255 };
+	mBlackTexture->SetState(ResourceState::CPU_READY);
+
+	// -----------------------
+	// Flat Normal Texture (CPU)
+	// -----------------------
+	// 1×1 tangent-space flat normal (128,128,255,255). Decoded as (0,0,1) in [-1,1],
+	// which after TBN multiplication gives the unperturbed geometry normal. Using the
+	// white texture as a normal-map fallback would produce a 45° tilt instead.
+	mFlatNormalTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+	mFlatNormalTexture->SetUID(INVALID_ID - 4);
+	mFlatNormalTexture->SetName("FlatNormalTexture");
+	mFlatNormalTexture->width        = 1;
+	mFlatNormalTexture->height       = 1;
+	mFlatNormalTexture->channelCount = 4;
+	mFlatNormalTexture->pixelData    = { 128, 128, 255, 255 };
+	mFlatNormalTexture->SetState(ResourceState::CPU_READY);
+
+	// -----------------------
 	// Default Material (CPU)
 	// -----------------------
 	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
 	mDefaultMaterial->SetName("DefaultMaterial");
-	mDefaultMaterial->diffuseColor           = glm::vec4(1.0f);
-	mDefaultMaterial->diffuseMap.type        = TextureMapType::DIFFUSE;
-	mDefaultMaterial->diffuseMap.texture     = mDefaultTexture;
+	mDefaultMaterial->uniformValues["diffuseColor"]   = { UniformValueType::Vec4, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["emissiveColor"]  = { UniformValueType::Vec4, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["aoIntensity"]       = { UniformValueType::Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["normalStrength"]    = { UniformValueType::Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["specularIntensity"] = { UniformValueType::Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["shininessScale"]    = { UniformValueType::Float, glm::vec4(1.0f) };
+	mDefaultMaterial->textureMaps["diffuseSampler"].texture = mDefaultTexture;
 	mDefaultMaterial->SetState(ResourceState::CPU_READY);
 
-	// Push both to the upload queue.  Texture must come first so it is GPU_READY
-	// before the material upload runs (CreateMaterial samples from it).
+	// Push to the upload queue.  Textures must come before the material so they
+	// are GPU_READY before CreateMaterial samples from them.
 	{
-		std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
-		m_pendingUploads.emplace_back(ResourceType::TEXTURE,  mDefaultTexture);
-		m_pendingUploads.emplace_back(ResourceType::MATERIAL, mDefaultMaterial);
+		using enum ResourceType;
+
+		std::scoped_lock lock(m_pendingUploadsMutex);
+		m_pendingUploads.emplace_back(TEXTURE,  mDefaultTexture);
+		m_pendingUploads.emplace_back(TEXTURE,  mWhiteTexture);
+		m_pendingUploads.emplace_back(TEXTURE,  mBlackTexture);
+		m_pendingUploads.emplace_back(TEXTURE,  mFlatNormalTexture);
+		m_pendingUploads.emplace_back(MATERIAL, mDefaultMaterial);
 	}
 
 	return true;
@@ -233,7 +290,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 
 	ResourceType resourceType = Resource::GetTypeFromExtension(extension);
 
-	if (resourceType == ResourceType::UNKNOWN) 
+	if (resourceType == ResourceType::UNKNOWN)
 	{
 		// NOUS_ERROR("Import File ERROR: General --> Unsupported file extension: %s", extension.c_str());
 		return false;
@@ -251,10 +308,10 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 			// CASE 1: The file is in "Assets\\" and DOES NOT HAVE Meta File
 			// New Resource, Create Meta File
 
-			UID resourceUID = static_cast<uint32>(Random::Generate());
+			auto resourceUID = static_cast<uint32>(Random::Generate());
 			std::string libraryExtension = Resource::GetLibraryExtensionFromType(resourceType);
-			std::string libraryPath = Resource::GetLibraryDirectoryFromType(resourceType) +
-									  std::to_string(resourceUID);
+			std::string libraryPath = std::format("{}{}",
+				Resource::GetLibraryDirectoryFromType(resourceType),resourceUID);
 			if (!libraryExtension.empty())
 				libraryPath += "." + libraryExtension;
 
@@ -266,45 +323,15 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 			metaFileData.assetsPath = relativePath;
 			metaFileData.libraryPath = libraryPath;
 
-			if (!CreateMetaFile(metaFilePath, metaFileData)) 
+			if (!CreateMetaFile(metaFilePath, metaFileData))
 			{
 				NOUS_ERROR("Import File ERROR: CASE 1 --> Error creating meta file: %s", metaFilePath.c_str());
 				return false;
 			}
 
-			// Manage inside: Import Resource and Save into Library
 			mImporterManager->Import(metaFileData.resourceType, metaFileData);
-
-			// Here we finish importing the file, and we start creating the resource.
-
-			//CreateResource(metaFileData.assetsPath);
-
-			//Resource* resource = InstantiateResource(resourceType);
-
-			//if (resource != nullptr)
-			//{
-			//	resource->SetName(fileName);
-			//	resource->SetUID(resourceUID);
-			//	resource->SetType(resourceType);
-			//	resource->SetAssetsPath(relativePath);
-			//	resource->SetLibraryPath(libraryPath);
-			//}
-			//else
-			//{
-			//	NOUS_ERROR("Import File ERROR: CASE 1 --> Failed to Instantiate Resource. Returned nullptr.");
-			//	return false;
-			//}
-
-			//// Manage inside: Loading in memory & increase reference count. 
-			//// Manage inside: Retrieve resource name and assetspath from libraryfile.
-			//ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource);
-
-			//AddResource(metaFileData.uid, resource);
-
-			//// Push to render packet
-			//
 		}
-		else 
+		else
 		{
 			// CASE 2,3: The file is in "Assets\\" and HAS Meta File
 			// Retrieve data from Meta File
@@ -319,51 +346,10 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 
 			if (!NOUS_FileManager::Exists(metaFileData.libraryPath))
 			{
-				// DONE
 				// CASE 2: The file is in "Assets\\" and HAS Meta File but NO Library File
 				// Reimport to create library file with the same UID and data from meta file
 
-				// Manage inside: Import Resource and Save into Library
 				mImporterManager->Import(metaFileData.resourceType, metaFileData);
-
-				// Here we finish importing the file, and we start creating the resource.
-
-				//CreateResource(metaFileData.assetsPath);
-
-				//if (!ResourceExists(metaFileData.uid))
-				//{
-				//	// Create New Resource Into Scene
-				//	Resource* resource = InstantiateResource(resourceType);
-
-				//	if (resource != nullptr)
-				//	{
-				//		resource->SetName(metaFileData.name);
-				//		resource->SetUID(metaFileData.uid);
-				//		resource->SetType(metaFileData.resourceType);
-				//		resource->SetAssetsPath(metaFileData.assetsPath);
-				//		resource->SetLibraryPath(metaFileData.libraryPath);
-				//	}
-				//	else
-				//	{
-				//		NOUS_ERROR("Import File ERROR: CASE 2 --> Failed to Instantiate Resource. Returned nullptr.");
-				//		return false;
-				//	}
-
-				//	// Manage inside: Loading in memory & increase reference count. 
-				//	// Manage inside: Retrieve resource name and assetspath from libraryfile.
-				//	ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource);
-
-				//	AddResource(metaFileData.uid, resource);
-
-				//	// Push to render packet
-				//
-				//}
-				//else 
-				//{
-				//	// TODO
-				//	// Get Loaded Resource and Increase Reference Count
-				//	resources[metaFileData.uid]->IncreaseReferenceCount();
-				//}
 			}
 			else
 			{
@@ -374,9 +360,8 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 				namespace fs = std::filesystem;
 
 				const fs::file_time_type assetTime   = fs::last_write_time(metaFileData.assetsPath);
-				const fs::file_time_type libraryTime = GetLibraryTime(metaFileData.libraryPath);
 
-				if (assetTime > libraryTime)
+				if (const fs::file_time_type libraryTime = GetLibraryTime(metaFileData.libraryPath); assetTime > libraryTime)
 				{
 					NOUS_INFO_C(CURRENT_CHANNEL,
 						"[ImportFile] '%s' modified since last import — regenerating library binary.",
@@ -388,52 +373,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 			}
 		}
 	}
-	else if (fileDirectory.rfind("Library\\", 0) == 0)
-	{
-		// DONE
-		// CASE 4: The file is in "Library\\"
-		// Load the Library File
-
-		// Here we finish importing the file, and we start creating the resource.
-
-		//UID resourceUID = static_cast<UID>(std::stoul(fileName));
-
-		//if (!ResourceExists(resourceUID))
-		//{
-		//	// Create New Resource Into Scene
-		//	Resource* resource = InstantiateResource(resourceType);
-
-		//	if (resource != nullptr)
-		//	{
-		//		//resource->SetName(metaFileData.name);
-		//		resource->SetUID(resourceUID);
-		//		resource->SetType(resourceType);
-		//		//resource->SetAssetsPath(metaFileData.assetsPath);
-		//		resource->SetLibraryPath(path);
-		//	}
-		//	else
-		//	{
-		//		NOUS_ERROR("Import File ERROR: CASE 4 --> Failed to Instantiate Resource. Returned nullptr.");
-		//		return false;
-		//	}
-
-		//	// Manage inside: Loading in memory & increase reference count. 
-		//	// Manage inside: Retrieve resource name and assetspath from libraryfile.
-		//	ImporterManager::Load(resource->GetType(), resource->GetLibraryPath(), resource);
-
-		//	AddResource(resource->GetUID(), resource);
-
-		//	// Push to render packet
-		//
-		//}
-		//else
-		//{
-		//	// TODO
-		//	// Get Loaded Resource and Increase Reference Count
-		//	resources[resourceUID]->IncreaseReferenceCount();
-		//}
-	}
-	else 
+	else
 	{
 		// DONE
 		// CASE 0: The file is not in "Assets\\" nor "Library\\"
@@ -441,9 +381,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 
 		if (resourceType != ResourceType::UNKNOWN)
 		{
-			std::string newPath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension;
-
-			if (NOUS_FileManager::CopyFile(path, newPath))
+			if (std::string newPath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension; NOUS_FileManager::CopyFile(path, newPath))
 			{
 				ImportFile(newPath);
 			}
@@ -453,7 +391,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 				return false;
 			}
 		}
-		else 
+		else
 		{
 			NOUS_ERROR("Import File ERROR: CASE 0 --> Unsupported file extension: %s", extension.c_str());
 			return false;
@@ -465,7 +403,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 
 std::unordered_map<UID, Resource*> ModuleResourceManager::GetResourcesMap() const
 {
-	std::lock_guard<std::mutex> lock(resourcesMutex);
+	std::scoped_lock lock(resourcesMutex);
 	return resources;
 }
 
@@ -475,7 +413,7 @@ bool ModuleResourceManager::CreateMetaFile(const std::string& metaFilePath, cons
 
 	metaFile.AppendValue("Name", inFileData.name);
 	metaFile.AppendValue("UID", static_cast<double>(inFileData.uid));
-	metaFile.AppendValue("Resource Type", static_cast<int>(inFileData.resourceType));
+	metaFile.AppendValue("Resource Type", std::to_underlying(inFileData.resourceType));
 	metaFile.AppendValue("Assets Path", inFileData.assetsPath);
 	metaFile.AppendValue("Library Path", inFileData.libraryPath);
 
@@ -493,7 +431,10 @@ bool ModuleResourceManager::ReadMetaFile(const std::string& metaFilePath, MetaFi
 	}
 
 	// Variables to hold the intermediate values
-	std::string r_fileName, r_assetsPath, r_libraryPath;
+	std::string r_fileName;
+	std::string r_assetsPath;
+	std::string r_libraryPath;
+
 	int r_resourceType;
 	double r_resourceUID;
 
@@ -524,22 +465,24 @@ Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
 
 	switch (type)
 	{
-		case ResourceType::MESH:
+		using enum ResourceType;
+
+		case MESH:
 		{
 			resource = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
 			break;
 		}
-		case ResourceType::MATERIAL:
+		case MATERIAL:
 		{
 			resource = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
 			break;
 		}
-		case ResourceType::TEXTURE:
+		case TEXTURE:
 		{
 			resource = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
 			break;
 		}
-		case ResourceType::SHADER:
+		case SHADER:
 		{
 			resource = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
 			break;
@@ -552,13 +495,13 @@ Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
 
 void ModuleResourceManager::DeleteResource(Resource*& resource)
 {
-	UID uid = resource->GetUID();
+	const UID uid = resource->GetUID();
 
 	// Remove any sub-resource map entry that points to this UID.
 	// Must hold resourcesMutex — RequestOrCreateSubMeshResource reads/writes this
 	// map under the same lock from worker threads.
 	{
-		std::lock_guard<std::mutex> lock(resourcesMutex);
+		std::scoped_lock lock(resourcesMutex);
 		for (auto it = m_submeshUIDMap.begin(); it != m_submeshUIDMap.end(); )
 		{
 			if (it->second == uid)
@@ -570,22 +513,24 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 
 	switch (resource->GetType())
 	{
-		case ResourceType::MESH:
+		using enum ResourceType;
+
+		case MESH:
 		{
 			NOUS_DELETE(resource, MemoryTag::RESOURCE_MESH);
 			break;
 		}
-		case ResourceType::MATERIAL:
+		case MATERIAL:
 		{
 			NOUS_DELETE(resource, MemoryTag::RESOURCE_MATERIAL);
 			break;
 		}
-		case ResourceType::TEXTURE:
+		case TEXTURE:
 		{
 			NOUS_DELETE(resource, MemoryTag::RESOURCE_TEXTURE);
 			break;
 		}
-		case ResourceType::SHADER:
+		case SHADER:
 		{
 			NOUS_DELETE(resource, MemoryTag::RESOURCE_SHADER);
 			break;
@@ -598,9 +543,9 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 	// so the map is clean before we reach this point.
 }
 
-bool ModuleResourceManager::ResourceExists(const UID& uid)
+bool ModuleResourceManager::ResourceExists(const UID& uid) const
 {
-	return !(resources.find(uid) == resources.end());
+	return resources.contains(uid);
 }
 
 Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
@@ -608,7 +553,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 	NOUS_INFO("Creating Resource");
 	NOUS_INFO("Assets path: %s", assetsPath.c_str());
 
-	std::string metaFilePath = assetsPath + ".meta";
+	const std::string metaFilePath = assetsPath + ".meta";
 	NOUS_INFO("Looking for meta file: %s", metaFilePath.c_str());
 
 	MetaFileData metaFileData;
@@ -629,8 +574,8 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 	// We insert a nullptr placeholder under the lock, load outside it, then replace.
 	bool needsLoad = false;
 	{
-		std::lock_guard<std::mutex> lock(resourcesMutex);
-		if (resources.find(metaFileData.uid) == resources.end())
+		std::lock_guard lock(resourcesMutex);
+		if (!resources.contains(metaFileData.uid))
 		{
 			resources[metaFileData.uid] = nullptr; // claim slot; marks "in progress"
 			needsLoad = true;
@@ -647,7 +592,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 			NOUS_ERROR("CreateResource ERROR: Failed to instantiate resource of type %s.",
 					   Resource::GetLibraryExtensionFromType(metaFileData.resourceType).c_str());
 			// Remove the placeholder so the slot is available again.
-			std::lock_guard<std::mutex> lock(resourcesMutex);
+			std::scoped_lock lock(resourcesMutex);
 			resources.erase(metaFileData.uid);
 			return nullptr;
 		}
@@ -665,7 +610,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 		{
 			NOUS_ERROR("CreateResource ERROR: Failed to deserialize resource from library: %s",
 					   metaFileData.libraryPath.c_str());
-			std::lock_guard<std::mutex> lock(resourcesMutex);
+			std::scoped_lock lock(resourcesMutex);
 			resources.erase(metaFileData.uid);
 			return nullptr;
 		}
@@ -673,12 +618,12 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 		resource->SetState(ResourceState::CPU_READY);
 
 		{
-			std::lock_guard<std::mutex> lock(resourcesMutex);
+			std::scoped_lock lock(resourcesMutex);
 			resources[metaFileData.uid] = resource;
 		}
 
 		{
-			std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+			std::scoped_lock lock(m_pendingUploadsMutex);
 			m_pendingUploads.emplace_back(metaFileData.resourceType, resource);
 		}
 
@@ -691,58 +636,55 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 
 		return resource;
 	}
-	else
+	NOUS_INFO("Resource with UID %u already exists. Requesting existing instance...", metaFileData.uid);
+
+	// Spin-wait if another thread is still loading (slot is claimed but pointer is nullptr).
+	// The IncreaseReferenceCount MUST happen inside the same lock acquisition as the pointer
+	// read so EvictResource cannot free the object between the two operations.
+	Resource* existingResource = nullptr;
+	while (true)
 	{
-		NOUS_INFO("Resource with UID %u already exists. Requesting existing instance...", metaFileData.uid);
-
-		// Spin-wait if another thread is still loading (slot is claimed but pointer is nullptr).
-		// The IncreaseReferenceCount MUST happen inside the same lock acquisition as the pointer
-		// read so EvictResource cannot free the object between the two operations.
-		Resource* existingResource = nullptr;
-		while (true)
 		{
+			std::scoped_lock lock(resourcesMutex);
+			auto it = resources.find(metaFileData.uid);
+			if (it == resources.end())
 			{
-				std::lock_guard<std::mutex> lock(resourcesMutex);
-				auto it = resources.find(metaFileData.uid);
-				if (it == resources.end())
-				{
-					// Entry was evicted and erased from the map while we were waiting.
-					// Fall through to the creation path by returning nullptr here — the
-					// caller (CMaterial::Deserialize etc.) will re-try via CreateResource.
-					NOUS_WARN("Resource UID %u was evicted before we could acquire it; caller should retry.",
-					          metaFileData.uid);
-					return nullptr;
-				}
-				existingResource = it->second;
-				if (existingResource != nullptr)
-				{
-					// Bump refcount under the lock to close the eviction race window.
-					existingResource->IncreaseReferenceCount();
-					break;
-				}
+				// Entry was evicted and erased from the map while we were waiting.
+				// Fall through to the creation path by returning nullptr here — the
+				// caller (CMaterial::Deserialize etc.) will re-try via CreateResource.
+				NOUS_WARN("Resource UID %u was evicted before we could acquire it; caller should retry.",
+				          metaFileData.uid);
+				return nullptr;
 			}
-			NOUS_Multithreading::NOUS_Thread::SleepMS(1); // yield while other thread loads
+			existingResource = it->second;
+			if (existingResource != nullptr)
+			{
+				// Bump refcount under the lock to close the eviction race window.
+				existingResource->IncreaseReferenceCount();
+				break;
+			}
 		}
-
-		existingResource->Validate();
-
-		NOUS_INFO("Existing resource retrieved successfully (Name: %s, RefCount: %u).",
-				  existingResource->GetName().c_str(), existingResource->GetReferenceCount());
-		NOUS_INFO("========================================");
-
-		return existingResource;
+		NOUS_Multithreading::NOUS_Thread::SleepMS(1); // yield while other thread loads
 	}
+
+	existingResource->Validate();
+
+	NOUS_INFO("Existing resource retrieved successfully (Name: %s, RefCount: %u).",
+	          existingResource->GetName().c_str(), existingResource->GetReferenceCount());
+	NOUS_INFO("========================================");
+
+	return existingResource;
 }
 
-Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType type,
+Resource* ModuleResourceManager::CreateResourceFromLibrary(const UID uid, ResourceType type,
                                                             const std::string& name,
                                                             const std::string& assetsPath,
                                                             const std::string& libraryPath)
 {
 	bool needsLoad = false;
 	{
-		std::lock_guard<std::mutex> lock(resourcesMutex);
-		if (resources.find(uid) == resources.end())
+		std::scoped_lock lock(resourcesMutex);
+		if (!resources.contains(uid))
 		{
 			resources[uid] = nullptr; // claim slot
 			needsLoad = true;
@@ -754,7 +696,7 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType
 		Resource* resource = InstantiateResource(type);
 		if (!resource)
 		{
-			std::lock_guard<std::mutex> lock(resourcesMutex);
+			std::lock_guard lock(resourcesMutex);
 			resources.erase(uid);
 			return nullptr;
 		}
@@ -769,7 +711,7 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType
 		{
 			NOUS_ERROR("CreateResourceFromLibrary: failed to deserialize '%s' from '%s'", name.c_str(), libraryPath.c_str());
 			DeleteResource(resource);
-			std::lock_guard<std::mutex> lock(resourcesMutex);
+			std::scoped_lock lock(resourcesMutex);
 			resources.erase(uid);
 			return nullptr;
 		}
@@ -777,12 +719,12 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType
 		resource->SetState(ResourceState::CPU_READY);
 
 		{
-			std::lock_guard<std::mutex> lock(resourcesMutex);
+			std::scoped_lock lock(resourcesMutex);
 			resources[uid] = resource;
 		}
 
 		{
-			std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+			std::scoped_lock lock(m_pendingUploadsMutex);
 			m_pendingUploads.emplace_back(type, resource);
 		}
 
@@ -790,44 +732,43 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(UID uid, ResourceType
 		resource->Validate();
 		return resource;
 	}
-	else
+	Resource* existing = nullptr;
+	while (true)
 	{
-		Resource* existing = nullptr;
-		while (true)
 		{
+			std::scoped_lock lock(resourcesMutex);
+			auto it = resources.find(uid);
+			if (it == resources.end())
+				return nullptr; // evicted; caller should retry
+			existing = it->second;
+			if (existing != nullptr)
 			{
-				std::lock_guard<std::mutex> lock(resourcesMutex);
-				auto it = resources.find(uid);
-				if (it == resources.end())
-					return nullptr; // evicted; caller should retry
-				existing = it->second;
-				if (existing != nullptr)
-				{
-					existing->IncreaseReferenceCount(); // under lock — closes the eviction race
-					break;
-				}
+				existing->IncreaseReferenceCount(); // under lock — closes the eviction race
+				break;
 			}
-			NOUS_Multithreading::NOUS_Thread::SleepMS(1);
 		}
-		return existing;
+		NOUS_Multithreading::NOUS_Thread::SleepMS(1);
 	}
+	return existing;
 }
 
 ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
-    const std::string& libraryPath, int32_t submeshIndex)
+    const std::string& libraryPath, int32_t submeshIndex, const std::string& assetsPath)
 {
 	// Use hash(libraryPath) as a stable synthetic base UID for dedup.
-	const UID baseUID = static_cast<UID>(std::hash<std::string>{}(libraryPath) & 0xFFFFFFFF);
+	const auto baseUID = static_cast<UID>(std::hash<std::string>{}(libraryPath) & 0xFFFFFFFF);
 	const auto key = std::make_pair(baseUID, submeshIndex);
 
 	{
-		std::lock_guard<std::mutex> lock(resourcesMutex);
-		auto mapIt = m_submeshUIDMap.find(key);
-		if (mapIt != m_submeshUIDMap.end())
+		std::scoped_lock lock(resourcesMutex);
+		if (const auto mapIt = m_submeshUIDMap.find(key); mapIt != m_submeshUIDMap.end())
 		{
-			auto resIt = resources.find(mapIt->second);
-			if (resIt != resources.end() && resIt->second)
+			if (const auto resIt = resources.find(mapIt->second); resIt != resources.end() && resIt->second)
 			{
+				// Cache hit: back-fill assetsPath if the earlier caller didn't have it
+				// (e.g. GAME-mode load) but this caller does (EDITOR-mode scene load).
+				if (!assetsPath.empty() && resIt->second->GetAssetsPath().empty())
+					resIt->second->SetAssetsPath(assetsPath);
 				resIt->second->IncreaseReferenceCount();
 				return down_cast<ResourceMesh*>(resIt->second);
 			}
@@ -844,10 +785,12 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 	}
 
 	const SubMeshData& sub = hierarchy[static_cast<size_t>(submeshIndex)];
-	ResourceMesh* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
+	auto* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
 	mesh->SetName(sub.name);
 	mesh->SetType(ResourceType::MESH);
 	mesh->SetLibraryPath(libraryPath);
+	if (!assetsPath.empty())
+		mesh->SetAssetsPath(assetsPath);
 
 	mesh->vertices = sub.vertices;
 	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
@@ -855,16 +798,16 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 
 	UID uid;
 	{
-		std::lock_guard<std::mutex> lock(resourcesMutex);
+		std::lock_guard lock(resourcesMutex);
 		do { uid = static_cast<UID>(Random::Generate()); }
-		while (uid == 0 || resources.count(uid));
+		while (uid == 0 || resources.contains(uid));
 
 		resources[uid] = mesh;
 		m_submeshUIDMap[key] = uid;
 	}
 
 	{
-		std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+		std::lock_guard lock(m_pendingUploadsMutex);
 		m_pendingUploads.emplace_back(ResourceType::MESH, mesh);
 	}
 
@@ -887,7 +830,7 @@ bool ModuleResourceManager::UnloadResource(const UID& UID)
 	// destroy GPU resources mid-frame (between command recording and vkQueueSubmit).
 	if (tmpResource->GetReferenceCount() == 0)
 	{
-		std::lock_guard<std::mutex> lock(m_pendingReleasesMutex);
+		std::lock_guard lock(m_pendingReleasesMutex);
 		m_pendingReleases.emplace_back(tmpResource->GetType(), tmpResource);
 	}
 
@@ -896,8 +839,8 @@ bool ModuleResourceManager::UnloadResource(const UID& UID)
 
 Resource* ModuleResourceManager::RequestResource(const UID& uid)
 {
-	std::lock_guard<std::mutex> lock(resourcesMutex);
-	auto it = resources.find(uid);
+	std::lock_guard lock(resourcesMutex);
+	const auto it = resources.find(uid);
 	if (it == resources.end() || !it->second) return nullptr;
 	// Resource is already fully loaded (GPU data is valid). Just bump the ref count
 	// and return the existing pointer — do NOT re-call ImporterManager::Load, which
@@ -908,7 +851,7 @@ Resource* ModuleResourceManager::RequestResource(const UID& uid)
 
 void ModuleResourceManager::AddResource(const UID& uid, Resource*& resource)
 {
-	std::lock_guard<std::mutex> lock(resourcesMutex);  // Multi-threading
+	std::lock_guard lock(resourcesMutex);  // Multi-threading
 	resources[uid] = resource;
 }
 
@@ -917,7 +860,7 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
     // Destroy shaders FIRST — descriptor sets reference texture image views;
     // freeing textures first would leave dangling view references in the sets.
     // VUID-vkDestroyImageView-01026
-    for (auto& [uid, res] : resources)
+    for (auto& res : resources | std::views::values)
     {
         if (!res || res->GetType() != ResourceType::SHADER) continue;
         if (res->GetState() == ResourceState::GPU_READY)
@@ -928,17 +871,18 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
 
     // Materials next — destroy GPU handle, then clear the texture pointer directly
     // (do NOT call UnloadResource here; the texture will be destroyed in the next pass).
-    for (auto& [uid, res] : resources)
+    for (auto& res : resources | std::views::values)
     {
         if (!res || res->GetType() != ResourceType::MATERIAL) continue;
         if (res->GetState() == ResourceState::GPU_READY)
             gpu->DestroyMaterial(down_cast<ResourceMaterial*>(res));
-        down_cast<ResourceMaterial*>(res)->diffuseMap.texture = nullptr;
+        for (auto* mat = down_cast<ResourceMaterial*>(res); auto& map : mat->textureMaps | std::views::values)
+            map.texture = nullptr;
         NOUS_DELETE(res, MemoryTag::RESOURCE_MATERIAL);
     }
 
     // Textures
-    for (auto& [uid, res] : resources)
+    for (auto& res : resources | std::views::values)
     {
         if (!res || res->GetType() != ResourceType::TEXTURE) continue;
         if (res->GetState() == ResourceState::GPU_READY)
@@ -948,7 +892,7 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
     }
 
     // Meshes
-    for (auto& [uid, res] : resources)
+    for (auto& res : resources | std::views::values)
     {
         if (!res || res->GetType() != ResourceType::MESH) continue;
         if (res->GetState() == ResourceState::GPU_READY)
@@ -968,6 +912,30 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
         mDefaultTexture = nullptr;
     }
 
+    if (mWhiteTexture)
+    {
+        if (mWhiteTexture->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyTexture(mWhiteTexture);
+        NOUS_DELETE(mWhiteTexture, MemoryTag::RESOURCE_TEXTURE);
+        mWhiteTexture = nullptr;
+    }
+
+    if (mBlackTexture)
+    {
+        if (mBlackTexture->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyTexture(mBlackTexture);
+        NOUS_DELETE(mBlackTexture, MemoryTag::RESOURCE_TEXTURE);
+        mBlackTexture = nullptr;
+    }
+
+    if (mFlatNormalTexture)
+    {
+        if (mFlatNormalTexture->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyTexture(mFlatNormalTexture);
+        NOUS_DELETE(mFlatNormalTexture, MemoryTag::RESOURCE_TEXTURE);
+        mFlatNormalTexture = nullptr;
+    }
+
     if (mDefaultMaterial)
     {
         if (mDefaultMaterial->GetState() == ResourceState::GPU_READY)
@@ -977,14 +945,14 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
     }
 
     // Discard any stale queue entries — all resources are destroyed above.
-    { std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);  m_pendingUploads.clear(); }
-    { std::lock_guard<std::mutex> lock(m_pendingReleasesMutex); m_pendingReleases.clear(); }
+    { std::lock_guard lock(m_pendingUploadsMutex);  m_pendingUploads.clear(); }
+    { std::lock_guard lock(m_pendingReleasesMutex); m_pendingReleases.clear(); }
 }
 
 std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingUploads()
 {
     std::vector<std::pair<ResourceType, Resource*>> result;
-    std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+    std::scoped_lock lock(m_pendingUploadsMutex);
     std::swap(result, m_pendingUploads);
     return result;
 }
@@ -992,7 +960,7 @@ std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendi
 std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingReleases()
 {
     std::vector<std::pair<ResourceType, Resource*>> result;
-    std::lock_guard<std::mutex> lock(m_pendingReleasesMutex);
+    std::scoped_lock lock(m_pendingReleasesMutex);
     std::swap(result, m_pendingReleases);
     return result;
 }
@@ -1002,12 +970,12 @@ bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
     // Final refcount check + map erasure under the same lock so that a concurrent
     // CreateResource thread cannot bump the refcount between our check and the delete.
     {
-        std::lock_guard<std::mutex> lock(resourcesMutex);
+        std::lock_guard lock(resourcesMutex);
         if (resource->GetReferenceCount() > 0)
         {
             // Re-acquired since TakePendingReleases. ImporterManager::Release already
             // freed the GPU resources, so re-queue for upload to restore GPU state.
-            std::lock_guard<std::mutex> uploadLock(m_pendingUploadsMutex);
+            std::lock_guard uploadLock(m_pendingUploadsMutex);
             m_pendingUploads.emplace_back(type, resource);
             return false;
         }
@@ -1024,9 +992,33 @@ ResourceTexture *ModuleResourceManager::GetDefaultTexture() const
     return mDefaultTexture;
 }
 
+ResourceTexture *ModuleResourceManager::GetWhiteTexture() const
+{
+    return mWhiteTexture;
+}
+
+ResourceTexture *ModuleResourceManager::GetBlackTexture() const
+{
+    return mBlackTexture;
+}
+
+ResourceTexture *ModuleResourceManager::GetFlatNormalTexture() const
+{
+    return mFlatNormalTexture;
+}
+
 ResourceMaterial *ModuleResourceManager::GetDefaultMaterial() const
 {
     return mDefaultMaterial;
+}
+
+Resource* ModuleResourceManager::GetLoadedResource(const UID uid)
+{
+    std::lock_guard lock(resourcesMutex);
+    const auto it = resources.find(uid);
+    if (it == resources.end() || it->second == nullptr)
+        return nullptr;
+    return it->second;
 }
 
 bool ModuleResourceManager::GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData)
@@ -1049,12 +1041,10 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
 
     // Fast path: sub-resource already loaded this session.
     {
-        std::lock_guard<std::mutex> lock(resourcesMutex);
-        auto mapIt = m_submeshUIDMap.find(key);
-        if (mapIt != m_submeshUIDMap.end())
+        std::lock_guard lock(resourcesMutex);
+        if (const auto mapIt = m_submeshUIDMap.find(key); mapIt != m_submeshUIDMap.end())
         {
-            auto resIt = resources.find(mapIt->second);
-            if (resIt != resources.end() && resIt->second)
+            if (const auto resIt = resources.find(mapIt->second); resIt != resources.end() && resIt->second)
             {
                 resIt->second->IncreaseReferenceCount();
                 return down_cast<ResourceMesh*>(resIt->second);
@@ -1076,7 +1066,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
     const SubMeshData& sub = hierarchy[static_cast<size_t>(submeshIndex)];
 
     // Build the ResourceMesh.
-    ResourceMesh* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
+    auto* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
     mesh->SetName(sub.name);
     mesh->SetType(ResourceType::MESH);
     mesh->SetAssetsPath(assetsPath);
@@ -1089,16 +1079,16 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
     // Assign a unique UID, register in the resource map and the sub-resource map.
     UID uid;
     {
-        std::lock_guard<std::mutex> lock(resourcesMutex);
+        std::lock_guard lock(resourcesMutex);
         do { uid = static_cast<UID>(Random::Generate()); }
-        while (uid == 0 || resources.count(uid));
+        while (uid == 0 || resources.contains(uid));
 
         resources[uid]       = mesh;
         m_submeshUIDMap[key] = uid;
     }
 
     {
-        std::lock_guard<std::mutex> lock(m_pendingUploadsMutex);
+        std::lock_guard lock(m_pendingUploadsMutex);
         m_pendingUploads.emplace_back(ResourceType::MESH, mesh);
     }
 
@@ -1122,8 +1112,8 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
         return futures;
     }
 
-    JSON_Object* rootObj    = json_value_get_object(root);
-    JSON_Array*  gameObjects = json_object_get_array(rootObj, "GameObjects");
+    JSON_Object const* rootObj    = json_value_get_object(root);
+    JSON_Array const*  gameObjects = json_object_get_array(rootObj, "GameObjects");
 
     if (!gameObjects)
     {
@@ -1146,16 +1136,18 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
     const size_t goCount = json_array_get_count(gameObjects);
     for (size_t i = 0; i < goCount; ++i)
     {
-        JSON_Object* goObj     = json_array_get_object(gameObjects, i);
-        JSON_Array*  comps     = json_object_get_array(goObj, "components");
+        JSON_Object const* goObj     = json_array_get_object(gameObjects, i);
+        JSON_Array const*  comps     = json_object_get_array(goObj, "components");
         if (!comps) continue;
 
         const size_t compCount = json_array_get_count(comps);
         for (size_t j = 0; j < compCount; ++j)
         {
-            JSON_Object* compObj = json_array_get_object(comps, j);
-            const char*  type    = json_object_get_string(compObj, "type");
-            if (!type || std::strcmp(type, "CMesh") != 0) continue;
+            JSON_Object const* compObj = json_array_get_object(comps, j);
+
+            if (const char* type = json_object_get_string(compObj, "type");
+            	!type || std::strcmp(type, "CMesh") != 0)
+            	continue;
 
             const char* assetPath = json_object_get_string(compObj, "assetPath");
             if (!assetPath || assetPath[0] == '\0') continue;
@@ -1179,18 +1171,18 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
     // Submit one parallel Deserialize job per unique resource.
     futures.reserve(uniqueRequests.size());
 
-    for (const auto& [key, req] : uniqueRequests)
+    for (const auto& req : uniqueRequests | std::views::values)
     {
         auto prom = std::make_shared<std::promise<void>>();
         futures.push_back(prom->get_future());
 
-        jobSystem->SubmitJob([this, req, prom]()
+        jobSystem->SubmitJob([this, req, prom]
         {
             Resource* res = nullptr;
             if (req.submeshIndex >= 0)
             {
                 if (!req.libraryPath.empty())
-                    res = RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex);
+                    res = RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex, req.assetPath);
                 else
                     res = RequestOrCreateSubMeshResource(req.assetPath, req.submeshIndex);
             }
@@ -1217,24 +1209,3 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
 
     return futures;
 }
-
-//std::string ModuleResourceManager::GetLibraryPath(const std::string& assetsPath)
-//{
-//	JsonFile metaFile;
-//
-//	// Load the JSON file
-//	if (!metaFile.LoadFromFile((assetsPath + ".meta").c_str()))
-//	{
-//		return "";
-//	}
-//
-//	std::string libraryPath;
-//
-//	// Retrieve the value
-//	if (!metaFile.GetValue("Library Path", libraryPath))
-//	{
-//		return "";
-//	}
-//
-//	return libraryPath;
-//}

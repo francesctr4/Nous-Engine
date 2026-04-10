@@ -3,10 +3,14 @@
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include "Engine/Core/Logger/Asserts.h"
 
+#include <algorithm>
+#include <cmath>
 #include <filesystem>
 
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
@@ -14,7 +18,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_FRONTEND;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_FRONTEND;
 
 RendererFrontend::RendererFrontend()
 {
@@ -43,7 +47,7 @@ void RendererFrontend::InjectDependencies(
     m_resourceManager = resourceManager;
 }
 
-bool RendererFrontend::Initialize(RendererBackendType backendType)
+bool RendererFrontend::Initialize(const RendererBackendType backendType)
 {
 	mBackendType = backendType;
 
@@ -71,7 +75,7 @@ bool RendererFrontend::Initialize(RendererBackendType backendType)
 	return true;
 }
 
-void RendererFrontend::Shutdown()
+void RendererFrontend::Shutdown() const
 {
 	if (!mBackend) return;
 
@@ -83,25 +87,25 @@ void RendererFrontend::Shutdown()
 	mBackend->Destroy();
 }
 
-void RendererFrontend::ReleaseFrameResources() noexcept
+void RendererFrontend::ReleaseFrameResources() const noexcept
 {
     if (mBackend)
         mBackend->ReleaseFrameResources();
 }
 
-void RendererFrontend::OnResized(uint16_t width, uint16_t height)
+void RendererFrontend::OnResized(const uint16_t width, const uint16_t height) const
 {
 	mBackend->Resized(width, height);
 }
 
-FrameResult RendererFrontend::BeginFrame(float dt)
+FrameResult RendererFrontend::BeginFrame(const float dt) const
 {
 	return mBackend->BeginFrame(dt);
 }
 
-FrameResult RendererFrontend::EndFrame(float dt)
+FrameResult RendererFrontend::EndFrame(const float dt) const
 {
-	FrameResult result = mBackend->EndFrame(dt);
+	const FrameResult result = mBackend->EndFrame(dt);
 
 	if (result == FrameResult::SUCCESS)
 	{
@@ -111,7 +115,7 @@ FrameResult RendererFrontend::EndFrame(float dt)
 	return result;
 }
 
-FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
+FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 {
 	if (!packet || !packet->gameCamera)
 	{
@@ -126,9 +130,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 	}
 
 	// --- BEGIN FRAME ---
-	const FrameResult beginResult = BeginFrame(packet->deltaTime);
-
-	switch (beginResult)
+	switch (BeginFrame(packet->deltaTime))
 	{
 		case FrameResult::SUCCESS:
 			break;
@@ -144,27 +146,53 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 
 	bool success = true;
 
+	// Assembles the full GlobalUBO from camera + light data in the render packet.
+	auto MakeGlobalUBO = [&](const Camera* camera) -> GlobalUBO
+	{
+		GlobalUBO ubo{};
+		ubo.projection    = camera->GetProjectionMatrix();
+		ubo.view          = camera->GetViewMatrix();
+		ubo.viewPosition  = glm::vec4(camera->GetPos(), 0.f);
+		ubo.ambientColor  = glm::vec4(1.f, 1.f, 1.f, 0.1f);
+		ubo.directionalLight = packet->directionalLight;
+		ubo.lightCountAndPad.x = static_cast<int32_t>(packet->activePointLightCount);
+		std::copy_n(packet->pointLights,
+		          packet->activePointLightCount,
+		          ubo.pointLights);
+		ubo.time = glm::vec4(packet->totalTime,
+		                     std::sin(packet->totalTime),
+		                     std::cos(packet->totalTime),
+		                     packet->deltaTime);
+		return ubo;
+	};
+
 	// --- SCENE PASS (EDITOR mode only) ---
 	if (mRenderMode == RenderMode::EDITOR)
 	{
-		RenderpassType sceneRenderpass = RenderpassType::SCENE;
-		success &= ExecuteRenderpass(sceneRenderpass, [&]()
+		constexpr auto sceneRenderpass = RenderpassType::SCENE;
+		success &= ExecuteRenderpass(sceneRenderpass, [&]
 		{
 			success &= mBackend->DrawBackground(sceneRenderpass,
 				packet->editorCamera->GetProjectionMatrix(),
 				packet->editorCamera->GetViewMatrix());
 
-			success &= mBackend->UpdateGlobalWorldState(
-					sceneRenderpass,
-					packet->editorCamera->GetProjectionMatrix(),
-					packet->editorCamera->GetViewMatrix(),
-					packet->editorCamera->GetPos(),
-					glm::vec4(1.0f), 0);
-
+			// IMPORTANT: DrawGrid (and DrawBackground above) each call UpdateGlobal on
+			// their own shader, which rebinds set=0 to their own tiny UBO buffer. Because
+			// the set=0 layouts are structurally compatible (one UBO at binding 0) across
+			// all shaders in this pass, Vulkan PRESERVES the set=0 binding when pipelines
+			// switch. If UpdateGlobalWorldState runs before DrawGrid, the grid call will
+			// clobber the MaterialShader's set=0 binding, and subsequent DrawGeometry
+			// calls will read light data (offsets > 128 bytes) past the grid UBO's range
+			// — they see zeros, lights go dark. Run UpdateGlobalWorldState AFTER all
+			// scenery draws that manage their own set=0, so the last binding on the main
+			// command buffer is MaterialShader's full 720-byte GlobalUBO.
 			success &= mBackend->DrawGrid(
 					sceneRenderpass,
 					packet->editorCamera->GetProjectionMatrix(),
 					packet->editorCamera->GetViewMatrix());
+
+			success &= mBackend->UpdateGlobalWorldState(sceneRenderpass,
+				MakeGlobalUBO(packet->editorCamera));
 
 			for (auto& geometry : packet->geometries)
 			{
@@ -199,23 +227,29 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 					mCameraFrustums,
 					/*globalAlreadySet=*/ !mBoundingBoxes.empty());
 			}
+
+			if (!mPointLightDebugs.empty())
+			{
+				success &= mBackend->DrawPointLightDebugs(
+					sceneRenderpass,
+					packet->editorCamera->GetProjectionMatrix(),
+					packet->editorCamera->GetViewMatrix(),
+					mPointLightDebugs,
+					/*globalAlreadySet=*/ !mBoundingBoxes.empty() || !mCameraFrustums.empty());
+			}
 		});
 	}
 
 	// --- GAME PASS ---
-	RenderpassType gameRenderpass = RenderpassType::GAME;
-	success &= ExecuteRenderpass(gameRenderpass, [&]()
+	constexpr auto gameRenderpass = RenderpassType::GAME;
+	success &= ExecuteRenderpass(gameRenderpass, [&]
 	{
 		success &= mBackend->DrawBackground(gameRenderpass,
 			packet->gameCamera->GetProjectionMatrix(),
 			packet->gameCamera->GetViewMatrix());
 
-        success &= mBackend->UpdateGlobalWorldState(
-				gameRenderpass,
-				packet->gameCamera->GetProjectionMatrix(),
-				packet->gameCamera->GetViewMatrix(),
-				packet->gameCamera->GetPos(),
-				glm::vec4(1.0f), 0);
+        success &= mBackend->UpdateGlobalWorldState(gameRenderpass,
+            MakeGlobalUBO(packet->gameCamera));
 
 		for (auto& geometry : packet->geometries)
 		{
@@ -226,8 +260,8 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 	// --- UI PASS (EDITOR mode only) ---
 	if (mRenderMode == RenderMode::EDITOR)
 	{
-		RenderpassType uiRenderpass = RenderpassType::UI;
-		success &= ExecuteRenderpass(uiRenderpass, [&]()
+		constexpr auto uiRenderpass = RenderpassType::UI;
+		success &= ExecuteRenderpass(uiRenderpass, [&]
 		{
 			DrawEditor();
 		});
@@ -257,26 +291,26 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet)
 	return FrameResult::SUCCESS;
 }
 
-bool RendererFrontend::ExecuteRenderpass(RenderpassType type, const std::function<void()>& drawCommands)
+bool RendererFrontend::ExecuteRenderpass(RenderpassType pass, const std::function<void()>& drawCommands) const
 {
-	if (!mBackend->BeginRenderpass(type))
+	if (!mBackend->BeginRenderpass(pass))
 	{
-		NOUS_ERROR_C(CURRENT_CHANNEL, "Begin Renderpass with type (%d) failed!", static_cast<int>(type));
+		NOUS_ERROR_C(CURRENT_CHANNEL, "Begin Renderpass with type (%d) failed!", static_cast<int>(pass));
 		return false;
 	}
 
 	drawCommands();
 
-	if (!mBackend->EndRenderpass(type))
+	if (!mBackend->EndRenderpass(pass))
 	{
-		NOUS_ERROR_C(CURRENT_CHANNEL, "End Renderpass with type (%d) failed!", static_cast<int>(type));
+		NOUS_ERROR_C(CURRENT_CHANNEL, "End Renderpass with type (%d) failed!", static_cast<int>(pass));
 		return false;
 	}
 
 	return true;
 }
 
-void RendererFrontend::DrawEditor()
+void RendererFrontend::DrawEditor() const
 {
     if (mEditorOverlay)
     {
@@ -304,7 +338,7 @@ void RendererFrontend::DestroyMaterial(ResourceMaterial* material)
 	mBackend->DestroyMaterial(material);
 }
 
-bool RendererFrontend::CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices, uint32_t indexCount, const uint32_t* indices, ResourceMesh* outGeometry)
+bool RendererFrontend::CreateGeometry(const uint32_t vertexCount, const Vertex3D* vertices, const uint32_t indexCount, const uint32_t* indices, ResourceMesh* outGeometry)
 {
 	return mBackend->CreateGeometry(vertexCount, vertices, indexCount, indices, outGeometry);
 }
@@ -350,7 +384,7 @@ void RendererFrontend::FlushPendingReloads()
         if (resource->GetType() != ResourceType::SHADER)
             continue;
 
-        auto* shader = static_cast<ResourceShader*>(resource);
+        auto* shader = down_cast<ResourceShader*>(resource);
         const std::string normalized =
             std::filesystem::path(shader->GetAssetsPath()).generic_string();
         DispatchCompileJob(normalized, shader);
@@ -362,7 +396,7 @@ void RendererFrontend::FlushCompletedReloads()
     // Drain the ready queue under the lock, then release it before doing GPU work.
     std::vector<PendingGPUSwap> toApply;
     {
-        std::lock_guard<std::mutex> lock(m_swapQueueMutex);
+        std::lock_guard lock(m_swapQueueMutex);
         if (m_readySwaps.empty()) return;
         toApply = std::move(m_readySwaps);
         m_readySwaps.clear();
@@ -402,26 +436,50 @@ void RendererFrontend::FlushCompletedReloads()
     }
 }
 
+void RendererFrontend::RequestMaterialShaderChange(ResourceMaterial* material,
+                                                    ResourceShader* newShader)
+{
+    std::lock_guard lock(m_reslotMutex);
+    m_pendingReslots.push_back({material, newShader});
+}
+
+void RendererFrontend::FlushPendingReslots()
+{
+    std::vector<PendingReslot> pending;
+    {
+        std::lock_guard lock(m_reslotMutex);
+        pending.swap(m_pendingReslots);
+    }
+
+    for (auto& [mat, newShader] : pending)
+    {
+        mBackend->DestroyMaterial(mat);
+        mat->shader    = newShader;
+        mat->shaderUID = newShader ? newShader->GetUID() : INVALID_ID;
+        NOUS_ASSERT(mBackend->CreateMaterial(mat));
+    }
+}
+
 void RendererFrontend::DispatchCompileJob(const std::string& path, ResourceShader* shader)
 {
     {
-        std::lock_guard<std::mutex> lock(m_swapQueueMutex);
-        if (m_inFlightPaths.count(path))
+        std::lock_guard lock(m_swapQueueMutex);
+        if (m_inFlightPaths.contains(path))
             return;  // compile already in-flight for this path — skip duplicate
         m_inFlightPaths.insert(path);
     }
 
     m_inFlightJobCount.fetch_add(1, std::memory_order_relaxed);
 
-    m_jobSystem->SubmitJob([this, path, shader]()
+    m_jobSystem->SubmitJob([this, path, shader]
     {
-        NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Compiling '%s'...", path.c_str());
+        NOUS_INFO_C(CURRENT_CHANNEL, "[RendererFrontend::DispatchCompileJob] Compiling '%s'...", path.c_str());
 
         const ShaderCompilerConfig config;
         ShaderLoadResult result = NOUS_ShaderSystem::LoadShaderFromFile(path, config);
 
         {
-            std::lock_guard<std::mutex> lock(m_swapQueueMutex);
+            std::lock_guard lock(m_swapQueueMutex);
             m_inFlightPaths.erase(path);
 
             if (result.success)
@@ -430,7 +488,7 @@ void RendererFrontend::DispatchCompileJob(const std::string& path, ResourceShade
             }
             else
             {
-                NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Compile failed for '%s': %s",
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[RendererFrontend::DispatchCompileJob] Compile failed for '%s': %s",
                              path.c_str(), result.errorMessage.c_str());
                 if (result.shader)
                     NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
@@ -460,7 +518,7 @@ bool RendererFrontend::ReloadShaderByPath(const std::string& path)
         if (normalizedIncoming != normalizedStored)
             continue;
 
-        auto* shader = static_cast<ResourceShader*>(resource);
+        auto* shader = down_cast<ResourceShader*>(resource);
         DispatchCompileJob(normalizedIncoming, shader);
         return true;  // job dispatched (shader found)
     }
@@ -469,9 +527,9 @@ bool RendererFrontend::ReloadShaderByPath(const std::string& path)
     return false;
 }
 
-uint32_t RendererFrontend::PickObjectAt(int32_t pixelX, int32_t pixelY,
+uint32_t RendererFrontend::PickObjectAt(const int32_t pixelX, const int32_t pixelY,
                                         const glm::mat4& projection, const glm::mat4& view,
-                                        const std::vector<GeometryRenderData>& geometries)
+                                        const std::vector<GeometryRenderData>& geometries) const
 {
     if (!mBackend || geometries.empty())
         return 0;
@@ -498,12 +556,17 @@ void RendererFrontend::SetCameraFrustums(const std::vector<CameraFrustumData>& f
 	mCameraFrustums = frustums;
 }
 
+void RendererFrontend::SetPointLightDebugs(const std::vector<BoundingBoxData>& lightDebugs)
+{
+	mPointLightDebugs = lightDebugs;
+}
+
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)
 {
     mEditorOverlay = overlay;
 }
 
-void RendererFrontend::SetRenderMode(RenderMode mode) noexcept
+void RendererFrontend::SetRenderMode(const RenderMode mode) noexcept
 {
     // Stored locally; forwarded to VulkanContext inside Initialize() after backend Create().
     mRenderMode = mode;
@@ -519,7 +582,7 @@ RendererBackendType RendererFrontend::GetBackendType() const noexcept
     return mBackendType;
 }
 
-void RendererFrontend::SetBackendType(RendererBackendType backendType) noexcept
+void RendererFrontend::SetBackendType(const RendererBackendType backendType) noexcept
 {
     mBackendType = backendType;
 }

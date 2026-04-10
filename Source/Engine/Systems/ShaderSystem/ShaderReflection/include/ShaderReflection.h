@@ -13,4 +13,4 @@ namespace NOUS_ShaderSystem
         const std::vector<ShaderReflectionResult>& stages);
 }
 
-#endif //NOUS_ENGINE_SHADERREFLECTION_H
+#endif //NOUS_ENGINE_SHADER_REFLECTION_H

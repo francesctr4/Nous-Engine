@@ -3,6 +3,7 @@
 
 #include <format>
 #include <cmath> // Required for LINUX GCC
+#include <chrono>
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Scripting/ScriptManager.h"
@@ -27,9 +28,64 @@ AssetsBrowser::AssetsBrowser(const char* title, EditorContext* context, bool sta
     Init();
 }
 
+AssetsBrowser::~AssetsBrowser()
+{
+    StopDirectoryWatcher();
+}
+
 void AssetsBrowser::Init()
 {
     AddItemsFromDirectory(current_directory);
+    StartDirectoryWatcher();
+}
+
+void AssetsBrowser::StartDirectoryWatcher()
+{
+    if (m_pollThread.joinable())
+        return;
+
+    m_pollThreadStop.store(false);
+    m_pollThread = std::thread([this]()
+    {
+        using namespace std::chrono_literals;
+        std::filesystem::file_time_type last{};
+        std::string currentWatched;
+
+        while (!m_pollThreadStop.load(std::memory_order_relaxed))
+        {
+            {
+                std::lock_guard<std::mutex> lk(m_watchedDirMutex);
+                if (m_watchedDir != currentWatched)
+                {
+                    currentWatched = m_watchedDir;
+                    last = {}; // baseline reset on navigation, first stat won't fire
+                }
+            }
+
+            if (!currentWatched.empty())
+            {
+                std::error_code ec;
+                auto writeTime = std::filesystem::last_write_time(currentWatched, ec);
+                if (!ec && writeTime != last)
+                {
+                    if (last != std::filesystem::file_time_type{})
+                        m_dirChanged.store(true, std::memory_order_release);
+                    last = writeTime;
+                }
+            }
+
+            // Sleep in small slices so shutdown is responsive (~50ms latency max).
+            for (int i = 0; i < 10 && !m_pollThreadStop.load(std::memory_order_relaxed); ++i)
+                std::this_thread::sleep_for(50ms);
+        }
+    });
+}
+
+void AssetsBrowser::StopDirectoryWatcher()
+{
+    m_pollThreadStop.store(true);
+    if (m_pollThread.joinable())
+        m_pollThread.join();
 }
 
 // Logic would be written in the main code BeginChild() and outputing to local variables.
@@ -78,7 +134,6 @@ void AssetsBrowser::UpdateLayoutSizes(float avail_width)
     LayoutSelectableSpacing = NOUS_MathUtils::MAX(floorf(LayoutItemSpacing) - IconHitSpacing, 0.0f);
     LayoutOuterPadding = floorf(LayoutItemSpacing * 0.5f);
 }
-#include <filesystem>
 
 int DetermineTypeFromDirectory(const std::string& directory_name) {
     if (directory_name == "Textures") 
@@ -102,6 +157,11 @@ int DetermineTypeFromDirectory(const std::string& directory_name) {
 void AssetsBrowser::AddItemsFromDirectory(const std::string& directoryPath)
 {
     Items.clear();
+
+    {
+        std::lock_guard<std::mutex> lk(m_watchedDirMutex);
+        m_watchedDir = directoryPath;
+    }
 
     for (const auto& entry : std::filesystem::directory_iterator(directoryPath))
     {
@@ -161,8 +221,14 @@ ExampleAsset* AssetsBrowser::GetItemByID(ImGuiID ID)
 
 void AssetsBrowser::Draw()
 {
-    if (*p_open) 
+    if (*p_open)
     {
+        // Drain the directory-change signal from the dedicated watcher thread.
+        // The thread polls last_write_time off the main thread (important for
+        // OneDrive paths, where the stat can stall for seconds).
+        if (m_dirChanged.exchange(false, std::memory_order_acquire))
+            AddItemsFromDirectory(current_directory);
+
         ImGui::SetNextWindowSize(ImVec2(IconSize * 25, IconSize * 15), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin(title, p_open, ImGuiWindowFlags_MenuBar))
         {
@@ -585,7 +651,7 @@ void AssetsBrowser::Draw()
                                 ImU32 label_col = ImGui::GetColorU32(item_is_selected ? ImGuiCol_Text : ImGuiCol_TextDisabled);
 
                                 // Calculate the position for the label (below the icon box)
-                                ImVec2 label_pos = ImVec2(pos.x, pos.y + LayoutItemSize.y + 4);  // Adjust vertical position
+                                auto label_pos = ImVec2(pos.x, pos.y + LayoutItemSize.y + 4);  // Adjust vertical position
 
                                 // Render text with a smaller font
                                 ImGui::PushFont(editorContext->GetFont(1)); // Use smaller font for title
@@ -629,7 +695,7 @@ void AssetsBrowser::Draw()
                 show_create_script_popup = false;
             }
 
-            if (ImGui::BeginPopupModal("Create New Script", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+            if (ImGui::BeginPopupModal("Create New Script", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
             {
                 ImGui::Text("Create a new script in: %s", script_creation_path.c_str());
                 ImGui::Spacing();
@@ -705,19 +771,19 @@ void AssetsBrowser::Draw()
                     // FIXME: Locking aiming on 'hovered_item_idx' (with a cool-down timer) would ensure zoom keeps on it.
                     const float hovered_item_nx = (io.MousePos.x - start_pos.x + LayoutItemSpacing * 0.5f) / LayoutItemStep.x;
                     const float hovered_item_ny = (io.MousePos.y - start_pos.y + LayoutItemSpacing * 0.5f) / LayoutItemStep.y;
-                    const int hovered_item_idx = ((int)hovered_item_ny * LayoutColumnCount) + (int)hovered_item_nx;
+                    const int hovered_item_idx = (static_cast<int>(hovered_item_ny) * LayoutColumnCount) + (int)hovered_item_nx;
                     //ImGui_Temp::SetTooltip("%f,%f -> item %d", hovered_item_nx, hovered_item_ny, hovered_item_idx); // Move those 4 lines in block above for easy debugging
 
                     // Zoom
-                    IconSize *= powf(1.1f, (float)(int)ZoomWheelAccum);
+                    IconSize *= powf(1.1f, static_cast<float>(static_cast<int>(ZoomWheelAccum)));
                     IconSize = std::clamp(IconSize, 16.0f, 128.0f);
-                    ZoomWheelAccum -= (int)ZoomWheelAccum;
+                    ZoomWheelAccum -= static_cast<int>(ZoomWheelAccum);
                     UpdateLayoutSizes(avail_width);
 
                     // Manipulate scroll to that we will land at the same Y location of currently hovered item.
                     // - Calculate next frame position of item under mouse
                     // - Set new scroll position to be used in next ImGui_Temp::BeginChild() call.
-                    float hovered_item_rel_pos_y = ((float)(hovered_item_idx / LayoutColumnCount) + fmodf(hovered_item_ny, 1.0f)) * LayoutItemStep.y;
+                    float hovered_item_rel_pos_y = (static_cast<float>(hovered_item_idx / LayoutColumnCount) + fmodf(hovered_item_ny, 1.0f)) * LayoutItemStep.y;
                     hovered_item_rel_pos_y += ImGui::GetStyle().WindowPadding.y;
                     float mouse_local_y = io.MousePos.y - ImGui::GetWindowPos().y;
                     ImGui::SetScrollY(hovered_item_rel_pos_y - mouse_local_y);
@@ -726,7 +792,7 @@ void AssetsBrowser::Draw()
         }
         ImGui::EndChild();
 
-        ImGui::Text("Selected: %d/%llu items", Selection.Size, (unsigned long long)Items.size());
+        ImGui::Text("Selected: %d/%llu items", Selection.Size, static_cast<unsigned long long>(Items.size()));
         ImGui::End();
     }
 }

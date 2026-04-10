@@ -1,9 +1,8 @@
 #include "Engine/Systems/ShaderSystem/ShaderParser/include/ShaderParser.h"
 #include "Engine/Core/Logger/Logger.h"
-
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
-
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
+
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 // ShaderParser.cpp
 static ShaderStage ParseStageName(const std::string& name)
@@ -24,7 +23,7 @@ NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::s
 
     ParseResult result;
 
-    const std::string token = "#pragma stage ";
+    constexpr std::string_view token = "#pragma stage ";
 
     struct StageEntry
     {
@@ -38,14 +37,14 @@ NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::s
     size_t pos = 0;
     while ((pos = fullSource.find(token, pos)) != std::string::npos)
     {
-        size_t lineEnd = fullSource.find('\n', pos);
+        const size_t lineEnd = fullSource.find('\n', pos);
         std::string stageName = fullSource.substr(pos + token.size(),
                                                   lineEnd - pos - token.size());
 
         // Trim whitespace/CR
         stageName.erase(stageName.find_last_not_of(" \t\r\n") + 1);
 
-        ShaderStage stage = ParseStageName(stageName);
+        const ShaderStage stage = ParseStageName(stageName);
         if (stage == ShaderStage::Unknown)
         {
             result.errorMessage = "ParseShaderStages: unknown stage '" + stageName + "'";
@@ -68,7 +67,7 @@ NOUS_ShaderSystem::ParseResult NOUS_ShaderSystem::ParseShaderStages(const std::s
     for (size_t i = 0; i < stagePositions.size(); ++i)
     {
         const size_t start = stagePositions[i].contentStart;
-        const size_t end   = (i + 1 < stagePositions.size())
+        const size_t end   = i + 1 < stagePositions.size()
                            ? stagePositions[i + 1].pragmaStart
                            : fullSource.size();
 

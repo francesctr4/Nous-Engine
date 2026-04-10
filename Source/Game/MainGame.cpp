@@ -11,7 +11,7 @@
 #include <string>
 #include <filesystem>
 
-enum class GameState
+enum class GameState : uint8_t
 {
     Creation,
     Start,
@@ -20,7 +20,7 @@ enum class GameState
     Exit,
 };
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MAIN;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MAIN;
 
 struct GameConfig
 {
@@ -47,8 +47,7 @@ static GameConfig LoadGameConfig(const char* argv0)
     if (const char* scene = json_object_get_string(obj, "startScene"))
         cfg.startScene = scene;
 
-    const double fps = json_object_get_number(obj, "targetFPS");
-    if (fps > 0.0)
+    if (const double fps = json_object_get_number(obj, "targetFPS"); fps > 0.0)
         cfg.targetFPS = static_cast<float>(fps);
 
     json_value_free(root);
@@ -72,7 +71,7 @@ int main(int argc, char** argv)
     NOUS_INFO_C(CURRENT_CHANNEL, "Starting GameApp '%s'...", TITLE);
 
     int mainReturn = EXIT_FAILURE;
-    GameState state = GameState::Creation;
+    auto state = GameState::Creation;
     Application* App = nullptr;
     GameConfig cfg;
 

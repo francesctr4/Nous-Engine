@@ -454,6 +454,13 @@ void ScriptManager::RecreateAllInstances()
         if (cs) cs->RecreateInstances();
 }
 
+void ScriptManager::StartAllInstances()
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+        if (cs) cs->StartInstances();
+}
+
 void ScriptManager::CleanupScripts()
 {
     std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);

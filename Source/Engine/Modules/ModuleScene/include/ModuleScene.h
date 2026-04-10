@@ -5,7 +5,6 @@
 #include "Engine/EngineExport.h"
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include <string>
-#include <vector>
 #include <atomic>
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
@@ -19,7 +18,7 @@ class ScriptManager;
 class ModuleInput;
 class ModuleResourceManager;
 
-enum class SimulationState { STOPPED, PLAYING, PAUSED };
+enum class SimulationState : uint8_t { STOPPED, PLAYING, PAUSED };
 
 class ModuleScene : public Module, public IEventListener
 {
@@ -30,7 +29,7 @@ public:
 		ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager);
 
 	// Destructor
-	virtual ~ModuleScene();
+	~ModuleScene() override;
 
 	bool Awake() override;
 	bool Start() override;
@@ -48,22 +47,31 @@ public:
 	NOUS_ENGINE_API void LoadSceneAsync(const std::string& path);
 	NOUS_ENGINE_API void ClearScene();
 
+	// Clears the active scene and resets its tracked path so the next save
+	// will require a target path (i.e. Save As...).
+	NOUS_ENGINE_API void NewScene(const std::string& name = "Untitled Scene");
+
+	// Returns the path of the scene currently loaded/saved, or empty string
+	// if the active scene has never been persisted.
+	NOUS_ENGINE_API const std::string& GetCurrentScenePath() const { return m_currentScenePath; }
+	NOUS_ENGINE_API bool                HasCurrentScenePath() const { return !m_currentScenePath.empty(); }
+
 	// Instantiates a .nprefab file into the active scene, optionally under parentGO.
 	// Returns the root of the instantiated prefab, or nullptr on failure.
-	NOUS_ENGINE_API GameObject* InstantiatePrefab(const std::string& path, GameObject* parentGO = nullptr);
+	NOUS_ENGINE_API GameObject* InstantiatePrefab(const std::string& path, GameObject* parentGO = nullptr) const;
 
 	// Creates a root GameObject + one child GO per submesh for the given mesh
 	// asset.  Each child has CTransform (from the node's local transform),
 	// CMesh (individual submesh resource), and default CMaterial.
 	// Safe to call from a job thread via CreateGameObjectDetached + RegisterGameObject.
-	NOUS_ENGINE_API void SpawnMeshAsHierarchy(const std::string& assetsPath);
+	NOUS_ENGINE_API void SpawnMeshAsHierarchy(const std::string& assetsPath) const;
 
 	// ---------------------------------------------------------------------------
 	// Simulation controls
 	// ---------------------------------------------------------------------------
 	NOUS_ENGINE_API void SetSnapshotEnabled(bool enabled) { m_snapshotEnabled = enabled; }
 
-	NOUS_ENGINE_API void RecompileScripts();
+	NOUS_ENGINE_API void RecompileScripts() const;
 
 	NOUS_ENGINE_API void PressPlay();   // STOPPED → PLAYING
 	NOUS_ENGINE_API void PressStop();   // PLAYING/PAUSED → STOPPED (restores scene snapshot)
@@ -105,10 +113,11 @@ private:
 	std::atomic<bool> m_pendingPrefabRefresh = false;  // set by LoadSceneAsync job, consumed in PreUpdate() on main thread
 	std::atomic<bool> m_isLoadingScene       = false;  // true while a LoadSceneAsync job is in flight; guards re-entrancy
 	std::string     m_snapshotPath     = "Library/_simulation_snapshot.nous";
+	std::string     m_currentScenePath;  // empty = unsaved; set by LoadScene/SaveScene
 
 	// After a scene is deserialized, re-instantiates any GO that carries a CPrefab
 	// component from its source .nprefab file, replacing stale inline children.
-	void RefreshPrefabInstances();
+	void RefreshPrefabInstances() const;
 
 	/**
 	 * @brief Ensures at least one GameObject with a main CCamera exists in the
@@ -118,7 +127,7 @@ private:
 	 * Called at the end of every LoadScene job so that scenes saved before the
 	 * CCamera system existed automatically get a camera on load.
 	 */
-	void EnsureMainCamera();
+	void EnsureMainCamera() const;
 };
 
 #endif // MODULESCENE_H

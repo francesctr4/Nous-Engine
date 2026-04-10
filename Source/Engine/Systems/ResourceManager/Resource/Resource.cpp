@@ -1,5 +1,6 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include <unordered_map>
+#include <utility>
 
 #pragma region UTILITY MAPS
 
@@ -166,7 +167,7 @@ std::string Resource::GetLibraryPath() const
 
 int16 Resource::GetIndexFromType(const ResourceType& type)
 {
-	return static_cast<int16>(std::to_underlying(type));
+	return std::to_underlying(type);
 }
 
 std::string Resource::GetLibraryExtensionFromType(const ResourceType type)

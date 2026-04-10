@@ -22,7 +22,7 @@
 #define LOG_TRACE_ENABLED 0
 #endif // _DEBUG
 
-typedef enum LogLevel {
+typedef enum LogLevel : int8_t {
 
 	NONE = -1,
 

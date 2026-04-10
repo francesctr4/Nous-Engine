@@ -6,6 +6,7 @@ target_sources(ECS PRIVATE
 )
 
 add_subdirectory(CCamera)
+add_subdirectory(CLight)
 add_subdirectory(CMaterial)
 add_subdirectory(CMesh)
 add_subdirectory(CPrefab)

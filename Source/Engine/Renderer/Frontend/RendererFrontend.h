@@ -35,7 +35,7 @@ class RendererFrontend : public IGPUResourceFactory
 {
 public:
     NOUS_ENGINE_API RendererFrontend();
-	NOUS_ENGINE_API ~RendererFrontend();
+	NOUS_ENGINE_API ~RendererFrontend() override;
 
 	// ---------------------------------------------------------------------
 	// Dependency Injection (call before Initialize)
@@ -50,14 +50,14 @@ public:
 	// Lifecycle
 	// ---------------------------------------------------------------------
 	[[nodiscard]] NOUS_ENGINE_API bool Initialize(RendererBackendType backendType);
-	NOUS_ENGINE_API void Shutdown();
-	NOUS_ENGINE_API void ReleaseFrameResources() noexcept;
-	NOUS_ENGINE_API void OnResized(uint16_t width, uint16_t height);
+	NOUS_ENGINE_API void Shutdown() const;
+	NOUS_ENGINE_API void ReleaseFrameResources() const noexcept;
+	NOUS_ENGINE_API void OnResized(uint16_t width, uint16_t height) const;
 
 	// ---------------------------------------------------------------------
 	// Rendering
 	// ---------------------------------------------------------------------
-	[[nodiscard]] NOUS_ENGINE_API enum FrameResult DrawFrame(RenderPacket* packet);
+	[[nodiscard]] NOUS_ENGINE_API enum FrameResult DrawFrame(RenderPacket* packet) const;
 
 	// ---------------------------------------------------------------------
 	// GPU Resource Management
@@ -79,6 +79,16 @@ public:
 	// Safe to call from inside a renderpass (e.g. UI/menu callbacks) — the actual
 	// reload is deferred and executed on the next call to FlushPendingReloads().
 	NOUS_ENGINE_API void ReloadAllShaders();
+
+	// Queue a material shader change to be processed at the start of the next PreUpdate.
+	// Safe to call from the Inspector (ImGui callback) — the actual GPU work (DestroyMaterial +
+	// CreateMaterial) happens between frames in FlushPendingReslots().
+	NOUS_ENGINE_API void RequestMaterialShaderChange(ResourceMaterial* material,
+	                                                 ResourceShader* newShader);
+
+	// Drain the reslot queue: DestroyMaterial + reassign shader + CreateMaterial for each entry.
+	// Called from ModuleRenderer3D::PreUpdate after FlushCompletedReloads.
+	NOUS_ENGINE_API void FlushPendingReslots();
 
 	// Execute any queued reload requests. Dispatches async compile jobs to the
 	// JobSystem — returns immediately, no GPU work done here.
@@ -109,7 +119,7 @@ public:
 	 */
 	NOUS_ENGINE_API uint32_t PickObjectAt(int32_t pixelX, int32_t pixelY,
 										  const glm::mat4& projection, const glm::mat4& view,
-										  const std::vector<GeometryRenderData>& geometries);
+										  const std::vector<GeometryRenderData>& geometries) const;
 
 	// ---------------------------------------------------------------------
 	// Object Outlining
@@ -154,6 +164,17 @@ public:
 	NOUS_ENGINE_API void SetCameraFrustums(const std::vector<CameraFrustumData>& frustums);
 
 	// ---------------------------------------------------------------------
+	// Point Light Debug Spheres
+	// ---------------------------------------------------------------------
+	/**
+	 * @brief Sets the point light debug sphere draws for the next frame.
+	 *        Each entry carries a translate+scale transform (maps unit sphere
+	 *        to world-space marker/range sphere) and a color.
+	 *        Passing an empty vector disables point light debug rendering.
+	 */
+	NOUS_ENGINE_API void SetPointLightDebugs(const std::vector<BoundingBoxData>& lightDebugs);
+
+	// ---------------------------------------------------------------------
 	// Accessors
 	// ---------------------------------------------------------------------
 	NOUS_ENGINE_API void SetBackendType(RendererBackendType backendType) noexcept;
@@ -167,12 +188,12 @@ private:
 	// ---------------------------------------------------------------------
 	// Internal helpers
 	// ---------------------------------------------------------------------
-	[[nodiscard]] FrameResult BeginFrame(float dt);
-	[[nodiscard]] FrameResult EndFrame(float dt);
+	[[nodiscard]] FrameResult BeginFrame(float dt) const;
+	[[nodiscard]] FrameResult EndFrame(float dt) const;
 
-	[[nodiscard]] bool ExecuteRenderpass(RenderpassType pass, const std::function<void()>& drawCommands);
+	[[nodiscard]] bool ExecuteRenderpass(RenderpassType pass, const std::function<void()>& drawCommands) const;
 
-	void DrawEditor();
+	void DrawEditor() const;
 
 	// Dispatch a background compile job for the given shader path/pointer.
 	// No-op if a compile for this path is already in-flight.
@@ -195,12 +216,18 @@ private:
 	// Deferred reload flag — set by ReloadAllShaders(), consumed by FlushPendingReloads().
 	bool m_pendingReloadAll = false;
 
+	// ── Material reslot queue ─────────────────────────────────────────────────
+	// Queued by RequestMaterialShaderChange(); drained each PreUpdate before resource uploads.
+	struct PendingReslot { ResourceMaterial* material; ResourceShader* newShader; };
+	std::vector<PendingReslot> m_pendingReslots;
+	std::mutex                 m_reslotMutex;
+
 	// ── Async compile pipeline ────────────────────────────────────────────────
 	// Worker threads push completed compile results here; main thread drains it
 	// in FlushCompletedReloads() each PreUpdate.
 	struct PendingGPUSwap
 	{
-	    ResourceShader*  shader;
+	    ResourceShader*  shader{};
 	    ShaderLoadResult compileResult;
 	};
 
@@ -218,6 +245,9 @@ private:
 
 	// Camera frustums — populated each frame by SetCameraFrustums().
 	std::vector<CameraFrustumData> mCameraFrustums;
+
+	// Point light debug spheres — populated each frame by SetPointLightDebugs().
+	std::vector<BoundingBoxData> mPointLightDebugs;
 
 };
 

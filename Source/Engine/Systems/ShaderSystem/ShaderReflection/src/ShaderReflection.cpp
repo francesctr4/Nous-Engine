@@ -1,14 +1,12 @@
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflection.h"
 #include "Engine/Core/Logger/Logger.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 #include <spirv_reflect.h>
-
 #include <algorithm>
-#include <cstdint>
 
-static DescriptorType ToDescriptorType(SpvReflectDescriptorType t)
+static DescriptorType ToDescriptorType(const SpvReflectDescriptorType t)
 {
     switch (t)
     {
@@ -26,7 +24,7 @@ static DescriptorType ToDescriptorType(SpvReflectDescriptorType t)
 // We map it to our own bitmask so that:
 // - Vertex stageMask != Fragment stageMask
 // - Later you can OR them when merging pipeline interface.
-static uint32_t ToStageMask(ShaderStage s)
+static uint32_t ToStageMask(const ShaderStage s)
 {
     switch (s)
     {
@@ -69,8 +67,7 @@ static DataType ToMemberDataType(const SpvReflectTypeDescription* td)
         // Most common for UBO/PC is float matrices.
         // We only store Mat2/3/4 (square). If not square, pick by columns as fallback.
         const uint32_t cols = td->traits.numeric.matrix.column_count;
-        const uint32_t rows = td->traits.numeric.matrix.row_count;
-        const uint32_t n = (cols == rows) ? cols : cols;
+        const uint32_t n = cols;
 
         if (n == 2) return DataType::Mat2;
         if (n == 3) return DataType::Mat3;
@@ -153,10 +150,10 @@ PipelineReflectionResult NOUS_ShaderSystem::MergeReflections(
         {
             auto& setBindings = out.descriptorSets[b.set];
 
-            auto it = std::find_if(setBindings.begin(), setBindings.end(),
-                [&](const ReflectedBinding& existing) {
-                    return existing.binding == b.binding;
-                });
+            auto it = std::ranges::find_if(setBindings,
+                                           [&](const ReflectedBinding& existing) {
+                                               return existing.binding == b.binding;
+                                           });
 
             if (it != setBindings.end())
                 it->stageMask |= b.stageMask; // mismo binding en otro stage
@@ -167,10 +164,10 @@ PipelineReflectionResult NOUS_ShaderSystem::MergeReflections(
         // Merge push constants
         for (const auto& pc : stage.pushConstants)
         {
-            auto it = std::find_if(out.pushConstants.begin(), out.pushConstants.end(),
-                [&](const ReflectedPushConstant& existing) {
-                    return existing.offset == pc.offset && existing.size == pc.size;
-                });
+            auto it = std::ranges::find_if(out.pushConstants,
+                                           [&](const ReflectedPushConstant& existing) {
+                                               return existing.offset == pc.offset && existing.size == pc.size;
+                                           });
 
             if (it != out.pushConstants.end())
                 it->stageMask |= pc.stageMask;
@@ -238,7 +235,7 @@ ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& sourc
         rb.binding  = b->binding;
         rb.type     = ToDescriptorType(b->descriptor_type);
         rb.count    = b->count;
-        rb.name     = (b->name ? b->name : "");
+        rb.name     = b->name ? b->name : "";
 
         // Fill new fields:
         rb.stageMask = stageMask;
@@ -260,7 +257,7 @@ ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& sourc
                 rm.name       = m.name ? m.name : "";
                 rm.offset     = m.offset;
                 rm.size       = m.size;
-                rm.arrayCount = (m.array.dims_count == 0) ? 1 : m.array.dims[0];
+                rm.arrayCount = m.array.dims_count == 0 ? 1 : m.array.dims[0];
                 rm.type       = ToMemberDataType(m.type_description);
 
                 rb.members.push_back(std::move(rm));
@@ -285,7 +282,7 @@ ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& sourc
         ReflectedPushConstant rpc{};
         rpc.offset    = pc->offset;
         rpc.size      = pc->size;
-        rpc.name      = (pc->name ? pc->name : "");
+        rpc.name      = pc->name ? pc->name : "";
         rpc.stageMask = stageMask;
 
         rpc.members.reserve(pc->member_count);
@@ -325,14 +322,13 @@ ShaderReflectionResult NOUS_ShaderSystem::ReflectSpirV(const ShaderSource& sourc
 
             ReflectedInput in{};
             in.location = v->location;
-            in.name     = (v->name ? v->name : "");
+            in.name     = v->name ? v->name : "";
 
             // Components (vecN). For scalar, component_count can be 0.
             uint32_t comps = 1;
             if (v->type_description)
             {
-                const uint32_t tf = v->type_description->type_flags;
-                if (tf & SPV_REFLECT_TYPE_FLAG_VECTOR)
+                if (const uint32_t tf = v->type_description->type_flags; tf & SPV_REFLECT_TYPE_FLAG_VECTOR)
                     comps = v->type_description->traits.numeric.vector.component_count;
             }
             in.components = static_cast<uint8_t>(comps);

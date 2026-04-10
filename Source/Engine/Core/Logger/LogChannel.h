@@ -2,8 +2,8 @@
 #define NOUS_ENGINE_LOGCHANNEL_H
 
 #include <cstdint>
-#include <string_view>
 #include <array>
+#include <utility>
 
 // ------------------------------------------------------------------------------------------------
 // LOG CHANNEL LIST
@@ -92,7 +92,8 @@
 // ------------------------------------------------------------
 // Enum generation
 // ------------------------------------------------------------
-enum class LogChannel : uint16_t {
+enum class LogChannel : uint8_t
+{
 #define X(NAME, STRING) NAME,
     LOG_CHANNEL_LIST
 #undef X
@@ -102,10 +103,10 @@ enum class LogChannel : uint16_t {
 // ------------------------------------------------------------
 // String table generation
 // ------------------------------------------------------------
-constexpr std::array<const char*, static_cast<size_t>(LogChannel::MAX_CHANNELS)>
-        LOG_CHANNEL_NAMES = {
+constexpr std::array<const char*, static_cast<size_t>(std::to_underlying(LogChannel::MAX_CHANNELS))>
+LOG_CHANNEL_NAMES = {
 #define X(NAME, STRING) STRING,
-        LOG_CHANNEL_LIST
+    LOG_CHANNEL_LIST
 #undef X
 };
 
@@ -114,8 +115,7 @@ constexpr std::array<const char*, static_cast<size_t>(LogChannel::MAX_CHANNELS)>
 // ------------------------------------------------------------
 constexpr const char* GetChannelName(LogChannel channel)
 {
-    size_t idx = static_cast<size_t>(channel);
-    if (idx < LOG_CHANNEL_NAMES.size())
+    if (const auto idx = static_cast<size_t>(std::to_underlying(channel)); idx < LOG_CHANNEL_NAMES.size())
         return LOG_CHANNEL_NAMES[idx];
     return "Unknown";
 }

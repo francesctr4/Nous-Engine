@@ -1,0 +1,81 @@
+{
+    "name": "PROP_Biotic_Liquid_Tank.fbx",
+    "version": 1,
+    "GameObjects": [
+        {
+            "uid": 2090891372,
+            "name": "PROP_Biotic_Liquid_Tank.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "uid": 1071002006,
+            "name": "PROP_Liquid_Tank",
+            "parent": 2090891372,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\PROP_Biotic_Liquid_Tank.fbx",
+                    "libraryPath": "Library\\Meshes\\17960336.nmesh",
+                    "resourceUID": 1597524134,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\PROP_Liquid_Tank_material.nmat",
+                    "libraryPath": "Library\\Materials\\2017331328.nmat",
+                    "resourceUID": 2017331328
+                }
+            ]
+        }
+    ]
+}

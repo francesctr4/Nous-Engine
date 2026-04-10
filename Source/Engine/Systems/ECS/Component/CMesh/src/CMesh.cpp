@@ -32,15 +32,19 @@ JSON_Value *CMesh::Serialize() const {
 }
 
 void CMesh::Deserialize(JSON_Object *obj) {
-    const char* assetPath = json_object_get_string(obj, "assetPath");
-    if (!assetPath || strlen(assetPath) == 0)
+    const char* assetPathRaw = json_object_get_string(obj, "assetPath");
+    const std::string assetPathStr = assetPathRaw ? assetPathRaw : "";
+    const char* assetPath = assetPathStr.c_str();
+
+    const char* libraryPathRaw = json_object_get_string(obj, "libraryPath");
+    const std::string libraryPath  = libraryPathRaw ? libraryPathRaw : "";
+
+    // Neither path set — GO has no mesh reference, leave it null.
+    if (assetPathStr.empty() && libraryPath.empty())
     {
         mesh = nullptr;
         return;
     }
-
-    const char* libraryPathRaw = json_object_get_string(obj, "libraryPath");
-    const std::string libraryPath  = libraryPathRaw ? libraryPathRaw : "";
     const JSON_Value* uidVal       = json_object_get_value(obj, "resourceUID");
     const UID resourceUID          = uidVal ? static_cast<UID>(json_value_get_number(uidVal)) : 0;
 
@@ -55,9 +59,9 @@ void CMesh::Deserialize(JSON_Object *obj) {
         if (!libraryPath.empty())
         {
             mesh = m_GameObject->GetScene()->GetResourceManager()->RequestOrCreateSubMeshResourceFromLibrary(
-                libraryPath, submeshIndex);
+                libraryPath, submeshIndex, assetPath);
         }
-        if (!mesh)
+        if (!mesh && !assetPathStr.empty())
         {
             mesh = m_GameObject->GetScene()->GetResourceManager()->RequestOrCreateSubMeshResource(assetPath, submeshIndex);
         }
@@ -73,7 +77,7 @@ void CMesh::Deserialize(JSON_Object *obj) {
                 resourceUID, ResourceType::MESH, NOUS_FileManager::GetFilename(assetPath),
                 assetPath, libraryPath));
         }
-        if (!mesh)
+        if (!mesh && !assetPathStr.empty())
         {
             mesh = down_cast<ResourceMesh*>(m_GameObject->GetScene()->GetResourceManager()->CreateResource(assetPath));
         }

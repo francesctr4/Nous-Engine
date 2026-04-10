@@ -5,7 +5,7 @@
 // =====================================================
 
 // This fixture provides a clean setup/teardown structure
-class t_ModuleEditor : public ::testing::Test {
+class t_ModuleEditor : public testing::Test {
 protected:
     // Called before each test
     void SetUp() override {

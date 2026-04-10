@@ -188,10 +188,10 @@ protected:
     // On other platforms writes a .cpp file.
     // Returns the source file path, or empty string if writing failed.
     struct Export { std::string name; int value; };
-    std::string WriteSource(const std::string& stem, const std::vector<Export>& exports)
+    std::string WriteSource(const std::string& stem, const std::vector<Export>& exports) const
     {
 #ifdef _WIN32
-        const std::string path = (tmpDir / (stem + ".c")).string();
+        std::string path = (tmpDir / (stem + ".c")).string();
         std::ofstream f(path);
         if (!f.is_open()) return {};
         f << "typedef int BOOL;\ntypedef unsigned long DWORD;\n"

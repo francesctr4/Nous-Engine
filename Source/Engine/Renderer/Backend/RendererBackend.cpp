@@ -130,11 +130,9 @@ bool RendererBackend::EndRenderpass(RenderpassType renderpassID)
 
 // ─────────────────────────────── Global State ────────────────────────────
 bool RendererBackend::UpdateGlobalWorldState(RenderpassType renderpassID,
-                                             const glm::mat4& projection, const glm::mat4& view,
-                                             const glm::vec3& viewPosition, const glm::vec4& ambientColor,
-                                             int32 mode)
+                                             const GlobalUBO& globalUBO)
 {
-    return mBackendInterface && mBackendInterface->UpdateGlobalWorldState(renderpassID, projection, view, viewPosition, ambientColor, mode);
+    return mBackendInterface && mBackendInterface->UpdateGlobalWorldState(renderpassID, globalUBO);
 }
 
 // ─────────────────────────────── Drawing ─────────────────────────────────
@@ -244,4 +242,10 @@ bool RendererBackend::DrawCameraFrustums(RenderpassType renderpassID, const glm:
     const glm::mat4 &view, const std::vector<CameraFrustumData> &frustums, bool globalAlreadySet)
 {
     return mBackendInterface && mBackendInterface->DrawCameraFrustums(renderpassID, projection, view, frustums, globalAlreadySet);
+}
+
+bool RendererBackend::DrawPointLightDebugs(RenderpassType renderpassID, const glm::mat4& projection,
+    const glm::mat4& view, const std::vector<BoundingBoxData>& lightDebugs, bool globalAlreadySet)
+{
+    return mBackendInterface && mBackendInterface->DrawPointLightDebugs(renderpassID, projection, view, lightDebugs, globalAlreadySet);
 }

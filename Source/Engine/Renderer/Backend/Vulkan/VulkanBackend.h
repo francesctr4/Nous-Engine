@@ -45,9 +45,7 @@ public:
 
 	bool UpdateGlobalWorldState(
             RenderpassType renderpassID,
-            const glm::mat4& projection, const glm::mat4& view,
-            const glm::vec3& viewPosition, const glm::vec4& ambientColor,
-            int32 mode) override;
+            const GlobalUBO& globalUBO) override;
 
 	bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData) override;
 
@@ -95,11 +93,16 @@ public:
 	                        const std::vector<CameraFrustumData>& frustums,
 	                        bool globalAlreadySet = false) override;
 
+	bool DrawPointLightDebugs(RenderpassType renderpassID,
+	                          const glm::mat4& projection,
+	                          const glm::mat4& view,
+	                          const std::vector<BoundingBoxData>& lightDebugs,
+	                          bool globalAlreadySet = false) override;
+
 	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 
-	void ProcessPendingSubmissions();
-
-	VulkanCommandBuffer* GetCommandBufferByRenderpassID(RenderpassType renderpassID);
+	static void ProcessPendingSubmissions();
+	static VulkanCommandBuffer* GetCommandBufferByRenderpassID(RenderpassType renderpassID);
 
 private:
 

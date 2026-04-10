@@ -4,8 +4,6 @@
 #include "Editor/UI/IEditorWindow.inl"
 #include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
-#include <string>
-
 class Scene;
 class GameObject;
 
@@ -18,7 +16,7 @@ class HierarchyWindow : public IEditorWindow
 {
 public:
 
-    explicit HierarchyWindow(const char* title, ::EditorContext* context, bool start_open = true);
+    explicit HierarchyWindow(const char* title, EditorContext* context, bool start_open = true);
 
     void Init() override;
     void Draw() override;
@@ -32,7 +30,7 @@ private:
     Scene* m_Scene = nullptr;
     NOUS_Vector<GameObject*> m_ToDelete;
     NOUS_Vector<ReparentRequest> m_ToReparent;
-    bool IsChildOf(GameObject *parent, GameObject *child);
+    static bool IsChildOf(const GameObject *parent, const GameObject *child);
 
     // Save-as-prefab popup state
     bool        m_showSaveAsPrefabPopup = false;

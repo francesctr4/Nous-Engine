@@ -30,7 +30,7 @@ struct VulkanImage
     uint32 height;
 };
 
-enum class VulkanRenderPassState 
+enum class VulkanRenderPassState : uint8_t
 {
     READY,
     RECORDING,
@@ -100,7 +100,7 @@ struct VkSwapChainSupportDetails
     VkSurfaceCapabilitiesKHR capabilities;
 };
 
-enum class VulkanCommandBufferState
+enum class VulkanCommandBufferState : uint8_t
 {
     READY,
     RECORDING,
@@ -320,6 +320,11 @@ struct VulkanContext
     // Capacity: k_MaxCameraFrustums (8) × 24 vertices (12 edges × 2 endpoints)
     VulkanBuffer frustumVertexBuffer{};
     uint32       frustumVertexCapacity = 0; // in vertices
+
+    // ── Point light debug sphere wireframe (static, shared for all lights) ─────
+    // 3 great-circle rings (XY, XZ, YZ planes) as line lists; scaled per-draw.
+    VulkanBuffer pointLightSphereVertexBuffer{};
+    uint32       pointLightSphereVertexCount = 0;
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;

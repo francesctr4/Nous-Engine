@@ -4,11 +4,12 @@
 #include "Editor/UI/IEditorWindow.inl"
 #include "Editor/EditorExport.h"
 #include <string>
+#include <cstdint>
 
 struct ImVec2;
 struct VulkanContext;
 
-enum class GizmoOperation
+enum class GizmoOperation : uint8_t
 {
     TRANSLATE,
     ROTATE,
@@ -16,7 +17,7 @@ enum class GizmoOperation
 };
 
 // Maps to ImGuizmo::MODE values
-enum class GizmoSpace
+enum class GizmoSpace : uint8_t
 {
     LOCAL = 0,
     WORLD = 1
@@ -26,7 +27,7 @@ class SceneViewport : public IEditorWindow
 {
 public:
 
-    NOUS_EDITOR_API explicit SceneViewport(const char* title, ::EditorContext* context, bool start_open = true);
+    NOUS_EDITOR_API explicit SceneViewport(const char* title, EditorContext* context, bool start_open = true);
 
     NOUS_EDITOR_API void Init() override;
     NOUS_EDITOR_API void Draw() override;

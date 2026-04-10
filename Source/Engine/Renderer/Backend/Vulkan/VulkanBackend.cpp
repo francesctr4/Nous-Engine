@@ -15,6 +15,10 @@
 #include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
+#include <cmath>
+#include <cstring>
+#include <memory>
 
 #include <Engine/Core/FileSystem/FileSystem.h>
 
@@ -36,7 +40,7 @@
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_BACKEND_VULKAN_BACKEND;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_BACKEND_VULKAN_BACKEND;
 
 VulkanContext* VulkanBackend::vkContext = nullptr;
 
@@ -69,7 +73,7 @@ bool VulkanBackend::Initialize()
     NOUS_INFO_C(CURRENT_CHANNEL, " ----------------------- USING VULKAN BACKEND ----------------------- ");
 
     // TODO: Custom allocator
-    vkContext->allocator = 0;
+    vkContext->allocator = nullptr;
 
     // Get Framebuffer Size
     int32 initialWidth = 0, initialHeight = 0;
@@ -329,16 +333,16 @@ bool VulkanBackend::Initialize()
         constexpr int halfExtent = 500;
         constexpr int step       = 10;
 
-        const glm::vec3 colorAxisX(0.70f, 0.15f, 0.15f); // X axis: red
-        const glm::vec3 colorAxisZ(0.15f, 0.15f, 0.70f); // Z axis: blue
-        const glm::vec3 colorMinor(0.30f, 0.30f, 0.30f); // regular lines: grey
+        constexpr glm::vec3 colorAxisX(0.70f, 0.15f, 0.15f); // X axis: red
+        constexpr glm::vec3 colorAxisZ(0.15f, 0.15f, 0.70f); // Z axis: blue
+        constexpr glm::vec3 colorMinor(0.30f, 0.30f, 0.30f); // regular lines: grey
 
-        const float fHalf = static_cast<float>(halfExtent);
+        constexpr auto fHalf = static_cast<float>(halfExtent);
 
         // Layout: axis lines first (4 vertices), then all minor lines.
         // This lets DrawGrid issue two draw calls with different line widths.
         std::vector<Vertex3D> gridVerts;
-        gridVerts.reserve(static_cast<size_t>((halfExtent * 2 / step + 1) * 4));
+        gridVerts.reserve((halfExtent * 2 / step + 1) * 4);
 
         // ── Axis lines (always first, 4 vertices) ─────────────────────────────
         { Vertex3D v{}; v.position = {-fHalf, 0.0f, 0.0f}; v.color = colorAxisX; gridVerts.push_back(v); }
@@ -351,7 +355,7 @@ bool VulkanBackend::Initialize()
         {
             if (i == 0) continue;
 
-            const float fi = static_cast<float>(i);
+            const auto fi = static_cast<float>(i);
 
             Vertex3D v1{}, v2{};
             v1.position = {-fHalf, 0.0f, fi};
@@ -372,7 +376,7 @@ bool VulkanBackend::Initialize()
         const uint64 bufferSize    = gridVerts.size() * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufferSize,
-            VkBufferUsageFlagBits(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             true, &vkContext->gridVertexBuffer))
         {
@@ -391,16 +395,6 @@ bool VulkanBackend::Initialize()
     // 8 corners of a unit cube at ±0.5, 12 edges → 24 line-segment endpoints.
     {
         // Corners
-        const glm::vec3 p[8] = {
-            { -0.5f, -0.5f, -0.5f }, // 0
-            {  0.5f, -0.5f, -0.5f }, // 1
-            {  0.5f,  0.5f, -0.5f }, // 2
-            { -0.5f,  0.5f, -0.5f }, // 3
-            { -0.5f, -0.5f,  0.5f }, // 4
-            {  0.5f, -0.5f,  0.5f }, // 5
-            {  0.5f,  0.5f,  0.5f }, // 6
-            { -0.5f,  0.5f,  0.5f }, // 7
-        };
 
         // 12 edges, each as a pair of corner indices
         constexpr int edgeIndices[24] = {
@@ -411,10 +405,20 @@ bool VulkanBackend::Initialize()
 
         std::vector<Vertex3D> boxVerts;
         boxVerts.reserve(24);
-        for (int i = 0; i < 24; ++i)
+        for (int edgeIndice : edgeIndices)
         {
+            const glm::vec3 p[8] = {
+                { -0.5f, -0.5f, -0.5f }, // 0
+                {  0.5f, -0.5f, -0.5f }, // 1
+                {  0.5f,  0.5f, -0.5f }, // 2
+                { -0.5f,  0.5f, -0.5f }, // 3
+                { -0.5f, -0.5f,  0.5f }, // 4
+                {  0.5f, -0.5f,  0.5f }, // 5
+                {  0.5f,  0.5f,  0.5f }, // 6
+                { -0.5f,  0.5f,  0.5f }, // 7
+            };
             Vertex3D v{};
-            v.position = p[edgeIndices[i]];
+            v.position = p[edgeIndice];
             boxVerts.push_back(v);
         }
 
@@ -422,7 +426,7 @@ bool VulkanBackend::Initialize()
         const uint64 bbBufSize = boxVerts.size() * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bbBufSize,
-            VkBufferUsageFlagBits(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             true, &vkContext->boundingBoxVertexBuffer))
         {
@@ -437,15 +441,74 @@ bool VulkanBackend::Initialize()
         }
     }
 
+    // ── Create point light debug unit-sphere wireframe vertex buffer ──────────
+    // 3 great-circle rings (XY, XZ, YZ planes) as LINE_LIST; scaled per-draw
+    // via push-constant model matrix (translate + uniform scale).
+    {
+        constexpr uint32 k_RingSegments = 24;
+        std::vector<Vertex3D> sphereVerts;
+        sphereVerts.reserve(k_RingSegments * 2 * 3);
+
+        for (uint32 plane = 0; plane < 3; ++plane)
+        {
+            for (uint32 i = 0; i < k_RingSegments; ++i)
+            {
+                const float a0 = (2.0f * glm::pi<float>() * static_cast<float>(i))     / static_cast<float>(k_RingSegments);
+                const float a1 = (2.0f * glm::pi<float>() * static_cast<float>(i + 1)) / static_cast<float>(k_RingSegments);
+                const float c0 = std::cos(a0), s0 = std::sin(a0);
+                const float c1 = std::cos(a1), s1 = std::sin(a1);
+
+                Vertex3D v0{}, v1{};
+                switch (plane)
+                {
+                    case 0: // XY ring
+                        v0.position = { c0, s0, 0.0f };
+                        v1.position = { c1, s1, 0.0f };
+                        break;
+                    case 1: // XZ ring
+                        v0.position = { c0, 0.0f, s0 };
+                        v1.position = { c1, 0.0f, s1 };
+                        break;
+                    case 2: // YZ ring
+                        v0.position = { 0.0f, c0, s0 };
+                        v1.position = { 0.0f, c1, s1 };
+                        break;
+                    default:
+                        break;
+                }
+                sphereVerts.push_back(v0);
+                sphereVerts.push_back(v1);
+            }
+        }
+
+        vkContext->pointLightSphereVertexCount = static_cast<uint32>(sphereVerts.size());
+        const uint64 sphereBufSize = sphereVerts.size() * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, sphereBufSize,
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->pointLightSphereVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create point light sphere vertex buffer.");
+        }
+        else
+        {
+            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->pointLightSphereVertexBuffer,
+                0, sphereBufSize, 0, sphereVerts.data());
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Point light debug sphere vertex buffer created (%u vertices).",
+                vkContext->pointLightSphereVertexCount);
+        }
+    }
+
     // ── Create camera frustum wireframe vertex buffer (dynamic, host-visible) ─
     // Capacity: 8 frustums × 24 vertices (12 edges × 2 endpoints per frustum).
     {
         constexpr uint32 k_MaxCameraFrustums    = 8;
         constexpr uint32 k_FrustumVertCapacity  = k_MaxCameraFrustums * 24;
-        const uint64 frustumBufSize = k_FrustumVertCapacity * sizeof(Vertex3D);
+        constexpr uint64 frustumBufSize = k_FrustumVertCapacity * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, frustumBufSize,
-            VkBufferUsageFlagBits(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             true, &vkContext->frustumVertexBuffer))
         {
@@ -462,7 +525,7 @@ bool VulkanBackend::Initialize()
 	return ret;
 }
 
-void VulkanBackend::SetRenderMode(RenderMode mode) noexcept
+void VulkanBackend::SetRenderMode(const RenderMode mode) noexcept
 {
     vkContext->renderMode = mode;
 }
@@ -583,6 +646,14 @@ void VulkanBackend::Shutdown() noexcept
         vkContext->frustumVertexCapacity = 0;
     }
 
+    // Destroy the point light debug sphere vertex buffer (not managed by ResourceManager).
+    if (vkContext->pointLightSphereVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->pointLightSphereVertexBuffer);
+        vkContext->pointLightSphereVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->pointLightSphereVertexCount = 0;
+    }
+
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
     if (vkContext->renderMode == RenderMode::GAME)
@@ -648,7 +719,7 @@ FrameResult VulkanBackend::BeginFrame(float dt)
     ProcessPendingSubmissions();
 
     vkContext->frameDeltaTime = dt;
-    VulkanDevice* device = &vkContext->device;
+    const VulkanDevice* device = &vkContext->device;
 
     // If we are in the middle of recreating the swapchain, attempt to rebuild now.
     if (vkContext->recreatingSwapchain)
@@ -657,8 +728,7 @@ FrameResult VulkanBackend::BeginFrame(float dt)
         // would immediately return false seeing the flag still set.
         vkContext->recreatingSwapchain = false;
 
-        VkResult waitRes = vkDeviceWaitIdle(device->logicalDevice);
-        if (!VkResultIsSuccess(waitRes))
+        if (const VkResult waitRes = vkDeviceWaitIdle(device->logicalDevice); !VkResultIsSuccess(waitRes))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::BeginFrame() --> vkDeviceWaitIdle (recreate) failed: '%s'",
                        VkResultMessage(waitRes, true).c_str());
@@ -805,7 +875,7 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
     submitInfo.pWaitSemaphores    = &vkContext->imageAvailableSemaphores[vkContext->currentFrame];
 
     // IMPORTANT: wait stage mask count MUST equal waitSemaphoreCount (was mismatched before)
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    constexpr VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.pWaitDstStageMask = waitStages;
 
     VkResult submitRes;
@@ -835,7 +905,7 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
     }
 
     // Present
-    VkResult presentRes = NOUS_VulkanSwapChain::SwapChainPresent(
+    const VkResult presentRes = NOUS_VulkanSwapChain::SwapChainPresent(
             vkContext,
             &vkContext->swapChain,
             vkContext->device.graphicsQueue,
@@ -866,7 +936,7 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
     // Begin recording commands.
     VulkanCommandBuffer* commandBuffer = nullptr;
     VulkanRenderpass* renderpass = nullptr;
-    VkFramebuffer framebuffer = 0;
+    VkFramebuffer framebuffer = nullptr;
     
     switch (renderpassID)
     {
@@ -913,10 +983,10 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
     VkViewport viewport;
 
     viewport.x = 0.0f;
-    viewport.y = (float)vkContext->framebufferHeight;
+    viewport.y = static_cast<float>(vkContext->framebufferHeight);
 
-    viewport.width = (float)vkContext->framebufferWidth;
-    viewport.height = -(float)vkContext->framebufferHeight;
+    viewport.width = static_cast<float>(vkContext->framebufferWidth);
+    viewport.height = -static_cast<float>(vkContext->framebufferHeight);
 
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
@@ -934,16 +1004,16 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
 
     vkCmdSetScissor(commandBuffer->handle, 0, 1, &scissor);
 
-    renderpass->renderArea.z = vkContext->framebufferWidth;
-    renderpass->renderArea.w = vkContext->framebufferHeight;
+    renderpass->renderArea.z = static_cast<float>(vkContext->framebufferWidth);
+    renderpass->renderArea.w = static_cast<float>(vkContext->framebufferHeight);
 
     NOUS_VulkanRenderpass::BeginRenderpass(commandBuffer, renderpass, framebuffer);
 
     // Initial pipeline bind; UpdateGlobalWorldState / DrawGeometry will re-bind as needed.
-    auto TryBind = [&](ResourceShader* rs) {
+    auto TryBind = [&](const ResourceShader* rs) {
         if (rs && rs->internalData)
             NOUS_VulkanShader::BindPipeline(commandBuffer->handle,
-                static_cast<VulkanShader*>(rs->internalData));
+                down_cast<VulkanShader*>(rs->internalData));
     };
 
     switch (renderpassID)
@@ -972,7 +1042,7 @@ bool VulkanBackend::EndRenderpass(RenderpassType renderpassID)
         case RenderpassType::GAME:
         {
             commandBuffer = &vkContext->imGuiResources.m_GameViewportCommandBuffers[vkContext->imageIndex];
-            renderpass = (vkContext->renderMode == RenderMode::GAME)
+            renderpass = vkContext->renderMode == RenderMode::GAME
                 ? &vkContext->gameSwapchainRenderpass
                 : &vkContext->gameRenderpass;
             break;
@@ -1024,7 +1094,7 @@ bool VulkanBackend::RecreateResources()
     // Clear these out just in case.
     for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
-        vkContext->imagesInFlight[i] = 0;
+        vkContext->imagesInFlight[i] = nullptr;
     }
 
     // Requery support and depth format
@@ -1107,25 +1177,21 @@ bool VulkanBackend::RecreateResources()
 }
 
 bool VulkanBackend::UpdateGlobalWorldState(
-        RenderpassType renderpassID,
-        const glm::mat4& projection, const glm::mat4& view,
-        const glm::vec3& viewPosition, const glm::vec4& ambientColor,
-        int32 mode)
+        const RenderpassType renderpassID,
+        const GlobalUBO& globalUBO)
 {
-    ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
+    const ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
         ? vkContext->builtInGameShader
         : vkContext->builtInMaterialShader;
 
     if (!rShader || !rShader->internalData) return false;
 
-    VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
-    VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
+    const VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
+    auto* vs = down_cast<VulkanShader*>(rShader->internalData);
 
     NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
-
-    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
     NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
-        vkContext->imageIndex, &ubo, sizeof(ubo));
+        vkContext->imageIndex, &globalUBO, sizeof(GlobalUBO));
 
     return true;
 }
@@ -1161,26 +1227,114 @@ VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(RenderpassTyp
     return commandBuffer;
 }
 
+// ── Uniform-value helpers for data-driven InstanceUBO upload ───────────────
+// `UniformValue` stores its payload in a `glm::vec4` for any scalar/vector type.
+// When the target GLSL member is an int variant, the float components must be
+// converted to int32 bit patterns before memcpy — otherwise the GPU would read
+// the float encoding of the numeric value (e.g. 5.0f as int = 1084227584).
+
+static uint32_t UniformValueByteCount(UniformValueType type)
+{
+    switch (type)
+    {
+        case UniformValueType::Float: return 4;
+        case UniformValueType::Vec2:  return 8;
+        case UniformValueType::Vec3:  return 12;
+        case UniformValueType::Vec4:  return 16;
+        case UniformValueType::Int:   return 4;
+        case UniformValueType::IVec2: return 8;
+        case UniformValueType::IVec3: return 12;
+        case UniformValueType::IVec4: return 16;
+    }
+    return 0;
+}
+
+static uint32_t UniformValueComponentCount(UniformValueType type)
+{
+    switch (type)
+    {
+        case UniformValueType::Float: case UniformValueType::Int:   return 1;
+        case UniformValueType::Vec2:  case UniformValueType::IVec2: return 2;
+        case UniformValueType::Vec3:  case UniformValueType::IVec3: return 3;
+        case UniformValueType::Vec4:  case UniformValueType::IVec4: return 4;
+    }
+    return 4;
+}
+
+static bool UniformValueIsInt(UniformValueType type)
+{
+    return type == UniformValueType::Int   || type == UniformValueType::IVec2
+        || type == UniformValueType::IVec3 || type == UniformValueType::IVec4;
+}
+
+// Write a UniformValue into the UBO byte buffer at the given offset, honouring
+// the int/float distinction. Callers must have already bounds-checked `offset`.
+static void WriteUniformValueToBuffer(uint8_t* dst, const UniformValue& uv)
+{
+    const uint32_t count = UniformValueComponentCount(uv.type);
+    if (UniformValueIsInt(uv.type))
+    {
+        int32_t tmp[4] = { 0, 0, 0, 0 };
+        for (uint32_t c = 0; c < count; ++c)
+            tmp[c] = static_cast<int32_t>(uv.data[static_cast<int>(c)]);
+        std::memcpy(dst, tmp, count * sizeof(int32_t));
+    }
+    else
+    {
+        // Floats: glm::vec4 is contiguous float[4]; copy the first `count` floats.
+        std::memcpy(dst, &uv.data, count * sizeof(float));
+    }
+}
+
+static UniformValueType DataTypeToUniformValueType(DataType dt)
+{
+    switch (dt)
+    {
+        case DataType::Float: return UniformValueType::Float;
+        case DataType::Vec2:  return UniformValueType::Vec2;
+        case DataType::Vec3:  return UniformValueType::Vec3;
+        case DataType::Vec4:  return UniformValueType::Vec4;
+        case DataType::Int:   return UniformValueType::Int;
+        case DataType::IVec2: return UniformValueType::IVec2;
+        case DataType::IVec3: return UniformValueType::IVec3;
+        case DataType::IVec4: return UniformValueType::IVec4;
+        default:              return UniformValueType::Vec4;
+    }
+}
+
 bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData)
 {
     if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID)
         return true;
 
-    ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
+    // The base shader owns the instance pool and descriptor state.
+    ResourceShader* baseShader = (renderpassID == RenderpassType::GAME)
         ? vkContext->builtInGameShader
         : vkContext->builtInMaterialShader;
 
-    if (!rShader || !rShader->internalData) return false;
+    if (!baseShader || !baseShader->internalData) return false;
 
-    VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
-    VulkanShader*        vs            = static_cast<VulkanShader*>(rShader->internalData);
-    VulkanGeometryData*  bufferData    = &vkContext->geometries[renderData.geometry->internalID];
+    // Custom shader pipeline: compiled against sceneRenderpass, which is structurally
+    // identical to gameRenderpass (same format/sample count) — Vulkan compatible in both.
+    ResourceShader* drawShader = baseShader;
+    if (renderData.material != nullptr &&
+        renderData.material->shader != nullptr &&
+        renderData.material->shader->internalData != nullptr &&
+        renderData.material->shader->GetState() == ResourceState::GPU_READY)
+    {
+        drawShader = renderData.material->shader;
+    }
 
-    // Bind pipeline.
-    NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
+    const VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
+    auto* vsBase = down_cast<VulkanShader*>(baseShader->internalData);
+    auto* vsDraw = down_cast<VulkanShader*>(drawShader->internalData);
+    const VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
 
-    // Push model matrix via push constants.
-    vkCmdPushConstants(commandBuffer->handle, vs->pipeline.pipelineLayout,
+    // Bind pipeline — use custom shader's VkPipeline if assigned, else base shader.
+    NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vsDraw);
+
+    // Push model matrix via push constants — use base shader's layout (compatible with draw shader).
+    vkCmdPushConstants(commandBuffer->handle, vsBase->pipeline.pipelineLayout,
         VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &renderData.model);
 
     // Resolve material.
@@ -1195,51 +1349,186 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     if (!material || material->internalID == INVALID_ID)
         material = vkContext->resourceManager->GetDefaultMaterial();
 
+    // vsInstance is the shader whose instance pool holds this material's descriptor slot.
+    // Use poolOwnerShader as the authoritative source — it was set at CreateMaterial time
+    // and reflects exactly which pool this material's internalID slot was acquired from.
+    // Falling back to heuristics (e.g. vsDraw->instancePool) gives the wrong answer when
+    // the reslot fires before the custom shader is GPU_READY, causing a NULL descriptor set.
+    VulkanShader* vsInstance = vsBase; // safe default
+    if (material && material->poolOwnerShader && material->poolOwnerShader->internalData)
+        vsInstance = down_cast<VulkanShader*>(material->poolOwnerShader->internalData);
+
     // Even the default material isn't GPU-ready yet, or the instance pool isn't initialised.
     // Skip the draw — issuing it would leave set #1 unbound and trigger VUID-vkCmdDrawIndexed-None-08600.
-    if (!material || material->internalID == INVALID_ID || !vs->instancePool)
+    if (!material || material->internalID == INVALID_ID || !vsInstance->instancePool)
         return true;
 
     // Per-instance descriptors (material UBO + texture sampler).
+    // All descriptor state is owned by vsBase (the instance pool owner).
     {
         const uint32_t instanceID  = material->internalID;
         const uint32_t imageIndex  = vkContext->imageIndex;
 
-        // Write diffuse colour to instance UBO (binding 0).
-        struct InstanceUBO { glm::vec4 diffuseColor; } ubo{ material->diffuseColor };
-        auto& uboGen = vs->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
-        NOUS_VulkanShader::WriteInstanceUBO(vkContext, vs, imageIndex, instanceID,
-            &ubo, sizeof(ubo), &uboGen);
-
-        // Write diffuse texture sampler (binding 1), lazy update.
-        // Fall back to the default texture if the material's texture is missing,
-        // has an invalid generation, or has not yet been uploaded to the GPU.
-        ResourceTexture* texture = material->diffuseMap.texture;
-        if (!texture || texture->generation == INVALID_ID || !texture->internalData)
-            texture = vkContext->resourceManager->GetDefaultTexture();
-
-        if (texture && texture->internalData)
+        // Write per-instance params to UBO (binding 0) via shader reflection.
+        // The byte buffer is sized to the reflected block and populated from
+        // `material->uniformValues` — no hardcoded struct layout.
+        const ReflectedBinding* instanceUBOBinding = nullptr;
         {
-            VulkanTextureData* texData = static_cast<VulkanTextureData*>(texture->internalData);
-            auto& samplerGen = vs->instanceStates[instanceID].descriptorStates[1].generations[imageIndex];
-            auto& samplerID  = vs->instanceStates[instanceID].descriptorStates[1].ids[imageIndex];
-            NOUS_VulkanShader::WriteInstanceSampler(vkContext, vs, imageIndex, instanceID,
-                1, texData->image.view, texData->sampler,
-                &samplerGen, &samplerID, texture->ID, texture->generation);
-        }
-        else if (vs->instanceStates[instanceID].descriptorStates[1].generations[imageIndex] == UINT32_MAX)
-        {
-            // Binding 1 has never been written for this image index (fresh slot, no
-            // valid texture yet including no default). Drawing now would violate
-            // VUID-vkCmdDrawIndexed-None-08114 — skip until a texture is available.
-            return true;
+            const auto& setIt = drawShader->reflection.descriptorSets.find(1);
+            if (setIt != drawShader->reflection.descriptorSets.end())
+            {
+                for (const auto& rb : setIt->second)
+                {
+                    if (rb.type == DescriptorType::UniformBuffer && rb.binding == 0)
+                    {
+                        instanceUBOBinding = &rb;
+                        break;
+                    }
+                }
+            }
         }
 
-        NOUS_VulkanShader::BindInstanceDescriptorSet(commandBuffer->handle, vs, imageIndex, instanceID);
+        if (instanceUBOBinding && instanceUBOBinding->blockSize > 0)
+        {
+            const uint32_t blockSize = instanceUBOBinding->blockSize;
+
+            // Stack-allocate for small UBOs (typical: 48-256 bytes), heap for large.
+            constexpr uint32_t c_stackThreshold = 1024;
+            uint8_t stackBuffer[c_stackThreshold];
+            std::unique_ptr<uint8_t[]> heapBuffer;
+            uint8_t* uboBuffer = stackBuffer;
+            if (blockSize > c_stackThreshold)
+            {
+                heapBuffer = std::make_unique<uint8_t[]>(blockSize);
+                uboBuffer  = heapBuffer.get();
+            }
+
+            // Zero-fill. Per-member defaults are applied below for any member
+            // the material has no entry for, using type-correct bit patterns.
+            std::memset(uboBuffer, 0, blockSize);
+
+            for (const auto& member : instanceUBOBinding->members)
+            {
+                const uint32_t memberBytes = [&]() -> uint32_t {
+                    switch (member.type)
+                    {
+                        case DataType::Float: case DataType::Int: return 4;
+                        case DataType::Vec2:  case DataType::IVec2: return 8;
+                        case DataType::Vec3:  case DataType::IVec3: return 12;
+                        case DataType::Vec4:  case DataType::IVec4: return 16;
+                        default: return 0;
+                    }
+                }();
+
+                if (memberBytes == 0 || member.offset + memberBytes > blockSize)
+                    continue;
+
+                auto it = material->uniformValues.find(member.name);
+                if (it != material->uniformValues.end())
+                {
+                    WriteUniformValueToBuffer(uboBuffer + member.offset, it->second);
+                }
+                else
+                {
+                    // Neutral default: 1.0f for floats, 1 for ints — matches the
+                    // previous vec4(1) fallback behaviour but with correct bit
+                    // pattern for int variants.
+                    const UniformValue fallback{
+                        DataTypeToUniformValueType(member.type),
+                        glm::vec4(1.0f)
+                    };
+                    WriteUniformValueToBuffer(uboBuffer + member.offset, fallback);
+                }
+            }
+
+            auto& uboGen = vsInstance->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
+            NOUS_VulkanShader::WriteInstanceUBO(vkContext, vsInstance, imageIndex, instanceID,
+                uboBuffer, blockSize, &uboGen);
+        }
+
+        // Write sampler bindings from baseShader reflection — no hardcoded binding indices.
+        // For each CombinedImageSampler in set=1, look up the texture by binding name from
+        // the material's textureMaps, falling back to the default texture if missing.
+        {
+            const auto& setIt = drawShader->reflection.descriptorSets.find(1);
+            if (setIt != drawShader->reflection.descriptorSets.end())
+            {
+                // Sort samplers by binding index to match the descriptor layout order.
+                std::vector<const ReflectedBinding*> samplers;
+                for (const auto& rb : setIt->second)
+                    if (rb.type == DescriptorType::CombinedImageSampler)
+                        samplers.push_back(&rb);
+                std::ranges::sort(samplers,
+                                  [](const ReflectedBinding* a, const ReflectedBinding* b){
+                                      return a->binding < b->binding; });
+
+                for (const ReflectedBinding* rb : samplers)
+                {
+                    ResourceTexture* texture = nullptr;
+                    if (auto texIt = material->textureMaps.find(rb->name); texIt != material->textureMaps.end())
+                        texture = texIt->second.texture;
+
+                    if (!texture || texture->generation == INVALID_ID || !texture->internalData)
+                    {
+                        // Each slot falls back to a semantically neutral texture so unassigned
+                        // maps have no visible effect on the final result.
+                        if (const std::string& n = rb->name; n.find("diffuse") != std::string::npos ||
+                            n.find("Diffuse") != std::string::npos)
+                        {
+                            // Checkerboard — visible "missing texture" signal.
+                            texture = vkContext->resourceManager->GetDefaultTexture();
+                        }
+                        else if (n.find("normal") != std::string::npos ||
+                                 n.find("Normal") != std::string::npos)
+                        {
+                            // (128,128,255) decodes to tangent-space (0,0,1) → geometry normal passthrough.
+                            texture = vkContext->resourceManager->GetFlatNormalTexture();
+                        }
+                        else if (n.find("emissive") != std::string::npos ||
+                                 n.find("Emissive") != std::string::npos)
+                        {
+                            // Black → adds nothing to the final colour.
+                            texture = vkContext->resourceManager->GetBlackTexture();
+                        }
+                        else
+                        {
+                            // White → multiplicative identity (specular strength = 1,
+                            // shininess = max, AO = 1 / no occlusion).
+                            texture = vkContext->resourceManager->GetWhiteTexture();
+                        }
+                    }
+
+                    if (texture && texture->internalData)
+                    {
+                        const auto* texData = static_cast<VulkanTextureData*>(texture->internalData);
+                        auto& samplerGen = vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex];
+                        auto& samplerID  = vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].ids[imageIndex];
+                        NOUS_VulkanShader::WriteInstanceSampler(vkContext, vsInstance, imageIndex, instanceID,
+                            rb->binding, texData->image.view, texData->sampler,
+                            &samplerGen, &samplerID, texture->GetUID(), texture->generation);
+                    }
+                    else if (vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex] == UINT32_MAX)
+                    {
+                        // This binding has never been written and no valid texture is available.
+                        // Drawing now would violate VUID-vkCmdDrawIndexed-None-08114 — skip.
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // When the material's slot lives in vsDraw's own pool (poolOwnerShader == drawShader),
+        // vsInstance == vsDraw and the descriptor set layout already matches the pipeline — no override.
+        // When the slot lives in a different pool (e.g. vsBase fallback), override to vsDraw's
+        // pipeline layout so Vulkan uses the correct layout for the bind point.
+        VkPipelineLayout bindLayout = (vsInstance != vsDraw)
+                                            ? vsDraw->pipeline.pipelineLayout
+                                            : VK_NULL_HANDLE;
+        NOUS_VulkanShader::BindInstanceDescriptorSet(commandBuffer->handle, vsInstance, imageIndex, instanceID, bindLayout);
     }
 
     // Bind vertex buffer.
-    VkDeviceSize offset = bufferData->vertexBufferOffset;
+    const VkDeviceSize offset = bufferData->vertexBufferOffset;
     vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1,
         &vkContext->objectVertexBuffer.handle, &offset);
 
@@ -1267,17 +1556,17 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     texture->internalData = reinterpret_cast<VulkanTextureData*>(
             NOUS_NEW<VulkanTextureData>(MemoryTag::RESOURCE_TEXTURE));
 
-    VulkanTextureData* textureData = (VulkanTextureData*)texture->internalData;
-    VkDeviceSize imageSize = texture->width * texture->height * texture->channelCount;
+    auto* textureData = static_cast<VulkanTextureData*>(texture->internalData);
+    const VkDeviceSize imageSize = texture->width * texture->height * texture->channelCount;
 
     // NOTE: Assumes 8 bits per channel.
-    VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM; // RGBA
+    constexpr VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM; // RGBA
 
     // Create a staging buffer and load data into it.
-    VkBufferUsageFlagBits usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    constexpr VkBufferUsageFlagBits usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    constexpr VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    VulkanBuffer stagingBuffer;
+    VulkanBuffer stagingBuffer{};
 
     NOUS_VulkanBuffer::CreateBuffer(vkContext, imageSize, usage, memoryPropertyFlags, true, &stagingBuffer);
     NOUS_VulkanBuffer::LoadData(vkContext, &stagingBuffer, 0, imageSize, 0, pixels);
@@ -1292,7 +1581,7 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
         VK_IMAGE_ASPECT_COLOR_BIT,
         &textureData->image);
 
-    VulkanCommandBuffer tempCommandBuffer;
+    VulkanCommandBuffer tempCommandBuffer{};
     VkCommandPool pool = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()));
     VkQueue queue = vkContext->device.transferQueue;
 
@@ -1340,7 +1629,7 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     samplerCreateInfo.minLod = 0.0f;
     samplerCreateInfo.maxLod = 0.0f;
 
-    VkResult result = vkCreateSampler(vkContext->device.logicalDevice, &samplerCreateInfo, vkContext->allocator, &textureData->sampler);
+    const VkResult result = vkCreateSampler(vkContext->device.logicalDevice, &samplerCreateInfo, vkContext->allocator, &textureData->sampler);
     
     if (!VkResultIsSuccess(result)) 
     {
@@ -1354,7 +1643,7 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
 
 void VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
 {
-    VulkanTextureData* textureData = reinterpret_cast<VulkanTextureData*>(texture->internalData);
+    auto* textureData = static_cast<VulkanTextureData*>(texture->internalData);
 
     if (textureData)
     {
@@ -1365,7 +1654,7 @@ void VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
         MemoryManager::ZeroMemory(&textureData->image, sizeof(VulkanImage));
 
         vkDestroySampler(vkContext->device.logicalDevice, textureData->sampler, vkContext->allocator);
-        textureData->sampler = 0;
+        textureData->sampler = nullptr;
 
         NOUS_DELETE(textureData, MemoryTag::RESOURCE_TEXTURE);
     }
@@ -1383,31 +1672,41 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
     if (material->internalID != INVALID_ID)
         return true;
 
-    // Acquire an instance slot from the primary shader.
-    // EDITOR mode: primary = builtInMaterialShader; also acquire a matching slot in builtInGameShader.
-    // GAME mode:   builtInMaterialShader is null; primary = builtInGameShader.
-    ResourceShader* primaryShader = vkContext->builtInMaterialShader
-        ? vkContext->builtInMaterialShader
-        : vkContext->builtInGameShader;
+    // Resolve pool owner: use material's custom shader if it is GPU-ready and has a pool.
+    // Falls back to the built-in material shader (or game shader in GAME mode).
+    ResourceShader* poolOwner = nullptr;
+    if (material->shader && material->shader->internalData &&
+        material->shader->GetState() == ResourceState::GPU_READY)
+    {
+        const auto* vs = down_cast<VulkanShader*>(material->shader->internalData);
+        if (vs->instancePool)
+            poolOwner = material->shader;
+    }
+    if (!poolOwner)
+        poolOwner = vkContext->builtInMaterialShader
+                    ? vkContext->builtInMaterialShader
+                    : vkContext->builtInGameShader;
 
-    if (!primaryShader || !primaryShader->internalData)
+    if (!poolOwner || !poolOwner->internalData)
     {
         NOUS_DEBUG_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() — no shader/instance pool ready yet; will retry after shaders init.");
         return false;
     }
 
-    auto* vs = down_cast<VulkanShader*>(primaryShader->internalData);
+    auto* vs = down_cast<VulkanShader*>(poolOwner->internalData);
     uint32_t instanceID = 0;
     if (!NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vs, &instanceID))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateMaterial() - Instance pool full.");
         return false;
     }
-    material->internalID = instanceID;
+    material->internalID      = instanceID;
+    material->poolOwnerShader = poolOwner;
 
-    // In EDITOR mode also acquire the matching slot in the game shader so
-    // both pools stay in sync (they share the same GLSL/layout).
-    if (vkContext->builtInMaterialShader
+    // In EDITOR mode, also acquire a matching slot in the game shader clone so both
+    // pools stay in sync — but only for materials using the built-in shader.
+    // Custom-shader materials are drawn directly from their own pool in both renderpasses.
+    if (poolOwner == vkContext->builtInMaterialShader
         && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
     {
         auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
@@ -1415,40 +1714,46 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
         NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vsGame, &gameID);
     }
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "Material created (instance %u).", material->internalID);
+    NOUS_INFO_C(CURRENT_CHANNEL, "Material created (instance %u, pool: %s).",
+                material->internalID, poolOwner->GetName().c_str());
     return true;
 }
 
 void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
 {
-    if (material)
-    {
-        if (material->internalID != INVALID_ID)
-        {
-            // Ensure descriptor sets are no longer referenced by any in-flight command buffers.
-            vkDeviceWaitIdle(vkContext->device.logicalDevice);
-
-            if (vkContext->builtInMaterialShader && vkContext->builtInMaterialShader->internalData)
-            {
-                VulkanShader* vs = static_cast<VulkanShader*>(vkContext->builtInMaterialShader->internalData);
-                NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vs, material->internalID);
-            }
-            if (vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
-            {
-                VulkanShader* vsGame = static_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
-                NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vsGame, material->internalID);
-            }
-            material->internalID = INVALID_ID;
-        }
-        else
-        {
-            NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with INVALID_ID.");
-        }
-    }
-    else 
+    if (!material)
     {
         NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with nullptr. Nothing was done.");
+        return;
     }
+
+    if (material->internalID == INVALID_ID)
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "VulkanBackend::DestroyMaterial() called with INVALID_ID.");
+        return;
+    }
+
+    // Ensure descriptor sets are no longer referenced by any in-flight command buffers.
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+
+    // Release from the owning pool.
+    if (material->poolOwnerShader && material->poolOwnerShader->internalData)
+    {
+        auto* vs = down_cast<VulkanShader*>(material->poolOwnerShader->internalData);
+        NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vs, material->internalID);
+    }
+
+    // Release game clone slot only for built-in shader materials (custom shaders share
+    // one pool between scene and game renderpasses — no clone slot to release).
+    if (material->poolOwnerShader == vkContext->builtInMaterialShader
+        && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
+    {
+        auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
+        NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vsGame, material->internalID);
+    }
+
+    material->internalID      = INVALID_ID;
+    material->poolOwnerShader = nullptr;
 }
 
 bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry)
@@ -1463,7 +1768,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     // TODO: ResourceManager needs to take care of reuploads, not here.
     
     //bool isReupload = false;
-    bool isReupload = geometry->internalID != INVALID_ID;
+    const bool isReupload = geometry->internalID != INVALID_ID;
 
     VulkanGeometryData oldRange{};
     VulkanGeometryData* internalData = nullptr;
@@ -1511,8 +1816,8 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     internalData->vertexSize = sizeof(Vertex3D) * vertexCount;
 
     {
-        std::lock_guard<std::mutex> vtxLock(vkContext->vertexBufferMutex);
-        if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, 0, queue, &vkContext->objectVertexBuffer,
+        std::lock_guard vtxLock(vkContext->vertexBufferMutex);
+        if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, nullptr, queue, &vkContext->objectVertexBuffer,
             &internalData->vertexBufferOffset, internalData->vertexSize, vertices))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "VulkanBackend::CreateGeometry() failed to upload to the vertex buffer!");
@@ -1548,7 +1853,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     {
         // Free vertex data
         {
-            std::lock_guard<std::mutex> vtxLock(vkContext->vertexBufferMutex);
+            std::lock_guard vtxLock(vkContext->vertexBufferMutex);
             NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectVertexBuffer,
                 oldRange.vertexBufferOffset, oldRange.vertexSize);
         }
@@ -1556,7 +1861,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
         // Free index data, if applicable
         if (oldRange.indexSize > 0)
         {
-            std::lock_guard<std::mutex> idxLock(vkContext->indexBufferMutex);
+            std::lock_guard idxLock(vkContext->indexBufferMutex);
             NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectIndexBuffer,
                 oldRange.indexBufferOffset, oldRange.indexSize);
         }
@@ -1576,7 +1881,7 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
 
         // Free vertex data
         {
-            std::lock_guard<std::mutex> vtxLock(vkContext->vertexBufferMutex);
+            std::lock_guard vtxLock(vkContext->vertexBufferMutex);
             NOUS_VulkanBuffer::FreeDataRange(vkContext, &vkContext->objectVertexBuffer, internalData->vertexBufferOffset, internalData->vertexSize);
         }
 
@@ -1611,7 +1916,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     //    have independent global UBO buffers and descriptor sets.
     if (assetPath.find("BuiltIn.MaterialShader") != std::string::npos)
     {
-        VulkanRenderpass* gameRenderpassTarget = (vkContext->renderMode == RenderMode::GAME)
+        VulkanRenderpass* gameRenderpassTarget = vkContext->renderMode == RenderMode::GAME
             ? &vkContext->gameSwapchainRenderpass
             : &vkContext->gameRenderpass;
 
@@ -1700,7 +2005,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     //    Fullscreen gradient with depth test OFF. Also creates a game renderpass clone.
     if (assetPath.find("BuiltIn.BackgroundShader") != std::string::npos)
     {
-        VulkanRenderpass* gameRenderpassTarget = (vkContext->renderMode == RenderMode::GAME)
+        VulkanRenderpass* gameRenderpassTarget = vkContext->renderMode == RenderMode::GAME
             ? &vkContext->gameSwapchainRenderpass
             : &vkContext->gameRenderpass;
 
@@ -1765,8 +2070,12 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         return true;
     }
 
-    // ── Default: scene renderpass for user-defined shaders ────────────────────
-    return NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader);
+    // ── Default: user-defined shaders — target the active renderpass ─────────
+    //    In GAME mode sceneRenderpass is VK_NULL_HANDLE; use the swapchain renderpass instead.
+    VulkanRenderpass* targetRenderpass = vkContext->renderMode == RenderMode::GAME
+        ? &vkContext->gameSwapchainRenderpass
+        : &vkContext->sceneRenderpass;
+    return NOUS_VulkanShader::Create(vkContext, targetRenderpass, shader);
 }
 
 void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
@@ -1783,6 +2092,8 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     // In GAME mode these are ResourceManager-owned and point directly to the shader being destroyed.
     if (shader == vkContext->builtInGameShader)             vkContext->builtInGameShader             = nullptr;
     if (shader == vkContext->builtInGameBackgroundShader)   vkContext->builtInGameBackgroundShader   = nullptr;
+
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
     auto* vs = down_cast<VulkanShader*>(shader->internalData);
     NOUS_VulkanShader::Destroy(vkContext, vs);
@@ -1834,12 +2145,12 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     // Helper: destroys existing GPU data on `s` (if any) and recreates it.
     // GPU is already idle — vkDeviceWaitIdle was called above.
     auto recreate = [&](ResourceShader* s, VulkanRenderpass* rp,
-                        bool disableBlending, bool createOutlinePipelines,
-                        bool useLineTopology, bool noDepthTest) -> bool
+                        const bool disableBlending, const bool createOutlinePipelines,
+                        const bool useLineTopology, const bool noDepthTest) -> bool
     {
         if (s->internalData)
         {
-            auto* oldVS = static_cast<VulkanShader*>(s->internalData);
+            auto* oldVS = down_cast<VulkanShader*>(s->internalData);
             NOUS_VulkanShader::Destroy(vkContext, oldVS);
             s->internalData = nullptr;
         }
@@ -1851,14 +2162,15 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     // Helper: re-acquires descriptor-set instance slots for every loaded material.
     // Must be called after the MaterialShader pools are destroyed+recreated — old
     // descriptor sets are gone with the old pool, so each material needs a fresh slot.
-    auto reacquireMaterialInstances = [&]()
+    auto reacquireMaterialInstances = [&]
     {
         if (!vkContext->resourceManager) return;
         for (auto& [uid, resource] : vkContext->resourceManager->GetResourcesMap())
         {
             if (resource->GetType() != ResourceType::MATERIAL) continue;
-            auto* mat = static_cast<ResourceMaterial*>(resource);
-            mat->internalID = INVALID_ID;   // bypass the "already acquired" guard
+            auto* mat = down_cast<ResourceMaterial*>(resource);
+            mat->internalID      = INVALID_ID;  // bypass the "already acquired" guard
+            mat->poolOwnerShader = nullptr;      // let CreateMaterial re-derive the pool owner
             CreateMaterial(mat);
         }
     };
@@ -1897,15 +2209,9 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
                 NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader game clone.");
         }
 
-        // Pick clone on pickRenderpass (blending disabled).
-        if (vkContext->builtInPickShader)
-        {
-            vkContext->builtInPickShader->stagesData = shader->stagesData;
-            vkContext->builtInPickShader->reflection = shader->reflection;
-            vkContext->builtInPickShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInPickShader, &vkContext->pickRenderpass, true, false, false, false))
-                NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate pick shader clone.");
-        }
+        // NOTE: builtInPickShader is NOT updated here. It is a separate independent shader
+        // (BuiltIn.PickShader.glsl) that outputs object IDs for mouse picking — it is NOT
+        // a clone of the material shader and must not be overwritten with material shader data.
 
         // Re-acquire descriptor-set slots for all materials — old slots were destroyed
         // with the previous shader pool and must be reallocated from the new one.
@@ -2012,6 +2318,16 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
         return false;
     }
 
+    // Custom shaders own their own instance pool when used as poolOwnerShader for a
+    // material (see CreateMaterial: it picks the custom shader's pool if it is
+    // GPU_READY). Recreating the VulkanShader above destroyed that pool, so every
+    // material whose poolOwnerShader pointed at this shader now holds a stale
+    // internalID slot referencing a destroyed VkDescriptorSet. Drawing those
+    // materials triggers VUID-vkCmdBindDescriptorSets-graphicsPipelineLibrary-06754
+    // ("pDescriptorSets[0] (VkDescriptorSet 0x0[])"). Re-acquire slots from the
+    // freshly created pool — the same pattern used for MaterialShader reloads.
+    reacquireMaterialInstances();
+
     NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Shader '%s' reloaded (gen=%u).", assetPath.c_str(), shader->generation);
     return true;
 }
@@ -2034,7 +2350,7 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
         return 0;
     }
 
-    VulkanShader* pickVS = static_cast<VulkanShader*>(rPickShader->internalData);
+    auto pickVS = down_cast<VulkanShader*>(rPickShader->internalData);
 
     // Wait for all GPU work to complete before using the pick resources.
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
@@ -2168,14 +2484,13 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
 
     // --- Read back pixel data ---
     uint32 objectID = 0;
-    void* mapped = NOUS_VulkanBuffer::LockMemory(vkContext, &stagingBuffer, 0, 4, 0);
-    if (mapped)
+    if (void* mapped = NOUS_VulkanBuffer::LockMemory(vkContext, &stagingBuffer, 0, 4, 0))
     {
         const auto* pixel = static_cast<const uint8*>(mapped);
         objectID = static_cast<uint32>(pixel[0])
-                 | (static_cast<uint32>(pixel[1]) << 8)
-                 | (static_cast<uint32>(pixel[2]) << 16)
-                 | (static_cast<uint32>(pixel[3]) << 24);
+                 | static_cast<uint32>(pixel[1]) << 8
+                 | static_cast<uint32>(pixel[2]) << 16
+                 | static_cast<uint32>(pixel[3]) << 24;
         NOUS_VulkanBuffer::UnlockMemory(vkContext, &stagingBuffer);
     }
 
@@ -2193,37 +2508,37 @@ VulkanContext* VulkanBackend::GetVulkanContext()
     return vkContext;
 }
 
-bool VulkanBackend::DrawGrid(RenderpassType renderpassID,
+bool VulkanBackend::DrawGrid(const RenderpassType renderpassID,
                              const glm::mat4& projection, const glm::mat4& view)
 {
     // Grid is scene-viewport only.
     if (renderpassID != RenderpassType::SCENE)
         return true;
 
-    ResourceShader* rGridShader = vkContext->builtInGridShader;
+    const ResourceShader* rGridShader = vkContext->builtInGridShader;
     if (!rGridShader || !rGridShader->internalData)
         return true; // Grid shader not loaded yet — skip gracefully.
 
     if (vkContext->gridVertexBuffer.handle == VK_NULL_HANDLE || vkContext->gridVertexCount == 0)
         return true;
 
-    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
-    VulkanShader* vs = static_cast<VulkanShader*>(rGridShader->internalData);
+    const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    const auto vs = down_cast<VulkanShader*>(rGridShader->internalData);
 
     // Bind the grid pipeline and upload view/projection to the grid shader's global UBO.
     NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
 
-    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+    const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
     NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
         vkContext->imageIndex, &ubo, sizeof(ubo));
 
     // Push identity model matrix (grid lives at the world origin).
-    const glm::mat4 identity(1.0f);
+    constexpr glm::mat4 identity(1.0f);
     vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
         VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &identity);
 
     // Bind the grid vertex buffer (axis lines first, minor lines after).
-    VkDeviceSize offset = 0;
+    constexpr VkDeviceSize offset = 0;
     vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->gridVertexBuffer.handle, &offset);
 
     const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
@@ -2239,12 +2554,12 @@ bool VulkanBackend::DrawGrid(RenderpassType renderpassID,
     return true;
 }
 
-bool VulkanBackend::DrawBackground(RenderpassType renderpassID,
+bool VulkanBackend::DrawBackground(const RenderpassType renderpassID,
                                     const glm::mat4& projection,
                                     const glm::mat4& view)
 {
     // Select the shader for this renderpass.
-    ResourceShader* rShader = nullptr;
+    const ResourceShader* rShader = nullptr;
     if (renderpassID == RenderpassType::SCENE)
         rShader = vkContext->builtInSceneBackgroundShader;
     else if (renderpassID == RenderpassType::GAME)
@@ -2253,8 +2568,8 @@ bool VulkanBackend::DrawBackground(RenderpassType renderpassID,
     if (!rShader || !rShader->internalData)
         return true; // Shader not loaded yet — skip gracefully.
 
-    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
-    VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
+    const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    const auto vs = down_cast<VulkanShader*>(rShader->internalData);
 
     // Bind the background pipeline (no vertex buffers, no descriptor sets needed).
     NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
@@ -2284,7 +2599,7 @@ bool VulkanBackend::DrawBackground(RenderpassType renderpassID,
     if (std::abs(upY) > 1e-4f)
         horizonNDC_y = negFwdY * focalY / upY;  // = -forward.y * P11 / up.y
     else
-        horizonNDC_y = (negFwdY >= 0.0f) ? 100.0f : -100.0f; // camera near-vertical: off screen
+        horizonNDC_y = negFwdY >= 0.0f ? 100.0f : -100.0f; // camera near-vertical: off screen
 
     // Allow a small margin outside [0,1] so the gradient still looks natural
     // when the horizon is just off the edge of the screen.
@@ -2317,7 +2632,7 @@ bool VulkanBackend::DrawBackground(RenderpassType renderpassID,
     return true;
 }
 
-bool VulkanBackend::DrawBoundingBoxes(RenderpassType renderpassID,
+bool VulkanBackend::DrawBoundingBoxes(const RenderpassType renderpassID,
                                        const glm::mat4& projection,
                                        const glm::mat4& view,
                                        const std::vector<BoundingBoxData>& boxes)
@@ -2329,25 +2644,25 @@ bool VulkanBackend::DrawBoundingBoxes(RenderpassType renderpassID,
     if (boxes.empty())
         return true;
 
-    ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
+    const ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
     if (!rShader || !rShader->internalData)
         return true; // Shader not loaded yet — skip gracefully.
 
     if (vkContext->boundingBoxVertexBuffer.handle == VK_NULL_HANDLE || vkContext->boundingBoxVertexCount == 0)
         return true;
 
-    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
-    VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
+    const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    const auto vs = down_cast<VulkanShader*>(rShader->internalData);
 
     // Bind the bounding box pipeline and upload view/projection to the global UBO.
     NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
 
-    struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+    const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
     NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
         vkContext->imageIndex, &ubo, sizeof(ubo));
 
     // Bind the shared unit-cube wireframe vertex buffer once.
-    VkDeviceSize offset = 0;
+    constexpr VkDeviceSize offset = 0;
     vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->boundingBoxVertexBuffer.handle, &offset);
 
     const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
@@ -2413,15 +2728,15 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
 
     for (const CameraFrustumData& f : frustums)
     {
-        for (int i = 0; i < 24; ++i)
+        for (int k_EdgeIndice : k_EdgeIndices)
         {
             Vertex3D v{};
-            v.position = f.corners[k_EdgeIndices[i]];
+            v.position = f.corners[k_EdgeIndice];
             verts.push_back(v);
         }
     }
 
-    const uint32 totalVerts = static_cast<uint32>(verts.size());
+    const auto totalVerts = static_cast<uint32>(verts.size());
     if (totalVerts > vkContext->frustumVertexCapacity)
     {
         NOUS_WARN_C(CURRENT_CHANNEL, "[DrawCameraFrustums] Frustum vertex count (%u) exceeds buffer capacity (%u). Skipping.",
@@ -2433,7 +2748,7 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
         0, totalVerts * sizeof(Vertex3D), 0, verts.data());
 
     VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
-    VulkanShader* vs = static_cast<VulkanShader*>(rShader->internalData);
+    auto vs = down_cast<VulkanShader*>(rShader->internalData);
 
     NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
 
@@ -2476,7 +2791,72 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
     return true;
 }
 
-bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
+bool VulkanBackend::DrawPointLightDebugs(const RenderpassType renderpassID,
+                                          const glm::mat4& projection,
+                                          const glm::mat4& view,
+                                          const std::vector<BoundingBoxData>& lightDebugs,
+                                          const bool globalAlreadySet)
+{
+    // Point light debug spheres are scene-viewport only.
+    if (renderpassID != RenderpassType::SCENE)
+        return true;
+
+    if (lightDebugs.empty())
+        return true;
+
+    // Reuse the bounding box shader: same vertex format (Vertex3D.position),
+    // same GlobalUBO (projection + view), same push constants (model + color).
+    const ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
+    if (!rShader || !rShader->internalData)
+        return true;
+
+    if (vkContext->pointLightSphereVertexBuffer.handle == VK_NULL_HANDLE ||
+        vkContext->pointLightSphereVertexCount == 0)
+        return true;
+
+    const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    const auto vs = down_cast<VulkanShader*>(rShader->internalData);
+
+    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+
+    if (globalAlreadySet)
+    {
+        // A previous scenery draw (bounding boxes / frustums) already updated
+        // the global descriptor set this frame. Just rebind it; updating again
+        // while bound would invalidate the command buffer.
+        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vs->pipeline.pipelineLayout, 0, 1,
+            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+    }
+    else
+    {
+        const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+            vkContext->imageIndex, &ubo, sizeof(ubo));
+    }
+
+    constexpr VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->pointLightSphereVertexBuffer.handle, &offset);
+
+    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
+
+    struct SpherePushConstants { glm::mat4 model; glm::vec4 color; };
+
+    for (const BoundingBoxData& ld : lightDebugs)
+    {
+        SpherePushConstants pc{ ld.transform, ld.color };
+        vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT,
+            0, sizeof(SpherePushConstants), &pc);
+
+        vkCmdDraw(cmdBuf->handle, vkContext->pointLightSphereVertexCount, 1, 0, 0);
+    }
+
+    return true;
+}
+
+bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
                                             const glm::mat4& projection, const glm::mat4& view,
                                             const std::vector<GeometryRenderData>& outlinedGeometries,
                                             const OutlineSettings& settings)
@@ -2488,15 +2868,15 @@ bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
     if (outlinedGeometries.empty())
         return true;
 
-    ResourceShader* rOutlineShader = vkContext->builtInOutlineShader;
+    const ResourceShader* rOutlineShader = vkContext->builtInOutlineShader;
     if (!rOutlineShader || !rOutlineShader->internalData)
         return true; // Outline shader not loaded yet — skip gracefully.
 
-    VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
-    VulkanShader* vs = static_cast<VulkanShader*>(rOutlineShader->internalData);
+    const VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
+    const auto vs = down_cast<VulkanShader*>(rOutlineShader->internalData);
 
     // Upload the outline global UBO: projection + view + outlineColor.
-    struct OutlineGlobalUBO { glm::mat4 projection; glm::mat4 view; glm::vec4 outlineColor; }
+    const struct OutlineGlobalUBO { glm::mat4 projection; glm::mat4 view; glm::vec4 outlineColor; }
         globalUBO{ projection, view, settings.color };
 
     // ── Pass 1: Stencil-write ─────────────────────────────────────────────────
@@ -2515,7 +2895,7 @@ bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
     {
         if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID) continue;
 
-        VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
+        const VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
 
         // Pass 1: draw the mesh at its ORIGINAL position (thickness=0) to mark the
         // stencil buffer at the real silhouette — NOT the expanded shell.
@@ -2563,7 +2943,7 @@ bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
     {
         if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID) continue;
 
-        VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
+        const VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
 
         struct OutlinePushConstant
         {
@@ -2600,7 +2980,7 @@ bool VulkanBackend::DrawOutlinedGeometries(RenderpassType renderpassID,
 
 void VulkanBackend::ProcessPendingSubmissions()
 {
-    std::unique_lock<std::mutex> lock(vkContext->submitQueueMutex);
+    std::unique_lock lock(vkContext->submitQueueMutex);
 
     while (!vkContext->submitQueue.empty()) 
     {
@@ -2609,16 +2989,16 @@ void VulkanBackend::ProcessPendingSubmissions()
 
         lock.unlock(); // Unlock while processing
 
-        std::mutex& queueMutex = (task.queue == vkContext->device.transferQueue)
+        std::mutex& queueMutex = task.queue == vkContext->device.transferQueue
             ? vkContext->device.transferQueueMutex
             : vkContext->device.graphicsQueueMutex;
-        std::lock_guard<std::mutex> queueLock(queueMutex);
-        VkResult result = vkQueueSubmit(task.queue, task.submitCount, task.pSubmits, task.fence);
+        std::lock_guard queueLock(queueMutex);
+        const VkResult result = vkQueueSubmit(task.queue, task.submitCount, task.pSubmits, task.fence);
 
-        bool success = (result == VK_SUCCESS);
-        if (success && task.waitIdle) 
+        bool success = result == VK_SUCCESS;
+        if (success && task.waitIdle)
         {
-            success = (vkQueueWaitIdle(task.queue) == VK_SUCCESS);
+            success = vkQueueWaitIdle(task.queue) == VK_SUCCESS;
         }
 
         task.resultPromise.set_value(success);

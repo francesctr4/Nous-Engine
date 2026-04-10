@@ -16,6 +16,7 @@
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
@@ -132,17 +133,27 @@ bool ModuleRenderer3D::Start()
 		resource->SetState(ResourceState::GPU_READY);
 	}
 
-	// Give the default texture a stable ID/generation for the descriptor lazy-write
-	// cache (WriteInstanceSampler).  Without this, every draw using the default
-	// texture re-fires vkUpdateDescriptorSets, causing validation errors.
+	// Give all built-in fallback textures stable generation values so the descriptor
+	// lazy-write cache (WriteInstanceSampler) can skip redundant writes. Without this,
+	// generation stays UINT32_MAX after every write (treated as "never written"),
+	// causing vkUpdateDescriptorSets to fire every draw call — and in EDITOR mode the
+	// GAME pass update then hits a descriptor already recorded in the SCENE command
+	// buffer, triggering a validation error. The unique identity key is GetUID(),
+	// assigned in ModuleResourceManager::Start() (INVALID_ID - 1..4).
 	ResourceTexture* defaultTex = mModuleResourceManager->GetDefaultTexture();
 	if (defaultTex)
-	{
-		defaultTex->ID         = 0;
 		defaultTex->generation = 0;
-	}
+	ResourceTexture* whiteTex = mModuleResourceManager->GetWhiteTexture();
+	if (whiteTex)
+		whiteTex->generation = 0;
+	ResourceTexture* blackTex = mModuleResourceManager->GetBlackTexture();
+	if (blackTex)
+		blackTex->generation = 0;
+	ResourceTexture* flatNormalTex = mModuleResourceManager->GetFlatNormalTexture();
+	if (flatNormalTex)
+		flatNormalTex->generation = 0;
 
-	// Register all .glsl files in Assets/Shaders/ for hot reload (EDITOR only).
+// Register all .glsl files in Assets/Shaders/ for hot reload (EDITOR only).
 	// Changes are detected by Poll() in PreUpdate() and trigger a per-file reload.
 	if (m_renderMode == RenderMode::EDITOR)
 	{
@@ -179,6 +190,23 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 	// Must run before FlushPendingReloads and before DrawFrame — no renderpass open here.
 	mRendererFrontend->FlushCompletedReloads();
 
+	// Upload CPU_READY resources before processing reslots so that a newly-imported
+	// custom shader is GPU_READY when FlushPendingReslots calls CreateMaterial.
+	// Without this ordering, a reslot that fires in the same frame the target shader
+	// is first uploaded would see the shader as not-GPU_READY and fall back to vsBase's
+	// instance pool — causing a NULL descriptor-set error on the first draw call.
+	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
+	{
+		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
+			NOUS_ERROR("ModuleRenderer3D::PreUpdate() — failed to upload resource '%s'.", resource->GetName().c_str());
+		resource->SetState(ResourceState::GPU_READY);
+	}
+
+	// Process queued material shader changes (Inspector reslots). Must run after
+	// FlushCompletedReloads (hot-reload GPU swaps) and TakePendingUploads (first-load
+	// shader uploads) so the target shader is always GPU-ready when CreateMaterial runs.
+	mRendererFrontend->FlushPendingReslots();
+
 	// Dispatch compile jobs for any queued/deferred reload requests.
 	// Returns immediately — jobs run on worker threads.
 	mRendererFrontend->FlushPendingReloads();
@@ -188,14 +216,6 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 	// is called later in PostUpdate, so no renderpass is open at this point.
 	if (m_renderMode == RenderMode::EDITOR)
 		m_shaderWatcher.Poll();
-
-	// Upload CPU_READY resources that were deserialized since the last frame.
-	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
-	{
-		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
-			NOUS_ERROR("ModuleRenderer3D::PreUpdate() — failed to upload resource '%s'.", resource->GetName().c_str());
-		resource->SetState(ResourceState::GPU_READY);
-	}
 
 	// Release GPU handles for retired resources, then hand back for CPU eviction.
 	for (auto& [type, resource] : mModuleResourceManager->TakePendingReleases())
@@ -222,8 +242,11 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 	const SceneRenderData& sceneData = mModuleScene->GetRenderData();
 
+	m_totalTime += dt;
+
 	RenderPacket packet{};
 	packet.deltaTime    = dt;
+	packet.totalTime    = m_totalTime;
 	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? mModuleCamera3D->GetCamera() : nullptr;
 	packet.gameCamera   = sceneData.gameCamera;
 
@@ -383,6 +406,46 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		}
 
 		mRendererFrontend->SetCameraFrustums(frustums);
+	}
+
+	// Editor-only: point light debug spheres.
+	//   Small marker sphere at every point light's position (always visible).
+	//   Larger range sphere shown only when the light's GameObject is selected.
+	if (m_renderMode == RenderMode::EDITOR)
+	{
+		std::vector<BoundingBoxData> pointLightDebugs;
+
+		if (sceneData.hasActiveScene)
+		{
+			constexpr float c_markerRadius = 0.25f;
+
+			for (const auto& goPtr : sceneData.gameObjects)
+			{
+				auto* light     = goPtr->TryGetComponent<CLight>();
+				auto* transform = goPtr->TryGetComponent<CTransform>();
+				if (!light || !transform) continue;
+				if (light->type != LightType::Point) continue;
+
+				const glm::vec4 color = glm::vec4(light->color, 1.0f);
+
+				// Always: small fixed-size marker sphere.
+				pointLightDebugs.emplace_back(
+					glm::translate(glm::mat4(1.0f), transform->position) *
+					glm::scale(glm::mat4(1.0f), glm::vec3(c_markerRadius)),
+					color);
+
+				// Only for the selected light: range sphere.
+				if (sceneData.selectedObject == goPtr)
+				{
+					pointLightDebugs.emplace_back(
+						glm::translate(glm::mat4(1.0f), transform->position) *
+						glm::scale(glm::mat4(1.0f), glm::vec3(light->range)),
+						color);
+				}
+			}
+		}
+
+		mRendererFrontend->SetPointLightDebugs(pointLightDebugs);
 	}
 
 	if (BuildRenderPacket(&packet, sceneData) && !mIsMinimized)
@@ -552,6 +615,8 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	}
 
 	packet->geometries.clear();
+	packet->hasDirectionalLight   = false;
+	packet->activePointLightCount = 0;
 
 	// Extract frustum planes from the game camera for per-mesh culling.
 	// Meshes whose world-space AABB is completely outside the frustum are skipped.
@@ -596,6 +661,46 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 		}
 
 		packet->geometries.emplace_back(data);
+	}
+
+	// ── Light gathering ───────────────────────────────────────────────────────────
+	for (const auto& goPtr : sceneData.gameObjects)
+	{
+		auto* light     = goPtr->TryGetComponent<CLight>();
+		auto* transform = goPtr->TryGetComponent<CTransform>();
+		if (!light || !transform) continue;
+
+		if (light->type == LightType::Directional)
+		{
+			if (!packet->hasDirectionalLight)
+			{
+				const glm::vec3 forward = glm::normalize(
+					transform->orientation * glm::vec3(0.f, -1.f, 0.f));
+				packet->directionalLight.direction = glm::vec4(forward, 0.f);
+				packet->directionalLight.color     = glm::vec4(light->color, light->intensity);
+				packet->hasDirectionalLight        = true;
+			}
+			else
+			{
+				NOUS_WARN_C(CURRENT_CHANNEL,
+					"Scene has more than one directional light; only the first is used.");
+			}
+		}
+		else if (light->type == LightType::Point)
+		{
+			if (packet->activePointLightCount < c_maxPointLights)
+			{
+				PointLight& pl = packet->pointLights[packet->activePointLightCount++];
+				pl.position    = glm::vec4(transform->position, light->range);
+				pl.color       = glm::vec4(light->color, light->intensity);
+			}
+			else
+			{
+				NOUS_WARN_C(CURRENT_CHANNEL,
+					"Point light limit (%u) reached; light on '%s' ignored.",
+					c_maxPointLights, goPtr->GetName().c_str());
+			}
+		}
 	}
 
 	return true;

@@ -1,13 +1,13 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
-
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
 #include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderParser/include/ShaderParser.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflection.h"
+
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 // ShaderLoader.cpp
 ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromSource(
@@ -36,8 +36,8 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromSource(
 
     for (const RawStage& raw : parsed.stages)
     {
-        const std::string stageSuffix = (raw.stage == ShaderStage::Vertex)   ? ".vert"
-                                      : (raw.stage == ShaderStage::Fragment) ? ".frag"
+        const std::string stageSuffix = raw.stage == ShaderStage::Vertex   ? ".vert"
+                                      : raw.stage == ShaderStage::Fragment ? ".frag"
                                       : ".comp";
         const std::string stageName = debugName + stageSuffix;
 
@@ -106,7 +106,7 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromFile(
 
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Read shader file '%s' (%llu bytes)", path.c_str(), bytesRead);
 
-    std::string source(buffer, bytesRead);
+    const std::string source(buffer, bytesRead);
     NOUS_DELETE(buffer, MemoryTag::FILE);
 
     return LoadShaderFromSource(source, path, config);

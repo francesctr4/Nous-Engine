@@ -18,7 +18,7 @@ class ResourceShader;
 // -----------------------------------------------------------------------------
 // Texture Maps
 // -----------------------------------------------------------------------------
-enum class TextureMapType
+enum class TextureMapType : int8_t
 {
     UNKNOWN = -1,
     DIFFUSE
@@ -53,22 +53,64 @@ struct GeometryRenderData
     glm::vec4 color;
 };
 
-enum class RenderpassType
+enum class RenderpassType : uint8_t
 {
     SCENE,
     GAME,
     UI
 };
 
+// -----------------------------------------------------------------------------
+// Light data (std140-safe: all members use vec4/ivec4, no vec3)
+// -----------------------------------------------------------------------------
+constexpr uint32_t c_maxPointLights = 16;
+
+struct DirectionalLight
+{
+    glm::vec4 direction;  // xyz = world-space direction (normalised), w = unused
+    glm::vec4 color;      // xyz = RGB, w = intensity
+};
+
+struct PointLight
+{
+    glm::vec4 position;   // xyz = world-space position, w = range
+    glm::vec4 color;      // xyz = RGB, w = intensity
+};
+
+// GPU-side global uniform buffer object.
+// Layout must mirror the GLSL GlobalUBO block exactly (std140).
+// IMPORTANT: Never use glm::vec3 here — in std140, vec3 has 16-byte alignment
+// while glm::vec3 has 4-byte alignment in C++, causing silent layout mismatch.
+// Use glm::ivec4 for the count field so both sides agree on 16-byte size + alignment.
+struct GlobalUBO
+{
+    glm::mat4        projection;                    //  64 bytes, offset   0
+    glm::mat4        view;                          //  64 bytes, offset  64
+    glm::vec4        viewPosition;                  //  16 bytes, offset 128 (w = unused)
+    glm::vec4        ambientColor;                  //  16 bytes, offset 144 (w = intensity)
+    DirectionalLight directionalLight;              //  32 bytes, offset 160
+    glm::ivec4       lightCountAndPad;              //  16 bytes, offset 192 (x = activePointLightCount)
+    PointLight       pointLights[c_maxPointLights]; // 512 bytes, offset 208
+    glm::vec4        time;                           //  16 bytes, offset 720 (x=totalTime, y=sin(t), z=cos(t), w=deltaTime)
+};                                                  // = 736 bytes total
+static_assert(sizeof(GlobalUBO) == 736,
+    "GlobalUBO size changed — update the GLSL block and this assert together.");
+
 struct RenderPacket
 {
-    RenderPacket() : editorCamera(nullptr), gameCamera(nullptr), deltaTime(0.0f) {}
+    RenderPacket() : editorCamera(nullptr), gameCamera(nullptr), deltaTime(0.0f), totalTime(0.0f) {}
 
     Camera* editorCamera;
     Camera* gameCamera;
     float deltaTime;
+    float totalTime;  // seconds since app start (accumulated dt)
 
     std::vector<GeometryRenderData> geometries;
+
+    DirectionalLight directionalLight              = {};
+    bool             hasDirectionalLight           = false;
+    PointLight       pointLights[c_maxPointLights] = {};
+    uint32_t         activePointLightCount         = 0;
 };
 
 struct OutlineSettings
@@ -94,7 +136,7 @@ struct CameraFrustumData
 {
     CameraFrustumData() : corners{}, color(0.0f, 1.0f, 0.0f, 1.0f) {}
     CameraFrustumData(const glm::vec3 c[8], const glm::vec4& col)
-        : color(col) { for (int i = 0; i < 8; ++i) corners[i] = c[i]; }
+        : corners{}, color(col) { for (int i = 0; i < 8; ++i) corners[i] = c[i]; }
 
     glm::vec3 corners[8];
     glm::vec4 color;
@@ -150,7 +192,7 @@ enum class RenderMode : uint8_t
 // -----------------------------------------------------------------------------
 // Renderer backend type
 // -----------------------------------------------------------------------------
-enum class RendererBackendType
+enum class RendererBackendType : int8_t
 {
     UNKNOWN = -1,
 
@@ -216,9 +258,7 @@ struct IRendererBackend
 
     [[nodiscard]] virtual bool UpdateGlobalWorldState(
             RenderpassType renderpassID,
-            const glm::mat4& projection, const glm::mat4& view,
-            const glm::vec3& viewPosition, const glm::vec4& ambientColor,
-            int32_t mode) = 0;
+            const GlobalUBO& globalUBO) = 0;
 
     [[nodiscard]] virtual bool DrawGeometry(
             RenderpassType renderpassID,
@@ -322,6 +362,26 @@ struct IRendererBackend
                                     const glm::mat4& view,
                                     const std::vector<CameraFrustumData>& frustums,
                                     bool globalAlreadySet = false) = 0;
+
+    // ─────────────────────────────── Point Light Debugs ──────────────────────
+    /**
+     * @brief Render wireframe debug spheres for point lights in the Scene View.
+     *        Only draws when renderpassID == SCENE (editor viewport).
+     *
+     * Reuses the bounding-box shader (LINE_LIST, mat4+vec4 push constants) and
+     * a shared unit-sphere vertex buffer. Each BoundingBoxData carries a
+     * translate+scale transform and the light color.
+     *
+     * @param globalAlreadySet  Pass true when the bounding-box shader's global
+     *        descriptor set was already updated this frame (e.g. DrawBoundingBoxes
+     *        or DrawCameraFrustums ran). Avoids "descriptor set updated while
+     *        bound" validation errors.
+     */
+    virtual bool DrawPointLightDebugs(RenderpassType renderpassID,
+                                      const glm::mat4& projection,
+                                      const glm::mat4& view,
+                                      const std::vector<BoundingBoxData>& lightDebugs,
+                                      bool globalAlreadySet = false) = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

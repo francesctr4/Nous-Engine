@@ -1,11 +1,15 @@
 {
-    "version": "0.1",
-    "name": "test_material",
-    "diffuse_color": [
-        1.54,
-        1,
-        1,
-        1
+    "uniforms": [
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1.54,
+                1,
+                1,
+                1
+            ]
+        }
     ],
-    "diffuse_map_name": "paving"
+    "texture_maps": []
 }

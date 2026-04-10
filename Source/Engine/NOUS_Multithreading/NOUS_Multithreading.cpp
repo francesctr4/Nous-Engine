@@ -34,7 +34,7 @@ namespace NOUS_Multithreading
 
     /// @brief Retrieves the main thread instance.
     /// @return Pointer to the main thread object, or nullptr if not registered.
-    NOUS_Multithreading::NOUS_Thread* GetMainThread()
+    NOUS_Thread* GetMainThread()
     {
         return sMainThread;
     }

@@ -2,8 +2,9 @@
 #define RESOURCESWINDOW_H
 
 #include "Editor/UI/IEditorWindow.inl"
+#include <cstdint>
 
-enum class ResourceType;
+enum class ResourceType : int8_t;
 class Resource;
 struct ImVec4;
 

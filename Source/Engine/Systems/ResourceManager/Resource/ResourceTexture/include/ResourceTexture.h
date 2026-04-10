@@ -16,7 +16,6 @@ public:
 
 public:
 
-    uint32 ID;
     uint32 generation;
     void* internalData;
 

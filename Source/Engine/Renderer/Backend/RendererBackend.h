@@ -49,8 +49,7 @@ public:
 
 	// ─────────────────────────────── Global State ────────────────────────────
 	[[nodiscard]] bool UpdateGlobalWorldState(RenderpassType renderpassID,
-											  const glm::mat4& projection, const glm::mat4& view,
-											  const glm::vec3& viewPosition, const glm::vec4& ambientColor, int32_t mode);
+											  const GlobalUBO& globalUBO);
 
 	// ─────────────────────────────── Drawing ─────────────────────────────────
 	[[nodiscard]] bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData);
@@ -102,6 +101,13 @@ public:
 	                        const glm::mat4& view,
 	                        const std::vector<CameraFrustumData>& frustums,
 	                        bool globalAlreadySet = false);
+
+	// ─────────────────────────────── Point Light Debugs ──────────────────────
+	bool DrawPointLightDebugs(RenderpassType renderpassID,
+	                          const glm::mat4& projection,
+	                          const glm::mat4& view,
+	                          const std::vector<BoundingBoxData>& lightDebugs,
+	                          bool globalAlreadySet = false);
 
 public:
 

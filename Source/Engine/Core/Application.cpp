@@ -41,7 +41,7 @@ Application::Application(const bool isGameMode)
     updateTitleTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
 
     // ------------- MULTITHREADING ------------- //
-    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
+    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD, 6);
 
     // -----------------------------------------------------------------------
     // Module construction order — LOAD-BEARING. Do not reorder.
@@ -131,7 +131,6 @@ bool Application::Awake() const
         window->Maximize();
         resourceManager->ScanAndImportAssets();
         scene->SetSnapshotEnabled(true);
-        scene->LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
     }
 
     return ret;
@@ -184,13 +183,13 @@ static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, NOUS_M
         ScriptManager::GenerateScript("PRUEBA_CREAR_SCRIPT_DESDE_MOTOR");
 
     if (input->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
-        scene->SaveScene("Assets/Scenes/LagiacrusScene.nous");
+        scene->SaveScene(scene->GetCurrentScenePath());
 
     if (input->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
         scene->ClearScene();
 
     if (input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN)
-        scene->LoadSceneAsync("Assets/Scenes/LagiacrusScene.nous");
+        scene->LoadSceneAsync(scene->GetCurrentScenePath());
 
     if (input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
         jobSystem->SubmitJob([scene] { scene->SpawnMeshAsHierarchy("Assets/Meshes/Lagiacrus_Head.fbx"); },    "Spawn Lagiacrus");
