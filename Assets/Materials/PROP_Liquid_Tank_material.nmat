@@ -21,12 +21,30 @@
             ]
         },
         {
-            "name": "materialParams",
-            "type": "vec4",
+            "name": "aoIntensity",
+            "type": "float",
             "value": [
-                1,
-                1,
-                1,
+                1
+            ]
+        },
+        {
+            "name": "normalStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "specularIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "shininessScale",
+            "type": "float",
+            "value": [
                 1
             ]
         }

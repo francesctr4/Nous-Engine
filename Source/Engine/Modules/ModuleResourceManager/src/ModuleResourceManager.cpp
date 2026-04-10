@@ -193,7 +193,10 @@ bool ModuleResourceManager::Start()
 	mDefaultMaterial->SetName("DefaultMaterial");
 	mDefaultMaterial->uniformValues["diffuseColor"]   = { UniformValueType::Vec4, glm::vec4(1.0f) };
 	mDefaultMaterial->uniformValues["emissiveColor"]  = { UniformValueType::Vec4, glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["materialParams"] = { UniformValueType::Vec4, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["aoIntensity"]       = { UniformValueType::Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["normalStrength"]    = { UniformValueType::Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["specularIntensity"] = { UniformValueType::Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["shininessScale"]    = { UniformValueType::Float, glm::vec4(1.0f) };
 	mDefaultMaterial->textureMaps["diffuseSampler"].texture = mDefaultTexture;
 	mDefaultMaterial->SetState(ResourceState::CPU_READY);
 

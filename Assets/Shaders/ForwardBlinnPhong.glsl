@@ -83,9 +83,12 @@ layout(location = 0) out vec4 fragColor;
 // Instance data (set = 1)
 layout(set = 1, binding = 0) uniform InstanceUBO
 {
-    vec4 diffuseColor;     // rgb = tint, a = opacity (unused)
-    vec4 emissiveColor;    // rgb = color, a = intensity
-    vec4 materialParams;   // x=aoIntensity, y=normalStrength, z=specularIntensity, w=shininessScale
+    vec4  diffuseColor;       // rgb = tint, a = opacity (unused)
+    vec4  emissiveColor;      // rgb = color, a = intensity
+    float aoIntensity;        // ambient occlusion multiplier [0,1]
+    float normalStrength;     // normal map XY scale
+    float specularIntensity;  // specular reflectance multiplier
+    float shininessScale;     // shininess (gloss) multiplier
 } instanceUBO;
 
 layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
@@ -159,9 +162,9 @@ void main()
 
     // --- SAMPLE TEXTURES ---
     vec3  albedo       = texture(diffuseSampler,    uv).rgb * instanceUBO.diffuseColor.rgb;
-    float specStrength = texture(specularSampler,   uv).r * instanceUBO.materialParams.z;
-    float shininess    = max(texture(shininessSampler, uv).r * 256.0 * instanceUBO.materialParams.w, 1.0);
-    float ao           = mix(1.0, texture(aoSampler, uv).r, instanceUBO.materialParams.x);
+    float specStrength = texture(specularSampler,   uv).r * instanceUBO.specularIntensity;
+    float shininess    = max(texture(shininessSampler, uv).r * 256.0 * instanceUBO.shininessScale, 1.0);
+    float ao           = mix(1.0, texture(aoSampler, uv).r, instanceUBO.aoIntensity);
     vec3  emissive     = texture(emissiveSampler,   uv).rgb * instanceUBO.emissiveColor.rgb * instanceUBO.emissiveColor.a;
 
     // --- NORMAL MAP (tangent space → world space via TBN) ---
@@ -169,7 +172,7 @@ void main()
     // Each column is re-normalized after interpolation to remove length drift.
     mat3 TBN = mat3(normalize(inDTO.T), normalize(inDTO.B), normalize(inDTO.N));
     vec3 normalSample = texture(normalSampler, uv).rgb * 2.0 - 1.0; // [0,1] → [-1,1]
-    normalSample.xy  *= instanceUBO.materialParams.y;               // normalStrength
+    normalSample.xy  *= instanceUBO.normalStrength;
     vec3 normal       = normalize(TBN * normalSample); // tangent space → world space
 
     vec3 viewDir = normalize(globalUBO.viewPosition.xyz - inDTO.fragPos);
@@ -196,3 +199,4 @@ void main()
 
     fragColor = vec4(result, 1.0);
 }
+

@@ -370,8 +370,8 @@ bool ImporterMaterial::CreateNewMaterialFile(const std::string& assetPath)
     JSON_Value*  rootVal = json_value_init_object();
     JSON_Object* root    = json_value_get_object(rootVal);
 
-    // Default uniforms (matching the built-in MaterialShader InstanceUBO layout:
-    // diffuseColor, emissiveColor, materialParams — all vec4(1)).
+    // Default uniforms (matching the ForwardBlinnPhong InstanceUBO layout:
+    // diffuseColor, emissiveColor, then the four per-channel scalar params).
     JSON_Value* uniArrVal = json_value_init_array();
     JSON_Array* uniArr    = json_value_get_array(uniArrVal);
 
@@ -391,9 +391,25 @@ bool ImporterMaterial::CreateNewMaterialFile(const std::string& assetPath)
         json_array_append_value(uniArr, entryVal);
     };
 
-    addVec4Uniform("diffuseColor",   1.0, 1.0, 1.0, 1.0);
-    addVec4Uniform("emissiveColor",  1.0, 1.0, 1.0, 1.0);
-    addVec4Uniform("materialParams", 1.0, 1.0, 1.0, 1.0);
+    auto addFloatUniform = [&](const char* name, double value)
+    {
+        JSON_Value*  entryVal = json_value_init_object();
+        JSON_Object* entry    = json_value_get_object(entryVal);
+        json_object_set_string(entry, "name", name);
+        json_object_set_string(entry, "type", "float");
+        JSON_Value* valArrVal = json_value_init_array();
+        JSON_Array* valArr    = json_value_get_array(valArrVal);
+        json_array_append_number(valArr, value);
+        json_object_set_value(entry, "value", valArrVal);
+        json_array_append_value(uniArr, entryVal);
+    };
+
+    addVec4Uniform("diffuseColor",      1.0, 1.0, 1.0, 1.0);
+    addVec4Uniform("emissiveColor",     1.0, 1.0, 1.0, 1.0);
+    addFloatUniform("aoIntensity",       1.0);
+    addFloatUniform("normalStrength",    1.0);
+    addFloatUniform("specularIntensity", 1.0);
+    addFloatUniform("shininessScale",    1.0);
 
     json_object_set_value(root, "uniforms", uniArrVal);
 
