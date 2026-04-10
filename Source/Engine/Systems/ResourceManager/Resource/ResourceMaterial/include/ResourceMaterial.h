@@ -31,7 +31,7 @@ public:
 
 	// Constructor & Destructor
 
-	explicit ResourceMaterial(UID uid = 0);
+	explicit ResourceMaterial(uint32 uid = 0);
 	~ResourceMaterial() override;
 
 public:

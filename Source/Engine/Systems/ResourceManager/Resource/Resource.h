@@ -5,8 +5,6 @@
 
 #include <string>
 
-using UID = uint32;
-
 enum class ResourceState : uint8_t
 {
     UNLOADED,   // No data loaded
@@ -31,18 +29,18 @@ class Resource
 public:
 
 	NOUS_ENGINE_API Resource();
-	NOUS_ENGINE_API Resource(UID uID, ResourceType type);
+	NOUS_ENGINE_API Resource(uint32 uID, ResourceType type);
 	NOUS_ENGINE_API virtual ~Resource();
 
 	NOUS_ENGINE_API void SetName(std::string_view name);
-	NOUS_ENGINE_API void SetUID(const UID& uid);
-	NOUS_ENGINE_API void SetType(const ResourceType& rType);
+	NOUS_ENGINE_API void SetUID(uint32 uid);
+	NOUS_ENGINE_API void SetType(ResourceType rType);
 
 	NOUS_ENGINE_API void SetAssetsPath(std::string_view assetsFilePath);
 	NOUS_ENGINE_API void SetLibraryPath(std::string_view libraryFilePath);
 
 	[[nodiscard]] NOUS_ENGINE_API std::string GetName() const;
-	[[nodiscard]] NOUS_ENGINE_API UID GetUID() const;
+	[[nodiscard]] NOUS_ENGINE_API uint32 GetUID() const;
 	[[nodiscard]] NOUS_ENGINE_API ResourceType GetType() const;
 
 	[[nodiscard]] NOUS_ENGINE_API std::string GetAssetsPath() const;
@@ -59,7 +57,7 @@ public:
 	[[nodiscard]] NOUS_ENGINE_API ResourceState GetState() const;
 	NOUS_ENGINE_API void SetState(ResourceState newState);
 
-	[[nodiscard]] NOUS_ENGINE_API static int16 GetIndexFromType(const ResourceType& type);
+	[[nodiscard]] NOUS_ENGINE_API static int16 GetIndexFromType(ResourceType type);
 	[[nodiscard]] NOUS_ENGINE_API static std::string GetLibraryExtensionFromType(ResourceType type);
 	[[nodiscard]] NOUS_ENGINE_API static ResourceType GetTypeFromExtension(const std::string& extension);
 	[[nodiscard]] NOUS_ENGINE_API static std::string GetAssetsDirectoryFromType(ResourceType type);
@@ -71,7 +69,7 @@ private:
 	ResourceState m_state;
 
 	std::string m_name;
-	UID m_uID;
+	uint32 m_uID;
 	ResourceType m_type;
 	uint32 m_referenceCount;
 

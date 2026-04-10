@@ -11,7 +11,7 @@ public:
 
 	// Constructor & Destructor
 
-	ResourceTexture(UID uid = 0);
+	ResourceTexture(uint32 uid = 0);
 	~ResourceTexture() override;
 
 public:

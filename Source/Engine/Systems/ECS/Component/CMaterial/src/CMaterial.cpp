@@ -42,7 +42,7 @@ void CMaterial::Deserialize(JSON_Object* obj) {
     const char* libraryPathRaw = json_object_get_string(obj, "libraryPath");
     const std::string libraryPath = libraryPathRaw ? libraryPathRaw : "";
     const JSON_Value* uidVal      = json_object_get_value(obj, "resourceUID");
-    const UID resourceUID         = uidVal ? static_cast<UID>(json_value_get_number(uidVal)) : 0;
+    const uint32 resourceUID         = uidVal ? static_cast<uint32>(json_value_get_number(uidVal)) : 0;
 
     // Try library path first (GAME mode / no .meta needed).
     if (!libraryPath.empty() && resourceUID != 0)

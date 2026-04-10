@@ -87,14 +87,12 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
             const char* rawPath = json_object_get_string(entry, "asset_path");
             if (!rawPath) continue;
 
-            std::string texPath(rawPath);
-            std::replace(texPath.begin(), texPath.end(), '\\', '/');
+            std::string texPath = NOUS_FileManager::NormalizePath(rawPath);
 
             MetaFileData texMeta;
             if (mResourceManager->GetAssetMetaData(texPath, texMeta))
             {
-                std::string libPath = texMeta.libraryPath;
-                std::replace(libPath.begin(), libPath.end(), '\\', '/');
+                std::string libPath = NOUS_FileManager::NormalizePath(texMeta.libraryPath);
                 json_object_set_number(entry, "uid",          static_cast<double>(texMeta.uid));
                 json_object_set_string(entry, "library_path", libPath.c_str());
             }
@@ -104,14 +102,12 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
     // ── Enrich shader_asset_path with shader_uid + shader_library_path ──
     if (const char* rawShaderPath = json_object_get_string(srcObj, "shader_asset_path"))
     {
-        std::string shaderPath(rawShaderPath);
-        std::replace(shaderPath.begin(), shaderPath.end(), '\\', '/');
+        std::string shaderPath = NOUS_FileManager::NormalizePath(rawShaderPath);
 
         MetaFileData shaderMeta;
         if (mResourceManager->GetAssetMetaData(shaderPath, shaderMeta))
         {
-            std::string libPath = shaderMeta.libraryPath;
-            std::replace(libPath.begin(), libPath.end(), '\\', '/');
+            std::string libPath = NOUS_FileManager::NormalizePath(shaderMeta.libraryPath);
             json_object_set_number(srcObj, "shader_uid",          static_cast<double>(shaderMeta.uid));
             json_object_set_string(srcObj, "shader_library_path", libPath.c_str());
         }
@@ -185,12 +181,10 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
                 continue;
             }
 
-            std::string assetPath(rawPath);
-            std::replace(assetPath.begin(), assetPath.end(), '\\', '/');
-            std::string libPath(libRaw);
-            std::replace(libPath.begin(), libPath.end(), '\\', '/');
+            std::string assetPath = NOUS_FileManager::NormalizePath(rawPath);
+            std::string libPath   = NOUS_FileManager::NormalizePath(libRaw);
 
-            const UID         texUID  = static_cast<UID>(uidDouble);
+            const uint32         texUID  = static_cast<uint32>(uidDouble);
             const std::string texName = NOUS_FileManager::GetFilename(assetPath);
             ResourceTexture*  tex     = down_cast<ResourceTexture*>(
                 mResourceManager->CreateResourceFromLibrary(
@@ -222,7 +216,7 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
             const std::string shaderName = NOUS_FileManager::GetFilename(shaderAssetPath);
 
             Resource* r = mResourceManager->CreateResourceFromLibrary(
-                static_cast<UID>(shaderUID), ResourceType::SHADER, shaderName,
+                static_cast<uint32>(shaderUID), ResourceType::SHADER, shaderName,
                 shaderAssetPath, shaderLibPath);
 
             if (ResourceShader* loadedShader = r ? down_cast<ResourceShader*>(r) : nullptr)

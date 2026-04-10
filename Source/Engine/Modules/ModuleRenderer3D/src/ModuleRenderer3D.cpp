@@ -588,7 +588,7 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 		const JSON_Object* entry   = json_object_get_object(rootObj, key);
 		if (!entry) { NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: missing entry '%s'.", key); return; }
 
-		const UID   uid     = static_cast<UID>(json_object_get_number(entry, "uid"));
+		const uint32   uid     = static_cast<uint32>(json_object_get_number(entry, "uid"));
 		const char* libPath = json_object_get_string(entry, "libraryPath");
 
 		if (uid == 0 || !libPath)

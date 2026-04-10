@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
-ResourceShader::ResourceShader(UID uid) : Resource(uid, ResourceType::SHADER)
+ResourceShader::ResourceShader(uint32 uid) : Resource(uid, ResourceType::SHADER)
 {
     ID = INVALID_ID;
     internalID = INVALID_ID;

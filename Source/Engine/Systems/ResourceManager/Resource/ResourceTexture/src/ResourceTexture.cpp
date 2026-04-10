@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 
-ResourceTexture::ResourceTexture(UID uid) : Resource(uid, ResourceType::TEXTURE)
+ResourceTexture::ResourceTexture(uint32 uid) : Resource(uid, ResourceType::TEXTURE)
 {
     internalData = nullptr;
 	generation = INVALID_ID;

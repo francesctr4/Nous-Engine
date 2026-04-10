@@ -46,7 +46,7 @@ void CMesh::Deserialize(JSON_Object *obj) {
         return;
     }
     const JSON_Value* uidVal       = json_object_get_value(obj, "resourceUID");
-    const UID resourceUID          = uidVal ? static_cast<UID>(json_value_get_number(uidVal)) : 0;
+    const uint32 resourceUID          = uidVal ? static_cast<uint32>(json_value_get_number(uidVal)) : 0;
 
     // Detect whether this component references a specific submesh.
     // json_object_get_value returns nullptr when the key is absent (old scenes).

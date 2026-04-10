@@ -17,7 +17,6 @@
 class IGPUResourceFactory;
 class IImporterManager;
 
-using UID = uint32_t;
 struct MetaFileData;
 class ResourceMesh;
 
@@ -55,11 +54,11 @@ public:
 	// Called by Application::Awake() when not in game mode.
 	NOUS_ENGINE_API void ScanAndImportAssets();
 
-	NOUS_ENGINE_API bool ResourceExists(const UID& uid) const;
+	NOUS_ENGINE_API bool ResourceExists(uint32 uid) const;
 	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath);
 
 	// GAME mode variant: load directly from a known library path without reading a .meta file.
-	NOUS_ENGINE_API Resource* CreateResourceFromLibrary(UID uid, ResourceType type,
+	NOUS_ENGINE_API Resource* CreateResourceFromLibrary(uint32 uid, ResourceType type,
 	                                                    const std::string& name,
 	                                                    const std::string& assetsPath,
 	                                                    const std::string& libraryPath);
@@ -73,12 +72,12 @@ public:
 	    const std::string& libraryPath, int32_t submeshIndex,
 	    const std::string& assetsPath = "");
 
-	NOUS_ENGINE_API bool UnloadResource(const UID& UID);
+	NOUS_ENGINE_API bool UnloadResource(uint32 uid);
 
 
 	// Returns a thread-safe snapshot copy of the resources map.
 	// Safe to call from any thread (e.g. editor UI) concurrently with AddResource().
-	NOUS_ENGINE_API std::unordered_map<UID, Resource*> GetResourcesMap() const;
+	NOUS_ENGINE_API std::unordered_map<uint32, Resource*> GetResourcesMap() const;
 
 	// Takes and clears the pending upload queue — called by Renderer::PreUpdate/Start.
 	// Each entry is a resource that has been Deserialized and needs GPU Upload.
@@ -106,7 +105,7 @@ public:
     // Use for read-only access (e.g. Inspector UI) where the caller does not own the resource.
     // Do NOT call UnloadResource on the returned pointer.
     // Returns nullptr if the resource is not currently loaded.
-    NOUS_ENGINE_API Resource* GetLoadedResource(UID uid);
+    NOUS_ENGINE_API Resource* GetLoadedResource(uint32 uid);
 
     // Reads the .meta sidecar for assetsPath and fills outData.
     // Returns false if the meta file is missing or malformed.
@@ -133,14 +132,14 @@ private:
 	static bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
 	static bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
 
-	static Resource* InstantiateResource(const ResourceType& type);
+	static Resource* InstantiateResource(ResourceType type);
 	void DeleteResource(Resource*& resource);
 
-	Resource* RequestResource(const UID& uid);
-	void AddResource(const UID& uid, Resource*& resource);
+	Resource* RequestResource(uint32 uid);
+	void AddResource(uint32 uid, Resource*& resource);
 
 	mutable std::mutex resourcesMutex;  // mutable: const methods (e.g. GetResourcesMap) can lock it
-	std::unordered_map<UID, Resource*> resources;
+	std::unordered_map<uint32, Resource*> resources;
 
 	// Resources waiting for GPU upload — populated by CreateResource/Deserialize paths.
 	// Drained by Renderer::PreUpdate (and Start for the initial set).
@@ -155,7 +154,7 @@ private:
 	// Maps (baseAssetUID, submeshIndex) → sub-resource UID.
 	// Allows RequestOrCreateSubMeshResource to reuse already-loaded sub-resources.
 	// Entry removed when the sub-resource is destroyed in DeleteResource().
-	std::map<std::pair<UID, int32_t>, UID> m_submeshUIDMap;
+	std::map<std::pair<uint32, int32_t>, uint32> m_submeshUIDMap;
 
 	ResourceTexture*  mDefaultTexture    = nullptr;
 	ResourceTexture*  mWhiteTexture      = nullptr;

@@ -19,6 +19,9 @@ namespace NOUS_FileManager
 	NOUS_ENGINE_API std::string GetFilename(const std::string& path);
 	NOUS_ENGINE_API std::string GetExtension(const std::string& path);
 
+	// Returns the path with all backslashes replaced by forward slashes.
+	NOUS_ENGINE_API std::string NormalizePath(const std::string& path);
+
 	// Directory operations
 	NOUS_ENGINE_API bool CreateDirectory(const std::filesystem::path& path);
 	NOUS_ENGINE_API bool DeleteDirectory(const std::filesystem::path& path);

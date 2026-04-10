@@ -56,6 +56,11 @@ std::string NOUS_FileManager::GetExtension(const std::string& path)
 	return std::filesystem::path(path).extension().string();
 }
 
+std::string NOUS_FileManager::NormalizePath(const std::string& path)
+{
+	return std::filesystem::path(path).generic_string();
+}
+
 bool NOUS_FileManager::CreateDirectory(const std::filesystem::path& path)
 {
 	if (!Exists(path.string()))

@@ -370,7 +370,7 @@ void InspectorWindow::Draw() {
                         {
                             // Use GetLoadedResource (no ref-count bump) — the built-in material
                             // shader is always loaded by the renderer, so we just borrow it.
-                            static UID s_builtInMatShaderUID = 0;
+                            static uint32 s_builtInMatShaderUID = 0;
                             if (s_builtInMatShaderUID == 0)
                             {
                                 MetaFileData meta;

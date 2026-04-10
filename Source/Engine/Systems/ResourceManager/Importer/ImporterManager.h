@@ -22,16 +22,16 @@ public:
 
     // IImporterManager — CPU-side, virtual, injectable
     void Init(ModuleResourceManager* resourceManager) override;
-    bool Import(const ResourceType& type, const MetaFileData& metaFileData) override;
-    bool Deserialize(const ResourceType& type, const std::string& libraryPath, Resource* resource) override;
-    void Evict(const ResourceType& type, Resource* resource) override;
+    bool Import(ResourceType type, const MetaFileData& metaFileData) override;
+    bool Deserialize(ResourceType type, const std::string& libraryPath, Resource* resource) override;
+    void Evict(ResourceType type, Resource* resource) override;
 
     // Asset pipeline (non-virtual)
-    static bool Save(const ResourceType& type, const MetaFileData& metaFileData, Resource*& inResource);
+    static bool Save(ResourceType type, const MetaFileData& metaFileData, Resource*& inResource);
 
     // GPU only — must be called from the render thread (used directly by ModuleRenderer3D)
-    static bool Upload(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu);
-    static void Release(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu);
+    static bool Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu);
+    static void Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu);
 
 private:
 

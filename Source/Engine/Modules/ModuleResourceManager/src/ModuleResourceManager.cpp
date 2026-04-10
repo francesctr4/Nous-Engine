@@ -238,19 +238,8 @@ bool ModuleResourceManager::CleanUp()
 
 void ModuleResourceManager::OnEvent(const Event& event)
 {
-	switch (event.type)
-	{
-		case EventType::DROP_FILE:
-		{
-			ImportFile(event.ctx.c);
-
-			break;
-		}
-		default:
-		{
-			break;
-		}
-	}
+	if (event.type == EventType::DROP_FILE)
+		ImportFile(event.ctx.c);
 }
 
 // Returns the effective modification time of a library output path.
@@ -401,7 +390,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 	return true;
 }
 
-std::unordered_map<UID, Resource*> ModuleResourceManager::GetResourcesMap() const
+std::unordered_map<uint32, Resource*> ModuleResourceManager::GetResourcesMap() const
 {
 	std::scoped_lock lock(resourcesMutex);
 	return resources;
@@ -450,7 +439,7 @@ bool ModuleResourceManager::ReadMetaFile(const std::string& metaFilePath, MetaFi
 
 	// Assign values to outFileData, casting where necessary
 	outFileData.name = r_fileName;
-	outFileData.uid = static_cast<UID>(r_resourceUID); // Casting double to UID
+	outFileData.uid = static_cast<uint32>(r_resourceUID); // Casting double to UID
 	outFileData.resourceType = static_cast<ResourceType>(r_resourceType); // Casting int to ResourceType
 	outFileData.assetsPath = r_assetsPath;
 	outFileData.libraryPath = r_libraryPath;
@@ -459,7 +448,7 @@ bool ModuleResourceManager::ReadMetaFile(const std::string& metaFilePath, MetaFi
 }
 
 
-Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
+Resource* ModuleResourceManager::InstantiateResource(ResourceType type)
 {
 	Resource* resource = nullptr;
 
@@ -495,7 +484,7 @@ Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
 
 void ModuleResourceManager::DeleteResource(Resource*& resource)
 {
-	const UID uid = resource->GetUID();
+	const uint32 uid = resource->GetUID();
 
 	// Remove any sub-resource map entry that points to this UID.
 	// Must hold resourcesMutex — RequestOrCreateSubMeshResource reads/writes this
@@ -543,7 +532,7 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 	// so the map is clean before we reach this point.
 }
 
-bool ModuleResourceManager::ResourceExists(const UID& uid) const
+bool ModuleResourceManager::ResourceExists(uint32 uid) const
 {
 	return resources.contains(uid);
 }
@@ -676,7 +665,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 	return existingResource;
 }
 
-Resource* ModuleResourceManager::CreateResourceFromLibrary(const UID uid, ResourceType type,
+Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, ResourceType type,
                                                             const std::string& name,
                                                             const std::string& assetsPath,
                                                             const std::string& libraryPath)
@@ -756,7 +745,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
     const std::string& libraryPath, int32_t submeshIndex, const std::string& assetsPath)
 {
 	// Use hash(libraryPath) as a stable synthetic base UID for dedup.
-	const auto baseUID = static_cast<UID>(std::hash<std::string>{}(libraryPath) & 0xFFFFFFFF);
+	const auto baseUID = static_cast<uint32>(std::hash<std::string>{}(libraryPath) & 0xFFFFFFFF);
 	const auto key = std::make_pair(baseUID, submeshIndex);
 
 	{
@@ -796,10 +785,10 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
 	mesh->SetState(ResourceState::CPU_READY);
 
-	UID uid;
+	uint32 uid;
 	{
 		std::lock_guard lock(resourcesMutex);
-		do { uid = static_cast<UID>(Random::Generate()); }
+		do { uid = static_cast<uint32>(Random::Generate()); }
 		while (uid == 0 || resources.contains(uid));
 
 		resources[uid] = mesh;
@@ -817,12 +806,12 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 	return mesh;
 }
 
-bool ModuleResourceManager::UnloadResource(const UID& UID)
+bool ModuleResourceManager::UnloadResource(uint32 uid)
 {
 	Resource* resource = nullptr;
 	{
 		std::lock_guard lock(resourcesMutex);
-		const auto it = resources.find(UID);
+		const auto it = resources.find(uid);
 		if (it == resources.end() || !it->second) return false; // not found or still loading (placeholder)
 		resource = it->second;
 		resource->DecreaseReferenceCount();
@@ -839,7 +828,7 @@ bool ModuleResourceManager::UnloadResource(const UID& UID)
 	return true;
 }
 
-Resource* ModuleResourceManager::RequestResource(const UID& uid)
+Resource* ModuleResourceManager::RequestResource(uint32 uid)
 {
 	std::lock_guard lock(resourcesMutex);
 	const auto it = resources.find(uid);
@@ -851,7 +840,7 @@ Resource* ModuleResourceManager::RequestResource(const UID& uid)
 	return it->second;
 }
 
-void ModuleResourceManager::AddResource(const UID& uid, Resource*& resource)
+void ModuleResourceManager::AddResource(uint32 uid, Resource*& resource)
 {
 	std::lock_guard lock(resourcesMutex);  // Multi-threading
 	resources[uid] = resource;
@@ -1014,7 +1003,7 @@ ResourceMaterial *ModuleResourceManager::GetDefaultMaterial() const
     return mDefaultMaterial;
 }
 
-Resource* ModuleResourceManager::GetLoadedResource(const UID uid)
+Resource* ModuleResourceManager::GetLoadedResource(const uint32 uid)
 {
     std::lock_guard lock(resourcesMutex);
     const auto it = resources.find(uid);
@@ -1079,10 +1068,10 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
     mesh->SetState(ResourceState::CPU_READY);
 
     // Assign a unique UID, register in the resource map and the sub-resource map.
-    UID uid;
+    uint32 uid;
     {
         std::lock_guard lock(resourcesMutex);
-        do { uid = static_cast<UID>(Random::Generate()); }
+        do { uid = static_cast<uint32>(Random::Generate()); }
         while (uid == 0 || resources.contains(uid));
 
         resources[uid]       = mesh;
@@ -1129,7 +1118,7 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
     {
         std::string assetPath;
         std::string libraryPath;
-        UID         uid          = 0;
+        uint32         uid          = 0;
         int32_t     submeshIndex = -1;
     };
 
@@ -1161,7 +1150,7 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
             MeshRequest req;
             req.assetPath    = assetPath;
             req.libraryPath  = libRaw ? libRaw : "";
-            req.uid          = uidVal   ? static_cast<UID>(json_value_get_number(uidVal))   : 0;
+            req.uid          = uidVal   ? static_cast<uint32>(json_value_get_number(uidVal))   : 0;
             req.submeshIndex = subIdxV  ? static_cast<int32_t>(json_value_get_number(subIdxV)) : -1;
 
             uniqueRequests[{req.assetPath, req.submeshIndex}] = std::move(req);

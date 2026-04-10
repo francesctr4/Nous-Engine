@@ -56,7 +56,7 @@ Resource::Resource()
 	this->m_valid = false;
 }
 
-Resource::Resource(const UID uID, const ResourceType type)
+Resource::Resource(const uint32 uID, const ResourceType type)
 {
 	this->m_type = type;
 	this->m_uID = uID;
@@ -83,12 +83,12 @@ void Resource::SetName(const std::string_view name)
 	this->m_name = name;
 }
 
-void Resource::SetUID(const UID& uid)
+void Resource::SetUID(uint32 uid)
 {
 	this->m_uID = uid;
 }
 
-void Resource::SetType(const ResourceType& rType)
+void Resource::SetType(ResourceType rType)
 {
 	this->m_type = rType;
 }
@@ -108,7 +108,7 @@ std::string Resource::GetName() const
 	return m_name;
 }
 
-UID Resource::GetUID() const
+uint32 Resource::GetUID() const
 {
 	return m_uID;
 }
@@ -169,7 +169,7 @@ std::string Resource::GetLibraryPath() const
 	return m_libraryFilePath;
 }
 
-int16 Resource::GetIndexFromType(const ResourceType& type)
+int16 Resource::GetIndexFromType(ResourceType type)
 {
 	return std::to_underlying(type);
 }

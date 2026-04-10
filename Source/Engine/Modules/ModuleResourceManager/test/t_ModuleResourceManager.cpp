@@ -20,9 +20,9 @@ public:
     bool deserializeResult = true;
 
     void Init(ModuleResourceManager*) override                              { initCalled = true; }
-    bool Import(const ResourceType&, const MetaFileData&) override         { return true; }
-    bool Deserialize(const ResourceType&, const std::string&, Resource*) override { return deserializeResult; }
-    void Evict(const ResourceType&, Resource*) override                    {}
+    bool Import(ResourceType, const MetaFileData&) override         { return true; }
+    bool Deserialize(ResourceType, const std::string&, Resource*) override { return deserializeResult; }
+    void Evict(ResourceType, Resource*) override                    {}
 };
 
 // =====================================================
@@ -105,7 +105,7 @@ TEST_F(t_ModuleResourceManager, AwakeCallsImporterInit)
 
 TEST_F(t_ModuleResourceManager, CreateResourceFromLibraryRegistersResource)
 {
-    const UID uid = 42;
+    const uint32 uid = 42;
     Resource* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "testMesh",
                                                   "Assets/test.fbx", "Library/Meshes/42.nmesh");
     ASSERT_NE(res, nullptr);
@@ -122,7 +122,7 @@ TEST_F(t_ModuleResourceManager, CreateResourceFromLibraryInitialRefCountIsOne)
 
 TEST_F(t_ModuleResourceManager, CreateResourceFromLibraryDeduplicates)
 {
-    const UID uid = 7;
+    const uint32 uid = 7;
     Resource* first  = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "mesh",
                                                      "Assets/a.fbx", "Library/Meshes/7.nmesh");
     Resource* second = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "mesh",
@@ -152,7 +152,7 @@ TEST_F(t_ModuleResourceManager, TakePendingUploadsClearsQueue)
 
 TEST_F(t_ModuleResourceManager, UnloadResourceAtZeroRefQueuesPendingRelease)
 {
-    const UID uid = 20;
+    const uint32 uid = 20;
     rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
     rm->TakePendingUploads();
 
@@ -164,7 +164,7 @@ TEST_F(t_ModuleResourceManager, UnloadResourceAtZeroRefQueuesPendingRelease)
 
 TEST_F(t_ModuleResourceManager, UnloadResourceAboveZeroRefDoesNotQueueRelease)
 {
-    const UID uid = 21;
+    const uint32 uid = 21;
     rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
     rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh"); // refcount = 2
     rm->TakePendingUploads();
@@ -176,7 +176,7 @@ TEST_F(t_ModuleResourceManager, UnloadResourceAboveZeroRefDoesNotQueueRelease)
 
 TEST_F(t_ModuleResourceManager, TakePendingReleasesClearsQueue)
 {
-    const UID uid = 30;
+    const uint32 uid = 30;
     rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
     rm->UnloadResource(uid);
 
@@ -197,7 +197,7 @@ TEST_F(t_ModuleResourceManager, GetResourcesMapReturnsAllRegistered)
 
 TEST_F(t_ModuleResourceManager, EvictResourceRemovesFromMap)
 {
-    const UID uid = 50;
+    const uint32 uid = 50;
     Resource* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
     rm->TakePendingUploads();
 
@@ -217,7 +217,7 @@ TEST_F(t_ModuleResourceManager, UnloadResourceReturnsFalseForUnknownUID)
 
 TEST_F(t_ModuleResourceManager, EvictResourceReQueuesUploadWhenReacquired)
 {
-    const UID uid = 60;
+    const uint32 uid = 60;
     Resource* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
     rm->TakePendingUploads();
 
@@ -238,7 +238,7 @@ TEST_F(t_ModuleResourceManager, DeserializeFailureReturnsNullAndDoesNotRegister)
 {
     mockImporter.deserializeResult = false;
 
-    const UID uid = 70;
+    const uint32 uid = 70;
     Resource* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
 
     EXPECT_EQ(res, nullptr);

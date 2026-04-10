@@ -16,7 +16,7 @@ public:
 
     // Constructor & Destructor
 
-    ResourceShader(UID uid = 0);
+    ResourceShader(uint32 uid = 0);
     ~ResourceShader() override;
 
 public:

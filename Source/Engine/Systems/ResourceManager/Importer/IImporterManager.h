@@ -14,9 +14,9 @@ public:
     virtual ~IImporterManager() = default;
 
     virtual void Init(ModuleResourceManager* resourceManager) = 0;
-    virtual bool Import(const ResourceType& type, const MetaFileData& metaFileData) = 0;
-    virtual bool Deserialize(const ResourceType& type, const std::string& libraryPath, Resource* resource) = 0;
-    virtual void Evict(const ResourceType& type, Resource* resource) = 0;
+    virtual bool Import(ResourceType type, const MetaFileData& metaFileData) = 0;
+    virtual bool Deserialize(ResourceType type, const std::string& libraryPath, Resource* resource) = 0;
+    virtual void Evict(ResourceType type, Resource* resource) = 0;
 };
 
 #endif // IIMPORTERMANAGER_H

@@ -15,7 +15,7 @@ public:
 
 	// Constructor & Destructor
 
-	ResourceMesh(UID uid = 0);
+	ResourceMesh(uint32 uid = 0);
 	~ResourceMesh() override;
 
 public:

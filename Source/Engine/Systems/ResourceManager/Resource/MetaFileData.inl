@@ -9,7 +9,7 @@ struct MetaFileData
     MetaFileData() : uid(0), resourceType(ResourceType::UNKNOWN) {}
     
 	std::string name;
-    UID uid;
+    uint32 uid;
     ResourceType resourceType;
     std::string assetsPath;
     std::string libraryPath;

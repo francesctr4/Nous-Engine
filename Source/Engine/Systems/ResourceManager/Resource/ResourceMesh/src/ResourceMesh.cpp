@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 
-ResourceMesh::ResourceMesh(UID uid) : Resource(uid, ResourceType::MESH)
+ResourceMesh::ResourceMesh(uint32 uid) : Resource(uid, ResourceType::MESH)
 {
 	ID = INVALID_ID;
 	internalID = INVALID_ID;

@@ -138,9 +138,8 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
             continue;
         }
 
-        const std::string spvPath = shaderDir + "\\" + stageName + ".spv";
-        const uint64 byteSize = static_cast<uint64>(
-            compiled.shaderSource.spirvBinary.size() * sizeof(uint32_t));
+        const std::string spvPath = (std::filesystem::path(shaderDir) / stageName).replace_extension(".spv").string();
+        const uint64 byteSize = compiled.shaderSource.spirvBinary.size() * sizeof(uint32_t);
 
         FileHandle spvFile;
         if (!spvFile.Open(spvPath, FileMode::WRITE, true))
