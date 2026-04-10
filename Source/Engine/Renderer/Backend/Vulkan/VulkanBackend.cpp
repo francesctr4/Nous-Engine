@@ -15,8 +15,10 @@
 #include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
+#include <cstring>
+#include <memory>
 
 #include <Engine/Core/FileSystem/FileSystem.h>
 
@@ -1225,6 +1227,81 @@ VulkanCommandBuffer* VulkanBackend::GetCommandBufferByRenderpassID(RenderpassTyp
     return commandBuffer;
 }
 
+// ── Uniform-value helpers for data-driven InstanceUBO upload ───────────────
+// `UniformValue` stores its payload in a `glm::vec4` for any scalar/vector type.
+// When the target GLSL member is an int variant, the float components must be
+// converted to int32 bit patterns before memcpy — otherwise the GPU would read
+// the float encoding of the numeric value (e.g. 5.0f as int = 1084227584).
+
+static uint32_t UniformValueByteCount(UniformValueType type)
+{
+    switch (type)
+    {
+        case UniformValueType::Float: return 4;
+        case UniformValueType::Vec2:  return 8;
+        case UniformValueType::Vec3:  return 12;
+        case UniformValueType::Vec4:  return 16;
+        case UniformValueType::Int:   return 4;
+        case UniformValueType::IVec2: return 8;
+        case UniformValueType::IVec3: return 12;
+        case UniformValueType::IVec4: return 16;
+    }
+    return 0;
+}
+
+static uint32_t UniformValueComponentCount(UniformValueType type)
+{
+    switch (type)
+    {
+        case UniformValueType::Float: case UniformValueType::Int:   return 1;
+        case UniformValueType::Vec2:  case UniformValueType::IVec2: return 2;
+        case UniformValueType::Vec3:  case UniformValueType::IVec3: return 3;
+        case UniformValueType::Vec4:  case UniformValueType::IVec4: return 4;
+    }
+    return 4;
+}
+
+static bool UniformValueIsInt(UniformValueType type)
+{
+    return type == UniformValueType::Int   || type == UniformValueType::IVec2
+        || type == UniformValueType::IVec3 || type == UniformValueType::IVec4;
+}
+
+// Write a UniformValue into the UBO byte buffer at the given offset, honouring
+// the int/float distinction. Callers must have already bounds-checked `offset`.
+static void WriteUniformValueToBuffer(uint8_t* dst, const UniformValue& uv)
+{
+    const uint32_t count = UniformValueComponentCount(uv.type);
+    if (UniformValueIsInt(uv.type))
+    {
+        int32_t tmp[4] = { 0, 0, 0, 0 };
+        for (uint32_t c = 0; c < count; ++c)
+            tmp[c] = static_cast<int32_t>(uv.data[static_cast<int>(c)]);
+        std::memcpy(dst, tmp, count * sizeof(int32_t));
+    }
+    else
+    {
+        // Floats: glm::vec4 is contiguous float[4]; copy the first `count` floats.
+        std::memcpy(dst, &uv.data, count * sizeof(float));
+    }
+}
+
+static UniformValueType DataTypeToUniformValueType(DataType dt)
+{
+    switch (dt)
+    {
+        case DataType::Float: return UniformValueType::Float;
+        case DataType::Vec2:  return UniformValueType::Vec2;
+        case DataType::Vec3:  return UniformValueType::Vec3;
+        case DataType::Vec4:  return UniformValueType::Vec4;
+        case DataType::Int:   return UniformValueType::Int;
+        case DataType::IVec2: return UniformValueType::IVec2;
+        case DataType::IVec3: return UniformValueType::IVec3;
+        case DataType::IVec4: return UniformValueType::IVec4;
+        default:              return UniformValueType::Vec4;
+    }
+}
+
 bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData)
 {
     if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID)
@@ -1292,16 +1369,82 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
         const uint32_t instanceID  = material->internalID;
         const uint32_t imageIndex  = vkContext->imageIndex;
 
-        // Write per-instance params to UBO (binding 0). Layout must match the GLSL InstanceUBO block
-        // in ForwardBlinnPhong.glsl and BuiltIn.MaterialShader.glsl (48 bytes, three vec4s).
-        const struct InstanceUBO {
-            glm::vec4 diffuseColor;
-            glm::vec4 emissiveColor;
-            glm::vec4 materialParams;
-        } ubo{ material->diffuseColor, material->emissiveColor, material->materialParams };
-        auto& uboGen = vsInstance->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
-        NOUS_VulkanShader::WriteInstanceUBO(vkContext, vsInstance, imageIndex, instanceID,
-            &ubo, sizeof(ubo), &uboGen);
+        // Write per-instance params to UBO (binding 0) via shader reflection.
+        // The byte buffer is sized to the reflected block and populated from
+        // `material->uniformValues` — no hardcoded struct layout.
+        const ReflectedBinding* instanceUBOBinding = nullptr;
+        {
+            const auto& setIt = drawShader->reflection.descriptorSets.find(1);
+            if (setIt != drawShader->reflection.descriptorSets.end())
+            {
+                for (const auto& rb : setIt->second)
+                {
+                    if (rb.type == DescriptorType::UniformBuffer && rb.binding == 0)
+                    {
+                        instanceUBOBinding = &rb;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (instanceUBOBinding && instanceUBOBinding->blockSize > 0)
+        {
+            const uint32_t blockSize = instanceUBOBinding->blockSize;
+
+            // Stack-allocate for small UBOs (typical: 48-256 bytes), heap for large.
+            constexpr uint32_t c_stackThreshold = 1024;
+            uint8_t stackBuffer[c_stackThreshold];
+            std::unique_ptr<uint8_t[]> heapBuffer;
+            uint8_t* uboBuffer = stackBuffer;
+            if (blockSize > c_stackThreshold)
+            {
+                heapBuffer = std::make_unique<uint8_t[]>(blockSize);
+                uboBuffer  = heapBuffer.get();
+            }
+
+            // Zero-fill. Per-member defaults are applied below for any member
+            // the material has no entry for, using type-correct bit patterns.
+            std::memset(uboBuffer, 0, blockSize);
+
+            for (const auto& member : instanceUBOBinding->members)
+            {
+                const uint32_t memberBytes = [&]() -> uint32_t {
+                    switch (member.type)
+                    {
+                        case DataType::Float: case DataType::Int: return 4;
+                        case DataType::Vec2:  case DataType::IVec2: return 8;
+                        case DataType::Vec3:  case DataType::IVec3: return 12;
+                        case DataType::Vec4:  case DataType::IVec4: return 16;
+                        default: return 0;
+                    }
+                }();
+
+                if (memberBytes == 0 || member.offset + memberBytes > blockSize)
+                    continue;
+
+                auto it = material->uniformValues.find(member.name);
+                if (it != material->uniformValues.end())
+                {
+                    WriteUniformValueToBuffer(uboBuffer + member.offset, it->second);
+                }
+                else
+                {
+                    // Neutral default: 1.0f for floats, 1 for ints — matches the
+                    // previous vec4(1) fallback behaviour but with correct bit
+                    // pattern for int variants.
+                    const UniformValue fallback{
+                        DataTypeToUniformValueType(member.type),
+                        glm::vec4(1.0f)
+                    };
+                    WriteUniformValueToBuffer(uboBuffer + member.offset, fallback);
+                }
+            }
+
+            auto& uboGen = vsInstance->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
+            NOUS_VulkanShader::WriteInstanceUBO(vkContext, vsInstance, imageIndex, instanceID,
+                uboBuffer, blockSize, &uboGen);
+        }
 
         // Write sampler bindings from baseShader reflection — no hardcoded binding indices.
         // For each CombinedImageSampler in set=1, look up the texture by binding name from
