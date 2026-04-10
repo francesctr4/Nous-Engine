@@ -819,19 +819,21 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 
 bool ModuleResourceManager::UnloadResource(const UID& UID)
 {
-	if (!ResourceExists(UID))
-		return false;
-
-	Resource* tmpResource = resources[UID];
-	if (!tmpResource) return false; // still loading (placeholder); ignore
-	tmpResource->DecreaseReferenceCount();
+	Resource* resource = nullptr;
+	{
+		std::lock_guard lock(resourcesMutex);
+		const auto it = resources.find(UID);
+		if (it == resources.end() || !it->second) return false; // not found or still loading (placeholder)
+		resource = it->second;
+		resource->DecreaseReferenceCount();
+	}
 
 	// Defer GPU Release + CPU Evict to the Renderer's PreUpdate so we never
 	// destroy GPU resources mid-frame (between command recording and vkQueueSubmit).
-	if (tmpResource->GetReferenceCount() == 0)
+	if (resource->GetReferenceCount() == 0)
 	{
 		std::lock_guard lock(m_pendingReleasesMutex);
-		m_pendingReleases.emplace_back(tmpResource->GetType(), tmpResource);
+		m_pendingReleases.emplace_back(resource->GetType(), resource);
 	}
 
 	return true;

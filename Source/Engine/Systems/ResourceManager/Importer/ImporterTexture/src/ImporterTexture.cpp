@@ -85,8 +85,7 @@ bool ImporterTexture::Deserialize(const std::string& libraryPath, Resource* outR
     }
     texture->hasTransparency = hasTransparency;
 
-    uint32 currentGeneration = texture->GetReferenceCount() == 0 ? INVALID_ID : texture->GetReferenceCount();
-    texture->generation = (currentGeneration == INVALID_ID) ? 0 : currentGeneration;
+    texture->generation = 0;
 
     // Copy into the resource's temporary CPU buffer for deferred GPU upload.
     texture->pixelData.assign(data, data + totalSize);

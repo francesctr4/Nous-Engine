@@ -1,4 +1,7 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
+
+#include "Engine/Core/Logger/Asserts.h"
+
 #include <unordered_map>
 #include <utility>
 
@@ -127,6 +130,7 @@ void Resource::IncreaseReferenceCount()
 
 void Resource::DecreaseReferenceCount()
 {
+	NOUS_ASSERT_MSG(m_referenceCount > 0, "Reference count underflow — double-unload on a resource");
 	m_referenceCount--;
 }
 

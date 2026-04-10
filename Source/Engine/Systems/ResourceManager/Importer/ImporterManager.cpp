@@ -27,30 +27,42 @@ void ImporterManager::Init(ModuleResourceManager* resourceManager)
 
 bool ImporterManager::Import(const ResourceType& type, const MetaFileData& metaFileData)
 {
-    return importers[Resource::GetIndexFromType(type)]->Import(metaFileData);
+    const int16 idx = Resource::GetIndexFromType(type);
+    if (idx < 0 || static_cast<size_t>(idx) >= importers.size()) return false;
+    return importers[idx]->Import(metaFileData);
 }
 
 bool ImporterManager::Save(const ResourceType& type, const MetaFileData& metaFileData, Resource*& inResource)
 {
-    return importers[Resource::GetIndexFromType(type)]->Save(metaFileData, inResource);
+    const int16 idx = Resource::GetIndexFromType(type);
+    if (idx < 0 || static_cast<size_t>(idx) >= importers.size()) return false;
+    return importers[idx]->Save(metaFileData, inResource);
 }
 
 bool ImporterManager::Deserialize(const ResourceType& type, const std::string& libraryPath, Resource* resource)
 {
-    return importers[Resource::GetIndexFromType(type)]->Deserialize(libraryPath, resource);
+    const int16 idx = Resource::GetIndexFromType(type);
+    if (idx < 0 || static_cast<size_t>(idx) >= importers.size()) return false;
+    return importers[idx]->Deserialize(libraryPath, resource);
 }
 
 void ImporterManager::Evict(const ResourceType& type, Resource* resource)
 {
-    importers[Resource::GetIndexFromType(type)]->Evict(resource);
+    const int16 idx = Resource::GetIndexFromType(type);
+    if (idx < 0 || static_cast<size_t>(idx) >= importers.size()) return;
+    importers[idx]->Evict(resource);
 }
 
 bool ImporterManager::Upload(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu)
 {
-    return importers[Resource::GetIndexFromType(type)]->Upload(resource, gpu);
+    const int16 idx = Resource::GetIndexFromType(type);
+    if (idx < 0 || static_cast<size_t>(idx) >= importers.size()) return false;
+    return importers[idx]->Upload(resource, gpu);
 }
 
 void ImporterManager::Release(const ResourceType& type, Resource* resource, IGPUResourceFactory* gpu)
 {
-    importers[Resource::GetIndexFromType(type)]->Release(resource, gpu);
+    const int16 idx = Resource::GetIndexFromType(type);
+    if (idx < 0 || static_cast<size_t>(idx) >= importers.size()) return;
+    importers[idx]->Release(resource, gpu);
 }
