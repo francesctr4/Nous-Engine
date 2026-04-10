@@ -1,19 +1,25 @@
 {
-    "diffuse_color": [
-        1,
-        1,
-        1,
-        1
-    ],
+    "shader_library_path": "Library\\Shaders\\2783957516",
     "texture_maps": [
         {
             "name": "diffuseSampler",
-            "asset_path": "Assets\\Textures\\Lagiacrus_Head_1024.png",
+            "asset_path": "Assets\/Textures\/Lagiacrus_Head_1024.png",
             "uid": 1997094234,
-            "library_path": "Library\\Textures\\1997094234.png"
+            "library_path": "Library\/Textures\/1997094234.png"
         }
     ],
     "shader_uid": 2783957516,
     "shader_asset_path": "Assets\\Shaders\\BuiltIn.MaterialShader.glsl",
-    "shader_library_path": "Library\\Shaders\\2783957516"
+    "uniforms": [
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        }
+    ]
 }
