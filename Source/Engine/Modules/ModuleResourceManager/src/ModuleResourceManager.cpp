@@ -191,7 +191,9 @@ bool ModuleResourceManager::Start()
 	// -----------------------
 	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
 	mDefaultMaterial->SetName("DefaultMaterial");
-	mDefaultMaterial->diffuseColor = glm::vec4(1.0f);
+	mDefaultMaterial->uniformValues["diffuseColor"]   = { UniformValueType::Vec4, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["emissiveColor"]  = { UniformValueType::Vec4, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["materialParams"] = { UniformValueType::Vec4, glm::vec4(1.0f) };
 	mDefaultMaterial->textureMaps["diffuseSampler"].texture = mDefaultTexture;
 	mDefaultMaterial->SetState(ResourceState::CPU_READY);
 
