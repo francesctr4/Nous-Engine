@@ -41,6 +41,30 @@ static glm::mat4 AiToGlm(const aiMatrix4x4& m)
     );
 }
 
+// Weld smooth normals per position for the outline pass.
+// For each vertex, accumulates and averages the face normals of all vertices that
+// share the same position, then normalizes the result into smoothNormal.
+static void WeldSmoothNormals(SubMeshData& out, size_t startIdx)
+{
+    struct Vec3Less {
+        bool operator()(const glm::vec3& a, const glm::vec3& b) const {
+            if (a.x != b.x) return a.x < b.x;
+            if (a.y != b.y) return a.y < b.y;
+            return a.z < b.z;
+        }
+    };
+    std::map<glm::vec3, std::pair<glm::vec3, uint32_t>, Vec3Less> accum;
+    for (size_t i = startIdx; i < out.vertices.size(); ++i) {
+        auto& [sum, cnt] = accum[out.vertices[i].position];
+        sum += out.vertices[i].normal;
+        ++cnt;
+    }
+    for (size_t i = startIdx; i < out.vertices.size(); ++i) {
+        const auto& [sum, cnt] = accum[out.vertices[i].position];
+        out.vertices[i].smoothNormal = glm::normalize(sum / static_cast<float>(cnt));
+    }
+}
+
 // Fill one SubMeshData from an aiMesh.  smoothNormals are welded per position.
 static void ExtractSubMesh(aiMesh* mesh, const glm::mat4& transform,
                             const std::string& name, SubMeshData& out)
@@ -86,26 +110,7 @@ static void ExtractSubMesh(aiMesh* mesh, const glm::mat4& transform,
         out.vertices.emplace_back(vertex);
     }
 
-    // Weld smooth normals per position (for outline pass)
-    {
-        struct Vec3Less {
-            bool operator()(const glm::vec3& a, const glm::vec3& b) const {
-                if (a.x != b.x) return a.x < b.x;
-                if (a.y != b.y) return a.y < b.y;
-                return a.z < b.z;
-            }
-        };
-        std::map<glm::vec3, std::pair<glm::vec3, uint32_t>, Vec3Less> accum;
-        for (size_t i = startIdx; i < out.vertices.size(); ++i) {
-            auto& [sum, cnt] = accum[out.vertices[i].position];
-            sum += out.vertices[i].normal;
-            ++cnt;
-        }
-        for (size_t i = startIdx; i < out.vertices.size(); ++i) {
-            const auto& [sum, cnt] = accum[out.vertices[i].position];
-            out.vertices[i].smoothNormal = glm::normalize(sum / static_cast<float>(cnt));
-        }
-    }
+    WeldSmoothNormals(out, startIdx);
 
     if (mesh->HasFaces())
     {

@@ -68,10 +68,6 @@ void EventSystem::Broadcast(const Event& evt)
                 listener->OnEvent(evt);
         }
     }
-    else
-    {
-        NOUS_DEBUG("Broadcasted event type: %d (no listeners registered)", static_cast<int>(evt.type));
-    }
 }
 
 // --------------------------------------------------

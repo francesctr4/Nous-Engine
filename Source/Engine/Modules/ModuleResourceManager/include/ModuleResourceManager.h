@@ -138,6 +138,13 @@ private:
 	Resource* RequestResource(uint32 uid);
 	void AddResource(uint32 uid, Resource*& resource);
 
+	void CreateBuiltinTextures();
+	void CreateBuiltinMaterial();
+	void DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu);
+
+	struct MeshRequest;
+	Resource* LoadMeshRequest(const MeshRequest& req);
+
 	mutable std::mutex resourcesMutex;  // mutable: const methods (e.g. GetResourcesMap) can lock it
 	std::unordered_map<uint32, Resource*> resources;
 
