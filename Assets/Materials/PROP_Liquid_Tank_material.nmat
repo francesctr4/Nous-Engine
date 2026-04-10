@@ -1,21 +1,35 @@
 {
-    "diffuse_color": [
-        1,
-        1,
-        1,
-        1
-    ],
-    "emissive_color": [
-        1,
-        1,
-        1,
-        1
-    ],
-    "material_params": [
-        1,
-        1,
-        1,
-        1
+    "uniforms": [
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "emissiveColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "materialParams",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        }
     ],
     "texture_maps": [
         {

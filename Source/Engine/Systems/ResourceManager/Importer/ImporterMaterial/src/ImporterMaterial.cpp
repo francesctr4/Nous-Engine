@@ -156,10 +156,10 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
     JSON_Object* root = json_value_get_object(rootVal);
 
     // ── Uniforms ─────────────────────────────────────────────────────────────
-    JSON_Array* uniformsArr = json_object_get_array(root, "uniforms");
-    if (uniformsArr)
+    // Data-driven: every uniform must live in the "uniforms" array. Members the
+    // material doesn't declare are filled with reflection defaults at draw time.
+    if (JSON_Array* uniformsArr = json_object_get_array(root, "uniforms"))
     {
-        // New format: parse the "uniforms" array directly.
         const size_t count = json_array_get_count(uniformsArr);
         for (size_t i = 0; i < count; ++i)
         {
@@ -182,29 +182,6 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
 
             material->uniformValues[name] = uv;
         }
-    }
-    else
-    {
-        // Legacy format: migrate hardcoded color/param fields into uniformValues.
-        // All three default to vec4(1.0f) if absent — lenient, since an old file
-        // without the "uniforms" key is assumed to be pre-migration.
-        auto readVec4 = [&](const char* key) -> glm::vec4
-        {
-            glm::vec4 v(1.0f);
-            if (JSON_Array* arr = json_object_get_array(root, key);
-                arr && json_array_get_count(arr) >= 4)
-            {
-                v.x = static_cast<float>(json_array_get_number(arr, 0));
-                v.y = static_cast<float>(json_array_get_number(arr, 1));
-                v.z = static_cast<float>(json_array_get_number(arr, 2));
-                v.w = static_cast<float>(json_array_get_number(arr, 3));
-            }
-            return v;
-        };
-
-        material->uniformValues["diffuseColor"]   = { UniformValueType::Vec4, readVec4("diffuse_color") };
-        material->uniformValues["emissiveColor"]  = { UniformValueType::Vec4, readVec4("emissive_color") };
-        material->uniformValues["materialParams"] = { UniformValueType::Vec4, readVec4("material_params") };
     }
 
     // ── Texture maps ─────────────────────────────────────────────────────────
@@ -373,11 +350,6 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
         json_object_remove(obj, "diffuse_map_path");
         json_object_remove(obj, "diffuse_map_uid");
         json_object_remove(obj, "diffuse_map_library_path");
-
-        // Remove legacy uniform keys (migrated to "uniforms" array).
-        json_object_remove(obj, "diffuse_color");
-        json_object_remove(obj, "emissive_color");
-        json_object_remove(obj, "material_params");
 
         // Write uniforms array (one entry per uniform in the material).
         {

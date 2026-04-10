@@ -19,11 +19,13 @@ struct ImporterMaterial : Importer
 
     static NOUS_ENGINE_API bool SaveMaterialToAssets(ResourceMaterial* material);
 
-    // Creates a minimal .nmat file at assetPath (diffuse_color only, no textures/shader).
-    // Used by the Inspector's "Create Material Asset" flow to seed a new on-disk
-    // material asset for a GameObject that is currently using the default material.
-    // Caller is responsible for calling ModuleResourceManager::ImportFile(assetPath)
-    // and CreateResource(assetPath) afterwards to register the new material.
+    // Creates a minimal .nmat file at assetPath with the built-in MaterialShader's
+    // default uniforms (diffuseColor, emissiveColor, materialParams) and an empty
+    // texture_maps array. Used by the Inspector's "Create Material Asset" flow to
+    // seed a new on-disk material asset for a GameObject that is currently using
+    // the default material. Caller is responsible for calling
+    // ModuleResourceManager::ImportFile(assetPath) and CreateResource(assetPath)
+    // afterwards to register the new material.
     static NOUS_ENGINE_API bool CreateNewMaterialFile(const std::string& assetPath);
 };
 
