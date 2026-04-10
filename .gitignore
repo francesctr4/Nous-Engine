@@ -7,6 +7,7 @@ cmake-build-*
 .idea
 build
 /docs
+/ThirdParty/
 
 # Generated reports
 clang_tidy_report.html
