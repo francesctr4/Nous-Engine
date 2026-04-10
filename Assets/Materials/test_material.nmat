@@ -1,6 +1,4 @@
 {
-    "version": "0.1",
-    "name": "test_material",
     "uniforms": [
         {
             "name": "diffuseColor",
@@ -13,5 +11,5 @@
             ]
         }
     ],
-    "diffuse_map_name": "paving"
+    "texture_maps": []
 }

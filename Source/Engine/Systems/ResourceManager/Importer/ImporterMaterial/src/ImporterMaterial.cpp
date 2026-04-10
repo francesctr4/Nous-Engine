@@ -76,9 +76,8 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
 
     JSON_Object* srcObj = json_value_get_object(srcVal);
 
-    // ── New format: enrich each entry in the existing texture_maps array ──
-    JSON_Array* texMapsArr = json_object_get_array(srcObj, "texture_maps");
-    if (texMapsArr)
+    // ── Enrich each entry in the texture_maps array with uid + library_path ──
+    if (JSON_Array* texMapsArr = json_object_get_array(srcObj, "texture_maps"))
     {
         const size_t count = json_array_get_count(texMapsArr);
         for (size_t i = 0; i < count; ++i)
@@ -101,40 +100,20 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
             }
         }
     }
-    // ── Legacy format: migrate diffuse_map_path → texture_maps array ──
-    else
+
+    // ── Enrich shader_asset_path with shader_uid + shader_library_path ──
+    if (const char* rawShaderPath = json_object_get_string(srcObj, "shader_asset_path"))
     {
-        const char* rawPath = json_object_get_string(srcObj, "diffuse_map_path");
-        if (rawPath)
+        std::string shaderPath(rawShaderPath);
+        std::replace(shaderPath.begin(), shaderPath.end(), '\\', '/');
+
+        MetaFileData shaderMeta;
+        if (mResourceManager->GetAssetMetaData(shaderPath, shaderMeta))
         {
-            std::string texPath(rawPath);
-            std::replace(texPath.begin(), texPath.end(), '\\', '/');
-
-            // Build texture_maps array with one entry for the diffuse sampler
-            JSON_Value*  arrVal   = json_value_init_array();
-            JSON_Array*  arr      = json_value_get_array(arrVal);
-            JSON_Value*  entryVal = json_value_init_object();
-            JSON_Object* entry    = json_value_get_object(entryVal);
-
-            json_object_set_string(entry, "name",       "diffuseSampler");
-            json_object_set_string(entry, "asset_path", texPath.c_str());
-
-            MetaFileData texMeta;
-            if (mResourceManager->GetAssetMetaData(texPath, texMeta))
-            {
-                std::string libPath = texMeta.libraryPath;
-                std::replace(libPath.begin(), libPath.end(), '\\', '/');
-                json_object_set_number(entry, "uid",          static_cast<double>(texMeta.uid));
-                json_object_set_string(entry, "library_path", libPath.c_str());
-            }
-
-            json_array_append_value(arr, entryVal);
-
-            // Remove old keys; add new array
-            json_object_remove(srcObj, "diffuse_map_path");
-            json_object_remove(srcObj, "diffuse_map_uid");
-            json_object_remove(srcObj, "diffuse_map_library_path");
-            json_object_set_value(srcObj, "texture_maps", arrVal);
+            std::string libPath = shaderMeta.libraryPath;
+            std::replace(libPath.begin(), libPath.end(), '\\', '/');
+            json_object_set_number(srcObj, "shader_uid",          static_cast<double>(shaderMeta.uid));
+            json_object_set_string(srcObj, "shader_library_path", libPath.c_str());
         }
     }
 
@@ -185,9 +164,10 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
     }
 
     // ── Texture maps ─────────────────────────────────────────────────────────
-    // New format: texture_maps array
-    JSON_Array* texMapsArr = json_object_get_array(root, "texture_maps");
-    if (texMapsArr)
+    // Data-driven: every texture slot lives in the "texture_maps" array with
+    // name + asset_path + uid + library_path. Save() enriches uid/library_path
+    // at import time, so library copies always carry them.
+    if (JSON_Array* texMapsArr = json_object_get_array(root, "texture_maps"))
     {
         const size_t count = json_array_get_count(texMapsArr);
         for (size_t i = 0; i < count; ++i)
@@ -197,28 +177,24 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
 
             const char* name    = json_object_get_string(entry, "name");
             const char* rawPath = json_object_get_string(entry, "asset_path");
-            if (!name || !rawPath) continue;
+            const char* libRaw  = json_object_get_string(entry, "library_path");
+            const double uidDouble = json_object_get_number(entry, "uid");
+            if (!name || !rawPath || !libRaw || uidDouble == 0.0)
+            {
+                NOUS_WARN("ImporterMaterial::Deserialize() — texture entry missing name/asset_path/uid/library_path; skipping.");
+                continue;
+            }
 
             std::string assetPath(rawPath);
             std::replace(assetPath.begin(), assetPath.end(), '\\', '/');
+            std::string libPath(libRaw);
+            std::replace(libPath.begin(), libPath.end(), '\\', '/');
 
-            ResourceTexture* tex = nullptr;
-
-            // Prefer library path (avoids re-importing in GAME mode)
-            const double  uidDouble = json_object_get_number(entry, "uid");
-            const char*   libRaw    = json_object_get_string(entry, "library_path");
-            if (uidDouble != 0.0 && libRaw)
-            {
-                std::string libPath(libRaw);
-                std::replace(libPath.begin(), libPath.end(), '\\', '/');
-                const UID         texUID   = static_cast<UID>(uidDouble);
-                const std::string texName  = NOUS_FileManager::GetFilename(assetPath);
-                tex = down_cast<ResourceTexture*>(
-                    mResourceManager->CreateResourceFromLibrary(
-                        texUID, ResourceType::TEXTURE, texName, assetPath, libPath));
-            }
-            if (!tex)
-                tex = down_cast<ResourceTexture*>(mResourceManager->CreateResource(assetPath));
+            const UID         texUID  = static_cast<UID>(uidDouble);
+            const std::string texName = NOUS_FileManager::GetFilename(assetPath);
+            ResourceTexture*  tex     = down_cast<ResourceTexture*>(
+                mResourceManager->CreateResourceFromLibrary(
+                    texUID, ResourceType::TEXTURE, texName, assetPath, libPath));
 
             if (tex)
                 material->textureMaps[name].texture = tex;
@@ -227,70 +203,38 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
                           assetPath.c_str(), name);
         }
     }
-    // Legacy format: diffuse_map_path → load as "diffuseSampler"
-    else
-    {
-        const char* rawPath = json_object_get_string(root, "diffuse_map_path");
-        if (rawPath)
-        {
-            std::string diffusePath(rawPath);
-            std::replace(diffusePath.begin(), diffusePath.end(), '\\', '/');
-
-            ResourceTexture* diffuseTex = nullptr;
-
-            const double  uidDouble = json_object_get_number(root, "diffuse_map_uid");
-            const char*   libRaw    = json_object_get_string(root, "diffuse_map_library_path");
-            if (uidDouble != 0.0 && libRaw)
-            {
-                std::string libPath(libRaw);
-                std::replace(libPath.begin(), libPath.end(), '\\', '/');
-                const UID         texUID  = static_cast<UID>(uidDouble);
-                const std::string texName = NOUS_FileManager::GetFilename(diffusePath);
-                diffuseTex = down_cast<ResourceTexture*>(
-                    mResourceManager->CreateResourceFromLibrary(
-                        texUID, ResourceType::TEXTURE, texName, diffusePath, libPath));
-            }
-            if (!diffuseTex)
-                diffuseTex = down_cast<ResourceTexture*>(mResourceManager->CreateResource(diffusePath));
-
-            if (diffuseTex)
-                material->textureMaps["diffuseSampler"].texture = diffuseTex;
-        }
-    }
 
     // ── Shader (optional) ────────────────────────────────────────────────────
-    const char* shaderAssetRaw = json_object_get_string(root, "shader_asset_path");
-    if (shaderAssetRaw)
+    // Data-driven: shader_asset_path + shader_uid + shader_library_path are all
+    // required. Save() enriches uid/library_path at import time.
+    if (const char* shaderAssetRaw = json_object_get_string(root, "shader_asset_path"))
     {
-        std::string       shaderAssetPath(shaderAssetRaw);
-        const std::string shaderName = NOUS_FileManager::GetFilename(shaderAssetPath);
-        const double      shaderUID  = json_object_get_number(root, "shader_uid");
-        ResourceShader*   loadedShader = nullptr;
-
-        const char* shaderLibRaw = json_object_get_string(root, "shader_library_path");
-        if (shaderLibRaw)
+        const char*  shaderLibRaw = json_object_get_string(root, "shader_library_path");
+        const double shaderUID    = json_object_get_number(root, "shader_uid");
+        if (!shaderLibRaw || shaderUID == 0.0)
         {
-            std::string shaderLibPath(shaderLibRaw);
-            Resource* r = mResourceManager->CreateResourceFromLibrary(
-                static_cast<UID>(shaderUID), ResourceType::SHADER, shaderName,
-                shaderAssetPath, shaderLibPath);
-            if (r) loadedShader = down_cast<ResourceShader*>(r);
-        }
-        if (!loadedShader)
-        {
-            Resource* r = mResourceManager->CreateResource(shaderAssetPath);
-            if (r) loadedShader = down_cast<ResourceShader*>(r);
-        }
-
-        if (loadedShader)
-        {
-            material->shader    = loadedShader;
-            material->shaderUID = loadedShader->GetUID();
+            NOUS_WARN("ImporterMaterial::Deserialize() — shader entry missing shader_uid/shader_library_path; falling back to built-in.");
         }
         else
         {
-            NOUS_WARN("ImporterMaterial::Deserialize() — shader '%s' could not be loaded; falling back to built-in.",
-                      shaderAssetPath.c_str());
+            std::string       shaderAssetPath(shaderAssetRaw);
+            std::string       shaderLibPath(shaderLibRaw);
+            const std::string shaderName = NOUS_FileManager::GetFilename(shaderAssetPath);
+
+            Resource* r = mResourceManager->CreateResourceFromLibrary(
+                static_cast<UID>(shaderUID), ResourceType::SHADER, shaderName,
+                shaderAssetPath, shaderLibPath);
+
+            if (ResourceShader* loadedShader = r ? down_cast<ResourceShader*>(r) : nullptr)
+            {
+                material->shader    = loadedShader;
+                material->shaderUID = loadedShader->GetUID();
+            }
+            else
+            {
+                NOUS_WARN("ImporterMaterial::Deserialize() — shader '%s' could not be loaded; falling back to built-in.",
+                          shaderAssetPath.c_str());
+            }
         }
     }
 
@@ -345,11 +289,6 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
             return false;
         }
         JSON_Object* obj = json_value_get_object(val);
-
-        // Remove legacy diffuse keys if still present
-        json_object_remove(obj, "diffuse_map_path");
-        json_object_remove(obj, "diffuse_map_uid");
-        json_object_remove(obj, "diffuse_map_library_path");
 
         // Write uniforms array (one entry per uniform in the material).
         {

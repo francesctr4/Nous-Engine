@@ -11,5 +11,12 @@
             ]
         }
     ],
-    "diffuse_map_path": "Assets\\Textures\\wolf_diffuse.png"
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/Textures\/wolf_diffuse.png",
+            "uid": 3094643500,
+            "library_path": "Library\/Textures\/3094643500.png"
+        }
+    ]
 }

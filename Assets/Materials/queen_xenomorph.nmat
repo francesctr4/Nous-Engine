@@ -11,5 +11,12 @@
             ]
         }
     ],
-    "diffuse_map_path": "Assets\\Textures\\TEX_CHAR_Boss_D.png"
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/Textures\/TEX_CHAR_Boss_D.png",
+            "uid": 2515585195,
+            "library_path": "Library\/Textures\/2515585195.png"
+        }
+    ]
 }
