@@ -24,14 +24,34 @@
 
 #include "imgui.h"
 #include <glm/glm.hpp>
-#include <filesystem>
-#include <vector>
-#include <string>
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
+
+// Local mirror of VulkanBackend's DataType→UniformValueType converter: the
+// Inspector lives in the Editor DLL and can't reach backend internals, and the
+// mapping is trivial enough to duplicate.
+static UniformValueType DataTypeToUniformValueType(DataType dt)
+{
+    switch (dt)
+    {
+        case DataType::Float: return UniformValueType::Float;
+        case DataType::Vec2:  return UniformValueType::Vec2;
+        case DataType::Vec3:  return UniformValueType::Vec3;
+        case DataType::Vec4:  return UniformValueType::Vec4;
+        case DataType::Int:   return UniformValueType::Int;
+        case DataType::IVec2: return UniformValueType::IVec2;
+        case DataType::IVec3: return UniformValueType::IVec3;
+        case DataType::IVec4: return UniformValueType::IVec4;
+        default:              return UniformValueType::Vec4;
+    }
+}
 
 InspectorWindow::InspectorWindow(const char* title, EditorContext* context, const bool start_open)
         : IEditorWindow(title, context, nullptr, start_open) {
@@ -303,10 +323,8 @@ void InspectorWindow::Draw() {
                             ImGui::EndCombo();
                         }
 
-                        ImGui::SeparatorText("Texture Maps");
-
                         // Determine effective shader: custom if assigned, otherwise built-in.
-                        // CreateResource is idempotent — returns the already-loaded resource.
+                        // Resolved once and shared between the Uniforms and Texture Maps sections.
                         ResourceShader* effectiveShader = mat.material->shader;
                         if (!effectiveShader)
                         {
@@ -323,6 +341,129 @@ void InspectorWindow::Draw() {
                                 effectiveShader = down_cast<ResourceShader*>(
                                     rm->GetLoadedResource(s_builtInMatShaderUID));
                         }
+
+                        // ── Uniforms section ─────────────────────────────────────────
+                        // Mirrors the texture sampler discovery pattern: query set=1
+                        // binding=0 UBO members from reflection, render widget per member.
+                        if (effectiveShader && effectiveShader->GetState() == ResourceState::GPU_READY)
+                        {
+                            const auto& uniSetIt = effectiveShader->reflection.descriptorSets.find(1);
+                            const ReflectedBinding* instanceUBO = nullptr;
+                            if (uniSetIt != effectiveShader->reflection.descriptorSets.end())
+                            {
+                                for (const auto& rb : uniSetIt->second)
+                                {
+                                    if (rb.type == DescriptorType::UniformBuffer && rb.binding == 0)
+                                    {
+                                        instanceUBO = &rb;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (instanceUBO && !instanceUBO->members.empty())
+                            {
+                                ImGui::SeparatorText("Uniforms");
+
+                                // Sort members by offset for stable display order.
+                                std::vector<const ReflectedMember*> sortedMembers;
+                                sortedMembers.reserve(instanceUBO->members.size());
+                                for (const auto& m : instanceUBO->members)
+                                    sortedMembers.push_back(&m);
+                                std::sort(sortedMembers.begin(), sortedMembers.end(),
+                                    [](const ReflectedMember* a, const ReflectedMember* b) {
+                                        return a->offset < b->offset; });
+
+                                for (const ReflectedMember* member : sortedMembers)
+                                {
+                                    // Ensure the material has a value for this member.
+                                    auto [it, inserted] = mat.material->uniformValues.try_emplace(
+                                        member->name,
+                                        UniformValue{ DataTypeToUniformValueType(member->type), glm::vec4(1.0f) });
+                                    UniformValue& uv = it->second;
+
+                                    // Heuristic: members with "color" in their name use a color picker.
+                                    const bool isColor =
+                                        (member->name.find("color") != std::string::npos ||
+                                         member->name.find("Color") != std::string::npos);
+
+                                    ImGui::PushID(member->name.c_str());
+                                    switch (member->type)
+                                    {
+                                        case DataType::Float:
+                                            ImGui::DragFloat(member->name.c_str(), &uv.data.x, 0.01f);
+                                            break;
+                                        case DataType::Vec2:
+                                            ImGui::DragFloat2(member->name.c_str(), &uv.data.x, 0.01f);
+                                            break;
+                                        case DataType::Vec3:
+                                            if (isColor)
+                                                ImGui::ColorEdit3(member->name.c_str(), &uv.data.x);
+                                            else
+                                                ImGui::DragFloat3(member->name.c_str(), &uv.data.x, 0.01f);
+                                            break;
+                                        case DataType::Vec4:
+                                            if (isColor)
+                                                ImGui::ColorEdit4(member->name.c_str(), &uv.data.x);
+                                            else
+                                                ImGui::DragFloat4(member->name.c_str(), &uv.data.x, 0.01f);
+                                            break;
+                                        case DataType::Int:
+                                        {
+                                            int v = static_cast<int>(uv.data.x);
+                                            if (ImGui::DragInt(member->name.c_str(), &v))
+                                                uv.data.x = static_cast<float>(v);
+                                            break;
+                                        }
+                                        case DataType::IVec2:
+                                        {
+                                            int v[2] = { static_cast<int>(uv.data.x),
+                                                         static_cast<int>(uv.data.y) };
+                                            if (ImGui::DragInt2(member->name.c_str(), v))
+                                            {
+                                                uv.data.x = static_cast<float>(v[0]);
+                                                uv.data.y = static_cast<float>(v[1]);
+                                            }
+                                            break;
+                                        }
+                                        case DataType::IVec3:
+                                        {
+                                            int v[3] = { static_cast<int>(uv.data.x),
+                                                         static_cast<int>(uv.data.y),
+                                                         static_cast<int>(uv.data.z) };
+                                            if (ImGui::DragInt3(member->name.c_str(), v))
+                                            {
+                                                uv.data.x = static_cast<float>(v[0]);
+                                                uv.data.y = static_cast<float>(v[1]);
+                                                uv.data.z = static_cast<float>(v[2]);
+                                            }
+                                            break;
+                                        }
+                                        case DataType::IVec4:
+                                        {
+                                            int v[4] = { static_cast<int>(uv.data.x),
+                                                         static_cast<int>(uv.data.y),
+                                                         static_cast<int>(uv.data.z),
+                                                         static_cast<int>(uv.data.w) };
+                                            if (ImGui::DragInt4(member->name.c_str(), v))
+                                            {
+                                                uv.data.x = static_cast<float>(v[0]);
+                                                uv.data.y = static_cast<float>(v[1]);
+                                                uv.data.z = static_cast<float>(v[2]);
+                                                uv.data.w = static_cast<float>(v[3]);
+                                            }
+                                            break;
+                                        }
+                                        default:
+                                            ImGui::TextDisabled("%s (unsupported type)", member->name.c_str());
+                                            break;
+                                    }
+                                    ImGui::PopID();
+                                }
+                            }
+                        }
+
+                        ImGui::SeparatorText("Texture Maps");
 
                         if (!effectiveShader || effectiveShader->GetState() != ResourceState::GPU_READY)
                         {
