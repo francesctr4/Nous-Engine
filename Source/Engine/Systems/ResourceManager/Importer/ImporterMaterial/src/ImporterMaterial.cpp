@@ -16,6 +16,50 @@
 
 #include "Engine/Core/Logger/Logger.h"
 
+#include <cstring>
+
+static const char* UniformValueTypeToString(UniformValueType type)
+{
+    switch (type)
+    {
+        case UniformValueType::Float: return "float";
+        case UniformValueType::Vec2:  return "vec2";
+        case UniformValueType::Vec3:  return "vec3";
+        case UniformValueType::Vec4:  return "vec4";
+        case UniformValueType::Int:   return "int";
+        case UniformValueType::IVec2: return "ivec2";
+        case UniformValueType::IVec3: return "ivec3";
+        case UniformValueType::IVec4: return "ivec4";
+    }
+    return "vec4";
+}
+
+static UniformValueType StringToUniformValueType(const char* str)
+{
+    if (!str) return UniformValueType::Vec4;
+    if (std::strcmp(str, "float") == 0) return UniformValueType::Float;
+    if (std::strcmp(str, "vec2")  == 0) return UniformValueType::Vec2;
+    if (std::strcmp(str, "vec3")  == 0) return UniformValueType::Vec3;
+    if (std::strcmp(str, "vec4")  == 0) return UniformValueType::Vec4;
+    if (std::strcmp(str, "int")   == 0) return UniformValueType::Int;
+    if (std::strcmp(str, "ivec2") == 0) return UniformValueType::IVec2;
+    if (std::strcmp(str, "ivec3") == 0) return UniformValueType::IVec3;
+    if (std::strcmp(str, "ivec4") == 0) return UniformValueType::IVec4;
+    return UniformValueType::Vec4;
+}
+
+static uint32_t UniformValueComponentCountLocal(UniformValueType type)
+{
+    switch (type)
+    {
+        case UniformValueType::Float: case UniformValueType::Int:   return 1;
+        case UniformValueType::Vec2:  case UniformValueType::IVec2: return 2;
+        case UniformValueType::Vec3:  case UniformValueType::IVec3: return 3;
+        case UniformValueType::Vec4:  case UniformValueType::IVec4: return 4;
+    }
+    return 4;
+}
+
 bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 {
     Resource* tempMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
@@ -111,41 +155,56 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
     }
     JSON_Object* root = json_value_get_object(rootVal);
 
-    // diffuse_color (stored as a 4-element JSON array)
-    JSON_Array* colorArr = json_object_get_array(root, "diffuse_color");
-    if (!colorArr || json_array_get_count(colorArr) < 4)
+    // ── Uniforms ─────────────────────────────────────────────────────────────
+    JSON_Array* uniformsArr = json_object_get_array(root, "uniforms");
+    if (uniformsArr)
     {
-        NOUS_ERROR("ImporterMaterial::Deserialize() missing diffuse_color in '%s'", libraryPath.c_str());
-        json_value_free(rootVal);
-        return false;
-    }
-    material->diffuseColor = glm::vec4(
-        static_cast<float>(json_array_get_number(colorArr, 0)),
-        static_cast<float>(json_array_get_number(colorArr, 1)),
-        static_cast<float>(json_array_get_number(colorArr, 2)),
-        static_cast<float>(json_array_get_number(colorArr, 3)));
+        // New format: parse the "uniforms" array directly.
+        const size_t count = json_array_get_count(uniformsArr);
+        for (size_t i = 0; i < count; ++i)
+        {
+            JSON_Object* entry = json_array_get_object(uniformsArr, i);
+            if (!entry) continue;
 
-    // emissive_color (optional, defaults to (1,1,1,1) = neutral when absent)
-    if (JSON_Array* emissiveArr = json_object_get_array(root, "emissive_color");
-        emissiveArr && json_array_get_count(emissiveArr) >= 4)
-    {
-        material->emissiveColor = glm::vec4(
-            static_cast<float>(json_array_get_number(emissiveArr, 0)),
-            static_cast<float>(json_array_get_number(emissiveArr, 1)),
-            static_cast<float>(json_array_get_number(emissiveArr, 2)),
-            static_cast<float>(json_array_get_number(emissiveArr, 3)));
-    }
+            const char* name    = json_object_get_string(entry, "name");
+            const char* typeStr = json_object_get_string(entry, "type");
+            JSON_Array* valArr  = json_object_get_array(entry, "value");
+            if (!name || !valArr) continue;
 
-    // material_params (optional, defaults to (1,1,1,1) = neutral when absent)
-    // x=aoIntensity, y=normalStrength, z=specularIntensity, w=shininessScale
-    if (JSON_Array* paramsArr = json_object_get_array(root, "material_params");
-        paramsArr && json_array_get_count(paramsArr) >= 4)
+            UniformValue uv;
+            uv.type = StringToUniformValueType(typeStr);
+            uv.data = glm::vec4(1.0f);
+
+            const uint32_t compCount = UniformValueComponentCountLocal(uv.type);
+            const size_t   arrCount  = json_array_get_count(valArr);
+            for (uint32_t c = 0; c < compCount && c < arrCount; ++c)
+                uv.data[static_cast<int>(c)] = static_cast<float>(json_array_get_number(valArr, c));
+
+            material->uniformValues[name] = uv;
+        }
+    }
+    else
     {
-        material->materialParams = glm::vec4(
-            static_cast<float>(json_array_get_number(paramsArr, 0)),
-            static_cast<float>(json_array_get_number(paramsArr, 1)),
-            static_cast<float>(json_array_get_number(paramsArr, 2)),
-            static_cast<float>(json_array_get_number(paramsArr, 3)));
+        // Legacy format: migrate hardcoded color/param fields into uniformValues.
+        // All three default to vec4(1.0f) if absent — lenient, since an old file
+        // without the "uniforms" key is assumed to be pre-migration.
+        auto readVec4 = [&](const char* key) -> glm::vec4
+        {
+            glm::vec4 v(1.0f);
+            if (JSON_Array* arr = json_object_get_array(root, key);
+                arr && json_array_get_count(arr) >= 4)
+            {
+                v.x = static_cast<float>(json_array_get_number(arr, 0));
+                v.y = static_cast<float>(json_array_get_number(arr, 1));
+                v.z = static_cast<float>(json_array_get_number(arr, 2));
+                v.w = static_cast<float>(json_array_get_number(arr, 3));
+            }
+            return v;
+        };
+
+        material->uniformValues["diffuseColor"]   = { UniformValueType::Vec4, readVec4("diffuse_color") };
+        material->uniformValues["emissiveColor"]  = { UniformValueType::Vec4, readVec4("emissive_color") };
+        material->uniformValues["materialParams"] = { UniformValueType::Vec4, readVec4("material_params") };
     }
 
     // ── Texture maps ─────────────────────────────────────────────────────────
@@ -315,6 +374,34 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
         json_object_remove(obj, "diffuse_map_uid");
         json_object_remove(obj, "diffuse_map_library_path");
 
+        // Remove legacy uniform keys (migrated to "uniforms" array).
+        json_object_remove(obj, "diffuse_color");
+        json_object_remove(obj, "emissive_color");
+        json_object_remove(obj, "material_params");
+
+        // Write uniforms array (one entry per uniform in the material).
+        {
+            JSON_Value* uniArrVal = json_value_init_array();
+            JSON_Array* uniArr    = json_value_get_array(uniArrVal);
+            for (const auto& [name, uv] : material->uniformValues)
+            {
+                JSON_Value*  entryVal = json_value_init_object();
+                JSON_Object* entry    = json_value_get_object(entryVal);
+                json_object_set_string(entry, "name", name.c_str());
+                json_object_set_string(entry, "type", UniformValueTypeToString(uv.type));
+
+                JSON_Value* valArrVal = json_value_init_array();
+                JSON_Array* valArr    = json_value_get_array(valArrVal);
+                const uint32_t compCount = UniformValueComponentCountLocal(uv.type);
+                for (uint32_t c = 0; c < compCount; ++c)
+                    json_array_append_number(valArr, static_cast<double>(uv.data[static_cast<int>(c)]));
+                json_object_set_value(entry, "value", valArrVal);
+
+                json_array_append_value(uniArr, entryVal);
+            }
+            json_object_set_value(obj, "uniforms", uniArrVal);
+        }
+
         // Write texture_maps array (one entry per assigned slot)
         JSON_Value* arrVal = json_value_init_array();
         JSON_Array* arr    = json_value_get_array(arrVal);
@@ -372,13 +459,32 @@ bool ImporterMaterial::CreateNewMaterialFile(const std::string& assetPath)
     JSON_Value*  rootVal = json_value_init_object();
     JSON_Object* root    = json_value_get_object(rootVal);
 
-    JSON_Value*  colorVal = json_value_init_array();
-    JSON_Array*  colorArr = json_value_get_array(colorVal);
-    json_array_append_number(colorArr, 1.0);
-    json_array_append_number(colorArr, 1.0);
-    json_array_append_number(colorArr, 1.0);
-    json_array_append_number(colorArr, 1.0);
-    json_object_set_value(root, "diffuse_color", colorVal);
+    // Default uniforms (matching the built-in MaterialShader InstanceUBO layout:
+    // diffuseColor, emissiveColor, materialParams — all vec4(1)).
+    JSON_Value* uniArrVal = json_value_init_array();
+    JSON_Array* uniArr    = json_value_get_array(uniArrVal);
+
+    auto addVec4Uniform = [&](const char* name, double x, double y, double z, double w)
+    {
+        JSON_Value*  entryVal = json_value_init_object();
+        JSON_Object* entry    = json_value_get_object(entryVal);
+        json_object_set_string(entry, "name", name);
+        json_object_set_string(entry, "type", "vec4");
+        JSON_Value* valArrVal = json_value_init_array();
+        JSON_Array* valArr    = json_value_get_array(valArrVal);
+        json_array_append_number(valArr, x);
+        json_array_append_number(valArr, y);
+        json_array_append_number(valArr, z);
+        json_array_append_number(valArr, w);
+        json_object_set_value(entry, "value", valArrVal);
+        json_array_append_value(uniArr, entryVal);
+    };
+
+    addVec4Uniform("diffuseColor",   1.0, 1.0, 1.0, 1.0);
+    addVec4Uniform("emissiveColor",  1.0, 1.0, 1.0, 1.0);
+    addVec4Uniform("materialParams", 1.0, 1.0, 1.0, 1.0);
+
+    json_object_set_value(root, "uniforms", uniArrVal);
 
     // Empty texture_maps array — the user will populate it via the Inspector.
     JSON_Value* mapsVal = json_value_init_array();
