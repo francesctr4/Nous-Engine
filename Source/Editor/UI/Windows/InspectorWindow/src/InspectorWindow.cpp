@@ -283,6 +283,10 @@ void InspectorWindow::Draw() {
                                     rm->UnloadResource(mat.material->shader->GetUID());
                                     editorContext->GetRendererFrontend()->RequestMaterialShaderChange(
                                         mat.material, nullptr);
+
+                                    // Drop all uniforms; the Uniforms section will re-populate
+                                    // them next frame from the built-in MaterialShader reflection.
+                                    mat.material->uniformValues.clear();
                                 }
                             }
                             if (defaultSelected) ImGui::SetItemDefaultFocus();
@@ -310,6 +314,42 @@ void InspectorWindow::Draw() {
                                                 rm->UnloadResource(mat.material->shader->GetUID());
                                             editorContext->GetRendererFrontend()->RequestMaterialShaderChange(
                                                 mat.material, down_cast<ResourceShader*>(r));
+
+                                            // Sync uniform values with the new shader's InstanceUBO:
+                                            // keep entries whose names still exist (name-match strategy),
+                                            // fill any missing members with defaults, and drop orphans.
+                                            ResourceShader* newEffective = down_cast<ResourceShader*>(r);
+                                            const auto& newSetIt =
+                                                newEffective->reflection.descriptorSets.find(1);
+                                            std::unordered_set<std::string> validNames;
+                                            if (newSetIt != newEffective->reflection.descriptorSets.end())
+                                            {
+                                                for (const auto& rb : newSetIt->second)
+                                                {
+                                                    if (rb.type == DescriptorType::UniformBuffer && rb.binding == 0)
+                                                    {
+                                                        for (const auto& m : rb.members)
+                                                        {
+                                                            validNames.insert(m.name);
+                                                            mat.material->uniformValues.try_emplace(
+                                                                m.name,
+                                                                UniformValue{
+                                                                    DataTypeToUniformValueType(m.type),
+                                                                    glm::vec4(1.0f) });
+                                                        }
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            // Prune orphaned entries.
+                                            for (auto it = mat.material->uniformValues.begin();
+                                                 it != mat.material->uniformValues.end(); )
+                                            {
+                                                if (validNames.find(it->first) == validNames.end())
+                                                    it = mat.material->uniformValues.erase(it);
+                                                else
+                                                    ++it;
+                                            }
                                         }
                                         else
                                         {
