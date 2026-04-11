@@ -505,6 +505,7 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 
 bool ModuleResourceManager::ResourceExists(uint32 uid) const
 {
+	std::scoped_lock lock(resourcesMutex);
 	return resources.contains(uid);
 }
 
@@ -695,23 +696,6 @@ bool ModuleResourceManager::UnloadResource(uint32 uid)
 	return true;
 }
 
-Resource* ModuleResourceManager::RequestResource(uint32 uid)
-{
-	std::lock_guard lock(resourcesMutex);
-	const auto it = resources.find(uid);
-	if (it == resources.end() || !it->second) return nullptr;
-	// Resource is already fully loaded (GPU data is valid). Just bump the ref count
-	// and return the existing pointer — do NOT re-call ImporterManager::Load, which
-	// would re-upload GPU data and overwrite internalID / internalData.
-	it->second->IncreaseReferenceCount();
-	return it->second;
-}
-
-void ModuleResourceManager::AddResource(uint32 uid, Resource*& resource)
-{
-	std::lock_guard lock(resourcesMutex);  // Multi-threading
-	resources[uid] = resource;
-}
 
 void ModuleResourceManager::DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu)
 {

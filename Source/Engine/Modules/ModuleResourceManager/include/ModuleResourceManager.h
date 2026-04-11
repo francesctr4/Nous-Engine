@@ -76,7 +76,7 @@ public:
 
 
 	// Returns a thread-safe snapshot copy of the resources map.
-	// Safe to call from any thread (e.g. editor UI) concurrently with AddResource().
+	// Safe to call from any thread (e.g. editor UI) concurrently with resource loading.
 	NOUS_ENGINE_API std::unordered_map<uint32, Resource*> GetResourcesMap() const;
 
 	// Takes and clears the pending upload queue — called by Renderer::PreUpdate/Start.
@@ -145,9 +145,6 @@ private:
 
 	static Resource* InstantiateResource(ResourceType type);
 	void DeleteResource(Resource*& resource);
-
-	Resource* RequestResource(uint32 uid);
-	void AddResource(uint32 uid, Resource*& resource);
 
 	void CreateBuiltinTextures();
 	void CreateBuiltinMaterial();
