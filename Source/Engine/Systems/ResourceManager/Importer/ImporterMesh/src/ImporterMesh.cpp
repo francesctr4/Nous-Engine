@@ -363,9 +363,7 @@ void ImporterMesh::Release(Resource* inResource, IGPUResourceFactory* gpu)
     if (mesh->internalID != INVALID_ID)
     {
         gpu->DestroyGeometry(mesh);
-        mesh->ID         = INVALID_ID;
         mesh->internalID = INVALID_ID;
-        mesh->generation = INVALID_ID;
     }
 }
 

@@ -103,9 +103,10 @@ public:
 
 public:
 
-    uint32 ID;
+    // GPU-side descriptor set instance slot index inside the owning shader's pool.
+    // Set by VulkanBackend::CreateMaterial, cleared to INVALID_ID on destroy.
+    // Used every frame to bind the correct per-material descriptor set.
     uint32 internalID;
-    uint32 generation;
 
     std::unordered_map<std::string, TextureMap>   textureMaps;   // key = GLSL binding name (e.g. "diffuseSampler")
     std::unordered_map<std::string, UniformValue> uniformValues; // key = GLSL InstanceUBO member name

@@ -4,9 +4,7 @@
 
 ResourceMaterial::ResourceMaterial(const uint32 uid) : Resource(uid, ResourceType::MATERIAL)
 {
-	ID         = INVALID_ID;
 	internalID = INVALID_ID;
-	generation = INVALID_ID;
 	shaderUID  = INVALID_ID;
 }
 

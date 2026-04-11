@@ -2,8 +2,6 @@
 
 ResourceShader::ResourceShader(uint32 uid) : Resource(uid, ResourceType::SHADER)
 {
-    ID = INVALID_ID;
-    internalID = INVALID_ID;
     generation = INVALID_ID;
 }
 

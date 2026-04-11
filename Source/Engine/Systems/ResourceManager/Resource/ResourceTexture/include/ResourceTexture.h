@@ -16,7 +16,13 @@ public:
 
 public:
 
+    // Incremented each time the texture is (re)uploaded to the GPU.
+    // Used by WriteInstanceSampler to skip redundant vkUpdateDescriptorSets calls:
+    // if generation and resource ID haven't changed since the last write, the update is skipped.
     uint32 generation;
+
+    // Owning pointer to the backend's GPU image (e.g. VulkanImage*).
+    // Allocated and freed exclusively by the renderer backend.
     void* internalData;
 
     uint32 width;

@@ -21,14 +21,18 @@ public:
 
 public:
 
-    uint32 ID;
-    uint32 internalID;
+    // Incremented each time the shader is hot-reloaded (GPU swap completed).
+    // Synced to backend-owned clones (e.g. builtInGameShader) after each reload
+    // so all consumers can detect that their pipeline is stale.
     uint32 generation;
 
     std::vector<ShaderSource> stagesData;
     PipelineReflectionResult reflection;        // merged interface (pipeline-level)
 
-    IBackendShader* internalData = nullptr;     // owned by the active backend (e.g. VulkanShader*)
+    // Owning pointer to the backend's GPU resources (e.g. VulkanShader*).
+    // Allocated and freed exclusively by the renderer backend.
+    // Swapped atomically during hot-reload: old destroyed, new created, pointer updated.
+    IBackendShader* internalData = nullptr;
 
 };
 

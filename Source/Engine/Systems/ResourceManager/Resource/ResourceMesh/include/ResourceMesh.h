@@ -20,9 +20,10 @@ public:
 
 public:
 
-	uint32 ID;
+	// GPU-side slot index into VulkanContext::geometries[].
+	// Set by VulkanBackend::CreateGeometry, cleared to INVALID_ID on destroy.
+	// Used every frame to locate the vertex/index buffer offsets for this mesh.
 	uint32 internalID;
-	uint32 generation;
 
 	std::vector<Vertex3D> vertices;
 	std::vector<uint32> indices;
