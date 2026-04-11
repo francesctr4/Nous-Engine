@@ -1,10 +1,10 @@
-#ifndef MODULERESOURCEMANAGER_H
-#define MODULERESOURCEMANAGER_H
+#pragma once
 
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
 
 #include <future>
 #include <map>
@@ -21,7 +21,6 @@ class IImporterManager;
 // Used only in the private CollectMeshRequestsFromScene signature; avoids pulling parson into every consumer.
 using JSON_Array = struct json_array_t;
 
-struct MetaFileData;
 class ResourceMesh;
 
 class ResourceTexture;
@@ -78,7 +77,6 @@ public:
 
 	NOUS_ENGINE_API bool UnloadResource(uint32 uid);
 
-
 	// Returns a thread-safe snapshot copy of the resources map.
 	// Safe to call from any thread (e.g. editor UI) concurrently with resource loading.
 	NOUS_ENGINE_API std::unordered_map<uint32, Resource*> GetResourcesMap() const;
@@ -115,10 +113,6 @@ public:
     // Upload/Release through the IImporterManager interface.
     NOUS_ENGINE_API IImporterManager* GetImporterManager() const;
 
-    // Reads the .meta sidecar for assetsPath and fills outData.
-    // Returns false if the meta file is missing or malformed.
-    static NOUS_ENGINE_API bool GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData) ;
-
     // Returns the ResourceMesh for a specific submesh within a source asset.
     // If already loaded this session, bumps the ref count and returns it.
     // Otherwise loads the submesh from the library binary, uploads it to the GPU,
@@ -135,20 +129,6 @@ public:
         const std::string& sceneFilePath);
 
 private:
-
-	static bool EnsureLibraryDirectories();
-	static bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
-	static bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
-
-	// ImportFile sub-routines
-	bool ImportFileFromExternal(const std::string& path, ResourceType resourceType,
-	                            const std::string& fileName, const std::string& extension);
-	bool ImportFileFromAssets(const std::string& relativePath, ResourceType resourceType,
-	                          const std::string& fileName, const std::string& extension) const;
-	bool ImportCase1_NewAsset(std::string_view relativePath, const std::string& metaFilePath,
-	                          ResourceType resourceType, std::string_view fileName) const;
-	bool ImportCase2_MissingLibrary(const MetaFileData& metaFileData) const;
-	bool ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const;
 
 	static Resource* InstantiateResource(ResourceType type);
 	void DeleteResource(Resource*& resource);
@@ -210,8 +190,7 @@ private:
 	ResourceMaterial* mDefaultMaterial   = nullptr;
 
 	// Injected dependencies
-	IImporterManager* mImporterManager = nullptr;
+	IImporterManager*       mImporterManager = nullptr;
+	ResourceImportPipeline  m_importPipeline;
 
 };
-
-#endif // MODULERESOURCEMANAGER_H

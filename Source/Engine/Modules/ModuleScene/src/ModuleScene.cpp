@@ -415,7 +415,7 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
 {
     // 1. Read meta to get library path and verify the asset exists.
     MetaFileData metaData;
-    if (!ModuleResourceManager::GetAssetMetaData(assetsPath, metaData))
+    if (!ResourceImportPipeline::GetAssetMetaData(assetsPath, metaData))
     {
         NOUS_ERROR("[SpawnMeshAsHierarchy] No meta file for '%s'. Import it first.", assetsPath.c_str());
         return;

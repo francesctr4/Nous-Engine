@@ -354,7 +354,7 @@ void InspectorWindow::Draw() {
                             if (s_builtInMatShaderUID == 0)
                             {
                                 MetaFileData meta;
-                                if (rm->GetAssetMetaData("Assets/Shaders/BuiltIn.MaterialShader.glsl", meta))
+                                if (ResourceImportPipeline::GetAssetMetaData("Assets/Shaders/BuiltIn.MaterialShader.glsl", meta))
                                     s_builtInMatShaderUID = meta.uid;
                             }
                             if (s_builtInMatShaderUID != 0)

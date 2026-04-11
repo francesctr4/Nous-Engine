@@ -79,7 +79,7 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
             std::string texPath = NOUS_FileManager::NormalizePath(rawPath);
 
             MetaFileData texMeta;
-            if (mResourceManager->GetAssetMetaData(texPath, texMeta))
+            if (ResourceImportPipeline::GetAssetMetaData(texPath, texMeta))
             {
                 std::string libPath = NOUS_FileManager::NormalizePath(texMeta.libraryPath);
                 json_object_set_number(entry, "uid",          static_cast<double>(texMeta.uid));
@@ -94,7 +94,7 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
         std::string shaderPath = NOUS_FileManager::NormalizePath(rawShaderPath);
 
         MetaFileData shaderMeta;
-        if (mResourceManager->GetAssetMetaData(shaderPath, shaderMeta))
+        if (ResourceImportPipeline::GetAssetMetaData(shaderPath, shaderMeta))
         {
             std::string libPath = NOUS_FileManager::NormalizePath(shaderMeta.libraryPath);
             json_object_set_number(srcObj, "shader_uid",          static_cast<double>(shaderMeta.uid));
