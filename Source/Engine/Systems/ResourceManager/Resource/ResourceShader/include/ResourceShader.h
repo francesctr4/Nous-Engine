@@ -16,8 +16,8 @@ public:
 
     // Constructor & Destructor
 
-    ResourceShader(uint32 uid = 0);
-    ~ResourceShader() override;
+    NOUS_ENGINE_API ResourceShader(uint32 uid = 0);
+    NOUS_ENGINE_API ~ResourceShader() override;
 
 public:
 

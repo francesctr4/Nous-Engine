@@ -2,7 +2,8 @@
 #define NOUS_ENGINE_SHADERLOADERTYPES_H
 
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
-#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+
+class ResourceShader;
 
 struct RawStage
 {

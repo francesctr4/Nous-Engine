@@ -1,32 +1,28 @@
 #include <gtest/gtest.h>
 
-// =====================================================
-// 🧩 Minimal Test Fixture Template
-// =====================================================
-
-// This fixture provides a clean setup/teardown structure
-class t_ResourceTexture : public ::testing::Test {
-protected:
-    // Called before each test
-    void SetUp() override {
-        // Initialize resources or objects here
-        initialized = true;
-    }
-
-    // Called after each test
-    void TearDown() override {
-        // Clean up resources here
-        initialized = false;
-    }
-
-    bool initialized = false;
-};
+#include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 
 // =====================================================
-// 🧪 Example Tests
+// Tests — ResourceTexture
 // =====================================================
 
-// Sanity test to check fixture setup
-TEST_F(t_ResourceTexture, TEST) {
-    EXPECT_TRUE(initialized);
+TEST(t_ResourceTexture, ConstructorSetsTypeTextureAndUID)
+{
+    ResourceTexture tex(99);
+    EXPECT_EQ(tex.GetType(), ResourceType::TEXTURE);
+    EXPECT_EQ(tex.GetUID(), 99u);
+}
+
+TEST(t_ResourceTexture, DefaultDimensionsAndChannelCountAreZero)
+{
+    ResourceTexture tex;
+    EXPECT_EQ(tex.width,        0u);
+    EXPECT_EQ(tex.height,       0u);
+    EXPECT_EQ(tex.channelCount, 0u);
+}
+
+TEST(t_ResourceTexture, RefCountStartsAtZero)
+{
+    ResourceTexture tex(1);
+    EXPECT_EQ(tex.GetReferenceCount(), 0u);
 }

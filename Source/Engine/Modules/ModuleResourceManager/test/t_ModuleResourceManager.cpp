@@ -247,3 +247,52 @@ TEST_F(t_ModuleResourceManager, DeserializeFailureReturnsNullAndDoesNotRegister)
     EXPECT_FALSE(rm->ResourceExists(uid));
     EXPECT_TRUE(rm->GetResourcesMap().empty());
 }
+
+TEST_F(t_ModuleResourceManager, GetLoadedResourceReturnsNullForUnknownUID)
+{
+    EXPECT_EQ(rm->GetLoadedResource(9999), nullptr);
+}
+
+TEST_F(t_ModuleResourceManager, GetLoadedResourceDoesNotBumpRefCount)
+{
+    const uint32 uid = 80;
+    Resource* created = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    ASSERT_NE(created, nullptr);
+    EXPECT_EQ(created->GetReferenceCount(), 1u);
+
+    Resource* borrowed = rm->GetLoadedResource(uid);
+
+    EXPECT_EQ(borrowed, created);              // same pointer — no new allocation
+    EXPECT_EQ(created->GetReferenceCount(), 1u); // borrowed reference: refcount unchanged
+}
+
+TEST_F(t_ModuleResourceManager, GetLoadedResourceReturnsNullAfterEviction)
+{
+    const uint32 uid = 81;
+    Resource* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    ASSERT_NE(res, nullptr);
+    rm->TakePendingUploads();
+
+    rm->UnloadResource(uid);      // refcount → 0
+    rm->TakePendingReleases();    // simulate renderer draining queue
+    rm->EvictResource(ResourceType::MESH, res);
+
+    EXPECT_EQ(rm->GetLoadedResource(uid), nullptr);
+}
+
+TEST_F(t_ModuleResourceManager, DeserializeFailureDoesNotBlockSubsequentLoadOfSameUID)
+{
+    const uint32 uid = 82;
+
+    // First attempt: importer fails — slot must be fully cleaned up.
+    mockImporter.deserializeResult = false;
+    Resource* failed = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    EXPECT_EQ(failed, nullptr);
+    EXPECT_FALSE(rm->ResourceExists(uid));
+
+    // Second attempt with the same UID must succeed without being blocked by the previous failure.
+    mockImporter.deserializeResult = true;
+    Resource* success = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    EXPECT_NE(success, nullptr);
+    EXPECT_TRUE(rm->ResourceExists(uid));
+}

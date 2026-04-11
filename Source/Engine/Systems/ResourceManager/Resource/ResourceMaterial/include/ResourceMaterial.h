@@ -92,14 +92,14 @@ public:
 
 	// Constructor & Destructor
 
-	explicit ResourceMaterial(uint32 uid = 0);
-	~ResourceMaterial() override;
+	NOUS_ENGINE_API explicit ResourceMaterial(uint32 uid = 0);
+	NOUS_ENGINE_API ~ResourceMaterial() override;
 
     // Sets shader + shaderUID and clears poolOwnerShader in one atomic step.
     // Always use this instead of assigning shader directly — it prevents stale
     // poolOwnerShader from pointing into the old shader's instance pool after a
     // shader change. VulkanBackend::CreateMaterial re-derives poolOwnerShader.
-    void SetShader(ResourceShader* newShader);
+    NOUS_ENGINE_API void SetShader(ResourceShader* newShader);
 
 public:
 

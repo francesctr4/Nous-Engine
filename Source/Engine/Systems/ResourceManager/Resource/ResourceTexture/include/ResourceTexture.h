@@ -11,8 +11,8 @@ public:
 
 	// Constructor & Destructor
 
-	ResourceTexture(uint32 uid = 0);
-	~ResourceTexture() override;
+	NOUS_ENGINE_API ResourceTexture(uint32 uid = 0);
+	NOUS_ENGINE_API ~ResourceTexture() override;
 
 public:
 

@@ -15,8 +15,8 @@ public:
 
 	// Constructor & Destructor
 
-	ResourceMesh(uint32 uid = 0);
-	~ResourceMesh() override;
+	NOUS_ENGINE_API ResourceMesh(uint32 uid = 0);
+	NOUS_ENGINE_API ~ResourceMesh() override;
 
 public:
 
