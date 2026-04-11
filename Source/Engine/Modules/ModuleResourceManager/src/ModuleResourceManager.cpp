@@ -529,132 +529,131 @@ bool ModuleResourceManager::ResourceExists(uint32 uid) const
 	return resources.contains(uid);
 }
 
-Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
+bool ModuleResourceManager::ClaimSlot(uint32 uid)
 {
-	NOUS_INFO("Creating Resource");
-	NOUS_INFO("Assets path: %s", assetsPath.c_str());
+	std::scoped_lock lock(resourcesMutex);
+	if (resources.contains(uid)) return false;
+	resources[uid] = nullptr; // placeholder: marks slot as "in progress"
+	return true;
+}
 
-	const std::string metaFilePath = assetsPath + ".meta";
-	NOUS_INFO("Looking for meta file: %s", metaFilePath.c_str());
-
-	MetaFileData metaFileData;
-	if (!ReadMetaFile(metaFilePath, metaFileData))
-	{
-		NOUS_ERROR("Failed to read meta file: %s", metaFilePath.c_str());
-		return nullptr;
-	}
-
-	NOUS_INFO("Meta file read successfully:");
-	NOUS_INFO(" - Name: %s", metaFileData.name.c_str());
-	NOUS_INFO(" - UID: %u", metaFileData.uid);
-	NOUS_INFO(" - Type: %s", Resource::GetLibraryExtensionFromType(metaFileData.resourceType).c_str());
-	NOUS_INFO(" - Assets path: %s", metaFileData.assetsPath.c_str());
-	NOUS_INFO(" - Library path: %s", metaFileData.libraryPath.c_str());
-
-	// Atomically check-and-claim the UID slot to prevent two threads from loading the same resource.
-	// We insert a nullptr placeholder under the lock, load outside it, then replace.
-	bool needsLoad = false;
-	{
-		std::lock_guard lock(resourcesMutex);
-		if (!resources.contains(metaFileData.uid))
-		{
-			resources[metaFileData.uid] = nullptr; // claim slot; marks "in progress"
-			needsLoad = true;
-		}
-	}
-
-	if (needsLoad)
-	{
-		NOUS_INFO("Resource with UID %u does not exist. Creating new instance...", metaFileData.uid);
-
-		Resource* resource = InstantiateResource(metaFileData.resourceType);
-		if (resource == nullptr)
-		{
-			NOUS_ERROR("CreateResource ERROR: Failed to instantiate resource of type %s.",
-					   Resource::GetLibraryExtensionFromType(metaFileData.resourceType).c_str());
-			// Remove the placeholder so the slot is available again.
-			std::scoped_lock lock(resourcesMutex);
-			resources.erase(metaFileData.uid);
-			return nullptr;
-		}
-
-		resource->SetName(metaFileData.name);
-		resource->SetUID(metaFileData.uid);
-		resource->SetType(metaFileData.resourceType);
-		resource->SetAssetsPath(metaFileData.assetsPath);
-		resource->SetLibraryPath(metaFileData.libraryPath);
-
-		NOUS_INFO("Resource instantiated successfully (UID: %u, Name: %s). Loading from library...",
-				  metaFileData.uid, metaFileData.name.c_str());
-
-		if (!mImporterManager->Deserialize(metaFileData.resourceType, metaFileData.libraryPath, resource))
-		{
-			NOUS_ERROR("CreateResource ERROR: Failed to deserialize resource from library: %s",
-					   metaFileData.libraryPath.c_str());
-			std::scoped_lock lock(resourcesMutex);
-			resources.erase(metaFileData.uid);
-			return nullptr;
-		}
-
-		resource->SetState(ResourceState::CPU_READY);
-
-		{
-			std::scoped_lock lock(resourcesMutex);
-			resources[metaFileData.uid] = resource;
-		}
-
-		{
-			std::scoped_lock lock(m_pendingUploadsMutex);
-			m_pendingUploads.emplace_back(metaFileData.resourceType, resource);
-		}
-
-		resource->IncreaseReferenceCount();
-		resource->Validate();
-
-		NOUS_INFO("Resource deserialized and queued for GPU upload.");
-		NOUS_INFO("Reference count: %u", resource->GetReferenceCount());
-		NOUS_INFO("========================================");
-
-		return resource;
-	}
-	NOUS_INFO("Resource with UID %u already exists. Requesting existing instance...", metaFileData.uid);
-
-	// Spin-wait if another thread is still loading (slot is claimed but pointer is nullptr).
-	// The IncreaseReferenceCount MUST happen inside the same lock acquisition as the pointer
-	// read so EvictResource cannot free the object between the two operations.
-	Resource* existingResource = nullptr;
+Resource* ModuleResourceManager::SpinWaitForSlot(uint32 uid)
+{
+	Resource* resource = nullptr;
 	while (true)
 	{
 		{
 			std::scoped_lock lock(resourcesMutex);
-			auto it = resources.find(metaFileData.uid);
+			const auto it = resources.find(uid);
 			if (it == resources.end())
+				return nullptr; // evicted before it resolved; caller should retry
+			resource = it->second;
+			if (resource != nullptr)
 			{
-				// Entry was evicted and erased from the map while we were waiting.
-				// Fall through to the creation path by returning nullptr here — the
-				// caller (CMaterial::Deserialize etc.) will re-try via CreateResource.
-				NOUS_WARN("Resource UID %u was evicted before we could acquire it; caller should retry.",
-				          metaFileData.uid);
-				return nullptr;
-			}
-			existingResource = it->second;
-			if (existingResource != nullptr)
-			{
-				// Bump refcount under the lock to close the eviction race window.
-				existingResource->IncreaseReferenceCount();
+				resource->IncreaseReferenceCount(); // under lock — closes the eviction race
 				break;
 			}
 		}
-		NOUS_Multithreading::NOUS_Thread::SleepMS(1); // yield while other thread loads
+		NOUS_Multithreading::NOUS_Thread::SleepMS(1);
+	}
+	resource->Validate();
+	return resource;
+}
+
+Resource* ModuleResourceManager::LoadResourceIntoSlot(uint32 uid, ResourceType type,
+    const std::string& name, const std::string& assetsPath, const std::string& libraryPath)
+{
+	Resource* resource = InstantiateResource(type);
+	if (!resource)
+	{
+		std::scoped_lock lock(resourcesMutex);
+		resources.erase(uid);
+		return nullptr;
 	}
 
-	existingResource->Validate();
+	resource->SetName(name);
+	resource->SetUID(uid);
+	resource->SetType(type);
+	resource->SetAssetsPath(assetsPath);
+	resource->SetLibraryPath(libraryPath);
 
-	NOUS_INFO("Existing resource retrieved successfully (Name: %s, RefCount: %u).",
-	          existingResource->GetName().c_str(), existingResource->GetReferenceCount());
-	NOUS_INFO("========================================");
+	if (!mImporterManager->Deserialize(type, libraryPath, resource))
+	{
+		NOUS_ERROR("LoadResourceIntoSlot: failed to deserialize '%s' from '%s'", name.c_str(), libraryPath.c_str());
+		DeleteResource(resource);
+		std::scoped_lock lock(resourcesMutex);
+		resources.erase(uid);
+		return nullptr;
+	}
 
-	return existingResource;
+	resource->SetState(ResourceState::CPU_READY);
+	{ std::scoped_lock lock(resourcesMutex);        resources[uid] = resource; }
+	{ std::scoped_lock lock(m_pendingUploadsMutex); m_pendingUploads.emplace_back(type, resource); }
+	resource->IncreaseReferenceCount();
+	resource->Validate();
+	return resource;
+}
+
+ResourceMesh* ModuleResourceManager::BuildAndRegisterSubMesh(
+    std::pair<uint32, int32_t> cacheKey,
+    const std::string& libraryPath,
+    int32_t submeshIndex,
+    const std::string& assetsPath)
+{
+	const auto hierarchy = ImporterMesh::LoadHierarchy(libraryPath);
+	if (submeshIndex < 0 || submeshIndex >= static_cast<int32_t>(hierarchy.size()))
+	{
+		NOUS_ERROR("BuildAndRegisterSubMesh: index %d out of range (count=%zu) for '%s'",
+		    submeshIndex, hierarchy.size(), libraryPath.c_str());
+		return nullptr;
+	}
+
+	const SubMeshData& sub = hierarchy[static_cast<size_t>(submeshIndex)];
+
+	auto* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
+	mesh->SetName(sub.name);
+	mesh->SetType(ResourceType::MESH);
+	mesh->SetLibraryPath(libraryPath);
+	if (!assetsPath.empty())
+		mesh->SetAssetsPath(assetsPath);
+
+	mesh->vertices = sub.vertices;
+	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
+	mesh->SetState(ResourceState::CPU_READY);
+
+	uint32 uid;
+	{
+		std::lock_guard lock(resourcesMutex);
+		do { uid = static_cast<uint32>(Random::Generate()); }
+		while (uid == 0 || resources.contains(uid));
+		resources[uid]             = mesh;
+		m_submeshUIDMap[cacheKey]  = uid;
+	}
+	{
+		std::lock_guard lock(m_pendingUploadsMutex);
+		m_pendingUploads.emplace_back(ResourceType::MESH, mesh);
+	}
+
+	mesh->SetUID(uid);
+	mesh->IncreaseReferenceCount();
+	mesh->Validate();
+	return mesh;
+}
+
+Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
+{
+	MetaFileData metaFileData;
+	if (!ReadMetaFile(assetsPath + ".meta", metaFileData))
+	{
+		NOUS_ERROR("CreateResource: failed to read meta for '%s'", assetsPath.c_str());
+		return nullptr;
+	}
+
+	if (ClaimSlot(metaFileData.uid))
+		return LoadResourceIntoSlot(metaFileData.uid, metaFileData.resourceType,
+		    metaFileData.name, metaFileData.assetsPath, metaFileData.libraryPath);
+
+	return SpinWaitForSlot(metaFileData.uid);
 }
 
 Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, ResourceType type,
@@ -662,75 +661,10 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, Res
                                                             const std::string& assetsPath,
                                                             const std::string& libraryPath)
 {
-	bool needsLoad = false;
-	{
-		std::scoped_lock lock(resourcesMutex);
-		if (!resources.contains(uid))
-		{
-			resources[uid] = nullptr; // claim slot
-			needsLoad = true;
-		}
-	}
+	if (ClaimSlot(uid))
+		return LoadResourceIntoSlot(uid, type, name, assetsPath, libraryPath);
 
-	if (needsLoad)
-	{
-		Resource* resource = InstantiateResource(type);
-		if (!resource)
-		{
-			std::lock_guard lock(resourcesMutex);
-			resources.erase(uid);
-			return nullptr;
-		}
-
-		resource->SetName(name);
-		resource->SetUID(uid);
-		resource->SetType(type);
-		resource->SetAssetsPath(assetsPath);
-		resource->SetLibraryPath(libraryPath);
-
-		if (!mImporterManager->Deserialize(type, libraryPath, resource))
-		{
-			NOUS_ERROR("CreateResourceFromLibrary: failed to deserialize '%s' from '%s'", name.c_str(), libraryPath.c_str());
-			DeleteResource(resource);
-			std::scoped_lock lock(resourcesMutex);
-			resources.erase(uid);
-			return nullptr;
-		}
-
-		resource->SetState(ResourceState::CPU_READY);
-
-		{
-			std::scoped_lock lock(resourcesMutex);
-			resources[uid] = resource;
-		}
-
-		{
-			std::scoped_lock lock(m_pendingUploadsMutex);
-			m_pendingUploads.emplace_back(type, resource);
-		}
-
-		resource->IncreaseReferenceCount();
-		resource->Validate();
-		return resource;
-	}
-	Resource* existing = nullptr;
-	while (true)
-	{
-		{
-			std::scoped_lock lock(resourcesMutex);
-			auto it = resources.find(uid);
-			if (it == resources.end())
-				return nullptr; // evicted; caller should retry
-			existing = it->second;
-			if (existing != nullptr)
-			{
-				existing->IncreaseReferenceCount(); // under lock — closes the eviction race
-				break;
-			}
-		}
-		NOUS_Multithreading::NOUS_Thread::SleepMS(1);
-	}
-	return existing;
+	return SpinWaitForSlot(uid);
 }
 
 ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
@@ -757,45 +691,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 		}
 	}
 
-	const auto hierarchy = ImporterMesh::LoadHierarchy(libraryPath);
-	if (submeshIndex < 0 || submeshIndex >= static_cast<int32_t>(hierarchy.size()))
-	{
-		NOUS_ERROR("RequestOrCreateSubMeshResourceFromLibrary: index %d out of range for '%s'",
-		    submeshIndex, libraryPath.c_str());
-		return nullptr;
-	}
-
-	const SubMeshData& sub = hierarchy[static_cast<size_t>(submeshIndex)];
-	auto* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
-	mesh->SetName(sub.name);
-	mesh->SetType(ResourceType::MESH);
-	mesh->SetLibraryPath(libraryPath);
-	if (!assetsPath.empty())
-		mesh->SetAssetsPath(assetsPath);
-
-	mesh->vertices = sub.vertices;
-	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
-	mesh->SetState(ResourceState::CPU_READY);
-
-	uint32 uid;
-	{
-		std::lock_guard lock(resourcesMutex);
-		do { uid = static_cast<uint32>(Random::Generate()); }
-		while (uid == 0 || resources.contains(uid));
-
-		resources[uid] = mesh;
-		m_submeshUIDMap[key] = uid;
-	}
-
-	{
-		std::lock_guard lock(m_pendingUploadsMutex);
-		m_pendingUploads.emplace_back(ResourceType::MESH, mesh);
-	}
-
-	mesh->SetUID(uid);
-	mesh->IncreaseReferenceCount();
-	mesh->Validate();
-	return mesh;
+	return BuildAndRegisterSubMesh(key, libraryPath, submeshIndex, assetsPath);
 }
 
 bool ModuleResourceManager::UnloadResource(uint32 uid)
@@ -1019,49 +915,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
         }
     }
 
-    // Load the full hierarchy to pick the requested submesh.
-    const auto hierarchy = ImporterMesh::LoadHierarchy(metaData.libraryPath);
-    if (submeshIndex < 0 || submeshIndex >= static_cast<int32_t>(hierarchy.size()))
-    {
-        NOUS_ERROR("RequestOrCreateSubMeshResource: index %d out of range (count=%zu) for %s",
-            submeshIndex, hierarchy.size(), assetsPath.c_str());
-        return nullptr;
-    }
-
-    const SubMeshData& sub = hierarchy[static_cast<size_t>(submeshIndex)];
-
-    // Build the ResourceMesh.
-    auto* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
-    mesh->SetName(sub.name);
-    mesh->SetType(ResourceType::MESH);
-    mesh->SetAssetsPath(assetsPath);
-    mesh->SetLibraryPath(metaData.libraryPath);
-
-    mesh->vertices = sub.vertices;
-    mesh->indices.assign(sub.indices.begin(), sub.indices.end());
-    mesh->SetState(ResourceState::CPU_READY);
-
-    // Assign a unique UID, register in the resource map and the sub-resource map.
-    uint32 uid;
-    {
-        std::lock_guard lock(resourcesMutex);
-        do { uid = static_cast<uint32>(Random::Generate()); }
-        while (uid == 0 || resources.contains(uid));
-
-        resources[uid]       = mesh;
-        m_submeshUIDMap[key] = uid;
-    }
-
-    {
-        std::lock_guard lock(m_pendingUploadsMutex);
-        m_pendingUploads.emplace_back(ResourceType::MESH, mesh);
-    }
-
-    mesh->SetUID(uid);
-    mesh->IncreaseReferenceCount();
-    mesh->Validate();
-
-    return mesh;
+    return BuildAndRegisterSubMesh(key, metaData.libraryPath, submeshIndex, assetsPath);
 }
 
 struct ModuleResourceManager::MeshRequest

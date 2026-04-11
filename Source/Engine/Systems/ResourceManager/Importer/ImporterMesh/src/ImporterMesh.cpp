@@ -203,6 +203,88 @@ static bool SaveSubmeshes(const MetaFileData& metaFileData,
     return ok;
 }
 
+// ─── Binary parser ────────────────────────────────────────────────────────────
+// Shared by Deserialize (which merges submeshes) and LoadHierarchy (which keeps them separate).
+// Returns one SubMeshData per logical submesh; empty on open/read failure.
+
+static std::vector<SubMeshData> ParseMeshBinary(const std::string& libraryPath)
+{
+    std::vector<SubMeshData> result;
+
+    FileHandle fh;
+    if (!fh.Open(libraryPath, FileMode::READ, true))
+    {
+        NOUS_ERROR("ParseMeshBinary: failed to open '%s'", libraryPath.c_str());
+        return result;
+    }
+
+    uint64_t bytesRead = 0;
+
+    uint32_t header4 = 0;
+    if (!fh.ReadBytes(4, reinterpret_cast<char*>(&header4), &bytesRead))
+        return result;
+
+    if (header4 != MESH_BINARY_MAGIC)
+    {
+        // V1 format: single flat mesh — wrap in one SubMeshData
+        uint32_t header4High = 0;
+        fh.ReadBytes(4, reinterpret_cast<char*>(&header4High), &bytesRead);
+        const uint64_t vCount = header4 | (static_cast<uint64_t>(header4High) << 32);
+
+        SubMeshData sub;
+        sub.name           = "Mesh";
+        sub.localTransform = glm::mat4(1.0f);
+        sub.vertices.resize(vCount);
+        fh.ReadBytes(vCount * sizeof(Vertex3D), reinterpret_cast<char*>(sub.vertices.data()), &bytesRead);
+
+        uint64_t iCount = 0;
+        fh.ReadBytes(sizeof(iCount), reinterpret_cast<char*>(&iCount), &bytesRead);
+        sub.indices.resize(iCount);
+        fh.ReadBytes(iCount * sizeof(uint32_t), reinterpret_cast<char*>(sub.indices.data()), &bytesRead);
+
+        fh.Close();
+        result.emplace_back(std::move(sub));
+        return result;
+    }
+
+    // V2 format
+    uint32_t submeshCount = 0;
+    if (!fh.ReadBytes(4, reinterpret_cast<char*>(&submeshCount), &bytesRead))
+        return result;
+
+    result.reserve(submeshCount);
+
+    for (uint32_t s = 0; s < submeshCount; ++s)
+    {
+        SubMeshData sub;
+
+        uint64_t nameLen = 0;
+        fh.ReadBytes(sizeof(nameLen), reinterpret_cast<char*>(&nameLen), &bytesRead);
+        if (nameLen > 0)
+        {
+            sub.name.resize(nameLen);
+            fh.ReadBytes(nameLen, sub.name.data(), &bytesRead);
+        }
+
+        fh.ReadBytes(16 * sizeof(float), reinterpret_cast<char*>(&sub.localTransform[0][0]), &bytesRead);
+
+        uint64_t vCount = 0;
+        fh.ReadBytes(sizeof(vCount), reinterpret_cast<char*>(&vCount), &bytesRead);
+        sub.vertices.resize(vCount);
+        fh.ReadBytes(vCount * sizeof(Vertex3D), reinterpret_cast<char*>(sub.vertices.data()), &bytesRead);
+
+        uint64_t iCount = 0;
+        fh.ReadBytes(sizeof(iCount), reinterpret_cast<char*>(&iCount), &bytesRead);
+        sub.indices.resize(iCount);
+        fh.ReadBytes(iCount * sizeof(uint32_t), reinterpret_cast<char*>(sub.indices.data()), &bytesRead);
+
+        result.emplace_back(std::move(sub));
+    }
+
+    fh.Close();
+    return result;
+}
+
 // ─── Importer interface ───────────────────────────────────────────────────────
 
 bool ImporterMesh::Import(const MetaFileData& metaFileData)
@@ -247,81 +329,23 @@ bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
 
 bool ImporterMesh::Deserialize(const std::string& libraryPath, Resource* outResource)
 {
-    // Loads the library binary into a single merged ResourceMesh (CPU only).
-    // Supports both the legacy V1 format and the current V2 multi-submesh format.
+    // Merge all submeshes from the binary into a single ResourceMesh (CPU only).
+    const auto submeshes = ParseMeshBinary(libraryPath);
+    if (submeshes.empty()) return false;
+
     ResourceMesh* mesh = down_cast<ResourceMesh*>(outResource);
 
-    FileHandle fh;
-    if (!fh.Open(libraryPath, FileMode::READ, true))
-        return false;
-
-    uint64_t bytesRead = 0;
-
-    uint32_t header4 = 0;
-    if (!fh.ReadBytes(4, reinterpret_cast<char*>(&header4), &bytesRead))
-        return false;
-
-    if (header4 == MESH_BINARY_MAGIC)
+    for (const auto& sub : submeshes)
     {
-        // ── V2 format: merge all submeshes into one ResourceMesh ──────────────
-        uint32_t submeshCount = 0;
-        if (!fh.ReadBytes(4, reinterpret_cast<char*>(&submeshCount), &bytesRead))
-            return false;
+        const size_t prevV = mesh->vertices.size();
+        mesh->vertices.insert(mesh->vertices.end(), sub.vertices.begin(), sub.vertices.end());
 
-        for (uint32_t s = 0; s < submeshCount; ++s)
-        {
-            // Name (skip)
-            uint64_t nameLen = 0;
-            fh.ReadBytes(sizeof(nameLen), reinterpret_cast<char*>(&nameLen), &bytesRead);
-            if (nameLen > 0)
-            {
-                std::string name(nameLen, '\0');
-                fh.ReadBytes(nameLen, name.data(), &bytesRead);
-            }
-
-            // Local transform (skip for merged load)
-            float dummy[16];
-            fh.ReadBytes(16 * sizeof(float), reinterpret_cast<char*>(dummy), &bytesRead);
-
-            // Vertices
-            uint64_t vCount = 0;
-            fh.ReadBytes(sizeof(vCount), reinterpret_cast<char*>(&vCount), &bytesRead);
-            const size_t prevV = mesh->vertices.size();
-            mesh->vertices.resize(prevV + vCount);
-            fh.ReadBytes(vCount * sizeof(Vertex3D),
-                reinterpret_cast<char*>(mesh->vertices.data() + prevV), &bytesRead);
-
-            // Indices (offset by prevV so they still index into the merged buffer)
-            uint64_t iCount = 0;
-            fh.ReadBytes(sizeof(iCount), reinterpret_cast<char*>(&iCount), &bytesRead);
-            const size_t prevI = mesh->indices.size();
-            mesh->indices.resize(prevI + iCount);
-            fh.ReadBytes(iCount * sizeof(uint32),
-                reinterpret_cast<char*>(mesh->indices.data() + prevI), &bytesRead);
-
-            for (size_t i = prevI; i < mesh->indices.size(); ++i)
-                mesh->indices[i] += static_cast<uint32>(prevV);
-        }
-    }
-    else
-    {
-        // ── V1 format: header4 is the low 32 bits of a uint64 vertex count ───
-        uint32_t header4High = 0;
-        fh.ReadBytes(4, reinterpret_cast<char*>(&header4High), &bytesRead);
-        const uint64_t vCount = header4 | (static_cast<uint64_t>(header4High) << 32);
-
-        mesh->vertices.resize(vCount);
-        fh.ReadBytes(vCount * sizeof(Vertex3D),
-            reinterpret_cast<char*>(mesh->vertices.data()), &bytesRead);
-
-        uint64_t iCount = 0;
-        fh.ReadBytes(sizeof(iCount), reinterpret_cast<char*>(&iCount), &bytesRead);
-        mesh->indices.resize(iCount);
-        fh.ReadBytes(iCount * sizeof(uint32),
-            reinterpret_cast<char*>(mesh->indices.data()), &bytesRead);
+        const size_t prevI = mesh->indices.size();
+        mesh->indices.resize(prevI + sub.indices.size());
+        for (size_t i = 0; i < sub.indices.size(); ++i)
+            mesh->indices[prevI + i] = sub.indices[i] + static_cast<uint32>(prevV);
     }
 
-    fh.Close();
     return true;
 }
 
@@ -356,87 +380,5 @@ void ImporterMesh::Evict(Resource* inResource)
 
 std::vector<SubMeshData> ImporterMesh::LoadHierarchy(const std::string& libraryPath)
 {
-    std::vector<SubMeshData> result;
-
-    FileHandle fh;
-    if (!fh.Open(libraryPath, FileMode::READ, true))
-    {
-        NOUS_ERROR("ImporterMesh::LoadHierarchy — failed to open %s", libraryPath.c_str());
-        return result;
-    }
-
-    uint64_t bytesRead = 0;
-
-    uint32_t header4 = 0;
-    if (!fh.ReadBytes(4, reinterpret_cast<char*>(&header4), &bytesRead))
-        return result;
-
-    if (header4 != MESH_BINARY_MAGIC)
-    {
-        // V1 format: single flat mesh — wrap it in one SubMeshData
-        uint32_t header4High = 0;
-        fh.ReadBytes(4, reinterpret_cast<char*>(&header4High), &bytesRead);
-        const uint64_t vCount = header4 | (static_cast<uint64_t>(header4High) << 32);
-
-        SubMeshData sub;
-        sub.name = "Mesh";
-        sub.localTransform = glm::mat4(1.0f);
-        sub.vertices.resize(vCount);
-        fh.ReadBytes(vCount * sizeof(Vertex3D),
-            reinterpret_cast<char*>(sub.vertices.data()), &bytesRead);
-
-        uint64_t iCount = 0;
-        fh.ReadBytes(sizeof(iCount), reinterpret_cast<char*>(&iCount), &bytesRead);
-        sub.indices.resize(iCount);
-        fh.ReadBytes(iCount * sizeof(uint32_t),
-            reinterpret_cast<char*>(sub.indices.data()), &bytesRead);
-
-        fh.Close();
-        result.emplace_back(std::move(sub));
-        return result;
-    }
-
-    // V2 format
-    uint32_t submeshCount = 0;
-    if (!fh.ReadBytes(4, reinterpret_cast<char*>(&submeshCount), &bytesRead))
-        return result;
-
-    result.reserve(submeshCount);
-
-    for (uint32_t s = 0; s < submeshCount; ++s)
-    {
-        SubMeshData sub;
-
-        // Name
-        uint64_t nameLen = 0;
-        fh.ReadBytes(sizeof(nameLen), reinterpret_cast<char*>(&nameLen), &bytesRead);
-        if (nameLen > 0)
-        {
-            sub.name.resize(nameLen);
-            fh.ReadBytes(nameLen, sub.name.data(), &bytesRead);
-        }
-
-        // Local transform
-        fh.ReadBytes(16 * sizeof(float),
-            reinterpret_cast<char*>(&sub.localTransform[0][0]), &bytesRead);
-
-        // Vertices
-        uint64_t vCount = 0;
-        fh.ReadBytes(sizeof(vCount), reinterpret_cast<char*>(&vCount), &bytesRead);
-        sub.vertices.resize(vCount);
-        fh.ReadBytes(vCount * sizeof(Vertex3D),
-            reinterpret_cast<char*>(sub.vertices.data()), &bytesRead);
-
-        // Indices
-        uint64_t iCount = 0;
-        fh.ReadBytes(sizeof(iCount), reinterpret_cast<char*>(&iCount), &bytesRead);
-        sub.indices.resize(iCount);
-        fh.ReadBytes(iCount * sizeof(uint32_t),
-            reinterpret_cast<char*>(sub.indices.data()), &bytesRead);
-
-        result.emplace_back(std::move(sub));
-    }
-
-    fh.Close();
-    return result;
+    return ParseMeshBinary(libraryPath);
 }

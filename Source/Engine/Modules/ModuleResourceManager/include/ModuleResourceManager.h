@@ -145,6 +145,29 @@ private:
 	struct MeshRequest;
 	Resource* LoadMeshRequest(const MeshRequest& req);
 
+	// Atomically claims the UID slot with a nullptr placeholder.
+	// Returns true if this thread won the race and must load; false if another thread already owns it.
+	bool ClaimSlot(uint32 uid);
+
+	// Spins until the slot's loading thread writes a real pointer, then bumps the refcount and returns it.
+	// Returns nullptr if the entry was evicted from the map before it resolved.
+	Resource* SpinWaitForSlot(uint32 uid);
+
+	// Instantiates, populates, deserializes, and registers a resource into an already-claimed slot.
+	// Caller must have won ClaimSlot() before calling this.
+	Resource* LoadResourceIntoSlot(uint32 uid, ResourceType type,
+	    const std::string& name,
+	    const std::string& assetsPath,
+	    const std::string& libraryPath);
+
+	// Loads the submesh at submeshIndex from the library binary, registers it in both maps, and
+	// queues it for GPU upload. cacheKey is (baseUID, submeshIndex) for m_submeshUIDMap.
+	ResourceMesh* BuildAndRegisterSubMesh(
+	    std::pair<uint32, int32_t> cacheKey,
+	    const std::string& libraryPath,
+	    int32_t submeshIndex,
+	    const std::string& assetsPath);
+
 	mutable std::mutex resourcesMutex;  // mutable: const methods (e.g. GetResourcesMap) can lock it
 	std::unordered_map<uint32, Resource*> resources;
 
