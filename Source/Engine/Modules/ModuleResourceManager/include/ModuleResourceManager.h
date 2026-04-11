@@ -132,23 +132,23 @@ private:
 	static bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
 	static bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
 
-	// ImportFile sub-routines (E1/E2)
+	// ImportFile sub-routines
 	bool ImportFileFromExternal(const std::string& path, ResourceType resourceType,
 	                            const std::string& fileName, const std::string& extension);
 	bool ImportFileFromAssets(const std::string& relativePath, ResourceType resourceType,
-	                          const std::string& fileName, const std::string& extension);
-	bool ImportCase1_NewAsset(const std::string& relativePath, const std::string& metaFilePath,
-	                          ResourceType resourceType, const std::string& fileName,
-	                          const std::string& extension);
-	bool ImportCase2_MissingLibrary(const MetaFileData& metaFileData);
-	bool ImportCase3_TimestampCheck(const MetaFileData& metaFileData);
+	                          const std::string& fileName, const std::string& extension) const;
+	bool ImportCase1_NewAsset(std::string_view relativePath, const std::string& metaFilePath,
+	                          ResourceType resourceType, std::string_view fileName,
+	                          std::string_view extension) const;
+	bool ImportCase2_MissingLibrary(const MetaFileData& metaFileData) const;
+	bool ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const;
 
 	static Resource* InstantiateResource(ResourceType type);
 	void DeleteResource(Resource*& resource);
 
 	void CreateBuiltinTextures();
 	void CreateBuiltinMaterial();
-	void DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu);
+	void DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu) const;
 
 	struct MeshRequest;
 	Resource* LoadMeshRequest(const MeshRequest& req);

@@ -196,14 +196,16 @@ void ModuleResourceManager::CreateBuiltinTextures()
 
 void ModuleResourceManager::CreateBuiltinMaterial()
 {
+	using enum UniformValueType;
+
 	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
 	mDefaultMaterial->SetName("DefaultMaterial");
-	mDefaultMaterial->uniformValues["diffuseColor"]      = { UniformValueType::Vec4,  glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["emissiveColor"]     = { UniformValueType::Vec4,  glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["aoIntensity"]       = { UniformValueType::Float, glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["normalStrength"]    = { UniformValueType::Float, glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["specularIntensity"] = { UniformValueType::Float, glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["shininessScale"]    = { UniformValueType::Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["diffuseColor"]      = { Vec4,  glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["emissiveColor"]     = { Vec4,  glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["aoIntensity"]       = { Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["normalStrength"]    = { Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["specularIntensity"] = { Float, glm::vec4(1.0f) };
+	mDefaultMaterial->uniformValues["shininessScale"]    = { Float, glm::vec4(1.0f) };
 	mDefaultMaterial->textureMaps["diffuseSampler"].texture = mDefaultTexture;
 	mDefaultMaterial->SetState(ResourceState::CPU_READY);
 }
@@ -292,7 +294,7 @@ bool ModuleResourceManager::ImportFileFromExternal(const std::string& path, Reso
 }
 
 bool ModuleResourceManager::ImportFileFromAssets(const std::string& relativePath, ResourceType resourceType,
-                                                  const std::string& fileName, const std::string& extension)
+                                                  const std::string& fileName, const std::string& extension) const
 {
 	const std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension + ".meta";
 
@@ -312,9 +314,9 @@ bool ModuleResourceManager::ImportFileFromAssets(const std::string& relativePath
 	return ImportCase3_TimestampCheck(metaFileData);
 }
 
-bool ModuleResourceManager::ImportCase1_NewAsset(const std::string& relativePath, const std::string& metaFilePath,
-                                                  ResourceType resourceType, const std::string& fileName,
-                                                  const std::string& extension)
+bool ModuleResourceManager::ImportCase1_NewAsset(const std::string_view relativePath, const std::string& metaFilePath,
+                                                  ResourceType resourceType, const std::string_view fileName,
+                                                  std::string_view extension) const
 {
 	const auto resourceUID           = static_cast<uint32>(Random::Generate());
 	const std::string libExtension   = Resource::GetLibraryExtensionFromType(resourceType);
@@ -339,13 +341,13 @@ bool ModuleResourceManager::ImportCase1_NewAsset(const std::string& relativePath
 	return true;
 }
 
-bool ModuleResourceManager::ImportCase2_MissingLibrary(const MetaFileData& metaFileData)
+bool ModuleResourceManager::ImportCase2_MissingLibrary(const MetaFileData& metaFileData) const
 {
 	mImporterManager->Import(metaFileData.resourceType, metaFileData);
 	return true;
 }
 
-bool ModuleResourceManager::ImportCase3_TimestampCheck(const MetaFileData& metaFileData)
+bool ModuleResourceManager::ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const
 {
 	namespace fs = std::filesystem;
 	const fs::file_time_type assetTime   = fs::last_write_time(metaFileData.assetsPath);
@@ -697,7 +699,7 @@ bool ModuleResourceManager::UnloadResource(uint32 uid)
 }
 
 
-void ModuleResourceManager::DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu)
+void ModuleResourceManager::DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu) const
 {
     if (!tex) return;
     if (tex->GetState() == ResourceState::GPU_READY)
