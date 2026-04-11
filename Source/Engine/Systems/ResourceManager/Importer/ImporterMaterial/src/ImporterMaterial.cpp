@@ -118,6 +118,120 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
     return ret;
 }
 
+// ---------------------------------------------------------------------------
+// Deserialize helpers
+// ---------------------------------------------------------------------------
+
+static void DeserializeUniforms(JSON_Object* root, ResourceMaterial* material)
+{
+    // Data-driven: every uniform must live in the "uniforms" array. Members the
+    // material doesn't declare are filled with reflection defaults at draw time.
+    JSON_Array* uniformsArr = json_object_get_array(root, "uniforms");
+    if (!uniformsArr) return;
+
+    const size_t count = json_array_get_count(uniformsArr);
+    for (size_t i = 0; i < count; ++i)
+    {
+        JSON_Object* entry = json_array_get_object(uniformsArr, i);
+        if (!entry) continue;
+
+        const char* name    = json_object_get_string(entry, "name");
+        const char* typeStr = json_object_get_string(entry, "type");
+        JSON_Array* valArr  = json_object_get_array(entry, "value");
+        if (!name || !valArr) continue;
+
+        UniformValue uv;
+        uv.type = StringToUniformValueType(typeStr);
+        uv.data = glm::vec4(1.0f);
+
+        const uint32_t compCount = UniformValueComponentCountLocal(uv.type);
+        const size_t   arrCount  = json_array_get_count(valArr);
+        for (uint32_t c = 0; c < compCount && c < arrCount; ++c)
+            uv.data[static_cast<int>(c)] = static_cast<float>(json_array_get_number(valArr, c));
+
+        material->uniformValues[name] = uv;
+    }
+}
+
+static void DeserializeTextureMaps(JSON_Object* root, ResourceMaterial* material,
+                                    ModuleResourceManager* rm)
+{
+    // Data-driven: every texture slot lives in the "texture_maps" array with
+    // name + asset_path + uid + library_path. Save() enriches uid/library_path
+    // at import time, so library copies always carry them.
+    JSON_Array* texMapsArr = json_object_get_array(root, "texture_maps");
+    if (!texMapsArr) return;
+
+    const size_t count = json_array_get_count(texMapsArr);
+    for (size_t i = 0; i < count; ++i)
+    {
+        JSON_Object* entry = json_array_get_object(texMapsArr, i);
+        if (!entry) continue;
+
+        const char*  name      = json_object_get_string(entry, "name");
+        const char*  rawPath   = json_object_get_string(entry, "asset_path");
+        const char*  libRaw    = json_object_get_string(entry, "library_path");
+        const double uidDouble = json_object_get_number(entry, "uid");
+        if (!name || !rawPath || !libRaw || uidDouble == 0.0)
+        {
+            NOUS_WARN("ImporterMaterial::Deserialize() — texture entry missing name/asset_path/uid/library_path; skipping.");
+            continue;
+        }
+
+        std::string assetPath = NOUS_FileManager::NormalizePath(rawPath);
+        std::string libPath   = NOUS_FileManager::NormalizePath(libRaw);
+
+        const uint32      texUID  = static_cast<uint32>(uidDouble);
+        const std::string texName = NOUS_FileManager::GetFilename(assetPath);
+        ResourceTexture*  tex     = down_cast<ResourceTexture*>(
+            rm->CreateResourceFromLibrary(texUID, ResourceType::TEXTURE, texName, assetPath, libPath));
+
+        if (tex)
+            material->textureMaps[name].texture = tex;
+        else
+            NOUS_WARN("ImporterMaterial::Deserialize() — texture '%s' (slot '%s') could not be loaded.",
+                      assetPath.c_str(), name);
+    }
+}
+
+static void DeserializeShader(JSON_Object* root, ResourceMaterial* material,
+                               ModuleResourceManager* rm)
+{
+    // Data-driven: shader_asset_path + shader_uid + shader_library_path are all
+    // required. Save() enriches uid/library_path at import time.
+    const char* shaderAssetRaw = json_object_get_string(root, "shader_asset_path");
+    if (!shaderAssetRaw) return;
+
+    const char*  shaderLibRaw = json_object_get_string(root, "shader_library_path");
+    const double shaderUID    = json_object_get_number(root, "shader_uid");
+    if (!shaderLibRaw || shaderUID == 0.0)
+    {
+        NOUS_WARN("ImporterMaterial::Deserialize() — shader entry missing shader_uid/shader_library_path; falling back to built-in.");
+        return;
+    }
+
+    std::string       shaderAssetPath(shaderAssetRaw);
+    std::string       shaderLibPath(shaderLibRaw);
+    const std::string shaderName = NOUS_FileManager::GetFilename(shaderAssetPath);
+
+    Resource* r = rm->CreateResourceFromLibrary(
+        static_cast<uint32>(shaderUID), ResourceType::SHADER, shaderName,
+        shaderAssetPath, shaderLibPath);
+
+    if (ResourceShader* loadedShader = r ? down_cast<ResourceShader*>(r) : nullptr)
+    {
+        material->shader    = loadedShader;
+        material->shaderUID = loadedShader->GetUID();
+    }
+    else
+    {
+        NOUS_WARN("ImporterMaterial::Deserialize() — shader '%s' could not be loaded; falling back to built-in.",
+                  shaderAssetPath.c_str());
+    }
+}
+
+// ---------------------------------------------------------------------------
+
 bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* outResource)
 {
     ResourceMaterial* material = down_cast<ResourceMaterial*>(outResource);
@@ -130,107 +244,9 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
     }
     JSON_Object* root = json_value_get_object(rootVal);
 
-    // ── Uniforms ─────────────────────────────────────────────────────────────
-    // Data-driven: every uniform must live in the "uniforms" array. Members the
-    // material doesn't declare are filled with reflection defaults at draw time.
-    if (JSON_Array* uniformsArr = json_object_get_array(root, "uniforms"))
-    {
-        const size_t count = json_array_get_count(uniformsArr);
-        for (size_t i = 0; i < count; ++i)
-        {
-            JSON_Object* entry = json_array_get_object(uniformsArr, i);
-            if (!entry) continue;
-
-            const char* name    = json_object_get_string(entry, "name");
-            const char* typeStr = json_object_get_string(entry, "type");
-            JSON_Array* valArr  = json_object_get_array(entry, "value");
-            if (!name || !valArr) continue;
-
-            UniformValue uv;
-            uv.type = StringToUniformValueType(typeStr);
-            uv.data = glm::vec4(1.0f);
-
-            const uint32_t compCount = UniformValueComponentCountLocal(uv.type);
-            const size_t   arrCount  = json_array_get_count(valArr);
-            for (uint32_t c = 0; c < compCount && c < arrCount; ++c)
-                uv.data[static_cast<int>(c)] = static_cast<float>(json_array_get_number(valArr, c));
-
-            material->uniformValues[name] = uv;
-        }
-    }
-
-    // ── Texture maps ─────────────────────────────────────────────────────────
-    // Data-driven: every texture slot lives in the "texture_maps" array with
-    // name + asset_path + uid + library_path. Save() enriches uid/library_path
-    // at import time, so library copies always carry them.
-    if (JSON_Array* texMapsArr = json_object_get_array(root, "texture_maps"))
-    {
-        const size_t count = json_array_get_count(texMapsArr);
-        for (size_t i = 0; i < count; ++i)
-        {
-            JSON_Object* entry = json_array_get_object(texMapsArr, i);
-            if (!entry) continue;
-
-            const char* name    = json_object_get_string(entry, "name");
-            const char* rawPath = json_object_get_string(entry, "asset_path");
-            const char* libRaw  = json_object_get_string(entry, "library_path");
-            const double uidDouble = json_object_get_number(entry, "uid");
-            if (!name || !rawPath || !libRaw || uidDouble == 0.0)
-            {
-                NOUS_WARN("ImporterMaterial::Deserialize() — texture entry missing name/asset_path/uid/library_path; skipping.");
-                continue;
-            }
-
-            std::string assetPath = NOUS_FileManager::NormalizePath(rawPath);
-            std::string libPath   = NOUS_FileManager::NormalizePath(libRaw);
-
-            const uint32         texUID  = static_cast<uint32>(uidDouble);
-            const std::string texName = NOUS_FileManager::GetFilename(assetPath);
-            ResourceTexture*  tex     = down_cast<ResourceTexture*>(
-                mResourceManager->CreateResourceFromLibrary(
-                    texUID, ResourceType::TEXTURE, texName, assetPath, libPath));
-
-            if (tex)
-                material->textureMaps[name].texture = tex;
-            else
-                NOUS_WARN("ImporterMaterial::Deserialize() — texture '%s' (slot '%s') could not be loaded.",
-                          assetPath.c_str(), name);
-        }
-    }
-
-    // ── Shader (optional) ────────────────────────────────────────────────────
-    // Data-driven: shader_asset_path + shader_uid + shader_library_path are all
-    // required. Save() enriches uid/library_path at import time.
-    if (const char* shaderAssetRaw = json_object_get_string(root, "shader_asset_path"))
-    {
-        const char*  shaderLibRaw = json_object_get_string(root, "shader_library_path");
-        const double shaderUID    = json_object_get_number(root, "shader_uid");
-        if (!shaderLibRaw || shaderUID == 0.0)
-        {
-            NOUS_WARN("ImporterMaterial::Deserialize() — shader entry missing shader_uid/shader_library_path; falling back to built-in.");
-        }
-        else
-        {
-            std::string       shaderAssetPath(shaderAssetRaw);
-            std::string       shaderLibPath(shaderLibRaw);
-            const std::string shaderName = NOUS_FileManager::GetFilename(shaderAssetPath);
-
-            Resource* r = mResourceManager->CreateResourceFromLibrary(
-                static_cast<uint32>(shaderUID), ResourceType::SHADER, shaderName,
-                shaderAssetPath, shaderLibPath);
-
-            if (ResourceShader* loadedShader = r ? down_cast<ResourceShader*>(r) : nullptr)
-            {
-                material->shader    = loadedShader;
-                material->shaderUID = loadedShader->GetUID();
-            }
-            else
-            {
-                NOUS_WARN("ImporterMaterial::Deserialize() — shader '%s' could not be loaded; falling back to built-in.",
-                          shaderAssetPath.c_str());
-            }
-        }
-    }
+    DeserializeUniforms(root, material);
+    DeserializeTextureMaps(root, material, mResourceManager);
+    DeserializeShader(root, material, mResourceManager);
 
     json_value_free(rootVal);
     return true;

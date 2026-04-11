@@ -132,6 +132,17 @@ private:
 	static bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
 	static bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
 
+	// ImportFile sub-routines (E1/E2)
+	bool ImportFileFromExternal(const std::string& path, ResourceType resourceType,
+	                            const std::string& fileName, const std::string& extension);
+	bool ImportFileFromAssets(const std::string& relativePath, ResourceType resourceType,
+	                          const std::string& fileName, const std::string& extension);
+	bool ImportCase1_NewAsset(const std::string& relativePath, const std::string& metaFilePath,
+	                          ResourceType resourceType, const std::string& fileName,
+	                          const std::string& extension);
+	bool ImportCase2_MissingLibrary(const MetaFileData& metaFileData);
+	bool ImportCase3_TimestampCheck(const MetaFileData& metaFileData);
+
 	static Resource* InstantiateResource(ResourceType type);
 	void DeleteResource(Resource*& resource);
 

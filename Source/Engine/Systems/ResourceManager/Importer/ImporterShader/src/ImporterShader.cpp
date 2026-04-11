@@ -60,21 +60,16 @@ static std::string GetShaderDirectory(const std::string& libraryPath)
 // ImporterShader
 // ---------------------------------------------------------------------------
 
-bool ImporterShader::Import(const MetaFileData& metaFileData)
-{
-    Resource* tempShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
-    return Save(metaFileData, tempShader);
-}
+// ---------------------------------------------------------------------------
+// Save helpers
+// ---------------------------------------------------------------------------
 
-bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResource)
+static bool ReadShaderSource(const std::string& assetsPath, std::string& outSource)
 {
-    NOUS_DELETE(inResource, MemoryTag::RESOURCE_SHADER);
-
-    // 1. Read the unified .glsl source file
     FileHandle glslFile;
-    if (!glslFile.Open(metaFileData.assetsPath, FileMode::READ, true))
+    if (!glslFile.Open(assetsPath, FileMode::READ, true))
     {
-        NOUS_ERROR("[ImporterShader] Cannot open source '%s'.", metaFileData.assetsPath.c_str());
+        NOUS_ERROR("[ImporterShader] Cannot open source '%s'.", assetsPath.c_str());
         return false;
     }
 
@@ -82,41 +77,29 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
     uint64 bytesRead = 0;
     if (!glslFile.ReadAllBytes(&rawSource, &bytesRead))
     {
-        NOUS_ERROR("[ImporterShader] Failed to read '%s'.", metaFileData.assetsPath.c_str());
+        NOUS_ERROR("[ImporterShader] Failed to read '%s'.", assetsPath.c_str());
         glslFile.Close();
         return false;
     }
     glslFile.Close();
 
-    std::string source(rawSource, bytesRead);
+    outSource.assign(rawSource, bytesRead);
     NOUS_DELETE(rawSource, MemoryTag::FILE);
+    return true;
+}
 
-    // 2. Parse into per-stage GLSL blocks
-    NOUS_ShaderSystem::ParseResult parsed = NOUS_ShaderSystem::ParseShaderStages(source);
-    if (!parsed.success)
-    {
-        NOUS_ERROR("[ImporterShader] Parse failed for '%s': %s",
-                   metaFileData.assetsPath.c_str(), parsed.errorMessage.c_str());
-        return false;
-    }
-
-    // 3. Create the per-shader directory: Library\Shaders\<uid>
-    const std::string shaderDir = GetShaderDirectory(metaFileData.libraryPath);
-    if (!NOUS_FileManager::CreateDirectory(shaderDir))
-    {
-        NOUS_ERROR("[ImporterShader] Failed to create directory: %s", shaderDir.c_str());
-        return false;
-    }
-
-    // 4. Compile each stage, write its SPIR-V, and collect for reflection
-    // Optimization is PERFORMANCE by default. The optimizer may strip unused vertex inputs from
-    // the SPIR-V, but vertex buffer stride and attribute offsets are derived from the actual
-    // Vertex3D struct layout (not from reflection), so this is safe.
+// Compiles every stage in `parsed`, writes each .spv to `shaderDir`, and
+// appends the resulting ShaderSource to `outCompiledSources`.
+// Optimization is PERFORMANCE by default. The optimizer may strip unused vertex inputs from
+// the SPIR-V, but vertex buffer stride and attribute offsets are derived from the actual
+// Vertex3D struct layout (not from reflection), so this is safe.
+static bool CompileShaderStages(const NOUS_ShaderSystem::ParseResult& parsed,
+                                 const std::string& shaderDir,
+                                 const std::string& assetsPath,
+                                 std::vector<ShaderSource>& outCompiledSources)
+{
     const ShaderCompilerConfig compilerConfig{};
     bool ret = true;
-
-    std::vector<ShaderSource>           compiledSources;
-    std::vector<ShaderReflectionResult> reflections;
 
     for (const RawStage& raw : parsed.stages)
     {
@@ -128,7 +111,7 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
         }
 
         ShaderCompileResult compiled = NOUS_ShaderSystem::CompileGlslStringToSpirv(
-            raw.glslSource, raw.stage, compilerConfig, metaFileData.assetsPath);
+            raw.glslSource, raw.stage, compilerConfig, assetsPath);
 
         if (!compiled.success)
         {
@@ -138,8 +121,8 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
             continue;
         }
 
-        const std::string spvPath = (std::filesystem::path(shaderDir) / stageName).replace_extension(".spv").string();
-        const uint64 byteSize = compiled.shaderSource.spirvBinary.size() * sizeof(uint32_t);
+        const std::string spvPath   = (std::filesystem::path(shaderDir) / stageName).replace_extension(".spv").string();
+        const uint64      byteSize  = compiled.shaderSource.spirvBinary.size() * sizeof(uint32_t);
 
         FileHandle spvFile;
         if (!spvFile.Open(spvPath, FileMode::WRITE, true))
@@ -155,19 +138,24 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
             NOUS_ERROR("[ImporterShader] Failed to write SPIR-V for stage '%s'.", stageName);
             ret = false;
         }
-
         spvFile.Close();
 
         NOUS_INFO("[ImporterShader] Saved stage '%s' -> '%s' (%llu bytes)",
                   stageName, spvPath.c_str(), bytesWritten);
 
-        compiledSources.push_back(compiled.shaderSource);
+        outCompiledSources.push_back(std::move(compiled.shaderSource));
     }
 
-    if (!ret) return false;
+    return ret;
+}
 
-    // 5. Reflect all stages, merge, and cache to reflection.json
+// Reflects all compiled stages, merges the results, and writes reflection.json.
+static void ReflectAndSerialize(const std::vector<ShaderSource>& compiledSources,
+                                 const std::string& shaderDir)
+{
+    std::vector<ShaderReflectionResult> reflections;
     reflections.reserve(compiledSources.size());
+
     for (const ShaderSource& src : compiledSources)
     {
         ShaderReflectionResult reflected = NOUS_ShaderSystem::ReflectSpirV(src);
@@ -187,8 +175,47 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
         NOUS_WARN("[ImporterShader] Failed to write reflection.json to '%s'.",
                   reflectionJsonPath.c_str());
     }
+}
 
-    return ret;
+// ---------------------------------------------------------------------------
+// ImporterShader
+// ---------------------------------------------------------------------------
+
+bool ImporterShader::Import(const MetaFileData& metaFileData)
+{
+    Resource* tempShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+    return Save(metaFileData, tempShader);
+}
+
+bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResource)
+{
+    NOUS_DELETE(inResource, MemoryTag::RESOURCE_SHADER);
+
+    std::string source;
+    if (!ReadShaderSource(metaFileData.assetsPath, source))
+        return false;
+
+    NOUS_ShaderSystem::ParseResult parsed = NOUS_ShaderSystem::ParseShaderStages(source);
+    if (!parsed.success)
+    {
+        NOUS_ERROR("[ImporterShader] Parse failed for '%s': %s",
+                   metaFileData.assetsPath.c_str(), parsed.errorMessage.c_str());
+        return false;
+    }
+
+    const std::string shaderDir = GetShaderDirectory(metaFileData.libraryPath);
+    if (!NOUS_FileManager::CreateDirectory(shaderDir))
+    {
+        NOUS_ERROR("[ImporterShader] Failed to create directory: %s", shaderDir.c_str());
+        return false;
+    }
+
+    std::vector<ShaderSource> compiledSources;
+    if (!CompileShaderStages(parsed, shaderDir, metaFileData.assetsPath, compiledSources))
+        return false;
+
+    ReflectAndSerialize(compiledSources, shaderDir);
+    return true;
 }
 
 bool ImporterShader::Deserialize(const std::string& libraryPath, Resource* outResource)

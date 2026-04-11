@@ -264,121 +264,100 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 		return false;
 	}
 
-	std::string relativePath = NOUS_FileManager::GetRelativePath(path);
-	std::string fileDirectory = NOUS_FileManager::GetDirectory(path);
-	std::string fileName = NOUS_FileManager::GetFilename(path);
-	std::string extension = NOUS_FileManager::GetExtension(path);
-
-	ResourceType resourceType = Resource::GetTypeFromExtension(extension);
+	const std::string relativePath  = NOUS_FileManager::GetRelativePath(path);
+	const std::string fileDirectory = NOUS_FileManager::GetDirectory(path);
+	const std::string fileName      = NOUS_FileManager::GetFilename(path);
+	const std::string extension     = NOUS_FileManager::GetExtension(path);
+	const ResourceType resourceType = Resource::GetTypeFromExtension(extension);
 
 	if (resourceType == ResourceType::UNKNOWN)
+		return false;
+
+	if (fileDirectory.rfind("Assets\\", 0) == 0)
+		return ImportFileFromAssets(relativePath, resourceType, fileName, extension);
+
+	return ImportFileFromExternal(path, resourceType, fileName, extension);
+}
+
+bool ModuleResourceManager::ImportFileFromExternal(const std::string& path, ResourceType resourceType,
+                                                   const std::string& fileName, const std::string& extension)
+{
+	const std::string newPath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension;
+	if (!NOUS_FileManager::CopyFile(path, newPath))
 	{
-		// NOUS_ERROR("Import File ERROR: General --> Unsupported file extension: %s", extension.c_str());
+		NOUS_ERROR("Import File ERROR: CASE 0 --> Error while copying the file to Assets\\ directory.");
+		return false;
+	}
+	return ImportFile(newPath);
+}
+
+bool ModuleResourceManager::ImportFileFromAssets(const std::string& relativePath, ResourceType resourceType,
+                                                  const std::string& fileName, const std::string& extension)
+{
+	const std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension + ".meta";
+
+	if (!NOUS_FileManager::Exists(metaFilePath))
+		return ImportCase1_NewAsset(relativePath, metaFilePath, resourceType, fileName, extension);
+
+	MetaFileData metaFileData;
+	if (!ReadMetaFile(metaFilePath, metaFileData))
+	{
+		NOUS_ERROR("Import File ERROR: CASE 2,3 --> Error reading meta file: %s", metaFilePath.c_str());
 		return false;
 	}
 
-	if (fileDirectory.rfind("Assets\\", 0) == 0)
+	if (!NOUS_FileManager::Exists(metaFileData.libraryPath))
+		return ImportCase2_MissingLibrary(metaFileData);
+
+	return ImportCase3_TimestampCheck(metaFileData);
+}
+
+bool ModuleResourceManager::ImportCase1_NewAsset(const std::string& relativePath, const std::string& metaFilePath,
+                                                  ResourceType resourceType, const std::string& fileName,
+                                                  const std::string& extension)
+{
+	const auto resourceUID           = static_cast<uint32>(Random::Generate());
+	const std::string libExtension   = Resource::GetLibraryExtensionFromType(resourceType);
+	std::string libraryPath          = std::format("{}{}", Resource::GetLibraryDirectoryFromType(resourceType), resourceUID);
+	if (!libExtension.empty())
+		libraryPath += "." + libExtension;
+
+	MetaFileData metaFileData;
+	metaFileData.name         = fileName;
+	metaFileData.uid          = resourceUID;
+	metaFileData.resourceType = resourceType;
+	metaFileData.assetsPath   = relativePath;
+	metaFileData.libraryPath  = libraryPath;
+
+	if (!CreateMetaFile(metaFilePath, metaFileData))
 	{
-		// CASE 1,2,3: The file is in "Assets\\"
-
-		std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension + ".meta";
-
-		if (!NOUS_FileManager::Exists(metaFilePath))
-		{
-			// DONE
-			// CASE 1: The file is in "Assets\\" and DOES NOT HAVE Meta File
-			// New Resource, Create Meta File
-
-			auto resourceUID = static_cast<uint32>(Random::Generate());
-			std::string libraryExtension = Resource::GetLibraryExtensionFromType(resourceType);
-			std::string libraryPath = std::format("{}{}",
-				Resource::GetLibraryDirectoryFromType(resourceType),resourceUID);
-			if (!libraryExtension.empty())
-				libraryPath += "." + libraryExtension;
-
-			MetaFileData metaFileData;
-
-			metaFileData.name = fileName;
-			metaFileData.uid = resourceUID;
-			metaFileData.resourceType = resourceType;
-			metaFileData.assetsPath = relativePath;
-			metaFileData.libraryPath = libraryPath;
-
-			if (!CreateMetaFile(metaFilePath, metaFileData))
-			{
-				NOUS_ERROR("Import File ERROR: CASE 1 --> Error creating meta file: %s", metaFilePath.c_str());
-				return false;
-			}
-
-			mImporterManager->Import(metaFileData.resourceType, metaFileData);
-		}
-		else
-		{
-			// CASE 2,3: The file is in "Assets\\" and HAS Meta File
-			// Retrieve data from Meta File
-
-			MetaFileData metaFileData;
-
-			if (!ReadMetaFile(metaFilePath, metaFileData))
-			{
-				NOUS_ERROR("Import File ERROR: CASE 2,3 --> Error reading meta file: %s", metaFilePath.c_str());
-				return false;
-			}
-
-			if (!NOUS_FileManager::Exists(metaFileData.libraryPath))
-			{
-				// CASE 2: The file is in "Assets\\" and HAS Meta File but NO Library File
-				// Reimport to create library file with the same UID and data from meta file
-
-				mImporterManager->Import(metaFileData.resourceType, metaFileData);
-			}
-			else
-			{
-				// CASE 3: The file is in "Assets\\" and HAS Meta File AND Library File.
-				// Compare filesystem timestamps: if the source asset is newer than the
-				// library binary, the binary is stale and must be regenerated.
-
-				namespace fs = std::filesystem;
-
-				const fs::file_time_type assetTime   = fs::last_write_time(metaFileData.assetsPath);
-
-				if (const fs::file_time_type libraryTime = GetLibraryTime(metaFileData.libraryPath); assetTime > libraryTime)
-				{
-					NOUS_INFO_C(CURRENT_CHANNEL,
-						"[ImportFile] '%s' modified since last import — regenerating library binary.",
-						metaFileData.name.c_str());
-
-					mImporterManager->Import(metaFileData.resourceType, metaFileData);
-				}
-				// else: library is up to date — nothing to do.
-			}
-		}
-	}
-	else
-	{
-		// DONE
-		// CASE 0: The file is not in "Assets\\" nor "Library\\"
-		// Copy to "Assets\\"
-
-		if (resourceType != ResourceType::UNKNOWN)
-		{
-			if (std::string newPath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension; NOUS_FileManager::CopyFile(path, newPath))
-			{
-				ImportFile(newPath);
-			}
-			else
-			{
-				NOUS_ERROR("Import File ERROR: CASE 0 --> Error while copying the file to Assets\\ directory.");
-				return false;
-			}
-		}
-		else
-		{
-			NOUS_ERROR("Import File ERROR: CASE 0 --> Unsupported file extension: %s", extension.c_str());
-			return false;
-		}
+		NOUS_ERROR("Import File ERROR: CASE 1 --> Error creating meta file: %s", metaFilePath.c_str());
+		return false;
 	}
 
+	mImporterManager->Import(metaFileData.resourceType, metaFileData);
+	return true;
+}
+
+bool ModuleResourceManager::ImportCase2_MissingLibrary(const MetaFileData& metaFileData)
+{
+	mImporterManager->Import(metaFileData.resourceType, metaFileData);
+	return true;
+}
+
+bool ModuleResourceManager::ImportCase3_TimestampCheck(const MetaFileData& metaFileData)
+{
+	namespace fs = std::filesystem;
+	const fs::file_time_type assetTime   = fs::last_write_time(metaFileData.assetsPath);
+	const fs::file_time_type libraryTime = GetLibraryTime(metaFileData.libraryPath);
+
+	if (assetTime > libraryTime)
+	{
+		NOUS_INFO_C(CURRENT_CHANNEL,
+			"[ImportFile] '%s' modified since last import — regenerating library binary.",
+			metaFileData.name.c_str());
+		mImporterManager->Import(metaFileData.resourceType, metaFileData);
+	}
 	return true;
 }
 
