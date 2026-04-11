@@ -29,6 +29,37 @@
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 
+#include <unordered_map>
+
+// ---------------------------------------------------------------------------
+// Resource factory table — one entry per ResourceType.
+// Adding a new type: add one entry here; no other edits required.
+// ---------------------------------------------------------------------------
+namespace
+{
+    struct ResourceFactory
+    {
+        Resource* (*create)();
+        void      (*destroy)(Resource*);
+    };
+
+    const std::unordered_map<ResourceType, ResourceFactory> k_ResourceFactories =
+    {
+        { ResourceType::MESH,
+          { []() -> Resource* { return NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH); },
+            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_MESH); } }},
+        { ResourceType::MATERIAL,
+          { []() -> Resource* { return NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL); },
+            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_MATERIAL); } }},
+        { ResourceType::TEXTURE,
+          { []() -> Resource* { return NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE); },
+            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_TEXTURE); } }},
+        { ResourceType::SHADER,
+          { []() -> Resource* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER); },
+            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_SHADER); } }},
+    };
+}
+
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
 ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
@@ -423,36 +454,9 @@ bool ModuleResourceManager::ReadMetaFile(const std::string& metaFilePath, MetaFi
 
 Resource* ModuleResourceManager::InstantiateResource(ResourceType type)
 {
-	Resource* resource = nullptr;
-
-	switch (type)
-	{
-		using enum ResourceType;
-
-		case MESH:
-		{
-			resource = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
-			break;
-		}
-		case MATERIAL:
-		{
-			resource = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
-			break;
-		}
-		case TEXTURE:
-		{
-			resource = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
-			break;
-		}
-		case SHADER:
-		{
-			resource = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
-			break;
-		}
-		default: break;
-	}
-
-	return resource;
+    const auto it = k_ResourceFactories.find(type);
+    if (it == k_ResourceFactories.end()) return nullptr;
+    return it->second.create();
 }
 
 void ModuleResourceManager::DeleteResource(Resource*& resource)
@@ -473,32 +477,9 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 		}
 	}
 
-	switch (resource->GetType())
-	{
-		using enum ResourceType;
-
-		case MESH:
-		{
-			NOUS_DELETE(resource, MemoryTag::RESOURCE_MESH);
-			break;
-		}
-		case MATERIAL:
-		{
-			NOUS_DELETE(resource, MemoryTag::RESOURCE_MATERIAL);
-			break;
-		}
-		case TEXTURE:
-		{
-			NOUS_DELETE(resource, MemoryTag::RESOURCE_TEXTURE);
-			break;
-		}
-		case SHADER:
-		{
-			NOUS_DELETE(resource, MemoryTag::RESOURCE_SHADER);
-			break;
-		}
-		default: break;
-	}
+	const auto it = k_ResourceFactories.find(resource->GetType());
+	if (it != k_ResourceFactories.end())
+		it->second.destroy(resource);
 
 	// NOTE: resources.erase(uid) is intentionally NOT here.
 	// EvictResource removes the entry under resourcesMutex before calling DeleteResource,
