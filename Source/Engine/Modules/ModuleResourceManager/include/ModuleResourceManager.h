@@ -5,6 +5,7 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
+#include "Engine/Modules/ModuleResourceManager/include/ScenePreloader.h"
 
 #include <future>
 #include <map>
@@ -16,10 +17,6 @@
 
 class IGPUResourceFactory;
 class IImporterManager;
-
-// Forward declaration for parson's JSON_Array (defined as typedef struct json_array_t JSON_Array in parson.h).
-// Used only in the private CollectMeshRequestsFromScene signature; avoids pulling parson into every consumer.
-using JSON_Array = struct json_array_t;
 
 class ResourceMesh;
 
@@ -137,11 +134,6 @@ private:
 	void CreateBuiltinMaterial();
 	static void DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu);
 
-	struct MeshRequest;
-	Resource* LoadMeshRequest(const MeshRequest& req);
-	static void CollectMeshRequestsFromScene(JSON_Array const* gameObjects,
-	                                         std::map<std::pair<std::string, int32_t>, MeshRequest>& outRequests);
-
 	// Atomically claims the UID slot with a nullptr placeholder.
 	// Returns true if this thread won the race and must load; false if another thread already owns it.
 	bool ClaimSlot(uint32 uid);
@@ -192,5 +184,6 @@ private:
 	// Injected dependencies
 	IImporterManager*       mImporterManager = nullptr;
 	ResourceImportPipeline  m_importPipeline;
+	ScenePreloader          m_scenePreloader;
 
 };
