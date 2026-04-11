@@ -1,4 +1,4 @@
 {
-    "startScene": "Library/Scenes/BioticTank.nous",
+    "startScene": "Library/Scenes/PBRSphere.nous",
     "targetFPS": 144
 }

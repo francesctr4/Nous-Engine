@@ -1405,7 +1405,9 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
                         // Each slot falls back to a semantically neutral texture so unassigned
                         // maps have no visible effect on the final result.
                         if (const std::string& n = rb->name; n.find("diffuse") != std::string::npos ||
-                            n.find("Diffuse") != std::string::npos)
+                            n.find("Diffuse") != std::string::npos ||
+                            n.find("albedo")  != std::string::npos ||
+                            n.find("Albedo")  != std::string::npos)
                         {
                             // Checkerboard — visible "missing texture" signal.
                             texture = vkContext->resourceManager->GetDefaultTexture();

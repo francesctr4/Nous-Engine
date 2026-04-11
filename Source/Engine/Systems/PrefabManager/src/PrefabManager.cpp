@@ -289,7 +289,7 @@ void PrefabManager::ReloadPrefabInstance(GameObject* instanceRoot, Scene* scene)
         for (auto* comp : instanceRoot->GetAllComponents())
         {
             const std::string t = comp->GetType();
-            if (t == "CTransform" || t == "CPrefab") continue;
+            if (t == "CTransform" || t == "CPrefab" || t == "CScript") continue;
             if (prefabRootTypes.find(t) == prefabRootTypes.end())
                 toRemove.push_back(typeid(*comp));
         }
@@ -340,9 +340,13 @@ void PrefabManager::ReloadPrefabInstance(GameObject* instanceRoot, Scene* scene)
                     JSON_Object* compObj  = json_array_get_object(comps, j);
                     const char*  typeName = json_object_get_string(compObj, "type");
                     if (!typeName) continue;
-                    // Preserve the existing transform and prefab reference.
+                    // Preserve the existing transform, prefab reference, and scripts.
+                    // CScript is scene-owned data (not in the .nprefab file) — its saved
+                    // properties come from the scene/snapshot JSON, not the prefab definition.
+                    // Recreating it here would wipe m_savedProperties and lose all field values.
                     if (std::string(typeName) == "CTransform") continue;
                     if (std::string(typeName) == "CPrefab")    continue;
+                    if (std::string(typeName) == "CScript")    continue;
 
                     Component* comp = Component::CreateComponent(typeName);
                     if (comp)
