@@ -34,25 +34,6 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
-// Local mirror of VulkanBackend's DataType→UniformValueType converter: the
-// Inspector lives in the Editor DLL and can't reach backend internals, and the
-// mapping is trivial enough to duplicate.
-static UniformValueType DataTypeToUniformValueType(DataType dt)
-{
-    switch (dt)
-    {
-        case DataType::Float: return UniformValueType::Float;
-        case DataType::Vec2:  return UniformValueType::Vec2;
-        case DataType::Vec3:  return UniformValueType::Vec3;
-        case DataType::Vec4:  return UniformValueType::Vec4;
-        case DataType::Int:   return UniformValueType::Int;
-        case DataType::IVec2: return UniformValueType::IVec2;
-        case DataType::IVec3: return UniformValueType::IVec3;
-        case DataType::IVec4: return UniformValueType::IVec4;
-        default:              return UniformValueType::Vec4;
-    }
-}
-
 InspectorWindow::InspectorWindow(const char* title, EditorContext* context, const bool start_open)
         : IEditorWindow(title, context, nullptr, start_open) {
     Init();
@@ -333,9 +314,7 @@ void InspectorWindow::Draw() {
                                                             validNames.insert(m.name);
                                                             mat.material->uniformValues.try_emplace(
                                                                 m.name,
-                                                                UniformValue{
-                                                                    DataTypeToUniformValueType(m.type),
-                                                                    glm::vec4(1.0f) });
+                                                                UniformValue::MakeDefault(DataTypeToUniformValueType(m.type)));
                                                         }
                                                         break;
                                                     }
@@ -419,7 +398,7 @@ void InspectorWindow::Draw() {
                                     // Ensure the material has a value for this member.
                                     auto [it, inserted] = mat.material->uniformValues.try_emplace(
                                         member->name,
-                                        UniformValue{ DataTypeToUniformValueType(member->type), glm::vec4(1.0f) });
+                                        UniformValue::MakeDefault(DataTypeToUniformValueType(member->type)));
                                     UniformValue& uv = it->second;
 
                                     // Heuristic: members with "color" in their name use a color picker.
@@ -431,69 +410,35 @@ void InspectorWindow::Draw() {
                                     switch (member->type)
                                     {
                                         case DataType::Float:
-                                            ImGui::DragFloat(member->name.c_str(), &uv.data.x, 0.01f);
+                                            ImGui::DragFloat(member->name.c_str(), &uv.fdata.x, 0.01f);
                                             break;
                                         case DataType::Vec2:
-                                            ImGui::DragFloat2(member->name.c_str(), &uv.data.x, 0.01f);
+                                            ImGui::DragFloat2(member->name.c_str(), &uv.fdata.x, 0.01f);
                                             break;
                                         case DataType::Vec3:
                                             if (isColor)
-                                                ImGui::ColorEdit3(member->name.c_str(), &uv.data.x);
+                                                ImGui::ColorEdit3(member->name.c_str(), &uv.fdata.x);
                                             else
-                                                ImGui::DragFloat3(member->name.c_str(), &uv.data.x, 0.01f);
+                                                ImGui::DragFloat3(member->name.c_str(), &uv.fdata.x, 0.01f);
                                             break;
                                         case DataType::Vec4:
                                             if (isColor)
-                                                ImGui::ColorEdit4(member->name.c_str(), &uv.data.x);
+                                                ImGui::ColorEdit4(member->name.c_str(), &uv.fdata.x);
                                             else
-                                                ImGui::DragFloat4(member->name.c_str(), &uv.data.x, 0.01f);
+                                                ImGui::DragFloat4(member->name.c_str(), &uv.fdata.x, 0.01f);
                                             break;
                                         case DataType::Int:
-                                        {
-                                            int v = static_cast<int>(uv.data.x);
-                                            if (ImGui::DragInt(member->name.c_str(), &v))
-                                                uv.data.x = static_cast<float>(v);
+                                            ImGui::DragInt(member->name.c_str(), &uv.idata.x);
                                             break;
-                                        }
                                         case DataType::IVec2:
-                                        {
-                                            int v[2] = { static_cast<int>(uv.data.x),
-                                                         static_cast<int>(uv.data.y) };
-                                            if (ImGui::DragInt2(member->name.c_str(), v))
-                                            {
-                                                uv.data.x = static_cast<float>(v[0]);
-                                                uv.data.y = static_cast<float>(v[1]);
-                                            }
+                                            ImGui::DragInt2(member->name.c_str(), &uv.idata.x);
                                             break;
-                                        }
                                         case DataType::IVec3:
-                                        {
-                                            int v[3] = { static_cast<int>(uv.data.x),
-                                                         static_cast<int>(uv.data.y),
-                                                         static_cast<int>(uv.data.z) };
-                                            if (ImGui::DragInt3(member->name.c_str(), v))
-                                            {
-                                                uv.data.x = static_cast<float>(v[0]);
-                                                uv.data.y = static_cast<float>(v[1]);
-                                                uv.data.z = static_cast<float>(v[2]);
-                                            }
+                                            ImGui::DragInt3(member->name.c_str(), &uv.idata.x);
                                             break;
-                                        }
                                         case DataType::IVec4:
-                                        {
-                                            int v[4] = { static_cast<int>(uv.data.x),
-                                                         static_cast<int>(uv.data.y),
-                                                         static_cast<int>(uv.data.z),
-                                                         static_cast<int>(uv.data.w) };
-                                            if (ImGui::DragInt4(member->name.c_str(), v))
-                                            {
-                                                uv.data.x = static_cast<float>(v[0]);
-                                                uv.data.y = static_cast<float>(v[1]);
-                                                uv.data.z = static_cast<float>(v[2]);
-                                                uv.data.w = static_cast<float>(v[3]);
-                                            }
+                                            ImGui::DragInt4(member->name.c_str(), &uv.idata.x);
                                             break;
-                                        }
                                         default:
                                             ImGui::TextDisabled("%s (unsupported type)", member->name.c_str());
                                             break;

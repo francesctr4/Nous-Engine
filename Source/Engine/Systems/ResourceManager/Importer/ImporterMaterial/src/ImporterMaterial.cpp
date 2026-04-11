@@ -48,17 +48,6 @@ static UniformValueType StringToUniformValueType(const char* str)
     return UniformValueType::Vec4;
 }
 
-static uint32_t UniformValueComponentCountLocal(UniformValueType type)
-{
-    switch (type)
-    {
-        case UniformValueType::Float: case UniformValueType::Int:   return 1;
-        case UniformValueType::Vec2:  case UniformValueType::IVec2: return 2;
-        case UniformValueType::Vec3:  case UniformValueType::IVec3: return 3;
-        case UniformValueType::Vec4:  case UniformValueType::IVec4: return 4;
-    }
-    return 4;
-}
 
 bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 {
@@ -140,14 +129,20 @@ static void DeserializeUniforms(JSON_Object* root, ResourceMaterial* material)
         JSON_Array* valArr  = json_object_get_array(entry, "value");
         if (!name || !valArr) continue;
 
-        UniformValue uv;
-        uv.type = StringToUniformValueType(typeStr);
-        uv.data = glm::vec4(1.0f);
+        UniformValue uv = UniformValue::MakeDefault(StringToUniformValueType(typeStr));
 
-        const uint32_t compCount = UniformValueComponentCountLocal(uv.type);
+        const uint32_t compCount = UniformValueComponentCount(uv.type);
         const size_t   arrCount  = json_array_get_count(valArr);
-        for (uint32_t c = 0; c < compCount && c < arrCount; ++c)
-            uv.data[static_cast<int>(c)] = static_cast<float>(json_array_get_number(valArr, c));
+        if (UniformValueIsInt(uv.type))
+        {
+            for (uint32_t c = 0; c < compCount && c < arrCount; ++c)
+                uv.idata[static_cast<int>(c)] = static_cast<int32_t>(json_array_get_number(valArr, c));
+        }
+        else
+        {
+            for (uint32_t c = 0; c < compCount && c < arrCount; ++c)
+                uv.fdata[static_cast<int>(c)] = static_cast<float>(json_array_get_number(valArr, c));
+        }
 
         material->uniformValues[name] = uv;
     }
@@ -311,9 +306,17 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
 
                 JSON_Value* valArrVal = json_value_init_array();
                 JSON_Array* valArr    = json_value_get_array(valArrVal);
-                const uint32_t compCount = UniformValueComponentCountLocal(uv.type);
-                for (uint32_t c = 0; c < compCount; ++c)
-                    json_array_append_number(valArr, static_cast<double>(uv.data[static_cast<int>(c)]));
+                const uint32_t compCount = UniformValueComponentCount(uv.type);
+                if (UniformValueIsInt(uv.type))
+                {
+                    for (uint32_t c = 0; c < compCount; ++c)
+                        json_array_append_number(valArr, static_cast<double>(uv.idata[static_cast<int>(c)]));
+                }
+                else
+                {
+                    for (uint32_t c = 0; c < compCount; ++c)
+                        json_array_append_number(valArr, static_cast<double>(uv.fdata[static_cast<int>(c)]));
+                }
                 json_object_set_value(entry, "value", valArrVal);
 
                 json_array_append_value(uniArr, entryVal);

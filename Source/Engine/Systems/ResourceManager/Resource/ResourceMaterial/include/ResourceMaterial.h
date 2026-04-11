@@ -4,6 +4,7 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Renderer/RendererTypes.h"
+#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 
 #include "glm/glm.hpp"
 #include <cstdint>
@@ -19,10 +20,70 @@ enum class UniformValueType : uint8_t
     Int, IVec2, IVec3, IVec4
 };
 
+// ---------------------------------------------------------------------------
+// UniformValue helpers — shared by renderer, importer, and editor.
+// Defined here so no consumer needs to duplicate them.
+// ---------------------------------------------------------------------------
+
+inline uint32_t UniformValueComponentCount(UniformValueType type)
+{
+    switch (type)
+    {
+        case UniformValueType::Float: case UniformValueType::Int:   return 1;
+        case UniformValueType::Vec2:  case UniformValueType::IVec2: return 2;
+        case UniformValueType::Vec3:  case UniformValueType::IVec3: return 3;
+        case UniformValueType::Vec4:  case UniformValueType::IVec4: return 4;
+    }
+    return 4;
+}
+
+inline bool UniformValueIsInt(UniformValueType type)
+{
+    return type == UniformValueType::Int   || type == UniformValueType::IVec2
+        || type == UniformValueType::IVec3 || type == UniformValueType::IVec4;
+}
+
+inline UniformValueType DataTypeToUniformValueType(DataType dt)
+{
+    switch (dt)
+    {
+        case DataType::Float: return UniformValueType::Float;
+        case DataType::Vec2:  return UniformValueType::Vec2;
+        case DataType::Vec3:  return UniformValueType::Vec3;
+        case DataType::Vec4:  return UniformValueType::Vec4;
+        case DataType::Int:   return UniformValueType::Int;
+        case DataType::IVec2: return UniformValueType::IVec2;
+        case DataType::IVec3: return UniformValueType::IVec3;
+        case DataType::IVec4: return UniformValueType::IVec4;
+        default:              return UniformValueType::Vec4;
+    }
+}
+
+// ---------------------------------------------------------------------------
+
 struct UniformValue
 {
     UniformValueType type = UniformValueType::Vec4;
-    glm::vec4 data = glm::vec4(1.0f); // universal storage; interpret by type (ints reinterpreted at upload)
+
+    // Split storage: float types use fdata, int types use idata.
+    // Always access the field that matches 'type' — reading the wrong member
+    // gives garbage (different bit patterns: 1.0f = 0x3F800000, 1 = 0x00000001).
+    union
+    {
+        glm::vec4  fdata = glm::vec4(1.0f);  // Float / Vec2 / Vec3 / Vec4
+        glm::ivec4 idata;                     // Int   / IVec2 / IVec3 / IVec4
+    };
+
+    // Returns a properly-initialised default value (1.0f for floats, 1 for ints).
+    static UniformValue MakeDefault(UniformValueType t)
+    {
+        UniformValue uv;
+        uv.type = t;
+        if (UniformValueIsInt(t))
+            uv.idata = glm::ivec4(1);
+        // else: fdata already initialised to glm::vec4(1.0f) by the default member initialiser
+        return uv;
+    }
 };
 
 class ResourceMaterial : public Resource
