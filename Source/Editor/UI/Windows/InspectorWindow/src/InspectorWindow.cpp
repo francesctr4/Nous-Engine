@@ -31,6 +31,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 

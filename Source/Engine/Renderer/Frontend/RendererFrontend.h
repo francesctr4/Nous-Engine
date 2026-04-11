@@ -8,7 +8,6 @@
 
 #include <atomic>
 #include <functional>
-#include <glm/glm.hpp>
 #include <mutex>
 #include <string>
 #include <unordered_set>

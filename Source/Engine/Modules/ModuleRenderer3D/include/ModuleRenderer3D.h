@@ -20,9 +20,7 @@
 #include "Engine/Core/FileWatcher/FileWatcher.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Renderer/RendererTypes.h"
-#include "Engine/Renderer/IGPUResourceFactory.h"
 
-#include <glm/glm.hpp>
 #include <unordered_map>
 #include <utility>
 
@@ -33,6 +31,7 @@ struct RenderPacket;
 struct SceneRenderData;
 class RendererFrontend;
 class Resource;
+class IGPUResourceFactory;
 
 // Dependency Injection
 class ModuleCamera3D;

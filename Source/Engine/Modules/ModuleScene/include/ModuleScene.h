@@ -7,7 +7,6 @@
 #include <string>
 #include <atomic>
 #include "Engine/Core/EventSystem/IEventListener.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
 class Scene;
 class GameObject;
