@@ -312,7 +312,7 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 	return ImportFileFromExternal(path, resourceType, fileName, extension);
 }
 
-bool ModuleResourceManager::ImportFileFromExternal(const std::string& path, ResourceType resourceType,
+bool ModuleResourceManager::ImportFileFromExternal(const std::string& path, const ResourceType resourceType,
                                                    const std::string& fileName, const std::string& extension)
 {
 	const std::string newPath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension;
@@ -324,13 +324,13 @@ bool ModuleResourceManager::ImportFileFromExternal(const std::string& path, Reso
 	return ImportFile(newPath);
 }
 
-bool ModuleResourceManager::ImportFileFromAssets(const std::string& relativePath, ResourceType resourceType,
+bool ModuleResourceManager::ImportFileFromAssets(const std::string& relativePath, const ResourceType resourceType,
                                                   const std::string& fileName, const std::string& extension) const
 {
 	const std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension + ".meta";
 
 	if (!NOUS_FileManager::Exists(metaFilePath))
-		return ImportCase1_NewAsset(relativePath, metaFilePath, resourceType, fileName, extension);
+		return ImportCase1_NewAsset(relativePath, metaFilePath, resourceType, fileName);
 
 	MetaFileData metaFileData;
 	if (!ReadMetaFile(metaFilePath, metaFileData))
@@ -346,8 +346,7 @@ bool ModuleResourceManager::ImportFileFromAssets(const std::string& relativePath
 }
 
 bool ModuleResourceManager::ImportCase1_NewAsset(const std::string_view relativePath, const std::string& metaFilePath,
-                                                  ResourceType resourceType, const std::string_view fileName,
-                                                  std::string_view extension) const
+                                                  const ResourceType resourceType, const std::string_view fileName) const
 {
 	const auto resourceUID           = static_cast<uint32>(Random::Generate());
 	const std::string libExtension   = Resource::GetLibraryExtensionFromType(resourceType);
@@ -380,17 +379,17 @@ bool ModuleResourceManager::ImportCase2_MissingLibrary(const MetaFileData& metaF
 
 bool ModuleResourceManager::ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const
 {
-	namespace fs = std::filesystem;
-	const fs::file_time_type assetTime   = fs::last_write_time(metaFileData.assetsPath);
-	const fs::file_time_type libraryTime = GetLibraryTime(metaFileData.libraryPath);
-
-	if (assetTime > libraryTime)
+	if (std::filesystem::last_write_time(metaFileData.assetsPath)
+		>
+		GetLibraryTime(metaFileData.libraryPath))
 	{
 		NOUS_INFO_C(CURRENT_CHANNEL,
 			"[ImportFile] '%s' modified since last import — regenerating library binary.",
 			metaFileData.name.c_str());
+
 		mImporterManager->Import(metaFileData.resourceType, metaFileData);
 	}
+
 	return true;
 }
 
@@ -452,7 +451,7 @@ bool ModuleResourceManager::ReadMetaFile(const std::string& metaFilePath, MetaFi
 }
 
 
-Resource* ModuleResourceManager::InstantiateResource(ResourceType type)
+Resource* ModuleResourceManager::InstantiateResource(const ResourceType type)
 {
     const auto it = k_ResourceFactories.find(type);
     if (it == k_ResourceFactories.end()) return nullptr;
@@ -477,8 +476,8 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 		}
 	}
 
-	const auto it = k_ResourceFactories.find(resource->GetType());
-	if (it != k_ResourceFactories.end())
+	if (const auto it = k_ResourceFactories.find(resource->GetType());
+		it != k_ResourceFactories.end())
 		it->second.destroy(resource);
 
 	// NOTE: resources.erase(uid) is intentionally NOT here.
@@ -486,13 +485,13 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 	// so the map is clean before we reach this point.
 }
 
-bool ModuleResourceManager::ResourceExists(uint32 uid) const
+bool ModuleResourceManager::ResourceExists(const uint32 uid) const
 {
 	std::scoped_lock lock(resourcesMutex);
 	return resources.contains(uid);
 }
 
-bool ModuleResourceManager::ClaimSlot(uint32 uid)
+bool ModuleResourceManager::ClaimSlot(const uint32 uid)
 {
 	std::scoped_lock lock(resourcesMutex);
 	if (resources.contains(uid)) return false;
@@ -500,7 +499,7 @@ bool ModuleResourceManager::ClaimSlot(uint32 uid)
 	return true;
 }
 
-Resource* ModuleResourceManager::SpinWaitForSlot(uint32 uid)
+Resource* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
 {
 	Resource* resource = nullptr;
 	while (true)
@@ -523,7 +522,7 @@ Resource* ModuleResourceManager::SpinWaitForSlot(uint32 uid)
 	return resource;
 }
 
-Resource* ModuleResourceManager::LoadResourceIntoSlot(uint32 uid, ResourceType type,
+Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, ResourceType type,
     const std::string& name, const std::string& assetsPath, const std::string& libraryPath)
 {
 	Resource* resource = InstantiateResource(type);
@@ -558,9 +557,9 @@ Resource* ModuleResourceManager::LoadResourceIntoSlot(uint32 uid, ResourceType t
 }
 
 ResourceMesh* ModuleResourceManager::BuildAndRegisterSubMesh(
-    std::pair<uint32, int32_t> cacheKey,
+    const std::pair<uint32, int32_t> cacheKey,
     const std::string& libraryPath,
-    int32_t submeshIndex,
+    const int32_t submeshIndex,
     const std::string& assetsPath)
 {
 	const auto hierarchy = ImporterMesh::LoadHierarchy(libraryPath);
@@ -619,7 +618,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 	return SpinWaitForSlot(metaFileData.uid);
 }
 
-Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, ResourceType type,
+Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, const ResourceType type,
                                                             const std::string& name,
                                                             const std::string& assetsPath,
                                                             const std::string& libraryPath)
@@ -657,7 +656,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 	return BuildAndRegisterSubMesh(key, libraryPath, submeshIndex, assetsPath);
 }
 
-bool ModuleResourceManager::UnloadResource(uint32 uid)
+bool ModuleResourceManager::UnloadResource(const uint32 uid)
 {
 	Resource* resource = nullptr;
 	{
@@ -680,7 +679,7 @@ bool ModuleResourceManager::UnloadResource(uint32 uid)
 }
 
 
-void ModuleResourceManager::DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu) const
+void ModuleResourceManager::DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu)
 {
     if (!tex) return;
     if (tex->GetState() == ResourceState::GPU_READY)
@@ -691,49 +690,45 @@ void ModuleResourceManager::DestroyBuiltinTexture(ResourceTexture*& tex, IGPURes
 
 void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
 {
-    // Destroy shaders FIRST — descriptor sets reference texture image views;
+    // Common pattern for types that don't need special pre-destruction work:
+    // filter by type → GPU destroy (if ready) → CPU Evict → DELETE.
+    // Defined as a lambda so its body is a separate complexity unit.
+    auto destroyByType = [&](const ResourceType type, const MemoryTag tag, auto gpuDestroy)
+    {
+        for (auto& res : resources | std::views::values)
+        {
+            if (!res || res->GetType() != type) continue;
+            if (res->GetState() == ResourceState::GPU_READY)
+                gpuDestroy(res);
+            mImporterManager->Evict(type, res);
+            NOUS_DELETE(res, tag);
+        }
+    };
+
+    // Shaders first — descriptor sets reference texture image views;
     // freeing textures first would leave dangling view references in the sets.
     // VUID-vkDestroyImageView-01026
-    for (auto& res : resources | std::views::values)
-    {
-        if (!res || res->GetType() != ResourceType::SHADER) continue;
-        if (res->GetState() == ResourceState::GPU_READY)
-            gpu->DestroyShader(down_cast<ResourceShader*>(res));
-        mImporterManager->Evict(ResourceType::SHADER, res);
-        NOUS_DELETE(res, MemoryTag::RESOURCE_SHADER);
-    }
+    destroyByType(ResourceType::SHADER, MemoryTag::RESOURCE_SHADER,
+        [&gpu](Resource* r) { gpu->DestroyShader(down_cast<ResourceShader*>(r)); });
 
-    // Materials next — destroy GPU handle, then clear the texture pointer directly
-    // (do NOT call UnloadResource here; the texture will be destroyed in the next pass).
+    // Materials next — destroy GPU handle, then clear texture pointers directly
+    // (do NOT call UnloadResource; textures are destroyed in the next pass).
     for (auto& res : resources | std::views::values)
     {
         if (!res || res->GetType() != ResourceType::MATERIAL) continue;
-        if (res->GetState() == ResourceState::GPU_READY)
-            gpu->DestroyMaterial(down_cast<ResourceMaterial*>(res));
-        for (auto* mat = down_cast<ResourceMaterial*>(res); auto& map : mat->textureMaps | std::views::values)
+        auto* mat = down_cast<ResourceMaterial*>(res);
+        if (mat->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyMaterial(mat);
+        for (auto& map : mat->textureMaps | std::views::values)
             map.texture = nullptr;
         NOUS_DELETE(res, MemoryTag::RESOURCE_MATERIAL);
     }
 
-    // Textures
-    for (auto& res : resources | std::views::values)
-    {
-        if (!res || res->GetType() != ResourceType::TEXTURE) continue;
-        if (res->GetState() == ResourceState::GPU_READY)
-            gpu->DestroyTexture(down_cast<ResourceTexture*>(res));
-        mImporterManager->Evict(ResourceType::TEXTURE, res);
-        NOUS_DELETE(res, MemoryTag::RESOURCE_TEXTURE);
-    }
+    destroyByType(ResourceType::TEXTURE, MemoryTag::RESOURCE_TEXTURE,
+        [&gpu](Resource* r) { gpu->DestroyTexture(down_cast<ResourceTexture*>(r)); });
 
-    // Meshes
-    for (auto& res : resources | std::views::values)
-    {
-        if (!res || res->GetType() != ResourceType::MESH) continue;
-        if (res->GetState() == ResourceState::GPU_READY)
-            gpu->DestroyGeometry(down_cast<ResourceMesh*>(res));
-        mImporterManager->Evict(ResourceType::MESH, res);
-        NOUS_DELETE(res, MemoryTag::RESOURCE_MESH);
-    }
+    destroyByType(ResourceType::MESH, MemoryTag::RESOURCE_MESH,
+        [&gpu](Resource* r) { gpu->DestroyGeometry(down_cast<ResourceMesh*>(r)); });
 
     resources.clear();
     m_submeshUIDMap.clear();
@@ -894,6 +889,46 @@ Resource* ModuleResourceManager::LoadMeshRequest(const MeshRequest& req)
     return CreateResource(req.assetPath);
 }
 
+// Walks the GameObjects array and collects every unique CMesh request.
+// Key: (assetPath, submeshIndex) — mirrors ResourceManager's internal deduplication.
+void ModuleResourceManager::CollectMeshRequestsFromScene(
+    JSON_Array const* gameObjects,
+    std::map<std::pair<std::string, int32_t>, MeshRequest>& outRequests)
+{
+    const size_t goCount = json_array_get_count(gameObjects);
+    for (size_t i = 0; i < goCount; ++i)
+    {
+        JSON_Object const* goObj = json_array_get_object(gameObjects, i);
+        JSON_Array const*  comps = json_object_get_array(goObj, "components");
+        if (!comps) continue;
+
+        const size_t compCount = json_array_get_count(comps);
+        for (size_t j = 0; j < compCount; ++j)
+        {
+            JSON_Object const* compObj = json_array_get_object(comps, j);
+
+            if (const char* type = json_object_get_string(compObj, "type");
+                !type || std::strcmp(type, "CMesh") != 0)
+                continue;
+
+            const char* assetPath = json_object_get_string(compObj, "assetPath");
+            if (!assetPath || assetPath[0] == '\0') continue;
+
+            const char*       libRaw  = json_object_get_string(compObj, "libraryPath");
+            const JSON_Value* uidVal  = json_object_get_value(compObj, "resourceUID");
+            const JSON_Value* subIdxV = json_object_get_value(compObj, "submeshIndex");
+
+            MeshRequest req;
+            req.assetPath    = assetPath;
+            req.libraryPath  = libRaw  ? libRaw : "";
+            req.uid          = uidVal  ? static_cast<uint32>(json_value_get_number(uidVal))   : 0;
+            req.submeshIndex = subIdxV ? static_cast<int32_t>(json_value_get_number(subIdxV)) : -1;
+
+            outRequests[{req.assetPath, req.submeshIndex}] = std::move(req);
+        }
+    }
+}
+
 std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync(
     NOUS_Multithreading::NOUS_JobSystem* jobSystem,
     const std::string& sceneFilePath)
@@ -907,7 +942,7 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
         return futures;
     }
 
-    JSON_Object const* rootObj    = json_value_get_object(root);
+    JSON_Object const* rootObj     = json_value_get_object(root);
     JSON_Array const*  gameObjects = json_object_get_array(rootObj, "GameObjects");
 
     if (!gameObjects)
@@ -916,44 +951,8 @@ std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync
         return futures;
     }
 
-    // Collect every unique CMesh resource request in the scene file.
-    // Key: (assetPath, submeshIndex) — same deduplication the ResourceManager uses internally.
-
     std::map<std::pair<std::string, int32_t>, MeshRequest> uniqueRequests;
-
-    const size_t goCount = json_array_get_count(gameObjects);
-    for (size_t i = 0; i < goCount; ++i)
-    {
-        JSON_Object const* goObj     = json_array_get_object(gameObjects, i);
-        JSON_Array const*  comps     = json_object_get_array(goObj, "components");
-        if (!comps) continue;
-
-        const size_t compCount = json_array_get_count(comps);
-        for (size_t j = 0; j < compCount; ++j)
-        {
-            JSON_Object const* compObj = json_array_get_object(comps, j);
-
-            if (const char* type = json_object_get_string(compObj, "type");
-            	!type || std::strcmp(type, "CMesh") != 0)
-            	continue;
-
-            const char* assetPath = json_object_get_string(compObj, "assetPath");
-            if (!assetPath || assetPath[0] == '\0') continue;
-
-            const char*        libRaw   = json_object_get_string(compObj, "libraryPath");
-            const JSON_Value*  uidVal   = json_object_get_value(compObj, "resourceUID");
-            const JSON_Value*  subIdxV  = json_object_get_value(compObj, "submeshIndex");
-
-            MeshRequest req;
-            req.assetPath    = assetPath;
-            req.libraryPath  = libRaw ? libRaw : "";
-            req.uid          = uidVal   ? static_cast<uint32>(json_value_get_number(uidVal))   : 0;
-            req.submeshIndex = subIdxV  ? static_cast<int32_t>(json_value_get_number(subIdxV)) : -1;
-
-            uniqueRequests[{req.assetPath, req.submeshIndex}] = std::move(req);
-        }
-    }
-
+    CollectMeshRequestsFromScene(gameObjects, uniqueRequests);
     json_value_free(root);
 
     // Submit one parallel Deserialize job per unique resource.

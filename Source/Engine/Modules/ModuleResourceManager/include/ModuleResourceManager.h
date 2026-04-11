@@ -17,6 +17,10 @@
 class IGPUResourceFactory;
 class IImporterManager;
 
+// Forward declaration for parson's JSON_Array (defined as typedef struct json_array_t JSON_Array in parson.h).
+// Used only in the private CollectMeshRequestsFromScene signature; avoids pulling parson into every consumer.
+using JSON_Array = struct json_array_t;
+
 struct MetaFileData;
 class ResourceMesh;
 
@@ -142,8 +146,7 @@ private:
 	bool ImportFileFromAssets(const std::string& relativePath, ResourceType resourceType,
 	                          const std::string& fileName, const std::string& extension) const;
 	bool ImportCase1_NewAsset(std::string_view relativePath, const std::string& metaFilePath,
-	                          ResourceType resourceType, std::string_view fileName,
-	                          std::string_view extension) const;
+	                          ResourceType resourceType, std::string_view fileName) const;
 	bool ImportCase2_MissingLibrary(const MetaFileData& metaFileData) const;
 	bool ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const;
 
@@ -152,10 +155,12 @@ private:
 
 	void CreateBuiltinTextures();
 	void CreateBuiltinMaterial();
-	void DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu) const;
+	static void DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu);
 
 	struct MeshRequest;
 	Resource* LoadMeshRequest(const MeshRequest& req);
+	static void CollectMeshRequestsFromScene(JSON_Array const* gameObjects,
+	                                         std::map<std::pair<std::string, int32_t>, MeshRequest>& outRequests);
 
 	// Atomically claims the UID slot with a nullptr placeholder.
 	// Returns true if this thread won the race and must load; false if another thread already owns it.

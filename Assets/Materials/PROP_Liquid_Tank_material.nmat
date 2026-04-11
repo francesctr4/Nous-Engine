@@ -11,6 +11,13 @@
             ]
         },
         {
+            "name": "specularIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
             "name": "emissiveColor",
             "type": "vec4",
             "value": [
@@ -28,21 +35,14 @@
             ]
         },
         {
-            "name": "normalStrength",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
-            "name": "specularIntensity",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
             "name": "shininessScale",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "normalStrength",
             "type": "float",
             "value": [
                 1
@@ -58,15 +58,9 @@
         },
         {
             "name": "diffuseSampler",
-            "asset_path": "Assets\/Textures\/TEX_PROP_LiquidTank_D.png",
-            "uid": 2308381605,
-            "library_path": "Library\/Textures\/2308381605.png"
-        },
-        {
-            "name": "emissiveSampler",
-            "asset_path": "Assets\/Textures\/TEX_PROP_LiquidTank_E.png",
-            "uid": 948151468,
-            "library_path": "Library\/Textures\/948151468.png"
+            "asset_path": "Assets\/Textures\/TEX_PROP_LiquidTank_A.png",
+            "uid": 2364040611,
+            "library_path": "Library\/Textures\/2364040611.png"
         },
         {
             "name": "normalSampler",
@@ -83,5 +77,5 @@
     ],
     "shader_uid": 4126860508,
     "shader_asset_path": "Assets\\Shaders\\ForwardBlinnPhong.glsl",
-    "shader_library_path": "Library\\Shaders\\4126860508"
+    "shader_library_path": "Library\/Shaders\/4126860508"
 }
