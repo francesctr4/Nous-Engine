@@ -169,11 +169,6 @@ std::string Resource::GetLibraryPath() const
 	return m_libraryFilePath;
 }
 
-int16 Resource::GetIndexFromType(ResourceType type)
-{
-	return std::to_underlying(type);
-}
-
 std::string Resource::GetLibraryExtensionFromType(const ResourceType type)
 {
 	return resourceTypeToLibraryExtension.at(type);

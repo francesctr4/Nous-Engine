@@ -24,7 +24,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
+#include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
 #include <filesystem>
@@ -116,10 +116,11 @@ bool ModuleRenderer3D::Start()
 	//
 	// Materials depend on shader instance pools, but shaders are queued AFTER the
 	// default material. Collect failed materials and retry after the full drain.
+	IImporterManager* importer = mModuleResourceManager->GetImporterManager();
 	std::vector<std::pair<ResourceType, Resource*>> deferredUploads;
 	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
 	{
-		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
+		if (!importer->Upload(type, resource, mRendererFrontend))
 			deferredUploads.emplace_back(type, resource);
 		else
 			resource->SetState(ResourceState::GPU_READY);
@@ -128,7 +129,7 @@ bool ModuleRenderer3D::Start()
 	// Retry deferred uploads — shaders (and their instance pools) are now ready.
 	for (auto& [type, resource] : deferredUploads)
 	{
-		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
+		if (!importer->Upload(type, resource, mRendererFrontend))
 			NOUS_ERROR("ModuleRenderer3D::Start() — failed to upload resource '%s'.", resource->GetName().c_str());
 		resource->SetState(ResourceState::GPU_READY);
 	}
@@ -195,9 +196,10 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 	// Without this ordering, a reslot that fires in the same frame the target shader
 	// is first uploaded would see the shader as not-GPU_READY and fall back to vsBase's
 	// instance pool — causing a NULL descriptor-set error on the first draw call.
+	IImporterManager* importer = mModuleResourceManager->GetImporterManager();
 	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
 	{
-		if (!ImporterManager::Upload(type, resource, mRendererFrontend))
+		if (!importer->Upload(type, resource, mRendererFrontend))
 			NOUS_ERROR("ModuleRenderer3D::PreUpdate() — failed to upload resource '%s'.", resource->GetName().c_str());
 		resource->SetState(ResourceState::GPU_READY);
 	}
@@ -221,7 +223,7 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 	for (auto& [type, resource] : mModuleResourceManager->TakePendingReleases())
 	{
 		if (resource->GetReferenceCount() > 0) continue; // re-acquired since queuing; skip
-		ImporterManager::Release(type, resource, mRendererFrontend);
+		importer->Release(type, resource, mRendererFrontend);
 		resource->SetState(ResourceState::CPU_READY);
 		mModuleResourceManager->EvictResource(type, resource);
 	}

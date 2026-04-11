@@ -3,6 +3,7 @@
 
 #include <Engine/Core/Globals.h>
 #include <memory>
+#include <unordered_map>
 
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 
@@ -14,28 +15,24 @@ struct MetaFileData;
 class IGPUResourceFactory;
 class ModuleResourceManager;
 
-constexpr int16 c_NUM_IMPORTERS = 4;
-
 class ImporterManager : public IImporterManager
 {
 public:
 
-    // IImporterManager — CPU-side, virtual, injectable
+    // IImporterManager overrides
     void Init(ModuleResourceManager* resourceManager) override;
     bool Import(ResourceType type, const MetaFileData& metaFileData) override;
     bool Deserialize(ResourceType type, const std::string& libraryPath, Resource* resource) override;
     void Evict(ResourceType type, Resource* resource) override;
+    bool Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu) override;
+    void Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu) override;
 
     // Asset pipeline (non-virtual)
     static bool Save(ResourceType type, const MetaFileData& metaFileData, Resource*& inResource);
 
-    // GPU only — must be called from the render thread (used directly by ModuleRenderer3D)
-    static bool Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu);
-    static void Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu);
-
 private:
 
-    static const std::array<std::unique_ptr<Importer>, c_NUM_IMPORTERS> importers;
+    static const std::unordered_map<ResourceType, std::unique_ptr<Importer>> importers;
 
 };
 

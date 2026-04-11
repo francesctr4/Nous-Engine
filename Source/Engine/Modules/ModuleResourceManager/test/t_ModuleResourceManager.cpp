@@ -19,10 +19,12 @@ public:
 
     bool deserializeResult = true;
 
-    void Init(ModuleResourceManager*) override                              { initCalled = true; }
-    bool Import(ResourceType, const MetaFileData&) override         { return true; }
-    bool Deserialize(ResourceType, const std::string&, Resource*) override { return deserializeResult; }
-    void Evict(ResourceType, Resource*) override                    {}
+    void Init(ModuleResourceManager*) override                                          { initCalled = true; }
+    bool Import(ResourceType, const MetaFileData&) override                             { return true; }
+    bool Deserialize(ResourceType, const std::string&, Resource*) override              { return deserializeResult; }
+    void Evict(ResourceType, Resource*) override                                        {}
+    bool Upload(ResourceType, Resource*, IGPUResourceFactory*) override                 { return true; }
+    void Release(ResourceType, Resource*, IGPUResourceFactory*) override                {}
 };
 
 // =====================================================

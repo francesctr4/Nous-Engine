@@ -107,6 +107,10 @@ public:
     // Returns nullptr if the resource is not currently loaded.
     NOUS_ENGINE_API Resource* GetLoadedResource(uint32 uid);
 
+    // Returns the injected importer manager — used by ModuleRenderer3D to call
+    // Upload/Release through the IImporterManager interface.
+    NOUS_ENGINE_API IImporterManager* GetImporterManager() const;
+
     // Reads the .meta sidecar for assetsPath and fills outData.
     // Returns false if the meta file is missing or malformed.
     static NOUS_ENGINE_API bool GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData) ;

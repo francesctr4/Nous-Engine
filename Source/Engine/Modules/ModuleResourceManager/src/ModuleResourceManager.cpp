@@ -847,6 +847,11 @@ Resource* ModuleResourceManager::GetLoadedResource(const uint32 uid)
     return it->second;
 }
 
+IImporterManager* ModuleResourceManager::GetImporterManager() const
+{
+    return mImporterManager;
+}
+
 bool ModuleResourceManager::GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData)
 {
     return ReadMetaFile(assetsPath + ".meta", outData);
