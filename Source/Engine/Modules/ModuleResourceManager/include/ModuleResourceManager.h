@@ -4,6 +4,7 @@
 #include "Engine/EngineExport.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/BuiltinResources/include/BuiltinResources.h"
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
 #include "Engine/Modules/ModuleResourceManager/include/ScenePreloader.h"
 
@@ -130,10 +131,6 @@ private:
 	static Resource* InstantiateResource(ResourceType type);
 	void DeleteResource(Resource*& resource);
 
-	void CreateBuiltinTextures();
-	void CreateBuiltinMaterial();
-	static void DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu);
-
 	// Atomically claims the UID slot with a nullptr placeholder.
 	// Returns true if this thread won the race and must load; false if another thread already owns it.
 	bool ClaimSlot(uint32 uid);
@@ -175,14 +172,9 @@ private:
 	// Entry removed when the sub-resource is destroyed in DeleteResource().
 	std::map<std::pair<uint32, int32_t>, uint32> m_submeshUIDMap;
 
-	ResourceTexture*  mDefaultTexture    = nullptr;
-	ResourceTexture*  mWhiteTexture      = nullptr;
-	ResourceTexture*  mBlackTexture      = nullptr;
-	ResourceTexture*  mFlatNormalTexture = nullptr;
-	ResourceMaterial* mDefaultMaterial   = nullptr;
-
 	// Injected dependencies
 	IImporterManager*       mImporterManager = nullptr;
+	BuiltinResources        m_builtinResources;
 	ResourceImportPipeline  m_importPipeline;
 	ScenePreloader          m_scenePreloader;
 

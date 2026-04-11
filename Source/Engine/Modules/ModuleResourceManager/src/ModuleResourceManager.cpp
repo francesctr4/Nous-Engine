@@ -94,111 +94,14 @@ bool ModuleResourceManager::ImportDirectory(const std::string& directory)
 bool ModuleResourceManager::Start()
 {
 	NOUS_INFO("Queuing built-in textures and default material for GPU upload...");
-	CreateBuiltinTextures();
-	CreateBuiltinMaterial();
-
-	// Push to the upload queue. Textures must come before the material so they
-	// are GPU_READY before CreateMaterial samples from them.
+	auto uploads = m_builtinResources.Create();
 	{
-		using enum ResourceType;
 		std::scoped_lock lock(m_pendingUploadsMutex);
-		m_pendingUploads.emplace_back(TEXTURE,  mDefaultTexture);
-		m_pendingUploads.emplace_back(TEXTURE,  mWhiteTexture);
-		m_pendingUploads.emplace_back(TEXTURE,  mBlackTexture);
-		m_pendingUploads.emplace_back(TEXTURE,  mFlatNormalTexture);
-		m_pendingUploads.emplace_back(MATERIAL, mDefaultMaterial);
+		m_pendingUploads.insert(m_pendingUploads.end(), uploads.begin(), uploads.end());
 	}
-
 	return true;
 }
 
-void ModuleResourceManager::CreateBuiltinTextures()
-{
-	// Reserved UIDs for built-in fallback textures. Placed at the top of the uint32
-	// range so they cannot collide with randomly-generated asset UIDs in .meta files.
-	// These UIDs are what the descriptor lazy-write dedup (WriteInstanceSampler) keys
-	// off via Resource::GetUID(), so each fallback must be uniquely identifiable.
-
-	// Default Texture — 256×256 checkerboard (CPU)
-	// Build a checkerboard pixel buffer and store it on the resource for deferred
-	// GPU upload. The GPU upload itself happens in ModuleRenderer3D::Start() which
-	// runs after this module and drains TakePendingUploads().
-	constexpr uint32 texDimension = 256;
-	constexpr uint32 channels     = 4;
-	constexpr uint32 pixelCount   = texDimension * texDimension;
-
-	mDefaultTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
-	mDefaultTexture->SetUID(INVALID_ID - 1);
-	mDefaultTexture->SetName("DefaultTexture");
-	mDefaultTexture->width        = texDimension;
-	mDefaultTexture->height       = texDimension;
-	mDefaultTexture->channelCount = channels;
-	mDefaultTexture->pixelData.resize(pixelCount * channels, 255);
-	for (uint32_t row = 0; row < texDimension; ++row)
-	{
-		for (uint32_t col = 0; col < texDimension; ++col)
-		{
-			constexpr uint32 squareSize = 16;
-			const uint32_t   indexBpp   = (row * texDimension + col) * channels;
-			const bool       isWhite    = row / squareSize % 2 == col / squareSize % 2;
-			mDefaultTexture->pixelData[indexBpp + 0] = isWhite ? 255 : 0;
-			mDefaultTexture->pixelData[indexBpp + 1] = isWhite ? 255 : 0;
-			mDefaultTexture->pixelData[indexBpp + 2] = 255;
-			mDefaultTexture->pixelData[indexBpp + 3] = 255;
-		}
-	}
-	mDefaultTexture->SetState(ResourceState::CPU_READY);
-
-	// White Texture — 1×1 (1,1,1,1). Neutral identity for multiplicative slots
-	// (specular strength, shininess, AO) — multiplying by 1 has no effect.
-	mWhiteTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
-	mWhiteTexture->SetUID(INVALID_ID - 2);
-	mWhiteTexture->SetName("WhiteTexture");
-	mWhiteTexture->width        = 1;
-	mWhiteTexture->height       = 1;
-	mWhiteTexture->channelCount = 4;
-	mWhiteTexture->pixelData    = { 255, 255, 255, 255 };
-	mWhiteTexture->SetState(ResourceState::CPU_READY);
-
-	// Black Texture — 1×1 (0,0,0,1). Neutral identity for additive slots
-	// (emissive) — adding 0 has no effect.
-	mBlackTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
-	mBlackTexture->SetUID(INVALID_ID - 3);
-	mBlackTexture->SetName("BlackTexture");
-	mBlackTexture->width        = 1;
-	mBlackTexture->height       = 1;
-	mBlackTexture->channelCount = 4;
-	mBlackTexture->pixelData    = { 0, 0, 0, 255 };
-	mBlackTexture->SetState(ResourceState::CPU_READY);
-
-	// Flat Normal Texture — 1×1 tangent-space flat normal (128,128,255,255).
-	// Decoded as (0,0,1) in [-1,1], giving the unperturbed geometry normal after
-	// TBN multiplication. Using white as a fallback would produce a 45° tilt.
-	mFlatNormalTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
-	mFlatNormalTexture->SetUID(INVALID_ID - 4);
-	mFlatNormalTexture->SetName("FlatNormalTexture");
-	mFlatNormalTexture->width        = 1;
-	mFlatNormalTexture->height       = 1;
-	mFlatNormalTexture->channelCount = 4;
-	mFlatNormalTexture->pixelData    = { 128, 128, 255, 255 };
-	mFlatNormalTexture->SetState(ResourceState::CPU_READY);
-}
-
-void ModuleResourceManager::CreateBuiltinMaterial()
-{
-	using enum UniformValueType;
-
-	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
-	mDefaultMaterial->SetName("DefaultMaterial");
-	mDefaultMaterial->uniformValues["diffuseColor"]      = { Vec4,  glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["emissiveColor"]     = { Vec4,  glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["aoIntensity"]       = { Float, glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["normalStrength"]    = { Float, glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["specularIntensity"] = { Float, glm::vec4(1.0f) };
-	mDefaultMaterial->uniformValues["shininessScale"]    = { Float, glm::vec4(1.0f) };
-	mDefaultMaterial->textureMaps["diffuseSampler"].texture = mDefaultTexture;
-	mDefaultMaterial->SetState(ResourceState::CPU_READY);
-}
 
 UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
@@ -466,15 +369,6 @@ bool ModuleResourceManager::UnloadResource(const uint32 uid)
 }
 
 
-void ModuleResourceManager::DestroyBuiltinTexture(ResourceTexture*& tex, IGPUResourceFactory* gpu)
-{
-    if (!tex) return;
-    if (tex->GetState() == ResourceState::GPU_READY)
-        gpu->DestroyTexture(tex);
-    NOUS_DELETE(tex, MemoryTag::RESOURCE_TEXTURE);
-    tex = nullptr;
-}
-
 void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
 {
     // Common pattern for types that don't need special pre-destruction work:
@@ -520,18 +414,7 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
     resources.clear();
     m_submeshUIDMap.clear();
 
-    DestroyBuiltinTexture(mDefaultTexture,    gpu);
-    DestroyBuiltinTexture(mWhiteTexture,      gpu);
-    DestroyBuiltinTexture(mBlackTexture,      gpu);
-    DestroyBuiltinTexture(mFlatNormalTexture, gpu);
-
-    if (mDefaultMaterial)
-    {
-        if (mDefaultMaterial->GetState() == ResourceState::GPU_READY)
-            gpu->DestroyMaterial(mDefaultMaterial);
-        NOUS_DELETE(mDefaultMaterial, MemoryTag::RESOURCE_MATERIAL);
-        mDefaultMaterial = nullptr;
-    }
+    m_builtinResources.Destroy(gpu);
 
     // Discard any stale queue entries — all resources are destroyed above.
     { std::lock_guard lock(m_pendingUploadsMutex);  m_pendingUploads.clear(); }
@@ -576,30 +459,11 @@ bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
     return true;
 }
 
-ResourceTexture *ModuleResourceManager::GetDefaultTexture() const
-{
-    return mDefaultTexture;
-}
-
-ResourceTexture *ModuleResourceManager::GetWhiteTexture() const
-{
-    return mWhiteTexture;
-}
-
-ResourceTexture *ModuleResourceManager::GetBlackTexture() const
-{
-    return mBlackTexture;
-}
-
-ResourceTexture *ModuleResourceManager::GetFlatNormalTexture() const
-{
-    return mFlatNormalTexture;
-}
-
-ResourceMaterial *ModuleResourceManager::GetDefaultMaterial() const
-{
-    return mDefaultMaterial;
-}
+ResourceTexture*  ModuleResourceManager::GetDefaultTexture()    const { return m_builtinResources.GetDefaultTexture();    }
+ResourceTexture*  ModuleResourceManager::GetWhiteTexture()      const { return m_builtinResources.GetWhiteTexture();      }
+ResourceTexture*  ModuleResourceManager::GetBlackTexture()      const { return m_builtinResources.GetBlackTexture();      }
+ResourceTexture*  ModuleResourceManager::GetFlatNormalTexture() const { return m_builtinResources.GetFlatNormalTexture(); }
+ResourceMaterial* ModuleResourceManager::GetDefaultMaterial()   const { return m_builtinResources.GetDefaultMaterial();  }
 
 Resource* ModuleResourceManager::GetLoadedResource(const uint32 uid)
 {
