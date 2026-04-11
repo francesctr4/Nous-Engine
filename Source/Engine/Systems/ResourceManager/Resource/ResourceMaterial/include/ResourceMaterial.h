@@ -34,6 +34,12 @@ public:
 	explicit ResourceMaterial(uint32 uid = 0);
 	~ResourceMaterial() override;
 
+    // Sets shader + shaderUID and clears poolOwnerShader in one atomic step.
+    // Always use this instead of assigning shader directly — it prevents stale
+    // poolOwnerShader from pointing into the old shader's instance pool after a
+    // shader change. VulkanBackend::CreateMaterial re-derives poolOwnerShader.
+    void SetShader(ResourceShader* newShader);
+
 public:
 
     uint32 ID;
@@ -43,6 +49,19 @@ public:
     std::unordered_map<std::string, TextureMap>   textureMaps;   // key = GLSL binding name (e.g. "diffuseSampler")
     std::unordered_map<std::string, UniformValue> uniformValues; // key = GLSL InstanceUBO member name
 
+    // -----------------------------------------------------------------------
+    // Shader ownership rules
+    //
+    // shader          — set via SetShader() by ImporterMaterial::DeserializeShader
+    //                   (CPU side). null = use built-in MaterialShader.
+    //
+    // shaderUID       — serialisation key; kept in sync with shader by SetShader().
+    //
+    // poolOwnerShader — GPU-only; set by VulkanBackend::CreateMaterial to record
+    //                   which shader's instance pool owns 'internalID'.
+    //                   Cleared by VulkanBackend::DestroyMaterial and by SetShader().
+    //                   Never set outside the renderer backend.
+    // -----------------------------------------------------------------------
     ResourceShader* shader          = nullptr;    // null = use built-in MaterialShader
     uint32          shaderUID       = INVALID_ID; // for serialisation / reload
     ResourceShader* poolOwnerShader = nullptr;    // runtime only — which shader's pool owns internalID

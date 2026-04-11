@@ -220,8 +220,7 @@ static void DeserializeShader(JSON_Object* root, ResourceMaterial* material,
 
     if (ResourceShader* loadedShader = r ? down_cast<ResourceShader*>(r) : nullptr)
     {
-        material->shader    = loadedShader;
-        material->shaderUID = loadedShader->GetUID();
+        material->SetShader(loadedShader);
     }
     else
     {
@@ -281,8 +280,7 @@ void ImporterMaterial::Evict(Resource* inResource)
     if (material->shader)
     {
         mResourceManager->UnloadResource(material->shader->GetUID());
-        material->shader    = nullptr;
-        material->shaderUID = INVALID_ID;
+        material->SetShader(nullptr);
     }
 }
 

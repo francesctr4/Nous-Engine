@@ -454,8 +454,7 @@ void RendererFrontend::FlushPendingReslots()
     for (auto& [mat, newShader] : pending)
     {
         mBackend->DestroyMaterial(mat);
-        mat->shader    = newShader;
-        mat->shaderUID = newShader ? newShader->GetUID() : INVALID_ID;
+        mat->SetShader(newShader);
         NOUS_ASSERT(mBackend->CreateMaterial(mat));
     }
 }
