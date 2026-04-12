@@ -9,12 +9,13 @@ NOUS_Multithreading::NOUS_Thread::NOUS_Thread() :
 }
 
 /// @brief NOUS_Thread destructor.
-NOUS_Multithreading::NOUS_Thread::~NOUS_Thread() 
-{ 
+NOUS_Multithreading::NOUS_Thread::~NOUS_Thread()
+{
+	// Ensure mIsRunning is updated correctly before the jthread auto-joins.
 	if (mIsRunning) Join();
 }
 
-/// @brief Starts the thread with a given function.
+/// @brief Starts the thread with a function that ignores the stop token.
 /// @param func The function to execute in the thread.
 void NOUS_Multithreading::NOUS_Thread::Start(const std::function<void()>& func)
 {
@@ -22,14 +23,38 @@ void NOUS_Multithreading::NOUS_Thread::Start(const std::function<void()>& func)
 
 	mIsRunning = true;
 
-	mThreadHandle = std::thread([this, func]
+	mThreadHandle = std::jthread([this, func](std::stop_token)
 	{
 		func();
 		mIsRunning = false;
-		});
+	});
 
 	mThreadID = GetThreadID(mThreadHandle.get_id());
 	mThreadState.store(ThreadState::READY);
+}
+
+/// @brief Starts the thread with a function that receives the stop token.
+/// @param func The function to execute in the thread. Receives a std::stop_token for cooperative cancellation.
+void NOUS_Multithreading::NOUS_Thread::Start(const std::function<void(std::stop_token)>& func)
+{
+	if (mIsRunning) return;
+
+	mIsRunning = true;
+
+	mThreadHandle = std::jthread([this, func](std::stop_token stopToken)
+	{
+		func(stopToken);
+		mIsRunning = false;
+	});
+
+	mThreadID = GetThreadID(mThreadHandle.get_id());
+	mThreadState.store(ThreadState::READY);
+}
+
+/// @brief Requests the thread to stop cooperatively via its stop token.
+void NOUS_Multithreading::NOUS_Thread::RequestStop()
+{
+	mThreadHandle.request_stop();
 }
 
 /// @brief Joins the thread if joinable.

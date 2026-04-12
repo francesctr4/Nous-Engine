@@ -6,6 +6,7 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
+#include <stop_token>
 
 namespace NOUS_Multithreading
 {
@@ -45,14 +46,15 @@ namespace NOUS_Multithreading
 
 		/// @brief Worker loop that each thread executes to process jobs from the queue.
 		/// @param thread The thread executing this loop.
-		void WorkerLoop(NOUS_Thread* thread);
+		/// @param stopToken Stop token provided by std::jthread for cooperative cancellation.
+		void WorkerLoop(NOUS_Thread* thread, std::stop_token stopToken);
 
 		std::queue<NOUS_Job*>		mJobQueue;
 		std::vector<NOUS_Thread*>	mThreads;
 
-		mutable std::mutex			mMutex;
-		std::condition_variable		mConditionVar;
-		std::atomic<bool>			mShutdown;
+		mutable std::mutex				mMutex;
+		std::condition_variable_any		mConditionVar;
+		std::atomic<bool>				mShutdown;
 
 	};
 }

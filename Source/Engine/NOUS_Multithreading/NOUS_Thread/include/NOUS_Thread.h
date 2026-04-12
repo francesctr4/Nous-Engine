@@ -3,6 +3,7 @@
 #include "Engine/EngineExport.h"
 
 #include <thread>
+#include <stop_token>
 #include <functional>
 #include <string>
 #include <chrono>
@@ -22,7 +23,7 @@ namespace NOUS_Multithreading
 	};
 
 	///////////////////////////////////////////////////////////////////////////
-	/// @brief std::thread wrapper with additional metadata (name, state, timer,...)
+	/// @brief std::jthread wrapper with additional metadata (name, state, timer,...)
 	///////////////////////////////////////////////////////////////////////////
 	class NOUS_Thread
 	{
@@ -42,9 +43,16 @@ namespace NOUS_Multithreading
 		NOUS_Thread(const NOUS_Thread&) = delete;
 		NOUS_Thread& operator=(const NOUS_Thread&) = delete;
 
-		/// @brief Starts the thread with a given function.
+		/// @brief Starts the thread with a function that ignores the stop token.
 		/// @param func The function to execute in the thread.
 		NOUS_ENGINE_API void Start(const std::function<void()>& func);
+
+		/// @brief Starts the thread with a function that receives the stop token.
+		/// @param func The function to execute in the thread. Receives a std::stop_token for cooperative cancellation.
+		NOUS_ENGINE_API void Start(const std::function<void(std::stop_token)>& func);
+
+		/// @brief Requests the thread to stop cooperatively via its stop token.
+		NOUS_ENGINE_API void RequestStop();
 
 		/// @brief Joins the thread if joinable.
 		NOUS_ENGINE_API void Join();
@@ -81,7 +89,7 @@ namespace NOUS_Multithreading
 	private:
 
 		std::string					mThreadName;
-		std::thread					mThreadHandle;
+		std::jthread				mThreadHandle;
 		uint32_t					mThreadID;
 		std::atomic<ThreadState>	mThreadState;
 

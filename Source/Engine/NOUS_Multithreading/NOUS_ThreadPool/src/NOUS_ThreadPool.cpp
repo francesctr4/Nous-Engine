@@ -23,10 +23,10 @@ NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8_t numThreads) :
 		mThreads.push_back(NOUS_NEW<NOUS_Thread>(MemoryTag::THREAD));
 		mThreads[i]->SetName("Worker Thread " + std::to_string(i + 1));
 
-		mThreads[i]->Start([this, i]
+		mThreads[i]->Start([this, i](std::stop_token stopToken)
 		{
-			WorkerLoop(mThreads[i]);
-			});
+			WorkerLoop(mThreads[i], stopToken);
+		});
 	}
 }
 
@@ -65,7 +65,9 @@ void NOUS_Multithreading::NOUS_ThreadPool::Shutdown()
 		}
 	}
 
-	mConditionVar.notify_all();
+	// Request stop on all threads — wakes them from condition_variable_any::wait.
+	for (NOUS_Thread* thread : mThreads)
+		thread->RequestStop();
 
 	for (NOUS_Thread* thread : mThreads)
 	{
@@ -91,7 +93,8 @@ std::queue<NOUS_Multithreading::NOUS_Job*> NOUS_Multithreading::NOUS_ThreadPool:
 
 /// @brief Worker loop that each thread executes to process jobs from the queue.
 /// @param thread The thread executing this loop.
-void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
+/// @param stopToken Stop token provided by std::jthread for cooperative cancellation.
+void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread, std::stop_token stopToken)
 {
 #ifdef _PROFILING
 	tracy::SetThreadName(thread->GetName().c_str()); // Set thread name
@@ -110,12 +113,14 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 
 			thread->SetThreadState(ThreadState::READY);
 
-			mConditionVar.wait(lock, [this]
+			// Wait until a job is available or stop is requested.
+			// condition_variable_any::wait wakes on notify_one/all OR stop_token request.
+			const bool hasJob = mConditionVar.wait(lock, stopToken, [this]
 			{
-				return !mJobQueue.empty() || mShutdown; // Threads sleep when there's no work.
-				});
+				return !mJobQueue.empty();
+			});
 
-			if (mShutdown && mJobQueue.empty()) break;
+			if (!hasJob) break; // Stop was requested and no job is pending.
 
 			job = mJobQueue.front();
 			mJobQueue.pop();
