@@ -7,18 +7,13 @@
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include <filesystem>
-#include <algorithm>
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Utils/Serialization/Random/Random.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
-#include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
 #include <future>
 #include <ranges>
@@ -55,6 +50,13 @@ namespace
           { []() -> Resource* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER); },
             [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_SHADER); } }},
     };
+
+    Resource* InstantiateResource(const ResourceType type)
+    {
+        const auto it = k_ResourceFactories.find(type);
+        if (it == k_ResourceFactories.end()) return nullptr;
+        return it->second.create();
+    }
 }
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
@@ -65,6 +67,7 @@ ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Mult
     , mImporterManager(importerManager)
     , m_importPipeline(importerManager)
     , m_scenePreloader(this)
+    , m_subMeshCache(resources, resourcesMutex, m_pendingUploads, m_pendingUploadsMutex)
 {
 	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
@@ -94,8 +97,8 @@ bool ModuleResourceManager::ImportDirectory(const std::string& directory)
 bool ModuleResourceManager::Start()
 {
 	NOUS_INFO("Queuing built-in textures and default material for GPU upload...");
-	auto uploads = m_builtinResources.Create();
 	{
+		auto uploads = m_builtinResources.Create();
 		std::scoped_lock lock(m_pendingUploadsMutex);
 		m_pendingUploads.insert(m_pendingUploads.end(), uploads.begin(), uploads.end());
 	}
@@ -141,29 +144,14 @@ std::unordered_map<uint32, Resource*> ModuleResourceManager::GetResourcesMap() c
 }
 
 
-Resource* ModuleResourceManager::InstantiateResource(const ResourceType type)
-{
-    const auto it = k_ResourceFactories.find(type);
-    if (it == k_ResourceFactories.end()) return nullptr;
-    return it->second.create();
-}
-
 void ModuleResourceManager::DeleteResource(Resource*& resource)
 {
-	const uint32 uid = resource->GetUID();
-
-	// Remove any sub-resource map entry that points to this UID.
-	// Must hold resourcesMutex — RequestOrCreateSubMeshResource reads/writes this
-	// map under the same lock from worker threads.
+	// Remove any sub-resource index entry that maps to this UID.
+	// SubMeshCache::EraseUID requires resourcesMutex to be held by the caller.
 	{
+		const uint32 uid = resource->GetUID();
 		std::scoped_lock lock(resourcesMutex);
-		for (auto it = m_submeshUIDMap.begin(); it != m_submeshUIDMap.end(); )
-		{
-			if (it->second == uid)
-				it = m_submeshUIDMap.erase(it);
-			else
-				++it;
-		}
+		m_subMeshCache.EraseUID(uid);
 	}
 
 	if (const auto it = k_ResourceFactories.find(resource->GetType());
@@ -246,51 +234,6 @@ Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, Resource
 	return resource;
 }
 
-ResourceMesh* ModuleResourceManager::BuildAndRegisterSubMesh(
-    const std::pair<uint32, int32_t> cacheKey,
-    const std::string& libraryPath,
-    const int32_t submeshIndex,
-    const std::string& assetsPath)
-{
-	const auto hierarchy = ImporterMesh::LoadHierarchy(libraryPath);
-	if (submeshIndex < 0 || submeshIndex >= static_cast<int32_t>(hierarchy.size()))
-	{
-		NOUS_ERROR("BuildAndRegisterSubMesh: index %d out of range (count=%zu) for '%s'",
-		    submeshIndex, hierarchy.size(), libraryPath.c_str());
-		return nullptr;
-	}
-
-	const SubMeshData& sub = hierarchy[static_cast<size_t>(submeshIndex)];
-
-	auto* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
-	mesh->SetName(sub.name);
-	mesh->SetType(ResourceType::MESH);
-	mesh->SetLibraryPath(libraryPath);
-	if (!assetsPath.empty())
-		mesh->SetAssetsPath(assetsPath);
-
-	mesh->vertices = sub.vertices;
-	mesh->indices.assign(sub.indices.begin(), sub.indices.end());
-	mesh->SetState(ResourceState::CPU_READY);
-
-	uint32 uid;
-	{
-		std::lock_guard lock(resourcesMutex);
-		do { uid = static_cast<uint32>(Random::Generate()); }
-		while (uid == 0 || resources.contains(uid));
-		resources[uid]             = mesh;
-		m_submeshUIDMap[cacheKey]  = uid;
-	}
-	{
-		std::lock_guard lock(m_pendingUploadsMutex);
-		m_pendingUploads.emplace_back(ResourceType::MESH, mesh);
-	}
-
-	mesh->SetUID(uid);
-	mesh->IncreaseReferenceCount();
-	mesh->Validate();
-	return mesh;
-}
 
 Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 {
@@ -320,31 +263,11 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, con
 }
 
 ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
-    const std::string& libraryPath, int32_t submeshIndex, const std::string& assetsPath)
+    const std::string& libraryPath, const int32_t submeshIndex, const std::string& assetsPath)
 {
-	// Use hash(libraryPath) as a stable synthetic base UID for dedup.
-	const auto baseUID = static_cast<uint32>(std::hash<std::string>{}(libraryPath) & 0xFFFFFFFF);
-	const auto key = std::make_pair(baseUID, submeshIndex);
-
-	{
-		std::scoped_lock lock(resourcesMutex);
-		if (const auto mapIt = m_submeshUIDMap.find(key); mapIt != m_submeshUIDMap.end())
-		{
-			if (const auto resIt = resources.find(mapIt->second); resIt != resources.end() && resIt->second)
-			{
-				// Cache hit: back-fill assetsPath if the earlier caller didn't have it
-				// (e.g. GAME-mode load) but this caller does (EDITOR-mode scene load).
-				if (!assetsPath.empty() && resIt->second->GetAssetsPath().empty())
-					resIt->second->SetAssetsPath(assetsPath);
-				resIt->second->IncreaseReferenceCount();
-				return down_cast<ResourceMesh*>(resIt->second);
-			}
-			m_submeshUIDMap.erase(mapIt);
-		}
-	}
-
-	return BuildAndRegisterSubMesh(key, libraryPath, submeshIndex, assetsPath);
+	return m_subMeshCache.RequestOrCreateFromLibrary(libraryPath, submeshIndex, assetsPath);
 }
+
 
 bool ModuleResourceManager::UnloadResource(const uint32 uid)
 {
@@ -412,7 +335,7 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
         [&gpu](Resource* r) { gpu->DestroyGeometry(down_cast<ResourceMesh*>(r)); });
 
     resources.clear();
-    m_submeshUIDMap.clear();
+    m_subMeshCache.Clear();
 
     m_builtinResources.Destroy(gpu);
 
@@ -481,34 +404,9 @@ IImporterManager* ModuleResourceManager::GetImporterManager() const
 
 
 ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::string& assetsPath,
-                                                                      int32_t submeshIndex)
+                                                                      const int32_t submeshIndex)
 {
-    // Read meta to resolve the base UID and library path.
-    MetaFileData metaData;
-    if (!ResourceImportPipeline::GetAssetMetaData(assetsPath, metaData))
-    {
-        NOUS_ERROR("RequestOrCreateSubMeshResource: missing meta for %s", assetsPath.c_str());
-        return nullptr;
-    }
-
-    const auto key = std::make_pair(metaData.uid, submeshIndex);
-
-    // Fast path: sub-resource already loaded this session.
-    {
-        std::lock_guard lock(resourcesMutex);
-        if (const auto mapIt = m_submeshUIDMap.find(key); mapIt != m_submeshUIDMap.end())
-        {
-            if (const auto resIt = resources.find(mapIt->second); resIt != resources.end() && resIt->second)
-            {
-                resIt->second->IncreaseReferenceCount();
-                return down_cast<ResourceMesh*>(resIt->second);
-            }
-            // Stale entry (resource was destroyed) — remove and recreate below.
-            m_submeshUIDMap.erase(mapIt);
-        }
-    }
-
-    return BuildAndRegisterSubMesh(key, metaData.libraryPath, submeshIndex, assetsPath);
+    return m_subMeshCache.RequestOrCreate(assetsPath, submeshIndex);
 }
 
 std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync(

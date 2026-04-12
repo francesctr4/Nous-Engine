@@ -6,10 +6,11 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Systems/ResourceManager/BuiltinResources/include/BuiltinResources.h"
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
-#include "Engine/Modules/ModuleResourceManager/include/ScenePreloader.h"
+#include "Engine/Systems/ResourceManager/ScenePreloader/include/ScenePreloader.h"
+#include "Engine/Systems/ResourceManager/SubMeshCache/include/SubMeshCache.h"
+#include "Engine/Systems/ResourceManager/IResourceLoader.h"
 
 #include <future>
-#include <map>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -24,7 +25,7 @@ class ResourceMesh;
 class ResourceTexture;
 class ResourceMaterial;
 
-class ModuleResourceManager : public Module, public IEventListener
+class ModuleResourceManager : public Module, public IEventListener, public IResourceLoader
 {
 public:
 
@@ -56,13 +57,13 @@ public:
 	NOUS_ENGINE_API void ScanAndImportAssets();
 
 	NOUS_ENGINE_API bool ResourceExists(uint32 uid) const;
-	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath);
+	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath) override;
 
 	// GAME mode variant: load directly from a known library path without reading a .meta file.
 	NOUS_ENGINE_API Resource* CreateResourceFromLibrary(uint32 uid, ResourceType type,
 	                                                    const std::string& name,
 	                                                    const std::string& assetsPath,
-	                                                    const std::string& libraryPath);
+	                                                    const std::string& libraryPath) override;
 
 	// GAME mode variant: load a submesh by library path + index, no .meta required.
 	// `assetsPath` is optional: when provided (EDITOR path), it is stamped onto the
@@ -71,7 +72,7 @@ public:
 	// assetsPath and CMesh::Deserialize would drop the reference on the next load.
 	NOUS_ENGINE_API ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(
 	    const std::string& libraryPath, int32_t submeshIndex,
-	    const std::string& assetsPath = "");
+	    const std::string& assetsPath) override;
 
 	NOUS_ENGINE_API bool UnloadResource(uint32 uid);
 
@@ -116,7 +117,7 @@ public:
     // Otherwise loads the submesh from the library binary, uploads it to the GPU,
     // and registers it in the resource map with a generated UID.
     NOUS_ENGINE_API ResourceMesh* RequestOrCreateSubMeshResource(const std::string& assetsPath,
-                                                                  int32_t submeshIndex);
+                                                                  int32_t submeshIndex) override;
 
     // Scans a .nous scene file for all CMesh resource requests and submits one parallel
     // Deserialize job per unique (assetPath, submeshIndex) pair.
@@ -128,7 +129,6 @@ public:
 
 private:
 
-	static Resource* InstantiateResource(ResourceType type);
 	void DeleteResource(Resource*& resource);
 
 	// Atomically claims the UID slot with a nullptr placeholder.
@@ -146,14 +146,6 @@ private:
 	    const std::string& assetsPath,
 	    const std::string& libraryPath);
 
-	// Loads the submesh at submeshIndex from the library binary, registers it in both maps, and
-	// queues it for GPU upload. cacheKey is (baseUID, submeshIndex) for m_submeshUIDMap.
-	ResourceMesh* BuildAndRegisterSubMesh(
-	    std::pair<uint32, int32_t> cacheKey,
-	    const std::string& libraryPath,
-	    int32_t submeshIndex,
-	    const std::string& assetsPath);
-
 	mutable std::mutex resourcesMutex;  // mutable: const methods (e.g. GetResourcesMap) can lock it
 	std::unordered_map<uint32, Resource*> resources;
 
@@ -167,15 +159,11 @@ private:
 	std::mutex m_pendingReleasesMutex;
 	std::vector<std::pair<ResourceType, Resource*>> m_pendingReleases;
 
-	// Maps (baseAssetUID, submeshIndex) → sub-resource UID.
-	// Allows RequestOrCreateSubMeshResource to reuse already-loaded sub-resources.
-	// Entry removed when the sub-resource is destroyed in DeleteResource().
-	std::map<std::pair<uint32, int32_t>, uint32> m_submeshUIDMap;
-
 	// Injected dependencies
 	IImporterManager*       mImporterManager = nullptr;
 	BuiltinResources        m_builtinResources;
 	ResourceImportPipeline  m_importPipeline;
 	ScenePreloader          m_scenePreloader;
+	SubMeshCache            m_subMeshCache;
 
 };

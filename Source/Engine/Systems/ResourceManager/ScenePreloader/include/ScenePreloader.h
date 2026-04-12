@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-class ModuleResourceManager;
+class IResourceLoader;
 namespace NOUS_Multithreading { class NOUS_JobSystem; }
 
 // Parses a .nous scene file, collects all CMesh resource requests,
@@ -15,7 +15,7 @@ namespace NOUS_Multithreading { class NOUS_JobSystem; }
 class ScenePreloader
 {
 public:
-    NOUS_ENGINE_API explicit ScenePreloader(ModuleResourceManager* resourceManager);
+    NOUS_ENGINE_API explicit ScenePreloader(IResourceLoader* resourceLoader);
 
     // Returns futures for each submitted job — caller waits on all of them
     // before calling Scene::Deserialize() so resource lookups hit the cache.
@@ -24,5 +24,5 @@ public:
         const std::string& sceneFilePath);
 
 private:
-    ModuleResourceManager* m_resourceManager = nullptr;
+    IResourceLoader* m_resourceLoader = nullptr;
 };

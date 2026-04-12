@@ -3,8 +3,6 @@ set(CLASS_NAME "ModuleResourceManager")
 add_library(${CLASS_NAME} STATIC
         include/${CLASS_NAME}.h
         src/${CLASS_NAME}.cpp
-        include/ScenePreloader.h
-        src/ScenePreloader.cpp
 )
 
 target_include_directories(${CLASS_NAME} PUBLIC

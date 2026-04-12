@@ -1,6 +1,6 @@
-#include "Engine/Modules/ModuleResourceManager/include/ScenePreloader.h"
+#include "Engine/Systems/ResourceManager/ScenePreloader/include/ScenePreloader.h"
 
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/IResourceLoader.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
@@ -25,24 +25,24 @@ namespace
         int32_t     submeshIndex = -1;
     };
 
-    // Dispatches the correct ModuleResourceManager load call based on the request fields.
+    // Dispatches the correct IResourceLoader load call based on the request fields.
     // Returns the loaded Resource* (refcount already bumped) or nullptr on failure.
     // Caller must call DecreaseReferenceCount() when done.
-    Resource* LoadMeshRequest(ModuleResourceManager* rm, const MeshRequest& req)
+    Resource* LoadMeshRequest(IResourceLoader* loader, const MeshRequest& req)
     {
         if (req.submeshIndex >= 0)
         {
             if (!req.libraryPath.empty())
-                return rm->RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex, req.assetPath);
-            return rm->RequestOrCreateSubMeshResource(req.assetPath, req.submeshIndex);
+                return loader->RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex, req.assetPath);
+            return loader->RequestOrCreateSubMeshResource(req.assetPath, req.submeshIndex);
         }
 
         if (!req.libraryPath.empty() && req.uid != 0)
-            return rm->CreateResourceFromLibrary(req.uid, ResourceType::MESH,
+            return loader->CreateResourceFromLibrary(req.uid, ResourceType::MESH,
                 std::filesystem::path(req.assetPath).filename().string(),
                 req.assetPath, req.libraryPath);
 
-        return rm->CreateResource(req.assetPath);
+        return loader->CreateResource(req.assetPath);
     }
 
     // Walks the GameObjects JSON array and collects every unique CMesh request.
@@ -86,8 +86,8 @@ namespace
     }
 } // namespace
 
-ScenePreloader::ScenePreloader(ModuleResourceManager* resourceManager)
-    : m_resourceManager(resourceManager)
+ScenePreloader::ScenePreloader(IResourceLoader* resourceLoader)
+    : m_resourceLoader(resourceLoader)
 {
 }
 
@@ -129,7 +129,7 @@ std::vector<std::future<void>> ScenePreloader::PreloadSceneResourcesAsync(
             // Release the preload's reference. The resource stays in the map so
             // CMesh::Deserialize() hits the fast path, but the preload does not
             // hold an extra ref that would prevent eviction.
-            if (Resource* res = LoadMeshRequest(m_resourceManager, req))
+            if (Resource* res = LoadMeshRequest(m_resourceLoader, req))
                 res->DecreaseReferenceCount();
             prom->set_value();
         }, "Preload: " + req.assetPath);

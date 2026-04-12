@@ -8,6 +8,8 @@ add_subdirectory(Importer)
 add_subdirectory(Resource)
 add_subdirectory(BuiltinResources)
 add_subdirectory(ResourceImportPipeline)
+add_subdirectory(SubMeshCache)
+add_subdirectory(ScenePreloader)
 
 set_target_properties(ResourceManager PROPERTIES
         CXX_STANDARD 23
