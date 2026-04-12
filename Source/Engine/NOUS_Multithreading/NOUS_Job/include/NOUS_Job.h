@@ -1,5 +1,4 @@
-#ifndef NOUS_JOB_H
-#define NOUS_JOB_H
+#pragma once
 
 #include "Engine/EngineExport.h"
 
@@ -31,5 +30,3 @@ namespace NOUS_Multithreading
 
 	};
 }
-
-#endif // NOUS_JOB_H

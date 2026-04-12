@@ -1,5 +1,4 @@
-#ifndef NOUS_JOB_SYSTEM_H
-#define NOUS_JOB_SYSTEM_H
+#pragma once
 
 #include "Engine/EngineExport.h"
 
@@ -16,7 +15,7 @@ namespace NOUS_Multithreading
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Maximum hardware threads available, minus one reserved for the main thread.
 	///////////////////////////////////////////////////////////////////////////
-	const uint8_t c_MAX_HARDWARE_THREADS = []
+	inline const uint8_t c_MAX_HARDWARE_THREADS = []
 	{
 			const unsigned int hardwareThreads = std::thread::hardware_concurrency();
 			return hardwareThreads == 0 ? 0 : hardwareThreads - 1;
@@ -69,5 +68,3 @@ namespace NOUS_Multithreading
 
 	};
 }
-
-#endif // NOUS_JOB_SYSTEM_H

@@ -1,5 +1,4 @@
-#ifndef NOUS_MULTITHREADING_H
-#define NOUS_MULTITHREADING_H
+#pragma once
 
 #include "Engine/EngineExport.h"
 
@@ -24,5 +23,3 @@ namespace NOUS_Multithreading
     /// @return Pointer to the main thread object, or nullptr if not registered.
     NOUS_ENGINE_API NOUS_Thread* GetMainThread();
 }
-
-#endif // NOUS_MULTITHREADING_H

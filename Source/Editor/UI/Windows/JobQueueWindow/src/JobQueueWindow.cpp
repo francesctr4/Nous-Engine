@@ -28,7 +28,7 @@ void JobQueue::Draw()
     if (ImGui::Begin(title, p_open))
     {
         const auto& threadPool = editorContext->GetJobSystem()->GetThreadPool();
-        const auto& jobQueue = threadPool.GetJobQueue();
+        auto jobQueue = threadPool.GetJobQueueSnapshot();
 
         // New Job Queue table
         if (ImGui::BeginTable("JobQueue", 1,
@@ -39,8 +39,7 @@ void JobQueue::Draw()
             ImGui::TableSetupColumn(std::format("Job Name ({} pending jobs)", jobQueue.size()).c_str(), ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
 
-            // Create a copy of the queue for safe iteration
-            std::queue<NOUS_Multithreading::NOUS_Job*> tempQueue = jobQueue;
+            std::queue<NOUS_Multithreading::NOUS_Job*> tempQueue = std::move(jobQueue);
 
             while (!tempQueue.empty())
             {

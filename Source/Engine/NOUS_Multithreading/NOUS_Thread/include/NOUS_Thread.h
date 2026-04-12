@@ -1,5 +1,4 @@
-#ifndef NOUS_THREAD_H
-#define NOUS_THREAD_H
+#pragma once
 
 #include "Engine/EngineExport.h"
 
@@ -87,13 +86,11 @@ namespace NOUS_Multithreading
 		std::atomic<ThreadState>	mThreadState;
 
 		std::atomic<bool>			mIsRunning;
-		NOUS_Job*					mCurrentJob;
+		std::atomic<NOUS_Job*>		mCurrentJob;
 
         std::chrono::time_point<std::chrono::steady_clock>	mStartTime;
         std::chrono::time_point<std::chrono::steady_clock>	mEndTime;
-        bool												mTimerRunning;
+        std::atomic<bool>									mTimerRunning;
 
 	};
 }
-
-#endif // NOUS_THREAD_H

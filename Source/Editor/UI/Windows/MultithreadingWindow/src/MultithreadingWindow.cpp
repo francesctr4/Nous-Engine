@@ -54,7 +54,7 @@ void Multithreading::Draw()
         
         const auto& threadPool = editorContext->GetJobSystem()->GetThreadPool();
         const auto& threads = threadPool.GetThreads();
-        const auto& jobQueue = threadPool.GetJobQueue();
+        auto jobQueue = threadPool.GetJobQueueSnapshot();
 
         ImGui::Columns(2);
         ImGui::Text("Max Hardware Threads: %u", NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
