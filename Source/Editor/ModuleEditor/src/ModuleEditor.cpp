@@ -85,6 +85,16 @@ bool ModuleEditor::Awake()
 	// Optionally, load more fonts as needed
 	fonts.push_back(io.Fonts->AddFontFromFileTTF(R"(Assets\Fonts\tahoma.ttf)", 12.0f));
 
+	// Font Awesome icon font (fonts[2]) — used by AssetsBrowser for file-type icons
+	{
+		static constexpr ImWchar c_iconRanges[] = { 0xE000, 0xF8FF, 0 };
+		ImFontConfig iconConfig;
+		iconConfig.MergeMode = false;
+		iconConfig.PixelSnapH = true;
+		iconConfig.GlyphMinAdvanceX = 64.0f;
+		fonts.push_back(io.Fonts->AddFontFromFileTTF(R"(Assets\Fonts\fa-solid-900.ttf)", 64.0f, &iconConfig, c_iconRanges));
+	}
+
 	switch (currentBackendType)
 	{
 		case RendererBackendType::VULKAN:

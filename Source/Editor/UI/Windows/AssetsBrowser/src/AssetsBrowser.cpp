@@ -597,6 +597,30 @@ void AssetsBrowser::Draw()
                             ImVec2 box_max(box_min.x + LayoutItemSize.x + 2, box_min.y + LayoutItemSize.y + 2);
                             draw_list->AddRectFilled(box_min, box_max, icon_bg_color);
 
+                            // Draw file-type icon centered in the box
+                            {
+                                ImFont* iconFont = editorContext->GetFont(2);
+                                if (iconFont)
+                                {
+                                    auto glyphIt = icon_type_glyphs.find(item_data->fileType);
+                                    const char* glyph = (glyphIt != icon_type_glyphs.end()) ? glyphIt->second : "\xEF\x85\x9B"; // U+F15B fa-file
+
+                                    const ImU32 overlayColor = icon_type_overlay_colors.count(item_data->fileType)
+                                        ? icon_type_overlay_colors.at(item_data->fileType)
+                                        : IM_COL32(204, 204, 204, 255);
+
+                                    // Scale icon to ~55% of box height, clamped to font size
+                                    const float iconFontSize = iconFont->FontSize;
+                                    const float iconScale    = LayoutItemSize.y * 0.55f / iconFontSize;
+                                    const ImVec2 glyphSize   = iconFont->CalcTextSizeA(iconFontSize * iconScale, FLT_MAX, 0.0f, glyph);
+                                    const ImVec2 iconPos     = ImVec2(
+                                        box_min.x + (LayoutItemSize.x - glyphSize.x) * 0.5f,
+                                        box_min.y + (LayoutItemSize.y - glyphSize.y) * 0.5f
+                                    );
+                                    draw_list->AddText(iconFont, iconFontSize * iconScale, iconPos, overlayColor, glyph);
+                                }
+                            }
+
                             if (ShowTypeOverlay && item_data->fileType != FileType::FOLDER) {
                                 ImU32 type_col = icon_type_overlay_colors.at(item_data->fileType);
                                 // Increase the size of the overlay

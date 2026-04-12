@@ -92,6 +92,7 @@ enum class FileType : int8_t
     TEXTURE,
     MATERIAL,
     SHADER,
+    SCRIPT,
     FONT,
     SCENE,
     PREFAB,
@@ -105,6 +106,8 @@ const std::unordered_map<std::string, FileType> extensionToFileType =
     {".fbx", FileType::MODEL},
     {".obj", FileType::MODEL},
     {".dae", FileType::MODEL},
+    {".glb", FileType::MODEL},
+    {".gltf", FileType::MODEL},
 
     // Texture file extensions
     {".png", FileType::TEXTURE},
@@ -116,9 +119,13 @@ const std::unordered_map<std::string, FileType> extensionToFileType =
     // Material file extensions
     {".nmat", FileType::MATERIAL},
 
+    // Script file extensions
+    {".cpp", FileType::SCRIPT},
+    {".h",   FileType::SCRIPT},
+
     // Shader file extensions
     {".glsl", FileType::SHADER},
-    {".spv", FileType::SHADER},
+    {".spv",  FileType::SHADER},
 
     // Font file extensions
     {".ttf", FileType::FONT},
@@ -131,6 +138,23 @@ const std::unordered_map<std::string, FileType> extensionToFileType =
 
     // Meta file extensions
     {".meta", FileType::META},
+};
+
+// Font Awesome codepoints for each file type (fa-solid-900), as raw UTF-8 byte sequences.
+// u8"" literals are char8_t* in C++20+ and cannot initialize const char* maps, so we use \x escapes.
+const std::unordered_map<FileType, const char*> icon_type_glyphs =
+{
+    {FileType::UNKNOWN,  "\xEF\x85\x9B"},   // U+F15B fa-file
+    {FileType::FOLDER,   "\xEF\x81\xBB"},   // U+F07B fa-folder
+    {FileType::META,     "\xEF\x81\x9A"},   // U+F05A fa-info-circle
+    {FileType::MODEL,    "\xEF\x86\xB2"},   // U+F1B2 fa-cube
+    {FileType::TEXTURE,  "\xEF\x80\xBE"},   // U+F03E fa-image
+    {FileType::MATERIAL, "\xEF\x94\xBF"},   // U+F53F fa-palette
+    {FileType::SHADER,   "\xEF\x9B\xBC"},   // U+F6FC fa-mountain
+    {FileType::SCRIPT,   "\xEF\x87\x89"},   // U+F1C9 fa-file-code
+    {FileType::FONT,     "\xEF\x80\xB1"},   // U+F031 fa-font
+    {FileType::SCENE,    "\xEF\x89\xB9"},   // U+F279 fa-map
+    {FileType::PREFAB,   "\xEF\x86\xB3"},   // U+F1B3 fa-cubes
 };
 
 // Rendering parameters
@@ -147,6 +171,7 @@ const std::unordered_map<FileType, uint32> icon_type_overlay_colors =
     {FileType::SCENE,   IM_COL32(255, 0,   0,   255)},  // Red for scenes
     {FileType::PREFAB,  IM_COL32(100, 180, 255, 255)},  // Blue for prefabs
     {FileType::SHADER, IM_COL32(255, 127, 255, 255)},  // Pink for shaders
+    {FileType::SCRIPT, IM_COL32(0, 200, 255, 255)},    // Cyan for scripts
 
     {FileType::FOLDER, IM_COL32(255, 204, 0, 255)}     // Yellow for folders
 };
