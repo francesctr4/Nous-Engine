@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <stop_token>
 #include <thread>
 
 using namespace NOUS_Multithreading;
@@ -63,6 +64,48 @@ TEST(t_NOUS_Thread, IsRunningIsFalseAfterJoin)
     thread.Start([]{});
     thread.Join();
     EXPECT_FALSE(thread.IsRunning());
+}
+
+TEST(t_NOUS_Thread, StartWithStopTokenPassesTokenToFunction)
+{
+    NOUS_Thread thread;
+    std::atomic<bool> tokenReceived = false;
+    std::atomic<bool> release = false;
+
+    thread.Start([&tokenReceived, &release](std::stop_token stopToken)
+    {
+        tokenReceived = stopToken.stop_possible(); // true when a valid stop source is associated
+        while (!release) std::this_thread::yield();
+    });
+
+    while (!tokenReceived) std::this_thread::yield();
+    EXPECT_TRUE(tokenReceived);
+
+    release = true;
+    thread.Join();
+}
+
+TEST(t_NOUS_Thread, RequestStopWakesBlockedThread)
+{
+    NOUS_Thread thread;
+    std::atomic<bool> entered = false;
+    std::atomic<bool> exited = false;
+
+    thread.Start([&entered, &exited](std::stop_token stopToken)
+    {
+        entered = true;
+        // Spin until stop is requested — simulates a worker waiting cooperatively.
+        while (!stopToken.stop_requested()) std::this_thread::yield();
+        exited = true;
+    });
+
+    while (!entered) std::this_thread::yield();
+    EXPECT_FALSE(exited);
+
+    thread.RequestStop();
+    thread.Join();
+
+    EXPECT_TRUE(exited);
 }
 
 // =====================================================
