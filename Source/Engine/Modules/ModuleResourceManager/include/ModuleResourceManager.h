@@ -6,7 +6,7 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Systems/ResourceManager/BuiltinResources/include/BuiltinResources.h"
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
-#include "Engine/Systems/ResourceManager/ScenePreloader/include/ScenePreloader.h"
+#include "Engine/Systems/ResourceManager/SceneResourcePreloader/include/SceneResourcePreloader.h"
 #include "Engine/Systems/ResourceManager/SubMeshCache/include/SubMeshCache.h"
 #include "Engine/Systems/ResourceManager/IResourceLoader.h"
 
@@ -163,7 +163,7 @@ private:
 	IImporterManager*       mImporterManager = nullptr;
 	BuiltinResources        m_builtinResources;
 	ResourceImportPipeline  m_importPipeline;
-	ScenePreloader          m_scenePreloader;
+	SceneResourcePreloader  m_scenePreloader;
 	SubMeshCache            m_subMeshCache;
 
 };

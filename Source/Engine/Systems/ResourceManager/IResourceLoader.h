@@ -10,8 +10,8 @@ class ResourceMesh;
 enum class ResourceType : int8_t;
 
 // Minimal interface for loading and requesting resources.
-// Implemented by ModuleResourceManager; used by ScenePreloader so that
-// ScenePreloader can live in Systems/ without depending on Modules/.
+// Implemented by ModuleResourceManager; used by SceneResourcePreloader so that
+// SceneResourcePreloader can live in Systems/ without depending on Modules/.
 class IResourceLoader
 {
 public:

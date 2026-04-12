@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Systems/ResourceManager/ScenePreloader/include/ScenePreloader.h"
+#include "Engine/Systems/ResourceManager/SceneResourcePreloader/include/SceneResourcePreloader.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
@@ -81,7 +81,7 @@ static void WriteSceneFile(const std::filesystem::path& path,
 // Fixture
 // =====================================================
 
-class t_ScenePreloader : public ::testing::Test
+class t_SceneResourcePreloader : public ::testing::Test
 {
 protected:
     static constexpr uint64 kMemoryPoolSize = MiB(64);
@@ -90,7 +90,7 @@ protected:
     NOUS_Multithreading::NOUS_JobSystem* jobSystem   = nullptr;
     SpMockImporterManager                mockImporter;
     ModuleResourceManager*               rm          = nullptr;
-    ScenePreloader*                      preloader   = nullptr;
+    SceneResourcePreloader*                      preloader   = nullptr;
 
     std::filesystem::path tempDir;
     std::filesystem::path savedCwd;
@@ -101,7 +101,7 @@ protected:
         eventSystem = new EventSystem();
         jobSystem   = new NOUS_Multithreading::NOUS_JobSystem(0); // inline execution
         rm          = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
-        preloader   = new ScenePreloader(rm);
+        preloader   = new SceneResourcePreloader(rm);
 
         const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
         tempDir = std::filesystem::temp_directory_path()
@@ -166,13 +166,13 @@ protected:
 // Error / empty-scene guards
 // =====================================================
 
-TEST_F(t_ScenePreloader, MissingSceneFileReturnsEmptyFutures)
+TEST_F(t_SceneResourcePreloader, MissingSceneFileReturnsEmptyFutures)
 {
     auto futures = preloader->PreloadSceneResourcesAsync(jobSystem, "nonexistent.nous");
     EXPECT_TRUE(futures.empty());
 }
 
-TEST_F(t_ScenePreloader, EmptyGameObjectsArrayReturnsEmptyFutures)
+TEST_F(t_SceneResourcePreloader, EmptyGameObjectsArrayReturnsEmptyFutures)
 {
     const std::filesystem::path scene = "empty_gos.nous";
     std::ofstream(scene) << "{\"GameObjects\": []}";
@@ -181,7 +181,7 @@ TEST_F(t_ScenePreloader, EmptyGameObjectsArrayReturnsEmptyFutures)
     EXPECT_TRUE(futures.empty());
 }
 
-TEST_F(t_ScenePreloader, MissingGameObjectsKeyReturnsEmptyFutures)
+TEST_F(t_SceneResourcePreloader, MissingGameObjectsKeyReturnsEmptyFutures)
 {
     const std::filesystem::path scene = "no_gos_key.nous";
     std::ofstream(scene) << "{}";
@@ -190,7 +190,7 @@ TEST_F(t_ScenePreloader, MissingGameObjectsKeyReturnsEmptyFutures)
     EXPECT_TRUE(futures.empty());
 }
 
-TEST_F(t_ScenePreloader, NoMeshComponentsReturnsEmptyFutures)
+TEST_F(t_SceneResourcePreloader, NoMeshComponentsReturnsEmptyFutures)
 {
     const std::filesystem::path scene = "no_mesh.nous";
     // GameObject exists but has no CMesh components.
@@ -202,7 +202,7 @@ TEST_F(t_ScenePreloader, NoMeshComponentsReturnsEmptyFutures)
     EXPECT_TRUE(futures.empty());
 }
 
-TEST_F(t_ScenePreloader, MeshWithEmptyAssetPathIsSkipped)
+TEST_F(t_SceneResourcePreloader, MeshWithEmptyAssetPathIsSkipped)
 {
     // CMesh entry with assetPath == "" must be ignored (no path to load from).
     const std::filesystem::path scene = "empty_path.nous";
@@ -218,7 +218,7 @@ TEST_F(t_ScenePreloader, MeshWithEmptyAssetPathIsSkipped)
 // Future count — deduplication and per-entry scheduling
 // =====================================================
 
-TEST_F(t_ScenePreloader, OneUniqueMeshYieldsOneFuture)
+TEST_F(t_SceneResourcePreloader, OneUniqueMeshYieldsOneFuture)
 {
     const std::filesystem::path scene = "one_mesh.nous";
     WriteSceneFile(scene, {{"Assets/Meshes/a.fbx", "", 0, 0}});
@@ -227,7 +227,7 @@ TEST_F(t_ScenePreloader, OneUniqueMeshYieldsOneFuture)
     EXPECT_EQ(futures.size(), 1u);
 }
 
-TEST_F(t_ScenePreloader, TwoDistinctMeshesYieldTwoFutures)
+TEST_F(t_SceneResourcePreloader, TwoDistinctMeshesYieldTwoFutures)
 {
     const std::filesystem::path scene = "two_meshes.nous";
     WriteSceneFile(scene, {
@@ -239,7 +239,7 @@ TEST_F(t_ScenePreloader, TwoDistinctMeshesYieldTwoFutures)
     EXPECT_EQ(futures.size(), 2u);
 }
 
-TEST_F(t_ScenePreloader, DuplicateMeshEntriesAreDeduplicatedToOneFuture)
+TEST_F(t_SceneResourcePreloader, DuplicateMeshEntriesAreDeduplicatedToOneFuture)
 {
     // Same assetPath + submeshIndex in two different GameObjects → 1 unique request.
     const std::filesystem::path scene = "dedup.nous";
@@ -252,7 +252,7 @@ TEST_F(t_ScenePreloader, DuplicateMeshEntriesAreDeduplicatedToOneFuture)
     EXPECT_EQ(futures.size(), 1u);
 }
 
-TEST_F(t_ScenePreloader, SameAssetDifferentSubmeshIndicesAreNotDeduped)
+TEST_F(t_SceneResourcePreloader, SameAssetDifferentSubmeshIndicesAreNotDeduped)
 {
     // Same assetPath but different submeshIndex → two distinct cache keys → two futures.
     const std::filesystem::path scene = "two_submeshes.nous";
@@ -269,7 +269,7 @@ TEST_F(t_ScenePreloader, SameAssetDifferentSubmeshIndicesAreNotDeduped)
 // Future resolution
 // =====================================================
 
-TEST_F(t_ScenePreloader, AllFuturesResolveWithInlineJobSystem)
+TEST_F(t_SceneResourcePreloader, AllFuturesResolveWithInlineJobSystem)
 {
     // Inline job system (0 threads) must resolve all futures before returning.
     // Calling wait() here verifies no future is left pending (which would deadlock
@@ -285,7 +285,7 @@ TEST_F(t_ScenePreloader, AllFuturesResolveWithInlineJobSystem)
     WaitAll(futures); // must not block
 }
 
-TEST_F(t_ScenePreloader, FuturesResolveEvenWhenAssetsAreMissing)
+TEST_F(t_SceneResourcePreloader, FuturesResolveEvenWhenAssetsAreMissing)
 {
     // All load attempts will fail (no .meta, no .nmesh on disk), but each job
     // must still call prom->set_value() so the future is resolved.

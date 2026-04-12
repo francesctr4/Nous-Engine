@@ -1,4 +1,4 @@
-set(TEST_NAME "t_ScenePreloader")
+set(TEST_NAME "t_SceneResourcePreloader")
 
 add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
 
