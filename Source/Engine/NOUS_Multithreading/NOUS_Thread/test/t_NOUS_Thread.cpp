@@ -18,7 +18,7 @@ TEST(t_NOUS_Thread, DefaultStateIsReady)
     NOUS_Thread thread;
     EXPECT_EQ(thread.GetThreadState(), ThreadState::READY);
     EXPECT_FALSE(thread.IsRunning());
-    EXPECT_EQ(thread.GetID(), 0u);
+    EXPECT_EQ(thread.GetID(), std::thread::id{});
     EXPECT_EQ(thread.GetCurrentJob(), nullptr);
     EXPECT_EQ(thread.GetName(), "");
 }
@@ -143,13 +143,13 @@ TEST(t_NOUS_Thread, TimerWhileRunningReturnsNonNegativeElapsed)
 // Thread ID
 // =====================================================
 
-TEST(t_NOUS_Thread, GetThreadIDIsConsistentForSameThread)
+TEST(t_NOUS_Thread, GetDisplayIDIsConsistentForSameThread)
 {
     const std::thread::id id = std::this_thread::get_id();
-    EXPECT_EQ(NOUS_Thread::GetThreadID(id), NOUS_Thread::GetThreadID(id));
+    EXPECT_EQ(NOUS_Thread::GetDisplayID(id), NOUS_Thread::GetDisplayID(id));
 }
 
-TEST(t_NOUS_Thread, GetThreadIDDiffersForDifferentThreads)
+TEST(t_NOUS_Thread, GetDisplayIDDiffersForDifferentThreads)
 {
     const std::thread::id mainId = std::this_thread::get_id();
     std::thread::id otherId;
@@ -157,13 +157,13 @@ TEST(t_NOUS_Thread, GetThreadIDDiffersForDifferentThreads)
     std::thread t([&otherId](){ otherId = std::this_thread::get_id(); });
     t.join();
 
-    EXPECT_NE(NOUS_Thread::GetThreadID(mainId), NOUS_Thread::GetThreadID(otherId));
+    EXPECT_NE(mainId, otherId);
 }
 
-TEST(t_NOUS_Thread, SetThreadIDMatchesStaticGetThreadID)
+TEST(t_NOUS_Thread, SetThreadIDMatchesGetID)
 {
     NOUS_Thread thread;
     const std::thread::id currentId = std::this_thread::get_id();
     thread.SetThreadID(currentId);
-    EXPECT_EQ(thread.GetID(), NOUS_Thread::GetThreadID(currentId));
+    EXPECT_EQ(thread.GetID(), currentId);
 }

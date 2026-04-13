@@ -385,13 +385,13 @@ void ConsoleWindow::DrawLogPanel()
 
                 char metaBuffer[128];
                 if (file)
-                    snprintf(metaBuffer, sizeof(metaBuffer), "%s:%d [%s] (tid:%llu)",
+                    snprintf(metaBuffer, sizeof(metaBuffer), "%s:%d [%s] (tid:%u)",
                              GetFileName(file), line,
                              function ? function : "",
-                             static_cast<unsigned long long>(threadId));
+                             threadId);
                 else
-                    snprintf(metaBuffer, sizeof(metaBuffer), "(tid:%llu)",
-                             static_cast<unsigned long long>(threadId));
+                    snprintf(metaBuffer, sizeof(metaBuffer), "(tid:%u)",
+                             threadId);
 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
                 ImGui::Text("[%s] %s [%s] %s",

@@ -126,7 +126,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 		thread->StartExecutionTimer();
 
 		NOUS_DEBUG_C(CURRENT_CHANNEL, "Executing job '%s' on thread '%s' (%u)",
-				   job->GetName().c_str(), thread->GetName().c_str(), thread->GetID());
+				   job->GetName().c_str(), thread->GetName().c_str(), NOUS_Thread::GetDisplayID(thread->GetID()));
 
 		try
 		{
@@ -141,7 +141,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 
 		NOUS_DEBUG_C(CURRENT_CHANNEL, "Job '%s' completed successfully on thread '%s' (%u) in %.3f s",
 				   job->GetName().c_str(), thread->GetName().c_str(),
-				   thread->GetID(), thread->GetExecutionTimeMS() / 1000.0f);
+				   NOUS_Thread::GetDisplayID(thread->GetID()), thread->GetExecutionTimeMS() / 1000.0f);
 
 		NOUS_DELETE(job, MemoryTag::THREAD);
 		thread->SetCurrentJob(nullptr);

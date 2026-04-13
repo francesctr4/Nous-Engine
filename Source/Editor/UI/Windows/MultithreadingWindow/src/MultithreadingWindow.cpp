@@ -150,7 +150,7 @@ void Multithreading::Draw()
 
                 // Thread ID
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text("%u", thread->GetID());
+                ImGui::Text("%u", NOUS_Multithreading::NOUS_Thread::GetDisplayID(thread->GetID()));
 
                 // Name
                 ImGui::TableSetColumnIndex(1);

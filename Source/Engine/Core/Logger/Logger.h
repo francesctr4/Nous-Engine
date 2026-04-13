@@ -56,8 +56,8 @@ struct NOUS_ENGINE_API LogEntry
 	int         line     = 0;       // __LINE__
 	const char* function = nullptr; // __FUNCTION__
 
-	// Thread ID captured at log time (Win32 GetCurrentThreadId or hash of std::thread::id).
-	uint64_t    threadId = 0;
+	// Thread ID captured at log time — matches GetDisplayID used in MultithreadingWindow.
+	uint32_t    threadId = 0;
 };
 
 // ──────────────────────────────────────────────────────────────────────────────

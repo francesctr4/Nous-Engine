@@ -2,7 +2,7 @@
 
 /// @brief NOUS_Thread constructor.
 NOUS_Multithreading::NOUS_Thread::NOUS_Thread() :
-	mThreadID(0), mThreadState(ThreadState::READY), mIsRunning(false),
+	mThreadState(ThreadState::READY), mIsRunning(false),
     mCurrentJob(nullptr), mTimerRunning(false)
 {
 
@@ -28,7 +28,7 @@ void NOUS_Multithreading::NOUS_Thread::Start(const std::function<void()>& func)
 		mIsRunning = false;
 		});
 
-	mThreadID = GetThreadID(mThreadHandle.get_id());
+	mThreadID = mThreadHandle.get_id();
 	mThreadState.store(ThreadState::READY);
 }
 
@@ -79,9 +79,9 @@ bool NOUS_Multithreading::NOUS_Thread::IsRunning() const
 	return mIsRunning; 
 }
 
-uint32_t NOUS_Multithreading::NOUS_Thread::GetID() const
-{ 
-	return mThreadID; 
+std::thread::id NOUS_Multithreading::NOUS_Thread::GetID() const
+{
+	return mThreadID;
 }
 
 /// @brief Job execution time tracking.
@@ -111,12 +111,11 @@ double NOUS_Multithreading::NOUS_Thread::GetExecutionTimeMS() const
 /// @note Used mainly for registering main thread.
 void NOUS_Multithreading::NOUS_Thread::SetThreadID(const std::thread::id id)
 {
-	mThreadID = static_cast<uint32_t>(std::hash<std::thread::id>{}(id));
+	mThreadID = id;
 }
 
-/// @brief Converts a std::thread::id to a numeric uint32_t.
-/// @note Uses std::hash for a portable, platform-independent result.
-uint32_t NOUS_Multithreading::NOUS_Thread::GetThreadID(const std::thread::id id)
+/// @brief Returns a uint32_t derived from the thread ID hash, for display and logging only.
+uint32_t NOUS_Multithreading::NOUS_Thread::GetDisplayID(const std::thread::id id)
 {
 	return static_cast<uint32_t>(std::hash<std::thread::id>{}(id));
 }

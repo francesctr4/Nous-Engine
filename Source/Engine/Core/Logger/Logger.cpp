@@ -224,13 +224,8 @@ static void LogOutputInternal(LogLevel level, LogChannel channel,
     const double timestamp = std::chrono::duration<double>(
         std::chrono::steady_clock::now() - s_logEpoch).count();
 
-    // Thread ID — OS-level on Windows, hashed std::thread::id elsewhere.
-#ifdef _WIN32
-    const uint64_t threadId = static_cast<uint64_t>(GetCurrentThreadId());
-#else
-    const uint64_t threadId = static_cast<uint64_t>(
-        std::hash<std::thread::id>{}(std::this_thread::get_id()));
-#endif
+    // Thread ID — same hash as MultithreadingWindow for consistency.
+    const uint32_t threadId = static_cast<uint32_t>(std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
     // Verbose console line — mirrors the ConsoleWindow "Details" format.
     // [MM:SS:mmm] [LEVEL] [CHANNEL] filename:line [func] (tid:N) text
@@ -240,21 +235,21 @@ static void LogOutputInternal(LogLevel level, LogChannel channel,
 
         if (file)
             snprintf(consoleBuffer, k_FormatBufSize,
-                     "[%02d:%02d:%03d] %s [%s] %s:%d [%s] (tid:%llu) %s\n",
+                     "[%02d:%02d:%03d] %s [%s] %s:%d [%s] (tid:%u) %s\n",
                      (totalMs / 1000) / 60, (totalMs / 1000) % 60, totalMs % 1000,
                      k_LevelTags[level],
                      LOG_CHANNEL_NAMES[(int)channel],
                      file, line,
                      function ? function : "",
-                     static_cast<unsigned long long>(threadId),
+                     threadId,
                      userFormatted);
         else
             snprintf(consoleBuffer, k_FormatBufSize,
-                     "[%02d:%02d:%03d] %s [%s] (tid:%llu) %s\n",
+                     "[%02d:%02d:%03d] %s [%s] (tid:%u) %s\n",
                      (totalMs / 1000) / 60, (totalMs / 1000) % 60, totalMs % 1000,
                      k_LevelTags[level],
                      LOG_CHANNEL_NAMES[(int)channel],
-                     static_cast<unsigned long long>(threadId),
+                     threadId,
                      userFormatted);
 
         PrintToConsoleColor(consoleBuffer, k_LevelColors[level]);

@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.h>
 
 #include <future>
+#include <thread>
 #include <array>
 #include <deque>
 #include <unordered_map>
@@ -144,7 +145,7 @@ struct VulkanDevice
 
     /* MULTITHREADING */
     std::mutex workerCommandPoolsMutex;
-    std::unordered_map<uint32, VkCommandPool> workerCommandPools;
+    std::unordered_map<std::thread::id, VkCommandPool> workerCommandPools;
 
     VkQueue graphicsQueue;
     std::mutex graphicsQueueMutex;

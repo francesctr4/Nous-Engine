@@ -1516,7 +1516,7 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
         &textureData->image);
 
     VulkanCommandBuffer tempCommandBuffer{};
-    VkCommandPool pool = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()));
+    VkCommandPool pool = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, std::this_thread::get_id());
     VkQueue queue = vkContext->device.transferQueue;
 
     NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(vkContext, pool, &tempCommandBuffer);
@@ -1742,7 +1742,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
         return false;
     }
 
-    VkCommandPool pool = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()));
+    VkCommandPool pool = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, std::this_thread::get_id());
     VkQueue queue = vkContext->device.transferQueue;
 
     // Vertex data.

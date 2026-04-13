@@ -122,7 +122,7 @@ TEST_F(t_NOUS_ThreadPool, ThreadsHaveUniqueIDs)
     pool = new NOUS_ThreadPool(4);
     const auto& threads = pool->GetThreads();
 
-    std::vector<uint32_t> ids;
+    std::vector<std::thread::id> ids;
     ids.reserve(threads.size());
     for (const NOUS_Thread* thread : threads)
         ids.push_back(thread->GetID());

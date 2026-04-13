@@ -25,7 +25,7 @@ bool NOUS_VulkanMultithreading::CreateWorkerCommandPools(VulkanContext* vkContex
 
     for (const auto& thread : threads)
     {
-        uint32 threadID = thread->GetID();
+        std::thread::id threadID = thread->GetID();
 
         VkCommandPool pool = VK_NULL_HANDLE;
 
@@ -79,7 +79,7 @@ bool NOUS_VulkanMultithreading::DestroyWorkerCommandPools(VulkanContext* vkConte
         }
         else
         {
-            NOUS_WARN("Null command pool found for thread %u", threadID);
+            NOUS_WARN("Null command pool found for thread %u", NOUS_Multithreading::NOUS_Thread::GetDisplayID(threadID));
             allDestroyed = false;
         }
     }
@@ -89,7 +89,7 @@ bool NOUS_VulkanMultithreading::DestroyWorkerCommandPools(VulkanContext* vkConte
     return allDestroyed;
 }
 
-VkCommandPool NOUS_VulkanMultithreading::GetThreadCommandPool(VulkanContext* vkContext, uint32 threadID)
+VkCommandPool NOUS_VulkanMultithreading::GetThreadCommandPool(VulkanContext* vkContext, std::thread::id threadID)
 {
     // The main (render) thread uses the main transfer command pool for uploads.
     if (NOUS_Multithreading::GetMainThread()->GetID() == threadID)
@@ -101,14 +101,14 @@ VkCommandPool NOUS_VulkanMultithreading::GetThreadCommandPool(VulkanContext* vkC
     if (it != vkContext->device.workerCommandPools.end())
         return it->second;
 
-    NOUS_WARN("Worker command pool not found for thread %u. Falling back to main transfer command pool.", threadID);
+    NOUS_WARN("Worker command pool not found for thread %u. Falling back to main transfer command pool.", NOUS_Multithreading::NOUS_Thread::GetDisplayID(threadID));
     return vkContext->device.mainTransferCommandPool;
 }
 
 bool NOUS_VulkanMultithreading::CreateQueueSubmitTask(VulkanContext* vkContext, VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence, bool waitIdle)
 {
     // If we're on the main thread, submit immediately using the appropriate queue mutex.
-    if (NOUS_Multithreading::GetMainThread()->GetID() == NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()))
+    if (NOUS_Multithreading::GetMainThread()->GetID() == std::this_thread::get_id())
     {
         std::mutex& queueMutex = (queue == vkContext->device.transferQueue)
             ? vkContext->device.transferQueueMutex

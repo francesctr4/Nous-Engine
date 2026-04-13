@@ -10,7 +10,7 @@ namespace NOUS_VulkanMultithreading
 	NOUS_ENGINE_API bool RecreateWorkerCommandPools(VulkanContext* vkContext);
 	bool DestroyWorkerCommandPools(VulkanContext* vkContext);
 
-    VkCommandPool GetThreadCommandPool(VulkanContext* vkContext, uint32 threadID);
+    VkCommandPool GetThreadCommandPool(VulkanContext* vkContext, std::thread::id threadID);
 
 	bool CreateQueueSubmitTask(VulkanContext* vkContext, VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence, bool waitIdle);
 }
