@@ -1,13 +1,13 @@
 #pragma once
 
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+
 #include <utility>
 #include <vector>
 
-class Resource;
 class ResourceTexture;
 class ResourceMaterial;
 class IGPUResourceFactory;
-enum class ResourceType : int8_t;
 
 // Owns the engine's built-in fallback resources (textures + default material).
 // Extracted from ModuleResourceManager — all creation and destruction logic lives here.
