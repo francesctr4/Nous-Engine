@@ -7,6 +7,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
+#include <cstring>
 #include <filesystem>
 #include <map>
 #include <parson.h>
