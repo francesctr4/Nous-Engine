@@ -111,18 +111,14 @@ double NOUS_Multithreading::NOUS_Thread::GetExecutionTimeMS() const
 /// @note Used mainly for registering main thread.
 void NOUS_Multithreading::NOUS_Thread::SetThreadID(const std::thread::id id)
 {
-	std::stringstream ss;
-	ss << id;
-	mThreadID = static_cast<uint32_t>(std::stoul(ss.str()));
+	mThreadID = static_cast<uint32_t>(std::hash<std::thread::id>{}(id));
 }
 
 /// @brief Converts a std::thread::id to a numeric uint32_t.
-/// @note Relies on string conversion; platform-dependent.
+/// @note Uses std::hash for a portable, platform-independent result.
 uint32_t NOUS_Multithreading::NOUS_Thread::GetThreadID(const std::thread::id id)
 {
-	std::stringstream ss;
-	ss << id;
-	return static_cast<uint32_t>(std::stoul(ss.str()));
+	return static_cast<uint32_t>(std::hash<std::thread::id>{}(id));
 }
 
 /// @return std::string representation of the passed thread state.

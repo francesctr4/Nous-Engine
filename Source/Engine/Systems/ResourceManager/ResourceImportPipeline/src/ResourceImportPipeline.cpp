@@ -107,7 +107,7 @@ bool ResourceImportPipeline::ImportFile(const std::string& path)
     if (resourceType == ResourceType::UNKNOWN)
         return false;
 
-    if (fileDirectory.rfind("Assets\\", 0) == 0)
+    if (fileDirectory.rfind("Assets/", 0) == 0)
         return ImportFileFromAssets(relativePath, resourceType, fileName, extension);
 
     return ImportFileFromExternal(path, resourceType, fileName, extension);

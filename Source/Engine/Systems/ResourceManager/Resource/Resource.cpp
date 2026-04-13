@@ -31,18 +31,18 @@ static const std::unordered_map<std::string_view, ResourceType> extensionToResou
 
 static const std::unordered_map<ResourceType, std::string> resourceTypeToAssetsFolder
 {
-	{ResourceType::MESH, "Assets\\Meshes\\"},
-	{ResourceType::MATERIAL, "Assets\\Materials\\"},
-	{ResourceType::TEXTURE, "Assets\\Textures\\"},
-	{ResourceType::SHADER, "Assets\\Shaders\\"},
+	{ResourceType::MESH, "Assets/Meshes/"},
+	{ResourceType::MATERIAL, "Assets/Materials/"},
+	{ResourceType::TEXTURE, "Assets/Textures/"},
+	{ResourceType::SHADER, "Assets/Shaders/"},
 };
 
 static const std::unordered_map<ResourceType, std::string> resourceTypeToLibraryFolder
 {
-	{ResourceType::MESH, "Library\\Meshes\\"},
-	{ResourceType::MATERIAL, "Library\\Materials\\"},
-	{ResourceType::TEXTURE, "Library\\Textures\\"},
-	{ResourceType::SHADER, "Library\\Shaders\\"},
+	{ResourceType::MESH, "Library/Meshes/"},
+	{ResourceType::MATERIAL, "Library/Materials/"},
+	{ResourceType::TEXTURE, "Library/Textures/"},
+	{ResourceType::SHADER, "Library/Shaders/"},
 };
 
 #pragma endregion

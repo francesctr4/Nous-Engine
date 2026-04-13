@@ -33,7 +33,7 @@ std::string NOUS_FileManager::GetRelativePath(const std::string& path)
 
 std::string NOUS_FileManager::GetDirectory(const std::string& path)
 {
-	return (std::filesystem::relative(path).parent_path() / "").string();
+	return (std::filesystem::relative(path).parent_path() / "").generic_string();
 }
 
 bool NOUS_FileManager::Exists(const std::string& path)
