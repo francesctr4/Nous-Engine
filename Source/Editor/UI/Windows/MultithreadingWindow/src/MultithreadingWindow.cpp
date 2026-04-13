@@ -64,8 +64,7 @@ void Multithreading::Draw()
 
         auto* mainThread = NOUS_Multithreading::GetMainThread();
         
-        // Static lifetime — avoids a dangling pointer when Draw() returns.
-        static NOUS_Multithreading::NOUS_Job mainThreadJob("Nous Engine", {});
+        NOUS_Multithreading::NOUS_Job mainThreadJob("Nous Engine", {});
         mainThread->SetCurrentJob(&mainThreadJob);
 
         // Calculate active threads
