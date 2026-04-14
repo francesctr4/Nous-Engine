@@ -17,6 +17,7 @@
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
+#include "Engine/Systems/ECS/ECSInternalComponents.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
@@ -277,81 +278,77 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	{
 		mMeshAABBCache.clear();
 
-		if (sceneData.hasActiveScene)
+		if (sceneData.registry)
 		{
-		std::vector<BoundingBoxData> boundingBoxes;
-		const auto& gameObjects = sceneData.gameObjects;
+			std::vector<BoundingBoxData> boundingBoxes;
+			auto view = sceneData.registry->view<CMesh, CTransform>();
 
-		for (auto go : gameObjects)
-		{
-			auto* meshComp = go.TryGetComponent<CMesh>();
-			auto* transform = go.TryGetComponent<CTransform>();
-			if (!meshComp || !meshComp->mesh || !transform)
-				continue;
-
-			const auto& vertices = meshComp->mesh->vertices;
-			if (vertices.empty())
-				continue;
-
-			// Compute local AABB from mesh vertices.
-			glm::vec3 localMin = vertices[0].position;
-			glm::vec3 localMax = vertices[0].position;
-			for (const auto& v : vertices)
+			for (auto [entity, meshComp, transform] : view.each())
 			{
-				localMin = glm::min(localMin, v.position);
-				localMax = glm::max(localMax, v.position);
+				if (!meshComp.mesh) continue;
+
+				const auto& vertices = meshComp.mesh->vertices;
+				if (vertices.empty()) continue;
+
+				// Compute local AABB from mesh vertices.
+				glm::vec3 localMin = vertices[0].position;
+				glm::vec3 localMax = vertices[0].position;
+				for (const auto& v : vertices)
+				{
+					localMin = glm::min(localMin, v.position);
+					localMax = glm::max(localMax, v.position);
+				}
+
+				const glm::vec3 localCenter  = (localMin + localMax) * 0.5f;
+				const glm::vec3 localExtents = localMax - localMin;
+
+				// ── OBB: apply full world transform (includes rotation) ────────────
+				const glm::mat4& worldMatrix = transform.worldMatrix;
+				glm::mat4 obbTransform = worldMatrix
+					* glm::translate(glm::mat4(1.0f), localCenter)
+					* glm::scale(glm::mat4(1.0f), localExtents);
+
+				// ── AABB: compute world-space axis-aligned bounds ──────────────────
+				const glm::vec3 corners[8] = {
+					glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMin.z, 1.0f)),
+					glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMin.z, 1.0f)),
+					glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMin.z, 1.0f)),
+					glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMin.z, 1.0f)),
+					glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMax.z, 1.0f)),
+					glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMax.z, 1.0f)),
+					glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMax.z, 1.0f)),
+					glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMax.z, 1.0f)),
+				};
+
+				glm::vec3 worldMin = corners[0];
+				glm::vec3 worldMax = corners[0];
+				for (const auto& c : corners)
+				{
+					worldMin = glm::min(worldMin, c);
+					worldMax = glm::max(worldMax, c);
+				}
+
+				// Cache world-space AABB for frustum culling in BuildRenderPacket.
+				const auto* info = sceneData.registry->try_get<CEntityInfo>(entity);
+				const uint32_t id = info ? info->id : 0u;
+				mMeshAABBCache[id] = { worldMin, worldMax };
+
+				// Editor-only: generate OBB and AABB overlay geometry.
+				if (m_renderMode == RenderMode::EDITOR)
+				{
+					const glm::vec3 worldCenter  = (worldMin + worldMax) * 0.5f;
+					const glm::vec3 worldExtents = worldMax - worldMin;
+
+					boundingBoxes.emplace_back(obbTransform, glm::vec4(0.3f, 0.6f, 1.0f, 1.0f)); // blue
+					glm::mat4 aabbTransform = glm::translate(glm::mat4(1.0f), worldCenter)
+						* glm::scale(glm::mat4(1.0f), worldExtents);
+					boundingBoxes.emplace_back(aabbTransform, glm::vec4(1.0f, 0.4f, 0.1f, 1.0f)); // orange-red
+				}
 			}
 
-			const glm::vec3 localCenter  = (localMin + localMax) * 0.5f;
-			const glm::vec3 localExtents = localMax - localMin;
-
-			// ── OBB: apply full world transform (includes rotation) ────────────
-			// transform = worldMatrix * translate(localCenter) * scale(localExtents)
-			const glm::mat4& worldMatrix = transform->worldMatrix;
-			glm::mat4 obbTransform = worldMatrix
-				* glm::translate(glm::mat4(1.0f), localCenter)
-				* glm::scale(glm::mat4(1.0f), localExtents);
-
-			// ── AABB: compute world-space axis-aligned bounds ──────────────────
-			// Transform all 8 local corners through the world matrix, then take min/max.
-			const glm::vec3 corners[8] = {
-				glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMin.z, 1.0f)),
-				glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMin.z, 1.0f)),
-				glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMin.z, 1.0f)),
-				glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMin.z, 1.0f)),
-				glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMax.z, 1.0f)),
-				glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMax.z, 1.0f)),
-				glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMax.z, 1.0f)),
-				glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMax.z, 1.0f)),
-			};
-
-			glm::vec3 worldMin = corners[0];
-			glm::vec3 worldMax = corners[0];
-			for (const auto& c : corners)
-			{
-				worldMin = glm::min(worldMin, c);
-				worldMax = glm::max(worldMax, c);
-			}
-
-			// Cache world-space AABB for frustum culling in BuildRenderPacket.
-			mMeshAABBCache[go.GetID()] = { worldMin, worldMax };
-
-			// Editor-only: generate OBB and AABB overlay geometry.
 			if (m_renderMode == RenderMode::EDITOR)
-			{
-				const glm::vec3 worldCenter  = (worldMin + worldMax) * 0.5f;
-				const glm::vec3 worldExtents = worldMax - worldMin;
-
-				boundingBoxes.emplace_back(obbTransform, glm::vec4(0.3f, 0.6f, 1.0f, 1.0f)); // blue
-				glm::mat4 aabbTransform = glm::translate(glm::mat4(1.0f), worldCenter)
-					* glm::scale(glm::mat4(1.0f), worldExtents);
-				boundingBoxes.emplace_back(aabbTransform, glm::vec4(1.0f, 0.4f, 0.1f, 1.0f)); // orange-red
-			}
+				mRendererFrontend->SetBoundingBoxes(boundingBoxes);
 		}
-
-		if (m_renderMode == RenderMode::EDITOR)
-			mRendererFrontend->SetBoundingBoxes(boundingBoxes);
-		} // if activeScene
 	}
 	else
 	{
@@ -363,29 +360,25 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	{
 		std::vector<CameraFrustumData> frustums;
 
-		if (sceneData.hasActiveScene)
+		if (sceneData.registry)
 		{
-			for (auto go : sceneData.gameObjects)
+			auto view = sceneData.registry->view<CCamera, CTransform>();
+			for (auto [entity, cam, transform] : view.each())
 			{
-				auto* cam       = go.TryGetComponent<CCamera>();
-				auto* transform = go.TryGetComponent<CTransform>();
-				if (!cam || !transform)
-					continue;
-
-				const float vfovRad     = glm::radians(cam->fov);
+				const float vfovRad     = glm::radians(cam.fov);
 				const float halfTan     = std::tan(vfovRad * 0.5f);
-				const float halfH_near  = cam->nearPlane * halfTan;
-				const float halfW_near  = halfH_near * cam->aspectRatio;
-				const float halfH_far   = cam->farPlane  * halfTan;
-				const float halfW_far   = halfH_far  * cam->aspectRatio;
+				const float halfH_near  = cam.nearPlane * halfTan;
+				const float halfW_near  = halfH_near * cam.aspectRatio;
+				const float halfH_far   = cam.farPlane  * halfTan;
+				const float halfW_far   = halfH_far  * cam.aspectRatio;
 
-				const glm::vec3 pos     = transform->position;
-				const glm::vec3 fwd     = transform->GetForward();
-				const glm::vec3 up      = transform->GetUp();
-				const glm::vec3 right   = transform->GetRight();
+				const glm::vec3 pos   = transform.position;
+				const glm::vec3 fwd   = transform.GetForward();
+				const glm::vec3 up    = transform.GetUp();
+				const glm::vec3 right = transform.GetRight();
 
-				const glm::vec3 nearCenter = pos + fwd * cam->nearPlane;
-				const glm::vec3 farCenter  = pos + fwd * cam->farPlane;
+				const glm::vec3 nearCenter = pos + fwd * cam.nearPlane;
+				const glm::vec3 farCenter  = pos + fwd * cam.farPlane;
 
 				CameraFrustumData fdata{};
 				// Near quad: TL, TR, BR, BL
@@ -400,7 +393,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 				fdata.corners[7] = farCenter  - up * halfH_far  - right * halfW_far;
 
 				// Main camera: yellow; secondary cameras: green.
-				fdata.color = cam->isMainCamera
+				fdata.color = cam.isMainCamera
 					? glm::vec4(1.0f, 0.85f, 0.0f, 1.0f)
 					: glm::vec4(0.2f, 0.9f,  0.2f, 1.0f);
 
@@ -418,31 +411,30 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	{
 		std::vector<BoundingBoxData> pointLightDebugs;
 
-		if (sceneData.hasActiveScene)
+		if (sceneData.registry)
 		{
 			constexpr float c_markerRadius = 0.25f;
 
-			for (auto go : sceneData.gameObjects)
+			auto view = sceneData.registry->view<CLight, CTransform>();
+			for (auto [entity, light, transform] : view.each())
 			{
-				auto* light     = go.TryGetComponent<CLight>();
-				auto* transform = go.TryGetComponent<CTransform>();
-				if (!light || !transform) continue;
-				if (light->type != LightType::Point) continue;
+				if (light.type != LightType::Point) continue;
 
-				const glm::vec4 color = glm::vec4(light->color, 1.0f);
+				const glm::vec4 color = glm::vec4(light.color, 1.0f);
 
 				// Always: small fixed-size marker sphere.
 				pointLightDebugs.emplace_back(
-					glm::translate(glm::mat4(1.0f), transform->position) *
+					glm::translate(glm::mat4(1.0f), transform.position) *
 					glm::scale(glm::mat4(1.0f), glm::vec3(c_markerRadius)),
 					color);
 
 				// Only for the selected light: range sphere.
-				if (sceneData.selectedObject == go)
+				if (sceneData.selectedObject.IsValid() &&
+				    sceneData.selectedObject.GetEntity() == entity)
 				{
 					pointLightDebugs.emplace_back(
-						glm::translate(glm::mat4(1.0f), transform->position) *
-						glm::scale(glm::mat4(1.0f), glm::vec3(light->range)),
+						glm::translate(glm::mat4(1.0f), transform.position) *
+						glm::scale(glm::mat4(1.0f), glm::vec3(light.range)),
 						color);
 				}
 			}
@@ -632,30 +624,31 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 		hasFrustum = true;
 	}
 
-	packet->geometries.reserve(sceneData.gameObjects.size());
+	if (!sceneData.registry) return false;
 
-	for (auto go : sceneData.gameObjects)
+	auto meshView = sceneData.registry->view<CMesh, CTransform>();
+	packet->geometries.reserve(static_cast<size_t>(
+		std::distance(meshView.begin(), meshView.end())));
+
+	for (auto [entity, mesh, transform] : meshView.each())
 	{
-		if (!go.HasComponent<CMesh>()) continue;
+		if (!mesh.mesh) continue;
 
 		GeometryRenderData data{};
 
-		data.objectUID = go.GetID();
+		const auto* info = sceneData.registry->try_get<CEntityInfo>(entity);
+		data.objectUID   = info ? info->id : 0u;
+		data.model       = transform.worldMatrix;
+		data.geometry    = mesh.mesh;
 
-		if (auto* transform = go.TryGetComponent<CTransform>())
-			data.model = transform->worldMatrix;
-
-		if (auto* mesh = go.TryGetComponent<CMesh>())
-			data.geometry = mesh->mesh;
-
-		if (auto* material = go.TryGetComponent<CMaterial>())
-			data.material = material->material;
+		if (const auto* mat = sceneData.registry->try_get<CMaterial>(entity))
+			data.material = mat->material;
 
 		// Frustum cull against the game camera using the cached world-space AABB.
 		// Meshes with no cached AABB (e.g. empty vertex arrays) are not culled.
 		if (hasFrustum)
 		{
-			const auto it = mMeshAABBCache.find(go.GetID());
+			const auto it = mMeshAABBCache.find(data.objectUID);
 			if (it != mMeshAABBCache.end() &&
 				!FrustumCulling::IsAABBVisible(frustum, it->second.first, it->second.second))
 			{
@@ -667,20 +660,17 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	}
 
 	// ── Light gathering ───────────────────────────────────────────────────────────
-	for (auto go : sceneData.gameObjects)
+	auto lightView = sceneData.registry->view<CLight, CTransform>();
+	for (auto [entity, light, transform] : lightView.each())
 	{
-		auto* light     = go.TryGetComponent<CLight>();
-		auto* transform = go.TryGetComponent<CTransform>();
-		if (!light || !transform) continue;
-
-		if (light->type == LightType::Directional)
+		if (light.type == LightType::Directional)
 		{
 			if (!packet->hasDirectionalLight)
 			{
 				const glm::vec3 forward = glm::normalize(
-					transform->orientation * glm::vec3(0.f, -1.f, 0.f));
+					transform.orientation * glm::vec3(0.f, -1.f, 0.f));
 				packet->directionalLight.direction = glm::vec4(forward, 0.f);
-				packet->directionalLight.color     = glm::vec4(light->color, light->intensity);
+				packet->directionalLight.color     = glm::vec4(light.color, light.intensity);
 				packet->hasDirectionalLight        = true;
 			}
 			else
@@ -689,19 +679,20 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 					"Scene has more than one directional light; only the first is used.");
 			}
 		}
-		else if (light->type == LightType::Point)
+		else if (light.type == LightType::Point)
 		{
 			if (packet->activePointLightCount < c_maxPointLights)
 			{
 				PointLight& pl = packet->pointLights[packet->activePointLightCount++];
-				pl.position    = glm::vec4(transform->position, light->range);
-				pl.color       = glm::vec4(light->color, light->intensity);
+				pl.position    = glm::vec4(transform.position, light.range);
+				pl.color       = glm::vec4(light.color, light.intensity);
 			}
 			else
 			{
+				const auto* info = sceneData.registry->try_get<CEntityInfo>(entity);
 				NOUS_WARN_C(CURRENT_CHANNEL,
 					"Point light limit (%u) reached; light on '%s' ignored.",
-					c_maxPointLights, go.GetName().c_str());
+					c_maxPointLights, info ? info->name.c_str() : "<unknown>");
 			}
 		}
 	}

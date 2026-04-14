@@ -157,8 +157,7 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 	m_renderData.hasActiveScene = activeScene != nullptr;
 	m_renderData.gameCamera     = gameCamera;
 	m_renderData.selectedObject = selectedGameObject;
-	if (activeScene)
-		m_renderData.gameObjects = activeScene->GetGameObjectsSnapshot(); // returns std::vector<GameObject>
+	m_renderData.registry       = activeScene ? &activeScene->GetRegistry() : nullptr;
 
 	return UpdateStatus::CONTINUE;
 }
@@ -191,11 +190,8 @@ void ModuleScene::OnEvent(const Event& event)
 			// Also update any CCamera components so the frustum visualization stays correct.
 			if (activeScene)
 			{
-				for (auto gos = activeScene->GetGameObjectsSnapshot(); auto go : gos)
-				{
-					if (auto* cam = go.TryGetComponent<CCamera>())
-						cam->aspectRatio = newAspect;
-				}
+				for (auto [entity, cam] : activeScene->GetRegistry().view<CCamera>().each())
+					cam.aspectRatio = newAspect;
 			}
 
 			break;
@@ -524,13 +520,10 @@ void ModuleScene::EnsureMainCamera() const
         return;
 
     // Check whether the loaded scene already has a main camera.
-    for (auto go : activeScene->GetGameObjectsSnapshot())
+    for (auto [entity, cam] : activeScene->GetRegistry().view<CCamera>().each())
     {
-        if (const auto* cam = go.TryGetComponent<CCamera>())
-        {
-            if (cam->isMainCamera)
-                return; // Found one — nothing to do.
-        }
+        if (cam.isMainCamera)
+            return; // Found one — nothing to do.
     }
 
     // No main camera found. Create a default one that mirrors the legacy gameCamera.
@@ -564,16 +557,14 @@ void ModuleScene::RefreshPrefabInstances() const
 {
     if (!activeScene) return;
 
-    // Phase 1: collect prefab roots from a snapshot.
+    // Phase 1: collect prefab roots from a view snapshot.
     // We must NOT call ReloadPrefabInstance while iterating — reload destroys
-    // children that are also in the snapshot, leaving dangling handles.
+    // children that would also appear in the view, leaving dangling handles.
     std::vector<GameObject> prefabRoots;
     {
-        for (auto go : activeScene->GetGameObjectsSnapshot())
-        {
-            if (go.HasComponent<CPrefab>())
-                prefabRoots.push_back(go);
-        }
+        auto& registry = activeScene->GetRegistry();
+        for (auto entity : registry.view<CPrefab>())
+            prefabRoots.emplace_back(entity, &registry);
     }
 
     if (prefabRoots.empty())
