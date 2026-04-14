@@ -117,6 +117,16 @@ TEST_F(t_Scene, FindGameObjectByID_MissingID_ReturnsInvalid)
     EXPECT_FALSE(found.IsValid());
 }
 
+TEST_F(t_Scene, IDMapSyncsOnDestroyCreate)
+{
+    GameObject go = scene->CreateGameObject("Temp");
+    const uint32_t id = go.GetID();
+    scene->DestroyGameObject(go);
+
+    // The ID must not resolve after destruction — m_IDToEntity must be cleaned.
+    EXPECT_FALSE(scene->FindGameObjectByID(id).IsValid());
+}
+
 // =============================================================================
 // GetGameObjectsSnapshot
 // =============================================================================
