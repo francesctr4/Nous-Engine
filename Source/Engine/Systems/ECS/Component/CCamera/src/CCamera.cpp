@@ -15,7 +15,8 @@
 
 glm::mat4 CCamera::GetViewMatrix() const
 {
-    auto* transform = GetGameObject()->TryGetComponent<CTransform>();
+    auto go = GetGameObject();
+    auto* transform = go.IsValid() ? go.TryGetComponent<CTransform>() : nullptr;
     if (!transform)
         return glm::mat4(1.0f);
 
@@ -40,11 +41,16 @@ void CCamera::OnUpdate(float /*deltaTime*/)
     if (!isMainCamera)
         return;
 
-    auto* transform = GetGameObject()->TryGetComponent<CTransform>();
+    auto go = GetGameObject();
+    if (!go.IsValid()) return;
+
+    auto* transform = go.TryGetComponent<CTransform>();
     if (!transform)
         return;
 
-    Camera* gameCamera = m_GameObject->GetScene()->GetModuleScene()->gameCamera;
+    Scene* scene = go.GetScene();
+    if (!scene) return;
+    Camera* gameCamera = scene->GetModuleScene()->gameCamera;
     gameCamera->SetPos(transform->position);
     gameCamera->SetFront(transform->GetForward());
     gameCamera->SetUp(transform->GetUp());

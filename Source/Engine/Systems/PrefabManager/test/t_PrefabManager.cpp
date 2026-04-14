@@ -5,19 +5,9 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
-
-// Minimal test-only component — used to verify that stale components are stripped
-// from a prefab instance root during ReloadPrefabInstance. Defined here to avoid
-// depending on CMesh or any other component whose virtual methods aren't DLL-exported.
-class CTestStale : public Component
-{
-public:
-    COMPONENT_TYPE(CTestStale)
-    JSON_Value* Serialize() const override { return nullptr; }
-    void        Deserialize(JSON_Object*)  override {}
-};
 
 #include <parson.h>
 #include <glm/glm.hpp>
@@ -116,9 +106,9 @@ protected:
                                   bool               withChild = false,
                                   const std::string& childName = "Child")
     {
-        GameObject* root = scene->CreateGameObject(rootName, nullptr);
+        GameObject root = scene->CreateGameObject(rootName, nullptr);
         if (withChild)
-            scene->CreateGameObject(childName, root);
+            scene->CreateGameObject(childName, &root);
 
         const std::string path = TempFile(filename);
         PrefabManager::SavePrefab(root, path);
@@ -132,9 +122,9 @@ protected:
 // SavePrefab
 // =============================================================================
 
-TEST_F(t_PrefabManager, SavePrefab_NullRoot_DoesNotCrash)
+TEST_F(t_PrefabManager, SavePrefab_InvalidRoot_DoesNotCrash)
 {
-    EXPECT_NO_FATAL_FAILURE(PrefabManager::SavePrefab(nullptr, TempFile("null.nprefab")));
+    EXPECT_NO_FATAL_FAILURE(PrefabManager::SavePrefab({}, TempFile("null.nprefab")));
 }
 
 TEST_F(t_PrefabManager, SavePrefab_CreatesFile)
@@ -220,8 +210,8 @@ TEST_F(t_PrefabManager, SavePrefab_ChildEntryHasNonZeroParent)
 TEST_F(t_PrefabManager, SavePrefab_StripsCPrefabFromOutput)
 {
     // Even if the root already carries a CPrefab, it must not appear in the saved file.
-    GameObject* root = scene->CreateGameObject("PrefabRoot", nullptr);
-    auto& cp = root->AddComponent<CPrefab>();
+    GameObject root = scene->CreateGameObject("PrefabRoot", nullptr);
+    auto& cp = root.AddComponent<CPrefab>();
     cp.prefabSourcePath = "old/path.nprefab";
 
     const std::string path = TempFile("save_strips_cprefab.nprefab");
@@ -254,37 +244,37 @@ TEST_F(t_PrefabManager, SavePrefab_StripsCPrefabFromOutput)
 // InstantiatePrefab
 // =============================================================================
 
-TEST_F(t_PrefabManager, InstantiatePrefab_NullScene_ReturnsNull)
+TEST_F(t_PrefabManager, InstantiatePrefab_NullScene_ReturnsInvalid)
 {
     const std::string path = SaveSimplePrefab("inst_null_scene.nprefab");
-    EXPECT_EQ(PrefabManager::InstantiatePrefab(path, nullptr), nullptr);
+    EXPECT_FALSE(PrefabManager::InstantiatePrefab(path, nullptr).IsValid());
 }
 
-TEST_F(t_PrefabManager, InstantiatePrefab_NonExistentFile_ReturnsNull)
+TEST_F(t_PrefabManager, InstantiatePrefab_NonExistentFile_ReturnsInvalid)
 {
-    EXPECT_EQ(PrefabManager::InstantiatePrefab("does_not_exist.nprefab", scene), nullptr);
+    EXPECT_FALSE(PrefabManager::InstantiatePrefab("does_not_exist.nprefab", scene).IsValid());
 }
 
-TEST_F(t_PrefabManager, InstantiatePrefab_ValidFile_ReturnsNonNull)
+TEST_F(t_PrefabManager, InstantiatePrefab_ValidFile_ReturnsValid)
 {
     const std::string path = SaveSimplePrefab("inst_valid.nprefab");
-    EXPECT_NE(PrefabManager::InstantiatePrefab(path, scene), nullptr);
+    EXPECT_TRUE(PrefabManager::InstantiatePrefab(path, scene).IsValid());
 }
 
 TEST_F(t_PrefabManager, InstantiatePrefab_RootHasCPrefab)
 {
     const std::string path = SaveSimplePrefab("inst_has_cprefab.nprefab");
-    GameObject* root = PrefabManager::InstantiatePrefab(path, scene);
-    ASSERT_NE(root, nullptr);
-    EXPECT_TRUE(root->HasComponent<CPrefab>());
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(root.IsValid());
+    EXPECT_TRUE(root.HasComponent<CPrefab>());
 }
 
 TEST_F(t_PrefabManager, InstantiatePrefab_CPrefabSourcePathMatchesFile)
 {
     const std::string path = SaveSimplePrefab("inst_source_path.nprefab");
-    GameObject* root = PrefabManager::InstantiatePrefab(path, scene);
-    ASSERT_NE(root, nullptr);
-    auto* cprefab = root->TryGetComponent<CPrefab>();
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(root.IsValid());
+    auto* cprefab = root.TryGetComponent<CPrefab>();
     ASSERT_NE(cprefab, nullptr);
     EXPECT_EQ(cprefab->prefabSourcePath, path);
 }
@@ -304,19 +294,19 @@ TEST_F(t_PrefabManager, InstantiatePrefab_AllGOsRegisteredInScene)
 TEST_F(t_PrefabManager, InstantiatePrefab_WithParent_RootIsChildOfParent)
 {
     const std::string path = SaveSimplePrefab("inst_parent.nprefab");
-    GameObject* parent = scene->CreateGameObject("Parent", nullptr);
+    GameObject parent = scene->CreateGameObject("Parent", nullptr);
 
-    GameObject* root = PrefabManager::InstantiatePrefab(path, scene, parent);
-    ASSERT_NE(root, nullptr);
-    EXPECT_EQ(root->GetParent(), parent);
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene, parent);
+    ASSERT_TRUE(root.IsValid());
+    EXPECT_EQ(root.GetParent(), parent);
 }
 
 TEST_F(t_PrefabManager, InstantiatePrefab_NoParent_RootHasNoSceneParent)
 {
     const std::string path = SaveSimplePrefab("inst_no_parent.nprefab");
-    GameObject* root = PrefabManager::InstantiatePrefab(path, scene, nullptr);
-    ASSERT_NE(root, nullptr);
-    EXPECT_EQ(root->GetParent(), nullptr);
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(root.IsValid());
+    EXPECT_FALSE(root.GetParent().IsValid());
 }
 
 // =============================================================================
@@ -325,14 +315,14 @@ TEST_F(t_PrefabManager, InstantiatePrefab_NoParent_RootHasNoSceneParent)
 
 TEST_F(t_PrefabManager, ReloadPrefabInstance_NoCPrefab_DoesNotCrash)
 {
-    GameObject* go = scene->CreateGameObject("NoPrefab", nullptr);
+    GameObject go = scene->CreateGameObject("NoPrefab", nullptr);
     EXPECT_NO_FATAL_FAILURE(PrefabManager::ReloadPrefabInstance(go, scene));
 }
 
 TEST_F(t_PrefabManager, ReloadPrefabInstance_MissingSourceFile_DoesNotCrash)
 {
-    GameObject* go = scene->CreateGameObject("Orphan", nullptr);
-    auto& cprefab = go->AddComponent<CPrefab>();
+    GameObject go = scene->CreateGameObject("Orphan", nullptr);
+    auto& cprefab = go.AddComponent<CPrefab>();
     cprefab.prefabSourcePath = "does_not_exist.nprefab";
     EXPECT_NO_FATAL_FAILURE(PrefabManager::ReloadPrefabInstance(go, scene));
 }
@@ -342,30 +332,30 @@ TEST_F(t_PrefabManager, ReloadPrefabInstance_ChildrenAreRebuilt)
     // Prefab: Root + 1 child "ChildFromPrefab"
     const std::string path = SaveSimplePrefab("reload_children.nprefab", "Root", true, "ChildFromPrefab");
 
-    GameObject* instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
-    ASSERT_NE(instanceRoot, nullptr);
-    ASSERT_EQ(instanceRoot->GetChildren().size(), 1u);
+    GameObject instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(instanceRoot.IsValid());
+    ASSERT_EQ(instanceRoot.GetChildren().size(), 1u);
 
     // Add an extra child that should not survive the reload.
-    scene->CreateGameObject("ExtraChild", instanceRoot);
-    ASSERT_EQ(instanceRoot->GetChildren().size(), 2u);
+    scene->CreateGameObject("ExtraChild", &instanceRoot);
+    ASSERT_EQ(instanceRoot.GetChildren().size(), 2u);
 
     PrefabManager::ReloadPrefabInstance(instanceRoot, scene);
 
     // Only the prefab's original child must remain.
-    EXPECT_EQ(instanceRoot->GetChildren().size(), 1u);
-    EXPECT_EQ(instanceRoot->GetChildren()[0]->GetName(), "ChildFromPrefab");
+    EXPECT_EQ(instanceRoot.GetChildren().size(), 1u);
+    EXPECT_EQ(instanceRoot.GetChildren()[0].GetName(), "ChildFromPrefab");
 }
 
 TEST_F(t_PrefabManager, ReloadPrefabInstance_RootCTransformPreserved)
 {
     const std::string path = SaveSimplePrefab("reload_transform.nprefab");
 
-    GameObject* instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
-    ASSERT_NE(instanceRoot, nullptr);
+    GameObject instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(instanceRoot.IsValid());
 
     // Move the instance root before reloading.
-    auto* t = instanceRoot->TryGetComponent<CTransform>();
+    auto* t = instanceRoot.TryGetComponent<CTransform>();
     ASSERT_NE(t, nullptr);
     t->position = glm::vec3(10.f, 20.f, 30.f);
     t->UpdateMatrix();
@@ -373,7 +363,7 @@ TEST_F(t_PrefabManager, ReloadPrefabInstance_RootCTransformPreserved)
     PrefabManager::ReloadPrefabInstance(instanceRoot, scene);
 
     // CTransform must still exist and position must be unchanged.
-    auto* tAfter = instanceRoot->TryGetComponent<CTransform>();
+    auto* tAfter = instanceRoot.TryGetComponent<CTransform>();
     ASSERT_NE(tAfter, nullptr);
     EXPECT_FLOAT_EQ(tAfter->position.x, 10.f);
     EXPECT_FLOAT_EQ(tAfter->position.y, 20.f);
@@ -384,46 +374,46 @@ TEST_F(t_PrefabManager, ReloadPrefabInstance_RootCPrefabPreserved)
 {
     const std::string path = SaveSimplePrefab("reload_cprefab.nprefab");
 
-    GameObject* instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
-    ASSERT_NE(instanceRoot, nullptr);
+    GameObject instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(instanceRoot.IsValid());
 
     PrefabManager::ReloadPrefabInstance(instanceRoot, scene);
 
-    EXPECT_TRUE(instanceRoot->HasComponent<CPrefab>());
-    EXPECT_EQ(instanceRoot->TryGetComponent<CPrefab>()->prefabSourcePath, path);
+    EXPECT_TRUE(instanceRoot.HasComponent<CPrefab>());
+    EXPECT_EQ(instanceRoot.TryGetComponent<CPrefab>()->prefabSourcePath, path);
 }
 
 TEST_F(t_PrefabManager, ReloadPrefabInstance_RootNameUpdatedFromFile)
 {
     const std::string path = SaveSimplePrefab("reload_name.nprefab", "OriginalName");
 
-    GameObject* instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
-    ASSERT_NE(instanceRoot, nullptr);
+    GameObject instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(instanceRoot.IsValid());
 
-    instanceRoot->SetName("RenamedInScene");
+    instanceRoot.SetName("RenamedInScene");
     PrefabManager::ReloadPrefabInstance(instanceRoot, scene);
 
-    EXPECT_EQ(instanceRoot->GetName(), "OriginalName");
+    EXPECT_EQ(instanceRoot.GetName(), "OriginalName");
 }
 
 TEST_F(t_PrefabManager, ReloadPrefabInstance_StaleComponentRemovedFromRoot)
 {
-    // Prefab root has only CTransform — no CTestStale.
+    // Prefab root has only CTransform — no CCamera.
     const std::string path = SaveSimplePrefab("reload_stale_comp.nprefab", "StaleRoot");
 
-    GameObject* instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
-    ASSERT_NE(instanceRoot, nullptr);
+    GameObject instanceRoot = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(instanceRoot.IsValid());
 
-    // Manually add CTestStale to the instance root after instantiation.
+    // Manually add CCamera to the instance root after instantiation.
     // This simulates a component that was removed from the prefab file since last save.
-    instanceRoot->AddComponent<CTestStale>();
-    ASSERT_TRUE(instanceRoot->HasComponent<CTestStale>());
+    instanceRoot.AddComponent<CCamera>();
+    ASSERT_TRUE(instanceRoot.HasComponent<CCamera>());
 
     PrefabManager::ReloadPrefabInstance(instanceRoot, scene);
 
-    // CTestStale is not in the prefab file — it must be stripped.
-    EXPECT_FALSE(instanceRoot->HasComponent<CTestStale>());
+    // CCamera is not in the prefab file — it must be stripped.
+    EXPECT_FALSE(instanceRoot.HasComponent<CCamera>());
     // CTransform and CPrefab must always survive the reload.
-    EXPECT_TRUE(instanceRoot->HasComponent<CTransform>());
-    EXPECT_TRUE(instanceRoot->HasComponent<CPrefab>());
+    EXPECT_TRUE(instanceRoot.HasComponent<CTransform>());
+    EXPECT_TRUE(instanceRoot.HasComponent<CPrefab>());
 }

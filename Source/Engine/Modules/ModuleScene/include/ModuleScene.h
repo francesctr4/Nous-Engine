@@ -1,15 +1,14 @@
-#ifndef MODULESCENE_H
-#define MODULESCENE_H
+#pragma once
 
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include <string>
 #include <atomic>
 #include "Engine/Core/EventSystem/IEventListener.h"
 
 class Scene;
-class GameObject;
 class Camera;
 class ScriptManager;
 
@@ -55,9 +54,9 @@ public:
 	NOUS_ENGINE_API const std::string& GetCurrentScenePath() const { return m_currentScenePath; }
 	NOUS_ENGINE_API bool                HasCurrentScenePath() const { return !m_currentScenePath.empty(); }
 
-	// Instantiates a .nprefab file into the active scene, optionally under parentGO.
-	// Returns the root of the instantiated prefab, or nullptr on failure.
-	NOUS_ENGINE_API GameObject* InstantiatePrefab(const std::string& path, GameObject* parentGO = nullptr) const;
+	// Instantiates a .nprefab file into the active scene, optionally under parent.
+	// Returns the root of the instantiated prefab (null handle on failure).
+	NOUS_ENGINE_API GameObject InstantiatePrefab(const std::string& path, GameObject parent = {}) const;
 
 	// Creates a root GameObject + one child GO per submesh for the given mesh
 	// asset.  Each child has CTransform (from the node's local transform),
@@ -88,7 +87,7 @@ public:
 public:
 
 	Scene*         activeScene    = nullptr;
-	GameObject*    selectedGameObject = nullptr;
+	GameObject     selectedGameObject;           // null handle by default (IsValid() == false)
 	Camera*        gameCamera    = nullptr;
 	ScriptManager* scriptManager = nullptr;
 
@@ -128,5 +127,3 @@ private:
 	 */
 	void EnsureMainCamera() const;
 };
-
-#endif // MODULESCENE_H

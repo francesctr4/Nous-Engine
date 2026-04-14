@@ -31,13 +31,19 @@ JSON_Value* CMaterial::Serialize() const {
 
 void CMaterial::Deserialize(JSON_Object* obj) {
     const char* assetPath = json_object_get_string(obj, "assetPath");
+    auto go = GetGameObject();
+    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
+
     if (!assetPath || strlen(assetPath) == 0) {
         // No on-disk material was referenced — this GO used the in-memory default
         // material (no assetPath, UID=0). Restore it so the mesh still renders
         // after a snapshot round-trip, instead of leaving material=nullptr.
-        material = m_GameObject->GetScene()->GetResourceManager()->GetDefaultMaterial();
+        if (scene)
+            material = scene->GetResourceManager()->GetDefaultMaterial();
         return;
     }
+
+    if (!scene) { material = nullptr; return; }
 
     const char* libraryPathRaw = json_object_get_string(obj, "libraryPath");
     const std::string libraryPath = libraryPathRaw ? libraryPathRaw : "";
@@ -47,14 +53,14 @@ void CMaterial::Deserialize(JSON_Object* obj) {
     // Try library path first (GAME mode / no .meta needed).
     if (!libraryPath.empty() && resourceUID != 0)
     {
-        material = down_cast<ResourceMaterial*>(m_GameObject->GetScene()->GetResourceManager()->CreateResourceFromLibrary(
+        material = down_cast<ResourceMaterial*>(scene->GetResourceManager()->CreateResourceFromLibrary(
             resourceUID, ResourceType::MATERIAL, NOUS_FileManager::GetFilename(assetPath),
             assetPath, libraryPath));
     }
     if (!material)
     {
         material = down_cast<ResourceMaterial*>(
-            m_GameObject->GetScene()->GetResourceManager()->CreateResource(assetPath)
+            scene->GetResourceManager()->CreateResource(assetPath)
         );
     }
 }
@@ -64,8 +70,10 @@ void CMaterial::Deserialize(JSON_Object* obj) {
 // -----------------------------------------------------------------------------
 void CMaterial::OnDestroy()
 {
-    if (material && material->IsValid() && m_GameObject && m_GameObject->GetScene())
+    auto go = GetGameObject();
+    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
+    if (material && material->IsValid() && scene)
     {
-        m_GameObject->GetScene()->GetResourceManager()->UnloadResource(material->GetUID());
+        scene->GetResourceManager()->UnloadResource(material->GetUID());
     }
 }

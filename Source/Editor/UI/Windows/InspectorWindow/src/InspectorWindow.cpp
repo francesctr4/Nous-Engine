@@ -49,15 +49,15 @@ void InspectorWindow::Draw() {
     if (*p_open) {
         if (ImGui::Begin(title, p_open)) {
 
-            GameObject* go = editorContext->GetScene()->selectedGameObject;
-            if (!go) {
+            GameObject go = editorContext->GetScene()->selectedGameObject;
+            if (!go.IsValid()) {
                 ImGui::TextDisabled("No GameObject selected.");
                 ImGui::End();
                 return;
             }
 
             // --- GameObject Header ---
-            auto* cprefab = go->TryGetComponent<CPrefab>();
+            auto* cprefab = go.TryGetComponent<CPrefab>();
             if (cprefab)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
@@ -74,21 +74,21 @@ void InspectorWindow::Draw() {
             }
 
             static char buffer[256];
-            strncpy(buffer, go->GetName().c_str(), sizeof(buffer) - 1);
+            strncpy(buffer, go.GetName().c_str(), sizeof(buffer) - 1);
             buffer[sizeof(buffer) - 1] = '\0';
             if (cprefab) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
             if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
-                go->SetName(buffer);
+                go.SetName(buffer);
             if (cprefab) ImGui::PopStyleColor();
             ImGui::SameLine();
-            ImGui::TextDisabled("(ID: %u)", go->GetID());
+            ImGui::TextDisabled("(ID: %u)", go.GetID());
 
             ImGui::Spacing();
 
             // --- Transform Component ---
-            if (go->HasComponent<CTransform>()) {
+            if (go.HasComponent<CTransform>()) {
                 if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    auto& transform = go->GetComponent<CTransform>();
+                    auto& transform = go.GetComponent<CTransform>();
 
                     ImGui::Indent();
 
@@ -112,9 +112,9 @@ void InspectorWindow::Draw() {
             }
 
             // --- Mesh Component ---
-            if (go->HasComponent<CMesh>()) {
+            if (go.HasComponent<CMesh>()) {
                 if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    if (auto& mesh = go->GetComponent<CMesh>();
+                    if (auto& mesh = go.GetComponent<CMesh>();
                         mesh.mesh)
                     {
                         ImGui::Text("Name: %s", mesh.mesh->GetName().c_str());
@@ -131,9 +131,9 @@ void InspectorWindow::Draw() {
             }
 
             // --- Camera Component ---
-            if (go->HasComponent<CCamera>()) {
+            if (go.HasComponent<CCamera>()) {
                 if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    auto& cam = go->GetComponent<CCamera>();
+                    auto& cam = go.GetComponent<CCamera>();
 
                     ImGui::Indent();
 
@@ -155,9 +155,9 @@ void InspectorWindow::Draw() {
             }
 
             // --- Light Component ---
-            if (go->HasComponent<CLight>()) {
+            if (go.HasComponent<CLight>()) {
                 if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    auto& light = go->GetComponent<CLight>();
+                    auto& light = go.GetComponent<CLight>();
 
                     ImGui::Indent();
 
@@ -181,12 +181,12 @@ void InspectorWindow::Draw() {
             }
 
             // --- Material Component ---
-            if (go->HasComponent<CMaterial>()) {
+            if (go.HasComponent<CMaterial>()) {
                 if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    if (auto& mat = go->GetComponent<CMaterial>();
+                    if (auto& mat = go.GetComponent<CMaterial>();
                         mat.material)
                     {
-                        auto* rm = go->GetScene()->GetResourceManager();
+                        auto* rm = go.GetScene()->GetResourceManager();
                         const bool isDefaultMaterial = (mat.material == rm->GetDefaultMaterial());
 
                         ImGui::Text("Name: %s", mat.material->GetName().c_str());
@@ -206,7 +206,7 @@ void InspectorWindow::Draw() {
                             if (ImGui::Button("Create Material Asset"))
                             {
                                 // Build a safe filename from the GameObject name.
-                                std::string safeName = go->GetName();
+                                std::string safeName = go.GetName();
                                 if (safeName.empty()) safeName = "Material";
                                 for (char& c : safeName)
                                 {
@@ -553,8 +553,8 @@ void InspectorWindow::Draw() {
             }
 
             // --- Script Component ---
-            if (go->HasComponent<CScript>()) {
-                auto& cs = go->GetComponent<CScript>();
+            if (go.HasComponent<CScript>()) {
+                auto& cs = go.GetComponent<CScript>();
                 const auto& scriptNames = cs.GetScriptNames();
 
                 if (ImGui::CollapsingHeader("Scripts", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -611,8 +611,8 @@ void InspectorWindow::Draw() {
                                             // Resolve current name for the preview label
                                             std::string preview = "None";
                                             if (*idPtr != 0 && editorContext->GetScene()->activeScene) {
-                                                auto* target = editorContext->GetScene()->activeScene->GetGameObjectByID(*idPtr);
-                                                preview = target ? target->GetName() : "(missing)";
+                                                auto target = editorContext->GetScene()->activeScene->GetGameObjectByID(*idPtr);
+                                                preview = target.IsValid() ? target.GetName() : "(missing)";
                                             }
 
                                             if (ImGui::BeginCombo(prop.name, preview.c_str())) {
@@ -623,10 +623,10 @@ void InspectorWindow::Draw() {
                                                 // All scene GameObjects
                                                 if (editorContext->GetScene()->activeScene) {
                                                     const auto gos = editorContext->GetScene()->activeScene->GetGameObjectsSnapshot();
-                                                    for (auto* target : gos) {
-                                                        const bool selected = *idPtr == target->GetID();
-                                                        if (ImGui::Selectable(target->GetName().c_str(), selected))
-                                                            *idPtr = target->GetID();
+                                                    for (auto target : gos) {
+                                                        const bool selected = *idPtr == target.GetID();
+                                                        if (ImGui::Selectable(target.GetName().c_str(), selected))
+                                                            *idPtr = target.GetID();
                                                         if (selected) ImGui::SetItemDefaultFocus();
                                                     }
                                                 }
@@ -676,9 +676,9 @@ void InspectorWindow::Draw() {
             ImGui::Separator();
             ImGui::Spacing();
 
-            if (!go->HasComponent<CScript>()) {
+            if (!go.HasComponent<CScript>()) {
                 if (ImGui::Button("Add CScript Component"))
-                    go->AddComponent<CScript>();
+                    go.AddComponent<CScript>();
             }
 
         }

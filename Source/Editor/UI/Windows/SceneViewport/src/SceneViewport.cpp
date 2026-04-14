@@ -125,8 +125,8 @@ void SceneViewport::Draw()
                 // ImGuizmo::IsOver() retains stale state from the previous frame when no
                 // gizmo was drawn (e.g. nothing selected). Only consult it when a gizmo is
                 // actually visible this frame, otherwise picking would be incorrectly blocked.
-                const bool gizmoVisible = editorContext->GetScene()->selectedGameObject != nullptr &&
-                                          editorContext->GetScene()->selectedGameObject->HasComponent<CTransform>();
+                const bool gizmoVisible = editorContext->GetScene()->selectedGameObject.IsValid() &&
+                                          editorContext->GetScene()->selectedGameObject.HasComponent<CTransform>();
                 const bool gizmoBlocking = gizmoVisible && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
                 s_GizmoWasActive = gizmoBlocking;
 
@@ -187,7 +187,7 @@ void SceneViewport::Draw()
                                 }
                                 else if (ext == ".nprefab")
                                 {
-                                    editorContext->GetScene()->InstantiatePrefab(path, nullptr);
+                                    editorContext->GetScene()->InstantiatePrefab(path);
                                 }
                                 else
                                 {
@@ -240,8 +240,8 @@ void SceneViewport::HandleGizmoInput()
 
 void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportSize)
 {
-    GameObject* selected = editorContext->GetScene()->selectedGameObject;
-    if (!selected || !selected->HasComponent<CTransform>())
+    GameObject selected = editorContext->GetScene()->selectedGameObject;
+    if (!selected.IsValid() || !selected.HasComponent<CTransform>())
         return;
 
     Camera* cam = editorContext->GetCamera()->GetCamera();
@@ -266,7 +266,7 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
     // Get the object's transform matrix.
     // Use worldMatrix so the gizmo is placed at the correct world position even
     // when the selected object is a child of another GO.
-    CTransform& transform = selected->GetComponent<CTransform>();
+    CTransform& transform = selected.GetComponent<CTransform>();
     glm::mat4 objectMatrix = transform.worldMatrix;
 
     // Configure ImGuizmo for this viewport
@@ -329,9 +329,10 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
     if (ImGuizmo::IsUsing())
     {
         glm::mat4 parentInverse = glm::mat4(1.0f);
-        if (GameObject* parent = selected->GetParent())
+        GameObject parent = selected.GetParent();
+        if (parent.IsValid())
         {
-            if (CTransform* pt = parent->TryGetComponent<CTransform>())
+            if (CTransform* pt = parent.TryGetComponent<CTransform>())
                 parentInverse = glm::inverse(pt->worldMatrix);
         }
 
@@ -391,17 +392,17 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
     std::vector<GeometryRenderData> geometries;
     geometries.reserve(gameObjects.size());
 
-    for (const auto& goPtr : gameObjects)
+    for (auto go : gameObjects)
     {
-        if (!goPtr->HasComponent<CMesh>()) continue;
+        if (!go.HasComponent<CMesh>()) continue;
 
         GeometryRenderData data{};
-        data.objectUID = goPtr->GetID();
+        data.objectUID = go.GetID();
 
-        if (auto* transform = goPtr->TryGetComponent<CTransform>())
+        if (auto* transform = go.TryGetComponent<CTransform>())
             data.model = transform->worldMatrix;
 
-        if (auto* mesh = goPtr->TryGetComponent<CMesh>())
+        if (auto* mesh = go.TryGetComponent<CMesh>())
             data.geometry = mesh->mesh;
 
         geometries.emplace_back(data);
@@ -409,7 +410,7 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
 
     if (geometries.empty())
     {
-        editorContext->GetScene()->selectedGameObject = nullptr;
+        editorContext->GetScene()->selectedGameObject = {};
         return;
     }
 
@@ -429,20 +430,20 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
     // Select or deselect
     if (objectID != 0)
     {
-        GameObject* found = editorContext->GetScene()->activeScene->FindGameObjectByID(objectID);
-        if (found)
+        GameObject found = editorContext->GetScene()->activeScene->FindGameObjectByID(objectID);
+        if (found.IsValid())
         {
             editorContext->GetScene()->selectedGameObject = found;
         }
         else
         {
             // objectID didn't match any live GO — stale pick result; deselect.
-            editorContext->GetScene()->selectedGameObject = nullptr;
+            editorContext->GetScene()->selectedGameObject = {};
         }
     }
     else
     {
-        editorContext->GetScene()->selectedGameObject = nullptr;
+        editorContext->GetScene()->selectedGameObject = {};
     }
 }
 

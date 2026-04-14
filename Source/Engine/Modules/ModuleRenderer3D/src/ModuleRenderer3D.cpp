@@ -256,12 +256,13 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	if (m_renderMode == RenderMode::EDITOR)
 	{
 		std::vector<GeometryRenderData> outlinedGeometries;
-		if (sceneData.selectedObject && sceneData.selectedObject->HasComponent<CMesh>())
+		if (sceneData.selectedObject.IsValid() && sceneData.selectedObject.HasComponent<CMesh>())
 		{
 			GeometryRenderData data{};
-			if (auto* t = sceneData.selectedObject->TryGetComponent<CTransform>())
+			auto selectedCopy = sceneData.selectedObject;
+			if (auto* t = selectedCopy.TryGetComponent<CTransform>())
 				data.model = t->worldMatrix;
-			if (auto* m = sceneData.selectedObject->TryGetComponent<CMesh>())
+			if (auto* m = selectedCopy.TryGetComponent<CMesh>())
 				data.geometry = m->mesh;
 			outlinedGeometries.push_back(data);
 		}
@@ -281,10 +282,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		std::vector<BoundingBoxData> boundingBoxes;
 		const auto& gameObjects = sceneData.gameObjects;
 
-		for (const auto& goPtr : gameObjects)
+		for (auto go : gameObjects)
 		{
-			auto* meshComp = goPtr->TryGetComponent<CMesh>();
-			auto* transform = goPtr->TryGetComponent<CTransform>();
+			auto* meshComp = go.TryGetComponent<CMesh>();
+			auto* transform = go.TryGetComponent<CTransform>();
 			if (!meshComp || !meshComp->mesh || !transform)
 				continue;
 
@@ -333,7 +334,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			}
 
 			// Cache world-space AABB for frustum culling in BuildRenderPacket.
-			mMeshAABBCache[goPtr->GetID()] = { worldMin, worldMax };
+			mMeshAABBCache[go.GetID()] = { worldMin, worldMax };
 
 			// Editor-only: generate OBB and AABB overlay geometry.
 			if (m_renderMode == RenderMode::EDITOR)
@@ -364,10 +365,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 		if (sceneData.hasActiveScene)
 		{
-			for (const auto& goPtr : sceneData.gameObjects)
+			for (auto go : sceneData.gameObjects)
 			{
-				auto* cam       = goPtr->TryGetComponent<CCamera>();
-				auto* transform = goPtr->TryGetComponent<CTransform>();
+				auto* cam       = go.TryGetComponent<CCamera>();
+				auto* transform = go.TryGetComponent<CTransform>();
 				if (!cam || !transform)
 					continue;
 
@@ -421,10 +422,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		{
 			constexpr float c_markerRadius = 0.25f;
 
-			for (const auto& goPtr : sceneData.gameObjects)
+			for (auto go : sceneData.gameObjects)
 			{
-				auto* light     = goPtr->TryGetComponent<CLight>();
-				auto* transform = goPtr->TryGetComponent<CTransform>();
+				auto* light     = go.TryGetComponent<CLight>();
+				auto* transform = go.TryGetComponent<CTransform>();
 				if (!light || !transform) continue;
 				if (light->type != LightType::Point) continue;
 
@@ -437,7 +438,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 					color);
 
 				// Only for the selected light: range sphere.
-				if (sceneData.selectedObject == goPtr)
+				if (sceneData.selectedObject == go)
 				{
 					pointLightDebugs.emplace_back(
 						glm::translate(glm::mat4(1.0f), transform->position) *
@@ -633,28 +634,28 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 
 	packet->geometries.reserve(sceneData.gameObjects.size());
 
-	for (const auto& goPtr : sceneData.gameObjects)
+	for (auto go : sceneData.gameObjects)
 	{
-		if (!goPtr->HasComponent<CMesh>()) continue;
+		if (!go.HasComponent<CMesh>()) continue;
 
 		GeometryRenderData data{};
 
-		data.objectUID = goPtr->GetID();
+		data.objectUID = go.GetID();
 
-		if (auto* transform = goPtr->TryGetComponent<CTransform>())
+		if (auto* transform = go.TryGetComponent<CTransform>())
 			data.model = transform->worldMatrix;
 
-		if (auto* mesh = goPtr->TryGetComponent<CMesh>())
+		if (auto* mesh = go.TryGetComponent<CMesh>())
 			data.geometry = mesh->mesh;
 
-		if (auto* material = goPtr->TryGetComponent<CMaterial>())
+		if (auto* material = go.TryGetComponent<CMaterial>())
 			data.material = material->material;
 
 		// Frustum cull against the game camera using the cached world-space AABB.
 		// Meshes with no cached AABB (e.g. empty vertex arrays) are not culled.
 		if (hasFrustum)
 		{
-			const auto it = mMeshAABBCache.find(goPtr->GetID());
+			const auto it = mMeshAABBCache.find(go.GetID());
 			if (it != mMeshAABBCache.end() &&
 				!FrustumCulling::IsAABBVisible(frustum, it->second.first, it->second.second))
 			{
@@ -666,10 +667,10 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	}
 
 	// ── Light gathering ───────────────────────────────────────────────────────────
-	for (const auto& goPtr : sceneData.gameObjects)
+	for (auto go : sceneData.gameObjects)
 	{
-		auto* light     = goPtr->TryGetComponent<CLight>();
-		auto* transform = goPtr->TryGetComponent<CTransform>();
+		auto* light     = go.TryGetComponent<CLight>();
+		auto* transform = go.TryGetComponent<CTransform>();
 		if (!light || !transform) continue;
 
 		if (light->type == LightType::Directional)
@@ -700,7 +701,7 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 			{
 				NOUS_WARN_C(CURRENT_CHANNEL,
 					"Point light limit (%u) reached; light on '%s' ignored.",
-					c_maxPointLights, goPtr->GetName().c_str());
+					c_maxPointLights, go.GetName().c_str());
 			}
 		}
 	}

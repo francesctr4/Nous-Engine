@@ -30,7 +30,9 @@ void CScript::OnStart()
 {
     // Always register so the component appears in the registry and can be found
     // by PressPlay() / hot-reload regardless of simulation state.
-    ModuleScene* moduleScene = m_GameObject->GetScene()->GetModuleScene();
+    auto go = GetGameObject();
+    if (!go.IsValid() || !go.GetScene()) return;
+    ModuleScene* moduleScene = go.GetScene()->GetModuleScene();
     moduleScene->scriptManager->RegisterScriptComponent(this);
     m_registered = true;
 
@@ -62,9 +64,13 @@ void CScript::OnDestroy()
 {
     // Unregister only if we actually registered — avoids calling into the scene
     // module if OnStart() was never reached (e.g., component destroyed mid-construction).
-    if (m_registered && m_GameObject && m_GameObject->GetScene())
+    if (m_registered)
     {
-        m_GameObject->GetScene()->GetModuleScene()->scriptManager->UnregisterScriptComponent(this);
+        auto go = GetGameObject();
+        if (go.IsValid() && go.GetScene())
+        {
+            go.GetScene()->GetModuleScene()->scriptManager->UnregisterScriptComponent(this);
+        }
         m_registered = false;
     }
 
@@ -81,9 +87,11 @@ void CScript::AddScript(const std::string& scriptName)
 {
     m_scriptNames.push_back(scriptName);
 
-    if (!m_GameObject) return;
+    auto go = GetGameObject();
+    if (!go.IsValid()) return;
 
-    ModuleScene* moduleScene = m_GameObject->GetScene()->GetModuleScene();
+    ModuleScene* moduleScene = go.GetScene() ? go.GetScene()->GetModuleScene() : nullptr;
+    if (!moduleScene) return;
     ScriptManager* sm = moduleScene->scriptManager;
     IScript* inst = sm->CreateScriptInstance(scriptName);
     if (!inst)
@@ -92,7 +100,7 @@ void CScript::AddScript(const std::string& scriptName)
         return;
     }
 
-    inst->SetOwnerID(m_GameObject->GetID());
+    inst->SetOwnerID(go.GetID());
     m_instances.push_back(inst);
 
     // Only invoke the lifecycle when the simulation is live; otherwise the
@@ -102,12 +110,12 @@ void CScript::AddScript(const std::string& scriptName)
         inst->Awake();
         inst->Start();
         NOUS_INFO("[CScript] Added and started script '%s' on '%s'",
-                  scriptName.c_str(), m_GameObject->GetName().c_str());
+                  scriptName.c_str(), go.GetName().c_str());
     }
     else
     {
         NOUS_INFO("[CScript] Added script '%s' on '%s' (will start on Play)",
-                  scriptName.c_str(), m_GameObject->GetName().c_str());
+                  scriptName.c_str(), go.GetName().c_str());
     }
 }
 
@@ -148,8 +156,11 @@ void CScript::RecreateInstances()
 
     // Only re-enter the lifecycle when the simulation is live; in edit mode
     // we just want the fresh instances available for Inspector editing.
-    if (!m_GameObject || m_GameObject->GetScene()->GetModuleScene()->IsStopped())
-        return;
+    {
+        auto go = GetGameObject();
+        if (!go.IsValid() || !go.GetScene() || go.GetScene()->GetModuleScene()->IsStopped())
+            return;
+    }
 
     StartInstances();
 }
@@ -177,22 +188,24 @@ void CScript::CreateInstances()
 {
     DestroyInstances();
 
-    if (!m_GameObject || !m_GameObject->GetScene() || !m_GameObject->GetScene()->GetModuleScene()) return;
-    ScriptManager* sm = m_GameObject->GetScene()->GetModuleScene()->scriptManager;
+    auto go = GetGameObject();
+    if (!go.IsValid() || !go.GetScene() || !go.GetScene()->GetModuleScene()) return;
+    ScriptManager* sm = go.GetScene()->GetModuleScene()->scriptManager;
     if (!sm) return;
+
+    const uint32_t ownerID  = go.GetID();
+    const std::string goName = go.GetName();
 
     for (const auto& name : m_scriptNames)
     {
         IScript* inst = sm->CreateScriptInstance(name);
         if (inst)
         {
-            if (m_GameObject)
-                inst->SetOwnerID(m_GameObject->GetID());
+            inst->SetOwnerID(ownerID);
 
             m_instances.push_back(inst);
             NOUS_INFO("[CScript] Created instance of '%s' on '%s'",
-                      name.c_str(),
-                      m_GameObject ? m_GameObject->GetName().c_str() : "unknown");
+                      name.c_str(), goName.c_str());
         }
         else
         {
@@ -206,9 +219,22 @@ void CScript::CreateInstances()
 
 void CScript::SaveProperties()
 {
+    NOUS_DEBUG("[CScript::SaveProperties] this=%p owner=%u instances=%zu names=%zu",
+               static_cast<const void*>(this),
+               GetGameObject().IsValid() ? GetGameObject().GetID() : 0u,
+               m_instances.size(), m_scriptNames.size());
+
+    if (m_instances.size() != m_scriptNames.size())
+    {
+        NOUS_ERROR("[CScript::SaveProperties] size mismatch — skipping to avoid crash");
+        return;
+    }
+
     for (size_t i = 0; i < m_instances.size(); ++i)
     {
         IScript* inst = m_instances[i];
+        NOUS_DEBUG("[CScript::SaveProperties]   [%zu] inst=%p name='%s'",
+                   i, static_cast<const void*>(inst), m_scriptNames[i].c_str());
         if (!inst) continue;
 
         const std::string& scriptName = m_scriptNames[i];
@@ -342,9 +368,14 @@ void CScript::Deserialize(JSON_Object* obj)
         }
     }
 
-    // Property values
+    // Property values — load BEFORE CreateInstances() so ApplyProperties() can restore fields.
     JSON_Object* propsObj = json_object_get_object(obj, "properties");
-    if (!propsObj) return;
+    if (!propsObj) {
+        // No saved properties — still recreate instances with the script names we loaded.
+        if (m_registered && !m_scriptNames.empty())
+            CreateInstances();
+        return;
+    }
 
     for (size_t si = 0; si < json_object_get_count(propsObj); ++si)
     {
@@ -374,4 +405,20 @@ void CScript::Deserialize(JSON_Object* obj)
             propMap[propName] = saved;
         }
     }
+
+    // Recreate instances now that both script names and saved properties are loaded.
+    // OnStart() already ran (m_registered=true) but called CreateInstances() against an
+    // empty m_scriptNames; this call creates the real instances and ApplyProperties()
+    // restores all SCRIPT_FIELD values (including SCRIPT_GAMEOBJECT references).
+    if (m_registered && !m_scriptNames.empty())
+        CreateInstances();
+
+    NOUS_DEBUG("[CScript::Deserialize] this=%p owner=%u instances=%zu names=%zu",
+               static_cast<const void*>(this),
+               GetGameObject().IsValid() ? GetGameObject().GetID() : 0u,
+               m_instances.size(), m_scriptNames.size());
+    for (size_t i = 0; i < m_instances.size(); ++i)
+        NOUS_DEBUG("[CScript::Deserialize]   [%zu] inst=%p name='%s'",
+                   i, static_cast<const void*>(m_instances[i]),
+                   (i < m_scriptNames.size() ? m_scriptNames[i].c_str() : "?"));
 }

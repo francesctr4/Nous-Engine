@@ -1,4 +1,5 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include <vector>
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
@@ -66,7 +67,7 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_Job
 
 ModuleScene::~ModuleScene()
 {
-	selectedGameObject = nullptr;
+	selectedGameObject = {};
 	NOUS_DELETE(gameCamera, MemoryTag::CAMERA);
 	NOUS_DELETE(activeScene, MemoryTag::SCENE);
 	NOUS_DELETE(scriptManager, MemoryTag::SCRIPTING_SYSTEM);
@@ -157,7 +158,7 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 	m_renderData.gameCamera     = gameCamera;
 	m_renderData.selectedObject = selectedGameObject;
 	if (activeScene)
-		m_renderData.gameObjects = activeScene->GetGameObjectsSnapshot();
+		m_renderData.gameObjects = activeScene->GetGameObjectsSnapshot(); // returns std::vector<GameObject>
 
 	return UpdateStatus::CONTINUE;
 }
@@ -190,9 +191,9 @@ void ModuleScene::OnEvent(const Event& event)
 			// Also update any CCamera components so the frustum visualization stays correct.
 			if (activeScene)
 			{
-				for (const auto gos = activeScene->GetGameObjectsSnapshot(); const auto& go : gos)
+				for (auto gos = activeScene->GetGameObjectsSnapshot(); auto go : gos)
 				{
-					if (auto* cam = go->TryGetComponent<CCamera>())
+					if (auto* cam = go.TryGetComponent<CCamera>())
 						cam->aspectRatio = newAspect;
 				}
 			}
@@ -386,14 +387,14 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 	);
 }
 
-GameObject* ModuleScene::InstantiatePrefab(const std::string& path, GameObject* parentGO) const
+GameObject ModuleScene::InstantiatePrefab(const std::string& path, GameObject parent) const
 {
-	return PrefabManager::InstantiatePrefab(path, activeScene, parentGO);
+	return PrefabManager::InstantiatePrefab(path, activeScene, parent);
 }
 
 void ModuleScene::ClearScene()
 {
-    selectedGameObject = nullptr;
+    selectedGameObject = {};
     activeScene->Clear();
 }
 
@@ -465,7 +466,7 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
 
     // 4. Root GO — named after the file, no mesh of its own.
     const std::string modelName = std::filesystem::path(assetsPath).filename().string();
-    GameObject* rootGO = activeScene->CreateGameObjectDetached(modelName);
+    GameObject rootGO = activeScene->CreateGameObjectDetached(modelName);
 
     // 5. One child GO per submesh — hierarchy construction uses preloaded resources.
     for (int32_t i = 0; i < submeshCount; ++i)
@@ -481,10 +482,10 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
         }
 
         // Create child GO attached to root.
-        GameObject* childGO = activeScene->CreateGameObjectDetached(sub.name, rootGO);
+        GameObject childGO = activeScene->CreateGameObjectDetached(sub.name, &rootGO);
 
         // Apply the node's accumulated world transform as the child's local transform.
-        if (auto* t = childGO->TryGetComponent<CTransform>())
+        if (auto* t = childGO.TryGetComponent<CTransform>())
         {
             glm::vec3 pos, scale, skew;
             glm::vec4 persp;
@@ -499,12 +500,12 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
         }
 
         // Mesh component — references the individual submesh resource.
-        auto& meshComp      = childGO->AddComponent<CMesh>();
+        auto& meshComp      = childGO.AddComponent<CMesh>();
         meshComp.mesh        = meshResource;
         meshComp.submeshIndex = i;
 
         // Default material — user can reassign via Inspector.
-        auto& matComp    = childGO->AddComponent<CMaterial>();
+        auto& matComp    = childGO.AddComponent<CMaterial>();
         matComp.material = mModuleResourceManager->GetDefaultMaterial();
 
         activeScene->RegisterGameObject(childGO);
@@ -523,9 +524,9 @@ void ModuleScene::EnsureMainCamera() const
         return;
 
     // Check whether the loaded scene already has a main camera.
-    for (const auto gameObjects = activeScene->GetGameObjectsSnapshot(); const auto& go : gameObjects)
+    for (auto go : activeScene->GetGameObjectsSnapshot())
     {
-        if (const auto* cam = go->TryGetComponent<CCamera>())
+        if (const auto* cam = go.TryGetComponent<CCamera>())
         {
             if (cam->isMainCamera)
                 return; // Found one — nothing to do.
@@ -535,10 +536,10 @@ void ModuleScene::EnsureMainCamera() const
     // No main camera found. Create a default one that mirrors the legacy gameCamera.
     NOUS_INFO("No main CCamera found in scene — creating default 'Main Camera' GameObject.");
 
-    GameObject* cameraGO = activeScene->CreateGameObject("Main Camera", nullptr);
+    GameObject cameraGO = activeScene->CreateGameObject("Main Camera", nullptr);
 
     // Position from the legacy orphan Camera so the view doesn't jump.
-    if (auto* t = cameraGO->TryGetComponent<CTransform>())
+    if (auto* t = cameraGO.TryGetComponent<CTransform>())
     {
         t->SetPosition(gameCamera->GetPos());
         // Derive orientation from the legacy camera's front/up vectors.
@@ -551,7 +552,7 @@ void ModuleScene::EnsureMainCamera() const
     }
 
     // Mirror FOV and clip planes from the legacy camera.
-    auto& cam        = cameraGO->AddComponent<CCamera>();
+    auto& cam        = cameraGO.AddComponent<CCamera>();
     cam.isMainCamera = true;
     cam.fov          = gameCamera->GetVerticalFOV();   // degrees
     cam.nearPlane    = gameCamera->GetNearPlane();
@@ -565,12 +566,12 @@ void ModuleScene::RefreshPrefabInstances() const
 
     // Phase 1: collect prefab roots from a snapshot.
     // We must NOT call ReloadPrefabInstance while iterating — reload destroys
-    // children that are also in the snapshot, leaving dangling pointers.
-    NOUS_Vector<GameObject*> prefabRoots(MemoryTag::SCENE);
+    // children that are also in the snapshot, leaving dangling handles.
+    std::vector<GameObject> prefabRoots;
     {
-	    for (const auto snapshot = activeScene->GetGameObjectsSnapshot(); auto* go : snapshot)
+        for (auto go : activeScene->GetGameObjectsSnapshot())
         {
-            if (go->HasComponent<CPrefab>())
+            if (go.HasComponent<CPrefab>())
                 prefabRoots.push_back(go);
         }
     }
@@ -584,7 +585,7 @@ void ModuleScene::RefreshPrefabInstances() const
     NOUS_INFO("[Scene] RefreshPrefabInstances: refreshing %zu prefab instance(s).", prefabRoots.size());
 
     // Phase 2: reload each root now that the snapshot is discarded.
-    for (auto* root : prefabRoots)
+    for (auto root : prefabRoots)
         PrefabManager::ReloadPrefabInstance(root, activeScene);
 
     NOUS_INFO("[Scene] RefreshPrefabInstances: done.");

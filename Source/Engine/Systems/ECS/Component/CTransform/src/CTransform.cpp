@@ -51,14 +51,18 @@ void CTransform::UpdateMatrix() {
 
     // If this component has a parent GO with a CTransform, chain the parent's
     // already-computed worldMatrix so children inherit parent transforms.
-    if (m_GameObject)
     {
-        if (GameObject* parent = m_GameObject->GetParent())
+        GameObject self = GetGameObject();
+        if (self.IsValid())
         {
-            if (CTransform* pt = parent->TryGetComponent<CTransform>())
+            GameObject parent = self.GetParent();
+            if (parent.IsValid())
             {
-                worldMatrix = pt->worldMatrix * local;
-                return;
+                if (CTransform* pt = parent.TryGetComponent<CTransform>())
+                {
+                    worldMatrix = pt->worldMatrix * local;
+                    return;
+                }
             }
         }
     }

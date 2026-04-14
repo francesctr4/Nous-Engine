@@ -26,6 +26,14 @@ class CScript : public Component {
 public:
     COMPONENT_TYPE(CScript)
 
+    // CScript must be pointer-stable in the registry: ScriptManager stores raw CScript*
+    // pointers, and each CScript owns a vector of IScript* into DLL memory. EnTT's default
+    // swap-and-pop storage would move components on entity destruction, silently invalidating
+    // those pointers (observed as a crash in SaveProperties when a prefab child was destroyed
+    // and refreshed during Play→Stop→Play). Opting into in_place_delete switches CScript to
+    // tombstone-based deletion, keeping addresses stable.
+    static constexpr bool in_place_delete = true;
+
     NOUS_ENGINE_API ~CScript() override;
 
     // Component lifecycle — called by the ECS

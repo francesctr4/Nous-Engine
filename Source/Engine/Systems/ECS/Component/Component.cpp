@@ -1,46 +1,25 @@
-#include "Component.h"
+#include "Engine/Systems/ECS/Component/Component.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
-#include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
+#include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
-#include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
+#include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+GameObject Component::GetGameObject() const {
+    return GameObject(m_Entity, m_Registry);
+}
 
 Component* Component::CreateComponent(const std::string& type) {
-    if (type == "CTransform") {
-        return NOUS_NEW<CTransform>(MemoryTag::COMPONENT);
-    }
-
-    if (type == "CMesh") {
-        return NOUS_NEW<CMesh>(MemoryTag::COMPONENT);
-    }
-
-    if (type == "CMaterial") {
-        return NOUS_NEW<CMaterial>(MemoryTag::COMPONENT);
-    }
-
-    if (type == "CCamera") {
-        return NOUS_NEW<CCamera>(MemoryTag::COMPONENT);
-    }
-
-    if (type == "CLight") {
-        return NOUS_NEW<CLight>(MemoryTag::COMPONENT);
-    }
-
-    if (type == "CPrefab") {
-        return NOUS_NEW<CPrefab>(MemoryTag::COMPONENT);
-    }
-
-    if (type == "CScript") {
-        return NOUS_NEW<CScript>(MemoryTag::COMPONENT);
-    }
-
-    NOUS_WARN("[%s] Unable to create component. "
-              "Unknown component type: %s.", type.c_str());
-
+    if (type == "CTransform") return new CTransform();
+    if (type == "CMesh")      return new CMesh();
+    if (type == "CMaterial")  return new CMaterial();
+    if (type == "CCamera")    return new CCamera();
+    if (type == "CLight")     return new CLight();
+    if (type == "CScript")    return new CScript();
+    if (type == "CPrefab")    return new CPrefab();
     return nullptr;
 }
