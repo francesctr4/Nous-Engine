@@ -10,6 +10,7 @@ find_package(glm REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(unofficial-shaderc CONFIG REQUIRED)
 find_package(unofficial-spirv-reflect CONFIG REQUIRED)
+find_package(EnTT CONFIG REQUIRED)
 
 # ==============================
 # Engine Modules

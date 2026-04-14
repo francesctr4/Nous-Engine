@@ -22,4 +22,5 @@ target_compile_definitions(ECS PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(ECS PUBLIC
         glm::glm
+        EnTT::EnTT
 )
