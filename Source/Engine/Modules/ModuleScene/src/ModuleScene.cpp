@@ -157,7 +157,12 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 
 	// Dispatch LateUpdate only when the simulation actually ticked this frame.
 	if (m_simulationState == SimulationState::PLAYING || m_didStepThisFrame)
+	{
+#ifdef _PROFILING
+		ZoneScopedN("DispatchLateUpdate");
+#endif
 		scriptManager->DispatchLateUpdate(TimeManager::simulationDeltaTime);
+	}
 
 	// Propagate parent transforms top-down before the renderer reads world matrices.
 	if (activeScene)

@@ -105,9 +105,24 @@ void Scene::DestroyGameObject(GameObject go) {
 // ── Update ────────────────────────────────────────────────────────────────────
 
 void Scene::Update(float deltaTime) {
-    m_Registry.view<CScript>().each([deltaTime](CScript& s) { s.OnUpdate(deltaTime); });
-    m_Registry.view<CCamera>().each([deltaTime](CCamera& c) { c.OnUpdate(deltaTime); });
-    m_Registry.view<CLight>().each ([deltaTime](CLight&  l) { l.OnUpdate(deltaTime); });
+    {
+#ifdef _PROFILING
+        ZoneScopedN("CScript::OnUpdate");
+#endif
+        m_Registry.view<CScript>().each([deltaTime](CScript& s) { s.OnUpdate(deltaTime); });
+    }
+    {
+#ifdef _PROFILING
+        ZoneScopedN("CCamera::OnUpdate");
+#endif
+        m_Registry.view<CCamera>().each([deltaTime](CCamera& c) { c.OnUpdate(deltaTime); });
+    }
+    {
+#ifdef _PROFILING
+        ZoneScopedN("CLight::OnUpdate");
+#endif
+        m_Registry.view<CLight>().each([deltaTime](CLight& l) { l.OnUpdate(deltaTime); });
+    }
 }
 
 // ── World Matrix Update ───────────────────────────────────────────────────────

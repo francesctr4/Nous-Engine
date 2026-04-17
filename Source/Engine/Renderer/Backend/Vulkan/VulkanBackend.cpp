@@ -1193,6 +1193,9 @@ bool VulkanBackend::UpdateGlobalWorldState(
         const RenderpassType renderpassID,
         const GlobalUBO& globalUBO)
 {
+#ifdef _PROFILING
+    ZoneScopedN("UpdateGlobalWorldState");
+#endif
     const ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
         ? vkContext->builtInGameShader
         : vkContext->builtInMaterialShader;
@@ -1254,6 +1257,9 @@ static void WriteUniformValueToBuffer(uint8_t* dst, const UniformValue& uv)
 
 bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData)
 {
+#ifdef _PROFILING
+    ZoneScopedN("DrawGeometry");
+#endif
     if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID)
         return true;
 
@@ -2458,6 +2464,9 @@ VulkanContext* VulkanBackend::GetVulkanContext()
 bool VulkanBackend::DrawGrid(const RenderpassType renderpassID,
                              const glm::mat4& projection, const glm::mat4& view)
 {
+#ifdef _PROFILING
+    ZoneScopedN("DrawGrid");
+#endif
     // Grid is scene-viewport only.
     if (renderpassID != RenderpassType::SCENE)
         return true;
@@ -2505,6 +2514,9 @@ bool VulkanBackend::DrawBackground(const RenderpassType renderpassID,
                                     const glm::mat4& projection,
                                     const glm::mat4& view)
 {
+#ifdef _PROFILING
+    ZoneScopedN("DrawBackground");
+#endif
     // Select the shader for this renderpass.
     const ResourceShader* rShader = nullptr;
     if (renderpassID == RenderpassType::SCENE)
@@ -2584,6 +2596,9 @@ bool VulkanBackend::DrawBoundingBoxes(const RenderpassType renderpassID,
                                        const glm::mat4& view,
                                        const std::vector<BoundingBoxData>& boxes)
 {
+#ifdef _PROFILING
+    ZoneScopedN("DrawBoundingBoxes");
+#endif
     // Bounding boxes are scene-viewport only.
     if (renderpassID != RenderpassType::SCENE)
         return true;
@@ -2641,6 +2656,9 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
                                         const std::vector<CameraFrustumData>& frustums,
                                         bool globalAlreadySet)
 {
+#ifdef _PROFILING
+    ZoneScopedN("DrawCameraFrustums");
+#endif
     // Frustum visualization is scene-viewport only.
     if (renderpassID != RenderpassType::SCENE)
         return true;
@@ -2744,6 +2762,9 @@ bool VulkanBackend::DrawPointLightDebugs(const RenderpassType renderpassID,
                                           const std::vector<BoundingBoxData>& lightDebugs,
                                           const bool globalAlreadySet)
 {
+#ifdef _PROFILING
+    ZoneScopedN("DrawPointLightDebugs");
+#endif
     // Point light debug spheres are scene-viewport only.
     if (renderpassID != RenderpassType::SCENE)
         return true;
@@ -2808,6 +2829,9 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
                                             const std::vector<GeometryRenderData>& outlinedGeometries,
                                             const OutlineSettings& settings)
 {
+#ifdef _PROFILING
+    ZoneScopedN("DrawOutlinedGeometries");
+#endif
     // Outline effect is scene-viewport only.
     if (renderpassID != RenderpassType::SCENE)
         return true;

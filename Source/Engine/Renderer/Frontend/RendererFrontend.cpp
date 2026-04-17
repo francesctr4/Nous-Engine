@@ -294,6 +294,9 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 		constexpr auto uiRenderpass = RenderpassType::UI;
 		success &= ExecuteRenderpass(uiRenderpass, [&]
 		{
+#ifdef _PROFILING
+			ZoneScopedN("DrawEditor (ImGui)");
+#endif
 			DrawEditor();
 		});
 	}

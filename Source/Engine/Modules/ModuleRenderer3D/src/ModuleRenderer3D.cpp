@@ -188,9 +188,17 @@ bool ModuleRenderer3D::Start()
 
 UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 {
-	// Apply GPU swaps for compile jobs that completed since last frame (async path).
-	// Must run before FlushPendingReloads and before DrawFrame — no renderpass open here.
-	mRendererFrontend->FlushCompletedReloads();
+#ifdef _PROFILING
+	ZoneScopedN("ModuleRenderer3D::PreUpdate");
+#endif
+	{
+#ifdef _PROFILING
+		ZoneScopedN("FlushCompletedReloads");
+#endif
+		// Apply GPU swaps for compile jobs that completed since last frame (async path).
+		// Must run before FlushPendingReloads and before DrawFrame — no renderpass open here.
+		mRendererFrontend->FlushCompletedReloads();
+	}
 
 	// Upload CPU_READY resources before processing reslots so that a newly-imported
 	// custom shader is GPU_READY when FlushPendingReslots calls CreateMaterial.
@@ -213,25 +221,45 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 	// Process queued material shader changes (Inspector reslots). Must run after
 	// FlushCompletedReloads (hot-reload GPU swaps) and TakePendingUploads (first-load
 	// shader uploads) so the target shader is always GPU-ready when CreateMaterial runs.
-	mRendererFrontend->FlushPendingReslots();
+	{
+#ifdef _PROFILING
+		ZoneScopedN("FlushPendingReslots");
+#endif
+		mRendererFrontend->FlushPendingReslots();
+	}
 
 	// Dispatch compile jobs for any queued/deferred reload requests.
 	// Returns immediately — jobs run on worker threads.
-	mRendererFrontend->FlushPendingReloads();
+	{
+#ifdef _PROFILING
+		ZoneScopedN("FlushPendingReloads");
+#endif
+		mRendererFrontend->FlushPendingReloads();
+	}
 
 	// Poll for shader file changes before any GPU work this frame (EDITOR only).
 	// Safe here: previous frame's EndFrame has already been submitted; DrawFrame
 	// is called later in PostUpdate, so no renderpass is open at this point.
 	if (m_renderMode == RenderMode::EDITOR)
+	{
+#ifdef _PROFILING
+		ZoneScopedN("ShaderWatcher::Poll");
+#endif
 		m_shaderWatcher.Poll();
+	}
 
 	// Release GPU handles for retired resources, then hand back for CPU eviction.
-	for (auto& [type, resource] : mModuleResourceManager->TakePendingReleases())
 	{
-		if (resource->GetReferenceCount() > 0) continue; // re-acquired since queuing; skip
-		importer->Release(type, resource, mRendererFrontend);
-		resource->SetState(ResourceState::CPU_READY);
-		mModuleResourceManager->EvictResource(type, resource);
+#ifdef _PROFILING
+		ZoneScopedN("GPU Resource Release");
+#endif
+		for (auto& [type, resource] : mModuleResourceManager->TakePendingReleases())
+		{
+			if (resource->GetReferenceCount() > 0) continue; // re-acquired since queuing; skip
+			importer->Release(type, resource, mRendererFrontend);
+			resource->SetState(ResourceState::CPU_READY);
+			mModuleResourceManager->EvictResource(type, resource);
+		}
 	}
 
 	return UpdateStatus::CONTINUE;
