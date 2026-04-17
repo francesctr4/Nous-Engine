@@ -122,6 +122,18 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
 
     mesh->vertices = sub.vertices;
     mesh->indices.assign(sub.indices.begin(), sub.indices.end());
+
+    if (!mesh->vertices.empty())
+    {
+        mesh->localAABBMin = mesh->vertices[0].position;
+        mesh->localAABBMax = mesh->vertices[0].position;
+        for (const auto& v : mesh->vertices)
+        {
+            mesh->localAABBMin = glm::min(mesh->localAABBMin, v.position);
+            mesh->localAABBMax = glm::max(mesh->localAABBMax, v.position);
+        }
+    }
+
     mesh->SetState(ResourceState::CPU_READY);
 
     uint32 uid;

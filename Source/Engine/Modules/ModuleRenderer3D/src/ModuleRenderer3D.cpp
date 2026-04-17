@@ -289,7 +289,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			for (auto [entity, meshComp, transform] : view.each())
 			{
 				if (!meshComp.mesh) continue;
-				if (meshComp.mesh->vertices.empty()) continue;
+				if (meshComp.mesh->internalID == INVALID_ID) continue;
 
 				const glm::vec3 localMin     = meshComp.mesh->localAABBMin;
 				const glm::vec3 localMax     = meshComp.mesh->localAABBMax;
