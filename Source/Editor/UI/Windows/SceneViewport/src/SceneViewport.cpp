@@ -128,6 +128,18 @@ void SceneViewport::Draw()
                 const bool gizmoVisible = editorContext->GetScene()->selectedGameObject.IsValid() &&
                                           editorContext->GetScene()->selectedGameObject.HasComponent<CTransform>();
                 const bool gizmoBlocking = gizmoVisible && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
+
+                // Keep the camera orbit target in sync with the selected object's world position.
+                ModuleCamera3D* cam3D = editorContext->GetCamera();
+                if (gizmoVisible)
+                {
+                    const CTransform& t = editorContext->GetScene()->selectedGameObject.GetComponent<CTransform>();
+                    cam3D->SetOrbitTarget(glm::vec3(t.worldMatrix[3]));
+                }
+                else
+                {
+                    cam3D->ClearOrbitTarget();
+                }
                 s_GizmoWasActive = gizmoBlocking;
 
                 // Handle mouse picking (click to select/deselect objects)
@@ -231,6 +243,20 @@ void SceneViewport::HandleGizmoInput()
         m_GizmoSpace = (m_GizmoSpace == GizmoSpace::LOCAL)
             ? GizmoSpace::WORLD
             : GizmoSpace::LOCAL;
+    }
+
+    // Frame selected object (F) — move camera to look at the selected object
+    if (editorContext->GetInput()->GetKey(SDL_SCANCODE_F) == KeyState::DOWN)
+    {
+        GameObject selected = editorContext->GetScene()->selectedGameObject;
+        if (selected.IsValid() && selected.HasComponent<CTransform>())
+        {
+            const CTransform& t = selected.GetComponent<CTransform>();
+            const glm::vec3 worldPos = glm::vec3(t.worldMatrix[3]);
+            const float maxScale = glm::max(t.scale.x, glm::max(t.scale.y, t.scale.z));
+            const float distance = glm::max(maxScale * 500.0f, 500.0f);
+            editorContext->GetCamera()->FrameTarget(worldPos, distance);
+        }
     }
 
     // Toggle snapping with Left Ctrl

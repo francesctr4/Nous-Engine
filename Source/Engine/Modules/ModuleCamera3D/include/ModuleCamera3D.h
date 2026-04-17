@@ -29,17 +29,24 @@ public:
 
 	NOUS_ENGINE_API Camera* GetCamera();
 
+	void SetOrbitTarget(const glm::vec3& worldPos) { m_orbitTarget = worldPos; m_hasOrbitTarget = true; }
+	void ClearOrbitTarget()                         { m_hasOrbitTarget = false; }
+	NOUS_ENGINE_API void FrameTarget(const glm::vec3& target, float distance = 5.0f);
+
 	bool sceneViewportHovered;
 
 private:
 
 	void HandleCameraMovement(glm::vec3& newPos, const float& speed);
-	void HandleCameraRotation(const float& sensitivity, const float& dt);
+	void HandleCameraRotation(const float& sensitivity);
 	void HandleCameraZoom(glm::vec3& newPos, const float& speed);
-	void HandleCameraPan(glm::vec3& newPos, const float& speed, const float& sensitivity, const float& dt);
-	void HandleCameraOrbit(const float& sensitivity, const float& dt, const glm::vec3& lookAt);
+	void HandleCameraPan(glm::vec3& newPos, const float& sensitivity);
+	void HandleCameraOrbit(const float& sensitivity, const glm::vec3& lookAt);
 
 	Camera* camera;
+
+	glm::vec3 m_orbitTarget  {};
+	bool      m_hasOrbitTarget = false;
 
 	// Dependency Injection
 	IInputReader* mModuleInput;
