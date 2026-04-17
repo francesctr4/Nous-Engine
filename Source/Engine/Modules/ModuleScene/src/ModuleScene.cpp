@@ -28,6 +28,10 @@
 
 #include <future>
 
+#ifdef _PROFILING
+#include <tracy/Tracy.hpp>
+#endif
+
 #include "Engine/Core/TimeManager/TimeManager.h"
 
 #include <SDL3/SDL.h>
@@ -110,6 +114,9 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 
 UpdateStatus ModuleScene::Update(const float dt)
 {
+#ifdef _PROFILING
+    ZoneScopedN("ModuleScene::Update");
+#endif
 	// Compute simulation dt — non-zero only when simulation is ticking.
 	m_didStepThisFrame = false;
 	float simDt = 0.0f;
@@ -144,13 +151,22 @@ UpdateStatus ModuleScene::Update(const float dt)
 
 UpdateStatus ModuleScene::PostUpdate(float dt)
 {
+#ifdef _PROFILING
+    ZoneScopedN("ModuleScene::PostUpdate");
+#endif
+
 	// Dispatch LateUpdate only when the simulation actually ticked this frame.
 	if (m_simulationState == SimulationState::PLAYING || m_didStepThisFrame)
 		scriptManager->DispatchLateUpdate(TimeManager::simulationDeltaTime);
 
 	// Propagate parent transforms top-down before the renderer reads world matrices.
 	if (activeScene)
+	{
+#ifdef _PROFILING
+        ZoneScopedN("UpdateWorldMatrices");
+#endif
 		activeScene->UpdateWorldMatrices();
+	}
 
 	// Build per-frame render snapshot consumed by ModuleRenderer3D::PostUpdate.
 	m_renderData                = {};

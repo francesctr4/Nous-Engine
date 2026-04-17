@@ -257,29 +257,44 @@ UpdateStatus Application::Update()
 
     // -------------- PreUpdate --------------
 
-    for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
     {
-        if (listModules[i] != nullptr)
-            ret = listModules[i]->PreUpdate(dt);
+#ifdef _PROFILING
+        ZoneScopedN("PreUpdate");
+#endif
+        for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
+        {
+            if (listModules[i] != nullptr)
+                ret = listModules[i]->PreUpdate(dt);
+        }
     }
 
     // -------------- Update --------------
 
-    for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
     {
-        if (listModules[i] != nullptr)
-            ret = listModules[i]->Update(dt);
-    }
+#ifdef _PROFILING
+        ZoneScopedN("Update");
+#endif
+        for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
+        {
+            if (listModules[i] != nullptr)
+                ret = listModules[i]->Update(dt);
+        }
 
-    if (ret == UpdateStatus::CONTINUE)
-        HandleDebugKeys(input, scene, jobSystem);
+        if (ret == UpdateStatus::CONTINUE)
+            HandleDebugKeys(input, scene, jobSystem);
+    }
 
     // -------------- PostUpdate --------------
 
-    for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
     {
-        if (listModules[i] != nullptr)
-            ret = listModules[i]->PostUpdate(dt);
+#ifdef _PROFILING
+        ZoneScopedN("PostUpdate");
+#endif
+        for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
+        {
+            if (listModules[i] != nullptr)
+                ret = listModules[i]->PostUpdate(dt);
+        }
     }
 
     // -------------- FinishUpdate --------------
