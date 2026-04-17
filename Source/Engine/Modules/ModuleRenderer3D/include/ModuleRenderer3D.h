@@ -118,7 +118,8 @@ private:
 
 	// Watches Assets/Shaders/*.glsl for changes and triggers hot reload.
 	// Populated in Start() (EDITOR mode only); Poll() called in PreUpdate().
-	FileWatcher m_shaderWatcher;
+	FileWatcher  m_shaderWatcher;
+	uint32_t     m_shaderWatchFrameCounter = 0;
 };
 
 #endif // NOUS_ENGINE_MODULE_RENDERER3D_H

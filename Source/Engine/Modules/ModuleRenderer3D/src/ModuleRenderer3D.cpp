@@ -237,10 +237,9 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 		mRendererFrontend->FlushPendingReloads();
 	}
 
-	// Poll for shader file changes before any GPU work this frame (EDITOR only).
-	// Safe here: previous frame's EndFrame has already been submitted; DrawFrame
-	// is called later in PostUpdate, so no renderpass is open at this point.
-	if (m_renderMode == RenderMode::EDITOR)
+	// Poll for shader file changes — throttled to every 30 frames (~2x/sec at 60fps)
+	// to avoid 543μs of filesystem stat overhead per frame.
+	if (m_renderMode == RenderMode::EDITOR && (++m_shaderWatchFrameCounter % 30 == 0))
 	{
 #ifdef _PROFILING
 		ZoneScopedN("ShaderWatcher::Poll");
@@ -364,8 +363,8 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 					worldMax = cached.second;
 				}
 
-				// Editor-only: generate OBB and AABB overlay geometry (cheap, always run).
-				if (m_renderMode == RenderMode::EDITOR)
+				// Editor-only: generate OBB and AABB overlay geometry.
+				if (m_renderMode == RenderMode::EDITOR && mRendererFrontend->showBoundingBoxes)
 				{
 					const glm::vec3 localCenter  = (localMin + localMax) * 0.5f;
 					const glm::vec3 localExtents = localMax - localMin;

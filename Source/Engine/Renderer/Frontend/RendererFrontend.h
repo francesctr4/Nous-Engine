@@ -152,6 +152,10 @@ public:
 	 */
 	NOUS_ENGINE_API void SetBoundingBoxes(const std::vector<BoundingBoxData>& boxes);
 
+	// Toggle AABB/OBB wireframe overlay. When false, skips both CPU overlay
+	// computation in ModuleRenderer3D and the GPU draw calls entirely.
+	bool showBoundingBoxes = true;
+
 	// ---------------------------------------------------------------------
 	// Camera Frustums
 	// ---------------------------------------------------------------------

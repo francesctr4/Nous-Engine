@@ -226,6 +226,12 @@ void MainMenuBar::Draw()
 				editorContext->GetRendererFrontend()->ReloadAllShaders();
 			}
 
+			ImGui::Separator();
+
+			bool showBB = editorContext->GetRendererFrontend()->showBoundingBoxes;
+			if (ImGui::MenuItem("Bounding Boxes", nullptr, showBB))
+				editorContext->GetRendererFrontend()->showBoundingBoxes = !showBB;
+
 			ImGui::EndMenu();
 		}
 
