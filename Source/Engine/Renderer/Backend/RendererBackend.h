@@ -54,6 +54,14 @@ public:
 	// ─────────────────────────────── Drawing ─────────────────────────────────
 	[[nodiscard]] bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData);
 
+    void UploadInstanceMatrices(uint32_t frameIndex,
+                                const glm::mat4* matrices,
+                                uint32_t count,
+                                uint32_t instanceOffset);
+
+    [[nodiscard]] bool DrawGeometryBatched(RenderpassType renderpassID,
+                                           const InstancedBatch& batch);
+
 	// ─────────────────────────────── Resources ───────────────────────────────
 	[[nodiscard]] bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture);
 	void DestroyTexture(ResourceTexture* texture);

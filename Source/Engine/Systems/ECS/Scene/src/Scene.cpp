@@ -105,6 +105,9 @@ void Scene::DestroyGameObject(GameObject go) {
 // ── Update ────────────────────────────────────────────────────────────────────
 
 void Scene::Update(float deltaTime) {
+#ifdef _PROFILING
+    ZoneScopedN("Scene::Update");
+#endif
     {
 #ifdef _PROFILING
         ZoneScopedN("CScript::OnUpdate");

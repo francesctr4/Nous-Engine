@@ -33,15 +33,15 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime
 } globalUBO;
 
-layout(push_constant) uniform PushConstants
+layout(set = 0, binding = 1) readonly buffer InstanceData
 {
-    // Only guaranteed a total of 128 bytes.
-    mat4 model; // 64 bytes
-} pushConstants;
+    mat4 models[];
+} instanceData;
 
 void main()
 {
-    vec4 worldPos   = pushConstants.model * vec4(inPosition, 1.0);
+    mat4 model      = instanceData.models[gl_InstanceIndex];
+    vec4 worldPos   = model * vec4(inPosition, 1.0);
     outDTO.outColor = inColor;
     outDTO.texCoord = inTexCoord;
     outDTO.fragPos  = worldPos.xyz;
@@ -49,9 +49,9 @@ void main()
     // Build world-space TBN.
     // The normal matrix (transpose of inverse) handles non-uniform scaling correctly.
     // Tangent is a direction vector and transforms with the model matrix directly.
-    mat3 normalMat = mat3(transpose(inverse(pushConstants.model)));
+    mat3 normalMat = mat3(transpose(inverse(model)));
     vec3 N = normalize(normalMat * inNormal);
-    vec3 T = normalize(mat3(pushConstants.model) * inTangent.xyz);
+    vec3 T = normalize(mat3(model) * inTangent.xyz);
     // Gram-Schmidt re-orthogonalization: removes any drift from non-orthogonal transforms.
     T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T) * inTangent.w; // handedness sign flips B for mirrored UVs

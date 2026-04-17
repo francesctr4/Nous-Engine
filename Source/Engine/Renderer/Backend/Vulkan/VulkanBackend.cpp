@@ -326,6 +326,29 @@ bool VulkanBackend::Initialize()
         vkContext->geometries[i].generation = INVALID_ID;
     }
 
+    // ── Instance SSBO (per-frame, triple-buffered, persistently mapped) ──────────
+    // Buffer holds 2×c_maxInstances matrices: scene pass uses indices [0, c_maxInstances),
+    // game pass uses indices [c_maxInstances, 2*c_maxInstances). This prevents the game-pass
+    // upload from overwriting scene matrices before the GPU reads them.
+    {
+        const VkDeviceSize ssboSize = 2 * c_maxInstances * sizeof(glm::mat4);
+        for (uint32_t i = 0; i < 3; ++i)
+        {
+            if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, ssboSize,
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    true, &vkContext->instanceSSBO[i]))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[Initialize] Failed to create instance SSBO %u.", i);
+                return false;
+            }
+            vkMapMemory(vkContext->device.logicalDevice,
+                        vkContext->instanceSSBO[i].memory, 0, ssboSize, 0,
+                        &vkContext->instanceSSBOMapped[i]);
+        }
+        NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Instance SSBOs created (3 × %llu bytes, scene+game split).", (unsigned long long)ssboSize);
+    }
+
     if (vkContext->renderMode == RenderMode::GAME)
     {
         // GAME mode: no editor-only vertex buffers needed.
@@ -656,6 +679,17 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->pointLightSphereVertexBuffer);
         vkContext->pointLightSphereVertexBuffer.handle = VK_NULL_HANDLE;
         vkContext->pointLightSphereVertexCount = 0;
+    }
+
+    // Destroy instance SSBOs.
+    for (uint32_t i = 0; i < 3; ++i)
+    {
+        if (vkContext->instanceSSBO[i].handle != VK_NULL_HANDLE)
+        {
+            vkUnmapMemory(vkContext->device.logicalDevice, vkContext->instanceSSBO[i].memory);
+            vkContext->instanceSSBOMapped[i] = nullptr;
+            NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->instanceSSBO[i]);
+        }
     }
 
     NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
@@ -1499,6 +1533,215 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     return true;
 }
 
+void VulkanBackend::UploadInstanceMatrices(uint32_t frameIndex,
+                                            const glm::mat4* matrices,
+                                            uint32_t count,
+                                            uint32_t instanceOffset)
+{
+    if (count == 0 || !matrices) return;
+    const uint32_t capacity  = 2 * c_maxInstances;
+    const uint32_t safeCount = (instanceOffset < capacity)
+                             ? std::min(count, capacity - instanceOffset)
+                             : 0;
+    if (safeCount == 0) return;
+    auto* base = static_cast<glm::mat4*>(vkContext->instanceSSBOMapped[frameIndex]);
+    std::memcpy(base + instanceOffset, matrices, safeCount * sizeof(glm::mat4));
+}
+
+bool VulkanBackend::DrawGeometryBatched(RenderpassType renderpassID,
+                                         const InstancedBatch& batch)
+{
+#ifdef _PROFILING
+    ZoneScopedN("DrawGeometryBatched");
+#endif
+    if (!batch.geometry || batch.geometry->internalID == INVALID_ID || batch.instanceCount == 0)
+        return true;
+
+    // The base shader owns the instance pool and global descriptor sets.
+    ResourceShader* baseShader = (renderpassID == RenderpassType::GAME)
+        ? vkContext->builtInGameShader
+        : vkContext->builtInMaterialShader;
+
+    if (!baseShader || !baseShader->internalData) return false;
+
+    // Custom shader pipeline: use material's shader if GPU-ready; otherwise fall back to base.
+    ResourceShader* drawShader = baseShader;
+    if (batch.material != nullptr &&
+        batch.material->shader != nullptr &&
+        batch.material->shader->internalData != nullptr &&
+        batch.material->shader->GetState() == ResourceState::GPU_READY)
+    {
+        drawShader = batch.material->shader;
+    }
+
+    const VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
+    auto* vsBase = down_cast<VulkanShader*>(baseShader->internalData);
+    auto* vsDraw = down_cast<VulkanShader*>(drawShader->internalData);
+    const VulkanGeometryData* bufferData = &vkContext->geometries[batch.geometry->internalID];
+
+    // Bind pipeline.
+    NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vsDraw);
+
+    // Resolve material (same fallback logic as DrawGeometry).
+    ResourceMaterial* material = batch.material;
+    if (!material || material->internalID == INVALID_ID)
+        material = vkContext->resourceManager->GetDefaultMaterial();
+
+    VulkanShader* vsInstance = vsBase;
+    if (material && material->poolOwnerShader && material->poolOwnerShader->internalData)
+        vsInstance = down_cast<VulkanShader*>(material->poolOwnerShader->internalData);
+
+    if (!material || material->internalID == INVALID_ID || !vsInstance->instancePool)
+        return true;
+
+    const uint32_t instanceID = material->internalID;
+    const uint32_t imageIndex = vkContext->imageIndex;
+
+    // Write per-instance UBO (same as DrawGeometry).
+    const ReflectedBinding* instanceUBOBinding = nullptr;
+    {
+        const auto& setIt = drawShader->reflection.descriptorSets.find(1);
+        if (setIt != drawShader->reflection.descriptorSets.end())
+        {
+            for (const auto& rb : setIt->second)
+            {
+                if (rb.type == DescriptorType::UniformBuffer && rb.binding == 0)
+                {
+                    instanceUBOBinding = &rb;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (instanceUBOBinding && instanceUBOBinding->blockSize > 0)
+    {
+        const uint32_t blockSize = instanceUBOBinding->blockSize;
+
+        constexpr uint32_t c_stackThreshold = 1024;
+        uint8_t stackBuffer[c_stackThreshold];
+        std::unique_ptr<uint8_t[]> heapBuffer;
+        uint8_t* uboBuffer = stackBuffer;
+        if (blockSize > c_stackThreshold)
+        {
+            heapBuffer = std::make_unique<uint8_t[]>(blockSize);
+            uboBuffer  = heapBuffer.get();
+        }
+
+        std::memset(uboBuffer, 0, blockSize);
+
+        for (const auto& member : instanceUBOBinding->members)
+        {
+            const uint32_t memberBytes = [&]() -> uint32_t {
+                switch (member.type)
+                {
+                    case DataType::Float: case DataType::Int: return 4;
+                    case DataType::Vec2:  case DataType::IVec2: return 8;
+                    case DataType::Vec3:  case DataType::IVec3: return 12;
+                    case DataType::Vec4:  case DataType::IVec4: return 16;
+                    default: return 0;
+                }
+            }();
+
+            if (memberBytes == 0 || member.offset + memberBytes > blockSize)
+                continue;
+
+            auto it = material->uniformValues.find(member.name);
+            if (it != material->uniformValues.end())
+                WriteUniformValueToBuffer(uboBuffer + member.offset, it->second);
+            else
+            {
+                const UniformValue fallback = UniformValue::MakeDefault(DataTypeToUniformValueType(member.type));
+                WriteUniformValueToBuffer(uboBuffer + member.offset, fallback);
+            }
+        }
+
+        auto& uboGen = vsInstance->instanceStates[instanceID].descriptorStates[0].generations[imageIndex];
+        NOUS_VulkanShader::WriteInstanceUBO(vkContext, vsInstance, imageIndex, instanceID,
+            uboBuffer, blockSize, &uboGen);
+    }
+
+    // Write sampler bindings (same as DrawGeometry).
+    {
+        const auto& setIt = drawShader->reflection.descriptorSets.find(1);
+        if (setIt != drawShader->reflection.descriptorSets.end())
+        {
+            std::vector<const ReflectedBinding*> samplers;
+            for (const auto& rb : setIt->second)
+                if (rb.type == DescriptorType::CombinedImageSampler)
+                    samplers.push_back(&rb);
+            std::ranges::sort(samplers,
+                              [](const ReflectedBinding* a, const ReflectedBinding* b){
+                                  return a->binding < b->binding; });
+
+            for (const ReflectedBinding* rb : samplers)
+            {
+                ResourceTexture* texture = nullptr;
+                if (auto texIt = material->textureMaps.find(rb->name); texIt != material->textureMaps.end())
+                    texture = texIt->second.texture;
+
+                if (!texture || texture->generation == INVALID_ID || !texture->internalData)
+                {
+                    if (const std::string& n = rb->name; n.find("diffuse") != std::string::npos ||
+                        n.find("Diffuse") != std::string::npos ||
+                        n.find("albedo")  != std::string::npos ||
+                        n.find("Albedo")  != std::string::npos)
+                        texture = vkContext->resourceManager->GetDefaultTexture();
+                    else if (n.find("normal") != std::string::npos || n.find("Normal") != std::string::npos)
+                        texture = vkContext->resourceManager->GetFlatNormalTexture();
+                    else if (n.find("emissive") != std::string::npos || n.find("Emissive") != std::string::npos)
+                        texture = vkContext->resourceManager->GetBlackTexture();
+                    else
+                        texture = vkContext->resourceManager->GetWhiteTexture();
+                }
+
+                if (texture && texture->internalData)
+                {
+                    const auto* texData = static_cast<VulkanTextureData*>(texture->internalData);
+                    auto& samplerGen = vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex];
+                    auto& samplerID  = vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].ids[imageIndex];
+                    NOUS_VulkanShader::WriteInstanceSampler(vkContext, vsInstance, imageIndex, instanceID,
+                        rb->binding, texData->image.view, texData->sampler,
+                        &samplerGen, &samplerID, texture->GetUID(), texture->generation);
+                }
+                else if (vsInstance->instanceStates[instanceID].descriptorStates[rb->binding].generations[imageIndex] == UINT32_MAX)
+                {
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Bind instance descriptor set.
+    VkPipelineLayout bindLayout = (vsInstance != vsDraw)
+                                        ? vsDraw->pipeline.pipelineLayout
+                                        : VK_NULL_HANDLE;
+    NOUS_VulkanShader::BindInstanceDescriptorSet(commandBuffer->handle, vsInstance, imageIndex, instanceID, bindLayout);
+
+    // Bind vertex + index buffers.
+    const VkDeviceSize offset = bufferData->vertexBufferOffset;
+    vkCmdBindVertexBuffers(commandBuffer->handle, 0, 1,
+        &vkContext->objectVertexBuffer.handle, &offset);
+
+    if (bufferData->indexCount > 0)
+    {
+        vkCmdBindIndexBuffer(commandBuffer->handle, vkContext->objectIndexBuffer.handle,
+            bufferData->indexBufferOffset, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(commandBuffer->handle,
+                         bufferData->indexCount,
+                         batch.instanceCount,
+                         0, 0,
+                         batch.firstInstance);
+    }
+    else
+    {
+        vkCmdDraw(commandBuffer->handle, bufferData->vertexCount,
+                  batch.instanceCount, 0, batch.firstInstance);
+    }
+
+    return true;
+}
+
 // ----------------------------------------------------------------------------------------------- //
 // TEMPORAL //
 
@@ -1857,6 +2100,53 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
 
 // ─────────────────────────────── Shaders ─────────────────────────────────
 
+// Returns true if this shader declares the per-frame instance SSBO at set=0 binding=1.
+static bool HasGlobalSSBOBinding(const ResourceShader* shader)
+{
+    auto it = shader->reflection.descriptorSets.find(0);
+    if (it == shader->reflection.descriptorSets.end()) return false;
+    for (const auto& rb : it->second)
+        if (rb.binding == 1 && rb.type == DescriptorType::StorageBuffer)
+            return true;
+    return false;
+}
+
+// Writes the per-frame instance SSBO into set=0 binding=1 of every global descriptor set owned by vs.
+// Must be called after AllocateGlobalResources (which creates globalDescriptorSets)
+// AND after the instanceSSBO buffers are created.
+static void WriteInstanceSSBODescriptor(VulkanContext* vkContext, VulkanShader* vs)
+{
+    const VkDeviceSize ssboSize = 2 * c_maxInstances * sizeof(glm::mat4);
+    const VkDevice     dev      = vkContext->device.logicalDevice;
+    const uint32_t     count    = static_cast<uint32_t>(vs->globalDescriptorSets.size());
+
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        VkDescriptorBufferInfo bufInfo{};
+        bufInfo.buffer = vkContext->instanceSSBO[i % 3].handle;
+        bufInfo.offset = 0;
+        bufInfo.range  = ssboSize;
+
+        VkWriteDescriptorSet write{};
+        write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet          = vs->globalDescriptorSets[i];
+        write.dstBinding      = 1;
+        write.dstArrayElement = 0;
+        write.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        write.descriptorCount = 1;
+        write.pBufferInfo     = &bufInfo;
+
+        vkUpdateDescriptorSets(dev, 1, &write, 0, nullptr);
+    }
+}
+
+// Convenience: checks reflection for SSBO binding then writes if present.
+static void TryWriteInstanceSSBODescriptor(VulkanContext* vkContext, ResourceShader* shader)
+{
+    if (!shader || !shader->internalData || !HasGlobalSSBOBinding(shader)) return;
+    WriteInstanceSSBODescriptor(vkContext, down_cast<VulkanShader*>(shader->internalData));
+}
+
 bool VulkanBackend::CreateShader(ResourceShader* shader)
 {
     if (!shader)
@@ -1879,6 +2169,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
             if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader))
                 return false;
             vkContext->builtInGameShader = shader;
+            TryWriteInstanceSSBODescriptor(vkContext, shader);
             NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to gameSwapchainRenderpass (GAME mode).");
         }
         else
@@ -1887,6 +2178,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
             if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader))
                 return false;
             vkContext->builtInMaterialShader = shader;
+            TryWriteInstanceSSBODescriptor(vkContext, shader);
             NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to sceneRenderpass.");
 
             auto* gameShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
@@ -1901,6 +2193,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
             else
             {
                 vkContext->builtInGameShader = gameShader;
+                TryWriteInstanceSSBODescriptor(vkContext, gameShader);
                 NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader clone assigned to gameRenderpass.");
             }
         }
@@ -2028,7 +2321,10 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     VulkanRenderpass* targetRenderpass = vkContext->renderMode == RenderMode::GAME
         ? &vkContext->gameSwapchainRenderpass
         : &vkContext->sceneRenderpass;
-    return NOUS_VulkanShader::Create(vkContext, targetRenderpass, shader);
+    if (!NOUS_VulkanShader::Create(vkContext, targetRenderpass, shader))
+        return false;
+    TryWriteInstanceSSBODescriptor(vkContext, shader);
+    return true;
 }
 
 void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
@@ -2140,6 +2436,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (GAME mode).");
                 return false;
             }
+            TryWriteInstanceSSBODescriptor(vkContext, shader);
             reacquireMaterialInstances();
             NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] MaterialShader reloaded (GAME mode, gen=%u).", shader->generation);
             return true;
@@ -2151,6 +2448,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (scene).");
             return false;
         }
+        TryWriteInstanceSSBODescriptor(vkContext, shader);
 
         // Game clone on gameRenderpass.
         if (vkContext->builtInGameShader)
@@ -2160,6 +2458,8 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             vkContext->builtInGameShader->generation = shader->generation;
             if (!recreate(vkContext->builtInGameShader, &vkContext->gameRenderpass, false, false, false, false))
                 NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader game clone.");
+            else
+                TryWriteInstanceSSBODescriptor(vkContext, vkContext->builtInGameShader);
         }
 
         // NOTE: builtInPickShader is NOT updated here. It is a separate independent shader
@@ -2264,12 +2564,16 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
         return true;
     }
 
-    // ── Default: user-defined shader → sceneRenderpass ───────────────────────
-    if (!recreate(shader, &vkContext->sceneRenderpass, false, false, false, false))
+    // ── Default: user-defined shader ─────────────────────────────────────────
+    VulkanRenderpass* reloadTargetRenderpass = vkContext->renderMode == RenderMode::GAME
+        ? &vkContext->gameSwapchainRenderpass
+        : &vkContext->sceneRenderpass;
+    if (!recreate(shader, reloadTargetRenderpass, false, false, false, false))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate shader '%s'.", assetPath.c_str());
         return false;
     }
+    TryWriteInstanceSSBODescriptor(vkContext, shader);
 
     // Custom shaders own their own instance pool when used as poolOwnerShader for a
     // material (see CreateMaterial: it picks the custom shader's pool if it is

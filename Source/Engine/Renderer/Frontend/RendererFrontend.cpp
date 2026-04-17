@@ -119,6 +119,54 @@ FrameResult RendererFrontend::EndFrame(const float dt) const
 	return result;
 }
 
+RendererFrontend::GroupedGeometries RendererFrontend::GroupGeometries(
+    const std::vector<GeometryRenderData>& geometries,
+    uint32_t baseInstance) const
+{
+    GroupedGeometries result;
+    if (geometries.empty()) return result;
+
+    // Sort so same (mesh, material) pairs are contiguous — required for correct firstInstance offsets.
+    std::vector<const GeometryRenderData*> sorted;
+    sorted.reserve(geometries.size());
+    for (const auto& g : geometries) sorted.push_back(&g);
+    std::sort(sorted.begin(), sorted.end(), [](const GeometryRenderData* a, const GeometryRenderData* b) {
+        if (a->material != b->material) return a->material < b->material;
+        return a->geometry < b->geometry;
+    });
+
+    // Data is sorted, so identical (geometry, material) pairs are always adjacent.
+    // Just compare with the last batch instead of a hash map — no collision risk.
+    for (const GeometryRenderData* grd : sorted)
+    {
+        if (!grd->geometry || !grd->material) continue;
+        if (result.matrices.size() >= c_maxInstances) break;
+
+        // Local index within this pass's matrix array; add baseInstance to get SSBO index.
+        const uint32_t localIndex = static_cast<uint32_t>(result.matrices.size());
+        const uint32_t ssboIndex  = baseInstance + localIndex;
+        result.matrices.push_back(grd->model);
+
+        if (!result.batches.empty() &&
+            result.batches.back().geometry == grd->geometry &&
+            result.batches.back().material == grd->material)
+        {
+            result.batches.back().instanceCount++;
+        }
+        else
+        {
+            InstancedBatch batch;
+            batch.geometry      = grd->geometry;
+            batch.material      = grd->material;
+            batch.firstInstance = ssboIndex;
+            batch.instanceCount = 1;
+            result.batches.push_back(batch);
+        }
+    }
+
+    return result;
+}
+
 FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 {
 	if (!packet || !packet->gameCamera)
@@ -208,10 +256,20 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 
 			{
 #ifdef _PROFILING
-				ZoneScopedN("DrawGeometry (Scene)");
+				ZoneScopedN("DrawGeometryBatched (Scene)");
 #endif
-				for (auto& geometry : packet->geometries)
-					success &= mBackend->DrawGeometry(sceneRenderpass, geometry);
+				// Scene pass uses SSBO range [0, c_maxInstances).
+				const GroupedGeometries grouped = GroupGeometries(packet->geometries, 0);
+				if (!grouped.matrices.empty())
+				{
+					mBackend->UploadInstanceMatrices(
+						static_cast<uint32_t>(mBackend->mFrameNumber % 3),
+						grouped.matrices.data(),
+						static_cast<uint32_t>(grouped.matrices.size()),
+						0);
+				}
+				for (const auto& batch : grouped.batches)
+					success &= mBackend->DrawGeometryBatched(sceneRenderpass, batch);
 			}
 
 			if (!mOutlinedGeometries.empty())
@@ -272,15 +330,26 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 
 			{
 #ifdef _PROFILING
-				ZoneScopedN("DrawGeometry (Game)");
+				ZoneScopedN("DrawGeometryBatched (Game)");
 #endif
 				// In EDITOR mode, gameGeometries is game-camera-culled.
 				// In GAME mode, the sole pass uses geometries (same list).
 				const auto& gameList = (mRenderMode == RenderMode::EDITOR)
 				    ? packet->gameGeometries
 				    : packet->geometries;
-				for (const auto& geometry : gameList)
-					success &= mBackend->DrawGeometry(gameRenderpass, geometry);
+				// Game pass uses SSBO range [c_maxInstances, 2*c_maxInstances) to avoid
+				// overwriting scene matrices that the GPU hasn't consumed yet.
+				const GroupedGeometries groupedGame = GroupGeometries(gameList, c_maxInstances);
+				if (!groupedGame.matrices.empty())
+				{
+					mBackend->UploadInstanceMatrices(
+						static_cast<uint32_t>(mBackend->mFrameNumber % 3),
+						groupedGame.matrices.data(),
+						static_cast<uint32_t>(groupedGame.matrices.size()),
+						c_maxInstances);
+				}
+				for (const auto& batch : groupedGame.batches)
+					success &= mBackend->DrawGeometryBatched(gameRenderpass, batch);
 			}
 		});
 	}

@@ -327,6 +327,12 @@ struct VulkanContext
     VulkanBuffer pointLightSphereVertexBuffer{};
     uint32       pointLightSphereVertexCount = 0;
 
+    // ── Per-frame instance SSBO (model matrices for GPU instancing) ────────────
+    // One buffer per frame-in-flight (triple-buffered). Persistently mapped.
+    // Layout: mat4[c_maxInstances] — indexed by gl_InstanceIndex in the shader.
+    std::array<VulkanBuffer, 3> instanceSSBO{};
+    std::array<void*, 3>        instanceSSBOMapped{};
+
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
     std::mutex geometriesMutex;     // guards slot scan + ID assignment in CreateGeometry/DestroyGeometry

@@ -91,6 +91,9 @@ bool ModuleScene::Start()
 
 UpdateStatus ModuleScene::PreUpdate(float dt)
 {
+#ifdef _PROFILING
+	ZoneScopedN("ModuleScene::PreUpdate");
+#endif
 	// Deferred stop: PressStop() set this flag instead of calling LoadScene() directly,
 	// so that the scene is never cleared while the SCENE/GAME command buffers are still
 	// recorded but not yet submitted (EndFrame hasn't run). By the time PreUpdate() is

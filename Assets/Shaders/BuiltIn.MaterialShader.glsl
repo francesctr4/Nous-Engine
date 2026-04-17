@@ -28,18 +28,17 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime
 } globalUBO;
 
-layout(push_constant) uniform pushConstantObject
+layout(set = 0, binding = 1) readonly buffer InstanceData
 {
-// Only guaranteed a total of 128 bytes.
-    mat4 model; // 64 bytes
-} pushConstant;
+    mat4 models[];
+} instanceData;
 
 void main()
 {
     outDTO.outColor = inColor;
     outDTO.texCoord = inTexCoord;
 
-    gl_Position = globalUBO.projection * globalUBO.view * pushConstant.model * vec4(inPosition, 1.0);
+    gl_Position = globalUBO.projection * globalUBO.view * instanceData.models[gl_InstanceIndex] * vec4(inPosition, 1.0);
 }
 
 // ------------------------------------------------------------------------------------------------------

@@ -18,18 +18,19 @@ layout(set = 0, binding = 0) uniform globalUniformObject
     mat4 view;
 } globalUBO;
 
-layout(push_constant) uniform pushConstantObject
+layout(set = 0, binding = 1) readonly buffer InstanceData
 {
-    mat4 model;
-} pushConstant;
+    mat4 models[];
+} instanceData;
 
 void main()
 {
+    mat4 model = instanceData.models[gl_InstanceIndex];
     // Approximate world-space normal (correct for uniform scale).
-    outDTO.worldNormal = mat3(pushConstant.model) * inNormal;
+    outDTO.worldNormal = mat3(model) * inNormal;
     outDTO.texCoord    = inTexCoord;
 
-    gl_Position = globalUBO.projection * globalUBO.view * pushConstant.model * vec4(inPosition, 1.0);
+    gl_Position = globalUBO.projection * globalUBO.view * model * vec4(inPosition, 1.0);
 }
 
 // ------------------------------------------------------------------------------------------------------

@@ -53,6 +53,16 @@ struct GeometryRenderData
     glm::vec4 color;
 };
 
+static constexpr uint32_t c_maxInstances = 4096;
+
+struct InstancedBatch
+{
+    ResourceMesh*     geometry      = nullptr;
+    ResourceMaterial* material      = nullptr;
+    uint32_t          firstInstance = 0;
+    uint32_t          instanceCount = 0;
+};
+
 enum class RenderpassType : uint8_t
 {
     SCENE,
@@ -269,6 +279,16 @@ struct IRendererBackend
     [[nodiscard]] virtual bool DrawGeometry(
             RenderpassType renderpassID,
             const GeometryRenderData& renderData) = 0;
+
+    // instanceOffset: index into the SSBO where writing starts.
+    // Scene pass uses offset 0; game pass uses offset c_maxInstances to avoid overwriting scene data.
+    virtual void UploadInstanceMatrices(uint32_t frameIndex,
+                                        const glm::mat4* matrices,
+                                        uint32_t count,
+                                        uint32_t instanceOffset) = 0;
+
+    [[nodiscard]] virtual bool DrawGeometryBatched(RenderpassType renderpassID,
+                                                    const InstancedBatch& batch) = 0;
 
     // ─────────────────────────────── Resources ───────────────────────────────
     [[nodiscard]] virtual bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture) = 0;

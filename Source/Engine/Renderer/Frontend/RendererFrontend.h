@@ -198,6 +198,16 @@ private:
 
 	void DrawEditor() const;
 
+    struct GroupedGeometries
+    {
+        std::vector<glm::mat4>      matrices;
+        std::vector<InstancedBatch> batches;
+    };
+
+    [[nodiscard]] GroupedGeometries GroupGeometries(
+        const std::vector<GeometryRenderData>& geometries,
+        uint32_t baseInstance = 0) const;
+
 	// Dispatch a background compile job for the given shader path/pointer.
 	// No-op if a compile for this path is already in-flight.
 	void DispatchCompileJob(const std::string& path, ResourceShader* shader);

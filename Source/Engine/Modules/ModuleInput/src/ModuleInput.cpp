@@ -6,6 +6,10 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
 
+#ifdef _PROFILING
+#include <tracy/Tracy.hpp>
+#endif
+
 static KeyState AdvanceKeyState(KeyState current, bool pressed)
 {
 	if (pressed)
@@ -54,6 +58,9 @@ bool ModuleInput::Start()
 
 UpdateStatus ModuleInput::PreUpdate(float dt)
 {
+#ifdef _PROFILING
+	ZoneScopedN("ModuleInput::PreUpdate");
+#endif
 	UpdateStatus ret = UpdateStatus::CONTINUE;
 
 	SDL_PumpEvents();

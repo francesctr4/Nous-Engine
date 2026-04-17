@@ -310,7 +310,16 @@ UpdateStatus Application::Update()
 
 void Application::FinishUpdate() const
 {
-    eventSystem->DispatchQueued();
+#ifdef _PROFILING
+    ZoneScopedN("FinishUpdate");
+#endif
+
+    {
+#ifdef _PROFILING
+        ZoneScopedN("DispatchQueuedEvents");
+#endif
+        eventSystem->DispatchQueued();
+    }
 
     // Set Window Title with Debug Info
 
@@ -339,6 +348,9 @@ void Application::FinishUpdate() const
 
     if (const float remaining = targetFrameTime - msTimer->ReadSec(); remaining > 0.0f)
     {
+#ifdef _PROFILING
+        ZoneScopedN("FramePacing");
+#endif
         if (remaining > DEFAULT_SPIN_THRESHOLD)
         {
             SDL_Delay(static_cast<Uint32>((remaining - DEFAULT_SPIN_THRESHOLD) * 1000.0f));

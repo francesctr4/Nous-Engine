@@ -11,6 +11,10 @@
 #include "glm/gtc/quaternion.hpp"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
+#ifdef _PROFILING
+#include <tracy/Tracy.hpp>
+#endif
+
 ModuleCamera3D::ModuleCamera3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, IInputReader* moduleInput)
     : Module(eventSystem, jobSystem), mModuleInput(moduleInput)
 {
@@ -45,7 +49,10 @@ UpdateStatus ModuleCamera3D::PreUpdate(float dt)
 
 UpdateStatus ModuleCamera3D::Update(float dt)
 {
-	if (sceneViewportHovered) 
+#ifdef _PROFILING
+	ZoneScopedN("ModuleCamera3D::Update");
+#endif
+	if (sceneViewportHovered)
 	{
 		glm::vec3 newPos(0, 0, 0);
 		float speed = 20.0f * dt;

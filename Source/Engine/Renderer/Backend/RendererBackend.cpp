@@ -141,6 +141,21 @@ bool RendererBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRe
     return mBackendInterface && mBackendInterface->DrawGeometry(renderpassID, renderData);
 }
 
+void RendererBackend::UploadInstanceMatrices(uint32_t frameIndex,
+                                              const glm::mat4* matrices,
+                                              uint32_t count,
+                                              uint32_t instanceOffset)
+{
+    if (mBackendInterface)
+        mBackendInterface->UploadInstanceMatrices(frameIndex, matrices, count, instanceOffset);
+}
+
+bool RendererBackend::DrawGeometryBatched(RenderpassType renderpassID,
+                                           const InstancedBatch& batch)
+{
+    return mBackendInterface && mBackendInterface->DrawGeometryBatched(renderpassID, batch);
+}
+
 // ─────────────────────────────── Resources ───────────────────────────────
 bool RendererBackend::CreateTexture(const uint8* pixels, ResourceTexture* outTexture)
 {
