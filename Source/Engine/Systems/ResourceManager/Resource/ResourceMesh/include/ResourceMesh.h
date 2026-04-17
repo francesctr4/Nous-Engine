@@ -6,6 +6,7 @@
 #include "Engine/Utils/Math/Vertex.inl"
 
 #include <vector>
+#include <glm/glm.hpp>
 
 class ResourceMaterial;
 
@@ -27,6 +28,11 @@ public:
 
 	std::vector<Vertex3D> vertices;
 	std::vector<uint32> indices;
+
+	// Local-space AABB computed once after import. Used every frame by the
+	// AABB cache pass — avoids iterating all vertices per frame.
+	glm::vec3 localAABBMin {0.f};
+	glm::vec3 localAABBMax {0.f};
 };
 
 #endif // RESOURCEMESH_H

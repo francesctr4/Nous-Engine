@@ -276,6 +276,9 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	// find an empty cache and silently skip all culling in GAME mode.
 	if (m_renderMode == RenderMode::EDITOR || frustumCullingEnabled)
 	{
+#ifdef _PROFILING
+		ZoneScopedN("AABB Cache");
+#endif
 		mMeshAABBCache.clear();
 
 		if (sceneData.registry)
@@ -286,19 +289,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			for (auto [entity, meshComp, transform] : view.each())
 			{
 				if (!meshComp.mesh) continue;
+				if (meshComp.mesh->vertices.empty()) continue;
 
-				const auto& vertices = meshComp.mesh->vertices;
-				if (vertices.empty()) continue;
-
-				// Compute local AABB from mesh vertices.
-				glm::vec3 localMin = vertices[0].position;
-				glm::vec3 localMax = vertices[0].position;
-				for (const auto& v : vertices)
-				{
-					localMin = glm::min(localMin, v.position);
-					localMax = glm::max(localMax, v.position);
-				}
-
+				const glm::vec3 localMin     = meshComp.mesh->localAABBMin;
+				const glm::vec3 localMax     = meshComp.mesh->localAABBMax;
 				const glm::vec3 localCenter  = (localMin + localMax) * 0.5f;
 				const glm::vec3 localExtents = localMax - localMin;
 
@@ -358,6 +352,9 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	// Editor-only: camera frustum overlays.
 	if (m_renderMode == RenderMode::EDITOR)
 	{
+#ifdef _PROFILING
+		ZoneScopedN("Frustum Build");
+#endif
 		std::vector<CameraFrustumData> frustums;
 
 		if (sceneData.registry)
@@ -409,6 +406,9 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	//   Larger range sphere shown only when the light's GameObject is selected.
 	if (m_renderMode == RenderMode::EDITOR)
 	{
+#ifdef _PROFILING
+		ZoneScopedN("Light Debugs");
+#endif
 		std::vector<BoundingBoxData> pointLightDebugs;
 
 		if (sceneData.registry)
@@ -443,8 +443,18 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetPointLightDebugs(pointLightDebugs);
 	}
 
-	if (BuildRenderPacket(&packet, sceneData) && !mIsMinimized)
 	{
+#ifdef _PROFILING
+		ZoneScopedN("BuildRenderPacket");
+#endif
+		if (!BuildRenderPacket(&packet, sceneData) || mIsMinimized)
+			return UpdateStatus::CONTINUE;
+	}
+
+	{
+#ifdef _PROFILING
+		ZoneScopedN("DrawFrame");
+#endif
 		FrameResult result = mRendererFrontend->DrawFrame(&packet);
 
 		switch (result)
@@ -603,6 +613,9 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 
 bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRenderData& sceneData)
 {
+#ifdef _PROFILING
+	ZoneScopedN("BuildRenderPacket");
+#endif
 	if (!sceneData.hasActiveScene)
 	{
 		NOUS_ERROR_C(CURRENT_CHANNEL, "Active scene is not defined. Render packet will not be built.");
