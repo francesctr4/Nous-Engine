@@ -49,6 +49,7 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
         if (!go.HasComponent<CTransform>()) { NOUS_WARN("GameObject %u has no Transform component!", id); return; }
         auto& transform = go.GetComponent<CTransform>();
         transform.position = glm::vec3(x, y, z);
+        transform.MarkDirty();
         transform.UpdateMatrix();
     };
 
@@ -75,6 +76,7 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
         if (!go.HasComponent<CTransform>()) { NOUS_WARN("GameObject %u has no Transform for SetScale!", id); return; }
         auto& transform = go.GetComponent<CTransform>();
         transform.scale = glm::vec3(x, y, z);
+        transform.MarkDirty();
         transform.UpdateMatrix();
     };
 

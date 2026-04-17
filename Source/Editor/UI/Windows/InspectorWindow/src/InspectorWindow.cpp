@@ -94,7 +94,10 @@ void InspectorWindow::Draw() {
 
                     // Position
                     if (ImGui::DragFloat3("Position", &transform.position.x, 0.1f))
+                    {
+                        transform.MarkDirty();
                         transform.UpdateMatrix();
+                    }
 
                     // Rotation (edit via Euler hint, convert to quaternion on change)
                     if (ImGui::DragFloat3("Rotation (Euler)", &transform.eulerHint.x, 0.1f))
@@ -105,7 +108,10 @@ void InspectorWindow::Draw() {
 
                     // Scale
                     if (ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f, 0.001f, 100.0f))
+                    {
+                        transform.MarkDirty();
                         transform.UpdateMatrix();
+                    }
 
                     ImGui::Unindent();
                 }

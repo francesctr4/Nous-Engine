@@ -1,4 +1,8 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
+
+#ifdef _PROFILING
+#include <tracy/Tracy.hpp>
+#endif
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
@@ -108,19 +112,29 @@ void Scene::Update(float deltaTime) {
 
 // ── World Matrix Update ───────────────────────────────────────────────────────
 
-static void UpdateWorldMatrixRecursive(entt::entity entity, entt::registry& registry) {
-    if (auto* t = registry.try_get<CTransform>(entity))
-        t->UpdateMatrix();
+static void UpdateWorldMatrixRecursive(entt::entity entity, entt::registry& registry, bool parentWasDirty) {
+    auto* t = registry.try_get<CTransform>(entity);
+    const bool isDirty = parentWasDirty || (t && t->m_localDirty);
+
+    if (t) {
+        if (isDirty) {
+            t->UpdateMatrix();
+            t->m_localDirty = false;
+            t->m_worldDirty = true;
+        } else {
+            t->m_worldDirty = false;
+        }
+    }
 
     if (const auto* h = registry.try_get<CHierarchy>(entity))
         for (auto child : h->children)
-            UpdateWorldMatrixRecursive(child, registry);
+            UpdateWorldMatrixRecursive(child, registry, isDirty);
 }
 
 void Scene::UpdateWorldMatrices() {
     for (auto [entity, hierarchy] : m_Registry.view<CHierarchy>().each()) {
         if (hierarchy.parent == entt::null)
-            UpdateWorldMatrixRecursive(entity, m_Registry);
+            UpdateWorldMatrixRecursive(entity, m_Registry, false);
     }
 }
 

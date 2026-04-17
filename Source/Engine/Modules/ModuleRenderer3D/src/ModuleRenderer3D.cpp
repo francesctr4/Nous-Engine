@@ -284,8 +284,6 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 #ifdef _PROFILING
 		ZoneScopedN("AABB Cache");
 #endif
-		mMeshAABBCache.clear();
-
 		if (sceneData.registry)
 		{
 			std::vector<BoundingBoxData> boundingBoxes;
@@ -296,45 +294,57 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 				if (!meshComp.mesh) continue;
 				if (meshComp.mesh->internalID == INVALID_ID) continue;
 
-				const glm::vec3 localMin     = meshComp.mesh->localAABBMin;
-				const glm::vec3 localMax     = meshComp.mesh->localAABBMax;
-				const glm::vec3 localCenter  = (localMin + localMax) * 0.5f;
-				const glm::vec3 localExtents = localMax - localMin;
-
-				// ── OBB: apply full world transform (includes rotation) ────────────
-				const glm::mat4& worldMatrix = transform.worldMatrix;
-				glm::mat4 obbTransform = worldMatrix
-					* glm::translate(glm::mat4(1.0f), localCenter)
-					* glm::scale(glm::mat4(1.0f), localExtents);
-
-				// ── AABB: compute world-space axis-aligned bounds ──────────────────
-				const glm::vec3 corners[8] = {
-					glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMin.z, 1.0f)),
-					glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMin.z, 1.0f)),
-					glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMin.z, 1.0f)),
-					glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMin.z, 1.0f)),
-					glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMax.z, 1.0f)),
-					glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMax.z, 1.0f)),
-					glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMax.z, 1.0f)),
-					glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMax.z, 1.0f)),
-				};
-
-				glm::vec3 worldMin = corners[0];
-				glm::vec3 worldMax = corners[0];
-				for (const auto& c : corners)
-				{
-					worldMin = glm::min(worldMin, c);
-					worldMax = glm::max(worldMax, c);
-				}
-
-				// Cache world-space AABB for frustum culling in BuildRenderPacket.
 				const auto* info = sceneData.registry->try_get<CEntityInfo>(entity);
 				const uint32_t id = info ? info->id : 0u;
-				mMeshAABBCache[id] = { worldMin, worldMax };
 
-				// Editor-only: generate OBB and AABB overlay geometry.
+				const glm::vec3 localMin     = meshComp.mesh->localAABBMin;
+				const glm::vec3 localMax     = meshComp.mesh->localAABBMax;
+				const glm::mat4& worldMatrix = transform.worldMatrix;
+
+				glm::vec3 worldMin, worldMax;
+
+				// Only recompute the 8-corner AABB transform when the world matrix changed.
+				// Static objects reuse the cached result from the previous frame.
+				if (transform.m_worldDirty || mMeshAABBCache.find(id) == mMeshAABBCache.end())
+				{
+					const glm::vec3 corners[8] = {
+						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMin.z, 1.0f)),
+						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMin.z, 1.0f)),
+						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMin.z, 1.0f)),
+						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMin.z, 1.0f)),
+						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMax.z, 1.0f)),
+						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMax.z, 1.0f)),
+						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMax.z, 1.0f)),
+						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMax.z, 1.0f)),
+					};
+
+					worldMin = corners[0];
+					worldMax = corners[0];
+					for (const auto& c : corners)
+					{
+						worldMin = glm::min(worldMin, c);
+						worldMax = glm::max(worldMax, c);
+					}
+
+					mMeshAABBCache[id] = { worldMin, worldMax };
+					transform.m_worldDirty = false;
+				}
+				else
+				{
+					const auto& cached = mMeshAABBCache[id];
+					worldMin = cached.first;
+					worldMax = cached.second;
+				}
+
+				// Editor-only: generate OBB and AABB overlay geometry (cheap, always run).
 				if (m_renderMode == RenderMode::EDITOR)
 				{
+					const glm::vec3 localCenter  = (localMin + localMax) * 0.5f;
+					const glm::vec3 localExtents = localMax - localMin;
+					glm::mat4 obbTransform = worldMatrix
+						* glm::translate(glm::mat4(1.0f), localCenter)
+						* glm::scale(glm::mat4(1.0f), localExtents);
+
 					const glm::vec3 worldCenter  = (worldMin + worldMax) * 0.5f;
 					const glm::vec3 worldExtents = worldMax - worldMin;
 

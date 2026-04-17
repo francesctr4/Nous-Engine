@@ -347,6 +347,7 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
         transform.orientation = newOrientation;
         transform.scale       = newScale;
         transform.eulerHint   = transform.GetEulerAngles();
+        transform.MarkDirty();
 
         transform.UpdateMatrix();
     }

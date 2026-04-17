@@ -21,11 +21,13 @@ void CTransform::SetEulerRotation(const glm::vec3& eulerDegrees) {
     // Build quaternion using GLM's default Euler convention — must match GetEulerAngles()
     // so that the round-trip SetEulerRotation(GetEulerAngles()) is lossless
     orientation = glm::quat(glm::radians(eulerDegrees));
+    MarkDirty();
 }
 
 void CTransform::Rotate(const glm::quat& deltaRotation) {
     orientation = glm::normalize(deltaRotation * orientation);
     eulerHint = GetEulerAngles();
+    MarkDirty();
 }
 
 glm::vec3 CTransform::GetEulerAngles() const {
@@ -150,5 +152,6 @@ void CTransform::Deserialize(JSON_Object *obj) {
         scale.z = static_cast<float>(json_array_get_number(scl, 2));
     }
 
+    MarkDirty();
     UpdateMatrix();
 }
