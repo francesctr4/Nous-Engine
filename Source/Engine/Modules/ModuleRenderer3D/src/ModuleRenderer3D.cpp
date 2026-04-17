@@ -198,11 +198,16 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 	// is first uploaded would see the shader as not-GPU_READY and fall back to vsBase's
 	// instance pool — causing a NULL descriptor-set error on the first draw call.
 	IImporterManager* importer = mModuleResourceManager->GetImporterManager();
-	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
 	{
-		if (!importer->Upload(type, resource, mRendererFrontend))
-			NOUS_ERROR("ModuleRenderer3D::PreUpdate() — failed to upload resource '%s'.", resource->GetName().c_str());
-		resource->SetState(ResourceState::GPU_READY);
+#ifdef _PROFILING
+		ZoneScopedN("GPU Uploads");
+#endif
+		for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
+		{
+			if (!importer->Upload(type, resource, mRendererFrontend))
+				NOUS_ERROR("ModuleRenderer3D::PreUpdate() — failed to upload resource '%s'.", resource->GetName().c_str());
+			resource->SetState(ResourceState::GPU_READY);
+		}
 	}
 
 	// Process queued material shader changes (Inspector reslots). Must run after

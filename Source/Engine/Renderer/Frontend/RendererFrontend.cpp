@@ -13,6 +13,10 @@
 #include <cmath>
 #include <filesystem>
 
+#ifdef _PROFILING
+#include <tracy/Tracy.hpp>
+#endif
+
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -130,18 +134,23 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 	}
 
 	// --- BEGIN FRAME ---
-	switch (BeginFrame(packet->deltaTime))
 	{
-		case FrameResult::SUCCESS:
-			break;
+#ifdef _PROFILING
+		ZoneScopedN("BeginFrame");
+#endif
+		switch (BeginFrame(packet->deltaTime))
+		{
+			case FrameResult::SUCCESS:
+				break;
 
-		case FrameResult::SKIPPED:
-			NOUS_DEBUG_C(CURRENT_CHANNEL, "Frame skipped (swapchain recreation/minimized).");
-			return FrameResult::SKIPPED;
+			case FrameResult::SKIPPED:
+				NOUS_DEBUG_C(CURRENT_CHANNEL, "Frame skipped (swapchain recreation/minimized).");
+				return FrameResult::SKIPPED;
 
-		case FrameResult::ERROR:
-			NOUS_ERROR_C(CURRENT_CHANNEL, "BeginFrame() failed.");
-			return FrameResult::ERROR;
+			case FrameResult::ERROR:
+				NOUS_ERROR_C(CURRENT_CHANNEL, "BeginFrame() failed.");
+				return FrameResult::ERROR;
+		}
 	}
 
 	bool success = true;
@@ -169,6 +178,9 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 	// --- SCENE PASS (EDITOR mode only) ---
 	if (mRenderMode == RenderMode::EDITOR)
 	{
+#ifdef _PROFILING
+		ZoneScopedN("Scene Pass");
+#endif
 		constexpr auto sceneRenderpass = RenderpassType::SCENE;
 		success &= ExecuteRenderpass(sceneRenderpass, [&]
 		{
@@ -194,9 +206,12 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 			success &= mBackend->UpdateGlobalWorldState(sceneRenderpass,
 				MakeGlobalUBO(packet->editorCamera));
 
-			for (auto& geometry : packet->geometries)
 			{
-				success &= mBackend->DrawGeometry(sceneRenderpass, geometry);
+#ifdef _PROFILING
+				ZoneScopedN("DrawGeometry (Scene)");
+#endif
+				for (auto& geometry : packet->geometries)
+					success &= mBackend->DrawGeometry(sceneRenderpass, geometry);
 			}
 
 			if (!mOutlinedGeometries.empty())
@@ -241,25 +256,36 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 	}
 
 	// --- GAME PASS ---
-	constexpr auto gameRenderpass = RenderpassType::GAME;
-	success &= ExecuteRenderpass(gameRenderpass, [&]
 	{
-		success &= mBackend->DrawBackground(gameRenderpass,
-			packet->gameCamera->GetProjectionMatrix(),
-			packet->gameCamera->GetViewMatrix());
-
-        success &= mBackend->UpdateGlobalWorldState(gameRenderpass,
-            MakeGlobalUBO(packet->gameCamera));
-
-		for (auto& geometry : packet->geometries)
+#ifdef _PROFILING
+		ZoneScopedN("Game Pass");
+#endif
+		constexpr auto gameRenderpass = RenderpassType::GAME;
+		success &= ExecuteRenderpass(gameRenderpass, [&]
 		{
-            success &= mBackend->DrawGeometry(gameRenderpass, geometry);
-		}
-	});
+			success &= mBackend->DrawBackground(gameRenderpass,
+				packet->gameCamera->GetProjectionMatrix(),
+				packet->gameCamera->GetViewMatrix());
+
+			success &= mBackend->UpdateGlobalWorldState(gameRenderpass,
+				MakeGlobalUBO(packet->gameCamera));
+
+			{
+#ifdef _PROFILING
+				ZoneScopedN("DrawGeometry (Game)");
+#endif
+				for (auto& geometry : packet->geometries)
+					success &= mBackend->DrawGeometry(gameRenderpass, geometry);
+			}
+		});
+	}
 
 	// --- UI PASS (EDITOR mode only) ---
 	if (mRenderMode == RenderMode::EDITOR)
 	{
+#ifdef _PROFILING
+		ZoneScopedN("UI Pass");
+#endif
 		constexpr auto uiRenderpass = RenderpassType::UI;
 		success &= ExecuteRenderpass(uiRenderpass, [&]
 		{
@@ -268,7 +294,13 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 	}
 
 	// --- END FRAME ---
-	const FrameResult endResult = EndFrame(packet->deltaTime);
+	FrameResult endResult;
+	{
+#ifdef _PROFILING
+		ZoneScopedN("EndFrame");
+#endif
+		endResult = EndFrame(packet->deltaTime);
+	}
 
 	if (endResult == FrameResult::ERROR)
 	{

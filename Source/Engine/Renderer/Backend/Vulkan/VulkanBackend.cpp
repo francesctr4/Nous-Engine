@@ -32,6 +32,10 @@
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
+
+#ifdef _PROFILING
+#include <tracy/Tracy.hpp>
+#endif
 #include "Engine/Renderer/Backend/Vulkan/Resources/Shader/VulkanShader.h"
 
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
@@ -769,6 +773,9 @@ FrameResult VulkanBackend::BeginFrame(float dt)
 
     // Wait for the current frame's fence (CPU/GPU sync).
     {
+#ifdef _PROFILING
+        ZoneScopedN("vkWaitForFences");
+#endif
         VkFence inFlight = vkContext->inFlightFences[vkContext->currentFrame];
         VkResult fenceRes = vkWaitForFences(device->logicalDevice, 1, &inFlight, VK_TRUE, UINT64_MAX);
         if (!VkResultIsSuccess(fenceRes))
@@ -781,6 +788,9 @@ FrameResult VulkanBackend::BeginFrame(float dt)
     // Acquire next image from the swapchain.
     // IMPORTANT: handle OUT_OF_DATE and SUBOPTIMAL as "skip and recreate".
     {
+#ifdef _PROFILING
+        ZoneScopedN("vkAcquireNextImageKHR");
+#endif
         VkResult acquireRes = NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(
                 vkContext,
                 &vkContext->swapChain,
@@ -809,6 +819,9 @@ FrameResult VulkanBackend::BeginFrame(float dt)
     // Must happen here — BEFORE BeginRenderpass resets/records the command buffer for imageIndex.
     if (vkContext->imagesInFlight[vkContext->imageIndex] != VK_NULL_HANDLE)
     {
+#ifdef _PROFILING
+        ZoneScopedN("vkWaitForFences (image-in-flight)");
+#endif
         VkFence imgFence = vkContext->imagesInFlight[vkContext->imageIndex];
         VkResult waitRes = vkWaitForFences(device->logicalDevice, 1, &imgFence, VK_TRUE, UINT64_MAX);
         if (!VkResultIsSuccess(waitRes))
@@ -2914,6 +2927,9 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
 
 void VulkanBackend::ProcessPendingSubmissions()
 {
+#ifdef _PROFILING
+    ZoneScopedN("ProcessPendingSubmissions");
+#endif
     std::unique_lock lock(vkContext->submitQueueMutex);
 
     while (!vkContext->submitQueue.empty()) 
@@ -2927,11 +2943,19 @@ void VulkanBackend::ProcessPendingSubmissions()
             ? vkContext->device.transferQueueMutex
             : vkContext->device.graphicsQueueMutex;
         std::lock_guard queueLock(queueMutex);
-        const VkResult result = vkQueueSubmit(task.queue, task.submitCount, task.pSubmits, task.fence);
 
-        bool success = result == VK_SUCCESS;
+        bool success;
+        {
+#ifdef _PROFILING
+            ZoneScopedN("vkQueueSubmit");
+#endif
+            success = vkQueueSubmit(task.queue, task.submitCount, task.pSubmits, task.fence) == VK_SUCCESS;
+        }
         if (success && task.waitIdle)
         {
+#ifdef _PROFILING
+            ZoneScopedN("vkQueueWaitIdle");
+#endif
             success = vkQueueWaitIdle(task.queue) == VK_SUCCESS;
         }
 
