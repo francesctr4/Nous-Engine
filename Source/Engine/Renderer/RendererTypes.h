@@ -105,7 +105,13 @@ struct RenderPacket
     float deltaTime;
     float totalTime;  // seconds since app start (accumulated dt)
 
+    // Scene-pass list: culled against editor camera frustum (EDITOR) or unculled (GAME).
+    // Also used for mouse picking and outlined geometry selection.
     std::vector<GeometryRenderData> geometries;
+
+    // Game-pass list: culled against game camera frustum.
+    // Only populated in EDITOR mode; GAME mode reuses `geometries` for its sole pass.
+    std::vector<GeometryRenderData> gameGeometries;
 
     DirectionalLight directionalLight              = {};
     bool             hasDirectionalLight           = false;

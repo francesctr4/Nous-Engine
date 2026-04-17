@@ -628,25 +628,42 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	}
 
 	packet->geometries.clear();
+	packet->gameGeometries.clear();
 	packet->hasDirectionalLight   = false;
 	packet->activePointLightCount = 0;
 
-	// Extract frustum planes from the game camera for per-mesh culling.
-	// Meshes whose world-space AABB is completely outside the frustum are skipped.
-	FrustumCulling::FrustumPlanes frustum{};
-	bool hasFrustum = false;
-	if (frustumCullingEnabled && packet->gameCamera)
+	// Per-pass frustum planes.
+	// In EDITOR mode both frustums are ALWAYS applied (independent of frustumCullingEnabled).
+	// In GAME mode the game frustum requires frustumCullingEnabled to be set explicitly.
+	FrustumCulling::FrustumPlanes sceneFrustum{};
+	FrustumCulling::FrustumPlanes gameFrustum{};
+	bool hasSceneFrustum = false;
+	bool hasGameFrustum  = false;
+
+	if (m_renderMode == RenderMode::EDITOR && packet->editorCamera)
 	{
-		const glm::mat4 vp = packet->gameCamera->GetProjectionMatrix() * packet->gameCamera->GetViewMatrix();
-		frustum    = FrustumCulling::ExtractFrustumPlanes(vp);
-		hasFrustum = true;
+		const glm::mat4 vp = packet->editorCamera->GetProjectionMatrix()
+		                   * packet->editorCamera->GetViewMatrix();
+		sceneFrustum    = FrustumCulling::ExtractFrustumPlanes(vp);
+		hasSceneFrustum = true;
+	}
+	// Game frustum: always active in EDITOR (per-frame preview culling);
+	// opt-in via frustumCullingEnabled in GAME mode.
+	if (packet->gameCamera && (m_renderMode == RenderMode::EDITOR || frustumCullingEnabled))
+	{
+		const glm::mat4 vp = packet->gameCamera->GetProjectionMatrix()
+		                   * packet->gameCamera->GetViewMatrix();
+		gameFrustum    = FrustumCulling::ExtractFrustumPlanes(vp);
+		hasGameFrustum = true;
 	}
 
 	if (!sceneData.registry) return false;
 
 	auto meshView = sceneData.registry->view<CMesh, CTransform>();
-	packet->geometries.reserve(static_cast<size_t>(
-		std::distance(meshView.begin(), meshView.end())));
+	const auto totalMeshes = static_cast<size_t>(
+		std::distance(meshView.begin(), meshView.end()));
+	packet->geometries.reserve(totalMeshes);
+	packet->gameGeometries.reserve(totalMeshes);
 
 	for (auto [entity, mesh, transform] : meshView.each())
 	{
@@ -662,19 +679,37 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 		if (const auto* mat = sceneData.registry->try_get<CMaterial>(entity))
 			data.material = mat->material;
 
-		// Frustum cull against the game camera using the cached world-space AABB.
-		// Meshes with no cached AABB (e.g. empty vertex arrays) are not culled.
-		if (hasFrustum)
+		// Scene pass (editor camera frustum culling).
+		if (m_renderMode == RenderMode::EDITOR)
 		{
-			const auto it = mMeshAABBCache.find(data.objectUID);
-			if (it != mMeshAABBCache.end() &&
-				!FrustumCulling::IsAABBVisible(frustum, it->second.first, it->second.second))
-			{
-				continue;
-			}
-		}
+			const bool passesScene = !hasSceneFrustum || [&]{
+				const auto it = mMeshAABBCache.find(data.objectUID);
+				return it == mMeshAABBCache.end()
+				    || FrustumCulling::IsAABBVisible(sceneFrustum, it->second.first, it->second.second);
+			}();
+			if (passesScene)
+				packet->geometries.emplace_back(data);
 
-		packet->geometries.emplace_back(data);
+			// Game pass (game camera frustum culling).
+			const bool passesGame = !hasGameFrustum || [&]{
+				const auto it = mMeshAABBCache.find(data.objectUID);
+				return it == mMeshAABBCache.end()
+				    || FrustumCulling::IsAABBVisible(gameFrustum, it->second.first, it->second.second);
+			}();
+			if (passesGame)
+				packet->gameGeometries.emplace_back(data);
+		}
+		else
+		{
+			// GAME mode: single pass — cull against game camera.
+			const bool passesGame = !hasGameFrustum || [&]{
+				const auto it = mMeshAABBCache.find(data.objectUID);
+				return it == mMeshAABBCache.end()
+				    || FrustumCulling::IsAABBVisible(gameFrustum, it->second.first, it->second.second);
+			}();
+			if (passesGame)
+				packet->geometries.emplace_back(data);
+		}
 	}
 
 	// ── Light gathering ───────────────────────────────────────────────────────────

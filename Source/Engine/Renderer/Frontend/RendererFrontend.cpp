@@ -274,7 +274,12 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 #ifdef _PROFILING
 				ZoneScopedN("DrawGeometry (Game)");
 #endif
-				for (auto& geometry : packet->geometries)
+				// In EDITOR mode, gameGeometries is game-camera-culled.
+				// In GAME mode, the sole pass uses geometries (same list).
+				const auto& gameList = (mRenderMode == RenderMode::EDITOR)
+				    ? packet->gameGeometries
+				    : packet->geometries;
+				for (const auto& geometry : gameList)
 					success &= mBackend->DrawGeometry(gameRenderpass, geometry);
 			}
 		});
