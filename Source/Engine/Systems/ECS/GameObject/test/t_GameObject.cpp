@@ -194,3 +194,29 @@ TEST_F(t_GameObject, DestroyGameObject_RemovesFromScene)
     scene->DestroyGameObject(go);
     EXPECT_LT(scene->GetGameObjectsSnapshot().size(), before);
 }
+
+TEST_F(t_GameObject, IsValid_ReturnsFalseAfterDestroy)
+{
+    GameObject go = scene->CreateGameObject("GO");
+    EXPECT_TRUE(go.IsValid());
+    scene->DestroyGameObject(go);
+    EXPECT_FALSE(go.IsValid());
+}
+
+// =============================================================================
+// EnTT view filtering
+// =============================================================================
+
+TEST_F(t_GameObject, ViewFilter_OnlyYieldsEntitiesWithBothComponents)
+{
+    GameObject goA = scene->CreateGameObject("A");
+    GameObject goB = scene->CreateGameObject("B");
+    goA.AddComponent<CCamera>();
+    // goB has no CCamera — must not appear in view<CCamera, CTransform>
+
+    int count = 0;
+    scene->GetRegistry().view<CCamera, CTransform>().each([&](auto, auto&, auto&) {
+        ++count;
+    });
+    EXPECT_EQ(count, 1);
+}

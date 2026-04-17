@@ -49,9 +49,9 @@ public:
     NOUS_ENGINE_API void UpdateMatrix();
 
     // ---------- JSON Serialization ----------
-    JSON_Value* Serialize() const override;
+    NOUS_ENGINE_API JSON_Value* Serialize() const override;
 
-    void Deserialize(JSON_Object* obj) override;
+    NOUS_ENGINE_API void Deserialize(JSON_Object* obj) override;
 };
 
 #endif //NOUS_ENGINE_CTRANSFORM_H
