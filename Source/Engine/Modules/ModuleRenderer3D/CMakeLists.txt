@@ -12,7 +12,3 @@ target_include_directories(${CLASS_NAME} PUBLIC
 target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(${CLASS_NAME} PUBLIC SDL3::SDL3)
-
-if (NOUS_BUILD_TESTS)
-    add_subdirectory(test)
-endif()
