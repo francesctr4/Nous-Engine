@@ -8,7 +8,6 @@
 #include "imgui_impl_vulkan.h"
 
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
 GameViewport::GameViewport(const char* title, EditorContext* context, const bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
@@ -25,7 +24,20 @@ void GameViewport::Draw()
 {
     if (*p_open)
     {
-        if (ImGui::Begin(title, p_open))
+        const bool visible = ImGui::Begin(title, p_open);
+
+        // Read content size regardless of visibility — ImGui preserves the window's
+        // size in its internal state even for hidden docked tabs, so this stays
+        // accurate during resize without requiring the tab to be active.
+        {
+            const ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
+            const ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
+            const auto squareSize = ImVec2(contentMax.x - contentMin.x, contentMax.y - contentMin.y);
+            if (squareSize.x > 0.0f && squareSize.y > 0.0f)
+                editorContext->GetScene()->gameViewportAspect = squareSize.x / squareSize.y;
+        }
+
+        if (visible)
         {
             // Get the size of the window's content area
             const ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
@@ -42,14 +54,6 @@ void GameViewport::Draw()
 
             if (squareSize.x > 0.0f && squareSize.y > 0.0f)
             {
-                // Drive game camera aspect ratio from panel size — Hor+ scaling.
-                // CCamera::OnUpdate() sets aspectRatio from the authored field each frame,
-                // but Draw() runs after Update(), so this override wins in EDITOR mode.
-                // In standalone GAME mode (no ImGui panel), CCamera keeps its authored value.
-                Camera* gameCamera = editorContext->GetScene()->gameCamera;
-                if (gameCamera)
-                    gameCamera->SetAspectRatio(squareSize.x / squareSize.y);
-
                 constexpr ImVec2 uvMin(0.0f, 0.0f);
                 constexpr ImVec2 uvMax(1.0f, 1.0f);
 

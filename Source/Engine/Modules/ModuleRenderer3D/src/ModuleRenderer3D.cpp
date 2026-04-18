@@ -285,6 +285,13 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	packet.editorCamera = (m_renderMode == RenderMode::EDITOR) ? mModuleCamera3D->GetCamera() : nullptr;
 	packet.gameCamera   = sceneData.gameCamera;
 
+	// EDITOR mode: apply the game viewport's panel aspect ratio (written by GameViewport::Draw()
+	// at end of the previous frame's UI pass) before frustum build and DrawFrame().
+	// This overrides the authored value set by CCamera::OnUpdate() earlier this frame.
+	// In GAME mode gameViewportAspect stays 0, so the authored value is used as-is.
+	if (m_renderMode == RenderMode::EDITOR && packet.gameCamera && mModuleScene->gameViewportAspect > 0.0f)
+		packet.gameCamera->SetAspectRatio(mModuleScene->gameViewportAspect);
+
 	// Editor-only: selection outline.
 	if (m_renderMode == RenderMode::EDITOR)
 	{
@@ -407,9 +414,13 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 				const float vfovRad     = glm::radians(cam.fov);
 				const float halfTan     = std::tan(vfovRad * 0.5f);
 				const float halfH_near  = cam.nearPlane * halfTan;
-				const float halfW_near  = halfH_near * cam.aspectRatio;
 				const float halfH_far   = cam.farPlane  * halfTan;
-				const float halfW_far   = halfH_far  * cam.aspectRatio;
+				// Use viewport-driven aspect ratio when available (EDITOR mode with game panel open);
+				// fall back to the authored field for GAME mode or before the first panel draw.
+				const float effectiveAspect = (mModuleScene->gameViewportAspect > 0.0f)
+				    ? mModuleScene->gameViewportAspect : cam.aspectRatio;
+				const float halfW_near  = halfH_near * effectiveAspect;
+				const float halfW_far   = halfH_far  * effectiveAspect;
 
 				const glm::vec3 pos   = transform.position;
 				const glm::vec3 fwd   = transform.GetForward();

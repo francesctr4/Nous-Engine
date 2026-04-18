@@ -90,6 +90,10 @@ public:
 	GameObject     selectedGameObject;           // null handle by default (IsValid() == false)
 	Camera*        gameCamera    = nullptr;
 	ScriptManager* scriptManager = nullptr;
+	// Set by GameViewport::Draw() each frame; applied in ModuleRenderer3D::PostUpdate()
+	// before frustum build and DrawFrame() to override CCamera's authored aspect ratio.
+	// 0.0f = not yet set (first frame before the viewport has drawn).
+	float          gameViewportAspect = 0.0f;
 
 private:
 
