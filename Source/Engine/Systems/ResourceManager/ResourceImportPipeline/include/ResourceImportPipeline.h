@@ -4,14 +4,17 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include <string>
 #include <string_view>
+#include <vector>
 
 class IImporterManager;
 struct MetaFileData;
+namespace NOUS_Multithreading { class NOUS_JobSystem; }
 
 class ResourceImportPipeline
 {
 public:
-    NOUS_ENGINE_API explicit ResourceImportPipeline(IImporterManager* importerManager);
+    NOUS_ENGINE_API ResourceImportPipeline(IImporterManager* importerManager,
+                                           NOUS_Multithreading::NOUS_JobSystem* jobSystem = nullptr);
 
     // Public import entry points — called by ModuleResourceManager delegators
     // and by external consumers that formerly called ModuleResourceManager directly.
@@ -42,4 +45,11 @@ private:
     bool ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const;
 
     IImporterManager* m_importerManager = nullptr;
+    NOUS_Multithreading::NOUS_JobSystem* m_jobSystem = nullptr;
+
+    // Phase-1 scan: walks directory, handles meta file creation, and collects
+    // MetaFileData for every file that actually needs import work. No imports are
+    // performed — safe to call from the main thread without holding any locks.
+    void CollectPendingImports(const std::string& directory,
+                               std::vector<MetaFileData>& outPending) const;
 };

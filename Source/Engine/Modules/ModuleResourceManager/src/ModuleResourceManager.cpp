@@ -65,7 +65,7 @@ ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Mult
                                              IImporterManager* importerManager)
     : Module(eventSystem, jobSystem)
     , mImporterManager(importerManager)
-    , m_importPipeline(importerManager)
+    , m_importPipeline(importerManager, jobSystem)
     , m_scenePreloader(this)
     , m_subMeshCache(resources, resourcesMutex, m_pendingUploads, m_pendingUploadsMutex)
 {

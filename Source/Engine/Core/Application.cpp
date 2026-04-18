@@ -41,7 +41,7 @@ Application::Application(const bool isGameMode)
     updateTitleTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
 
     // ------------- MULTITHREADING ------------- //
-    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD, 6);
+    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
 
     // -----------------------------------------------------------------------
     // Module construction order — LOAD-BEARING. Do not reorder.

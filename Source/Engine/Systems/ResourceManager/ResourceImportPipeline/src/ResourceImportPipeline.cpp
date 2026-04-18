@@ -6,9 +6,11 @@
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
+#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
 #include <filesystem>
 #include <format>
+#include <vector>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
@@ -32,8 +34,10 @@ static std::filesystem::file_time_type GetLibraryTime(const std::filesystem::pat
     return fs::last_write_time(libraryPath);
 }
 
-ResourceImportPipeline::ResourceImportPipeline(IImporterManager* importerManager)
+ResourceImportPipeline::ResourceImportPipeline(IImporterManager* importerManager,
+                                               NOUS_Multithreading::NOUS_JobSystem* jobSystem)
     : m_importerManager(importerManager)
+    , m_jobSystem(jobSystem)
 {
 }
 
@@ -49,9 +53,48 @@ bool ResourceImportPipeline::EnsureLibraryDirectories()
 
 void ResourceImportPipeline::ScanAndImportAssets()
 {
-    // Scan Assets/ on startup. ImportFile is a cheap no-op for assets
-    // whose library binary is already up-to-date (Case 3 timestamp check).
-    ImportDirectory("Assets");
+    // Phase 1 (sequential): walk Assets/, write any missing .meta files, collect
+    // MetaFileData for every file that actually needs import work.
+    std::vector<MetaFileData> pendingWork;
+    CollectPendingImports("Assets", pendingWork);
+
+    // Phase 2: import in parallel when a job system is available, otherwise sequential.
+    if (m_jobSystem && !pendingWork.empty())
+    {
+        // Split mesh imports from everything else.
+        // Assimp is CPU/memory-intensive: running many mesh jobs concurrently
+        // causes cache thrashing and is slower than sequential processing.
+        // Shaders (~7s peak) and other light assets run in parallel on all threads;
+        // all meshes run sequentially in one job — total is max(shaders, meshes)
+        // rather than max(each mesh * contention_factor).
+        std::vector<MetaFileData> meshWork;
+        for (const auto& item : pendingWork)
+        {
+            if (item.resourceType == ResourceType::MESH)
+                meshWork.push_back(item);
+            else
+                m_jobSystem->SubmitJob([this, item]()
+                {
+                    m_importerManager->Import(item.resourceType, item);
+                }, item.name);
+        }
+
+        if (!meshWork.empty())
+        {
+            m_jobSystem->SubmitJob([this, meshWork = std::move(meshWork)]()
+            {
+                for (const auto& mesh : meshWork)
+                    m_importerManager->Import(mesh.resourceType, mesh);
+            }, "MeshImports");
+        }
+
+        m_jobSystem->WaitForPendingJobs();
+    }
+    else
+    {
+        for (const auto& item : pendingWork)
+            m_importerManager->Import(item.resourceType, item);
+    }
 
     // Mirror all scene files from Assets/Scenes/ → Library/Scenes/ so GameApp
     // can always load them from Library/ without needing Assets/.
@@ -64,6 +107,85 @@ void ResourceImportPipeline::ScanAndImportAssets()
                 const std::string src  = entry.path().string();
                 const std::string dest = "Library/Scenes/" + entry.path().filename().string();
                 NOUS_FileManager::CopyFile(src, dest);
+            }
+        }
+    }
+}
+
+void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
+                                                    std::vector<MetaFileData>& outPending) const
+{
+    if (!NOUS_FileManager::Exists(directory))
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Directory does not exist: %s", directory.c_str());
+        return;
+    }
+
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+    {
+        if (!std::filesystem::is_regular_file(entry))
+            continue;
+
+        const std::string path          = entry.path().string();
+        const std::string relativePath  = NOUS_FileManager::GetRelativePath(path);
+        const std::string fileDirectory = NOUS_FileManager::GetDirectory(path);
+        const std::string fileName      = NOUS_FileManager::GetFilename(path);
+        const std::string extension     = NOUS_FileManager::GetExtension(path);
+        const ResourceType resourceType = Resource::GetTypeFromExtension(extension);
+
+        if (resourceType == ResourceType::UNKNOWN)
+            continue;
+        if (fileDirectory.rfind("Assets/", 0) != 0)
+            continue;
+
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Importing file: %s", path.c_str());
+
+        const std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType)
+                                       + fileName + extension + ".meta";
+
+        if (!NOUS_FileManager::Exists(metaFilePath))
+        {
+            // Case 1: new asset — create meta file now (sequential), schedule import.
+            const auto resourceUID         = static_cast<uint32>(Random::Generate());
+            const std::string libExtension = Resource::GetLibraryExtensionFromType(resourceType);
+            std::string libraryPath        = std::format("{}{}",
+                Resource::GetLibraryDirectoryFromType(resourceType), resourceUID);
+            if (!libExtension.empty())
+                libraryPath += "." + libExtension;
+
+            MetaFileData meta;
+            meta.name         = fileName;
+            meta.uid          = resourceUID;
+            meta.resourceType = resourceType;
+            meta.assetsPath   = relativePath;
+            meta.libraryPath  = libraryPath;
+
+            if (CreateMetaFile(metaFilePath, meta))
+                outPending.push_back(meta);
+            else
+                NOUS_ERROR_C(CURRENT_CHANNEL, "Import File ERROR: CASE 1 --> Error creating meta file: %s", metaFilePath.c_str());
+        }
+        else
+        {
+            MetaFileData meta;
+            if (!ReadMetaFile(metaFilePath, meta))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "Import File ERROR: CASE 2,3 --> Error reading meta file: %s", metaFilePath.c_str());
+                continue;
+            }
+
+            if (!NOUS_FileManager::Exists(meta.libraryPath))
+            {
+                // Case 2: library binary missing.
+                outPending.push_back(meta);
+            }
+            else if (std::filesystem::last_write_time(meta.assetsPath) > GetLibraryTime(meta.libraryPath))
+            {
+                // Case 3: source file modified since last import.
+                NOUS_INFO_C(CURRENT_CHANNEL,
+                    "[ImportFile] '%s' modified since last import — regenerating library binary.",
+                    meta.name.c_str());
+                outPending.push_back(meta);
             }
         }
     }
