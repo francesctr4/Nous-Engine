@@ -82,31 +82,15 @@ void SceneViewport::Draw()
 
             if (squareSize.x > 0.0f && squareSize.y > 0.0f)
             {
-                // Calculate aspect ratios and UV coordinates
+                // Drive camera aspect ratio from panel size — Hor+ scaling (vertical FOV fixed).
+                // This keeps scene rendering, ImGuizmo, and mouse picking all consistent.
+                Camera* editorCam = editorContext->GetCamera()->GetCamera();
+                if (editorCam)
+                    editorCam->SetAspectRatio(squareSize.x / squareSize.y);
+
                 VulkanContext* vkCtx = VulkanBackend::GetVulkanContext();
-                float textureWidth  = static_cast<float>(vkCtx->framebufferWidth);
-                float textureHeight = static_cast<float>(vkCtx->framebufferHeight);
-
-                float textureAspect  = textureWidth / textureHeight;
-                float viewportAspect = squareSize.x / squareSize.y;
-
-                ImVec2 uvMin(0.0f, 0.0f);
-                ImVec2 uvMax(1.0f, 1.0f);
-
-                if (viewportAspect < textureAspect)
-                {
-                    // Viewport is narrower: crop left/right
-                    float cropFactor = textureAspect / viewportAspect;
-                    uvMin.x = 0.5f - 0.5f / cropFactor;
-                    uvMax.x = 0.5f + 0.5f / cropFactor;
-                }
-                else if (viewportAspect > textureAspect)
-                {
-                    // Viewport is wider: crop top/bottom
-                    float cropFactor = viewportAspect / textureAspect;
-                    uvMin.y = 0.5f - 0.5f / cropFactor;
-                    uvMax.y = 0.5f + 0.5f / cropFactor;
-                }
+                constexpr ImVec2 uvMin(0.0f, 0.0f);
+                constexpr ImVec2 uvMax(1.0f, 1.0f);
 
                 // Position the image at the start of the content region and render
                 ImGui::SetCursorPos(contentMin);
@@ -145,7 +129,7 @@ void SceneViewport::Draw()
                 // Handle mouse picking (click to select/deselect objects)
                 if (!gizmoBlocking)
                 {
-                    HandleMousePicking(squarePos, squareSize, uvMin, uvMax);
+                    HandleMousePicking(squarePos, squareSize);
                 }
 
                 // Drag-and-drop target — only place the InvisibleButton when the gizmo
@@ -278,16 +262,9 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
     // so it expects standard OpenGL-convention matrices. glm::perspective already produces that.
     glm::mat4 view = cam->GetViewMatrix();
 
-    // Build a projection matrix that matches the viewport panel's aspect ratio.
-    // The scene image is UV-cropped to fit the panel, so the gizmo projection must
-    // use the panel's aspect ratio to stay aligned with what the user sees.
-    float viewportAspect = viewportSize.x / viewportSize.y;
-    glm::mat4 projection = glm::perspective(
-        glm::radians(cam->GetVerticalFOV()),
-        viewportAspect,
-        cam->GetNearPlane(),
-        cam->GetFarPlane()
-    );
+    // Camera aspect ratio is driven from the panel each frame, so the camera's own
+    // projection matrix is already correct — no need to rebuild it here.
+    glm::mat4 projection = cam->GetProjectionMatrix();
 
     // Get the object's transform matrix.
     // Use worldMatrix so the gizmo is placed at the correct world position even
@@ -379,8 +356,7 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
     }
 }
 
-void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& viewportSize,
-                                       const ImVec2& uvMin, const ImVec2& uvMax)
+void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& viewportSize)
 {
     // Only respond to left mouse button click when the viewport is hovered and
     // right mouse button is NOT held (camera uses RMB + WASD).
@@ -400,15 +376,11 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
     if (relX < 0.0f || relX > 1.0f || relY < 0.0f || relY > 1.0f)
         return;
 
-    // Map from panel-relative [0,1] to UV coordinates (accounting for cropping)
-    float uvX = uvMin.x + relX * (uvMax.x - uvMin.x);
-    float uvY = uvMin.y + relY * (uvMax.y - uvMin.y);
-
-    // Map UV to framebuffer pixel coordinates (round to nearest, clamp to valid range)
+    // Full UV — panel-relative coords map directly to framebuffer UV (no cropping).
     VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
-    int32_t pixelX = std::clamp(static_cast<int32_t>(uvX * static_cast<float>(vkContext->framebufferWidth)  + 0.5f),
+    int32_t pixelX = std::clamp(static_cast<int32_t>(relX * static_cast<float>(vkContext->framebufferWidth)  + 0.5f),
                                 0, static_cast<int32_t>(vkContext->framebufferWidth  - 1));
-    int32_t pixelY = std::clamp(static_cast<int32_t>(uvY * static_cast<float>(vkContext->framebufferHeight) + 0.5f),
+    int32_t pixelY = std::clamp(static_cast<int32_t>(relY * static_cast<float>(vkContext->framebufferHeight) + 0.5f),
                                 0, static_cast<int32_t>(vkContext->framebufferHeight - 1));
 
     // Build geometry list (same logic as ModuleRenderer3D::BuildRenderPacket)

@@ -40,8 +40,7 @@ private:
     static bool IsValidASCII(const std::string& str);
 
     void HandleGizmoInput();
-    void HandleMousePicking(const ImVec2& viewportPos, const ImVec2& viewportSize,
-                            const ImVec2& uvMin, const ImVec2& uvMax);
+    void HandleMousePicking(const ImVec2& viewportPos, const ImVec2& viewportSize);
     void DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportSize);
 
     GizmoOperation m_GizmoOperation = GizmoOperation::TRANSLATE;

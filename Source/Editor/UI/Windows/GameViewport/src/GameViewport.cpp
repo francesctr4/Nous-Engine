@@ -7,6 +7,9 @@
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
+#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
+
 GameViewport::GameViewport(const char* title, EditorContext* context, const bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
@@ -39,30 +42,16 @@ void GameViewport::Draw()
 
             if (squareSize.x > 0.0f && squareSize.y > 0.0f)
             {
-                // Calculate aspect ratios and UV coordinates
-                constexpr float textureWidth = 1920.0f;
-                constexpr float textureHeight = 1080.0f;
+                // Drive game camera aspect ratio from panel size — Hor+ scaling.
+                // CCamera::OnUpdate() sets aspectRatio from the authored field each frame,
+                // but Draw() runs after Update(), so this override wins in EDITOR mode.
+                // In standalone GAME mode (no ImGui panel), CCamera keeps its authored value.
+                Camera* gameCamera = editorContext->GetScene()->gameCamera;
+                if (gameCamera)
+                    gameCamera->SetAspectRatio(squareSize.x / squareSize.y);
 
-                constexpr float textureAspect = textureWidth / textureHeight;
-                const float viewportAspect = squareSize.x / squareSize.y;
-
-                ImVec2 uvMin(0.0f, 0.0f);
-                ImVec2 uvMax(1.0f, 1.0f);
-
-                if (viewportAspect < textureAspect)
-                {
-                    // Viewport is narrower: crop left/right
-                    const float cropFactor = textureAspect / viewportAspect;
-                    uvMin.x = 0.5f - 0.5f / cropFactor;
-                    uvMax.x = 0.5f + 0.5f / cropFactor;
-                }
-                else if (viewportAspect > textureAspect)
-                {
-                    // Viewport is wider: crop top/bottom
-                    const float cropFactor = viewportAspect / textureAspect;
-                    uvMin.y = 0.5f - 0.5f / cropFactor;
-                    uvMax.y = 0.5f + 0.5f / cropFactor;
-                }
+                constexpr ImVec2 uvMin(0.0f, 0.0f);
+                constexpr ImVec2 uvMax(1.0f, 1.0f);
 
                 // Position the image at the start of the content region and render
                 ImGui::SetCursorPos(contentMin); // Position relative to window's content area
