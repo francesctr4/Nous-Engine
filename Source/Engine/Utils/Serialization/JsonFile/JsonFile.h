@@ -3,6 +3,7 @@
 
 #include <Engine/Core/Globals.h>
 #include <Engine/Utils/Math/MathUtils.h>
+#include "Engine/EngineExport.h"
 
 #include <glm/glm.hpp>
 
@@ -11,7 +12,7 @@
 typedef struct json_value_t  JSON_Value;
 typedef struct json_object_t JSON_Object;
 
-class JsonFile 
+class NOUS_ENGINE_API JsonFile
 {
 public:
 
