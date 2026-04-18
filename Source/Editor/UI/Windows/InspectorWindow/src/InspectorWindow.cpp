@@ -288,8 +288,10 @@ void InspectorWindow::Draw() {
                                     if (!entry.is_regular_file()) continue;
                                     if (entry.path().extension() != ".glsl") continue;
 
-                                    const std::string fullPath = entry.path().generic_string();
                                     const std::string fileName = entry.path().filename().string();
+                                    if (fileName.rfind("BuiltIn.", 0) == 0) continue;
+
+                                    const std::string fullPath = entry.path().generic_string();
                                     const bool isSelected = (mat.material->shader != nullptr &&
                                                              mat.material->shader->GetAssetsPath() == fullPath);
 
