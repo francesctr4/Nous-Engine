@@ -101,7 +101,7 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 	if (m_pendingStop)
 	{
 		m_pendingStop          = false;
-		m_pendingPrefabRefresh = false; // LoadScene calls RefreshPrefabInstances directly
+		m_pendingPrefabRefresh = false; // snapshot restore skips RefreshPrefabInstances; cancel any pending refresh
 		LoadScene(m_snapshotPath);
 		NOUS_INFO("[Scene] Simulation stopped — scene restored from snapshot.");
 	}
@@ -353,7 +353,12 @@ void ModuleScene::LoadScene(const std::string& path)
 
 	activeScene->Deserialize(path);
 	EnsureMainCamera();
-	RefreshPrefabInstances();
+	// Snapshot already captures the complete pre-play state of every entity,
+	// including prefab instances. Refreshing from disk would destroy and recreate
+	// prefab children from their .nprefab source files, resetting them to their
+	// initial (disk) state rather than the editor state at the time Play was pressed.
+	if (path != m_snapshotPath)
+		RefreshPrefabInstances();
 
 	// Don't treat the simulation snapshot as the user's active scene — otherwise
 	// pressing Stop would make Save overwrite Library/_simulation_snapshot.nous.
