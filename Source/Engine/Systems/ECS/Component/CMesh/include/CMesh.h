@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_CMESH_H
 
 #include "Engine/Systems/ECS/Component/Component.h"
+#include "Engine/EngineExport.h"
 
 #include <cstdint>
 
@@ -19,11 +20,11 @@ public:
     int32_t submeshIndex = -1;
 
     // ---------- JSON Serialization ----------
-    JSON_Value* Serialize() const override;
+    NOUS_ENGINE_API JSON_Value* Serialize() const override;
 
-    void Deserialize(JSON_Object* obj) override;
+    NOUS_ENGINE_API void Deserialize(JSON_Object* obj) override;
 
-    void OnDestroy() override;
+    NOUS_ENGINE_API void OnDestroy() override;
 };
 
 #endif // NOUS_ENGINE_CMESH_H

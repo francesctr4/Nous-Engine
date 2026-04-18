@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_CMATERIAL_H
 
 #include "Engine/Systems/ECS/Component/Component.h"
+#include "Engine/EngineExport.h"
 
 class ResourceMaterial;
 
@@ -13,10 +14,10 @@ public:
     ~CMaterial() override = default;
 
     // ---------- JSON Serialization ----------
-    JSON_Value* Serialize() const override;
-    void Deserialize(JSON_Object* obj) override;
+    NOUS_ENGINE_API JSON_Value* Serialize() const override;
+    NOUS_ENGINE_API void Deserialize(JSON_Object* obj) override;
 
-    void OnDestroy() override;
+    NOUS_ENGINE_API void OnDestroy() override;
 
     ResourceMaterial* material = nullptr;
 };

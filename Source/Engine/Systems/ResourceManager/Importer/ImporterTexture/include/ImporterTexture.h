@@ -2,8 +2,9 @@
 #define IMPORTERTEXTURE_H
 
 #include "Engine/Systems/ResourceManager/Importer/Importer.inl"
+#include "Engine/EngineExport.h"
 
-struct ImporterTexture : Importer
+struct NOUS_ENGINE_API ImporterTexture : Importer
 {
     bool Import(const MetaFileData& metaFileData) override;
     bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;

@@ -1,6 +1,7 @@
 #ifndef NOUS_ENGINE_EVENT_H
 #define NOUS_ENGINE_EVENT_H
 
+#include "Engine/EngineExport.h"
 #include <cstdint>
 #include <cstring>
 
@@ -70,29 +71,29 @@ struct Event
 // ------------------------------------------------------------
 
 // Integer helpers
-EventContext SendContext(int32_t a);
-EventContext SendContext(int32_t a, int32_t b);
-EventContext SendContext(int32_t a, int32_t b, int32_t c);
-EventContext SendContext(int32_t a, int32_t b, int32_t c, int32_t d);
+NOUS_ENGINE_API EventContext SendContext(int32_t a);
+NOUS_ENGINE_API EventContext SendContext(int32_t a, int32_t b);
+NOUS_ENGINE_API EventContext SendContext(int32_t a, int32_t b, int32_t c);
+NOUS_ENGINE_API EventContext SendContext(int32_t a, int32_t b, int32_t c, int32_t d);
 
 // Unsigned integer helpers
-EventContext SendContext(uint32_t a);
-EventContext SendContext(uint32_t a, uint32_t b);
-EventContext SendContext(uint32_t a, uint32_t b, uint32_t c);
+NOUS_ENGINE_API EventContext SendContext(uint32_t a);
+NOUS_ENGINE_API EventContext SendContext(uint32_t a, uint32_t b);
+NOUS_ENGINE_API EventContext SendContext(uint32_t a, uint32_t b, uint32_t c);
 
 // Floating point helpers
-EventContext SendContext(float a);
-EventContext SendContext(float a, float b);
-EventContext SendContext(float a, float b, float c);
+NOUS_ENGINE_API EventContext SendContext(float a);
+NOUS_ENGINE_API EventContext SendContext(float a, float b);
+NOUS_ENGINE_API EventContext SendContext(float a, float b, float c);
 
 // Double helpers
-EventContext SendContext(double a);
-EventContext SendContext(double a, double b);
+NOUS_ENGINE_API EventContext SendContext(double a);
+NOUS_ENGINE_API EventContext SendContext(double a, double b);
 
 // Boolean, string, pointer, and 64-bit helpers
-EventContext SendContext(bool value);
-EventContext SendContext(const char* str);
-EventContext SendContext(int64_t a, int64_t b = 0);
+NOUS_ENGINE_API EventContext SendContext(bool value);
+NOUS_ENGINE_API EventContext SendContext(const char* str);
+NOUS_ENGINE_API EventContext SendContext(int64_t a, int64_t b = 0);
 
 // -------- [pointer] --------
 template<typename T>

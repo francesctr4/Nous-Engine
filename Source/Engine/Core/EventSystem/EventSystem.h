@@ -41,12 +41,12 @@ public:
     // --------------------------------------------------
     // Dispatch queued events (call each frame)
     // --------------------------------------------------
-    void DispatchQueued();
+    NOUS_ENGINE_API void DispatchQueued();
 
     // --------------------------------------------------
     // Utilities
     // --------------------------------------------------
-    void Clear();
+    NOUS_ENGINE_API void Clear();
 
 private:
     std::unordered_map<EventType, std::vector<IEventListener*>> m_Listeners;

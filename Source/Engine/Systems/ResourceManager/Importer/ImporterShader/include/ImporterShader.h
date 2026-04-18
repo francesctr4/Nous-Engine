@@ -2,8 +2,9 @@
 #define NOUS_ENGINE_IMPORTER_SHADER_H
 
 #include "Engine/Systems/ResourceManager/Importer/Importer.inl"
+#include "Engine/EngineExport.h"
 
-struct ImporterShader : Importer
+struct NOUS_ENGINE_API ImporterShader : Importer
 {
     bool Import(const MetaFileData& metaFileData) override;
     bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;
