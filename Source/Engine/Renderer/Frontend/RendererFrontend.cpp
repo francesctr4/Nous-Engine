@@ -169,6 +169,8 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 		std::copy_n(packet->pointLights,
 		          packet->activePointLightCount,
 		          ubo.pointLights);
+		ubo.spotLightCountAndPad.x = static_cast<int32_t>(packet->activeSpotLightCount);
+		std::copy_n(packet->spotLights, packet->activeSpotLightCount, ubo.spotLights);
 		ubo.time = glm::vec4(packet->totalTime,
 		                     std::sin(packet->totalTime),
 		                     std::cos(packet->totalTime),
@@ -262,6 +264,26 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 					packet->editorCamera->GetViewMatrix(),
 					mPointLightDebugs,
 					/*globalAlreadySet=*/ !mBoundingBoxes.empty() || !mCameraFrustums.empty());
+			}
+
+			if (!mDirectionalLightDebugs.empty())
+			{
+				success &= mBackend->DrawDirectionalLightDebugs(
+					sceneRenderpass,
+					packet->editorCamera->GetProjectionMatrix(),
+					packet->editorCamera->GetViewMatrix(),
+					mDirectionalLightDebugs,
+					/*globalAlreadySet=*/ !mBoundingBoxes.empty() || !mCameraFrustums.empty() || !mPointLightDebugs.empty());
+			}
+
+			if (!mSpotLightDebugs.empty())
+			{
+				success &= mBackend->DrawSpotLightDebugs(
+					sceneRenderpass,
+					packet->editorCamera->GetProjectionMatrix(),
+					packet->editorCamera->GetViewMatrix(),
+					mSpotLightDebugs,
+					/*globalAlreadySet=*/ !mBoundingBoxes.empty() || !mCameraFrustums.empty() || !mPointLightDebugs.empty() || !mDirectionalLightDebugs.empty());
 			}
 		});
 	}
@@ -620,6 +642,16 @@ void RendererFrontend::SetCameraFrustums(const std::vector<CameraFrustumData>& f
 void RendererFrontend::SetPointLightDebugs(const std::vector<BoundingBoxData>& lightDebugs)
 {
 	mPointLightDebugs = lightDebugs;
+}
+
+void RendererFrontend::SetDirectionalLightDebugs(const std::vector<DirectionalLightDebugData>& lightDebugs)
+{
+	mDirectionalLightDebugs = lightDebugs;
+}
+
+void RendererFrontend::SetSpotLightDebugs(const std::vector<SpotLightDebugData>& lightDebugs)
+{
+	mSpotLightDebugs = lightDebugs;
 }
 
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)

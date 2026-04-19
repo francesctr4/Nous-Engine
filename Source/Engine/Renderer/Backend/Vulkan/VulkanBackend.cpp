@@ -527,6 +527,92 @@ bool VulkanBackend::Initialize()
         }
     }
 
+    // ── Create directional light debug pyramid vertex buffer ──────────────────
+    // 8 edges (4 base + 4 apex-to-corner) = 16 line endpoints.
+    // Apex at (0,-1.5,0); base corners at (±0.2, 0, ±0.2). Points in local -Y.
+    {
+        const glm::vec3 apex = { 0.0f, -1.5f,  0.0f };
+        const glm::vec3 bbl  = {-0.2f,  0.0f, -0.2f };
+        const glm::vec3 bbr  = { 0.2f,  0.0f, -0.2f };
+        const glm::vec3 bfr  = { 0.2f,  0.0f,  0.2f };
+        const glm::vec3 bfl  = {-0.2f,  0.0f,  0.2f };
+
+        std::array<Vertex3D, 16> pyramidVerts{};
+        auto setPos = [](Vertex3D& v, const glm::vec3& p) { v.position = p; };
+
+        setPos(pyramidVerts[0],  bbl);  setPos(pyramidVerts[1],  bbr);
+        setPos(pyramidVerts[2],  bbr);  setPos(pyramidVerts[3],  bfr);
+        setPos(pyramidVerts[4],  bfr);  setPos(pyramidVerts[5],  bfl);
+        setPos(pyramidVerts[6],  bfl);  setPos(pyramidVerts[7],  bbl);
+        setPos(pyramidVerts[8],  apex); setPos(pyramidVerts[9],  bbl);
+        setPos(pyramidVerts[10], apex); setPos(pyramidVerts[11], bbr);
+        setPos(pyramidVerts[12], apex); setPos(pyramidVerts[13], bfr);
+        setPos(pyramidVerts[14], apex); setPos(pyramidVerts[15], bfl);
+
+        vkContext->dirLightPyramidVertexCount = static_cast<uint32>(pyramidVerts.size());
+        const uint64 bufSize = pyramidVerts.size() * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufSize,
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->dirLightPyramidVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create directional light pyramid vertex buffer.");
+        }
+        else
+        {
+            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->dirLightPyramidVertexBuffer,
+                0, bufSize, 0, pyramidVerts.data());
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Dir light debug pyramid vertex buffer created (%u vertices).",
+                vkContext->dirLightPyramidVertexCount);
+        }
+    }
+
+    // ── Create spot light debug cone vertex buffer ─────────────────────────────
+    // Apex at origin, base circle at y=-1 in XZ plane; 24 segments.
+    // 24 base segments × 2 + 24 spokes × 2 = 96 line endpoints. Points in local -Y.
+    {
+        constexpr uint32 k_ConeSegments = 24;
+        std::vector<Vertex3D> coneVerts;
+        coneVerts.reserve(k_ConeSegments * 4);
+
+        for (uint32 i = 0; i < k_ConeSegments; ++i)
+        {
+            const float a0 = (2.0f * glm::pi<float>() * static_cast<float>(i))     / static_cast<float>(k_ConeSegments);
+            const float a1 = (2.0f * glm::pi<float>() * static_cast<float>(i + 1)) / static_cast<float>(k_ConeSegments);
+
+            Vertex3D v0{}, v1{};
+            v0.position = { std::cos(a0), -1.0f, std::sin(a0) };
+            v1.position = { std::cos(a1), -1.0f, std::sin(a1) };
+            coneVerts.push_back(v0);
+            coneVerts.push_back(v1);
+
+            Vertex3D vApex{}, vRim{};
+            vApex.position = { 0.0f, 0.0f, 0.0f };
+            vRim.position  = { std::cos(a0), -1.0f, std::sin(a0) };
+            coneVerts.push_back(vApex);
+            coneVerts.push_back(vRim);
+        }
+
+        vkContext->spotLightConeVertexCount = static_cast<uint32>(coneVerts.size());
+        const uint64 bufSize = coneVerts.size() * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufSize,
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->spotLightConeVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create spot light cone vertex buffer.");
+        }
+        else
+        {
+            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->spotLightConeVertexBuffer,
+                0, bufSize, 0, coneVerts.data());
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Spot light debug cone vertex buffer created (%u vertices).",
+                vkContext->spotLightConeVertexCount);
+        }
+    }
+
     // ── Create camera frustum wireframe vertex buffer (dynamic, host-visible) ─
     // Capacity: 8 frustums × 24 vertices (12 edges × 2 endpoints per frustum).
     {
@@ -679,6 +765,20 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->pointLightSphereVertexBuffer);
         vkContext->pointLightSphereVertexBuffer.handle = VK_NULL_HANDLE;
         vkContext->pointLightSphereVertexCount = 0;
+    }
+
+    if (vkContext->dirLightPyramidVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->dirLightPyramidVertexBuffer);
+        vkContext->dirLightPyramidVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->dirLightPyramidVertexCount = 0;
+    }
+
+    if (vkContext->spotLightConeVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->spotLightConeVertexBuffer);
+        vkContext->spotLightConeVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->spotLightConeVertexCount = 0;
     }
 
     // Destroy instance SSBOs.
@@ -3107,6 +3207,124 @@ bool VulkanBackend::DrawPointLightDebugs(const RenderpassType renderpassID,
             0, sizeof(SpherePushConstants), &pc);
 
         vkCmdDraw(cmdBuf->handle, vkContext->pointLightSphereVertexCount, 1, 0, 0);
+    }
+
+    return true;
+}
+
+bool VulkanBackend::DrawDirectionalLightDebugs(const RenderpassType renderpassID,
+                                               const glm::mat4& projection,
+                                               const glm::mat4& view,
+                                               const std::vector<DirectionalLightDebugData>& lightDebugs,
+                                               const bool globalAlreadySet)
+{
+#ifdef _PROFILING
+    ZoneScopedN("DrawDirectionalLightDebugs");
+#endif
+    if (renderpassID != RenderpassType::SCENE) return true;
+    if (lightDebugs.empty())                   return true;
+
+    const ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
+    if (!rShader || !rShader->internalData)    return true;
+    if (vkContext->dirLightPyramidVertexBuffer.handle == VK_NULL_HANDLE ||
+        vkContext->dirLightPyramidVertexCount == 0)
+        return true;
+
+    const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    const auto vs = down_cast<VulkanShader*>(rShader->internalData);
+
+    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+
+    if (globalAlreadySet)
+    {
+        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vs->pipeline.pipelineLayout, 0, 1,
+            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+    }
+    else
+    {
+        const struct MinUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+            vkContext->imageIndex, &ubo, sizeof(ubo));
+    }
+
+    constexpr VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->dirLightPyramidVertexBuffer.handle, &offset);
+
+    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
+
+    struct PushConstants { glm::mat4 model; glm::vec4 color; };
+
+    for (const DirectionalLightDebugData& ld : lightDebugs)
+    {
+        PushConstants pc{ ld.transform, ld.color };
+        vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pc);
+        vkCmdDraw(cmdBuf->handle, vkContext->dirLightPyramidVertexCount, 1, 0, 0);
+    }
+
+    return true;
+}
+
+bool VulkanBackend::DrawSpotLightDebugs(const RenderpassType renderpassID,
+                                        const glm::mat4& projection,
+                                        const glm::mat4& view,
+                                        const std::vector<SpotLightDebugData>& lightDebugs,
+                                        const bool globalAlreadySet)
+{
+#ifdef _PROFILING
+    ZoneScopedN("DrawSpotLightDebugs");
+#endif
+    if (renderpassID != RenderpassType::SCENE) return true;
+    if (lightDebugs.empty())                   return true;
+
+    const ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
+    if (!rShader || !rShader->internalData)    return true;
+    if (vkContext->spotLightConeVertexBuffer.handle == VK_NULL_HANDLE ||
+        vkContext->spotLightConeVertexCount == 0)
+        return true;
+
+    const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    const auto vs = down_cast<VulkanShader*>(rShader->internalData);
+
+    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+
+    if (globalAlreadySet)
+    {
+        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vs->pipeline.pipelineLayout, 0, 1,
+            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+    }
+    else
+    {
+        const struct MinUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+            vkContext->imageIndex, &ubo, sizeof(ubo));
+    }
+
+    constexpr VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->spotLightConeVertexBuffer.handle, &offset);
+
+    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
+
+    struct PushConstants { glm::mat4 model; glm::vec4 color; };
+
+    for (const SpotLightDebugData& ld : lightDebugs)
+    {
+        PushConstants pcMarker{ ld.markerTransform, ld.color };
+        vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pcMarker);
+        vkCmdDraw(cmdBuf->handle, vkContext->spotLightConeVertexCount, 1, 0, 0);
+
+        if (ld.selected)
+        {
+            PushConstants pcFull{ ld.fullConeTransform, ld.color };
+            vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+                VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pcFull);
+            vkCmdDraw(cmdBuf->handle, vkContext->spotLightConeVertexCount, 1, 0, 0);
+        }
     }
 
     return true;

@@ -20,6 +20,7 @@ layout(location = 0) out struct DataTransferObject
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -30,7 +31,9 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     DirectionalLight dirLight;
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
-    vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime
+    vec4             time;
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 layout(set = 0, binding = 1) readonly buffer InstanceData
@@ -100,6 +103,7 @@ layout(set = 1, binding = 6) uniform sampler2D emissiveSampler;
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -111,6 +115,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
     vec4             time;
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 const float PI = 3.14159265359;
@@ -167,6 +173,27 @@ vec3 CalcPBRLight(vec3 L, vec3 radiance,
     return (kD * albedo / PI + spec) * radiance * NdotL;
 }
 
+vec3 CalcSpotLight_PBR(SpotLight light, vec3 fragPos, vec3 N, vec3 V,
+                       vec3 albedo, float metallic, float roughness, vec3 F0)
+{
+    vec3  toLight  = light.position.xyz - fragPos;
+    float dist     = length(toLight);
+    if (dist >= light.position.w) return vec3(0.0);
+
+    vec3  lightDir = normalize(toLight);
+    float cosTheta = dot(-lightDir, normalize(light.direction.xyz));
+
+    float epsilon   = light.angles.x - light.angles.y;
+    float spotAtten = clamp((cosTheta - light.angles.y) / epsilon, 0.0, 1.0);
+
+    float distAtten = clamp(1.0 - (dist / light.position.w), 0.0, 1.0);
+    distAtten      *= distAtten;
+
+    vec3 L        = lightDir;
+    vec3 radiance = light.color.rgb * light.color.w * spotAtten * distAtten;
+    return CalcPBRLight(L, radiance, N, V, albedo, metallic, roughness, F0);
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 void main()
@@ -215,6 +242,14 @@ void main()
         vec3 L        = normalize(toLight);
         vec3 radiance = globalUBO.pointLights[i].color.rgb * globalUBO.pointLights[i].color.w * atten;
         Lo += CalcPBRLight(L, radiance, N, V, albedo, metallic, roughness, F0);
+    }
+
+    // --- SPOT LIGHTS ---
+    for (int i = 0; i < globalUBO.spotLightCountAndPad.x; i++)
+    {
+        Lo += CalcSpotLight_PBR(globalUBO.spotLights[i],
+                                inDTO.fragPos, N, V,
+                                albedo, metallic, roughness, F0);
     }
 
     // --- AMBIENT (simple constant-color; IBL deferred to Phase 4) ---

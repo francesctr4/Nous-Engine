@@ -5,6 +5,7 @@
 #include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
+#include <parson.h>
 
 class t_CLight : public ::testing::Test
 {
@@ -137,4 +138,96 @@ TEST_F(t_CLight, MultipleGameObjects_IndependentCLight)
     b.GetComponent<CLight>().intensity = 5.0f;
     EXPECT_FLOAT_EQ(a.GetComponent<CLight>().intensity, 1.0f);
     EXPECT_FLOAT_EQ(b.GetComponent<CLight>().intensity, 5.0f);
+}
+
+// =============================================================================
+// Spot light type
+// =============================================================================
+
+TEST_F(t_CLight, DefaultInnerAngle_Is15)
+{
+    GameObject go = scene->CreateGameObject("SpotLight");
+    go.AddComponent<CLight>();
+    EXPECT_FLOAT_EQ(go.GetComponent<CLight>().innerAngle, 15.0f);
+}
+
+TEST_F(t_CLight, DefaultOuterAngle_Is25)
+{
+    GameObject go = scene->CreateGameObject("SpotLight");
+    go.AddComponent<CLight>();
+    EXPECT_FLOAT_EQ(go.GetComponent<CLight>().outerAngle, 25.0f);
+}
+
+TEST_F(t_CLight, Type_CanBeChangedToSpot)
+{
+    GameObject go = scene->CreateGameObject("SpotLight");
+    go.AddComponent<CLight>();
+    go.GetComponent<CLight>().type = LightType::Spot;
+    EXPECT_EQ(go.GetComponent<CLight>().type, LightType::Spot);
+}
+
+// =============================================================================
+// Serialization
+// =============================================================================
+
+TEST_F(t_CLight, Spot_Serialize_WritesLightTypeSpot)
+{
+    GameObject go  = scene->CreateGameObject("SpotLight");
+    auto& light    = go.AddComponent<CLight>();
+    light.type     = LightType::Spot;
+    light.innerAngle = 20.0f;
+    light.outerAngle = 35.0f;
+
+    JSON_Value*  val = light.Serialize();
+    JSON_Object* obj = json_value_get_object(val);
+
+    EXPECT_STREQ(json_object_get_string(obj, "lightType"), "Spot");
+    EXPECT_FLOAT_EQ(static_cast<float>(json_object_get_number(obj, "innerAngle")), 20.0f);
+    EXPECT_FLOAT_EQ(static_cast<float>(json_object_get_number(obj, "outerAngle")), 35.0f);
+
+    json_value_free(val);
+}
+
+TEST_F(t_CLight, Spot_Deserialize_RoundTrip_PreservesAngles)
+{
+    GameObject go  = scene->CreateGameObject("SpotLight");
+    auto& light    = go.AddComponent<CLight>();
+    light.type     = LightType::Spot;
+    light.innerAngle = 12.0f;
+    light.outerAngle = 28.0f;
+
+    JSON_Value*  val = light.Serialize();
+    JSON_Object* obj = json_value_get_object(val);
+
+    go.GetComponent<CLight>().type       = LightType::Directional;
+    go.GetComponent<CLight>().innerAngle = 0.0f;
+    go.GetComponent<CLight>().outerAngle = 0.0f;
+    go.GetComponent<CLight>().Deserialize(obj);
+
+    EXPECT_EQ(go.GetComponent<CLight>().type,       LightType::Spot);
+    EXPECT_FLOAT_EQ(go.GetComponent<CLight>().innerAngle, 12.0f);
+    EXPECT_FLOAT_EQ(go.GetComponent<CLight>().outerAngle, 28.0f);
+
+    json_value_free(val);
+}
+
+TEST_F(t_CLight, NonSpot_Deserialize_AngleFieldsOptional)
+{
+    JSON_Value*  val = json_value_init_object();
+    JSON_Object* obj = json_value_get_object(val);
+    json_object_set_string(obj, "lightType", "Point");
+    json_object_set_number(obj, "colorR",    1.0);
+    json_object_set_number(obj, "colorG",    1.0);
+    json_object_set_number(obj, "colorB",    1.0);
+    json_object_set_number(obj, "intensity", 1.0);
+    json_object_set_number(obj, "range",     10.0);
+
+    GameObject go = scene->CreateGameObject("PointLight");
+    go.AddComponent<CLight>().Deserialize(obj);
+
+    EXPECT_EQ(go.GetComponent<CLight>().type, LightType::Point);
+    EXPECT_FLOAT_EQ(go.GetComponent<CLight>().innerAngle, 15.0f);
+    EXPECT_FLOAT_EQ(go.GetComponent<CLight>().outerAngle, 25.0f);
+
+    json_value_free(val);
 }

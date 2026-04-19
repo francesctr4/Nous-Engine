@@ -10,6 +10,7 @@ target_include_directories(${TEST_NAME}
 )
 
 find_package(GTest CONFIG REQUIRED)
+find_package(parson CONFIG REQUIRED)
 
 target_link_libraries(${TEST_NAME}
         PRIVATE
@@ -17,6 +18,7 @@ target_link_libraries(${TEST_NAME}
         NousEngine::Editor
         GTest::gtest
         GTest::gtest_main
+        parson::parson
 )
 
 include(GoogleTest)

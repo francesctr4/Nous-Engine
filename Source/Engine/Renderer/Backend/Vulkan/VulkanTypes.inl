@@ -327,6 +327,16 @@ struct VulkanContext
     VulkanBuffer pointLightSphereVertexBuffer{};
     uint32       pointLightSphereVertexCount = 0;
 
+    // ── Directional light debug pyramid wireframe (static, shared for all dir lights) ─
+    // Narrow pyramid pointing in local -Y (8 edges = 16 line endpoints). LINE_LIST.
+    VulkanBuffer dirLightPyramidVertexBuffer{};
+    uint32       dirLightPyramidVertexCount = 0;
+
+    // ── Spot light debug cone wireframe (static, shared for all spot lights) ──────
+    // Apex at origin, base circle at y=-1 (24 segments + 24 spokes = 96 endpoints). LINE_LIST.
+    VulkanBuffer spotLightConeVertexBuffer{};
+    uint32       spotLightConeVertexCount = 0;
+
     // ── Per-frame instance SSBO (model matrices for GPU instancing) ────────────
     // One buffer per frame-in-flight (triple-buffered). Persistently mapped.
     // Layout: mat4[c_maxInstances] — indexed by gl_InstanceIndex in the shader.

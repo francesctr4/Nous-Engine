@@ -20,6 +20,7 @@ layout(location = 0) out struct DataTransferObject
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -30,7 +31,9 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     DirectionalLight dirLight;
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
-    vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime
+    vec4             time;
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 layout(set = 0, binding = 1) readonly buffer InstanceData
@@ -104,6 +107,7 @@ layout(set = 1, binding = 6) uniform sampler2D emissiveSampler;
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -114,7 +118,9 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     DirectionalLight dirLight;
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
-    vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime
+    vec4             time;
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 // ── Blinn-Phong helpers ───────────────────────────────────────────────────────
@@ -152,6 +158,32 @@ vec3 CalcPointLight(vec4 posAndRange, vec4 colorAndIntensity,
     vec3 diffuse  = diff * albedo * colorAndIntensity.rgb * colorAndIntensity.w;
     vec3 specular = spec * specStrength * colorAndIntensity.rgb * colorAndIntensity.w;
     return (diffuse + specular) * atten;
+}
+
+vec3 CalcSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir,
+                   vec3 albedo, float specStrength, float shininess)
+{
+    vec3  toLight  = light.position.xyz - fragPos;
+    float dist     = length(toLight);
+    if (dist >= light.position.w) return vec3(0.0);
+
+    vec3  lightDir = normalize(toLight);
+    float cosTheta = dot(lightDir, normalize(-light.direction.xyz));
+
+    // cosInner - cosOuter > 0 since inner angle < outer angle
+    float epsilon   = light.angles.x - light.angles.y;
+    float spotAtten = clamp((cosTheta - light.angles.y) / epsilon, 0.0, 1.0);
+
+    float distAtten = clamp(1.0 - (dist / light.position.w), 0.0, 1.0);
+    distAtten      *= distAtten; // quadratic falloff
+
+    vec3  halfway  = normalize(lightDir + viewDir);
+    float diff     = max(dot(normal, lightDir), 0.0);
+    float spec     = pow(max(dot(normal, halfway), 0.0), shininess);
+
+    vec3 diffuse  = diff * albedo * light.color.rgb * light.color.w;
+    vec3 specular = spec * specStrength * light.color.rgb * light.color.w;
+    return (diffuse + specular) * spotAtten * distAtten;
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -193,6 +225,14 @@ void main()
                                  globalUBO.pointLights[i].color,
                                  inDTO.fragPos, normal, viewDir,
                                  albedo, specStrength, shininess);
+    }
+
+    // --- SPOT LIGHTS ---
+    for (int i = 0; i < globalUBO.spotLightCountAndPad.x; i++)
+    {
+        result += CalcSpotLight(globalUBO.spotLights[i],
+                                inDTO.fragPos, normal, viewDir,
+                                albedo, specStrength, shininess);
     }
 
     result += emissive;
