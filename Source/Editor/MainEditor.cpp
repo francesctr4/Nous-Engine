@@ -7,10 +7,6 @@
 // Editor
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_THREAD_LOCAL
-#include "stb_image.h"
-
 typedef enum MainState : uint8_t
 {
     MAIN_START,
