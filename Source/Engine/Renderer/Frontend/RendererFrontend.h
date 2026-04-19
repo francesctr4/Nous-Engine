@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_RENDERER_FRONTEND_H
 
 #include "Engine/Renderer/RendererTypes.h"
+#include "Engine/Renderer/Frontend/GroupGeometries.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
 #include "Engine/EngineExport.h"
@@ -197,16 +198,6 @@ private:
 	[[nodiscard]] bool ExecuteRenderpass(RenderpassType pass, const std::function<void()>& drawCommands) const;
 
 	void DrawEditor() const;
-
-    struct GroupedGeometries
-    {
-        std::vector<glm::mat4>      matrices;
-        std::vector<InstancedBatch> batches;
-    };
-
-    [[nodiscard]] GroupedGeometries GroupGeometries(
-        const std::vector<GeometryRenderData>& geometries,
-        uint32_t baseInstance = 0) const;
 
 	// Dispatch a background compile job for the given shader path/pointer.
 	// No-op if a compile for this path is already in-flight.
