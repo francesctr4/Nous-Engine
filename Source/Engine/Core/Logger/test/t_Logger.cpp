@@ -7,6 +7,14 @@
 #include <thread>
 #include <vector>
 
+static void WaitForLogEntry(uint64_t cursorBefore, int timeoutMs = 500)
+{
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
+    while (GetLogEntryCount() <= cursorBefore &&
+           std::chrono::steady_clock::now() < deadline)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+}
+
 // =============================================================================
 // Fixture — initialize/shutdown the logger around each test
 // =============================================================================
@@ -102,7 +110,7 @@ TEST_F(t_Logger, GetLogEntryCount_IncreasesAfterLogging)
 {
     const uint64_t before = GetLogEntryCount();
     LogOutput(LOG_LEVEL_INFO, "t_Logger test entry");
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    WaitForLogEntry(before);
     EXPECT_GT(GetLogEntryCount(), before);
 }
 
@@ -110,7 +118,7 @@ TEST_F(t_Logger, GetLogEntriesSince_ReturnsNewEntries)
 {
     const uint64_t cursor0 = GetLogEntryCount();
     LogOutput(LOG_LEVEL_INFO, "t_Logger cursor test");
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    WaitForLogEntry(cursor0);
 
     std::vector<LogEntry> entries;
     GetLogEntriesSince(cursor0, entries);
@@ -121,7 +129,7 @@ TEST_F(t_Logger, GetLogEntriesSince_EntryHasCorrectLevel)
 {
     const uint64_t cursor0 = GetLogEntryCount();
     LogOutput(LOG_LEVEL_WARN, "t_Logger level check");
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    WaitForLogEntry(cursor0);
 
     std::vector<LogEntry> entries;
     GetLogEntriesSince(cursor0, entries);
@@ -141,8 +149,9 @@ TEST_F(t_Logger, SetLogCallback_InvokedOnLog)
         called = true;
     });
 
+    const uint64_t cursor0 = GetLogEntryCount();
     LogOutput(LOG_LEVEL_INFO, "callback test");
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    WaitForLogEntry(cursor0);
 
     EXPECT_TRUE(called);
 

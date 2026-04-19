@@ -3,6 +3,7 @@
 #include "Engine/Core/Logger/Logger.h"
 
 // Wrapper around std::filesystem
+#include <algorithm>
 #include <filesystem>
 
 std::string NOUS_FileManager::GetAbsolutePath(const std::string& path)
@@ -58,7 +59,9 @@ std::string NOUS_FileManager::GetExtension(const std::string& path)
 
 std::string NOUS_FileManager::NormalizePath(const std::string& path)
 {
-	return std::filesystem::path(path).generic_string();
+	std::string result = path;
+	std::replace(result.begin(), result.end(), '\\', '/');
+	return result;
 }
 
 bool NOUS_FileManager::CreateDirectory(const std::filesystem::path& path)

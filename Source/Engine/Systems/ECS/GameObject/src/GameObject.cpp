@@ -15,6 +15,7 @@
 #include <parson.h>
 #include <ranges>
 #include <algorithm>
+#include <cstring>
 
 // ── Identity ──────────────────────────────────────────────────────────────────
 

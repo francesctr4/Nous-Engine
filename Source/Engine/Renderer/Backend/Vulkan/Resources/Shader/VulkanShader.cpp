@@ -306,9 +306,7 @@ void VulkanShader::Destroy()
 // ─────────────────────────────── Create ──────────────────────────────────────
 
 bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* renderpass,
-                                ResourceShader* shader, bool disableBlending,
-                                bool createOutlinePipelines, bool useLineTopology,
-                                bool noDepthTest)
+                                ResourceShader* shader, const VulkanShaderCreateInfo& settings)
 {
     if (!shader || shader->stagesData.empty())
     {
@@ -490,7 +488,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     VkPipelineDepthStencilStateCreateInfo depthCI{};
     depthCI.sType            = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 
-    if (createOutlinePipelines)
+    if (settings.createOutlinePipelines)
     {
         // Outline-draw pipeline: depth test ON (respect scene depth), no depth write,
         // stencil test NOTEQUAL(1) — only draw where the mesh was NOT marked in pass 1.
@@ -510,7 +508,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
         depthCI.front             = outlineStencil;
         depthCI.back              = outlineStencil;
     }
-    else if (noDepthTest)
+    else if (settings.noDepthTest)
     {
         // Background-style pipeline: depth test OFF, depth write OFF.
         // The background is drawn first and must not occlude or be occluded
@@ -529,7 +527,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     VkPipelineColorBlendAttachmentState blendAttach{};
     blendAttach.colorWriteMask    = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    blendAttach.blendEnable           = (disableBlending || createOutlinePipelines) ? VK_FALSE : VK_TRUE;
+    blendAttach.blendEnable           = (settings.disableBlending || settings.createOutlinePipelines) ? VK_FALSE : VK_TRUE;
     blendAttach.srcColorBlendFactor   = VK_BLEND_FACTOR_SRC_ALPHA;
     blendAttach.dstColorBlendFactor   = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     blendAttach.colorBlendOp          = VK_BLEND_OP_ADD;
@@ -572,7 +570,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     inputAssemblyCI.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssemblyCI.topology               = hasTessellation
                                                 ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST
-                                                : (useLineTopology
+                                                : (settings.useLineTopology
                                                     ? VK_PRIMITIVE_TOPOLOGY_LINE_LIST
                                                     : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     inputAssemblyCI.primitiveRestartEnable = VK_FALSE;
@@ -621,7 +619,7 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
     //   outlineNoDepthPipeline      — outline-draw, depth OFF  (depthAware=false pass 2)
     //   stencilWritePipeline        — stencil-write, depth ON  (depthAware=true  pass 1)
     //   stencilWriteNoDepthPipeline — stencil-write, depth OFF (depthAware=false pass 1)
-    if (createOutlinePipelines)
+    if (settings.createOutlinePipelines)
     {
         // ── 6b-0. Outline-no-depth pipeline ───────────────────────────────────
         // Same as the outline-draw pipeline but with depth test disabled so the

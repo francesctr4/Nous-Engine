@@ -65,6 +65,15 @@ struct VulkanShader : public IBackendShader
     void Destroy() override;
 };
 
+// ── Pipeline creation settings ────────────────────────────────────────────────
+struct VulkanShaderCreateInfo
+{
+    bool disableBlending        = false; // disable alpha blending (e.g. pick shader)
+    bool createOutlinePipelines = false; // also build stencil-write / outline pipeline variants
+    bool useLineTopology        = false; // LINE_LIST topology instead of TRIANGLE_LIST
+    bool noDepthTest            = false; // depth test + depth write both OFF (e.g. background)
+};
+
 // ── NOUS_VulkanShader namespace ───────────────────────────────────────────────
 namespace NOUS_VulkanShader
 {
@@ -73,15 +82,10 @@ namespace NOUS_VulkanShader
     /**
      * @brief Build all Vulkan resources from a ResourceShader that already holds
      *        compiled SPIR-V and reflection data.  Populates shader->internalData.
-     *
-     * @param createOutlinePipelines  When true, creates a second stencil-write pipeline
-     *        stored in VulkanShader::stencilWritePipeline.  Used for the outline shader.
      */
     bool Create(VulkanContext* vkContext, VulkanRenderpass* renderpass,
-                ResourceShader* shader, bool disableBlending = false,
-                bool createOutlinePipelines = false,
-                bool useLineTopology = false,
-                bool noDepthTest = false);
+                ResourceShader* shader,
+                const VulkanShaderCreateInfo& settings = {});
 
     /** @brief Destroy all GPU resources held by vs and free the struct. */
     void Destroy(VulkanContext* vkContext, VulkanShader* vs);
