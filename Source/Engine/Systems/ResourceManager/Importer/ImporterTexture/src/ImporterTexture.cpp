@@ -7,7 +7,9 @@
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
+#if defined(_WIN32) || defined(_WIN64)
 #define STB_IMAGE_IMPLEMENTATION
+#endif
 #define STBI_THREAD_LOCAL
 #include "stb_image.h"
 
