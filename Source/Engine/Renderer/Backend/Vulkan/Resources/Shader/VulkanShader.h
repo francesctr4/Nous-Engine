@@ -3,6 +3,7 @@
 
 #include "Engine/Renderer/RendererTypes.h"
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
+#include "Engine/Renderer/Backend/Vulkan/Resources/Shader/VulkanShaderDescriptorState.h"
 
 #include <mutex>
 #include <string>
@@ -12,14 +13,6 @@ class ResourceShader;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 constexpr uint32_t VULKAN_SHADER_MAX_INSTANCE_COUNT = 1024;
-
-// ── Per-descriptor generation/ID tracking for lazy descriptor writes ──────────
-struct VulkanShaderDescriptorState
-{
-    // One slot per swapchain image (triple-buffering)
-    std::array<uint32_t, 3> generations = {UINT32_MAX, UINT32_MAX, UINT32_MAX};
-    std::array<uint32_t, 3> ids         = {UINT32_MAX, UINT32_MAX, UINT32_MAX};
-};
 
 // ── Per-instance (per-material / per-object) state ───────────────────────────
 struct VulkanShaderInstanceState

@@ -993,13 +993,7 @@ void NOUS_VulkanShader::WriteInstanceSampler(VulkanContext* vkContext, VulkanSha
     if (!vs->instancePool || instanceID >= VULKAN_SHADER_MAX_INSTANCE_COUNT) return;
     if (!vs->instanceStates[instanceID].inUse) return;
 
-    // A generation of UINT32_MAX means this binding has never been written — always
-    // force the first write even if the resource ID/generation happen to match that
-    // sentinel (e.g. uninitialized ResourceTexture::ID / generation fields).
-    const bool neverWritten = (*inOutGeneration == UINT32_MAX);
-
-    // Lazy: skip write if resource is unchanged (only after at least one write).
-    if (!neverWritten && *inOutID == resourceID && *inOutGeneration == resourceGeneration) return;
+    if (!SamplerNeedsWrite(*inOutGeneration, *inOutID, resourceID, resourceGeneration)) return;
 
     VkDescriptorImageInfo imgInfo{};
     imgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
