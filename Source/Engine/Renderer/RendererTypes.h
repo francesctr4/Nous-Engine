@@ -74,6 +74,7 @@ enum class RenderpassType : uint8_t
 // Light data (std140-safe: all members use vec4/ivec4, no vec3)
 // -----------------------------------------------------------------------------
 constexpr uint32_t c_maxPointLights = 16;
+constexpr uint32_t c_maxSpotLights  = 8;
 
 struct DirectionalLight
 {
@@ -86,6 +87,15 @@ struct PointLight
     glm::vec4 position;   // xyz = world-space position, w = range
     glm::vec4 color;      // xyz = RGB, w = intensity
 };
+
+struct SpotLight
+{
+    glm::vec4 position;   // xyz = world-space position, w = range
+    glm::vec4 direction;  // xyz = world-space direction (normalised), w = unused
+    glm::vec4 color;      // xyz = RGB, w = intensity
+    glm::vec4 angles;     // x = cos(innerAngle), y = cos(outerAngle), zw = unused
+};
+// 64 bytes, std140-safe (all vec4)
 
 // GPU-side global uniform buffer object.
 // Layout must mirror the GLSL GlobalUBO block exactly (std140).
@@ -101,9 +111,11 @@ struct GlobalUBO
     DirectionalLight directionalLight;              //  32 bytes, offset 160
     glm::ivec4       lightCountAndPad;              //  16 bytes, offset 192 (x = activePointLightCount)
     PointLight       pointLights[c_maxPointLights]; // 512 bytes, offset 208
-    glm::vec4        time;                           //  16 bytes, offset 720 (x=totalTime, y=sin(t), z=cos(t), w=deltaTime)
-};                                                  // = 736 bytes total
-static_assert(sizeof(GlobalUBO) == 736,
+    glm::vec4        time;                            //  16 bytes, offset 720 (x=totalTime, y=sin(t), z=cos(t), w=deltaTime)
+    glm::ivec4       spotLightCountAndPad;            //  16 bytes, offset 736 (x = activeSpotLightCount)
+    SpotLight        spotLights[c_maxSpotLights];     // 512 bytes, offset 752
+};                                                   // = 1264 bytes total
+static_assert(sizeof(GlobalUBO) == 1264,
     "GlobalUBO size changed — update the GLSL block and this assert together.");
 
 struct RenderPacket
@@ -127,6 +139,8 @@ struct RenderPacket
     bool             hasDirectionalLight           = false;
     PointLight       pointLights[c_maxPointLights] = {};
     uint32_t         activePointLightCount         = 0;
+    SpotLight        spotLights[c_maxSpotLights]   = {};
+    uint32_t         activeSpotLightCount          = 0;
 };
 
 struct OutlineSettings
@@ -176,6 +190,28 @@ struct BoundingBoxData
 
     glm::mat4 transform;
     glm::vec4 color;
+};
+
+// Per-directional-light debug pyramid data passed to DrawDirectionalLightDebugs().
+struct DirectionalLightDebugData
+{
+    DirectionalLightDebugData() : transform(1.0f), color(1.0f) {}
+    DirectionalLightDebugData(const glm::mat4& t, const glm::vec4& c) : transform(t), color(c) {}
+
+    glm::mat4 transform;  // GO position + direction-aligned rotation, no scale
+    glm::vec4 color;
+};
+
+// Per-spot-light debug cone data passed to DrawSpotLightDebugs().
+struct SpotLightDebugData
+{
+    SpotLightDebugData()
+        : markerTransform(1.0f), fullConeTransform(1.0f), color(1.0f), selected(false) {}
+
+    glm::mat4 markerTransform;    // small fixed cone — always drawn
+    glm::mat4 fullConeTransform;  // range+angle scaled cone — drawn only when selected
+    glm::vec4 color;
+    bool      selected;
 };
 
 // -----------------------------------------------------------------------------
@@ -408,6 +444,33 @@ struct IRendererBackend
                                       const glm::mat4& view,
                                       const std::vector<BoundingBoxData>& lightDebugs,
                                       bool globalAlreadySet = false) = 0;
+
+    // ─────────────────────────────── Directional Light Debugs ────────────────
+    /**
+     * @brief Render wireframe debug pyramids for directional lights in the Scene View.
+     *        Only draws when renderpassID == SCENE.
+     * @param globalAlreadySet  Pass true when another scenery draw already updated
+     *        the bounding-box shader's global descriptor set this frame.
+     */
+    virtual bool DrawDirectionalLightDebugs(RenderpassType renderpassID,
+                                            const glm::mat4& projection,
+                                            const glm::mat4& view,
+                                            const std::vector<DirectionalLightDebugData>& lightDebugs,
+                                            bool globalAlreadySet = false) = 0;
+
+    // ─────────────────────────────── Spot Light Debugs ───────────────────────
+    /**
+     * @brief Render wireframe debug cones for spot lights in the Scene View.
+     *        Only draws when renderpassID == SCENE.
+     *        Draws a small marker cone always and a full-scale cone when selected.
+     * @param globalAlreadySet  Pass true when another scenery draw already updated
+     *        the bounding-box shader's global descriptor set this frame.
+     */
+    virtual bool DrawSpotLightDebugs(RenderpassType renderpassID,
+                                     const glm::mat4& projection,
+                                     const glm::mat4& view,
+                                     const std::vector<SpotLightDebugData>& lightDebugs,
+                                     bool globalAlreadySet = false) = 0;
 };
 
 #endif // NOUS_ENGINE_RENDERER_TYPES_H

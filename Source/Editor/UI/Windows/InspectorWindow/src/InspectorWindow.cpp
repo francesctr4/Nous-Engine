@@ -167,9 +167,9 @@ void InspectorWindow::Draw() {
 
                     ImGui::Indent();
 
-                    const char* lightTypeNames[] = { "Directional", "Point" };
+                    const char* lightTypeNames[] = { "Directional", "Point", "Spot" };
                     int currentType = static_cast<int>(light.type);
-                    if (ImGui::Combo("Type", &currentType, lightTypeNames, 2))
+                    if (ImGui::Combo("Type", &currentType, lightTypeNames, 3))
                         light.type = static_cast<LightType>(currentType);
 
                     ImGui::ColorEdit3("Color", &light.color.r);
@@ -180,6 +180,17 @@ void InspectorWindow::Draw() {
                     if (light.type == LightType::Point) {
                         ImGui::DragFloat("Range", &light.range, 0.1f, 0.1f, 10000.0f, "%.1f");
                         light.range = glm::max(light.range, 0.1f);
+                    }
+
+                    if (light.type == LightType::Spot) {
+                        ImGui::DragFloat("Range", &light.range, 0.1f, 0.1f, 10000.0f, "%.1f");
+                        light.range = glm::max(light.range, 0.1f);
+
+                        ImGui::DragFloat("Inner Angle", &light.innerAngle, 0.5f, 1.0f, 89.0f, "%.1f deg");
+                        light.innerAngle = glm::clamp(light.innerAngle, 1.0f, 89.0f);
+
+                        ImGui::DragFloat("Outer Angle", &light.outerAngle, 0.5f, 1.0f, 90.0f, "%.1f deg");
+                        light.outerAngle = glm::clamp(light.outerAngle, light.innerAngle + 0.5f, 90.0f);
                     }
 
                     ImGui::Unindent();

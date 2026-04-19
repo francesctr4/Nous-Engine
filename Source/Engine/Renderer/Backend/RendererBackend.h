@@ -117,6 +117,20 @@ public:
 	                          const std::vector<BoundingBoxData>& lightDebugs,
 	                          bool globalAlreadySet = false);
 
+	// ─────────────────────────────── Directional Light Debugs ────────────────
+	bool DrawDirectionalLightDebugs(RenderpassType renderpassID,
+	                                const glm::mat4& projection,
+	                                const glm::mat4& view,
+	                                const std::vector<DirectionalLightDebugData>& lightDebugs,
+	                                bool globalAlreadySet = false);
+
+	// ─────────────────────────────── Spot Light Debugs ───────────────────────
+	bool DrawSpotLightDebugs(RenderpassType renderpassID,
+	                         const glm::mat4& projection,
+	                         const glm::mat4& view,
+	                         const std::vector<SpotLightDebugData>& lightDebugs,
+	                         bool globalAlreadySet = false);
+
 public:
 
 	uint64_t mFrameNumber;

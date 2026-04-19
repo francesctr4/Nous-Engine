@@ -177,6 +177,8 @@ public:
 	 *        Passing an empty vector disables point light debug rendering.
 	 */
 	NOUS_ENGINE_API void SetPointLightDebugs(const std::vector<BoundingBoxData>& lightDebugs);
+	NOUS_ENGINE_API void SetDirectionalLightDebugs(const std::vector<DirectionalLightDebugData>& lightDebugs);
+	NOUS_ENGINE_API void SetSpotLightDebugs(const std::vector<SpotLightDebugData>& lightDebugs);
 
 	// ---------------------------------------------------------------------
 	// Accessors
@@ -252,6 +254,12 @@ private:
 
 	// Point light debug spheres — populated each frame by SetPointLightDebugs().
 	std::vector<BoundingBoxData> mPointLightDebugs;
+
+	// Directional light debug pyramids — populated each frame by SetDirectionalLightDebugs().
+	std::vector<DirectionalLightDebugData> mDirectionalLightDebugs;
+
+	// Spot light debug cones — populated each frame by SetSpotLightDebugs().
+	std::vector<SpotLightDebugData> mSpotLightDebugs;
 
 };
 

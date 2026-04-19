@@ -20,6 +20,7 @@ layout(location = 0) out struct DataTransferObject
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -31,6 +32,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
     vec4             time;
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 layout(set = 0, binding = 1) readonly buffer InstanceData
@@ -91,6 +94,7 @@ layout(set = 1, binding = 2) uniform sampler2D normalSampler;
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -102,6 +106,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
     vec4             time;
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 // ── Noise ─────────────────────────────────────────────────────────────────────
@@ -215,6 +221,22 @@ void main()
     for (int i = 0; i < globalUBO.lightCountAndPad.x; i++)
         direct += CalcPointLight(globalUBO.pointLights[i].position, globalUBO.pointLights[i].color,
                                  inDTO.fragPos, N, V, albedo);
+    for (int i = 0; i < globalUBO.spotLightCountAndPad.x; i++)
+    {
+        SpotLight sl    = globalUBO.spotLights[i];
+        vec3  toL       = sl.position.xyz - inDTO.fragPos;
+        float dist      = length(toL);
+        if (dist >= sl.position.w) continue;
+        float att       = clamp(1.0 - dist / sl.position.w, 0.0, 1.0); att *= att;
+        vec3  L         = normalize(toL);
+        float cosTheta  = dot(-L, normalize(sl.direction.xyz));
+        float spotFade  = clamp((cosTheta - sl.angles.y) / (sl.angles.x - sl.angles.y), 0.0, 1.0);
+        if (spotFade <= 0.0) continue;
+        float diff      = max(dot(N, L), 0.0);
+        vec3  H         = normalize(L + V);
+        float spec      = pow(max(dot(N, H), 0.0), 32.0) * 0.3;
+        direct += (diff * albedo + spec) * sl.color.rgb * sl.color.w * att * spotFade;
+    }
 
     vec3 litSurface = ambient + direct;
 

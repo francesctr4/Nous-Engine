@@ -264,3 +264,15 @@ bool RendererBackend::DrawPointLightDebugs(RenderpassType renderpassID, const gl
 {
     return mBackendInterface && mBackendInterface->DrawPointLightDebugs(renderpassID, projection, view, lightDebugs, globalAlreadySet);
 }
+
+bool RendererBackend::DrawDirectionalLightDebugs(RenderpassType renderpassID, const glm::mat4& projection,
+    const glm::mat4& view, const std::vector<DirectionalLightDebugData>& lightDebugs, bool globalAlreadySet)
+{
+    return mBackendInterface && mBackendInterface->DrawDirectionalLightDebugs(renderpassID, projection, view, lightDebugs, globalAlreadySet);
+}
+
+bool RendererBackend::DrawSpotLightDebugs(RenderpassType renderpassID, const glm::mat4& projection,
+    const glm::mat4& view, const std::vector<SpotLightDebugData>& lightDebugs, bool globalAlreadySet)
+{
+    return mBackendInterface && mBackendInterface->DrawSpotLightDebugs(renderpassID, projection, view, lightDebugs, globalAlreadySet);
+}

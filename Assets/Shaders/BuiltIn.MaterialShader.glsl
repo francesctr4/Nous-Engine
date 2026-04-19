@@ -15,6 +15,7 @@ layout(location = 0) out struct DataTransferObject
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -26,6 +27,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
     vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 layout(set = 0, binding = 1) readonly buffer InstanceData
@@ -57,6 +60,7 @@ layout(location = 0) out vec4 fragColor;
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -68,6 +72,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
     vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 layout(set = 1, binding = 0) uniform InstanceUBO

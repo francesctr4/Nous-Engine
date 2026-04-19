@@ -494,6 +494,56 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		}
 
 		mRendererFrontend->SetPointLightDebugs(pointLightDebugs);
+
+		// Directional light debug pyramids.
+		std::vector<DirectionalLightDebugData> dirLightDebugs;
+		// Spot light debug cones.
+		std::vector<SpotLightDebugData> spotLightDebugs;
+
+		if (sceneData.registry)
+		{
+			constexpr float c_markerRadius = 0.25f;
+
+			auto lightView2 = sceneData.registry->view<CLight, CTransform>();
+			for (auto [entity, light, transform] : lightView2.each())
+			{
+				const bool isSelected = sceneData.selectedObject.IsValid() &&
+				                        sceneData.selectedObject.GetEntity() == entity;
+				const glm::vec4 color = glm::vec4(light.color, 1.0f);
+
+				if (light.type == LightType::Directional)
+				{
+					DirectionalLightDebugData ddata{};
+					ddata.transform = glm::translate(glm::mat4(1.0f), transform.position) *
+					                  glm::mat4_cast(transform.orientation);
+					ddata.color = color;
+					dirLightDebugs.push_back(ddata);
+				}
+				else if (light.type == LightType::Spot)
+				{
+					const float outerRad  = glm::radians(light.outerAngle);
+					const float coneScale = std::tan(outerRad) * light.range;
+
+					SpotLightDebugData sdata{};
+					// Marker: small fixed sphere at the spot position.
+					sdata.markerTransform =
+						glm::translate(glm::mat4(1.0f), transform.position) *
+						glm::mat4_cast(transform.orientation) *
+						glm::scale(glm::mat4(1.0f), glm::vec3(c_markerRadius));
+					// Full cone: scaled to outerAngle + range.
+					sdata.fullConeTransform =
+						glm::translate(glm::mat4(1.0f), transform.position) *
+						glm::mat4_cast(transform.orientation) *
+						glm::scale(glm::mat4(1.0f), glm::vec3(coneScale, light.range, coneScale));
+					sdata.color    = color;
+					sdata.selected = isSelected;
+					spotLightDebugs.push_back(sdata);
+				}
+			}
+		}
+
+		mRendererFrontend->SetDirectionalLightDebugs(dirLightDebugs);
+		mRendererFrontend->SetSpotLightDebugs(spotLightDebugs);
 	}
 
 	{
@@ -679,6 +729,7 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	packet->gameGeometries.clear();
 	packet->hasDirectionalLight   = false;
 	packet->activePointLightCount = 0;
+	packet->activeSpotLightCount  = 0;
 
 	// Per-pass frustum planes.
 	// In EDITOR mode both frustums are ALWAYS applied (independent of frustumCullingEnabled).
@@ -794,6 +845,29 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 				NOUS_WARN_C(CURRENT_CHANNEL,
 					"Point light limit (%u) reached; light on '%s' ignored.",
 					c_maxPointLights, info ? info->name.c_str() : "<unknown>");
+			}
+		}
+		else if (light.type == LightType::Spot)
+		{
+			if (packet->activeSpotLightCount < c_maxSpotLights)
+			{
+				const glm::vec3 forward = glm::normalize(
+					transform.orientation * glm::vec3(0.f, -1.f, 0.f));
+				SpotLight& sl      = packet->spotLights[packet->activeSpotLightCount++];
+				sl.position        = glm::vec4(transform.position, light.range);
+				sl.direction       = glm::vec4(forward, 0.f);
+				sl.color           = glm::vec4(light.color, light.intensity);
+				sl.angles          = glm::vec4(
+					std::cos(glm::radians(light.innerAngle)),
+					std::cos(glm::radians(light.outerAngle)),
+					0.f, 0.f);
+			}
+			else
+			{
+				const auto* info = sceneData.registry->try_get<CEntityInfo>(entity);
+				NOUS_WARN_C(CURRENT_CHANNEL,
+					"Spot light limit (%u) reached; light on '%s' ignored.",
+					c_maxSpotLights, info ? info->name.c_str() : "<unknown>");
 			}
 		}
 	}

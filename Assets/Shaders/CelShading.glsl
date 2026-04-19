@@ -20,6 +20,7 @@ layout(location = 0) out struct DataTransferObject
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -31,6 +32,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
     vec4             time;
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 layout(set = 0, binding = 1) readonly buffer InstanceData
@@ -96,6 +99,7 @@ layout(set = 1, binding = 6) uniform sampler2D emissiveSampler;
 
 struct DirectionalLight { vec4 direction; vec4 color; };
 struct PointLight        { vec4 position; vec4 color; };
+struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };
 
 layout(set = 0, binding = 0) uniform GlobalUBO
 {
@@ -107,6 +111,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO
     ivec4            lightCountAndPad;
     PointLight       pointLights[16];
     vec4             time;
+    ivec4            spotLightCountAndPad;
+    SpotLight        spotLights[8];
 } globalUBO;
 
 // ── Cel-shading helpers ───────────────────────────────────────────────────────
@@ -186,6 +192,31 @@ void main()
 
         vec3 lightColor = globalUBO.pointLights[i].color.rgb * globalUBO.pointLights[i].color.w * atten;
         result += (cel * albedo + celSpec) * lightColor;
+    }
+
+    // --- SPOT LIGHTS ---
+    for (int i = 0; i < globalUBO.spotLightCountAndPad.x; i++)
+    {
+        vec3  toLight = globalUBO.spotLights[i].position.xyz - inDTO.fragPos;
+        float dist    = length(toLight);
+        float range   = globalUBO.spotLights[i].position.w;
+        if (dist >= range) continue;
+
+        float atten     = clamp(1.0 - (dist / range), 0.0, 1.0);
+        atten          *= atten;
+        vec3  lightDir  = normalize(toLight);
+        float cosTheta  = dot(-lightDir, normalize(globalUBO.spotLights[i].direction.xyz));
+        float cosInner  = globalUBO.spotLights[i].angles.x;
+        float cosOuter  = globalUBO.spotLights[i].angles.y;
+        float spotFade  = clamp((cosTheta - cosOuter) / (cosInner - cosOuter), 0.0, 1.0);
+        if (spotFade <= 0.0) continue;
+
+        float NdotL    = max(dot(N, lightDir), 0.0);
+        float cel      = CelDiffuse(NdotL);
+        vec3  halfway  = normalize(lightDir + viewDir);
+        float celSpec  = CelSpecular(dot(N, halfway), shininess) * specStrength;
+        vec3  color    = globalUBO.spotLights[i].color.rgb * globalUBO.spotLights[i].color.w * atten * spotFade;
+        result += (cel * albedo + celSpec) * color;
     }
 
     // --- RIM LIGHT ---
