@@ -6,7 +6,7 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 
-using namespace NOUS_ShaderSystem;
+using namespace nous::engine::shader_system;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shader fixtures — minimal vert+frag shaders that differ only in frag output

@@ -93,7 +93,7 @@ static bool ReadShaderSource(const std::string& assetsPath, std::string& outSour
 // Optimization is PERFORMANCE by default. The optimizer may strip unused vertex inputs from
 // the SPIR-V, but vertex buffer stride and attribute offsets are derived from the actual
 // Vertex3D struct layout (not from reflection), so this is safe.
-static bool CompileShaderStages(const NOUS_ShaderSystem::ParseResult& parsed,
+static bool CompileShaderStages(const nous::engine::shader_system::ParseResult& parsed,
                                  const std::string& shaderDir,
                                  const std::string& assetsPath,
                                  std::vector<ShaderSource>& outCompiledSources)
@@ -110,7 +110,7 @@ static bool CompileShaderStages(const NOUS_ShaderSystem::ParseResult& parsed,
             continue;
         }
 
-        ShaderCompileResult compiled = NOUS_ShaderSystem::CompileGlslStringToSpirv(
+        ShaderCompileResult compiled = nous::engine::shader_system::CompileGlslStringToSpirv(
             raw.glslSource, raw.stage, compilerConfig, assetsPath);
 
         if (!compiled.success)
@@ -158,7 +158,7 @@ static void ReflectAndSerialize(const std::vector<ShaderSource>& compiledSources
 
     for (const ShaderSource& src : compiledSources)
     {
-        ShaderReflectionResult reflected = NOUS_ShaderSystem::ReflectSpirV(src);
+        ShaderReflectionResult reflected = nous::engine::shader_system::ReflectSpirV(src);
         if (!reflected.success)
         {
             NOUS_WARN("[ImporterShader] Reflection failed for a stage: %s",
@@ -167,10 +167,10 @@ static void ReflectAndSerialize(const std::vector<ShaderSource>& compiledSources
         reflections.push_back(std::move(reflected));
     }
 
-    PipelineReflectionResult pipeline = NOUS_ShaderSystem::MergeReflections(reflections);
+    PipelineReflectionResult pipeline = nous::engine::shader_system::MergeReflections(reflections);
 
     const std::string reflectionJsonPath = shaderDir + "\\reflection.json";
-    if (!NOUS_ShaderSystem::SerializeReflection(pipeline, reflectionJsonPath))
+    if (!nous::engine::shader_system::SerializeReflection(pipeline, reflectionJsonPath))
     {
         NOUS_WARN("[ImporterShader] Failed to write reflection.json to '%s'.",
                   reflectionJsonPath.c_str());
@@ -195,7 +195,7 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
     if (!ReadShaderSource(metaFileData.assetsPath, source))
         return false;
 
-    NOUS_ShaderSystem::ParseResult parsed = NOUS_ShaderSystem::ParseShaderStages(source);
+    nous::engine::shader_system::ParseResult parsed = nous::engine::shader_system::ParseShaderStages(source);
     if (!parsed.success)
     {
         NOUS_ERROR("[ImporterShader] Parse failed for '%s': %s",
@@ -281,7 +281,7 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, Resource* outRe
     // 3. Load reflection: try cached JSON first, fall back to live reflection
     const std::string reflectionJsonPath = shaderDir + "\\reflection.json";
 
-    if (!NOUS_ShaderSystem::DeserializeReflection(reflectionJsonPath, shader->reflection))
+    if (!nous::engine::shader_system::DeserializeReflection(reflectionJsonPath, shader->reflection))
     {
         NOUS_WARN("[ImporterShader] reflection.json missing or invalid, reflecting from SPIR-V.");
 
@@ -289,7 +289,7 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, Resource* outRe
         reflections.reserve(shader->stagesData.size());
         for (const ShaderSource& src : shader->stagesData)
         {
-            ShaderReflectionResult reflected = NOUS_ShaderSystem::ReflectSpirV(src);
+            ShaderReflectionResult reflected = nous::engine::shader_system::ReflectSpirV(src);
             if (!reflected.success)
             {
                 NOUS_WARN("[ImporterShader] Reflection failed for stage: %s",
@@ -297,7 +297,7 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, Resource* outRe
             }
             reflections.push_back(std::move(reflected));
         }
-        shader->reflection = NOUS_ShaderSystem::MergeReflections(reflections);
+        shader->reflection = nous::engine::shader_system::MergeReflections(reflections);
     }
 
     NOUS_INFO("[ImporterShader] Deserialized %zu stage(s) from '%s'.",

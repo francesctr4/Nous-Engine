@@ -5,7 +5,7 @@
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 
 // ShaderLoader.h
-namespace NOUS_ShaderSystem
+namespace nous::engine::shader_system
 {
     ShaderLoadResult LoadShaderFromFile(const std::string& path,
                                         const ShaderCompilerConfig& config);

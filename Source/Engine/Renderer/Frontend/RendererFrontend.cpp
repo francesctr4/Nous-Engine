@@ -559,7 +559,7 @@ void RendererFrontend::DispatchCompileJob(const std::string& path, ResourceShade
         NOUS_INFO_C(CURRENT_CHANNEL, "[RendererFrontend::DispatchCompileJob] Compiling '%s'...", path.c_str());
 
         const ShaderCompilerConfig config;
-        ShaderLoadResult result = NOUS_ShaderSystem::LoadShaderFromFile(path, config);
+        ShaderLoadResult result = nous::engine::shader_system::LoadShaderFromFile(path, config);
 
         {
             std::lock_guard lock(m_swapQueueMutex);

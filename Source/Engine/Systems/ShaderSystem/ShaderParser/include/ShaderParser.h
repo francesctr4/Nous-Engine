@@ -6,7 +6,7 @@
 
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
 
-namespace NOUS_ShaderSystem
+namespace nous::engine::shader_system
 {
     // Extrae las stages de un archivo .glsl unificado.
     // Devuelve error en result.errorMessage si no encuentra ninguna stage.

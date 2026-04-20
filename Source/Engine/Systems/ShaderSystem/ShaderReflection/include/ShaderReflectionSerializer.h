@@ -4,7 +4,7 @@
 #include <string>
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 
-namespace NOUS_ShaderSystem
+namespace nous::engine::shader_system
 {
     // Serializes a merged PipelineReflectionResult to a JSON file.
     bool SerializeReflection(const PipelineReflectionResult& reflection,

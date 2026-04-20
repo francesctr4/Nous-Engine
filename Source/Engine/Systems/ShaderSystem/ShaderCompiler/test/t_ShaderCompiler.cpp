@@ -2,7 +2,7 @@
 
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
 
-using namespace NOUS_ShaderSystem;
+using namespace nous::engine::shader_system;
 
 // =====================================================
 // Mock Shaders

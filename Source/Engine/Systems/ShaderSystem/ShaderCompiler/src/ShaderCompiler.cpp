@@ -68,7 +68,7 @@ namespace
     }
 }
 
-namespace NOUS_ShaderSystem
+namespace nous::engine::shader_system
 {
     bool CompileGlslFileToSpirvFile(const std::string& glslPath,
                                     const std::string& spvPath,

@@ -166,7 +166,7 @@ static ReflectedOutput DeserializeFragmentOutput(const JSON_Object* o)
 // Public API
 // ---------------------------------------------------------------------------
 
-bool NOUS_ShaderSystem::SerializeReflection(const PipelineReflectionResult& reflection,
+bool nous::engine::shader_system::SerializeReflection(const PipelineReflectionResult& reflection,
                                             const std::string& jsonPath)
 {
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Serializing reflection to '%s'", jsonPath.c_str());
@@ -226,7 +226,7 @@ bool NOUS_ShaderSystem::SerializeReflection(const PipelineReflectionResult& refl
     return ok;
 }
 
-bool NOUS_ShaderSystem::DeserializeReflection(const std::string& jsonPath,
+bool nous::engine::shader_system::DeserializeReflection(const std::string& jsonPath,
                                               PipelineReflectionResult& outReflection)
 {
     JSON_Value* rootVal = json_parse_file(jsonPath.c_str());

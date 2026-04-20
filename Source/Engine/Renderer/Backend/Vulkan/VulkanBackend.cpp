@@ -2446,7 +2446,7 @@ bool VulkanBackend::ReloadShader(ResourceShader* shader) noexcept
 
     // ── 1. Recompile from source (CPU only — no GPU work yet) ─────────────────
     const ShaderCompilerConfig config;
-    ShaderLoadResult loadResult = NOUS_ShaderSystem::LoadShaderFromFile(assetPath, config);
+    ShaderLoadResult loadResult = nous::engine::shader_system::LoadShaderFromFile(assetPath, config);
 
     if (!loadResult.success)
     {

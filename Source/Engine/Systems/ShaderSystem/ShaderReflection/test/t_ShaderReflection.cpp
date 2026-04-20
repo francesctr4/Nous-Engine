@@ -7,7 +7,7 @@
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflection.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionSerializer.h"
 
-using namespace NOUS_ShaderSystem;
+using namespace nous::engine::shader_system;
 
 // =====================================================
 // Mock Shaders

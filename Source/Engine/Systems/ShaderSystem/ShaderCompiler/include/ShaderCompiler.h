@@ -8,7 +8,7 @@
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
 
-namespace NOUS_ShaderSystem
+namespace nous::engine::shader_system
 {
     /**
      * Compiles a GLSL file into a SPIR-V binary file.

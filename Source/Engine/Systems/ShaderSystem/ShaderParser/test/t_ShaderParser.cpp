@@ -2,7 +2,7 @@
 
 #include "Engine/Systems/ShaderSystem/ShaderParser/include/ShaderParser.h"
 
-using namespace NOUS_ShaderSystem;
+using namespace nous::engine::shader_system;
 
 // =====================================================
 // ShaderParser Unit Tests

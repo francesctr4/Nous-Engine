@@ -11,7 +11,7 @@
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 // ShaderLoader.cpp
-ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromSource(
+ShaderLoadResult nous::engine::shader_system::LoadShaderFromSource(
     const std::string& fullSource,
     const std::string& debugName,
     const ShaderCompilerConfig& config)
@@ -80,7 +80,7 @@ ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromSource(
     return out;
 }
 
-ShaderLoadResult NOUS_ShaderSystem::LoadShaderFromFile(
+ShaderLoadResult nous::engine::shader_system::LoadShaderFromFile(
     const std::string& path, const ShaderCompilerConfig& config)
 {
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Loading shader from file '%s'", path.c_str());

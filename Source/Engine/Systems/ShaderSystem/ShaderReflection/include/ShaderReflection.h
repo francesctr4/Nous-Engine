@@ -4,7 +4,7 @@
 #include "ShaderReflectionTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
 
-namespace NOUS_ShaderSystem
+namespace nous::engine::shader_system
 {
     ShaderReflectionResult ReflectSpirV(const ShaderSource& source);
 
