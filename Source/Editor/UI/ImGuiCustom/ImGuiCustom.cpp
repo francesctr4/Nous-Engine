@@ -2,7 +2,7 @@
 
 #include "imgui.h"
 
-void ImGuiCustom::ImGuiTheme_OrangeGrey()
+void nous::editor::imgui::ImGuiTheme_OrangeGrey()
 {
     ImGuiStyle& style = ImGui::GetStyle();
 
@@ -91,7 +91,7 @@ void ImGuiCustom::ImGuiTheme_OrangeGrey()
     style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.800000011920929f, 0.800000011920929f, 0.800000011920929f, 0.3499999940395355f);
 }
 
-void ImGuiCustom::ImGuiTheme_RedGrey()
+void nous::editor::imgui::ImGuiTheme_RedGrey()
 {
     // Red and Grey Font style
     ImGuiStyle& style = ImGui::GetStyle();
@@ -156,7 +156,7 @@ void ImGuiCustom::ImGuiTheme_RedGrey()
 
 // Helper to display a little (?) mark which shows a tooltip when hovered.
 // In your own code you may want to display an actual icon if you are using a merged icon fonts (see docs/FONTS.md)
-void ImGuiCustom::ImGuiHelpMarker(const char* description)
+void nous::editor::imgui::ImGuiHelpMarker(const char* description)
 {
     ImGui::TextDisabled("(?)");
     if (ImGui::BeginItemTooltip())

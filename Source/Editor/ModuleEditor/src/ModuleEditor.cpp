@@ -78,7 +78,7 @@ bool ModuleEditor::Awake()
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
 
-	ImGuiCustom::ImGuiTheme_RedGrey();
+	nous::editor::imgui::ImGuiTheme_RedGrey();
 
 	fonts.push_back(io.Fonts->AddFontFromFileTTF(R"(Assets\Fonts\tahoma.ttf)", 15.0f));
 
