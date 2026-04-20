@@ -204,7 +204,7 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
     }
 
     const std::string shaderDir = GetShaderDirectory(metaFileData.libraryPath);
-    if (!NOUS_FileManager::CreateDirectory(shaderDir))
+    if (!nous::engine::filesystem::CreateDirectory(shaderDir))
     {
         NOUS_ERROR("[ImporterShader] Failed to create directory: %s", shaderDir.c_str());
         return false;
@@ -225,7 +225,7 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, Resource* outRe
     // 1. Derive stage directory from the library path
     const std::string shaderDir = GetShaderDirectory(libraryPath);
 
-    if (!NOUS_FileManager::IsDirectory(shaderDir))
+    if (!nous::engine::filesystem::IsDirectory(shaderDir))
     {
         NOUS_ERROR("[ImporterShader] Stage directory not found: %s", shaderDir.c_str());
         return false;

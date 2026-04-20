@@ -192,7 +192,7 @@ void SceneViewport::Draw()
         // Mesh assets → spawn a full submesh hierarchy.
         // Prefab assets → instantiate prefab into scene.
         // All other assets → just load the resource.
-        const std::string ext = NOUS_FileManager::GetExtension(path);
+        const std::string ext = nous::engine::filesystem::GetExtension(path);
         if (Resource::GetTypeFromExtension(ext) == ResourceType::MESH)
         {
             editorContext->GetJobSystem()->SubmitJob([path, this]()

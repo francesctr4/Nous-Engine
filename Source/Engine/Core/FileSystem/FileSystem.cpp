@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <filesystem>
 
-std::string NOUS_FileManager::GetAbsolutePath(const std::string& path)
+std::string nous::engine::filesystem::GetAbsolutePath(const std::string& path)
 {
 	try
 	{
@@ -19,7 +19,7 @@ std::string NOUS_FileManager::GetAbsolutePath(const std::string& path)
 	}
 }
 
-std::string NOUS_FileManager::GetRelativePath(const std::string& path)
+std::string nous::engine::filesystem::GetRelativePath(const std::string& path)
 {
 	try
 	{
@@ -32,39 +32,39 @@ std::string NOUS_FileManager::GetRelativePath(const std::string& path)
 	}
 }
 
-std::string NOUS_FileManager::GetDirectory(const std::string& path)
+std::string nous::engine::filesystem::GetDirectory(const std::string& path)
 {
 	return (std::filesystem::relative(path).parent_path() / "").generic_string();
 }
 
-bool NOUS_FileManager::Exists(const std::string& path)
+bool nous::engine::filesystem::Exists(const std::string& path)
 {
 	return std::filesystem::exists(path);
 }
 
-bool NOUS_FileManager::IsDirectory(const std::string& path)
+bool nous::engine::filesystem::IsDirectory(const std::string& path)
 {
 	return std::filesystem::is_directory(path);
 }
 
-std::string NOUS_FileManager::GetFilename(const std::string& path)
+std::string nous::engine::filesystem::GetFilename(const std::string& path)
 {
 	return std::filesystem::path(path).stem().string();
 }
 
-std::string NOUS_FileManager::GetExtension(const std::string& path)
+std::string nous::engine::filesystem::GetExtension(const std::string& path)
 {
 	return std::filesystem::path(path).extension().string();
 }
 
-std::string NOUS_FileManager::NormalizePath(const std::string& path)
+std::string nous::engine::filesystem::NormalizePath(const std::string& path)
 {
 	std::string result = path;
 	std::replace(result.begin(), result.end(), '\\', '/');
 	return result;
 }
 
-bool NOUS_FileManager::CreateDirectory(const std::filesystem::path& path)
+bool nous::engine::filesystem::CreateDirectory(const std::filesystem::path& path)
 {
 	if (!Exists(path.string()))
 	{
@@ -82,7 +82,7 @@ bool NOUS_FileManager::CreateDirectory(const std::filesystem::path& path)
 	return true;
 }
 
-bool NOUS_FileManager::DeleteDirectory(const std::filesystem::path& path)
+bool nous::engine::filesystem::DeleteDirectory(const std::filesystem::path& path)
 {
 	if (Exists(path.string()))
 	{
@@ -117,7 +117,7 @@ bool NOUS_FileManager::DeleteDirectory(const std::filesystem::path& path)
 	return true;
 }
 
-bool NOUS_FileManager::CopyFile(const std::string& source, const std::string& destination)
+bool nous::engine::filesystem::CopyFile(const std::string& source, const std::string& destination)
 {
 	try
 	{
@@ -141,7 +141,7 @@ bool NOUS_FileManager::CopyFile(const std::string& source, const std::string& de
 	}
 }
 
-bool NOUS_FileManager::MoveFile(const std::string& source, const std::string& destination)
+bool nous::engine::filesystem::MoveFile(const std::string& source, const std::string& destination)
 {
 	try
 	{
@@ -155,7 +155,7 @@ bool NOUS_FileManager::MoveFile(const std::string& source, const std::string& de
 	}
 }
 
-bool NOUS_FileManager::DeleteFile(const std::string& path)
+bool nous::engine::filesystem::DeleteFile(const std::string& path)
 {
 	try
 	{

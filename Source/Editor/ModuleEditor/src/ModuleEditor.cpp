@@ -65,7 +65,7 @@ ModuleEditor::~ModuleEditor() = default;
 
 bool ModuleEditor::Awake()
 {
-	NOUS_FileManager::CopyFile(R"(Assets\Settings\imgui.ini)", "imgui.ini");
+	nous::engine::filesystem::CopyFile(R"(Assets\Settings\imgui.ini)", "imgui.ini");
 
 	mModuleRenderer3D->GetRendererFrontend()->SetEditorOverlay(this);
 	currentBackendType = mModuleRenderer3D->GetRendererFrontend()->GetBackendType();

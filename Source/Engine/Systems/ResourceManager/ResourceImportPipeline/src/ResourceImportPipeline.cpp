@@ -43,12 +43,12 @@ ResourceImportPipeline::ResourceImportPipeline(IImporterManager* importerManager
 
 bool ResourceImportPipeline::EnsureLibraryDirectories()
 {
-    return NOUS_FileManager::CreateDirectory("Library") &&
-           NOUS_FileManager::CreateDirectory("Library/Shaders") &&
-           NOUS_FileManager::CreateDirectory("Library/Meshes") &&
-           NOUS_FileManager::CreateDirectory("Library/Materials") &&
-           NOUS_FileManager::CreateDirectory("Library/Textures") &&
-           NOUS_FileManager::CreateDirectory("Library/Scenes");
+    return nous::engine::filesystem::CreateDirectory("Library") &&
+           nous::engine::filesystem::CreateDirectory("Library/Shaders") &&
+           nous::engine::filesystem::CreateDirectory("Library/Meshes") &&
+           nous::engine::filesystem::CreateDirectory("Library/Materials") &&
+           nous::engine::filesystem::CreateDirectory("Library/Textures") &&
+           nous::engine::filesystem::CreateDirectory("Library/Scenes");
 }
 
 void ResourceImportPipeline::ScanAndImportAssets()
@@ -98,7 +98,7 @@ void ResourceImportPipeline::ScanAndImportAssets()
 
     // Mirror all scene files from Assets/Scenes/ → Library/Scenes/ so GameApp
     // can always load them from Library/ without needing Assets/.
-    if (NOUS_FileManager::Exists("Assets/Scenes"))
+    if (nous::engine::filesystem::Exists("Assets/Scenes"))
     {
         for (const auto& entry : std::filesystem::directory_iterator("Assets/Scenes"))
         {
@@ -106,7 +106,7 @@ void ResourceImportPipeline::ScanAndImportAssets()
             {
                 const std::string src  = entry.path().string();
                 const std::string dest = "Library/Scenes/" + entry.path().filename().string();
-                NOUS_FileManager::CopyFile(src, dest);
+                nous::engine::filesystem::CopyFile(src, dest);
             }
         }
     }
@@ -115,7 +115,7 @@ void ResourceImportPipeline::ScanAndImportAssets()
 void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
                                                     std::vector<MetaFileData>& outPending) const
 {
-    if (!NOUS_FileManager::Exists(directory))
+    if (!nous::engine::filesystem::Exists(directory))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Directory does not exist: %s", directory.c_str());
         return;
@@ -127,10 +127,10 @@ void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
             continue;
 
         const std::string path          = entry.path().string();
-        const std::string relativePath  = NOUS_FileManager::GetRelativePath(path);
-        const std::string fileDirectory = NOUS_FileManager::GetDirectory(path);
-        const std::string fileName      = NOUS_FileManager::GetFilename(path);
-        const std::string extension     = NOUS_FileManager::GetExtension(path);
+        const std::string relativePath  = nous::engine::filesystem::GetRelativePath(path);
+        const std::string fileDirectory = nous::engine::filesystem::GetDirectory(path);
+        const std::string fileName      = nous::engine::filesystem::GetFilename(path);
+        const std::string extension     = nous::engine::filesystem::GetExtension(path);
         const ResourceType resourceType = Resource::GetTypeFromExtension(extension);
 
         if (resourceType == ResourceType::UNKNOWN)
@@ -143,7 +143,7 @@ void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
         const std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType)
                                        + fileName + extension + ".meta";
 
-        if (!NOUS_FileManager::Exists(metaFilePath))
+        if (!nous::engine::filesystem::Exists(metaFilePath))
         {
             // Case 1: new asset — create meta file now (sequential), schedule import.
             const auto resourceUID         = static_cast<uint32>(Random::Generate());
@@ -174,7 +174,7 @@ void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
                 continue;
             }
 
-            if (!NOUS_FileManager::Exists(meta.libraryPath))
+            if (!nous::engine::filesystem::Exists(meta.libraryPath))
             {
                 // Case 2: library binary missing.
                 outPending.push_back(meta);
@@ -193,7 +193,7 @@ void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
 
 bool ResourceImportPipeline::ImportDirectory(const std::string& directory)
 {
-    if (!NOUS_FileManager::Exists(directory))
+    if (!nous::engine::filesystem::Exists(directory))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Directory does not exist: %s", directory.c_str());
         return false;
@@ -214,16 +214,16 @@ bool ResourceImportPipeline::ImportFile(const std::string& path)
 {
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Importing file: %s", path.c_str());
 
-    if (!NOUS_FileManager::Exists(path))
+    if (!nous::engine::filesystem::Exists(path))
     {
         NOUS_ERROR("Import File ERROR: General --> Couldn't find file: %s", path.c_str());
         return false;
     }
 
-    const std::string relativePath  = NOUS_FileManager::GetRelativePath(path);
-    const std::string fileDirectory = NOUS_FileManager::GetDirectory(path);
-    const std::string fileName      = NOUS_FileManager::GetFilename(path);
-    const std::string extension     = NOUS_FileManager::GetExtension(path);
+    const std::string relativePath  = nous::engine::filesystem::GetRelativePath(path);
+    const std::string fileDirectory = nous::engine::filesystem::GetDirectory(path);
+    const std::string fileName      = nous::engine::filesystem::GetFilename(path);
+    const std::string extension     = nous::engine::filesystem::GetExtension(path);
     const ResourceType resourceType = Resource::GetTypeFromExtension(extension);
 
     if (resourceType == ResourceType::UNKNOWN)
@@ -239,7 +239,7 @@ bool ResourceImportPipeline::ImportFileFromExternal(const std::string& path, con
                                                     const std::string& fileName, const std::string& extension)
 {
     const std::string newPath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension;
-    if (!NOUS_FileManager::CopyFile(path, newPath))
+    if (!nous::engine::filesystem::CopyFile(path, newPath))
     {
         NOUS_ERROR("Import File ERROR: CASE 0 --> Error while copying the file to Assets\\ directory.");
         return false;
@@ -252,7 +252,7 @@ bool ResourceImportPipeline::ImportFileFromAssets(const std::string& relativePat
 {
     const std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension + ".meta";
 
-    if (!NOUS_FileManager::Exists(metaFilePath))
+    if (!nous::engine::filesystem::Exists(metaFilePath))
         return ImportCase1_NewAsset(relativePath, metaFilePath, resourceType, fileName);
 
     MetaFileData metaFileData;
@@ -262,7 +262,7 @@ bool ResourceImportPipeline::ImportFileFromAssets(const std::string& relativePat
         return false;
     }
 
-    if (!NOUS_FileManager::Exists(metaFileData.libraryPath))
+    if (!nous::engine::filesystem::Exists(metaFileData.libraryPath))
         return ImportCase2_MissingLibrary(metaFileData);
 
     return ImportCase3_TimestampCheck(metaFileData);

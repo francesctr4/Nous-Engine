@@ -54,7 +54,7 @@ void CMaterial::Deserialize(JSON_Object* obj) {
     if (!libraryPath.empty() && resourceUID != 0)
     {
         material = down_cast<ResourceMaterial*>(scene->GetResourceManager()->CreateResourceFromLibrary(
-            resourceUID, ResourceType::MATERIAL, NOUS_FileManager::GetFilename(assetPath),
+            resourceUID, ResourceType::MATERIAL, nous::engine::filesystem::GetFilename(assetPath),
             assetPath, libraryPath));
     }
     if (!material)

@@ -703,7 +703,7 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 		{ NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: invalid data for '%s'.", key); return; }
 
 		mModuleResourceManager->CreateResourceFromLibrary(
-			uid, ResourceType::SHADER, NOUS_FileManager::GetFilename(assetPath), assetPath, libPath);
+			uid, ResourceType::SHADER, nous::engine::filesystem::GetFilename(assetPath), assetPath, libPath);
 	};
 
 	loadShader("MaterialShader",   "Assets/Shaders/BuiltIn.MaterialShader.glsl");

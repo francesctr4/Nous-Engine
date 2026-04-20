@@ -25,7 +25,7 @@ bool ImporterTexture::Save(const MetaFileData& metaFileData, Resource*& inResour
 {
     NOUS_DELETE(inResource, MemoryTag::RESOURCE_TEXTURE);
 
-    bool ret = NOUS_FileManager::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
+    bool ret = nous::engine::filesystem::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
 
     return ret;
 }

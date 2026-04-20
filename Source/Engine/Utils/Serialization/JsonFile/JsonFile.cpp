@@ -140,7 +140,7 @@ bool JsonFile::SaveToFile(const char* path)
 // Load JSON from file
 bool JsonFile::LoadFromFile(const char* path)
 {
-    if (NOUS_FileManager::Exists(path)) 
+    if (nous::engine::filesystem::Exists(path))
     {
         JSON_Value* newValue = json_parse_file(path);
         if (newValue) {

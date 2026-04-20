@@ -320,7 +320,7 @@ void ModuleScene::SaveScene(const std::string& path)
 {
     // Name the in-memory scene after the file stem so the Inspector/Hierarchy
     // reflect the saved name without requiring a reload.
-    const std::string filename = NOUS_FileManager::GetFilename(path);
+    const std::string filename = nous::engine::filesystem::GetFilename(path);
     if (const std::string stem = std::filesystem::path(filename).stem().string(); !stem.empty())
         activeScene->SetName(stem);
 
@@ -331,7 +331,7 @@ void ModuleScene::SaveScene(const std::string& path)
     // from Library without needing Assets/.
     const std::string libraryPath = "Library/Scenes/" + filename;
     std::filesystem::create_directories("Library/Scenes");
-    NOUS_FileManager::CopyFile(path, libraryPath);
+    nous::engine::filesystem::CopyFile(path, libraryPath);
 
     m_currentScenePath = path;
 }

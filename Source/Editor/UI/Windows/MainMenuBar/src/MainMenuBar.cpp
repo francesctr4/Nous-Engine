@@ -488,7 +488,7 @@ void MainMenuBar::Draw()
 		const std::string targetPath = nameValid
 			? (std::string(kScenesDir) + "/" + trimmed + kSceneExt)
 			: std::string();
-		const bool overwriting = nameValid && NOUS_FileManager::Exists(targetPath);
+		const bool overwriting = nameValid && nous::engine::filesystem::Exists(targetPath);
 
 		if (!nameValid)
 			ImGui::TextColored(ImVec4(0.9f, 0.4f, 0.4f, 1.0f), "Enter a valid filename.");

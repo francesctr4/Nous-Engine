@@ -6,7 +6,7 @@
 
 #include "Engine/EngineExport.h"
 
-namespace NOUS_FileManager 
+namespace nous::engine::filesystem
 {
 	// Path utilities
 	

@@ -61,7 +61,7 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
 
     JSON_Value* srcVal = json_parse_file(metaFileData.assetsPath.c_str());
     if (!srcVal)
-        return NOUS_FileManager::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
+        return nous::engine::filesystem::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
 
     JSON_Object* srcObj = json_value_get_object(srcVal);
 
@@ -76,12 +76,12 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
             const char* rawPath = json_object_get_string(entry, "asset_path");
             if (!rawPath) continue;
 
-            std::string texPath = NOUS_FileManager::NormalizePath(rawPath);
+            std::string texPath = nous::engine::filesystem::NormalizePath(rawPath);
 
             MetaFileData texMeta;
             if (ResourceImportPipeline::GetAssetMetaData(texPath, texMeta))
             {
-                std::string libPath = NOUS_FileManager::NormalizePath(texMeta.libraryPath);
+                std::string libPath = nous::engine::filesystem::NormalizePath(texMeta.libraryPath);
                 json_object_set_number(entry, "uid",          static_cast<double>(texMeta.uid));
                 json_object_set_string(entry, "library_path", libPath.c_str());
             }
@@ -91,12 +91,12 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
     // ── Enrich shader_asset_path with shader_uid + shader_library_path ──
     if (const char* rawShaderPath = json_object_get_string(srcObj, "shader_asset_path"))
     {
-        std::string shaderPath = NOUS_FileManager::NormalizePath(rawShaderPath);
+        std::string shaderPath = nous::engine::filesystem::NormalizePath(rawShaderPath);
 
         MetaFileData shaderMeta;
         if (ResourceImportPipeline::GetAssetMetaData(shaderPath, shaderMeta))
         {
-            std::string libPath = NOUS_FileManager::NormalizePath(shaderMeta.libraryPath);
+            std::string libPath = nous::engine::filesystem::NormalizePath(shaderMeta.libraryPath);
             json_object_set_number(srcObj, "shader_uid",          static_cast<double>(shaderMeta.uid));
             json_object_set_string(srcObj, "shader_library_path", libPath.c_str());
         }
@@ -173,11 +173,11 @@ static void DeserializeTextureMaps(JSON_Object* root, ResourceMaterial* material
             continue;
         }
 
-        std::string assetPath = NOUS_FileManager::NormalizePath(rawPath);
-        std::string libPath   = NOUS_FileManager::NormalizePath(libRaw);
+        std::string assetPath = nous::engine::filesystem::NormalizePath(rawPath);
+        std::string libPath   = nous::engine::filesystem::NormalizePath(libRaw);
 
         const uint32      texUID  = static_cast<uint32>(uidDouble);
-        const std::string texName = NOUS_FileManager::GetFilename(assetPath);
+        const std::string texName = nous::engine::filesystem::GetFilename(assetPath);
         ResourceTexture*  tex     = down_cast<ResourceTexture*>(
             rm->CreateResourceFromLibrary(texUID, ResourceType::TEXTURE, texName, assetPath, libPath));
 
@@ -207,7 +207,7 @@ static void DeserializeShader(JSON_Object* root, ResourceMaterial* material,
 
     std::string       shaderAssetPath(shaderAssetRaw);
     std::string       shaderLibPath(shaderLibRaw);
-    const std::string shaderName = NOUS_FileManager::GetFilename(shaderAssetPath);
+    const std::string shaderName = nous::engine::filesystem::GetFilename(shaderAssetPath);
 
     Resource* r = rm->CreateResourceFromLibrary(
         static_cast<uint32>(shaderUID), ResourceType::SHADER, shaderName,
@@ -376,7 +376,7 @@ bool ImporterMaterial::CreateNewMaterialFile(const std::string& assetPath)
     if (assetPath.empty()) return false;
 
     // Ensure parent directory exists (e.g. Assets/Materials/).
-    NOUS_FileManager::CreateDirectory(NOUS_FileManager::GetDirectory(assetPath));
+    nous::engine::filesystem::CreateDirectory(nous::engine::filesystem::GetDirectory(assetPath));
 
     JSON_Value*  rootVal = json_value_init_object();
     JSON_Object* root    = json_value_get_object(rootVal);

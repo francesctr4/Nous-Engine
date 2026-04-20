@@ -82,7 +82,7 @@ void CMesh::Deserialize(JSON_Object *obj) {
         if (!libraryPath.empty() && resourceUID != 0)
         {
             mesh = down_cast<ResourceMesh*>(scene->GetResourceManager()->CreateResourceFromLibrary(
-                resourceUID, ResourceType::MESH, NOUS_FileManager::GetFilename(assetPath),
+                resourceUID, ResourceType::MESH, nous::engine::filesystem::GetFilename(assetPath),
                 assetPath, libraryPath));
         }
         if (!mesh && !assetPathStr.empty())
