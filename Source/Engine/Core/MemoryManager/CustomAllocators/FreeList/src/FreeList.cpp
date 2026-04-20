@@ -66,7 +66,7 @@ Freelist::~Freelist()
             NOUS_WARN("Freelist::~Freelist() — %llu bytes still allocated at destruction (totalSize=%llu). "
                       "Possible memory leak.", state_->totalSize - free, state_->totalSize);
         }
-        MemoryManager::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
+        nous::engine::memory::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
     }
 }
 
@@ -310,7 +310,7 @@ bool Freelist::Resize(uint64 newSize, uint64* memoryRequirement, void* newMemory
     *outOldMemory = reinterpret_cast<void*>(oldState);
 
     // Initialize new memory block
-    MemoryManager::ZeroMemory(newMemory, *memoryRequirement);
+    nous::engine::memory::ZeroMemory(newMemory, *memoryRequirement);
     state_ = reinterpret_cast<InternalState*>(newMemory);
     state_->nodes = reinterpret_cast<Node*>(reinterpret_cast<char*>(newMemory) + sizeof(InternalState));
     state_->maxEntries = maxEntries;

@@ -43,7 +43,7 @@ protected:
 
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(kMemoryPoolSize);
+        nous::engine::memory::InitializeMemory(kMemoryPoolSize);
         eventSystem = new EventSystem();
         jobSystem   = new nous::engine::multithreading::NOUS_JobSystem(0);
         rm = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
@@ -58,7 +58,7 @@ protected:
         jobSystem = nullptr;
         delete eventSystem;
         eventSystem = nullptr;
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 
     // Evicts every resource still in the map so ShutdownMemory finds zero outstanding allocations.

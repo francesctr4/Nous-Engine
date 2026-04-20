@@ -16,7 +16,7 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
         if (vkContext->imGuiResources.m_GameViewportCommandBuffers.empty())
         {
             vkContext->imGuiResources.m_GameViewportCommandBuffers.resize(swapCount);
-            MemoryManager::ZeroMemory(vkContext->imGuiResources.m_GameViewportCommandBuffers.data(),
+            nous::engine::memory::ZeroMemory(vkContext->imGuiResources.m_GameViewportCommandBuffers.data(),
                 swapCount * sizeof(VulkanCommandBuffer));
         }
 
@@ -27,7 +27,7 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
                 CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &cb);
                 cb.handle = 0;
             }
-            MemoryManager::ZeroMemory(&cb, sizeof(VulkanCommandBuffer));
+            nous::engine::memory::ZeroMemory(&cb, sizeof(VulkanCommandBuffer));
             CommandBufferAllocate(vkContext, vkContext->device.mainGraphicsCommandPool, true, &cb);
         }
         return ret;
@@ -37,7 +37,7 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
     if (vkContext->graphicsCommandBuffers.empty())
     {
         vkContext->graphicsCommandBuffers.resize(swapCount);
-        MemoryManager::ZeroMemory(vkContext->graphicsCommandBuffers.data(), swapCount * sizeof(VulkanCommandBuffer));
+        nous::engine::memory::ZeroMemory(vkContext->graphicsCommandBuffers.data(), swapCount * sizeof(VulkanCommandBuffer));
     }
 
     for (auto it = vkContext->graphicsCommandBuffers.begin(); it != vkContext->graphicsCommandBuffers.end(); ++it)
@@ -48,7 +48,7 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
             (*it).handle = 0;
         }
 
-        MemoryManager::ZeroMemory(&(*it), sizeof(VulkanCommandBuffer));
+        nous::engine::memory::ZeroMemory(&(*it), sizeof(VulkanCommandBuffer));
         CommandBufferAllocate(vkContext, vkContext->device.mainGraphicsCommandPool, true, &(*it));
     }
 
@@ -57,7 +57,7 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
     if (vkContext->imGuiResources.m_ViewportCommandBuffers.empty())
     {
         vkContext->imGuiResources.m_ViewportCommandBuffers.resize(vkContext->imGuiResources.m_ViewportImages.size());
-        MemoryManager::ZeroMemory(vkContext->imGuiResources.m_ViewportCommandBuffers.data(), vkContext->imGuiResources.m_ViewportCommandBuffers.size() * sizeof(VulkanCommandBuffer));
+        nous::engine::memory::ZeroMemory(vkContext->imGuiResources.m_ViewportCommandBuffers.data(), vkContext->imGuiResources.m_ViewportCommandBuffers.size() * sizeof(VulkanCommandBuffer));
     }
 
     for (auto it = vkContext->imGuiResources.m_ViewportCommandBuffers.begin(); it != vkContext->imGuiResources.m_ViewportCommandBuffers.end(); ++it)
@@ -68,7 +68,7 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
             (*it).handle = 0;
         }
 
-        MemoryManager::ZeroMemory(&(*it), sizeof(VulkanCommandBuffer));
+        nous::engine::memory::ZeroMemory(&(*it), sizeof(VulkanCommandBuffer));
         CommandBufferAllocate(vkContext, vkContext->device.mainGraphicsCommandPool, true, &(*it));
     }
 
@@ -77,7 +77,7 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
     if (vkContext->imGuiResources.m_GameViewportCommandBuffers.empty())
     {
         vkContext->imGuiResources.m_GameViewportCommandBuffers.resize(vkContext->imGuiResources.m_GameViewportImages.size());
-        MemoryManager::ZeroMemory(vkContext->imGuiResources.m_GameViewportCommandBuffers.data(), vkContext->imGuiResources.m_GameViewportCommandBuffers.size() * sizeof(VulkanCommandBuffer));
+        nous::engine::memory::ZeroMemory(vkContext->imGuiResources.m_GameViewportCommandBuffers.data(), vkContext->imGuiResources.m_GameViewportCommandBuffers.size() * sizeof(VulkanCommandBuffer));
     }
 
     for (auto it = vkContext->imGuiResources.m_GameViewportCommandBuffers.begin(); it != vkContext->imGuiResources.m_GameViewportCommandBuffers.end(); ++it)
@@ -88,7 +88,7 @@ bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
             (*it).handle = 0;
         }
 
-        MemoryManager::ZeroMemory(&(*it), sizeof(VulkanCommandBuffer));
+        nous::engine::memory::ZeroMemory(&(*it), sizeof(VulkanCommandBuffer));
         CommandBufferAllocate(vkContext, vkContext->device.mainGraphicsCommandPool, true, &(*it));
     }
 

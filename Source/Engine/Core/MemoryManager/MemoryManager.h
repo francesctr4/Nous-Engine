@@ -34,7 +34,7 @@ enum class MemoryTag : uint8_t
 	MAX
 };
 
-namespace MemoryManager
+namespace nous::engine::memory
 {
     NOUS_ENGINE_API void InitializeMemory(uint64 preAllocatedMemorySize);
 
@@ -80,7 +80,7 @@ namespace MemoryManager
 template<typename T, typename... Args> \
 T* name(MemoryTag tag = MemoryTag::UNKNOWN, Args&&... args) \
 { \
-    void* memory = MemoryManager::Allocate(sizeof(T), tag); \
+    void* memory = nous::engine::memory::Allocate(sizeof(T), tag); \
     auto ptr = new(memory) T(std::forward<Args>(args)...); \
     return ptr; \
 }
@@ -99,7 +99,7 @@ CUSTOM_NEW(NOUS_NEW)
 template<typename T> \
 T* name(size_t count, MemoryTag tag = MemoryTag::UNKNOWN) \
 { \
-    void* memory = MemoryManager::Allocate(sizeof(T) * count, tag); \
+    void* memory = nous::engine::memory::Allocate(sizeof(T) * count, tag); \
     auto ptr = static_cast<T*>(memory); \
     for (size_t i = 0; i < count; ++i) \
     { \
@@ -125,7 +125,7 @@ inline void name(T*& ptr, MemoryTag tag = MemoryTag::UNKNOWN) noexcept \
     if (ptr != nullptr) \
     { \
         ptr->~T(); \
-        MemoryManager::Free(static_cast<void*>(ptr), tag); \
+        nous::engine::memory::Free(static_cast<void*>(ptr), tag); \
         ptr = nullptr; \
     } \
 }
@@ -148,7 +148,7 @@ void name(T*& ptr, size_t count, MemoryTag tag = MemoryTag::UNKNOWN) \
         { \
             ptr[i].~T(); \
         } \
-        MemoryManager::Free(ptr, sizeof(T) * count, tag); \
+        nous::engine::memory::Free(ptr, sizeof(T) * count, tag); \
         ptr = nullptr; \
     } \
 }

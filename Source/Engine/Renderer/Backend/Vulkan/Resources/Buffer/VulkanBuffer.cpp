@@ -11,7 +11,7 @@ void CleanupFreelist(VulkanBuffer* buffer)
 {
     // ----- FREE LIST ----- //
     buffer->bufferFreelist->~Freelist();
-    MemoryManager::Free(buffer->freelistBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
+    nous::engine::memory::Free(buffer->freelistBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
 
     buffer->freelistMemoryRequirement = 0;
     buffer->freelistBlock = nullptr;
@@ -61,7 +61,7 @@ void NOUS_VulkanBuffer::DestroyBuffers(VulkanContext* vkContext)
 bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64 size, VkBufferUsageFlagBits usage, 
 	uint32 memoryPropertyFlags, bool bindOnCreate, VulkanBuffer* outBuffer)
 {
-    MemoryManager::ZeroMemory(outBuffer, sizeof(VulkanBuffer));
+    nous::engine::memory::ZeroMemory(outBuffer, sizeof(VulkanBuffer));
 
     outBuffer->totalSize = size;
     outBuffer->usage = usage;
@@ -75,7 +75,7 @@ bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64 size, VkBu
     if (size >= kFreelistMinSize)
     {
         outBuffer->freelistMemoryRequirement = Freelist::GetMemoryRequirement(size);
-        outBuffer->freelistBlock = MemoryManager::Allocate(outBuffer->freelistMemoryRequirement, MemoryTag::RENDERER);
+        outBuffer->freelistBlock = nous::engine::memory::Allocate(outBuffer->freelistMemoryRequirement, MemoryTag::RENDERER);
         outBuffer->bufferFreelist = new (&outBuffer->freelistBlock) Freelist(size, outBuffer->freelistBlock);
     }
 
@@ -177,19 +177,19 @@ bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64 newSize,
     }
 
     // Allocate new memory block
-    void* newBlock = MemoryManager::Allocate(newMemoryRequirement, MemoryTag::RENDERER);
+    void* newBlock = nous::engine::memory::Allocate(newMemoryRequirement, MemoryTag::RENDERER);
     void* oldBlock = nullptr;
 
     // Second call: Perform actual resize
     if (!buffer->bufferFreelist->Resize(newSize, &newMemoryRequirement, newBlock, &oldBlock)) 
     {
         NOUS_ERROR("NOUS_VulkanBuffer::ResizeBuffer(): Failed to resize freelist.");
-        MemoryManager::Free(newBlock, newMemoryRequirement, MemoryTag::RENDERER);
+        nous::engine::memory::Free(newBlock, newMemoryRequirement, MemoryTag::RENDERER);
         return false;
     }
 
     // Cleanup old memory and update buffer properties
-    MemoryManager::Free(oldBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
+    nous::engine::memory::Free(oldBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
 
     buffer->freelistMemoryRequirement = newMemoryRequirement;
     buffer->freelistBlock = newBlock;
@@ -290,7 +290,7 @@ void NOUS_VulkanBuffer::LoadData(VulkanContext* vkContext, VulkanBuffer* buffer,
 {
     void* dataPtr;
     VK_CHECK(vkMapMemory(vkContext->device.logicalDevice, buffer->memory, offset, size, flags, &dataPtr));
-    MemoryManager::CopyMemory(dataPtr, data, size);
+    nous::engine::memory::CopyMemory(dataPtr, data, size);
     vkUnmapMemory(vkContext->device.logicalDevice, buffer->memory);
 }
 

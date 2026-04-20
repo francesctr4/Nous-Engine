@@ -23,7 +23,7 @@ int main(/*int argc, char** argv*/)
     StartLogTimer(); // must be first — anchors all log timestamps to program start
 
     // Specify the amount of memory available for the project
-    MemoryManager::InitializeMemory(MiB(50));
+    nous::engine::memory::InitializeMemory(MiB(50));
 
     nous::engine::multithreading::RegisterMainThread();
 
@@ -129,13 +129,13 @@ int main(/*int argc, char** argv*/)
     nous::engine::multithreading::UnregisterMainThread();
 
     NOUS_MULTILINE_C(LOG_LEVEL_INFO, CURRENT_CHANNEL,
-        (std::string("[main] ") + MemoryManager::GetMemoryUsageStats()).c_str());
+        (std::string("[main] ") + nous::engine::memory::GetMemoryUsageStats()).c_str());
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Successfully exited Nous Engine. See you soon!");
 
     ShutdownLogging();
 
-    MemoryManager::ShutdownMemory();
+    nous::engine::memory::ShutdownMemory();
 
     return mainReturn;
 }

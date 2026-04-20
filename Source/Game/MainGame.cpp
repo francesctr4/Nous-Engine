@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 {
     StartLogTimer();
 
-    MemoryManager::InitializeMemory(MiB(300));
+    nous::engine::memory::InitializeMemory(MiB(300));
 
     nous::engine::multithreading::RegisterMainThread();
 
@@ -179,11 +179,11 @@ int main(int argc, char** argv)
     nous::engine::multithreading::UnregisterMainThread();
 
     NOUS_MULTILINE_C(LOG_LEVEL_INFO, CURRENT_CHANNEL,
-        (std::string("[main] ") + MemoryManager::GetMemoryUsageStats()).c_str());
+        (std::string("[main] ") + nous::engine::memory::GetMemoryUsageStats()).c_str());
 
     ShutdownLogging();
 
-    MemoryManager::ShutdownMemory();
+    nous::engine::memory::ShutdownMemory();
 
     return mainReturn;
 }

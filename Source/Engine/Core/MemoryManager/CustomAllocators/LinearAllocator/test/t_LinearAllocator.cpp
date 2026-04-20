@@ -13,12 +13,12 @@ class t_LinearAllocator : public ::testing::Test
 protected:
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(65536);
+        nous::engine::memory::InitializeMemory(65536);
     }
 
     void TearDown() override
     {
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 };
 

@@ -39,9 +39,9 @@ void MemoryWindow::Draw()
 
     if (ImGui::Begin(title, p_open))
     {
-        auto stats  = MemoryManager::GetMemoryStats();
-        auto config = MemoryManager::GetMemoryConfig();
-        const char* const* tags = MemoryManager::GetMemoryTagNames();
+        auto stats  = nous::engine::memory::GetMemoryStats();
+        auto config = nous::engine::memory::GetMemoryConfig();
+        const char* const* tags = nous::engine::memory::GetMemoryTagNames();
 
         // ------------------------------
         // Compute metrics

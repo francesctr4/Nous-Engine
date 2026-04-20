@@ -101,7 +101,7 @@ protected:
 
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(kMemoryPoolSize);
+        nous::engine::memory::InitializeMemory(kMemoryPoolSize);
         cache = new SubMeshCache(resources, resourcesMutex, pendingUploads, pendingUploadsMutex);
 
         const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -126,7 +126,7 @@ protected:
             if (res) NOUS_DELETE(res, MemoryTag::RESOURCE_MESH);
         resources.clear();
 
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 };
 

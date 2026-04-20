@@ -24,7 +24,7 @@ static bool CreateShaderModuleFromBinary(VulkanContext* vkContext,
         return false;
     }
 
-    MemoryManager::ZeroMemory(&outStage->shaderModuleCreateInfo, sizeof(VkShaderModuleCreateInfo));
+    nous::engine::memory::ZeroMemory(&outStage->shaderModuleCreateInfo, sizeof(VkShaderModuleCreateInfo));
     outStage->shaderModuleCreateInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     outStage->shaderModuleCreateInfo.codeSize = spirvBinary.size() * sizeof(uint32_t);
     outStage->shaderModuleCreateInfo.pCode    = spirvBinary.data();
@@ -32,7 +32,7 @@ static bool CreateShaderModuleFromBinary(VulkanContext* vkContext,
     VK_CHECK(vkCreateShaderModule(vkContext->device.logicalDevice,
         &outStage->shaderModuleCreateInfo, vkContext->allocator, &outStage->handle));
 
-    MemoryManager::ZeroMemory(&outStage->shaderStageCreateInfo, sizeof(VkPipelineShaderStageCreateInfo));
+    nous::engine::memory::ZeroMemory(&outStage->shaderStageCreateInfo, sizeof(VkPipelineShaderStageCreateInfo));
     outStage->shaderStageCreateInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     outStage->shaderStageCreateInfo.stage  = stageFlagBit;
     outStage->shaderStageCreateInfo.module = outStage->handle;

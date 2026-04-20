@@ -10,7 +10,7 @@ LinearAllocator::LinearAllocator(uint64 capacity, void* preAllocatedMemory)
 {
     if (memory == nullptr) 
     {
-        memory = MemoryManager::Allocate(capacity, MemoryTag::LINEAR_ALLOCATOR);
+        memory = nous::engine::memory::Allocate(capacity, MemoryTag::LINEAR_ALLOCATOR);
 
         if (memory == nullptr)
         {
@@ -19,7 +19,7 @@ LinearAllocator::LinearAllocator(uint64 capacity, void* preAllocatedMemory)
         }
     }
 
-    MemoryManager::ZeroMemory(memory, capacity);
+    nous::engine::memory::ZeroMemory(memory, capacity);
 }
 
 LinearAllocator::~LinearAllocator()
@@ -43,7 +43,7 @@ void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
         NOUS_WARN("LinearAllocator::Create() called on an already-initialized allocator. "
                   "Freeing previous allocation to avoid leak.");
         if (ownsMemory)
-            MemoryManager::Free(memory, this->capacity, MemoryTag::LINEAR_ALLOCATOR);
+            nous::engine::memory::Free(memory, this->capacity, MemoryTag::LINEAR_ALLOCATOR);
         memory = nullptr;
         this->capacity = 0;
         offset = 0;
@@ -56,7 +56,7 @@ void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
 
     if (memory == nullptr)
     {
-        memory = MemoryManager::Allocate(capacity, MemoryTag::LINEAR_ALLOCATOR);
+        memory = nous::engine::memory::Allocate(capacity, MemoryTag::LINEAR_ALLOCATOR);
 
         if (memory == nullptr)
         {
@@ -65,7 +65,7 @@ void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
         }
     }
 
-    MemoryManager::ZeroMemory(memory, capacity);
+    nous::engine::memory::ZeroMemory(memory, capacity);
 }
 
 void* LinearAllocator::Allocate(uint64 size, uint64 alignment)
@@ -123,7 +123,7 @@ void LinearAllocator::FreeAll()
 
     if (memory)
     {
-        MemoryManager::Free(memory, capacity, MemoryTag::LINEAR_ALLOCATOR);
+        nous::engine::memory::Free(memory, capacity, MemoryTag::LINEAR_ALLOCATOR);
         memory = nullptr;
     }
     offset = 0;

@@ -10,17 +10,17 @@ class t_NOUS_STLAllocator : public ::testing::Test {
 protected:
     void SetUp() override {
         // Initialize memory manager if not already active
-        MemoryManager::InitializeMemory(65536);
+        nous::engine::memory::InitializeMemory(65536);
     }
 
     void TearDown() override {
         // Check that all allocations have been freed after each test
-        const auto stats = MemoryManager::GetMemoryStats();
+        const auto stats = nous::engine::memory::GetMemoryStats();
         EXPECT_EQ(stats.totalAllocations, 0)
                             << "Memory leak detected after test! Allocated bytes: "
                             << stats.totalAllocations;
 
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 };
 
@@ -32,7 +32,7 @@ TEST_F(t_NOUS_STLAllocator, VectorAllocationAndFree)
     using Alloc = NOUS_STLAllocator<int>;
     Alloc alloc(MemoryTag::ARRAY);
 
-    const auto before = MemoryManager::GetMemoryStats();
+    const auto before = nous::engine::memory::GetMemoryStats();
 
     {
         std::vector<int, Alloc> vec(alloc);
@@ -41,7 +41,7 @@ TEST_F(t_NOUS_STLAllocator, VectorAllocationAndFree)
             vec.push_back(i);
     }
 
-    const auto after = MemoryManager::GetMemoryStats();
+    const auto after = nous::engine::memory::GetMemoryStats();
 
     EXPECT_EQ(after.totalAllocations, before.totalAllocations)
                         << "All std::vector allocations should have been freed.";
@@ -55,7 +55,7 @@ TEST_F(t_NOUS_STLAllocator, TagAccountingIsAccurate)
     using Alloc = NOUS_STLAllocator<float>;
     Alloc alloc(MemoryTag::ARRAY);
 
-    const auto before = MemoryManager::GetMemoryStats();
+    const auto before = nous::engine::memory::GetMemoryStats();
 
     {
         std::vector<float, Alloc> data(alloc);
@@ -63,7 +63,7 @@ TEST_F(t_NOUS_STLAllocator, TagAccountingIsAccurate)
         data.resize(64, 1.0f);
     }
 
-    const auto after = MemoryManager::GetMemoryStats();
+    const auto after = nous::engine::memory::GetMemoryStats();
 
     // Ensure ARRAY tag usage returns to zero
     EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::ARRAY], 0)
@@ -80,7 +80,7 @@ TEST_F(t_NOUS_STLAllocator, UnorderedMapAllocAndFree)
     using Alloc = NOUS_STLAllocator<Pair>;
     Alloc alloc(MemoryTag::DICT);
 
-    const auto before = MemoryManager::GetMemoryStats();
+    const auto before = nous::engine::memory::GetMemoryStats();
 
     {
         std::unordered_map<int, double, std::hash<int>, std::equal_to<int>, Alloc> map(
@@ -90,7 +90,7 @@ TEST_F(t_NOUS_STLAllocator, UnorderedMapAllocAndFree)
             map.emplace(i, i * 1.5);
     }
 
-    const auto after = MemoryManager::GetMemoryStats();
+    const auto after = nous::engine::memory::GetMemoryStats();
     EXPECT_EQ(after.totalAllocations, before.totalAllocations)
                         << "All unordered_map allocations should have been freed.";
 }
@@ -106,7 +106,7 @@ TEST_F(t_NOUS_STLAllocator, IndependentContainersTrackSeparateTags)
     VecAlloc vecAlloc(MemoryTag::ARRAY);
     MapAlloc mapAlloc(MemoryTag::DICT);
 
-    const auto before = MemoryManager::GetMemoryStats();
+    const auto before = nous::engine::memory::GetMemoryStats();
 
     {
         std::vector<int, VecAlloc> vec(vecAlloc);
@@ -118,7 +118,7 @@ TEST_F(t_NOUS_STLAllocator, IndependentContainersTrackSeparateTags)
         map.emplace(2, 84);
     }
 
-    const auto after = MemoryManager::GetMemoryStats();
+    const auto after = nous::engine::memory::GetMemoryStats();
 
     EXPECT_EQ(after.totalAllocations, before.totalAllocations);
     EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::ARRAY], 0);
@@ -133,7 +133,7 @@ TEST_F(t_NOUS_STLAllocator, MaxSizeReflectsPoolCapacity)
     using Alloc = NOUS_STLAllocator<uint8_t>;
     Alloc alloc(MemoryTag::ARRAY);
 
-    const auto config = MemoryManager::GetMemoryConfig();
+    const auto config = nous::engine::memory::GetMemoryConfig();
 
     // max_size() must not exceed the pool (a container reserving more would fail).
     EXPECT_LE(alloc.max_size(), config.totalAllocationSize);
@@ -193,7 +193,7 @@ TEST_F(t_NOUS_STLAllocator, ListWithRebindTracksCorrectly)
     using Alloc = NOUS_STLAllocator<int>;
     Alloc alloc(MemoryTag::ARRAY);
 
-    const auto before = MemoryManager::GetMemoryStats();
+    const auto before = nous::engine::memory::GetMemoryStats();
 
     {
         std::list<int, Alloc> lst(alloc);
@@ -201,7 +201,7 @@ TEST_F(t_NOUS_STLAllocator, ListWithRebindTracksCorrectly)
             lst.push_back(i);
     }
 
-    const auto after = MemoryManager::GetMemoryStats();
+    const auto after = nous::engine::memory::GetMemoryStats();
     EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::ARRAY], 0)
         << "std::list node allocations should be freed and tracked under ARRAY tag.";
     EXPECT_EQ(after.totalAllocations, before.totalAllocations);
@@ -216,14 +216,14 @@ TEST_F(t_NOUS_STLAllocator, RawAllocateDeallocateRoundtrip)
     NOUS_STLAllocator<uint64> alloc(MemoryTag::ARRAY);
 
     constexpr std::size_t n = 16;
-    const auto before = MemoryManager::GetMemoryStats();
+    const auto before = nous::engine::memory::GetMemoryStats();
 
     uint64* p = alloc.allocate(n);
     ASSERT_NE(p, nullptr);
-    EXPECT_GT(MemoryManager::GetMemoryStats().taggedAllocations[(uint64)MemoryTag::ARRAY], 0u);
+    EXPECT_GT(nous::engine::memory::GetMemoryStats().taggedAllocations[(uint64)MemoryTag::ARRAY], 0u);
 
     alloc.deallocate(p, n);
-    EXPECT_EQ(MemoryManager::GetMemoryStats().taggedAllocations[(uint64)MemoryTag::ARRAY],
+    EXPECT_EQ(nous::engine::memory::GetMemoryStats().taggedAllocations[(uint64)MemoryTag::ARRAY],
               before.taggedAllocations[(uint64)MemoryTag::ARRAY]);
 }
 

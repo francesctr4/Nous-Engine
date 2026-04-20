@@ -1947,7 +1947,7 @@ void VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
         vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
         NOUS_VulkanImage::DestroyVulkanImage(vkContext, &textureData->image);
-        MemoryManager::ZeroMemory(&textureData->image, sizeof(VulkanImage));
+        nous::engine::memory::ZeroMemory(&textureData->image, sizeof(VulkanImage));
 
         vkDestroySampler(vkContext->device.logicalDevice, textureData->sampler, vkContext->allocator);
         textureData->sampler = nullptr;
@@ -2191,7 +2191,7 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
         // Clean up data.
         {
             std::lock_guard geoLock(vkContext->geometriesMutex);
-            MemoryManager::ZeroMemory(internalData, sizeof(VulkanGeometryData));
+            nous::engine::memory::ZeroMemory(internalData, sizeof(VulkanGeometryData));
             internalData->ID = INVALID_ID;
             internalData->generation = INVALID_ID;
         }

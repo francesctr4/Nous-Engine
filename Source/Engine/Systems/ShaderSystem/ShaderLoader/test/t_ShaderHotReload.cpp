@@ -61,8 +61,8 @@ void main() { outColor = THIS_IS_NOT_VALID_GLSL; }
 class t_ShaderHotReload : public ::testing::Test
 {
 protected:
-    void SetUp() override    { MemoryManager::InitializeMemory(65536); }
-    void TearDown() override { MemoryManager::ShutdownMemory(); }
+    void SetUp() override    { nous::engine::memory::InitializeMemory(65536); }
+    void TearDown() override { nous::engine::memory::ShutdownMemory(); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

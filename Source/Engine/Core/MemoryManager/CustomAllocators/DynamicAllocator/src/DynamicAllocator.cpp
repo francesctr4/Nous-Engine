@@ -68,7 +68,7 @@ DynamicAllocator::~DynamicAllocator()
         }
 
         state_->freelist->~Freelist();
-        MemoryManager::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
+        nous::engine::memory::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
     }
 }
 

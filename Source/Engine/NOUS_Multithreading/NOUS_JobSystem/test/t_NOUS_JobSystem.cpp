@@ -23,14 +23,14 @@ protected:
 
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(kPoolSize);
+        nous::engine::memory::InitializeMemory(kPoolSize);
     }
 
     void TearDown() override
     {
         delete jobSystem;
         jobSystem = nullptr;
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 };
 

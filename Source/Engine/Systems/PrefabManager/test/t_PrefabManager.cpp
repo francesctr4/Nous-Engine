@@ -87,7 +87,7 @@ class t_PrefabManager : public ::testing::Test
 protected:
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(MiB(16));
+        nous::engine::memory::InitializeMemory(MiB(16));
         fs::create_directories(kTempDir);
         scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene");
     }
@@ -96,7 +96,7 @@ protected:
     {
         NOUS_DELETE(scene, MemoryTag::SCENE);
         fs::remove_all(kTempDir);
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 
     // Creates root GO (+ optional child) in the fixture scene, saves to a temp

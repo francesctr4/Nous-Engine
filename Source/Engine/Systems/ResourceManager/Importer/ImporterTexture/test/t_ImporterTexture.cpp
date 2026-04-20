@@ -85,7 +85,7 @@ class t_ImporterTexture : public ::testing::Test
 protected:
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(MiB(16));
+        nous::engine::memory::InitializeMemory(MiB(16));
         m_bmpPath = (fs::temp_directory_path() / "nous_t_importer_texture.bmp").string();
         m_bmp2Path = (fs::temp_directory_path() / "nous_t_importer_texture2.bmp").string();
     }
@@ -95,7 +95,7 @@ protected:
         std::error_code ec;
         fs::remove(m_bmpPath,  ec);
         fs::remove(m_bmp2Path, ec);
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 
     std::string m_bmpPath;

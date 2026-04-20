@@ -152,14 +152,14 @@ void NOUS_VulkanRenderpass::BeginRenderpass(VulkanCommandBuffer* commandBuffer, 
 
     if (renderpass->clearFlags & RenderpassClearFlag::COLOR_BUFFER)
     {
-        MemoryManager::CopyMemory(clearValues[renderPassInfo.clearValueCount].color.float32,
+        nous::engine::memory::CopyMemory(clearValues[renderPassInfo.clearValueCount].color.float32,
                                   glm::value_ptr(renderpass->clearColor), sizeof(glm::vec4));
         renderPassInfo.clearValueCount++;
     }
 
     if (renderpass->clearFlags & RenderpassClearFlag::DEPTH_BUFFER)
     {
-        MemoryManager::CopyMemory(clearValues[renderPassInfo.clearValueCount].color.float32,
+        nous::engine::memory::CopyMemory(clearValues[renderPassInfo.clearValueCount].color.float32,
                                   glm::value_ptr(renderpass->clearColor), sizeof(glm::vec4));
         clearValues[renderPassInfo.clearValueCount].depthStencil.depth   = renderpass->depth;
         clearValues[renderPassInfo.clearValueCount].depthStencil.stencil = renderpass->stencil;

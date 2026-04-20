@@ -20,14 +20,14 @@ protected:
 
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(kMemoryPoolSize);
+        nous::engine::memory::InitializeMemory(kMemoryPoolSize);
         m_testFilePath = (std::filesystem::temp_directory_path() / "nous_t_ImporterMaterial.nmat").string();
     }
 
     void TearDown() override
     {
         std::filesystem::remove(m_testFilePath);
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 
     // Writes a minimal .nmat JSON string to the temp file.

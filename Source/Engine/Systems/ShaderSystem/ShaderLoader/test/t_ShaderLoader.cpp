@@ -123,13 +123,13 @@ class t_ShaderLoader : public ::testing::Test
 protected:
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(65536);
+        nous::engine::memory::InitializeMemory(65536);
         config = DefaultConfig();
     }
 
     void TearDown() override
     {
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 
     ShaderCompilerConfig config;

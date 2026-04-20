@@ -14,7 +14,7 @@ class t_FileHandle : public ::testing::Test
 protected:
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(MiB(4));
+        nous::engine::memory::InitializeMemory(MiB(4));
         m_path = (fs::temp_directory_path() / "nous_t_filehandle.tmp").string();
     }
 
@@ -22,7 +22,7 @@ protected:
     {
         std::error_code ec;
         fs::remove(m_path, ec);
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 
     std::string m_path;

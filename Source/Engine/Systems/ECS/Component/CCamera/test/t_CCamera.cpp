@@ -15,14 +15,14 @@ class t_CCamera : public ::testing::Test
 protected:
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(MiB(16));
+        nous::engine::memory::InitializeMemory(MiB(16));
         scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene");
     }
 
     void TearDown() override
     {
         NOUS_DELETE(scene, MemoryTag::SCENE);
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 
     Scene* scene = nullptr;

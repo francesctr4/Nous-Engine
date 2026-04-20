@@ -44,7 +44,7 @@ struct MemorySystemConfig
 
 static struct MemorySystemConfig config;
 
-void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
+void nous::engine::memory::InitializeMemory(uint64 preAllocatedMemorySize)
 {
 	ZeroMemory(&config, sizeof(config));
 
@@ -71,7 +71,7 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 	NOUS_DEBUG_C(CURRENT_CHANNEL, "Memory system initialized with %llu bytes", config.totalAllocationSize);
 }
 
-void MemoryManager::ShutdownMemory()
+void nous::engine::memory::ShutdownMemory()
 {
 	if (config.allocator)
 	{
@@ -101,7 +101,7 @@ void MemoryManager::ShutdownMemory()
 	// ----------------------------------------------------------------------- //
 }
 
-void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
+void* nous::engine::memory::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 
@@ -134,7 +134,7 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 	return block;
 }
 
-void MemoryManager::Free(void* block, MemoryTag tag)
+void nous::engine::memory::Free(void* block, MemoryTag tag)
 {
 	if (!block) return;
 	std::lock_guard<std::mutex> lock(memoryMutex);
@@ -164,12 +164,12 @@ void MemoryManager::Free(void* block, MemoryTag tag)
 	if (!ok)
 	{
 		NOUS_WARN_C(CURRENT_CHANNEL,
-					"MemoryManager::Free(void*, tag=%d): allocator failed to free %p",
+					"nous::engine::memory::Free(void*, tag=%d): allocator failed to free %p",
 					static_cast<int>(tag), block);
 	}
 }
 
-void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
+void nous::engine::memory::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
 	if (!block) return;
 	std::scoped_lock lock(memoryMutex);
@@ -207,22 +207,22 @@ void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UN
 	}
 }
 
-void* MemoryManager::ZeroMemory(void* block, uint64 size)
+void* nous::engine::memory::ZeroMemory(void* block, uint64 size)
 {
 	return std::memset(block, 0, size);
 }
 
-void* MemoryManager::CopyMemory(void* destination, const void* source, uint64 size)
+void* nous::engine::memory::CopyMemory(void* destination, const void* source, uint64 size)
 {
 	return std::memcpy(destination, source, size);
 }
 
-void* MemoryManager::SetMemory(void* destination, int32 value, uint64 size)
+void* nous::engine::memory::SetMemory(void* destination, int32 value, uint64 size)
 {
 	return std::memset(destination, value, size);
 }
 
-std::string MemoryManager::GetMemoryUsageStats()
+std::string nous::engine::memory::GetMemoryUsageStats()
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 	std::ostringstream out;
@@ -284,13 +284,13 @@ std::string MemoryManager::GetMemoryUsageStats()
 	return out.str();
 }
 
-uint64 MemoryManager::GetMemoryAllocationCount()
+uint64 nous::engine::memory::GetMemoryAllocationCount()
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 	return config.stats.totalAllocations;
 }
 
-MemoryManager::MemoryStatsSnapshot MemoryManager::GetMemoryStats()
+nous::engine::memory::MemoryStatsSnapshot nous::engine::memory::GetMemoryStats()
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 	MemoryStatsSnapshot snapshot{};
@@ -303,7 +303,7 @@ MemoryManager::MemoryStatsSnapshot MemoryManager::GetMemoryStats()
 	return snapshot;
 }
 
-const char* const* MemoryManager::GetMemoryTagNames()
+const char* const* nous::engine::memory::GetMemoryTagNames()
 {
 	// Enum names are compile-time constants — populate once.
 	// string_view::data() points into static string literals so the pointers
@@ -318,7 +318,7 @@ const char* const* MemoryManager::GetMemoryTagNames()
 	return names.data();
 }
 
-MemoryManager::MemoryConfigSnapshot MemoryManager::GetMemoryConfig()
+nous::engine::memory::MemoryConfigSnapshot nous::engine::memory::GetMemoryConfig()
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 	MemoryConfigSnapshot snapshot{};

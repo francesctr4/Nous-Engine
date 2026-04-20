@@ -42,7 +42,7 @@ class t_ImporterShader : public ::testing::Test
 protected:
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(MiB(32));
+        nous::engine::memory::InitializeMemory(MiB(32));
         fs::create_directories(kTempDir);
         m_glslPath    = (fs::path(kTempDir) / "test.glsl").string();
         m_libraryPath = (fs::path(kTempDir) / "test_shader.spv").string();
@@ -55,7 +55,7 @@ protected:
     {
         std::error_code ec;
         fs::remove_all(kTempDir, ec);
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 
     MetaFileData MakeMeta() const

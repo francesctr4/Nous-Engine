@@ -53,7 +53,7 @@ private:
         // meaning those allocations bypass MemoryManager tracking. Using
         // NOUS_STLAllocator here would close that gap, but it creates a circular
         // bootstrap dependency: allocMap insertion → NOUS_STLAllocator::allocate →
-        // MemoryManager::Allocate → DynamicAllocator::Allocate → allocMap insertion
+        // nous::engine::memory::Allocate → DynamicAllocator::Allocate → allocMap insertion
         // (deadlock on mapMutex, since std::mutex is non-recursive). Solving this
         // requires either a separate node pool, a recursive mutex + re-entrancy guard,
         // or a custom open-addressing hash map that lives entirely within the managed

@@ -43,12 +43,12 @@ protected:
 
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(kPoolSize);
+        nous::engine::memory::InitializeMemory(kPoolSize);
     }
 
     void TearDown() override
     {
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 };
 
@@ -118,9 +118,9 @@ TEST_F(t_MemoryManager, NOUS_DELETE_OnNullptrIsNoop)
 {
     int* p = nullptr;
     // Should not crash and stats should be unchanged.
-    const auto statsBefore = MemoryManager::GetMemoryStats();
+    const auto statsBefore = nous::engine::memory::GetMemoryStats();
     NOUS_DELETE(p, MemoryTag::APPLICATION);
-    const auto statsAfter = MemoryManager::GetMemoryStats();
+    const auto statsAfter = nous::engine::memory::GetMemoryStats();
     EXPECT_EQ(statsAfter.totalAllocations, statsBefore.totalAllocations);
 }
 
@@ -130,19 +130,19 @@ TEST_F(t_MemoryManager, NOUS_DELETE_OnNullptrIsNoop)
 
 TEST_F(t_MemoryManager, NOUS_NEW_IncreasesAllocationCount)
 {
-    const uint64 before = MemoryManager::GetMemoryStats().totalAllocations;
+    const uint64 before = nous::engine::memory::GetMemoryStats().totalAllocations;
     int* p = NOUS_NEW<int>(MemoryTag::APPLICATION);
-    EXPECT_EQ(MemoryManager::GetMemoryStats().totalAllocations, before + 1);
+    EXPECT_EQ(nous::engine::memory::GetMemoryStats().totalAllocations, before + 1);
     NOUS_DELETE(p, MemoryTag::APPLICATION);
 }
 
 TEST_F(t_MemoryManager, NOUS_NEW_IncreasesTaggedBytes)
 {
-    const auto before = MemoryManager::GetMemoryStats();
+    const auto before = nous::engine::memory::GetMemoryStats();
     const uint64 tagIdx = static_cast<uint64>(MemoryTag::RENDERER);
 
     int* p = NOUS_NEW<int>(MemoryTag::RENDERER);
-    const auto after = MemoryManager::GetMemoryStats();
+    const auto after = nous::engine::memory::GetMemoryStats();
 
     EXPECT_GT(after.taggedAllocations[tagIdx], before.taggedAllocations[tagIdx]);
     EXPECT_GT(after.totalAllocated, before.totalAllocated);
@@ -153,20 +153,20 @@ TEST_F(t_MemoryManager, NOUS_NEW_IncreasesTaggedBytes)
 TEST_F(t_MemoryManager, NOUS_DELETE_DecreasesAllocationCount)
 {
     int* p = NOUS_NEW<int>(MemoryTag::APPLICATION);
-    const uint64 afterAlloc = MemoryManager::GetMemoryStats().totalAllocations;
+    const uint64 afterAlloc = nous::engine::memory::GetMemoryStats().totalAllocations;
 
     NOUS_DELETE(p, MemoryTag::APPLICATION);
-    EXPECT_EQ(MemoryManager::GetMemoryStats().totalAllocations, afterAlloc - 1);
+    EXPECT_EQ(nous::engine::memory::GetMemoryStats().totalAllocations, afterAlloc - 1);
 }
 
 TEST_F(t_MemoryManager, NOUS_NEW_DELETE_Roundtrip_RestoresStats)
 {
-    const auto statsBefore = MemoryManager::GetMemoryStats();
+    const auto statsBefore = nous::engine::memory::GetMemoryStats();
 
     SimpleStruct* s = NOUS_NEW<SimpleStruct>(MemoryTag::APPLICATION);
     NOUS_DELETE(s, MemoryTag::APPLICATION);
 
-    const auto statsAfter = MemoryManager::GetMemoryStats();
+    const auto statsAfter = nous::engine::memory::GetMemoryStats();
     EXPECT_EQ(statsAfter.totalAllocations, statsBefore.totalAllocations);
     EXPECT_EQ(statsAfter.totalAllocated, statsBefore.totalAllocated);
 }
@@ -176,19 +176,19 @@ TEST_F(t_MemoryManager, MultipleTagsTrackedIndependently)
     const uint64 meshIdx = static_cast<uint64>(MemoryTag::RESOURCE_MESH);
     const uint64 texIdx  = static_cast<uint64>(MemoryTag::RESOURCE_TEXTURE);
 
-    const auto before = MemoryManager::GetMemoryStats();
+    const auto before = nous::engine::memory::GetMemoryStats();
 
     int* mesh = NOUS_NEW<int>(MemoryTag::RESOURCE_MESH);
     int* tex  = NOUS_NEW<int>(MemoryTag::RESOURCE_TEXTURE);
 
-    const auto during = MemoryManager::GetMemoryStats();
+    const auto during = nous::engine::memory::GetMemoryStats();
     EXPECT_GT(during.taggedAllocations[meshIdx], before.taggedAllocations[meshIdx]);
     EXPECT_GT(during.taggedAllocations[texIdx],  before.taggedAllocations[texIdx]);
 
     NOUS_DELETE(mesh, MemoryTag::RESOURCE_MESH);
     NOUS_DELETE(tex,  MemoryTag::RESOURCE_TEXTURE);
 
-    const auto after = MemoryManager::GetMemoryStats();
+    const auto after = nous::engine::memory::GetMemoryStats();
     EXPECT_EQ(after.taggedAllocations[meshIdx], before.taggedAllocations[meshIdx]);
     EXPECT_EQ(after.taggedAllocations[texIdx],  before.taggedAllocations[texIdx]);
 }
@@ -249,20 +249,20 @@ TEST_F(t_MemoryManager, NOUS_DELETE_ARRAY_NullsOutPointer)
 
 TEST_F(t_MemoryManager, NOUS_NEW_ARRAY_IncreasesAllocationCount)
 {
-    const uint64 before = MemoryManager::GetMemoryStats().totalAllocations;
+    const uint64 before = nous::engine::memory::GetMemoryStats().totalAllocations;
     int* arr = NOUS_NEW_ARRAY<int>(16, MemoryTag::ARRAY);
-    EXPECT_EQ(MemoryManager::GetMemoryStats().totalAllocations, before + 1);
+    EXPECT_EQ(nous::engine::memory::GetMemoryStats().totalAllocations, before + 1);
     NOUS_DELETE_ARRAY(arr, 16, MemoryTag::ARRAY);
 }
 
 TEST_F(t_MemoryManager, NOUS_NEW_ARRAY_DELETE_ARRAY_Roundtrip_RestoresStats)
 {
-    const auto before = MemoryManager::GetMemoryStats();
+    const auto before = nous::engine::memory::GetMemoryStats();
 
     float* arr = NOUS_NEW_ARRAY<float>(32, MemoryTag::ARRAY);
     NOUS_DELETE_ARRAY(arr, 32, MemoryTag::ARRAY);
 
-    const auto after = MemoryManager::GetMemoryStats();
+    const auto after = nous::engine::memory::GetMemoryStats();
     EXPECT_EQ(after.totalAllocations, before.totalAllocations);
     EXPECT_EQ(after.totalAllocated,   before.totalAllocated);
 }

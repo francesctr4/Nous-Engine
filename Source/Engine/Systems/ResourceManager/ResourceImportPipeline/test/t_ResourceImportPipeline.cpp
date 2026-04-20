@@ -43,7 +43,7 @@ protected:
 
     void SetUp() override
     {
-        MemoryManager::InitializeMemory(kMemoryPoolSize);
+        nous::engine::memory::InitializeMemory(kMemoryPoolSize);
         pipeline = new ResourceImportPipeline(&mockImporter);
 
         // Give each test an isolated sandbox. ResourceImportPipeline works entirely
@@ -64,7 +64,7 @@ protected:
 
         delete pipeline;
         pipeline = nullptr;
-        MemoryManager::ShutdownMemory();
+        nous::engine::memory::ShutdownMemory();
     }
 
     // Creates a file (and all parent directories) with stub content.
