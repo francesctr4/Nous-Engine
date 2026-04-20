@@ -37,7 +37,7 @@ protected:
     static constexpr uint64 kMemoryPoolSize = MiB(64);
 
     EventSystem*          eventSystem = nullptr;
-    NOUS_Multithreading::NOUS_JobSystem* jobSystem = nullptr; // single-threaded: jobs run inline
+    nous::engine::multithreading::NOUS_JobSystem* jobSystem = nullptr; // single-threaded: jobs run inline
     MockImporterManager   mockImporter;
     ModuleResourceManager* rm = nullptr;
 
@@ -45,7 +45,7 @@ protected:
     {
         MemoryManager::InitializeMemory(kMemoryPoolSize);
         eventSystem = new EventSystem();
-        jobSystem   = new NOUS_Multithreading::NOUS_JobSystem(0);
+        jobSystem   = new nous::engine::multithreading::NOUS_JobSystem(0);
         rm = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
     }
 

@@ -2,7 +2,7 @@
 
 #include "Engine/EngineExport.h"
 
-namespace NOUS_Multithreading
+namespace nous::engine::multithreading
 {
     // Forward declaration.
     class NOUS_Thread;

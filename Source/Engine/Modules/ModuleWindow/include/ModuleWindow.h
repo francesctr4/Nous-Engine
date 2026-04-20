@@ -12,7 +12,7 @@ class ModuleWindow : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleWindow(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
+	ModuleWindow(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem);
 
 	// Destructor
 	~ModuleWindow() override;

@@ -13,7 +13,7 @@ class ModuleCamera3D : public Module, public IEventListener
 {
 public:
 
-	explicit ModuleCamera3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, IInputReader* moduleInput);
+	explicit ModuleCamera3D(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem, IInputReader* moduleInput);
 	~ModuleCamera3D() override;
 
 	bool Awake() override;

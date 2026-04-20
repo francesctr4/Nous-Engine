@@ -41,7 +41,7 @@ Application::Application(const bool isGameMode)
     updateTitleTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
 
     // ------------- MULTITHREADING ------------- //
-    jobSystem = NOUS_NEW<NOUS_Multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
+    jobSystem = NOUS_NEW<nous::engine::multithreading::NOUS_JobSystem>(MemoryTag::THREAD);
 
     // -----------------------------------------------------------------------
     // Module construction order — LOAD-BEARING. Do not reorder.
@@ -177,7 +177,7 @@ UpdateStatus Application::PrepareUpdate()
 // ---------------------------------------------------------------------------
 // DEBUG — temporary development shortcuts. Remove when editor UI covers these.
 // ---------------------------------------------------------------------------
-static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
+static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::engine::multithreading::NOUS_JobSystem* jobSystem)
 {
     if (input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
         ScriptManager::GenerateScript("PRUEBA_CREAR_SCRIPT_DESDE_MOTOR");
@@ -220,7 +220,7 @@ static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, NOUS_M
         scene->ClearScene();
 
     if (input->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
-        jobSystem->SubmitJob([] { NOUS_Multithreading::NOUS_Thread::SleepMS(5000); }, "Test Sleep");
+        jobSystem->SubmitJob([] { nous::engine::multithreading::NOUS_Thread::SleepMS(5000); }, "Test Sleep");
 
     if (input->GetKey(SDL_SCANCODE_F8) == KeyState::DOWN)
     {
@@ -432,5 +432,5 @@ ModuleResourceManager* Application::GetResourceManager() const { return resource
 ModuleScene*           Application::GetScene()           const { return scene; }
 ModuleRenderer3D*      Application::GetRenderer()        const { return renderer; }
 
-NOUS_Multithreading::NOUS_JobSystem* Application::GetJobSystem() const { return jobSystem; }
+nous::engine::multithreading::NOUS_JobSystem* Application::GetJobSystem() const { return jobSystem; }
 

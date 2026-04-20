@@ -8,7 +8,7 @@
 #include <chrono>
 #include <thread>
 
-using namespace NOUS_Multithreading;
+using namespace nous::engine::multithreading;
 
 // =====================================================
 // Fixture

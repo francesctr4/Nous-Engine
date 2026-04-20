@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 
-using namespace NOUS_Multithreading;
+using namespace nous::engine::multithreading;
 
 // =====================================================
 // Fixture

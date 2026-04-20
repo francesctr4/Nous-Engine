@@ -19,7 +19,7 @@ class Freelist;
 class ModuleWindow;
 class ModuleResourceManager;
 class EventSystem;
-namespace NOUS_Multithreading { class NOUS_JobSystem; }
+namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 struct VulkanImage
 {
@@ -359,7 +359,7 @@ struct VulkanContext
     // ── Injected dependencies (set before Initialize(), not owned) ─────────────
     ModuleWindow*                              window          = nullptr;
     EventSystem*                               eventSystem     = nullptr;
-    NOUS_Multithreading::NOUS_JobSystem*        jobSystem       = nullptr;
+    nous::engine::multithreading::NOUS_JobSystem*        jobSystem       = nullptr;
     ModuleResourceManager*                     resourceManager = nullptr;
 };
 

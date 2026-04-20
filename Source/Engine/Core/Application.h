@@ -10,7 +10,7 @@
 struct Event;
 class EventSystem;
 class Timer;
-namespace NOUS_Multithreading { class NOUS_JobSystem; }
+namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 class Module;
 class ModuleWindow;
@@ -56,7 +56,7 @@ public:
     NOUS_ENGINE_API ModuleRenderer3D*                     GetRenderer()        const;
 
 	// ------------- MULTITHREADING ------------- //
-    NOUS_ENGINE_API NOUS_Multithreading::NOUS_JobSystem*  GetJobSystem()       const;
+    NOUS_ENGINE_API nous::engine::multithreading::NOUS_JobSystem*  GetJobSystem()       const;
 
 
 private:
@@ -74,7 +74,7 @@ private:
 	bool m_isGameMode;
 
 	EventSystem*                         eventSystem;
-	NOUS_Multithreading::NOUS_JobSystem* jobSystem;
+	nous::engine::multithreading::NOUS_JobSystem* jobSystem;
 	IImporterManager*                    importerManager;
 
 	std::vector<Module*> listModules;

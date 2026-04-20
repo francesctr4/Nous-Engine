@@ -15,7 +15,7 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-ModuleCamera3D::ModuleCamera3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem, IInputReader* moduleInput)
+ModuleCamera3D::ModuleCamera3D(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem, IInputReader* moduleInput)
     : Module(eventSystem, jobSystem), mModuleInput(moduleInput)
 {
 	sceneViewportHovered = false;

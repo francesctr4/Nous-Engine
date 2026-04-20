@@ -34,9 +34,9 @@ void Multithreading::Draw()
         ImGui::Text("Job System Overview");
         ImGui::Separator();
 
-        static int newSize = NOUS_Multithreading::c_MAX_HARDWARE_THREADS;
+        static int newSize = nous::engine::multithreading::c_MAX_HARDWARE_THREADS;
         const int minThreads = 0;
-        const int maxThreads = NOUS_Multithreading::c_MAX_HARDWARE_THREADS * 2;
+        const int maxThreads = nous::engine::multithreading::c_MAX_HARDWARE_THREADS * 2;
 
         if (ImGui::InputInt("Thread Count", &newSize, 1, 5))
         {
@@ -57,25 +57,25 @@ void Multithreading::Draw()
         auto jobQueue = threadPool.GetJobQueueSnapshot();
 
         ImGui::Columns(2);
-        ImGui::Text("Max Hardware Threads: %u", NOUS_Multithreading::c_MAX_HARDWARE_THREADS);
+        ImGui::Text("Max Hardware Threads: %u", nous::engine::multithreading::c_MAX_HARDWARE_THREADS);
         ImGui::Text("Total Worker Threads: %u", static_cast<uint8>(threads.size()));
         ImGui::Text("Total Jobs: %u", editorContext->GetJobSystem()->GetPendingJobs());
         ImGui::NextColumn();
 
-        auto* mainThread = NOUS_Multithreading::GetMainThread();
+        auto* mainThread = nous::engine::multithreading::GetMainThread();
         
         // Static lifetime — avoids a dangling pointer when Draw() returns.
-        static NOUS_Multithreading::NOUS_Job mainThreadJob("Nous Engine", {});
+        static nous::engine::multithreading::NOUS_Job mainThreadJob("Nous Engine", {});
         mainThread->SetCurrentJob(&mainThreadJob);
 
         // Calculate active threads
         int activeThreads = 0;
-        std::vector<NOUS_Multithreading::NOUS_Thread*> allThreads;
+        std::vector<nous::engine::multithreading::NOUS_Thread*> allThreads;
         if (mainThread) allThreads.push_back(mainThread);
         allThreads.insert(allThreads.end(), threads.begin(), threads.end());
 
         for (const auto& thread : allThreads)
-            if (thread->GetThreadState() == NOUS_Multithreading::ThreadState::RUNNING)
+            if (thread->GetThreadState() == nous::engine::multithreading::ThreadState::RUNNING)
                 activeThreads++;
 
         // Active threads progress bar with threshold-based coloring
@@ -144,13 +144,13 @@ void Multithreading::Draw()
 
                 // Status indicator
                 const auto state = thread->GetThreadState();
-                const ImVec4 color = (state == NOUS_Multithreading::ThreadState::RUNNING) ?
+                const ImVec4 color = (state == nous::engine::multithreading::ThreadState::RUNNING) ?
                     ImVec4(1.0f, 0.0f, 0.0f, 1.0f) :  // Green for running
                     ImVec4(0.0f, 1.0f, 0.0f, 1.0f);   // Red for others
 
                 // Thread ID
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text("%u", NOUS_Multithreading::NOUS_Thread::GetDisplayID(thread->GetID()));
+                ImGui::Text("%u", nous::engine::multithreading::NOUS_Thread::GetDisplayID(thread->GetID()));
 
                 // Name
                 ImGui::TableSetColumnIndex(1);
@@ -159,7 +159,7 @@ void Multithreading::Draw()
                 // State
                 ImGui::TableSetColumnIndex(2);
                 ImGui::TextColored(color, "%s",
-                    NOUS_Multithreading::NOUS_Thread::GetStringFromState(state).c_str());
+                    nous::engine::multithreading::NOUS_Thread::GetStringFromState(state).c_str());
 
                 // Job
                 ImGui::TableSetColumnIndex(3);

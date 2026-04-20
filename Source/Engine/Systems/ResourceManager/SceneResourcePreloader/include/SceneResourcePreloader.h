@@ -7,7 +7,7 @@
 #include <vector>
 
 class IResourceLoader;
-namespace NOUS_Multithreading { class NOUS_JobSystem; }
+namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 // Parses a .nous scene file, collects all CMesh resource requests,
 // and submits one parallel Deserialize job per unique (assetPath, submeshIndex) pair.
@@ -20,7 +20,7 @@ public:
     // Returns futures for each submitted job — caller waits on all of them
     // before calling Scene::Deserialize() so resource lookups hit the cache.
     NOUS_ENGINE_API std::vector<std::future<void>> PreloadSceneResourcesAsync(
-        NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+        nous::engine::multithreading::NOUS_JobSystem* jobSystem,
         const std::string& sceneFilePath);
 
 private:

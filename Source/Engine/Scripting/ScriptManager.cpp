@@ -251,7 +251,7 @@ void ScriptManager::UnloadScriptLibrary() {
         m_libraryHandle = nullptr;
 
         // Small delay to ensure DLL is fully unloaded
-        NOUS_Multithreading::NOUS_Thread::SleepMS(100);
+        nous::engine::multithreading::NOUS_Thread::SleepMS(100);
     }
 }
 
@@ -358,10 +358,10 @@ bool ScriptManager::WaitForDLLUnload(const std::string& dllPath, int maxRetries)
         DWORD error = GetLastError();
         if (error == ERROR_SHARING_VIOLATION) {
             // DLL is still locked, wait and retry
-            NOUS_Multithreading::NOUS_Thread::SleepMS(50);
+            nous::engine::multithreading::NOUS_Thread::SleepMS(50);
         } else if (error == ERROR_FILE_NOT_FOUND) {
             // DLL doesn't exist yet (might be compiling)
-            NOUS_Multithreading::NOUS_Thread::SleepMS(100);
+            nous::engine::multithreading::NOUS_Thread::SleepMS(100);
         } else {
             break; // Other error
         }

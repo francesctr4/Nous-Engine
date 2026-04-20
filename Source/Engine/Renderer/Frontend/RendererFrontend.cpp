@@ -40,7 +40,7 @@ RendererFrontend::~RendererFrontend()
 void RendererFrontend::InjectDependencies(
     ModuleWindow* window,
     EventSystem* eventSystem,
-    NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+    nous::engine::multithreading::NOUS_JobSystem* jobSystem,
     ModuleResourceManager* resourceManager)
 {
     // Cache here — backend interface doesn't exist yet (Create() hasn't been called).

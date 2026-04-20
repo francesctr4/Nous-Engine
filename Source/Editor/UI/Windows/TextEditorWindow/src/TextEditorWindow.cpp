@@ -392,7 +392,7 @@ void TextEditorWindow::TriggerScriptRecompile()
     mScriptRecompileInFlight.store(true);
 
     ModuleScene*                           scene     = editorContext->GetScene();
-    NOUS_Multithreading::NOUS_JobSystem*   jobSystem = editorContext->GetJobSystem();
+    nous::engine::multithreading::NOUS_JobSystem*   jobSystem = editorContext->GetJobSystem();
     jobSystem->SubmitJob([scene, this]
     {
         scene->RecompileScripts();

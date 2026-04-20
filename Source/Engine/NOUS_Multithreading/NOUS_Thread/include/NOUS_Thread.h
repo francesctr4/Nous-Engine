@@ -7,7 +7,7 @@
 #include <string>
 #include <chrono>
 
-namespace NOUS_Multithreading
+namespace nous::engine::multithreading
 {
     // Forward declarations
 	class NOUS_Job;

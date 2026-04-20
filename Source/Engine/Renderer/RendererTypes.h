@@ -257,7 +257,7 @@ enum class RendererBackendType : int8_t
 class ModuleWindow;
 class ModuleResourceManager;
 class EventSystem;
-namespace NOUS_Multithreading { class NOUS_JobSystem; }
+namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 // -----------------------------------------------------------------------------
 // Renderer backend interface
@@ -277,7 +277,7 @@ struct IRendererBackend
     // ─────────────────────────────── Dependency Injection ────────────────────
     virtual void InjectDependencies(
         EventSystem* eventSystem,
-        NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+        nous::engine::multithreading::NOUS_JobSystem* jobSystem,
         ModuleWindow* window,
         ModuleResourceManager* resourceManager) = 0;
 

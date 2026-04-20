@@ -39,11 +39,11 @@ void JobQueue::Draw()
             ImGui::TableSetupColumn(std::format("Job Name ({} pending jobs)", jobQueue.size()).c_str(), ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
 
-            std::queue<NOUS_Multithreading::NOUS_Job*> tempQueue = std::move(jobQueue);
+            std::queue<nous::engine::multithreading::NOUS_Job*> tempQueue = std::move(jobQueue);
 
             while (!tempQueue.empty())
             {
-                NOUS_Multithreading::NOUS_Job* job = tempQueue.front();
+                nous::engine::multithreading::NOUS_Job* job = tempQueue.front();
                 tempQueue.pop();
 
                 ImGui::TableNextRow();

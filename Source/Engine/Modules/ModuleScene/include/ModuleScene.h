@@ -23,7 +23,7 @@ class ModuleScene : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleScene(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+	ModuleScene(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 		ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager);
 
 	// Destructor

@@ -87,7 +87,7 @@ protected:
     static constexpr uint64 kMemoryPoolSize = MiB(64);
 
     EventSystem*                         eventSystem = nullptr;
-    NOUS_Multithreading::NOUS_JobSystem* jobSystem   = nullptr;
+    nous::engine::multithreading::NOUS_JobSystem* jobSystem   = nullptr;
     SpMockImporterManager                mockImporter;
     ModuleResourceManager*               rm          = nullptr;
     SceneResourcePreloader*                      preloader   = nullptr;
@@ -99,7 +99,7 @@ protected:
     {
         MemoryManager::InitializeMemory(kMemoryPoolSize);
         eventSystem = new EventSystem();
-        jobSystem   = new NOUS_Multithreading::NOUS_JobSystem(0); // inline execution
+        jobSystem   = new nous::engine::multithreading::NOUS_JobSystem(0); // inline execution
         rm          = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
         preloader   = new SceneResourcePreloader(rm);
 

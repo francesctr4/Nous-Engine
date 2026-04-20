@@ -33,7 +33,7 @@ class ModuleEditor : public Module, public IEditorOverlay, public IEventListener
 public:
 
 	// Constructor
-	NOUS_EDITOR_API ModuleEditor(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+	NOUS_EDITOR_API ModuleEditor(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 		ModuleWindow* moduleWindow,
 		ModuleInput* moduleInput,
 		ModuleCamera3D* moduleCamera3D,
@@ -57,7 +57,7 @@ public:
     ModuleInput*           GetInput()                   const override { return mModuleInput; }
     ModuleResourceManager* GetResourceManager()         const override { return mModuleResourceManager; }
     RendererFrontend*      GetRendererFrontend()        const override;
-    NOUS_Multithreading::NOUS_JobSystem* GetJobSystem() const override { return JobSystem; }
+    nous::engine::multithreading::NOUS_JobSystem* GetJobSystem() const override { return JobSystem; }
 
 private:
 

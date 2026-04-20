@@ -13,7 +13,7 @@ class ModuleInput : public Module, public IEventListener, public IInputReader
 {
 public:
 
-	ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
+	ModuleInput(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem);
 	~ModuleInput() override;
 
 	bool Awake() override;

@@ -64,7 +64,7 @@ int main(int argc, char** argv)
 
     MemoryManager::InitializeMemory(MiB(300));
 
-    NOUS_Multithreading::RegisterMainThread();
+    nous::engine::multithreading::RegisterMainThread();
 
     InitializeLogging(false); // no console.log in game builds
 
@@ -176,7 +176,7 @@ int main(int argc, char** argv)
 
     NOUS_INFO_C(CURRENT_CHANNEL, "GameApp exited successfully.");
 
-    NOUS_Multithreading::UnregisterMainThread();
+    nous::engine::multithreading::UnregisterMainThread();
 
     NOUS_MULTILINE_C(LOG_LEVEL_INFO, CURRENT_CHANNEL,
         (std::string("[main] ") + MemoryManager::GetMemoryUsageStats()).c_str());

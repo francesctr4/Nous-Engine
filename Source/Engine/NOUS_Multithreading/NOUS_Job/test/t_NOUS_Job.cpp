@@ -4,7 +4,7 @@
 
 #include <stdexcept>
 
-using namespace NOUS_Multithreading;
+using namespace nous::engine::multithreading;
 
 // =====================================================
 // Name and construction

@@ -45,7 +45,7 @@ public:
 	// ---------------------------------------------------------------------
 	// Constructor / Destructor
 	// ---------------------------------------------------------------------
-	explicit ModuleRenderer3D(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+	explicit ModuleRenderer3D(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 		ModuleWindow* moduleWindow,
 		ModuleCamera3D* moduleCamera3D,
 		ModuleResourceManager* moduleResourceManager,

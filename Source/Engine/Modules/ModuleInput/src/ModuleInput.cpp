@@ -17,7 +17,7 @@ static KeyState AdvanceKeyState(KeyState current, bool pressed)
 	return (current == KeyState::REPEAT || current == KeyState::DOWN) ? KeyState::UP : KeyState::IDLE;
 }
 
-ModuleInput::ModuleInput(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
+ModuleInput::ModuleInput(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem)
     : Module(eventSystem, jobSystem)
 {
 	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);

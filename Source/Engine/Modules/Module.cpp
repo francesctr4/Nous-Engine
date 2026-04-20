@@ -1,6 +1,6 @@
 #include "Module.h"
 
-Module::Module(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem) :
+Module::Module(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem) :
     eventSystem(eventSystem),
     JobSystem(jobSystem)
 {}

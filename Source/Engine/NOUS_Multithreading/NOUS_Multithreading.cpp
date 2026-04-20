@@ -3,7 +3,7 @@
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-namespace NOUS_Multithreading
+namespace nous::engine::multithreading
 {
     NOUS_Thread* sMainThread = nullptr;
 

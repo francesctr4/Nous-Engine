@@ -93,7 +93,7 @@ SceneResourcePreloader::SceneResourcePreloader(IResourceLoader* resourceLoader)
 }
 
 std::vector<std::future<void>> SceneResourcePreloader::PreloadSceneResourcesAsync(
-    NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+    nous::engine::multithreading::NOUS_JobSystem* jobSystem,
     const std::string& sceneFilePath)
 {
     std::vector<std::future<void>> futures;

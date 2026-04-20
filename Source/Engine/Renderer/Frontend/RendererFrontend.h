@@ -24,7 +24,7 @@ struct IEditorOverlay;
 class ModuleWindow;
 class ModuleResourceManager;
 class EventSystem;
-namespace NOUS_Multithreading { class NOUS_JobSystem; }
+namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 /**
  * @brief High-level rendering controller.
@@ -43,7 +43,7 @@ public:
 	NOUS_ENGINE_API void InjectDependencies(
 		ModuleWindow* window,
 		EventSystem* eventSystem,
-		NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+		nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 		ModuleResourceManager* resourceManager);
 
 	// ---------------------------------------------------------------------
@@ -214,7 +214,7 @@ private:
 	// Cached dependencies — applied to the backend after Create() inside Initialize()
 	ModuleWindow*                        m_window          = nullptr;
 	EventSystem*                         m_eventSystem     = nullptr;
-	NOUS_Multithreading::NOUS_JobSystem* m_jobSystem       = nullptr;
+	nous::engine::multithreading::NOUS_JobSystem* m_jobSystem       = nullptr;
 	ModuleResourceManager*               m_resourceManager = nullptr;
 
 	IEditorOverlay* mEditorOverlay;

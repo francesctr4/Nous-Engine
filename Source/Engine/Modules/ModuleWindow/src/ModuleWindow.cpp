@@ -7,7 +7,7 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
 
-ModuleWindow::ModuleWindow(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem)
+ModuleWindow::ModuleWindow(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem)
     : Module(eventSystem, jobSystem), m_window(nullptr), m_isMinimized(false) {}
 
 ModuleWindow::~ModuleWindow() = default;

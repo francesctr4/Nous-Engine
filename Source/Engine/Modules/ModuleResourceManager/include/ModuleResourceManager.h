@@ -30,7 +30,7 @@ class ModuleResourceManager : public Module, public IEventListener, public IReso
 public:
 
 	// Constructor
-	NOUS_ENGINE_API ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+	NOUS_ENGINE_API ModuleResourceManager(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 	                                      IImporterManager* importerManager);
 
 	// Destructor
@@ -124,7 +124,7 @@ public:
     // Returns futures — wait on all before calling Scene::Deserialize() so CMesh::Deserialize()
     // hits the resource cache instead of blocking on disk I/O.
     NOUS_ENGINE_API std::vector<std::future<void>> PreloadSceneResourcesAsync(
-        NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+        nous::engine::multithreading::NOUS_JobSystem* jobSystem,
         const std::string& sceneFilePath);
 
 private:

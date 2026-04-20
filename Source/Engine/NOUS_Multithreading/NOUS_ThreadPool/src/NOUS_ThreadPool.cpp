@@ -13,7 +13,7 @@ constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING;
 
 /// @brief NOUS_ThreadPool constructor.
 /// @note Marked explicit to prevent implicit conversions and copy-initialization from a single argument.
-NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8_t numThreads) :
+nous::engine::multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8_t numThreads) :
 	mShutdown(false)
 {
 	mThreads.reserve(numThreads);
@@ -31,14 +31,14 @@ NOUS_Multithreading::NOUS_ThreadPool::NOUS_ThreadPool(uint8_t numThreads) :
 }
 
 /// @brief NOUS_ThreadPool destructor.
-NOUS_Multithreading::NOUS_ThreadPool::~NOUS_ThreadPool()
+nous::engine::multithreading::NOUS_ThreadPool::~NOUS_ThreadPool()
 {
 	Shutdown();
 }
 
 /// @brief Adds a job to the queue and notifies a worker.
 /// @param job The job to be executed.
-void NOUS_Multithreading::NOUS_ThreadPool::SubmitJob(NOUS_Job* job)
+void nous::engine::multithreading::NOUS_ThreadPool::SubmitJob(NOUS_Job* job)
 {
 	{
 		std::lock_guard lock(mMutex);
@@ -48,7 +48,7 @@ void NOUS_Multithreading::NOUS_ThreadPool::SubmitJob(NOUS_Job* job)
 }
 
 /// @brief Deletes pending jobs, joins all threads and cleans up resources afterwards.
-void NOUS_Multithreading::NOUS_ThreadPool::Shutdown()
+void nous::engine::multithreading::NOUS_ThreadPool::Shutdown()
 {
 	if (mShutdown.exchange(true))
 	{
@@ -77,13 +77,13 @@ void NOUS_Multithreading::NOUS_ThreadPool::Shutdown()
 }
 
 /// @return A vector of NOUS_Thread contained inside the thread pool.
-const std::vector<NOUS_Multithreading::NOUS_Thread*>& NOUS_Multithreading::NOUS_ThreadPool::GetThreads() const
+const std::vector<nous::engine::multithreading::NOUS_Thread*>& nous::engine::multithreading::NOUS_ThreadPool::GetThreads() const
 { 
 	return mThreads; 
 }
 
 /// @return A snapshot copy of the pending job queue, taken under the internal lock.
-std::queue<NOUS_Multithreading::NOUS_Job*> NOUS_Multithreading::NOUS_ThreadPool::GetJobQueueSnapshot() const
+std::queue<nous::engine::multithreading::NOUS_Job*> nous::engine::multithreading::NOUS_ThreadPool::GetJobQueueSnapshot() const
 {
 	std::lock_guard lock(mMutex);
 	return mJobQueue;
@@ -91,7 +91,7 @@ std::queue<NOUS_Multithreading::NOUS_Job*> NOUS_Multithreading::NOUS_ThreadPool:
 
 /// @brief Worker loop that each thread executes to process jobs from the queue.
 /// @param thread The thread executing this loop.
-void NOUS_Multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
+void nous::engine::multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thread)
 {
 #ifdef _PROFILING
 	tracy::SetThreadName(thread->GetName().c_str()); // Set thread name

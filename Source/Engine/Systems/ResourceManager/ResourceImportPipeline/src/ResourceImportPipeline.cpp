@@ -35,7 +35,7 @@ static std::filesystem::file_time_type GetLibraryTime(const std::filesystem::pat
 }
 
 ResourceImportPipeline::ResourceImportPipeline(IImporterManager* importerManager,
-                                               NOUS_Multithreading::NOUS_JobSystem* jobSystem)
+                                               nous::engine::multithreading::NOUS_JobSystem* jobSystem)
     : m_importerManager(importerManager)
     , m_jobSystem(jobSystem)
 {

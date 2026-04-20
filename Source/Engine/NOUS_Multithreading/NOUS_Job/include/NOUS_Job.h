@@ -5,7 +5,7 @@
 #include <functional>
 #include <string>
 
-namespace NOUS_Multithreading
+namespace nous::engine::multithreading
 {
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Represents an executable task with a name and function.

@@ -44,7 +44,7 @@
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
 
-ModuleEditor::ModuleEditor(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+ModuleEditor::ModuleEditor(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 	ModuleWindow* moduleWindow,
 	ModuleInput* moduleInput,
 	ModuleCamera3D* moduleCamera3D,

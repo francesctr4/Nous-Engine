@@ -6,13 +6,13 @@
 
 // Forward Declarations
 class EventSystem;
-namespace NOUS_Multithreading { class NOUS_JobSystem; }
+namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 class Module
 {
 public:
 
-	NOUS_ENGINE_API Module(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem);
+	NOUS_ENGINE_API Module(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem);
 	NOUS_ENGINE_API virtual ~Module();
 
 	NOUS_ENGINE_API virtual bool Awake();
@@ -27,7 +27,7 @@ public:
 protected:
 
 	EventSystem* eventSystem;
-	NOUS_Multithreading::NOUS_JobSystem* JobSystem;
+	nous::engine::multithreading::NOUS_JobSystem* JobSystem;
 
 };
 

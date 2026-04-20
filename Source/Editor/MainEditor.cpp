@@ -25,7 +25,7 @@ int main(/*int argc, char** argv*/)
     // Specify the amount of memory available for the project
     MemoryManager::InitializeMemory(MiB(50));
 
-    NOUS_Multithreading::RegisterMainThread();
+    nous::engine::multithreading::RegisterMainThread();
 
     InitializeLogging();
 
@@ -126,7 +126,7 @@ int main(/*int argc, char** argv*/)
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Exiting engine '%s'...", TITLE);
 
-    NOUS_Multithreading::UnregisterMainThread();
+    nous::engine::multithreading::UnregisterMainThread();
 
     NOUS_MULTILINE_C(LOG_LEVEL_INFO, CURRENT_CHANNEL,
         (std::string("[main] ") + MemoryManager::GetMemoryUsageStats()).c_str());

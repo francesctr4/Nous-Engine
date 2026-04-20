@@ -7,7 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 
-namespace NOUS_Multithreading
+namespace nous::engine::multithreading
 {
 	// Forward declarations
 	class NOUS_Job;

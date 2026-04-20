@@ -61,7 +61,7 @@ namespace
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
-ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
                                              IImporterManager* importerManager)
     : Module(eventSystem, jobSystem)
     , mImporterManager(importerManager)
@@ -194,7 +194,7 @@ Resource* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
 				break;
 			}
 		}
-		NOUS_Multithreading::NOUS_Thread::SleepMS(1);
+		nous::engine::multithreading::NOUS_Thread::SleepMS(1);
 	}
 	resource->Validate();
 	return resource;
@@ -410,7 +410,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::s
 }
 
 std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync(
-    NOUS_Multithreading::NOUS_JobSystem* jobSystem,
+    nous::engine::multithreading::NOUS_JobSystem* jobSystem,
     const std::string& sceneFilePath)
 {
     return m_scenePreloader.PreloadSceneResourcesAsync(jobSystem, sceneFilePath);
