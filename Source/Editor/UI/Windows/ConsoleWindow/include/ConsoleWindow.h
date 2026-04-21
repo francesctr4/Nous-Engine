@@ -1,7 +1,7 @@
 #ifndef CONSOLEWINDOW_H
 #define CONSOLEWINDOW_H
 
-#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/UI/IEditorWindow.h"
 #include "Engine/Core/Logger/Logger.h"
 #include <vector>
 #include <string>
@@ -13,7 +13,9 @@ public:
     ~ConsoleWindow() override = default;
 
     void Init() override;
-    void Draw() override;
+    void Update() override;
+    ImGuiWindowFlags GetWindowFlags() const override;
+    void DrawContent() override;
 
 private:
     void DrawMenuBar();

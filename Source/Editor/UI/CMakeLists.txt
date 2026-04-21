@@ -45,7 +45,10 @@ set_target_properties(ImGuiColorTextEdit PROPERTIES
 # ----------------------------------------
 # EditorUI target
 # ----------------------------------------
-add_library(EditorUI STATIC IEditorWindow.inl)
+add_library(EditorUI STATIC
+        IEditorWindow.h
+        IEditorWindow.cpp
+)
 
 add_subdirectory(ImGuiCustom)
 add_subdirectory(Windows)

@@ -9,7 +9,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
-#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/UI/IEditorWindow.h"
 #include "Editor/UI/ImGuiCustom/ImGuiCustom.h"
 
 // ImGui_Temp

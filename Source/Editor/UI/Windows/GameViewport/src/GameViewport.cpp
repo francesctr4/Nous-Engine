@@ -10,69 +10,61 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 
 GameViewport::GameViewport(const char* title, EditorContext* context, const bool start_open)
-    : IEditorWindow(title, context, nullptr, start_open)
-{
-    Init();
-}
+    : IEditorWindow(title, context, nullptr, start_open) {}
 
 void GameViewport::Init()
 {
     CreateGameViewportDescriptorSets();
 }
 
-void GameViewport::Draw()
+bool GameViewport::AlwaysUpdate() const
 {
-    if (*p_open)
-    {
-        const bool visible = ImGui::Begin(title, p_open);
+    return true;
+}
 
-        // Read content size regardless of visibility — ImGui preserves the window's
-        // size in its internal state even for hidden docked tabs, so this stays
-        // accurate during resize without requiring the tab to be active.
-        {
-            const ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
-            const ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
-            const auto squareSize = ImVec2(contentMax.x - contentMin.x, contentMax.y - contentMin.y);
-            if (squareSize.x > 0.0f && squareSize.y > 0.0f)
-                editorContext->GetScene()->gameViewportAspect = squareSize.x / squareSize.y;
-        }
+void GameViewport::OnLayoutUpdated(const ImVec2& panelSize)
+{
+    if (ModuleScene* scene = editorContext->GetScene())
+        scene->gameViewportAspect = panelSize.x / panelSize.y;
+}
 
-        if (visible)
-        {
-            // Get the size of the window's content area
-            const ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
-            const ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
-            const ImVec2 windowPos = ImGui::GetWindowPos();
-            const auto squareSize = ImVec2(contentMax.x - contentMin.x, contentMax.y - contentMin.y);
-            const auto squarePos = ImVec2(windowPos.x + contentMin.x, windowPos.y + contentMin.y);
-            const auto squareEnd = ImVec2(squarePos.x + squareSize.x, squarePos.y + squareSize.y);
+void GameViewport::DrawContent()
+{
+    // Constants
+    constexpr ImVec2 uvMin(0.0f, 0.0f);
+    constexpr ImVec2 uvMax(1.0f, 1.0f);
+	constexpr auto backgroundColor = IM_COL32(100, 100, 100, 255);
+	constexpr auto borderColor = IM_COL32(255, 255, 255, 255);
 
-            ImDrawList* drawList = ImGui::GetWindowDrawList();
+    // Rendering context
+    const VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-            // Draw gray background
-            drawList->AddRectFilled(squarePos, squareEnd, IM_COL32(100, 100, 100, 255));
+    // Background
+    drawList->AddRectFilled(
+        contentPos,
+        contentEnd,
+        backgroundColor
+    );
 
-            if (squareSize.x > 0.0f && squareSize.y > 0.0f)
-            {
-                constexpr ImVec2 uvMin(0.0f, 0.0f);
-                constexpr ImVec2 uvMax(1.0f, 1.0f);
+    // Main image
+    ImGui::SetCursorPos(contentMin);
+    ImGui::Image(
+        NOUS_ImGuiVulkanResources::GetViewportTexture(
+            vkContext->imGuiResources
+                .m_GameViewportDescriptorSets[vkContext->imageIndex]
+        ),
+        contentSize,
+        uvMin,
+        uvMax
+    );
 
-                // Position the image at the start of the content region and render
-                ImGui::SetCursorPos(contentMin); // Position relative to window's content area
-
-                const VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
-
-                ImGui::Image(
-                        NOUS_ImGuiVulkanResources::GetViewportTexture(
-                            vkContext->imGuiResources.m_GameViewportDescriptorSets[vkContext->imageIndex]),
-                        squareSize, uvMin, uvMax);
-
-                // Draw white border on top
-                drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
-            }
-        }
-        ImGui::End();
-    }
+    // Overlay / border
+    drawList->AddRect(
+        contentPos,
+        contentEnd,
+        borderColor
+    );
 }
 
 void GameViewport::CreateGameViewportDescriptorSets()

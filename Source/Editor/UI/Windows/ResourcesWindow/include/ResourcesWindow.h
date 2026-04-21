@@ -1,7 +1,7 @@
 #ifndef RESOURCESWINDOW_H
 #define RESOURCESWINDOW_H
 
-#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/UI/IEditorWindow.h"
 #include <cstdint>
 
 enum class ResourceType : int8_t;
@@ -14,8 +14,7 @@ public:
 
     explicit Resources(const char* title, ::EditorContext* context, bool start_open = true);
 
-    void Init() override;
-    void Draw() override;
+    void DrawContent() override;
 
 private:
 
@@ -23,6 +22,8 @@ private:
 
     void ChooseTextColor(const ResourceType& type, ImVec4& color);
     void DisplayResource(const Resource* resource, const ImVec4& textColor);
+
+    uint32_t previousResourceCount = 0;
 };
 
 #endif // RESOURCESWINDOW_H

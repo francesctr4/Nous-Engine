@@ -38,7 +38,6 @@
 SceneViewport::SceneViewport(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
-    SceneViewport::Init();
 }
 
 void SceneViewport::Init()
@@ -46,21 +45,24 @@ void SceneViewport::Init()
     CreateSceneViewportDescriptorSets();
 }
 
-void SceneViewport::Draw()
+void SceneViewport::OnLayoutUpdated(const ImVec2& panelSize)
 {
-    if (!*p_open) return;
+    // Drive camera aspect ratio from panel size — Hor+ scaling (vertical FOV fixed).
+    // This keeps scene rendering, ImGuizmo, and mouse picking all consistent.
+    if (Camera* editorCam = editorContext->GetCamera()->GetCamera())
+        editorCam->SetAspectRatio(panelSize.x / panelSize.y);
+}
 
+ImGuiWindowFlags SceneViewport::GetWindowFlags() const
+{
     // Prevent a floating window from being moved by ImGui while the gizmo is active.
     // Window movement is processed inside Begin(), so we must pass NoMove *to* Begin()
     // using the gizmo state from the previous frame (static bool persists across calls).
-    static bool s_GizmoWasActive = false;
-    if (!ImGui::Begin(title, p_open,
-                      s_GizmoWasActive ? ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None))
-    {
-        ImGui::End();
-        return;
-    }
+    return s_GizmoWasActive ? ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None;
+}
 
+void SceneViewport::DrawContent()
+{
     editorContext->GetCamera()->sceneViewportHovered = ImGui::IsWindowHovered();
 
     // Handle gizmo mode switching (W/E/R keys) when viewport is hovered
@@ -85,14 +87,8 @@ void SceneViewport::Draw()
     if (squareSize.x <= 0.0f || squareSize.y <= 0.0f)
     {
         s_GizmoWasActive = false;
-        ImGui::End();
         return;
     }
-
-    // Drive camera aspect ratio from panel size — Hor+ scaling (vertical FOV fixed).
-    // This keeps scene rendering, ImGuizmo, and mouse picking all consistent.
-    if (Camera* editorCam = editorContext->GetCamera()->GetCamera())
-        editorCam->SetAspectRatio(squareSize.x / squareSize.y);
 
     VulkanContext* vkCtx = VulkanBackend::GetVulkanContext();
     constexpr ImVec2 uvMin(0.0f, 0.0f);
@@ -142,7 +138,6 @@ void SceneViewport::Draw()
 
     if (gizmoBlocking)
     {
-        ImGui::End();
         return;
     }
 
@@ -151,7 +146,6 @@ void SceneViewport::Draw()
 
     if (!ImGui::BeginDragDropTarget())
     {
-        ImGui::End();
         return;
     }
 
@@ -160,7 +154,6 @@ void SceneViewport::Draw()
     if (payload == nullptr)
     {
         ImGui::EndDragDropTarget();
-        ImGui::End();
         return;
     }
 
@@ -214,8 +207,6 @@ void SceneViewport::Draw()
     }
 
     ImGui::EndDragDropTarget();
-
-    ImGui::End();
 }
 
 void SceneViewport::HandleGizmoInput()

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/UI/IEditorWindow.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 
 #include <vector>
@@ -19,7 +19,8 @@ public:
     explicit HierarchyWindow(const char* title, EditorContext* context, bool start_open = true);
 
     void Init() override;
-    void Draw() override;
+    void DrawContent() override;
+    void FinishUpdate() override;
 
     void SetScene(Scene* scene) { m_Scene = scene; }
 

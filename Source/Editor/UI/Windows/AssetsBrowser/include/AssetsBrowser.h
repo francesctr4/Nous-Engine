@@ -1,7 +1,7 @@
 #ifndef ASSETSBROWSER_H
 #define ASSETSBROWSER_H
 
-#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/UI/IEditorWindow.h"
 #include "Engine/Utils/Math/MathUtils.h"
 #include "Engine/Core/Globals.h"
 
@@ -255,8 +255,11 @@ public:
 
     explicit AssetsBrowser(const char* title, EditorContext* context, bool start_open = true);
     ~AssetsBrowser() override;
+
     void Init() override;
-    void Draw() override;
+    void Update() override;
+    void DrawContent() override;
+    ImGuiWindowFlags GetWindowFlags() const override;
 
     void AddItems(int count);
     void ClearItems();

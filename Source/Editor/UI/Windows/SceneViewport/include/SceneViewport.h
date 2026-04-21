@@ -1,7 +1,7 @@
 #ifndef SCENEVIEWPORT_H
 #define SCENEVIEWPORT_H
 
-#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/UI/IEditorWindow.h"
 #include "Editor/EditorExport.h"
 #include <string>
 #include <cstdint>
@@ -30,7 +30,9 @@ public:
     NOUS_EDITOR_API explicit SceneViewport(const char* title, EditorContext* context, bool start_open = true);
 
     NOUS_EDITOR_API void Init() override;
-    NOUS_EDITOR_API void Draw() override;
+    void OnLayoutUpdated(const ImVec2& panelSize) override;
+    ImGuiWindowFlags GetWindowFlags() const override;
+    NOUS_EDITOR_API void DrawContent() override;
 
     static void CreateSceneViewportDescriptorSets();
     static void DestroySceneViewportDescriptorSets();
@@ -49,6 +51,8 @@ private:
     float m_TranslateSnap = 1.0f;
     float m_RotateSnap = 15.0f;
     float m_ScaleSnap = 0.1f;
+
+    bool s_GizmoWasActive = false;
 
 };
 

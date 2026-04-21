@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/UI/IEditorWindow.h"
 #include "Editor/../../ThirdParty/ImGuiColorTextEdit/TextEditor.h"
 
 #include <atomic>
@@ -16,7 +16,8 @@ public:
     ~TextEditorWindow() override = default;
 
     void Init() override;
-    void Draw() override;
+    void Update() override;
+    void DrawContent() override;
 
     // Load a file into the editor (callable from AssetsBrowser or other windows).
     // Switches mode automatically based on file extension.

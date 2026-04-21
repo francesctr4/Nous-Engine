@@ -32,7 +32,6 @@ ConsoleWindow::ConsoleWindow(const char* title, EditorContext* context, const bo
     : IEditorWindow(title, context, nullptr, start_open)
 {
     for (bool& b : showChannel) b = true;
-    ConsoleWindow::Init();
 }
 
 void ConsoleWindow::Init()
@@ -51,6 +50,37 @@ void ConsoleWindow::Init()
 
     m_filterDirty     = true;
     m_lastCheckedSize = 0;
+}
+
+void ConsoleWindow::Update()
+{
+    // 1. Pull any new entries from the Logger (render thread only, no lock).
+    PullNewEntries();
+
+    // 2. Detect search text change — update lowercased needle and mark dirty.
+    if (strcmp(searchBuffer, m_lastSearchStr) != 0) {
+        strncpy(m_lastSearchStr, searchBuffer, sizeof(m_lastSearchStr) - 1);
+        m_lastSearchStr[sizeof(m_lastSearchStr) - 1] = '\0';
+        m_searchLower = searchBuffer;
+        std::ranges::transform(m_searchLower,
+                               m_searchLower.begin(),
+                               [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        m_filterDirty = true;
+    }
+
+    // 3. Rebuild or incrementally extend the filtered index list.
+    if (m_filterDirty) {
+        RebuildFilteredIndices();
+    } else if (logBuffer.size() > m_lastCheckedSize) {
+        UpdateFilteredIndicesIncremental(m_lastCheckedSize);
+    }
+
+    ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
+}
+
+ImGuiWindowFlags ConsoleWindow::GetWindowFlags() const
+{
+    return ImGuiWindowFlags_MenuBar;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -200,39 +230,11 @@ void ConsoleWindow::RebuildChannelSummary()
 // Draw
 // ──────────────────────────────────────────────────────────────────────────────
 
-void ConsoleWindow::Draw()
+void ConsoleWindow::DrawContent()
 {
-    if (!*p_open) return;
-
-    // 1. Pull any new entries from the Logger (render thread only, no lock).
-    PullNewEntries();
-
-    // 2. Detect search text change — update lowercased needle and mark dirty.
-    if (strcmp(searchBuffer, m_lastSearchStr) != 0) {
-        strncpy(m_lastSearchStr, searchBuffer, sizeof(m_lastSearchStr) - 1);
-        m_lastSearchStr[sizeof(m_lastSearchStr) - 1] = '\0';
-        m_searchLower = searchBuffer;
-        std::ranges::transform(m_searchLower,
-                               m_searchLower.begin(),
-                               [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
-        m_filterDirty = true;
-    }
-
-    // 3. Rebuild or incrementally extend the filtered index list.
-    if (m_filterDirty) {
-        RebuildFilteredIndices();
-    } else if (logBuffer.size() > m_lastCheckedSize) {
-        UpdateFilteredIndicesIncremental(m_lastCheckedSize);
-    }
-
-    ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin(title, p_open, ImGuiWindowFlags_MenuBar))
-    {
-        DrawMenuBar();
-        DrawLogPanel();
-        DrawCommandLine();
-    }
-    ImGui::End();
+    DrawMenuBar();
+    DrawLogPanel();
+    DrawCommandLine();
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

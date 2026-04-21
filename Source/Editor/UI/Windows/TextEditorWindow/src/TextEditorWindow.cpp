@@ -28,7 +28,6 @@ TextEditorWindow::TextEditorWindow(const char* title, EditorContext* context, bo
     : IEditorWindow(title, context, nullptr, start_open)
 {
     mFileNameBuffer[0] = '\0';
-    Init();
 }
 
 void TextEditorWindow::Init()
@@ -36,66 +35,64 @@ void TextEditorWindow::Init()
     mTextEditor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
 }
 
-void TextEditorWindow::Draw()
+void TextEditorWindow::Update()
 {
-    if (!*p_open) return;
-
     ImGui::SetNextWindowSize(ImVec2(800.0f, 600.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin(title, p_open))
+}
+
+void TextEditorWindow::DrawContent()
+{
+    DrawTabs();
+
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    DrawToolbar();
+
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    mTextEditor.Render("##TextEditorContent", ImGui::GetContentRegionAvail());
+
+    // ImGuiColorTextEdit doesn't set io.WantTextInput like standard ImGui
+    // widgets do. Set it manually when the TextEditor's child window is focused
+    // so that ImGui_ImplSDL3_NewFrame() keeps SDL_StartTextInput() active.
+    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+        ImGui::GetIO().WantTextInput = true;
+
+    if (mTextEditor.IsTextChanged())
+        mHasUnsavedChanges = true;
+
+    // Accept .glsl and .cpp files dragged from the AssetsBrowser.
+    // Drag-drop bypasses the unsaved-changes guard — it is an explicit user action.
+    if (ImGui::BeginDragDropTarget())
     {
-        DrawTabs();
-
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        DrawToolbar();
-
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        mTextEditor.Render("##TextEditorContent", ImGui::GetContentRegionAvail());
-
-        // ImGuiColorTextEdit doesn't set io.WantTextInput like standard ImGui
-        // widgets do. Set it manually when the TextEditor's child window is focused
-        // so that ImGui_ImplSDL3_NewFrame() keeps SDL_StartTextInput() active.
-        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
-            ImGui::GetIO().WantTextInput = true;
-
-        if (mTextEditor.IsTextChanged())
-            mHasUnsavedChanges = true;
-
-        // Accept .glsl and .cpp files dragged from the AssetsBrowser.
-        // Drag-drop bypasses the unsaved-changes guard — it is an explicit user action.
-        if (ImGui::BeginDragDropTarget())
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
         {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+            const char* data = static_cast<const char*>(payload->Data);
+            const char* end = data + payload->DataSize;
+            while (data < end)
             {
-                const char* data = static_cast<const char*>(payload->Data);
-                const char* end  = data + payload->DataSize;
-                while (data < end)
+                std::string path(data);
+                data += path.size() + 1;
+
+                std::filesystem::path p(path);
+                const auto ext = p.extension();
+
+                if (ext == k_GlslExtension)
                 {
-                    std::string path(data);
-                    data += path.size() + 1;
-
-                    std::filesystem::path p(path);
-                    const auto ext = p.extension();
-
-                    if (ext == k_GlslExtension)
-                    {
-                        SwitchMode(TextEditorMode::Shader);
-                        LoadFile(p);
-                    }
-                    else if (ext == k_CppExtension)
-                    {
-                        SwitchMode(TextEditorMode::Script);
-                        LoadFile(p);
-                    }
+                    SwitchMode(TextEditorMode::Shader);
+                    LoadFile(p);
+                }
+                else if (ext == k_CppExtension)
+                {
+                    SwitchMode(TextEditorMode::Script);
+                    LoadFile(p);
                 }
             }
-            ImGui::EndDragDropTarget();
         }
+        ImGui::EndDragDropTarget();
     }
-    ImGui::End();
 }
 
 void TextEditorWindow::DrawTabs()
@@ -105,9 +102,11 @@ void TextEditorWindow::DrawTabs()
 
     // While the discard popup is pending, force the current mode's tab to stay selected.
     const ImGuiTabItemFlags shaderFlags = (mPendingModeSwitch && mMode == TextEditorMode::Shader)
-        ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
+                                              ? ImGuiTabItemFlags_SetSelected
+                                              : ImGuiTabItemFlags_None;
     const ImGuiTabItemFlags scriptFlags = (mPendingModeSwitch && mMode == TextEditorMode::Script)
-        ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
+                                              ? ImGuiTabItemFlags_SetSelected
+                                              : ImGuiTabItemFlags_None;
 
     if (ImGui::BeginTabItem("Shaders", nullptr, shaderFlags))
     {
@@ -231,7 +230,7 @@ void TextEditorWindow::OpenFile()
     }
 
     const char* basePath = (mMode == TextEditorMode::Shader) ? k_AssetsShaderPath : k_AssetsScriptPath;
-    const char* ext      = (mMode == TextEditorMode::Shader) ? k_GlslExtension    : k_CppExtension;
+    const char* ext = (mMode == TextEditorMode::Shader) ? k_GlslExtension : k_CppExtension;
 
     std::filesystem::path loadPath = std::filesystem::path(basePath)
         / (std::string(mFileNameBuffer) + ext);
@@ -248,7 +247,7 @@ void TextEditorWindow::Save()
     }
 
     const char* basePath = (mMode == TextEditorMode::Shader) ? k_AssetsShaderPath : k_AssetsScriptPath;
-    const char* ext      = (mMode == TextEditorMode::Shader) ? k_GlslExtension    : k_CppExtension;
+    const char* ext = (mMode == TextEditorMode::Shader) ? k_GlslExtension : k_CppExtension;
 
     std::filesystem::path savePath = std::filesystem::path(basePath)
         / (std::string(mFileNameBuffer) + ext);
@@ -269,7 +268,7 @@ void TextEditorWindow::Save()
         return;
     }
 
-    mCurrentFilePath   = savePath;
+    mCurrentFilePath = savePath;
     mHasUnsavedChanges = false;
     NOUS_INFO("[TextEditor] Saved: %s", savePath.string().c_str());
 
@@ -293,7 +292,7 @@ void TextEditorWindow::Delete()
     else
     {
         NOUS_ERROR("[TextEditor] Failed to delete: %s (%s)",
-            mCurrentFilePath.string().c_str(), ec.message().c_str());
+                   mCurrentFilePath.string().c_str(), ec.message().c_str());
     }
 
     mCurrentFilePath.clear();
@@ -345,7 +344,7 @@ void TextEditorWindow::TrySwitch(TextEditorMode target)
     if (mHasUnsavedChanges)
     {
         mPendingModeSwitch = true;
-        mPendingMode       = target;
+        mPendingMode = target;
         ImGui::OpenPopup("##DiscardChanges");
     }
     else
@@ -391,8 +390,8 @@ void TextEditorWindow::TriggerScriptRecompile()
 
     mScriptRecompileInFlight.store(true);
 
-    ModuleScene*                           scene     = editorContext->GetScene();
-    nous::engine::multithreading::NOUS_JobSystem*   jobSystem = editorContext->GetJobSystem();
+    ModuleScene* scene = editorContext->GetScene();
+    nous::engine::multithreading::NOUS_JobSystem* jobSystem = editorContext->GetJobSystem();
     jobSystem->SubmitJob([scene, this]
     {
         scene->RecompileScripts();

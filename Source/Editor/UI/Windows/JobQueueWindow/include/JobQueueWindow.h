@@ -1,16 +1,15 @@
 #ifndef JOBQUEUEWINDOW_H
 #define JOBQUEUEWINDOW_H
 
-#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/UI/IEditorWindow.h"
 
 class JobQueue : public IEditorWindow
 {
 public:
 
-    explicit JobQueue(const char* title, ::EditorContext* context, bool start_open = true);
+    explicit JobQueue(const char* title, EditorContext* context, bool start_open = true);
 
-    void Init() override;
-    void Draw() override;
+    void DrawContent() override;
 };
 
 #endif // JOBQUEUEWINDOW_H
