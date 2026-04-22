@@ -15,7 +15,7 @@ Resources::Resources(const char* title, EditorContext* context, bool start_open)
 void Resources::DrawContent()
 {
     std::unordered_map<uint32, Resource*> resourcesMap = editorContext->GetResourceManager()->GetResourcesMap();
-    uint32 currentResourceCount = resourcesMap.size();
+    auto currentResourceCount = static_cast<uint32>(resourcesMap.size());
 
     ImGui::TextColored(
         ImVec4(1.f, 0.5f, 0.5f, 1.f),
@@ -73,7 +73,7 @@ void Resources::DrawContent()
 
 // ------------------------------------------------------------------------------------------------------------ //
 
-void Resources::AlignHeadersToCenter()
+void Resources::AlignHeadersToCenter() const
 {
     ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
 
@@ -97,7 +97,7 @@ void Resources::AlignHeadersToCenter()
     }
 }
 
-void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor)
+void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor) const
 {
     switch (type)
     {
@@ -129,7 +129,7 @@ void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor)
     }
 }
 
-void Resources::DisplayResource(const Resource* resource, const ImVec4& textColor)
+void Resources::DisplayResource(const Resource* resource, const ImVec4& textColor) const
 {
     ImGui::TableSetColumnIndex(0);
     ImGui::PushStyleColor(ImGuiCol_Text, textColor);

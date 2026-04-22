@@ -27,98 +27,98 @@ void HierarchyWindow::Init()
 
 void HierarchyWindow::DrawContent()
 {
-    if (m_Scene)
+    if (!m_Scene)
+        return;
+
+    // Root node = Scene itself
+    const bool opened = ImGui::TreeNodeEx(m_Scene,
+                                          ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow,
+                                          "%s", m_Scene->GetName().c_str());
+
+    // Make the SCENE NODE a drag-drop target (reparent to root or instantiate prefab)
+    if (ImGui::BeginDragDropTarget())
     {
-        // Root node = Scene itself
-        const bool opened = ImGui::TreeNodeEx(m_Scene,
-                                              ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow,
-                                              "%s", m_Scene->GetName().c_str());
-
-        // Make the SCENE NODE a drag-drop target (reparent to root or instantiate prefab)
-        if (ImGui::BeginDragDropTarget())
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT"))
         {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_GAMEOBJECT"))
-            {
-                IM_ASSERT(payload->DataSize == sizeof(entt::entity));
-                entt::entity e = *static_cast<const entt::entity*>(payload->Data);
-                GameObject draggedGO(e, &m_Scene->GetRegistry());
-                if (draggedGO.IsValid())
-                    m_ToReparent.push_back({draggedGO, {}});
-            }
-            // Accept .nprefab files dragged from the AssetsBrowser
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
-            {
-                auto data = static_cast<const char*>(payload->Data);
-                const char* end = data + payload->DataSize;
-                while (data < end)
-                {
-                    std::string path(data);
-                    data += path.size() + 1;
-                    if (std::filesystem::path(path).extension() == ".nprefab")
-                        editorContext->GetScene()->InstantiatePrefab(path);
-                }
-            }
-            ImGui::EndDragDropTarget();
+            IM_ASSERT(payload->DataSize == sizeof(entt::entity));
+            entt::entity e = *static_cast<const entt::entity*>(payload->Data);
+            GameObject draggedGO(e, &m_Scene->GetRegistry());
+            if (draggedGO.IsValid())
+                m_ToReparent.push_back({draggedGO, {}});
         }
-
-        // Right-click on the scene root to create objects.
-        if (ImGui::BeginPopupContextItem("##SceneContextMenu"))
+        // Accept .nprefab files dragged from the AssetsBrowser
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
         {
-            if (ImGui::MenuItem("Create Empty"))
+            auto data = static_cast<const char*>(payload->Data);
+            const char* end = data + payload->DataSize;
+            while (data < end)
             {
-                GameObject go = m_Scene->CreateGameObject("GameObject", nullptr);
-                editorContext->GetScene()->selectedGameObject = go;
+                std::string path(data);
+                data += path.size() + 1;
+                if (std::filesystem::path(path).extension() == ".nprefab")
+                    editorContext->GetScene()->InstantiatePrefab(path);
             }
-            if (ImGui::MenuItem("Create Camera"))
-            {
-                GameObject go = m_Scene->CreateGameObject("Main Camera", nullptr);
-                auto& cam = go.AddComponent<CCamera>();
-                cam.isMainCamera = true;
-                editorContext->GetScene()->selectedGameObject = go;
-            }
-            if (ImGui::MenuItem("Create Light"))
-            {
-                GameObject go = m_Scene->CreateGameObject("Directional Light", nullptr);
-                go.AddComponent<CLight>();
-                editorContext->GetScene()->selectedGameObject = go;
-            }
-            ImGui::EndPopup();
         }
-
-        if (opened)
-        {
-            if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
-            {
-                if (!ImGui::IsAnyItemHovered())
-                {
-                    editorContext->GetScene()->selectedGameObject = {};
-                }
-            }
-
-            for (const auto go : m_Scene->GetGameObjectsSnapshot())
-            {
-                if (!go.GetParent().IsValid())
-                    DrawGameObjectNode(go);
-            }
-            ImGui::TreePop();
-        }
-
-        // Process deletion first
-        for (auto go : m_ToDelete)
-        {
-            if (editorContext->GetScene()->selectedGameObject == go)
-                editorContext->GetScene()->selectedGameObject = {};
-            m_Scene->DestroyGameObject(go);
-        }
-        m_ToDelete.clear();
-
-        // Process reparenting safely
-        for (auto& req : m_ToReparent)
-        {
-            req.child.SetParent(req.newParent);
-        }
-        m_ToReparent.clear();
+        ImGui::EndDragDropTarget();
     }
+
+    // Right-click on the scene root to create objects.
+    if (ImGui::BeginPopupContextItem("##SceneContextMenu"))
+    {
+        if (ImGui::MenuItem("Create Empty"))
+        {
+            GameObject go = m_Scene->CreateGameObject("GameObject", nullptr);
+            editorContext->GetScene()->selectedGameObject = go;
+        }
+        if (ImGui::MenuItem("Create Camera"))
+        {
+            GameObject go = m_Scene->CreateGameObject("Main Camera", nullptr);
+            auto& cam = go.AddComponent<CCamera>();
+            cam.isMainCamera = true;
+            editorContext->GetScene()->selectedGameObject = go;
+        }
+        if (ImGui::MenuItem("Create Light"))
+        {
+            GameObject go = m_Scene->CreateGameObject("Directional Light", nullptr);
+            go.AddComponent<CLight>();
+            editorContext->GetScene()->selectedGameObject = go;
+        }
+        ImGui::EndPopup();
+    }
+
+    if (opened)
+    {
+        if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+        {
+            if (!ImGui::IsAnyItemHovered())
+            {
+                editorContext->GetScene()->selectedGameObject = {};
+            }
+        }
+
+        for (const auto go : m_Scene->GetGameObjectsSnapshot())
+        {
+            if (!go.GetParent().IsValid())
+                DrawGameObjectNode(go);
+        }
+        ImGui::TreePop();
+    }
+
+    // Process deletion first
+    for (auto go : m_ToDelete)
+    {
+        if (editorContext->GetScene()->selectedGameObject == go)
+            editorContext->GetScene()->selectedGameObject = {};
+        m_Scene->DestroyGameObject(go);
+    }
+    m_ToDelete.clear();
+
+    // Process reparenting safely
+    for (auto& req : m_ToReparent)
+    {
+        req.child.SetParent(req.newParent);
+    }
+    m_ToReparent.clear();
 }
 
 void HierarchyWindow::FinishUpdate()

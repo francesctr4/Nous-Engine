@@ -348,6 +348,9 @@ void ConsoleWindow::DrawMenuBar()
 
 void ConsoleWindow::DrawLogPanel()
 {
+    if (ImGui::IsWindowAppearing())
+        scrollToBottom = true;
+
     const float footerHeight = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footerHeight), false,
                       ImGuiWindowFlags_HorizontalScrollbar);

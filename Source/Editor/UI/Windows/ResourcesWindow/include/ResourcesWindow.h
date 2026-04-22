@@ -18,10 +18,9 @@ public:
 
 private:
 
-    void AlignHeadersToCenter();
-
-    void ChooseTextColor(const ResourceType& type, ImVec4& color);
-    void DisplayResource(const Resource* resource, const ImVec4& textColor);
+    void AlignHeadersToCenter() const;
+    void ChooseTextColor(const ResourceType& type, ImVec4& color) const;
+    void DisplayResource(const Resource* resource, const ImVec4& textColor) const;
 
     uint32_t previousResourceCount = 0;
 };

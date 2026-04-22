@@ -40,6 +40,7 @@ public:
 private:
 
     static bool IsValidASCII(const std::string& str);
+    void HandleDragAndDropTarget() const;
 
     void HandleGizmoInput();
     void HandleMousePicking(const ImVec2& viewportPos, const ImVec2& viewportSize) const;

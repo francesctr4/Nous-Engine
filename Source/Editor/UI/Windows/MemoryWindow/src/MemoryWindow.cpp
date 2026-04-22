@@ -4,21 +4,7 @@
 #include <imgui.h>
 #include <algorithm>
 #include <numeric>
-
-struct MemoryUsageHistory
-{
-    static constexpr int MaxSamples = 300; // ~5 seconds at 60 FPS
-    float values[MaxSamples] = {};
-    int currentIndex = 0;
-
-    void AddValue(float value)
-    {
-        values[currentIndex] = value;
-        currentIndex = (currentIndex + 1) % MaxSamples;
-    }
-};
-
-static MemoryUsageHistory history;
+#include <utility>
 
 MemoryWindow::MemoryWindow(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
@@ -46,8 +32,8 @@ void MemoryWindow::DrawContent()
 
     history.AddValue(usagePercentage * 100.0f); // store percent
 
-    float totalPoolMB = config.totalAllocationSize / (1024.0f * 1024.0f);
-    float totalAllocatedMB = stats.totalAllocated / (1024.0f * 1024.0f);
+    float totalPoolMB = static_cast<float>(config.totalAllocationSize) / (1024.0f * 1024.0f);
+    float totalAllocatedMB = static_cast<float>(stats.totalAllocated) / (1024.0f * 1024.0f);
 
     // ------------------------------
     // Summary info
@@ -95,8 +81,8 @@ void MemoryWindow::DrawContent()
     ImGui::SeparatorText("Usage over Time");
     ImGui::PlotLines(
         "##MemoryUsagePlot",
-        history.values,
-        IM_ARRAYSIZE(history.values),
+        history.values.data(),
+        static_cast<int>(history.values.size()),
         history.currentIndex,
         nullptr,
         0.0f, 100.0f, // Y range (0–100%)
@@ -104,7 +90,7 @@ void MemoryWindow::DrawContent()
     );
 
     // Optional stats
-    float maxUsage = *std::max_element(std::begin(history.values), std::end(history.values));
+    float maxUsage = *std::ranges::max_element(history.values);
     ImGui::Text("Peak: %.2f%%", maxUsage);
 
     // ------------------------------
@@ -121,7 +107,7 @@ void MemoryWindow::DrawContent()
 
         uint64 totalBytes = 0;
 
-        for (uint32 i = 0; i < static_cast<uint32>(MemoryTag::MAX); ++i)
+        for (uint32 i = 0; i < static_cast<uint32>(std::to_underlying(MemoryTag::MAX)); ++i)
         {
             uint64 bytes = stats.taggedAllocations[i];
             if (bytes == 0) continue;
@@ -132,9 +118,9 @@ void MemoryWindow::DrawContent()
             ImGui::TableSetColumnIndex(0);
             ImGui::TextUnformatted(tags[i]);
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%llu", (unsigned long long)bytes);
+            ImGui::Text("%llu", bytes);
             ImGui::TableSetColumnIndex(2);
-            ImGui::Text("%.3f", bytes / (1024.0f * 1024.0f));
+            ImGui::Text("%.3f", static_cast<float>(bytes) / (1024.0f * 1024.0f));
         }
 
         // ------------------------------
@@ -148,10 +134,11 @@ void MemoryWindow::DrawContent()
         ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "TOTAL");
 
         ImGui::TableSetColumnIndex(1);
-        ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "%llu", (unsigned long long)totalBytes);
+        ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "%llu", totalBytes);
 
         ImGui::TableSetColumnIndex(2);
-        ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "%.3f", totalBytes / (1024.0f * 1024.0f));
+        ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "%.3f",
+                           static_cast<float>(totalBytes) / (1024.0f * 1024.0f));
 
         ImGui::EndTable();
     }

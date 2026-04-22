@@ -26,6 +26,7 @@ public:
 private:
     void DrawTabs();
     void DrawToolbar();
+    void HandleDragDropTarget();
     void CreateNew();
     void OpenFile();
     void Save();

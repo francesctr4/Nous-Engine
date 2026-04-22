@@ -71,20 +71,12 @@ void SceneViewport::DrawContent()
         HandleGizmoInput();
     }
 
-    // Get the size of the window's content area
-    ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
-    ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
-    ImVec2 windowPos = ImGui::GetWindowPos();
-    auto squareSize = ImVec2(contentMax.x - contentMin.x, contentMax.y - contentMin.y);
-    auto squarePos = ImVec2(windowPos.x + contentMin.x, windowPos.y + contentMin.y);
-    auto squareEnd = ImVec2(squarePos.x + squareSize.x, squarePos.y + squareSize.y);
-
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
     // Draw gray background
-    drawList->AddRectFilled(squarePos, squareEnd, IM_COL32(100, 100, 100, 255));
+    drawList->AddRectFilled(contentPos, contentEnd, IM_COL32(100, 100, 100, 255));
 
-    if (squareSize.x <= 0.0f || squareSize.y <= 0.0f)
+    if (contentSize.x <= 0.0f || contentSize.y <= 0.0f)
     {
         s_GizmoWasActive = false;
         return;
@@ -99,13 +91,13 @@ void SceneViewport::DrawContent()
     ImGui::Image(
         NOUS_ImGuiVulkanResources::GetViewportTexture(
             vkCtx->imGuiResources.m_ViewportDescriptorSets[vkCtx->imageIndex]),
-        squareSize, uvMin, uvMax);
+        contentSize, uvMin, uvMax);
 
     // Draw white border on top
-    drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
+    drawList->AddRect(contentPos, contentEnd, IM_COL32(255, 255, 255, 255));
 
     // Draw the gizmo on top of the scene image
-    DrawGizmo(squarePos, squareSize);
+    DrawGizmo(contentPos, contentSize);
 
     // ImGuizmo::IsOver() retains stale state from the previous frame when no
     // gizmo was drawn (e.g. nothing selected). Only consult it when a gizmo is
@@ -127,22 +119,21 @@ void SceneViewport::DrawContent()
     }
     s_GizmoWasActive = gizmoBlocking;
 
-    // Handle mouse picking (click to select/deselect objects)
     if (!gizmoBlocking)
     {
-        HandleMousePicking(squarePos, squareSize);
+        // Handle mouse picking (click to select/deselect objects)
+        HandleMousePicking(contentPos, contentSize);
+
+        // Drag-and-drop target — only place the InvisibleButton when the gizmo
+        // is not being hovered/used, so it doesn't steal mouse input from ImGuizmo
+        HandleDragAndDropTarget();
     }
+}
 
-    // Drag-and-drop target — only place the InvisibleButton when the gizmo
-    // is not being hovered/used, so it doesn't steal mouse input from ImGuizmo
-
-    if (gizmoBlocking)
-    {
-        return;
-    }
-
-    ImGui::SetCursorScreenPos(squarePos);
-    ImGui::InvisibleButton("DropTarget", squareSize);
+void SceneViewport::HandleDragAndDropTarget() const
+{
+    ImGui::SetCursorScreenPos(contentPos);
+    ImGui::InvisibleButton("DropTarget", contentSize);
 
     if (!ImGui::BeginDragDropTarget())
     {

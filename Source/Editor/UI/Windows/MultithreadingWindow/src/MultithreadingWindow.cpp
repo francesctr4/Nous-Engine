@@ -9,6 +9,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
 
 #include <algorithm>
+#include <format>
 
 #include "imgui.h"
 
@@ -40,7 +41,7 @@ void Multithreading::DrawContent()
     ImGui::SameLine();
     if (ImGui::Button("Resize Pool"))
     {
-        editorContext->GetJobSystem()->Resize(newSize);
+        editorContext->GetJobSystem()->Resize(static_cast<uint8_t>(newSize));
         NOUS_VulkanMultithreading::RecreateWorkerCommandPools(VulkanBackend::GetVulkanContext());
     }
 
@@ -73,7 +74,7 @@ void Multithreading::DrawContent()
             activeThreads++;
 
     // Active threads progress bar with threshold-based coloring
-    float progress = static_cast<float>(activeThreads) / allThreads.size();
+    float progress = static_cast<float>(activeThreads) / static_cast<float>(allThreads.size());
     const float yellowThreshold = 1.0f / 3.0f;
     const float redThreshold = 2.0f / 3.0f;
 
@@ -94,12 +95,12 @@ void Multithreading::DrawContent()
 
     // Apply custom color to the progress bar
     ImGui::PushStyleColor(ImGuiCol_PlotHistogram, barColor);
-    std::string text = "Active Threads: " + std::to_string(activeThreads) + "/" + std::to_string(allThreads.size());
+    std::string text = std::format("Active Threads: {}/{}", activeThreads, allThreads.size());
     ImGui::ProgressBar(progress, ImVec2(-1, 0), text.c_str());
     ImGui::PopStyleColor();
 
     // Determine and display threading mode
-    const bool isSingleThreaded = (threads.size() == 0);
+    const bool isSingleThreaded = threads.empty();
     const char* modeText = isSingleThreaded ? "Single-threaded Mode" : "Multi-threaded Mode";
     const ImVec4 modeColor = isSingleThreaded ? ImVec4(0.8f, 0.0f, 0.0f, 1.0f) : ImVec4(0.1f, 0.6f, 1.0f, 1.0f);
 

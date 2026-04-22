@@ -9,7 +9,7 @@
 #include <format>
 #include <queue>
 
-JobQueue::JobQueue(const char* title, EditorContext* context, bool start_open)
+JobQueue::JobQueue(const char* title, EditorContext* context, const bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
 }
@@ -32,7 +32,7 @@ void JobQueue::DrawContent()
 
         while (!tempQueue.empty())
         {
-            nous::engine::multithreading::NOUS_Job* job = tempQueue.front();
+            const nous::engine::multithreading::NOUS_Job* job = tempQueue.front();
             tempQueue.pop();
 
             ImGui::TableNextRow();

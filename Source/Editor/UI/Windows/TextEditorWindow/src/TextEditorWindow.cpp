@@ -63,36 +63,42 @@ void TextEditorWindow::DrawContent()
     if (mTextEditor.IsTextChanged())
         mHasUnsavedChanges = true;
 
+    HandleDragDropTarget();
+}
+
+void TextEditorWindow::HandleDragDropTarget()
+{
     // Accept .glsl and .cpp files dragged from the AssetsBrowser.
     // Drag-drop bypasses the unsaved-changes guard — it is an explicit user action.
-    if (ImGui::BeginDragDropTarget())
+    if (!ImGui::BeginDragDropTarget())
+        return;
+
+    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
     {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+        const auto* data = static_cast<const char*>(payload->Data);
+        const char* end = data + payload->DataSize;
+        while (data < end)
         {
-            const char* data = static_cast<const char*>(payload->Data);
-            const char* end = data + payload->DataSize;
-            while (data < end)
+            std::string path(data);
+            data += path.size() + 1;
+
+            std::filesystem::path p(path);
+            const auto ext = p.extension();
+
+            if (ext == k_GlslExtension)
             {
-                std::string path(data);
-                data += path.size() + 1;
-
-                std::filesystem::path p(path);
-                const auto ext = p.extension();
-
-                if (ext == k_GlslExtension)
-                {
-                    SwitchMode(TextEditorMode::Shader);
-                    LoadFile(p);
-                }
-                else if (ext == k_CppExtension)
-                {
-                    SwitchMode(TextEditorMode::Script);
-                    LoadFile(p);
-                }
+                SwitchMode(TextEditorMode::Shader);
+                LoadFile(p);
+            }
+            else if (ext == k_CppExtension)
+            {
+                SwitchMode(TextEditorMode::Script);
+                LoadFile(p);
             }
         }
-        ImGui::EndDragDropTarget();
     }
+
+    ImGui::EndDragDropTarget();
 }
 
 void TextEditorWindow::DrawTabs()
@@ -284,8 +290,7 @@ void TextEditorWindow::Delete()
         return;
     }
 
-    std::error_code ec;
-    if (std::filesystem::remove(mCurrentFilePath, ec))
+    if (std::error_code ec; std::filesystem::remove(mCurrentFilePath, ec))
     {
         NOUS_INFO("[TextEditor] Deleted: %s", mCurrentFilePath.string().c_str());
     }
@@ -390,7 +395,7 @@ void TextEditorWindow::TriggerScriptRecompile()
 
     mScriptRecompileInFlight.store(true);
 
-    ModuleScene* scene = editorContext->GetScene();
+    const ModuleScene* scene = editorContext->GetScene();
     nous::engine::multithreading::NOUS_JobSystem* jobSystem = editorContext->GetJobSystem();
     jobSystem->SubmitJob([scene, this]
     {
