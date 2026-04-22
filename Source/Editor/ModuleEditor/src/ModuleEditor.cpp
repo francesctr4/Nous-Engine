@@ -28,7 +28,7 @@
 #include "Editor/UI/Windows/SceneViewport/include/SceneViewport.h"
 #include "Editor/UI/Windows/GameViewport/include/GameViewport.h"
 #include "Editor/UI/Windows/HierarchyWindow/include/HierarchyWindow.h"
-#include "Editor/UI/Windows/InspectorWindow/include/InspectorWindow.h"
+#include "Editor/UI/Windows/InspectorWindow/InspectorWindow.h"
 #include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
 #include "Editor/UI/Windows/MemoryWindow/include/MemoryWindow.h"
 #include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
