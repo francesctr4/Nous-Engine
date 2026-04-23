@@ -58,7 +58,7 @@ ImGuiWindowFlags SceneViewport::GetWindowFlags() const
     // Prevent a floating window from being moved by ImGui while the gizmo is active.
     // Window movement is processed inside Begin(), so we must pass NoMove *to* Begin()
     // using the gizmo state from the previous frame (static bool persists across calls).
-    return s_GizmoWasActive ? ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None;
+    return m_GizmoWasActive ? ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None;
 }
 
 void SceneViewport::DrawContent()
@@ -78,7 +78,7 @@ void SceneViewport::DrawContent()
 
     if (contentSize.x <= 0.0f || contentSize.y <= 0.0f)
     {
-        s_GizmoWasActive = false;
+        m_GizmoWasActive = false;
         return;
     }
 
@@ -117,7 +117,7 @@ void SceneViewport::DrawContent()
     {
         cam3D->ClearOrbitTarget();
     }
-    s_GizmoWasActive = gizmoBlocking;
+    m_GizmoWasActive = gizmoBlocking;
 
     if (!gizmoBlocking)
     {

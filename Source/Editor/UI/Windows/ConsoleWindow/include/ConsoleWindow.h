@@ -1,5 +1,4 @@
-#ifndef CONSOLEWINDOW_H
-#define CONSOLEWINDOW_H
+#pragma once
 
 #include "Editor/UI/IEditorWindow.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -92,5 +91,3 @@ private:
     bool freezeConsole = false;
     bool m_showDetails = true; // show file:line + thread ID per entry
 };
-
-#endif // CONSOLEWINDOW_H

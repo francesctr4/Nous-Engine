@@ -1,5 +1,4 @@
-#ifndef IEDITORWINDOW_INL
-#define IEDITORWINDOW_INL
+#pragma once
 
 #include "Editor/EditorContext.h"
 #include <imgui.h>
@@ -60,9 +59,7 @@ protected:
 
     EditorContext* editorContext;
 
-private:
-
-	virtual bool UpdateLayout();
+    virtual bool UpdateLayout();
 
 private:
     bool initialized{ false };
@@ -70,5 +67,3 @@ private:
     bool internal_open;
     bool* p_open;
 };
-
-#endif

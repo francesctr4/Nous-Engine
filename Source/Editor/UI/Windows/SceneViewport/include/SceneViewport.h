@@ -1,5 +1,4 @@
-#ifndef SCENEVIEWPORT_H
-#define SCENEVIEWPORT_H
+#pragma once
 
 #include "Editor/UI/IEditorWindow.h"
 #include "Editor/EditorExport.h"
@@ -53,8 +52,6 @@ private:
     float m_RotateSnap = 15.0f;
     float m_ScaleSnap = 0.1f;
 
-    bool s_GizmoWasActive = false;
+    bool m_GizmoWasActive = false;
 
 };
-
-#endif // SCENEVIEWPORT_H

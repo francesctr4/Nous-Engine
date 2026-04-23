@@ -75,7 +75,7 @@ void InspectorWindow::DrawContent()
     DrawAddComponentSection(&go);
 }
 
-void InspectorWindow::DrawGameObjectHeader(GameObject* go) const
+void InspectorWindow::DrawGameObjectHeader(GameObject* go)
 {
     // --- GameObject Header ---
     auto const* cprefab = go->TryGetComponent<CPrefab>();
@@ -94,20 +94,20 @@ void InspectorWindow::DrawGameObjectHeader(GameObject* go) const
         ImGui::SeparatorText("GameObject Info");
     }
 
-    static std::string buffer;
-
-    if (buffer.empty())
-        buffer = go->GetName();
-
-    // ensure capacity + null termination
-    buffer.resize(256);
+    const uint32_t currentID = go->GetID();
+    if (currentID != m_lastSelectedID)
+    {
+        m_nameBuffer = go->GetName();
+        m_lastSelectedID = currentID;
+    }
+    m_nameBuffer.resize(256);
 
     if (cprefab)
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
 
-    if (ImGui::InputText("##Name", buffer.data(), buffer.capacity()))
+    if (ImGui::InputText("##Name", m_nameBuffer.data(), m_nameBuffer.size()))
     {
-        go->SetName(buffer);
+        go->SetName(m_nameBuffer);
     }
 
     if (cprefab)

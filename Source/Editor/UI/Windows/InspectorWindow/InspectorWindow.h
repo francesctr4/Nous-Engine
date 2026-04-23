@@ -1,5 +1,4 @@
-#ifndef NOUS_ENGINE_INSPECTORWINDOW_H
-#define NOUS_ENGINE_INSPECTORWINDOW_H
+#pragma once
 
 #include "Editor/UI/IEditorWindow.h"
 #include "Engine/Scripting/Internal/IScript.inl"
@@ -7,6 +6,8 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
+#include <cstdint>
+#include <string>
 
 class ScriptManager;
 class CScript;
@@ -28,7 +29,7 @@ protected:
 
 private:
 
-    void DrawGameObjectHeader(GameObject* go) const;
+    void DrawGameObjectHeader(GameObject* go);
 
     void DrawTransformComponent(CTransform* ctransform) const;
     void DrawMeshComponent(const CMesh* cmesh) const;
@@ -40,6 +41,7 @@ private:
 
     void DrawAddComponentSection(GameObject* go) const;
 
-};
+    std::string m_nameBuffer;
+    uint32_t m_lastSelectedID = UINT32_MAX;
 
-#endif //NOUS_ENGINE_INSPECTORWINDOW_H
+};
