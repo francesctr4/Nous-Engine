@@ -17,7 +17,7 @@ void GameViewport::Init()
     CreateGameViewportDescriptorSets();
 }
 
-bool GameViewport::AlwaysUpdate() const
+bool GameViewport::UpdatesWhenCollapsed() const
 {
     return true;
 }

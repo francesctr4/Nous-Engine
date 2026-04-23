@@ -11,7 +11,7 @@ public:
     NOUS_EDITOR_API explicit GameViewport(const char* title, EditorContext* context, bool start_open = true);
 
     NOUS_EDITOR_API void Init() override;
-    NOUS_EDITOR_API bool AlwaysUpdate() const override;
+    NOUS_EDITOR_API bool UpdatesWhenCollapsed() const override;
     NOUS_EDITOR_API void OnLayoutUpdated(const ImVec2& panelSize) override;
     NOUS_EDITOR_API void DrawContent() override;
 

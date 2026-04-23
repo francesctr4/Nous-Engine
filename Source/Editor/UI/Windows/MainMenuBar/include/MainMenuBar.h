@@ -16,7 +16,7 @@ public:
     }
     void End() override { ImGui::EndMainMenuBar(); }
 
-    bool AlwaysUpdate() const override;
+    bool UpdatesWhenCollapsed() const override;
     void Update() override;
     void DrawContent() override;
     void FinishUpdate() override;

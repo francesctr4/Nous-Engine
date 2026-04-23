@@ -62,7 +62,7 @@ void MainMenuBar::saveToCurrent(bool& triggerSaveAs) const
         triggerSaveAs = true;
 }
 
-bool MainMenuBar::AlwaysUpdate() const
+bool MainMenuBar::UpdatesWhenCollapsed() const
 {
     return true;
 }

@@ -40,7 +40,7 @@ protected:
     virtual void DrawContent() = 0; // Mandatory
     virtual void FinishUpdate() {} // Optional
     // If true, Update() and OnLayoutUpdated() will run even if the window is collapsed.
-    virtual bool AlwaysUpdate() const { return false; }
+    virtual bool UpdatesWhenCollapsed() const { return false; }
     // NEW: Allow derived classes to inject ImGui flags dynamically
     virtual ImGuiWindowFlags GetWindowFlags() const { return 0; }
 
@@ -51,7 +51,6 @@ protected:
 
     // Shared layout state (usable by all windows)
     ImVec2 contentMin{};
-    ImVec2 contentMax{};
     ImVec2 contentSize{};
     ImVec2 contentPos{};     // absolute screen-space
     ImVec2 contentEnd{};     // absolute screen-space

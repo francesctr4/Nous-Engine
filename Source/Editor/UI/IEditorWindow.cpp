@@ -14,7 +14,7 @@ void IEditorWindow::Draw()
     {
         // 2. Decide if we should process layout/rendering logic.
         // We do this if the window is visible OR if it's a "Background Worker" like a Viewport.
-        if (visible || AlwaysUpdate())
+        if (visible || UpdatesWhenCollapsed())
         {
             bool sizeChanged = UpdateLayout();
 
@@ -37,7 +37,7 @@ void IEditorWindow::Draw()
 bool IEditorWindow::UpdateLayout()
 {
     contentMin = ImGui::GetWindowContentRegionMin();
-    contentMax = ImGui::GetWindowContentRegionMax();
+    const ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
 
     ImVec2 newSize{
         contentMax.x - contentMin.x,
