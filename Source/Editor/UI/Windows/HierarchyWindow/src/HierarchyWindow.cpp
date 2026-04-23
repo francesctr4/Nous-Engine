@@ -14,6 +14,7 @@
 
 #include <filesystem>
 #include <string>
+#include <format>
 
 HierarchyWindow::HierarchyWindow(const char* title, EditorContext* context, const bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
