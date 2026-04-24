@@ -3,6 +3,7 @@
 
 #include <imgui.h>
 #include <algorithm>
+#include <cinttypes>
 #include <numeric>
 #include <utility>
 
@@ -118,7 +119,7 @@ void MemoryWindow::DrawContent()
             ImGui::TableSetColumnIndex(0);
             ImGui::TextUnformatted(tags[i]);
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%llu", bytes);
+            ImGui::Text("%" PRIu64, bytes);
             ImGui::TableSetColumnIndex(2);
             ImGui::Text("%.3f", static_cast<float>(bytes) / (1024.0f * 1024.0f));
         }
@@ -134,7 +135,7 @@ void MemoryWindow::DrawContent()
         ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "TOTAL");
 
         ImGui::TableSetColumnIndex(1);
-        ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "%llu", totalBytes);
+        ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "%" PRIu64, totalBytes);
 
         ImGui::TableSetColumnIndex(2);
         ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.3f, 1.0f), "%.3f",
