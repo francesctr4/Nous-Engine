@@ -277,7 +277,7 @@ void HierarchyWindow::HandleGameObjectNodeDragDropPayloads(GameObject obj)
         IM_ASSERT(payload->DataSize == sizeof(entt::entity));
         entt::entity e = *static_cast<const entt::entity*>(payload->Data);
         GameObject draggedGO(e, &m_Scene->GetRegistry());
-        if (draggedGO.IsValid() && draggedGO != obj && !IsChildOf(obj, draggedGO))
+        if (draggedGO.IsValid() && draggedGO != obj && !IsChildOf(draggedGO, obj))
             m_ToReparent.emplace_back(draggedGO, obj);
     }
 
