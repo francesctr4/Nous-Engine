@@ -9,9 +9,9 @@ void SetupInputBindings(InputAPI& input, ModuleInput* moduleInput)
     s_input = moduleInput;
 
     // Key state checking
-    input.GetKey = [](int scancode) -> int {
+    input.GetKey = [](NOUS_SCANCODE scancode) -> int {
         if (!s_input) return 0;
-        return static_cast<int>(s_input->GetKey(scancode));
+        return static_cast<int>(s_input->GetKey(static_cast<int>(scancode)));
     };
 
     // Mouse button checking

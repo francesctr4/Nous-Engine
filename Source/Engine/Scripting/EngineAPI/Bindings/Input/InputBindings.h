@@ -2,27 +2,28 @@
 #define NOUS_ENGINE_INPUTBINDINGS_H
 
 #include <cstdint>
+#include <Engine/Scripting/EngineAPI/NOUS_SCANCODE.h>
 
-// In EngineAPI.h - update the InputAPI struct
 struct InputAPI
 {
-    // Add key state checking function
-    int (*GetKey)(int scancode) = nullptr;
-    int (*GetMouseButton)(int button) = nullptr;
+    int (*GetKey)(NOUS_SCANCODE scancode) = nullptr;
+    int (*GetMouseButton)(int button)    = nullptr;
 
-    // Mouse position functions
     void (*GetMousePosition)(int* x, int* y) = nullptr;
-    void (*GetMouseMotion)(int* x, int* y) = nullptr;
+    void (*GetMouseMotion)(int* x, int* y)   = nullptr;
 
-    // Key state constants (matching your engine's KeyState)
+    // Key state constants
     typedef enum KeyState : std::uint8_t
     {
-        IDLE = 0,
-        DOWN = 1,
+        IDLE   = 0,
+        DOWN   = 1,
         REPEAT = 2,
-        UP = 3
+        UP     = 3
     } KeyState;
 
+    // --- REMOVED: SDL_Scancode copy --- use NOUS_SCANCODE instead ---
+    // (kept as a placeholder so existing code referencing InputAPI::SDL_Scancode
+    //  gets a clear compile error rather than a silent wrong-value bug)
     typedef enum SDL_Scancode : std::uint16_t
     {
         SDL_SCANCODE_UNKNOWN = 0,

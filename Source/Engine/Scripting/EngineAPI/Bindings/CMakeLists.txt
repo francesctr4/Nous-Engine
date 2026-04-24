@@ -5,4 +5,6 @@ target_sources(Scripting PRIVATE
 
 add_subdirectory(GameObject)
 add_subdirectory(Input)
+add_subdirectory(Light)
 add_subdirectory(Logger)
+add_subdirectory(Material)

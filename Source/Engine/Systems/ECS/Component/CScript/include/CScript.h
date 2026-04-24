@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_CSCRIPT_H
 
 #include "Engine/Systems/ECS/Component/Component.h"
+#include <atomic>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -15,8 +16,9 @@ class IScript;
 // Values must stay in sync with ScriptProperty::Type in IScript.inl.
 struct SavedProperty
 {
-    uint8_t type;   // 0 = Float, 1 = Int, 2 = Bool, 3 = GameObject (uint32_t ID)
+    uint8_t type;   // 0 = Float, 1 = Int, 2 = Bool, 3 = GameObject (uint32_t ID), 4 = String
     union { float f; int32_t i; bool b; uint32_t u; } value{};
+    std::string strValue; // used when type == 4 (String)
 };
 
 // scriptName → propertyName → saved value
@@ -34,7 +36,13 @@ public:
     // tombstone-based deletion, keeping addresses stable.
     static constexpr bool in_place_delete = true;
 
+    CScript() = default;
     NOUS_ENGINE_API ~CScript() override;
+
+    // Explicitly defined because std::atomic deletes the implicit copy operations.
+    // Only script names and saved properties transfer; instances must be recreated via OnStart.
+    NOUS_ENGINE_API CScript(const CScript& other);
+    NOUS_ENGINE_API CScript& operator=(const CScript& other);
 
     // Component lifecycle — called by the ECS
     NOUS_ENGINE_API void OnStart()              override;
@@ -43,6 +51,9 @@ public:
 
     // Called by ModuleScene::PostUpdate for the LateUpdate pass
     void LateUpdate(float dt);
+
+    // Called by ScriptManager::DispatchFixedUpdate at a fixed timestep
+    void FixedUpdate(float fixedDt);
 
     // Runtime script attachment (safe to call before or after OnStart)
     NOUS_ENGINE_API void AddScript(const std::string& scriptName);
@@ -81,11 +92,16 @@ private:
     void SaveProperties();          // snapshot live property values → m_savedProperties
     void ApplyProperties();         // write m_savedProperties back into live instances
 
-    std::vector<std::string> m_scriptNames;
-    std::vector<IScript*>    m_instances;
-    bool                     m_started    = false;  // true when DLL instances are alive and ticking
-    bool                     m_registered = false;  // true when RegisterScriptComponent has been called
-    ScriptPropertyMap        m_savedProperties; // persists across hot-reload and serialization
+    std::vector<std::string>  m_scriptNames;
+    std::vector<IScript*>     m_instances;
+    bool                      m_started    = false;  // true when DLL instances are alive and ticking
+    bool                      m_registered = false;  // true when RegisterScriptComponent has been called
+    ScriptPropertyMap         m_savedProperties; // persists across hot-reload and serialization
+
+    // Set to true on the worker thread before instances are destroyed, false after they are
+    // recreated. OnUpdate/LateUpdate on the main thread skip iteration while this is set,
+    // preventing a use-after-free when hot-reload runs during play mode.
+    std::atomic<bool>         m_reloading{false};
 };
 
 #endif // NOUS_ENGINE_CSCRIPT_H

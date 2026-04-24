@@ -1,0 +1,73 @@
+{
+    "uniforms": [
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "metallic",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "emissiveColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "normalStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "albedoColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "roughness",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "aoStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        }
+    ],
+    "texture_maps": [
+        {
+            "name": "albedoSampler",
+            "asset_path": "Assets\/Textures\/Light_Gold_Albedo.png",
+            "uid": 3110410100,
+            "library_path": "Library\/Textures\/3110410100.png"
+        }
+    ],
+    "shader_uid": 1190405774,
+    "shader_asset_path": "Assets\\Shaders\\ForwardPBR.glsl",
+    "shader_library_path": "Library\\Shaders\\1190405774"
+}

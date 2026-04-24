@@ -50,6 +50,9 @@ public:
     // Dispatches IScript::LateUpdate to all live components. Called from ModuleScene::PostUpdate.
     void DispatchLateUpdate(float dt);
 
+    // Dispatches IScript::FixedUpdate to all live components. Call from a fixed-timestep tick.
+    NOUS_ENGINE_API void DispatchFixedUpdate(float fixedDt);
+
     // Calls RecreateInstances() on every registered component. Called during script hot-reload.
     void RecreateAllInstances();
 
@@ -65,13 +68,12 @@ private:
     // Platform-specific library handling
     void* LoadDLL(const std::string& path);
     void* GetSymbol(void* handle, const std::string& symbol);
-    bool WaitForDLLUnload(const std::string& dllPath, int maxRetries = 10);
     void UnloadLibrary(void* handle);
 
     void* m_libraryHandle;
     std::string m_shadowDllPath;
     ScriptRegistry* m_scriptRegistry;
-    EngineAPI* api;
+    EngineAPI* api = nullptr;
 
     ModuleInput* m_moduleInput;
     ModuleScene* m_moduleScene;

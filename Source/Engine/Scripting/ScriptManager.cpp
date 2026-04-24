@@ -358,46 +358,9 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     NOUS_INFO("Scripts recompiled successfully!");
 #endif
 
-    if (!WaitForDLLUnload(dllPath)) {
-        NOUS_ERROR("DLL is still locked, cannot reload");
-        return false;
-    }
-
     return LoadScriptLibrary(dllPath);
 }
 
-bool ScriptManager::WaitForDLLUnload(const std::string& dllPath, int maxRetries) {
-#ifdef _WIN32
-    for (int i = 0; i < maxRetries; ++i) {
-        HANDLE fileHandle = CreateFileA(
-                dllPath.c_str(),
-                GENERIC_READ,
-                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                NULL,
-                OPEN_EXISTING,
-                FILE_ATTRIBUTE_NORMAL,
-                NULL
-        );
-
-        if (fileHandle != INVALID_HANDLE_VALUE) {
-            CloseHandle(fileHandle);
-            return true; // File is accessible
-        }
-
-        DWORD error = GetLastError();
-        if (error == ERROR_SHARING_VIOLATION) {
-            // DLL is still locked, wait and retry
-            nous::engine::multithreading::NOUS_Thread::SleepMS(50);
-        } else if (error == ERROR_FILE_NOT_FOUND) {
-            // DLL doesn't exist yet (might be compiling)
-            nous::engine::multithreading::NOUS_Thread::SleepMS(100);
-        } else {
-            break; // Other error
-        }
-    }
-#endif
-    return true; // On non-Windows or if we can't check, just proceed
-}
 
 std::vector<std::string> ScriptManager::GetAvailableScriptNames() const
 {
@@ -474,6 +437,13 @@ void ScriptManager::DispatchLateUpdate(float dt)
     std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
     for (auto* cs : m_scriptComponents)
         if (cs) cs->LateUpdate(dt);
+}
+
+void ScriptManager::DispatchFixedUpdate(float fixedDt)
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+        if (cs) cs->FixedUpdate(fixedDt);
 }
 
 void ScriptManager::RecreateAllInstances()

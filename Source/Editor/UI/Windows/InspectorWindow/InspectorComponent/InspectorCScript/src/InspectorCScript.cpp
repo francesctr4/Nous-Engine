@@ -1,3 +1,4 @@
+#include <array>
 #include <string>
 
 #include "Editor/UI/Windows/InspectorWindow/InspectorComponent/InspectorCScript/include/InspectorCScript.h"
@@ -88,6 +89,15 @@ void DrawScriptProperty(Scene* scene, const ScriptProperty& prop)
     case GameObject:
         DrawGameObjectProperty(scene, prop);
         break;
+    case String:
+    {
+        auto* strPtr = static_cast<std::string*>(prop.ptr);
+        std::array<char, 256> buf{};
+        strPtr->copy(buf.data(), buf.size() - 1);
+        if (ImGui::InputText(prop.name, buf.data(), buf.size()))
+            *strPtr = buf.data();
+        break;
+    }
     }
 }
 

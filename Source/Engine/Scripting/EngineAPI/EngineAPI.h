@@ -5,14 +5,17 @@
 struct LoggerAPI;
 struct InputAPI;
 struct GameObjectAPI;
+struct LightAPI;
+struct MaterialAPI;
 
 // --- Engine API (root) ---
 struct EngineAPI
 {
-    LoggerAPI* Logger;
-    InputAPI* Input;
+    LoggerAPI*    Logger;
+    InputAPI*     Input;
     GameObjectAPI* GameObject;
-    // Add PhysicsAPI, InputAPI, etc here later
+    LightAPI*     Light;
+    MaterialAPI*  Material;
 };
 
 // Only declare here

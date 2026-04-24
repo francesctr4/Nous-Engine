@@ -48,6 +48,7 @@ file(COPY
 
 file(COPY
         "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.h"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/NOUS_SCANCODE.h"
         DESTINATION
         "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/EngineAPI"
 )

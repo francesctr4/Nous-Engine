@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <string>
 #include <vector>
 #include <type_traits>
 
@@ -11,7 +12,7 @@
 // ---------------------------------------------------------------------------
 struct ScriptProperty
 {
-    enum class Type : uint8_t { Float, Int, Bool, GameObject };
+    enum class Type : uint8_t { Float, Int, Bool, GameObject, String };
 
     const char* name;   // display name shown in the Inspector
     Type        type;
@@ -38,6 +39,8 @@ struct ScriptProperty
                 type = ScriptProperty::Type::Int;                                          \
             else if constexpr (std::is_same_v<T, bool>)                                   \
                 type = ScriptProperty::Type::Bool;                                         \
+            else if constexpr (std::is_same_v<T, std::string>)                            \
+                type = ScriptProperty::Type::String;                                       \
             props.push_back({ #varName, type, &member });                                  \
         }                                                                                  \
     } _nous_spr_##varName { m_properties, varName };
@@ -101,7 +104,7 @@ public:
     virtual void Update(float deltaTime) = 0;
 
     // Called at a fixed timestep (useful for physics updates)
-    virtual void FixedUpdate(float fixedDeltaTime) = 0;
+    virtual void FixedUpdate(float fixedDeltaTime) {}
 
     // Called after Update, useful for camera logic or late adjustments
     virtual void LateUpdate(float deltaTime) = 0;

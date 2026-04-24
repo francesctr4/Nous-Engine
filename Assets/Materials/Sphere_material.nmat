@@ -132,5 +132,5 @@
     ],
     "shader_uid": 1190405774,
     "shader_asset_path": "Assets\\Shaders\\ForwardPBR.glsl",
-    "shader_library_path": "Library\\Shaders\\1190405774"
+    "shader_library_path": "Library\/Shaders\/1190405774"
 }

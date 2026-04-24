@@ -45,6 +45,7 @@ public:
     // Lookup
     NOUS_ENGINE_API GameObject FindGameObjectByID(uint32_t id);
     NOUS_ENGINE_API GameObject GetGameObjectByID(uint32_t id);
+    NOUS_ENGINE_API GameObject FindGameObjectByName(const std::string& name);
 
     // Returns all GameObjects as a vector of handles.
     // For render hot paths, prefer GetRegistry().view<>() directly.

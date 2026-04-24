@@ -51,13 +51,13 @@ public:
     {
         /*coding_start::Rykan::Update*/
         // Check for F4 key press
-        if (Nous_Engine->Input->GetKey(InputAPI::SDL_SCANCODE_F) == InputAPI::KeyState::DOWN)
+        if (Nous_Engine->Input->GetKey(NOUS_SCANCODE::F) == InputAPI::KeyState::DOWN)
         {
             Nous_Engine->Logger->Debug("F key pressed!");
             Nous_Engine->GameObject->Create("adioooos");
         }
 
-        if (Nous_Engine->Input->GetKey(InputAPI::SDL_SCANCODE_H) == InputAPI::KeyState::DOWN)
+        if (Nous_Engine->Input->GetKey(NOUS_SCANCODE::H) == InputAPI::KeyState::DOWN)
         {
             Nous_Engine->Logger->Debug("H key pressed!");
             Nous_Engine->GameObject->Create("RYKAAAAN");

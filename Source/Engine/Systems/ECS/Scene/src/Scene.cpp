@@ -176,6 +176,15 @@ GameObject Scene::GetGameObjectByID(uint32_t id) {
     return FindGameObjectByID(id);
 }
 
+GameObject Scene::FindGameObjectByName(const std::string& name) {
+    std::lock_guard lock(m_Mutex);
+    for (auto [entity, info] : m_Registry.view<CEntityInfo>().each()) {
+        if (info.name == name)
+            return GameObject(entity, &m_Registry);
+    }
+    return {};
+}
+
 std::vector<GameObject> Scene::GetGameObjects() const {
     std::lock_guard lock(m_Mutex);
     std::vector<GameObject> result;

@@ -112,11 +112,7 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
 
     gameObject.FindByName = [](const char* name) -> uint32_t {
         if (!s_scene || !s_scene->activeScene || !name) return 0;
-        // Search all GameObjects for one with the matching name.
-        for (auto go : s_scene->activeScene->GetGameObjectsSnapshot()) {
-            if (go.GetName() == name)
-                return go.GetID();
-        }
-        return 0;
+        const GameObject go = s_scene->activeScene->FindGameObjectByName(name);
+        return go.IsValid() ? go.GetID() : 0;
     };
 }

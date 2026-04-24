@@ -23,6 +23,28 @@ CScript::~CScript()
     DestroyInstances();
 }
 
+CScript::CScript(const CScript& other)
+    : m_scriptNames(other.m_scriptNames)
+    , m_savedProperties(other.m_savedProperties)
+{
+    // m_instances, m_started, m_registered, m_reloading left at defaults —
+    // instances are DLL pointers that cannot be shallow-copied.
+}
+
+CScript& CScript::operator=(const CScript& other)
+{
+    if (this != &other)
+    {
+        DestroyInstances();
+        m_scriptNames     = other.m_scriptNames;
+        m_savedProperties = other.m_savedProperties;
+        m_started         = false;
+        m_registered      = false;
+        m_reloading.store(false, std::memory_order_relaxed);
+    }
+    return *this;
+}
+
 // ---------------------------------------------------------------------------
 // Component lifecycle
 // ---------------------------------------------------------------------------
@@ -50,15 +72,23 @@ void CScript::OnStart()
 
 void CScript::OnUpdate(float dt)
 {
-    if (dt <= 0.0f) return;
+    if (dt <= 0.0f || m_reloading.load(std::memory_order_seq_cst)) return;
     for (auto* inst : m_instances)
         if (inst) inst->Update(dt);
 }
 
 void CScript::LateUpdate(float dt)
 {
+    if (m_reloading.load(std::memory_order_seq_cst)) return;
     for (auto* inst : m_instances)
         if (inst) inst->LateUpdate(dt);
+}
+
+void CScript::FixedUpdate(float fixedDt)
+{
+    if (m_reloading.load(std::memory_order_seq_cst)) return;
+    for (auto* inst : m_instances)
+        if (inst) inst->FixedUpdate(fixedDt);
 }
 
 void CScript::OnDestroy()
@@ -146,6 +176,7 @@ void CScript::RemoveScript(const std::string& scriptName)
 
 void CScript::ClearInstances()
 {
+    m_reloading.store(true, std::memory_order_seq_cst);
     SaveProperties();   // snapshot values before the DLL instances are destroyed
     DestroyInstances();
     m_started = false;
@@ -160,10 +191,14 @@ void CScript::RecreateInstances()
     {
         auto go = GetGameObject();
         if (!go.IsValid() || !go.GetScene() || go.GetScene()->GetModuleScene()->IsStopped())
+        {
+            m_reloading.store(false, std::memory_order_seq_cst);
             return;
+        }
     }
 
     StartInstances();
+    m_reloading.store(false, std::memory_order_seq_cst);
 }
 
 void CScript::StartInstances()
@@ -248,10 +283,11 @@ void CScript::SaveProperties()
 
             switch (prop.type)
             {
-                case ScriptProperty::Type::Float:      saved.value.f = *static_cast<float*>   (prop.ptr); break;
-                case ScriptProperty::Type::Int:        saved.value.i = *static_cast<int32_t*> (prop.ptr); break;
-                case ScriptProperty::Type::Bool:       saved.value.b = *static_cast<bool*>    (prop.ptr); break;
-                case ScriptProperty::Type::GameObject: saved.value.u = *static_cast<uint32_t*>(prop.ptr); break;
+                case ScriptProperty::Type::Float:      saved.value.f  = *static_cast<float*>      (prop.ptr); break;
+                case ScriptProperty::Type::Int:        saved.value.i  = *static_cast<int32_t*>    (prop.ptr); break;
+                case ScriptProperty::Type::Bool:       saved.value.b  = *static_cast<bool*>       (prop.ptr); break;
+                case ScriptProperty::Type::GameObject: saved.value.u  = *static_cast<uint32_t*>   (prop.ptr); break;
+                case ScriptProperty::Type::String:     saved.strValue = *static_cast<std::string*>(prop.ptr); break;
             }
 
             propMap[prop.name] = saved;
@@ -280,10 +316,11 @@ void CScript::ApplyProperties()
 
             switch (prop.type)
             {
-                case ScriptProperty::Type::Float:      *static_cast<float*>   (prop.ptr) = saved.value.f; break;
-                case ScriptProperty::Type::Int:        *static_cast<int32_t*> (prop.ptr) = saved.value.i; break;
-                case ScriptProperty::Type::Bool:       *static_cast<bool*>    (prop.ptr) = saved.value.b; break;
-                case ScriptProperty::Type::GameObject: *static_cast<uint32_t*>(prop.ptr) = saved.value.u; break;
+                case ScriptProperty::Type::Float:      *static_cast<float*>      (prop.ptr) = saved.value.f;  break;
+                case ScriptProperty::Type::Int:        *static_cast<int32_t*>    (prop.ptr) = saved.value.i;  break;
+                case ScriptProperty::Type::Bool:       *static_cast<bool*>       (prop.ptr) = saved.value.b;  break;
+                case ScriptProperty::Type::GameObject: *static_cast<uint32_t*>   (prop.ptr) = saved.value.u;  break;
+                case ScriptProperty::Type::String:     *static_cast<std::string*>(prop.ptr) = saved.strValue; break;
             }
         }
     }
@@ -329,6 +366,7 @@ JsonObject CScript::Serialize() const
                 case ScriptProperty::Type::Int:        pObj.Set("value", saved.value.i);                        break;
                 case ScriptProperty::Type::Bool:       pObj.Set("value", saved.value.b);                        break;
                 case ScriptProperty::Type::GameObject: pObj.Set("value", static_cast<double>(saved.value.u));   break;
+                case ScriptProperty::Type::String:     pObj.Set("value", saved.strValue);                       break;
             }
             scriptObj.Set(propName, std::move(pObj));
         }
@@ -381,10 +419,11 @@ void CScript::Deserialize(const JsonObject& obj)
 
             switch (static_cast<ScriptProperty::Type>(saved.type))
             {
-                case ScriptProperty::Type::Float:      saved.value.f = pObj.GetFloat ("value");                        break;
-                case ScriptProperty::Type::Int:        saved.value.i = static_cast<int32_t> (pObj.GetInt("value"));    break;
-                case ScriptProperty::Type::Bool:       saved.value.b = pObj.GetBool  ("value");                        break;
-                case ScriptProperty::Type::GameObject: saved.value.u = static_cast<uint32_t>(pObj.GetDouble("value")); break;
+                case ScriptProperty::Type::Float:      saved.value.f  = pObj.GetFloat ("value");                        break;
+                case ScriptProperty::Type::Int:        saved.value.i  = static_cast<int32_t> (pObj.GetInt("value"));   break;
+                case ScriptProperty::Type::Bool:       saved.value.b  = pObj.GetBool  ("value");                        break;
+                case ScriptProperty::Type::GameObject: saved.value.u  = static_cast<uint32_t>(pObj.GetDouble("value")); break;
+                case ScriptProperty::Type::String:     saved.strValue = pObj.GetString("value");                        break;
             }
 
             propMap[propName] = saved;
