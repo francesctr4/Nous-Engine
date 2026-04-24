@@ -45,6 +45,7 @@ GameObject Scene::CreateGameObject(const std::string& name, GameObject* parent) 
     m_Registry.emplace<CEntityInfo>(entity, id, name);
     m_Registry.emplace<CHierarchy>(entity);
     m_IDToEntity[id] = entity;
+    m_OrderedEntities.push_back(entity);
 
     GameObject go(entity, &m_Registry);
     go.AddComponent<CTransform>();
@@ -91,6 +92,7 @@ void Scene::RegisterGameObject(GameObject go) {
     std::lock_guard lock(m_Mutex);
     const uint32_t id = m_Registry.get<CEntityInfo>(go.GetEntity()).id;
     m_IDToEntity[id]  = go.GetEntity();
+    m_OrderedEntities.push_back(go.GetEntity());
 }
 
 // ── Destruction ───────────────────────────────────────────────────────────────
@@ -176,7 +178,8 @@ GameObject Scene::GetGameObjectByID(uint32_t id) {
 std::vector<GameObject> Scene::GetGameObjects() const {
     std::lock_guard lock(m_Mutex);
     std::vector<GameObject> result;
-    for (auto entity : m_Registry.view<CEntityInfo>())
+    result.reserve(m_OrderedEntities.size());
+    for (auto entity : m_OrderedEntities)
         result.emplace_back(entity, const_cast<entt::registry*>(&m_Registry));
     return result;
 }
@@ -253,6 +256,9 @@ void Scene::Deserialize(const std::string& filepath) {
 
     {
         std::lock_guard lock(m_Mutex);
+        for (auto it = created.rbegin(); it != created.rend(); ++it)
+            m_OrderedEntities.push_back(it->first.GetEntity());
+
         for (auto& [go, parentID] : created) {
             if (parentID == 0) continue;
             const entt::entity parentEntity = FindEntityByID_NoLock(parentID);
@@ -288,6 +294,7 @@ void Scene::Clear() {
 
     m_Registry.clear();
     m_IDToEntity.clear();
+    m_OrderedEntities.clear();
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────────
@@ -322,8 +329,12 @@ void Scene::DestroyEntity(entt::entity entity) {
         }
     }
 
-    if (const auto* info = m_Registry.try_get<CEntityInfo>(entity))
+    if (const auto* info = m_Registry.try_get<CEntityInfo>(entity)) {
         m_IDToEntity.erase(info->id);
+        auto it = std::find(m_OrderedEntities.begin(), m_OrderedEntities.end(), entity);
+        if (it != m_OrderedEntities.end())
+            m_OrderedEntities.erase(it);
+    }
 
     // Match Clear() behavior: fire OnDestroy for every component type before
     // the registry destructs the entity. Skipping this leaves ScriptManager

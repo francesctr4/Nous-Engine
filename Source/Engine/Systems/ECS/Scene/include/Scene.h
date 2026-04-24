@@ -68,6 +68,7 @@ private:
 
     entt::registry                             m_Registry;
     std::unordered_map<uint32_t, entt::entity> m_IDToEntity;
+    std::vector<entt::entity>                  m_OrderedEntities;
     std::string                                m_Name;
     mutable std::mutex                         m_Mutex;
     ModuleScene*                               m_ModuleScene     = nullptr;
