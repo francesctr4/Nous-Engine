@@ -8,9 +8,12 @@
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterMaterial/include/ImporterMaterial.h"
 #include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
+#include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -202,6 +205,12 @@ void Scene::Serialize(const std::string& filepath) const {
     root.Set("GameObjects", std::move(goArr));
 
     JsonFile::SaveToFile(root, filepath);
+
+    m_Registry.view<CMaterial>().each([](const CMaterial& c) {
+        if (c.material && !c.material->GetAssetsPath().empty())
+            ImporterMaterial::SaveMaterialToAssets(c.material);
+    });
+
     NOUS_INFO("Scene saved: %s", filepath.c_str());
 }
 
@@ -254,6 +263,13 @@ void Scene::Deserialize(const std::string& filepath) {
             m_Registry.get<CHierarchy>(go.GetEntity()).parent = parentEntity;
             m_Registry.get<CHierarchy>(parentEntity).children.push_back(go.GetEntity());
         }
+    }
+
+    for (auto& [go, parentID] : created)
+    {
+        if (!go.IsValid()) continue;
+        if (go.TryGetComponent<CPrefab>())
+            PrefabManager::ReloadPrefabInstance(go, this);
     }
 
     NOUS_DEBUG("Loaded scene: %s with %d objects", filepath.c_str(), count);

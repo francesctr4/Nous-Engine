@@ -7,6 +7,8 @@
 #include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterMaterial/include/ImporterMaterial.h"
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
@@ -106,6 +108,13 @@ void PrefabManager::SavePrefab(GameObject root, const std::string& filePath)
     fileRoot.Set("version",     1.0);
     fileRoot.Set("GameObjects", std::move(goArr));
     JsonFile::SaveToFile(fileRoot, filePath);
+
+    for (auto go : allGOs)
+    {
+        if (auto* cm = go.TryGetComponent<CMaterial>())
+            if (cm->material && !cm->material->GetAssetsPath().empty())
+                ImporterMaterial::SaveMaterialToAssets(cm->material);
+    }
 
     NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Saved prefab '%s' → %s (%zu object(s))",
         root.GetName().c_str(), filePath.c_str(), allGOs.size());
