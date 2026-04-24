@@ -38,6 +38,72 @@
             ]
         },
         {
+            "uid": 894767494,
+            "name": "Sphere",
+            "parent": 1302664073,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.70710676908493042,
+                        -0.70710676908493042,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        100,
+                        99.994979858398438,
+                        99.994979858398438
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\SpherePBR.fbx",
+                    "libraryPath": "Library\\Meshes\\827778096.nmesh",
+                    "resourceUID": 4274558043,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\Sphere_material.nmat",
+                    "libraryPath": "Library\\Materials\\1852952231.nmat",
+                    "resourceUID": 1852952231
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [],
+                    "properties": {
+                        "MoveScript": {
+                            "m_amplitude": {
+                                "type": 0,
+                                "value": 200
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 5
+                            }
+                        },
+                        "RotateY": {
+                            "m_speed": {
+                                "type": 0,
+                                "value": 90
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
             "uid": 2819515318,
             "name": "Directional Light",
             "parent": 0,
@@ -113,6 +179,20 @@
                     "farPlane": 10000,
                     "aspectRatio": 1.8879055976867676,
                     "isMainCamera": true
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [
+                        "CameraMovement"
+                    ],
+                    "properties": {
+                        "CameraMovement": {
+                            "m_speed": {
+                                "type": 0,
+                                "value": 50
+                            }
+                        }
+                    }
                 }
             ]
         },
@@ -203,62 +283,6 @@
                             "m_target": {
                                 "type": 3,
                                 "value": 1302664073
-                            }
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "uid": 1677009262,
-            "name": "Sphere",
-            "parent": 1302664073,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "orientation": [
-                        0.70710670948028564,
-                        -0.7071068286895752,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        -90.000007629394531,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        100,
-                        99.994979858398438,
-                        99.994979858398438
-                    ]
-                },
-                {
-                    "type": "CMesh",
-                    "assetPath": "Assets\\Meshes\\SpherePBR.fbx",
-                    "libraryPath": "Library\\Meshes\\827778096.nmesh",
-                    "resourceUID": 294307130,
-                    "submeshIndex": 0
-                },
-                {
-                    "type": "CMaterial",
-                    "assetPath": "Assets\\Materials\\Sphere_material.nmat",
-                    "libraryPath": "Library\\Materials\\1852952231.nmat",
-                    "resourceUID": 1852952231
-                },
-                {
-                    "type": "CScript",
-                    "scripts": [],
-                    "properties": {
-                        "RotateY": {
-                            "m_speed": {
-                                "type": 0,
-                                "value": 90
                             }
                         }
                     }

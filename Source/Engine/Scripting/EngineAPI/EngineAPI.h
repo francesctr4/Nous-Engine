@@ -4,18 +4,26 @@
 // Forward declarations
 struct LoggerAPI;
 struct InputAPI;
+struct TimeAPI;
 struct GameObjectAPI;
+struct ComponentAPI;
 struct LightAPI;
 struct MaterialAPI;
+struct CameraAPI;
+struct SceneAPI;
 
 // --- Engine API (root) ---
 struct EngineAPI
 {
-    LoggerAPI*    Logger;
-    InputAPI*     Input;
+    LoggerAPI*     Logger;
+    InputAPI*      Input;
+    TimeAPI*       Time;
     GameObjectAPI* GameObject;
-    LightAPI*     Light;
-    MaterialAPI*  Material;
+    ComponentAPI*  Component;
+    LightAPI*      Light;
+    MaterialAPI*   Material;
+    CameraAPI*     Camera;
+    SceneAPI*      Scene;
 };
 
 // Only declare here

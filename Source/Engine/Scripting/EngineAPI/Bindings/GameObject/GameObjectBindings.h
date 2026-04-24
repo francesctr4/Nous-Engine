@@ -20,6 +20,27 @@ struct GameObjectAPI
 
     // Lookup — returns 0 if not found
     uint32_t (*FindByName)(const char* name) = nullptr;
+
+    // Transform — direction vectors (derived from orientation quaternion)
+    void (*GetForward)(uint32_t id, float* x, float* y, float* z) = nullptr;
+    void (*GetRight)  (uint32_t id, float* x, float* y, float* z) = nullptr;
+    void (*GetUp)     (uint32_t id, float* x, float* y, float* z) = nullptr;
+
+    // Transform — relative movement (world-space delta)
+    void (*Translate)(uint32_t id, float dx, float dy, float dz) = nullptr;
+
+    // Transform — rotation delta in Euler degrees (world-space pre-multiply)
+    void (*Rotate)(uint32_t id, float dx, float dy, float dz) = nullptr;
+
+    // Hierarchy
+    uint32_t (*GetParent)    (uint32_t id)                 = nullptr; // 0 if no parent
+    void     (*SetParent)    (uint32_t id, uint32_t parentId) = nullptr; // 0 = detach
+    uint32_t (*GetChildCount)(uint32_t id)                 = nullptr;
+    uint32_t (*GetChild)     (uint32_t id, uint32_t index) = nullptr; // 0 if out of range
+
+    // Name
+    void (*GetName)(uint32_t id, char* buffer, int bufferSize) = nullptr;
+    void (*SetName)(uint32_t id, const char* name)             = nullptr;
 };
 
 class ModuleScene;

@@ -115,4 +115,107 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
         const GameObject go = s_scene->activeScene->FindGameObjectByName(name);
         return go.IsValid() ? go.GetID() : 0;
     };
+
+    gameObject.GetForward = [](uint32_t id, float* x, float* y, float* z) {
+        if (!s_scene || !s_scene->activeScene) return;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
+        const glm::vec3 fwd = go.GetComponent<CTransform>().GetForward();
+        if (x) *x = fwd.x;
+        if (y) *y = fwd.y;
+        if (z) *z = fwd.z;
+    };
+
+    gameObject.GetRight = [](uint32_t id, float* x, float* y, float* z) {
+        if (!s_scene || !s_scene->activeScene) return;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
+        const glm::vec3 right = go.GetComponent<CTransform>().GetRight();
+        if (x) *x = right.x;
+        if (y) *y = right.y;
+        if (z) *z = right.z;
+    };
+
+    gameObject.GetUp = [](uint32_t id, float* x, float* y, float* z) {
+        if (!s_scene || !s_scene->activeScene) return;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
+        const glm::vec3 up = go.GetComponent<CTransform>().GetUp();
+        if (x) *x = up.x;
+        if (y) *y = up.y;
+        if (z) *z = up.z;
+    };
+
+    gameObject.Translate = [](uint32_t id, float dx, float dy, float dz) {
+        if (!s_scene || !s_scene->activeScene) return;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
+        auto& transform = go.GetComponent<CTransform>();
+        transform.Translate(glm::vec3(dx, dy, dz));
+        transform.UpdateMatrix();
+    };
+
+    gameObject.Rotate = [](uint32_t id, float dx, float dy, float dz) {
+        if (!s_scene || !s_scene->activeScene) return;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
+        auto& transform = go.GetComponent<CTransform>();
+        transform.Rotate(glm::quat(glm::radians(glm::vec3(dx, dy, dz))));
+        transform.UpdateMatrix();
+    };
+
+    gameObject.GetParent = [](uint32_t id) -> uint32_t {
+        if (!s_scene || !s_scene->activeScene) return 0;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid()) return 0;
+        const GameObject parent = go.GetParent();
+        return parent.IsValid() ? parent.GetID() : 0;
+    };
+
+    gameObject.SetParent = [](uint32_t id, uint32_t parentId) {
+        if (!s_scene || !s_scene->activeScene) return;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid()) { NOUS_WARN("[GameObjectAPI] SetParent: GameObject %u not found", id); return; }
+        if (parentId == 0) {
+            go.SetParent({});
+        } else {
+            GameObject parent = s_scene->activeScene->GetGameObjectByID(parentId);
+            if (!parent.IsValid()) { NOUS_WARN("[GameObjectAPI] SetParent: parent %u not found", parentId); return; }
+            go.SetParent(parent);
+        }
+    };
+
+    gameObject.GetChildCount = [](uint32_t id) -> uint32_t {
+        if (!s_scene || !s_scene->activeScene) return 0;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid()) return 0;
+        return static_cast<uint32_t>(go.GetChildren().size());
+    };
+
+    gameObject.GetChild = [](uint32_t id, uint32_t index) -> uint32_t {
+        if (!s_scene || !s_scene->activeScene) return 0;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid()) return 0;
+        const auto children = go.GetChildren();
+        if (index >= children.size()) return 0;
+        return children[index].GetID();
+    };
+
+    gameObject.GetName = [](uint32_t id, char* buffer, int bufferSize) {
+        if (!s_scene || !s_scene->activeScene || !buffer || bufferSize <= 0) return;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid()) return;
+        const std::string& name = go.GetName();
+        const int len = static_cast<int>(name.size());
+        const int copyLen = (len < bufferSize - 1) ? len : bufferSize - 1;
+        name.copy(buffer, copyLen);
+        buffer[copyLen] = '\0';
+    };
+
+    gameObject.SetName = [](uint32_t id, const char* name) {
+        if (!s_scene || !s_scene->activeScene || !name) return;
+        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!go.IsValid()) { NOUS_WARN("[GameObjectAPI] SetName: GameObject %u not found", id); return; }
+        go.SetName(name);
+    };
 }

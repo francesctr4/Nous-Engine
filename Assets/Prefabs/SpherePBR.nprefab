@@ -34,7 +34,7 @@
             ]
         },
         {
-            "uid": 627290845,
+            "uid": 894767494,
             "name": "Sphere",
             "parent": 1302664073,
             "components": [
@@ -46,14 +46,14 @@
                         0
                     ],
                     "orientation": [
-                        0.99701416492462158,
+                        0.70710676908493042,
+                        -0.70710676908493042,
                         0,
-                        0.077218994498252869,
                         0
                     ],
                     "rotation": [
+                        -90,
                         0,
-                        8.8574628829956055,
                         0
                     ],
                     "scale": [
@@ -66,7 +66,7 @@
                     "type": "CMesh",
                     "assetPath": "Assets\\Meshes\\SpherePBR.fbx",
                     "libraryPath": "Library\\Meshes\\827778096.nmesh",
-                    "resourceUID": 422936419,
+                    "resourceUID": 4274558043,
                     "submeshIndex": 0
                 },
                 {
@@ -77,18 +77,16 @@
                 },
                 {
                     "type": "CScript",
-                    "scripts": [
-                        "MoveScript"
-                    ],
+                    "scripts": [],
                     "properties": {
                         "MoveScript": {
                             "m_amplitude": {
                                 "type": 0,
-                                "value": 8.8999996185302734
+                                "value": 200
                             },
                             "m_speed": {
                                 "type": 0,
-                                "value": 36.200000762939453
+                                "value": 5
                             }
                         },
                         "RotateY": {

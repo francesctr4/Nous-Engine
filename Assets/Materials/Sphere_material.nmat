@@ -1,6 +1,13 @@
 {
     "uniforms": [
         {
+            "name": "specularIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
             "name": "emissiveColor",
             "type": "vec4",
             "value": [
@@ -11,20 +18,17 @@
             ]
         },
         {
-            "name": "normalStrength",
+            "name": "shininessScale",
             "type": "float",
             "value": [
-                1
+                -10
             ]
         },
         {
-            "name": "albedoColor",
-            "type": "vec4",
+            "name": "normalStrength",
+            "type": "float",
             "value": [
-                1,
-                1,
-                1,
-                1
+                -8.8900003433227539
             ]
         },
         {
@@ -38,42 +42,7 @@
             ]
         },
         {
-            "name": "metallic",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
-            "name": "roughness",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
-            "name": "aoStrength",
-            "type": "float",
-            "value": [
-                4
-            ]
-        },
-        {
             "name": "aoIntensity",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
-            "name": "specularIntensity",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
-            "name": "shininessScale",
             "type": "float",
             "value": [
                 1
@@ -130,7 +99,7 @@
             "library_path": "Library\/Textures\/216461560.png"
         }
     ],
-    "shader_uid": 1190405774,
-    "shader_asset_path": "Assets\\Shaders\\ForwardPBR.glsl",
-    "shader_library_path": "Library\/Shaders\/1190405774"
+    "shader_uid": 1611773809,
+    "shader_asset_path": "Assets\\Shaders\\HolographicIridescent.glsl",
+    "shader_library_path": "Library\/Shaders\/1611773809"
 }
