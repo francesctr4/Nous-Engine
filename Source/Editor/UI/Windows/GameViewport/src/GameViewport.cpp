@@ -36,8 +36,6 @@ void GameViewport::DrawContent()
 	constexpr auto backgroundColor = IM_COL32(100, 100, 100, 255);
 	constexpr auto borderColor = IM_COL32(255, 255, 255, 255);
 
-    // Rendering context
-    const VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
     // Background
@@ -46,6 +44,27 @@ void GameViewport::DrawContent()
         contentEnd,
         backgroundColor
     );
+
+    ModuleScene* scene = editorContext->GetScene();
+    if (!scene || !scene->HasMainCamera())
+    {
+        constexpr auto  textColor = IM_COL32(200, 200, 200, 255);
+        constexpr char  message[] = "No game camera in scene";
+        constexpr float fontSize  = 20.0f;
+        ImFont*         font      = ImGui::GetFont();
+        const ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, -1.0f, message);
+        const ImVec2 textPos(
+            contentPos.x + (contentSize.x - textSize.x) * 0.5f,
+            contentPos.y + (contentSize.y - textSize.y) * 0.5f
+        );
+        drawList->AddText(font, fontSize, textPos, textColor, message);
+
+        drawList->AddRect(contentPos, contentEnd, borderColor);
+        return;
+    }
+
+    // Rendering context
+    const VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 
     // Main image
     ImGui::SetCursorPos(contentMin);

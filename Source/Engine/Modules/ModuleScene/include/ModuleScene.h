@@ -84,6 +84,9 @@ public:
 	// Returns the per-frame snapshot built in PostUpdate for consumption by the renderer.
 	NOUS_ENGINE_API const SceneRenderData& GetRenderData() const { return m_renderData; }
 
+	// Returns true if the active scene contains at least one CCamera with isMainCamera=true.
+	NOUS_ENGINE_API bool HasMainCamera() const;
+
 public:
 
 	Scene*         activeScene    = nullptr;

@@ -543,6 +543,19 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
         modelName.c_str(), submeshes.size());
 }
 
+bool ModuleScene::HasMainCamera() const
+{
+    if (!activeScene)
+        return false;
+
+    for (auto [entity, cam] : activeScene->GetRegistry().view<CCamera>().each())
+    {
+        if (cam.isMainCamera)
+            return true;
+    }
+    return false;
+}
+
 void ModuleScene::EnsureMainCamera() const
 {
     if (!activeScene)
