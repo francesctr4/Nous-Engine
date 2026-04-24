@@ -215,3 +215,13 @@ void JsonObject::Remove(std::string_view key) {
 bool JsonObject::IsEmpty() const {
     return m_Value == nullptr;
 }
+
+std::vector<std::string> JsonObject::GetKeys() const {
+    std::vector<std::string> keys;
+    if (!m_Object) return keys;
+    const size_t count = json_object_get_count(m_Object);
+    keys.reserve(count);
+    for (size_t i = 0; i < count; ++i)
+        keys.emplace_back(json_object_get_name(m_Object, i));
+    return keys;
+}

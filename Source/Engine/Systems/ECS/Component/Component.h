@@ -2,12 +2,9 @@
 
 #include <string>
 #include <entt/entt.hpp>
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 class GameObject;
-
-typedef struct json_object_t JSON_Object;
-typedef struct json_array_t  JSON_Array;
-typedef struct json_value_t  JSON_Value;
 
 class Component {
 public:
@@ -23,8 +20,8 @@ public:
     virtual void OnUpdate(float deltaTime) {}
     virtual void OnDestroy() {}
 
-    virtual JSON_Value* Serialize()          const = 0;
-    virtual void        Deserialize(JSON_Object* obj) = 0;
+    virtual JsonObject Serialize()                    const = 0;
+    virtual void       Deserialize(const JsonObject& obj)  = 0;
 
     static Component* CreateComponent(const std::string& type);
 

@@ -9,10 +9,6 @@
 #include <vector>
 #include <stdexcept>
 
-using JSON_Object = json_object_t;
-using JSON_Array  = json_array_t;
-using JSON_Value  = json_value_t;
-
 class Scene;
 
 // Lightweight value-type handle to an entity in an entt::registry.
@@ -67,8 +63,8 @@ public:
 
     // ── Serialization ─────────────────────────────────────────────────────────
 
-    JSON_Value*       Serialize() const;
-    static GameObject Deserialize(const JSON_Object* obj, Scene* scene);
+    JsonObject        Serialize() const;
+    static GameObject Deserialize(const JsonObject& obj, Scene* scene);
 
     // Used during two-phase deserialization to wire parent relationships.
     uint32_t GetParentID() const;

@@ -6,38 +6,31 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
-// Parson
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
-JSON_Value *CMesh::Serialize() const {
-    JSON_Value* objVal = json_value_init_object();
-    JSON_Object* obj = json_value_get_object(objVal);
-
-    json_object_set_string(obj, "type", GetType().c_str());
-    json_object_set_string(obj, "assetPath", mesh ? mesh->GetAssetsPath().c_str() : "");
+JsonObject CMesh::Serialize() const {
+    JsonObject root;
+    root.Set("type",      GetType());
+    root.Set("assetPath", mesh ? mesh->GetAssetsPath() : "");
 
     // Store library path and UID so GameApp can load without .meta files.
     if (mesh)
     {
-        json_object_set_string(obj, "libraryPath", mesh->GetLibraryPath().c_str());
-        json_object_set_number(obj, "resourceUID", static_cast<double>(mesh->GetUID()));
+        root.Set("libraryPath", mesh->GetLibraryPath());
+        root.Set("resourceUID", static_cast<double>(mesh->GetUID()));
     }
 
     // Only write submeshIndex for actual sub-resources; omit for merged meshes so
     // old scene files (without this field) continue to load via CreateResource().
     if (submeshIndex >= 0)
-        json_object_set_number(obj, "submeshIndex", static_cast<double>(submeshIndex));
+        root.Set("submeshIndex", submeshIndex);
 
-    return objVal;
+    return root;
 }
 
-void CMesh::Deserialize(JSON_Object *obj) {
-    const char* assetPathRaw = json_object_get_string(obj, "assetPath");
-    const std::string assetPathStr = assetPathRaw ? assetPathRaw : "";
-    const char* assetPath = assetPathStr.c_str();
-
-    const char* libraryPathRaw = json_object_get_string(obj, "libraryPath");
-    const std::string libraryPath  = libraryPathRaw ? libraryPathRaw : "";
+void CMesh::Deserialize(const JsonObject& obj) {
+    const std::string assetPathStr = obj.GetString("assetPath");
+    const std::string libraryPath  = obj.GetString("libraryPath");
 
     // Neither path set — GO has no mesh reference, leave it null.
     if (assetPathStr.empty() && libraryPath.empty())
@@ -45,17 +38,12 @@ void CMesh::Deserialize(JSON_Object *obj) {
         mesh = nullptr;
         return;
     }
-    const JSON_Value* uidVal       = json_object_get_value(obj, "resourceUID");
-    const uint32 resourceUID          = uidVal ? static_cast<uint32>(json_value_get_number(uidVal)) : 0;
+    const uint32 resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
 
-    // Detect whether this component references a specific submesh.
-    // json_object_get_value returns nullptr when the key is absent (old scenes).
-    const JSON_Value* subIdxVal = json_object_get_value(obj, "submeshIndex");
-    if (subIdxVal)
+    if (obj.HasKey("submeshIndex"))
     {
-        submeshIndex = static_cast<int32_t>(json_value_get_number(subIdxVal));
+        submeshIndex = obj.GetInt("submeshIndex");
 
-        // Try library path first (GAME mode / no .meta needed).
         auto go = GetGameObject();
         Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
         if (!scene) { mesh = nullptr; return; }
@@ -63,11 +51,11 @@ void CMesh::Deserialize(JSON_Object *obj) {
         if (!libraryPath.empty())
         {
             mesh = scene->GetResourceManager()->RequestOrCreateSubMeshResourceFromLibrary(
-                libraryPath, submeshIndex, assetPath);
+                libraryPath, submeshIndex, assetPathStr.c_str());
         }
         if (!mesh && !assetPathStr.empty())
         {
-            mesh = scene->GetResourceManager()->RequestOrCreateSubMeshResource(assetPath, submeshIndex);
+            mesh = scene->GetResourceManager()->RequestOrCreateSubMeshResource(assetPathStr.c_str(), submeshIndex);
         }
     }
     else
@@ -82,12 +70,12 @@ void CMesh::Deserialize(JSON_Object *obj) {
         if (!libraryPath.empty() && resourceUID != 0)
         {
             mesh = down_cast<ResourceMesh*>(scene->GetResourceManager()->CreateResourceFromLibrary(
-                resourceUID, ResourceType::MESH, nous::engine::filesystem::GetFilename(assetPath),
-                assetPath, libraryPath));
+                resourceUID, ResourceType::MESH, nous::engine::filesystem::GetFilename(assetPathStr),
+                assetPathStr, libraryPath));
         }
         if (!mesh && !assetPathStr.empty())
         {
-            mesh = down_cast<ResourceMesh*>(scene->GetResourceManager()->CreateResource(assetPath));
+            mesh = down_cast<ResourceMesh*>(scene->GetResourceManager()->CreateResource(assetPathStr.c_str()));
         }
     }
 }

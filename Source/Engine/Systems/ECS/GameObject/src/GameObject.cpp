@@ -12,10 +12,9 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Logger/Logger.h"
 
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
 #include <ranges>
 #include <algorithm>
-#include <cstring>
 
 // ── Identity ──────────────────────────────────────────────────────────────────
 
@@ -157,61 +156,55 @@ uint32_t GameObject::GetParentID() const {
 
 // ── Serialization ─────────────────────────────────────────────────────────────
 
-JSON_Value* GameObject::Serialize() const {
-    JSON_Value*  objVal = json_value_init_object();
-    JSON_Object* obj    = json_value_get_object(objVal);
-
+JsonObject GameObject::Serialize() const {
     const uint32_t myID     = GetID();
     const uint32_t parentID = GetParentID();
 
-    json_object_set_number(obj, "uid",    myID);
-    json_object_set_string(obj, "name",   GetName().c_str());
-    json_object_set_number(obj, "parent", parentID);
-
     NOUS_INFO("Serializing: %s (ID: %u) -> Parent ID: %u", GetName().c_str(), myID, parentID);
 
-    JSON_Value*  componentsVal = json_value_init_array();
-    JSON_Array*  componentsArr = json_value_get_array(componentsVal);
+    JsonArray componentsArr;
+    for (Component* c : GetAllComponents())
+        componentsArr.Append(c->Serialize());
 
-    for (Component* c : GetAllComponents()) {
-        if (JSON_Value* v = c->Serialize())
-            json_array_append_value(componentsArr, v);
-    }
-
-    json_object_set_value(obj, "components", componentsVal);
-    return objVal;
+    JsonObject obj;
+    obj.Set("uid",        static_cast<double>(myID));
+    obj.Set("name",       GetName());
+    obj.Set("parent",     static_cast<double>(parentID));
+    obj.Set("components", std::move(componentsArr));
+    return obj;
 }
 
 // static
-GameObject GameObject::Deserialize(const JSON_Object* obj, Scene* scene) {
-    const auto  uid      = static_cast<uint32_t>(json_object_get_number(obj, "uid"));
-    const char* name     = json_object_get_string(obj, "name");
-    const auto  parentID = static_cast<uint32_t>(json_object_get_number(obj, "parent"));
+GameObject GameObject::Deserialize(const JsonObject& obj, Scene* scene) {
+    const auto        uid      = static_cast<uint32_t>(obj.GetDouble("uid",    0.0));
+    const std::string name     = obj.GetString("name");
+    const auto        parentID = static_cast<uint32_t>(obj.GetDouble("parent", 0.0));
 
-    entt::registry& reg    = const_cast<entt::registry&>(scene->GetRegistry());
+    entt::registry& reg = const_cast<entt::registry&>(scene->GetRegistry());
     const entt::entity entity = reg.create();
-    reg.emplace<CEntityInfo>(entity, uid, name ? name : "");
+    reg.emplace<CEntityInfo>(entity, uid, name);
     reg.emplace<CHierarchy>(entity);
 
     GameObject go(entity, &reg);
 
-    NOUS_INFO("Deserializing: %s (ID: %u) -> Parent ID: %u", name ? name : "", uid, parentID);
+    NOUS_INFO("Deserializing: %s (ID: %u) -> Parent ID: %u", name.c_str(), uid, parentID);
 
-    if (const JSON_Array* comps = json_object_get_array(obj, "components")) {
-        const size_t count = json_array_get_count(comps);
-        for (size_t i = 0; i < count; ++i) {
-            JSON_Object* compObj = json_array_get_object(comps, i);
-            const char*  type    = json_object_get_string(compObj, "type");
-            if (!type) continue;
+    JsonArray comps = obj.GetArray("components");
+    if (!comps.IsEmpty()) {
+        const int count = comps.Count();
+        for (int i = 0; i < count; ++i) {
+            JsonObject compObj = comps.GetObject(i);
+            const std::string type = compObj.GetString("type");
+            if (type.empty()) continue;
 
-            if      (strcmp(type, "CTransform") == 0) { go.AddComponent<CTransform>().Deserialize(compObj); }
-            else if (strcmp(type, "CMesh")      == 0) { go.AddComponent<CMesh>()     .Deserialize(compObj); }
-            else if (strcmp(type, "CMaterial")  == 0) { go.AddComponent<CMaterial>() .Deserialize(compObj); }
-            else if (strcmp(type, "CCamera")    == 0) { go.AddComponent<CCamera>()   .Deserialize(compObj); }
-            else if (strcmp(type, "CLight")     == 0) { go.AddComponent<CLight>()    .Deserialize(compObj); }
-            else if (strcmp(type, "CScript")    == 0) { go.AddComponent<CScript>()   .Deserialize(compObj); }
-            else if (strcmp(type, "CPrefab")    == 0) { go.AddComponent<CPrefab>()   .Deserialize(compObj); }
-            else { NOUS_WARN("Unknown component type during deserialization: %s", type); }
+            if      (type == "CTransform") { go.AddComponent<CTransform>().Deserialize(compObj); }
+            else if (type == "CMesh")      { go.AddComponent<CMesh>()     .Deserialize(compObj); }
+            else if (type == "CMaterial")  { go.AddComponent<CMaterial>() .Deserialize(compObj); }
+            else if (type == "CCamera")    { go.AddComponent<CCamera>()   .Deserialize(compObj); }
+            else if (type == "CLight")     { go.AddComponent<CLight>()    .Deserialize(compObj); }
+            else if (type == "CScript")    { go.AddComponent<CScript>()   .Deserialize(compObj); }
+            else if (type == "CPrefab")    { go.AddComponent<CPrefab>()   .Deserialize(compObj); }
+            else { NOUS_WARN("Unknown component type during deserialization: %s", type.c_str()); }
         }
     }
 

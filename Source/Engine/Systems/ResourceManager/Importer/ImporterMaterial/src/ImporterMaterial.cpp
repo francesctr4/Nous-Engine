@@ -8,15 +8,14 @@
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
-#include <parson.h>
 #include <algorithm>
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include "Engine/Core/Logger/Logger.h"
-
-#include <cstring>
 
 static const char* UniformValueTypeToString(UniformValueType type)
 {
@@ -34,17 +33,16 @@ static const char* UniformValueTypeToString(UniformValueType type)
     return "vec4";
 }
 
-static UniformValueType StringToUniformValueType(const char* str)
+static UniformValueType StringToUniformValueType(std::string_view str)
 {
-    if (!str) return UniformValueType::Vec4;
-    if (std::strcmp(str, "float") == 0) return UniformValueType::Float;
-    if (std::strcmp(str, "vec2")  == 0) return UniformValueType::Vec2;
-    if (std::strcmp(str, "vec3")  == 0) return UniformValueType::Vec3;
-    if (std::strcmp(str, "vec4")  == 0) return UniformValueType::Vec4;
-    if (std::strcmp(str, "int")   == 0) return UniformValueType::Int;
-    if (std::strcmp(str, "ivec2") == 0) return UniformValueType::IVec2;
-    if (std::strcmp(str, "ivec3") == 0) return UniformValueType::IVec3;
-    if (std::strcmp(str, "ivec4") == 0) return UniformValueType::IVec4;
+    if (str == "float") return UniformValueType::Float;
+    if (str == "vec2")  return UniformValueType::Vec2;
+    if (str == "vec3")  return UniformValueType::Vec3;
+    if (str == "vec4")  return UniformValueType::Vec4;
+    if (str == "int")   return UniformValueType::Int;
+    if (str == "ivec2") return UniformValueType::IVec2;
+    if (str == "ivec3") return UniformValueType::IVec3;
+    if (str == "ivec4") return UniformValueType::IVec4;
     return UniformValueType::Vec4;
 }
 
@@ -59,122 +57,125 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
 {
     NOUS_DELETE(inResource, MemoryTag::RESOURCE_MATERIAL);
 
-    JSON_Value* srcVal = json_parse_file(metaFileData.assetsPath.c_str());
-    if (!srcVal)
+    JsonObject root = JsonFile::LoadFromFile(metaFileData.assetsPath);
+    if (root.IsEmpty())
         return nous::engine::filesystem::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
 
-    JSON_Object* srcObj = json_value_get_object(srcVal);
-
     // ── Enrich each entry in the texture_maps array with uid + library_path ──
-    if (JSON_Array* texMapsArr = json_object_get_array(srcObj, "texture_maps"))
     {
-        const size_t count = json_array_get_count(texMapsArr);
-        for (size_t i = 0; i < count; ++i)
+        JsonArray origMaps = root.GetArray("texture_maps");
+        if (!origMaps.IsEmpty())
         {
-            JSON_Object* entry = json_array_get_object(texMapsArr, i);
-            if (!entry) continue;
-            const char* rawPath = json_object_get_string(entry, "asset_path");
-            if (!rawPath) continue;
-
-            std::string texPath = nous::engine::filesystem::NormalizePath(rawPath);
-
-            MetaFileData texMeta;
-            if (ResourceImportPipeline::GetAssetMetaData(texPath, texMeta))
+            JsonArray newMaps;
+            const int count = origMaps.Count();
+            for (int i = 0; i < count; ++i)
             {
-                std::string libPath = nous::engine::filesystem::NormalizePath(texMeta.libraryPath);
-                json_object_set_number(entry, "uid",          static_cast<double>(texMeta.uid));
-                json_object_set_string(entry, "library_path", libPath.c_str());
+                JsonObject entry = origMaps.GetObject(i);
+                if (entry.IsEmpty()) continue;
+
+                const std::string rawPath = entry.GetString("asset_path");
+                if (!rawPath.empty())
+                {
+                    const std::string texPath = nous::engine::filesystem::NormalizePath(rawPath);
+                    MetaFileData texMeta;
+                    if (ResourceImportPipeline::GetAssetMetaData(texPath, texMeta))
+                    {
+                        entry.Set("uid",          static_cast<double>(texMeta.uid));
+                        entry.Set("library_path", nous::engine::filesystem::NormalizePath(texMeta.libraryPath));
+                    }
+                }
+                newMaps.Append(std::move(entry));
             }
+            root.Set("texture_maps", std::move(newMaps));
         }
     }
 
     // ── Enrich shader_asset_path with shader_uid + shader_library_path ──
-    if (const char* rawShaderPath = json_object_get_string(srcObj, "shader_asset_path"))
     {
-        std::string shaderPath = nous::engine::filesystem::NormalizePath(rawShaderPath);
-
-        MetaFileData shaderMeta;
-        if (ResourceImportPipeline::GetAssetMetaData(shaderPath, shaderMeta))
+        const std::string rawShaderPath = root.GetString("shader_asset_path");
+        if (!rawShaderPath.empty())
         {
-            std::string libPath = nous::engine::filesystem::NormalizePath(shaderMeta.libraryPath);
-            json_object_set_number(srcObj, "shader_uid",          static_cast<double>(shaderMeta.uid));
-            json_object_set_string(srcObj, "shader_library_path", libPath.c_str());
+            const std::string shaderPath = nous::engine::filesystem::NormalizePath(rawShaderPath);
+            MetaFileData shaderMeta;
+            if (ResourceImportPipeline::GetAssetMetaData(shaderPath, shaderMeta))
+            {
+                root.Set("shader_uid",          static_cast<double>(shaderMeta.uid));
+                root.Set("shader_library_path", nous::engine::filesystem::NormalizePath(shaderMeta.libraryPath));
+            }
         }
     }
 
-    const bool ret = json_serialize_to_file_pretty(srcVal, metaFileData.libraryPath.c_str()) == JSONSuccess;
-    json_value_free(srcVal);
-    return ret;
+    return JsonFile::SaveToFile(root, metaFileData.libraryPath);
 }
 
 // ---------------------------------------------------------------------------
 // Deserialize helpers
 // ---------------------------------------------------------------------------
 
-static void DeserializeUniforms(JSON_Object* root, ResourceMaterial* material)
+static void DeserializeUniforms(const JsonObject& root, ResourceMaterial* material)
 {
     // Data-driven: every uniform must live in the "uniforms" array. Members the
     // material doesn't declare are filled with reflection defaults at draw time.
-    JSON_Array* uniformsArr = json_object_get_array(root, "uniforms");
-    if (!uniformsArr) return;
+    JsonArray uniformsArr = root.GetArray("uniforms");
+    if (uniformsArr.IsEmpty()) return;
 
-    const size_t count = json_array_get_count(uniformsArr);
-    for (size_t i = 0; i < count; ++i)
+    const int count = uniformsArr.Count();
+    for (int i = 0; i < count; ++i)
     {
-        JSON_Object* entry = json_array_get_object(uniformsArr, i);
-        if (!entry) continue;
+        JsonObject entry = uniformsArr.GetObject(i);
+        if (entry.IsEmpty()) continue;
 
-        const char* name    = json_object_get_string(entry, "name");
-        const char* typeStr = json_object_get_string(entry, "type");
-        JSON_Array* valArr  = json_object_get_array(entry, "value");
-        if (!name || !valArr) continue;
+        const std::string name    = entry.GetString("name");
+        const std::string typeStr = entry.GetString("type");
+        JsonArray         valArr  = entry.GetArray("value");
+        if (name.empty() || valArr.IsEmpty()) continue;
 
         UniformValue uv = UniformValue::MakeDefault(StringToUniformValueType(typeStr));
 
         const uint32_t compCount = UniformValueComponentCount(uv.type);
-        const size_t   arrCount  = json_array_get_count(valArr);
+        const int      arrCount  = valArr.Count();
         if (UniformValueIsInt(uv.type))
         {
-            for (uint32_t c = 0; c < compCount && c < arrCount; ++c)
-                uv.idata[static_cast<int>(c)] = static_cast<int32_t>(json_array_get_number(valArr, c));
+            for (uint32_t c = 0; c < compCount && static_cast<int>(c) < arrCount; ++c)
+                uv.idata[static_cast<int>(c)] = static_cast<int32_t>(valArr.GetDouble(static_cast<int>(c)));
         }
         else
         {
-            for (uint32_t c = 0; c < compCount && c < arrCount; ++c)
-                uv.fdata[static_cast<int>(c)] = static_cast<float>(json_array_get_number(valArr, c));
+            for (uint32_t c = 0; c < compCount && static_cast<int>(c) < arrCount; ++c)
+                uv.fdata[static_cast<int>(c)] = valArr.GetFloat(static_cast<int>(c));
         }
 
         material->uniformValues[name] = uv;
     }
 }
 
-static void DeserializeTextureMaps(JSON_Object* root, ResourceMaterial* material,
+static void DeserializeTextureMaps(const JsonObject& root, ResourceMaterial* material,
                                     ModuleResourceManager* rm)
 {
     // Data-driven: every texture slot lives in the "texture_maps" array with
     // name + asset_path + uid + library_path. Save() enriches uid/library_path
     // at import time, so library copies always carry them.
-    JSON_Array* texMapsArr = json_object_get_array(root, "texture_maps");
-    if (!texMapsArr) return;
+    JsonArray texMapsArr = root.GetArray("texture_maps");
+    if (texMapsArr.IsEmpty()) return;
 
-    const size_t count = json_array_get_count(texMapsArr);
-    for (size_t i = 0; i < count; ++i)
+    const int count = texMapsArr.Count();
+    for (int i = 0; i < count; ++i)
     {
-        JSON_Object* entry = json_array_get_object(texMapsArr, i);
-        if (!entry) continue;
+        JsonObject entry = texMapsArr.GetObject(i);
+        if (entry.IsEmpty()) continue;
 
-        const char*  name      = json_object_get_string(entry, "name");
-        const char*  rawPath   = json_object_get_string(entry, "asset_path");
-        const char*  libRaw    = json_object_get_string(entry, "library_path");
-        const double uidDouble = json_object_get_number(entry, "uid");
-        if (!name || !rawPath || !libRaw || uidDouble == 0.0)
+        const std::string name      = entry.GetString("name");
+        const std::string rawPath   = entry.GetString("asset_path");
+        const std::string libRaw    = entry.GetString("library_path");
+        const double      uidDouble = entry.GetDouble("uid", 0.0);
+        if (name.empty() || rawPath.empty() || libRaw.empty() || uidDouble == 0.0)
         {
             NOUS_WARN("ImporterMaterial::Deserialize() — texture entry missing name/asset_path/uid/library_path; skipping.");
             continue;
         }
 
-        std::string assetPath = nous::engine::filesystem::NormalizePath(rawPath);
-        std::string libPath   = nous::engine::filesystem::NormalizePath(libRaw);
+        const std::string assetPath = nous::engine::filesystem::NormalizePath(rawPath);
+        const std::string libPath   = nous::engine::filesystem::NormalizePath(libRaw);
 
         const uint32      texUID  = static_cast<uint32>(uidDouble);
         const std::string texName = nous::engine::filesystem::GetFilename(assetPath);
@@ -185,33 +186,30 @@ static void DeserializeTextureMaps(JSON_Object* root, ResourceMaterial* material
             material->textureMaps[name].texture = tex;
         else
             NOUS_WARN("ImporterMaterial::Deserialize() — texture '%s' (slot '%s') could not be loaded.",
-                      assetPath.c_str(), name);
+                      assetPath.c_str(), name.c_str());
     }
 }
 
-static void DeserializeShader(JSON_Object* root, ResourceMaterial* material,
+static void DeserializeShader(const JsonObject& root, ResourceMaterial* material,
                                ModuleResourceManager* rm)
 {
     // Data-driven: shader_asset_path + shader_uid + shader_library_path are all
     // required. Save() enriches uid/library_path at import time.
-    const char* shaderAssetRaw = json_object_get_string(root, "shader_asset_path");
-    if (!shaderAssetRaw) return;
+    const std::string shaderAssetRaw = root.GetString("shader_asset_path");
+    if (shaderAssetRaw.empty()) return;
 
-    const char*  shaderLibRaw = json_object_get_string(root, "shader_library_path");
-    const double shaderUID    = json_object_get_number(root, "shader_uid");
-    if (!shaderLibRaw || shaderUID == 0.0)
+    const std::string shaderLibRaw = root.GetString("shader_library_path");
+    const double      shaderUID    = root.GetDouble("shader_uid", 0.0);
+    if (shaderLibRaw.empty() || shaderUID == 0.0)
     {
         NOUS_WARN("ImporterMaterial::Deserialize() — shader entry missing shader_uid/shader_library_path; falling back to built-in.");
         return;
     }
 
-    std::string       shaderAssetPath(shaderAssetRaw);
-    std::string       shaderLibPath(shaderLibRaw);
-    const std::string shaderName = nous::engine::filesystem::GetFilename(shaderAssetPath);
-
+    const std::string shaderName = nous::engine::filesystem::GetFilename(shaderAssetRaw);
     Resource* r = rm->CreateResourceFromLibrary(
         static_cast<uint32>(shaderUID), ResourceType::SHADER, shaderName,
-        shaderAssetPath, shaderLibPath);
+        shaderAssetRaw, shaderLibRaw);
 
     if (ResourceShader* loadedShader = r ? down_cast<ResourceShader*>(r) : nullptr)
     {
@@ -220,7 +218,7 @@ static void DeserializeShader(JSON_Object* root, ResourceMaterial* material,
     else
     {
         NOUS_WARN("ImporterMaterial::Deserialize() — shader '%s' could not be loaded; falling back to built-in.",
-                  shaderAssetPath.c_str());
+                  shaderAssetRaw.c_str());
     }
 }
 
@@ -230,19 +228,17 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
 {
     ResourceMaterial* material = down_cast<ResourceMaterial*>(outResource);
 
-    JSON_Value* rootVal = json_parse_file(libraryPath.c_str());
-    if (!rootVal)
+    JsonObject root = JsonFile::LoadFromFile(libraryPath);
+    if (root.IsEmpty())
     {
         NOUS_ERROR("ImporterMaterial::Deserialize() failed to load file '%s'", libraryPath.c_str());
         return false;
     }
-    JSON_Object* root = json_value_get_object(rootVal);
 
     DeserializeUniforms(root, material);
     DeserializeTextureMaps(root, material, mResourceManager);
     DeserializeShader(root, material, mResourceManager);
 
-    json_value_free(rootVal);
     return true;
 }
 
@@ -283,50 +279,36 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
 {
     if (!material) return false;
 
-    auto updateFile = [&](const std::string& filePath) -> bool
+    auto buildUniformsArray = [&]() -> JsonArray
     {
-        JSON_Value* val = json_parse_file(filePath.c_str());
-        if (!val)
+        JsonArray uniArr;
+        for (const auto& [name, uv] : material->uniformValues)
         {
-            NOUS_ERROR("ImporterMaterial::SaveMaterialToAssets() — could not open '%s'", filePath.c_str());
-            return false;
-        }
-        JSON_Object* obj = json_value_get_object(val);
+            JsonObject entry;
+            entry.Set("name", name);
+            entry.Set("type", UniformValueTypeToString(uv.type));
 
-        // Write uniforms array (one entry per uniform in the material).
-        {
-            JSON_Value* uniArrVal = json_value_init_array();
-            JSON_Array* uniArr    = json_value_get_array(uniArrVal);
-            for (const auto& [name, uv] : material->uniformValues)
+            JsonArray valArr;
+            const uint32_t compCount = UniformValueComponentCount(uv.type);
+            if (UniformValueIsInt(uv.type))
             {
-                JSON_Value*  entryVal = json_value_init_object();
-                JSON_Object* entry    = json_value_get_object(entryVal);
-                json_object_set_string(entry, "name", name.c_str());
-                json_object_set_string(entry, "type", UniformValueTypeToString(uv.type));
-
-                JSON_Value* valArrVal = json_value_init_array();
-                JSON_Array* valArr    = json_value_get_array(valArrVal);
-                const uint32_t compCount = UniformValueComponentCount(uv.type);
-                if (UniformValueIsInt(uv.type))
-                {
-                    for (uint32_t c = 0; c < compCount; ++c)
-                        json_array_append_number(valArr, static_cast<double>(uv.idata[static_cast<int>(c)]));
-                }
-                else
-                {
-                    for (uint32_t c = 0; c < compCount; ++c)
-                        json_array_append_number(valArr, static_cast<double>(uv.fdata[static_cast<int>(c)]));
-                }
-                json_object_set_value(entry, "value", valArrVal);
-
-                json_array_append_value(uniArr, entryVal);
+                for (uint32_t c = 0; c < compCount; ++c)
+                    valArr.Append(static_cast<double>(uv.idata[static_cast<int>(c)]));
             }
-            json_object_set_value(obj, "uniforms", uniArrVal);
+            else
+            {
+                for (uint32_t c = 0; c < compCount; ++c)
+                    valArr.Append(static_cast<double>(uv.fdata[static_cast<int>(c)]));
+            }
+            entry.Set("value", std::move(valArr));
+            uniArr.Append(std::move(entry));
         }
+        return uniArr;
+    };
 
-        // Write texture_maps array (one entry per assigned slot)
-        JSON_Value* arrVal = json_value_init_array();
-        JSON_Array* arr    = json_value_get_array(arrVal);
+    auto buildTextureMapsArray = [&]() -> JsonArray
+    {
+        JsonArray arr;
         for (const auto& [name, map] : material->textureMaps)
         {
             if (!map.texture) continue;
@@ -334,36 +316,42 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
             // — they have no asset on disk, so persisting an entry for them would
             // produce a broken reference on the next load.
             if (map.texture->GetAssetsPath().empty()) continue;
-            JSON_Value*  entryVal = json_value_init_object();
-            JSON_Object* entry    = json_value_get_object(entryVal);
-            json_object_set_string(entry, "name",         name.c_str());
-            json_object_set_string(entry, "asset_path",   map.texture->GetAssetsPath().c_str());
-            json_object_set_number(entry, "uid",          static_cast<double>(map.texture->GetUID()));
-            json_object_set_string(entry, "library_path", map.texture->GetLibraryPath().c_str());
-            json_array_append_value(arr, entryVal);
+            JsonObject entry;
+            entry.Set("name",         name);
+            entry.Set("asset_path",   map.texture->GetAssetsPath());
+            entry.Set("uid",          static_cast<double>(map.texture->GetUID()));
+            entry.Set("library_path", map.texture->GetLibraryPath());
+            arr.Append(std::move(entry));
         }
-        json_object_set_value(obj, "texture_maps", arrVal);
+        return arr;
+    };
 
-        // Shader keys (set or remove)
+    auto updateFile = [&](const std::string& filePath) -> bool
+    {
+        JsonObject obj = JsonFile::LoadFromFile(filePath);
+        if (obj.IsEmpty())
+        {
+            NOUS_ERROR("ImporterMaterial::SaveMaterialToAssets() — could not open '%s'", filePath.c_str());
+            return false;
+        }
+
+        obj.Set("uniforms",     buildUniformsArray());
+        obj.Set("texture_maps", buildTextureMapsArray());
+
         if (material->shader)
         {
-            json_object_set_number(obj, "shader_uid",
-                static_cast<double>(material->shaderUID));
-            json_object_set_string(obj, "shader_asset_path",
-                material->shader->GetAssetsPath().c_str());
-            json_object_set_string(obj, "shader_library_path",
-                material->shader->GetLibraryPath().c_str());
+            obj.Set("shader_uid",          static_cast<double>(material->shaderUID));
+            obj.Set("shader_asset_path",   material->shader->GetAssetsPath());
+            obj.Set("shader_library_path", material->shader->GetLibraryPath());
         }
         else
         {
-            json_object_remove(obj, "shader_uid");
-            json_object_remove(obj, "shader_asset_path");
-            json_object_remove(obj, "shader_library_path");
+            obj.Remove("shader_uid");
+            obj.Remove("shader_asset_path");
+            obj.Remove("shader_library_path");
         }
 
-        const bool ok = (json_serialize_to_file_pretty(val, filePath.c_str()) == JSONSuccess);
-        json_value_free(val);
-        return ok;
+        return JsonFile::SaveToFile(obj, filePath);
     };
 
     bool ok = updateFile(material->GetAssetsPath());
@@ -378,57 +366,40 @@ bool ImporterMaterial::CreateNewMaterialFile(const std::string& assetPath)
     // Ensure parent directory exists (e.g. Assets/Materials/).
     nous::engine::filesystem::CreateDirectory(nous::engine::filesystem::GetDirectory(assetPath));
 
-    JSON_Value*  rootVal = json_value_init_object();
-    JSON_Object* root    = json_value_get_object(rootVal);
-
-    // Default uniforms (matching the ForwardBlinnPhong InstanceUBO layout:
-    // diffuseColor, emissiveColor, then the four per-channel scalar params).
-    JSON_Value* uniArrVal = json_value_init_array();
-    JSON_Array* uniArr    = json_value_get_array(uniArrVal);
-
-    auto addVec4Uniform = [&](const char* name, double x, double y, double z, double w)
+    auto makeVec4Uniform = [](const char* name, double x, double y, double z, double w) -> JsonObject
     {
-        JSON_Value*  entryVal = json_value_init_object();
-        JSON_Object* entry    = json_value_get_object(entryVal);
-        json_object_set_string(entry, "name", name);
-        json_object_set_string(entry, "type", "vec4");
-        JSON_Value* valArrVal = json_value_init_array();
-        JSON_Array* valArr    = json_value_get_array(valArrVal);
-        json_array_append_number(valArr, x);
-        json_array_append_number(valArr, y);
-        json_array_append_number(valArr, z);
-        json_array_append_number(valArr, w);
-        json_object_set_value(entry, "value", valArrVal);
-        json_array_append_value(uniArr, entryVal);
+        JsonObject entry;
+        entry.Set("name", name);
+        entry.Set("type", "vec4");
+        JsonArray valArr;
+        valArr.Append(x); valArr.Append(y); valArr.Append(z); valArr.Append(w);
+        entry.Set("value", std::move(valArr));
+        return entry;
     };
 
-    auto addFloatUniform = [&](const char* name, double value)
+    auto makeFloatUniform = [](const char* name, double value) -> JsonObject
     {
-        JSON_Value*  entryVal = json_value_init_object();
-        JSON_Object* entry    = json_value_get_object(entryVal);
-        json_object_set_string(entry, "name", name);
-        json_object_set_string(entry, "type", "float");
-        JSON_Value* valArrVal = json_value_init_array();
-        JSON_Array* valArr    = json_value_get_array(valArrVal);
-        json_array_append_number(valArr, value);
-        json_object_set_value(entry, "value", valArrVal);
-        json_array_append_value(uniArr, entryVal);
+        JsonObject entry;
+        entry.Set("name", name);
+        entry.Set("type", "float");
+        JsonArray valArr;
+        valArr.Append(value);
+        entry.Set("value", std::move(valArr));
+        return entry;
     };
 
-    addVec4Uniform("diffuseColor",      1.0, 1.0, 1.0, 1.0);
-    addVec4Uniform("emissiveColor",     1.0, 1.0, 1.0, 1.0);
-    addFloatUniform("aoIntensity",       1.0);
-    addFloatUniform("normalStrength",    1.0);
-    addFloatUniform("specularIntensity", 1.0);
-    addFloatUniform("shininessScale",    1.0);
+    // Default uniforms (matching the ForwardBlinnPhong InstanceUBO layout).
+    JsonArray uniArr;
+    uniArr.Append(makeVec4Uniform("diffuseColor",      1.0, 1.0, 1.0, 1.0));
+    uniArr.Append(makeVec4Uniform("emissiveColor",     1.0, 1.0, 1.0, 1.0));
+    uniArr.Append(makeFloatUniform("aoIntensity",       1.0));
+    uniArr.Append(makeFloatUniform("normalStrength",    1.0));
+    uniArr.Append(makeFloatUniform("specularIntensity", 1.0));
+    uniArr.Append(makeFloatUniform("shininessScale",    1.0));
 
-    json_object_set_value(root, "uniforms", uniArrVal);
+    JsonObject root;
+    root.Set("uniforms",     std::move(uniArr));
+    root.Set("texture_maps", JsonArray{});  // empty — user will populate via Inspector
 
-    // Empty texture_maps array — the user will populate it via the Inspector.
-    JSON_Value* mapsVal = json_value_init_array();
-    json_object_set_value(root, "texture_maps", mapsVal);
-
-    const bool ok = json_serialize_to_file_pretty(rootVal, assetPath.c_str()) == JSONSuccess;
-    json_value_free(rootVal);
-    return ok;
+    return JsonFile::SaveToFile(root, assetPath);
 }

@@ -7,7 +7,7 @@
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 // ---------------------------------------------------------------------------
 // Matrix computation
@@ -64,31 +64,23 @@ void CCamera::OnUpdate(float /*deltaTime*/)
 // Serialization
 // ---------------------------------------------------------------------------
 
-JSON_Value* CCamera::Serialize() const
+JsonObject CCamera::Serialize() const
 {
-    JSON_Value*  objVal = json_value_init_object();
-    JSON_Object* obj    = json_value_get_object(objVal);
-
-    json_object_set_string(obj, "type",          GetType().c_str());
-    json_object_set_number(obj, "fov",            fov);
-    json_object_set_number(obj, "nearPlane",      nearPlane);
-    json_object_set_number(obj, "farPlane",       farPlane);
-    json_object_set_number(obj, "aspectRatio",    aspectRatio);
-    json_object_set_boolean(obj, "isMainCamera",  isMainCamera);
-
-    return objVal;
+    JsonObject root;
+    root.Set("type",         GetType());
+    root.Set("fov",          fov);
+    root.Set("nearPlane",    nearPlane);
+    root.Set("farPlane",     farPlane);
+    root.Set("aspectRatio",  aspectRatio);
+    root.Set("isMainCamera", isMainCamera);
+    return root;
 }
 
-void CCamera::Deserialize(JSON_Object* obj)
+void CCamera::Deserialize(const JsonObject& obj)
 {
-    if (json_object_has_value(obj, "fov"))
-        fov         = static_cast<float>(json_object_get_number(obj, "fov"));
-    if (json_object_has_value(obj, "nearPlane"))
-        nearPlane   = static_cast<float>(json_object_get_number(obj, "nearPlane"));
-    if (json_object_has_value(obj, "farPlane"))
-        farPlane    = static_cast<float>(json_object_get_number(obj, "farPlane"));
-    if (json_object_has_value(obj, "aspectRatio"))
-        aspectRatio = static_cast<float>(json_object_get_number(obj, "aspectRatio"));
-    if (json_object_has_value(obj, "isMainCamera"))
-        isMainCamera = json_object_get_boolean(obj, "isMainCamera") != 0;
+    fov          = obj.GetFloat("fov",          fov);
+    nearPlane    = obj.GetFloat("nearPlane",    nearPlane);
+    farPlane     = obj.GetFloat("farPlane",     farPlane);
+    aspectRatio  = obj.GetFloat("aspectRatio",  aspectRatio);
+    isMainCamera = obj.GetBool ("isMainCamera", isMainCamera);
 }

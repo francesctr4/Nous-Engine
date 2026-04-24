@@ -15,7 +15,8 @@
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Core/Logger/Logger.h"
 
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
 #include <queue>
 
 // ── Constructor / Destructor ──────────────────────────────────────────────────
@@ -189,66 +190,57 @@ void Scene::SetName(const std::string& name) { m_Name = name; }
 // ── Serialization ─────────────────────────────────────────────────────────────
 
 void Scene::Serialize(const std::string& filepath) const {
-    JSON_Value*  root    = json_value_init_object();
-    JSON_Object* rootObj = json_value_get_object(root);
-    JSON_Value*  arrVal  = json_value_init_array();
-    JSON_Array*  arr     = json_value_get_array(arrVal);
-
+    JsonArray goArr;
     for (auto entity : m_Registry.view<CEntityInfo>()) {
         GameObject go(entity, const_cast<entt::registry*>(&m_Registry));
-        if (JSON_Value* v = go.Serialize())
-            json_array_append_value(arr, v);
+        goArr.Append(go.Serialize());
     }
 
-    json_object_set_string(rootObj, "name",    m_Name.c_str());
-    json_object_set_number(rootObj, "version", 0.1);
-    json_object_set_value(rootObj,  "GameObjects", arrVal);
+    JsonObject root;
+    root.Set("name",        m_Name);
+    root.Set("version",     0.1);
+    root.Set("GameObjects", std::move(goArr));
 
-    json_serialize_to_file_pretty(root, filepath.c_str());
-    json_value_free(root);
-
+    JsonFile::SaveToFile(root, filepath);
     NOUS_INFO("Scene saved: %s", filepath.c_str());
 }
 
 void Scene::Deserialize(const std::string& filepath) {
-    JSON_Value* root = json_parse_file(filepath.c_str());
-    if (!root) {
+    JsonObject root = JsonFile::LoadFromFile(filepath);
+    if (root.IsEmpty()) {
         NOUS_ERROR("Failed to parse scene file: %s", filepath.c_str());
         return;
     }
 
-    JSON_Object* rootObj  = json_value_get_object(root);
-    const char*  sceneName = json_object_get_string(rootObj, "name");
-    if (sceneName) m_Name = sceneName;
+    const std::string sceneName = root.GetString("name");
+    if (!sceneName.empty()) m_Name = sceneName;
 
-    JSON_Array* arr = json_object_get_array(rootObj, "GameObjects");
-    if (!arr) {
-        json_value_free(root);
+    JsonArray arr = root.GetArray("GameObjects");
+    if (arr.IsEmpty()) {
         NOUS_WARN("No GameObjects array found in scene file");
         return;
     }
 
-    const size_t count = json_array_get_count(arr);
+    const int count = arr.Count();
     std::vector<std::pair<GameObject, uint32_t>> created;
     // Iterate JSON in reverse: EnTT views traverse the packed array in reverse
     // insertion order, so serialize already wrote entities in reverse-of-creation
     // order. Emplacing them back in reverse-of-JSON order rebuilds the packed
     // array so the next view iteration matches the JSON order — making save/load
     // round-trips stable. Without this, sibling order flips on every save.
-    for (size_t i = count; i-- > 0;) {
-        JSON_Object* obj = json_array_get_object(arr, i);
+    for (int i = count - 1; i >= 0; --i) {
+        JsonObject obj = arr.GetObject(i);
+        if (obj.IsEmpty()) continue;
         // Read parentID from JSON BEFORE deserializing — GameObject::Deserialize()
         // does not store it in CHierarchy (that wiring happens below), so calling
         // go.GetParentID() afterward would always return 0.
-        const auto parentID = static_cast<uint32_t>(json_object_get_number(obj, "parent"));
+        const auto parentID = static_cast<uint32_t>(obj.GetDouble("parent", 0.0));
         GameObject go = GameObject::Deserialize(obj, this);
         if (go.IsValid()) {
             m_IDToEntity[go.GetID()] = go.GetEntity();
             created.push_back({ go, parentID });
         }
     }
-
-    json_value_free(root);
 
     {
         std::lock_guard lock(m_Mutex);
@@ -264,7 +256,7 @@ void Scene::Deserialize(const std::string& filepath) {
         }
     }
 
-    NOUS_DEBUG("Loaded scene: %s with %zu objects", filepath.c_str(), created.size());
+    NOUS_DEBUG("Loaded scene: %s with %d objects", filepath.c_str(), count);
 }
 
 // ── Clear ─────────────────────────────────────────────────────────────────────

@@ -10,7 +10,8 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Core/Logger/Logger.h"
 
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
 #include <algorithm>
 
 // ---------------------------------------------------------------------------
@@ -300,106 +301,90 @@ void CScript::DestroyInstances()
 // Serialization
 // ---------------------------------------------------------------------------
 
-JSON_Value* CScript::Serialize() const
+JsonObject CScript::Serialize() const
 {
     // Snapshot live property values before serializing (const_cast is safe: we only read via void*)
     const_cast<CScript*>(this)->SaveProperties();
 
-    JSON_Value*  val = json_value_init_object();
-    JSON_Object* obj = json_value_get_object(val);
+    JsonObject root;
+    root.Set("type", "CScript");
 
-    json_object_set_string(obj, "type", "CScript");
-
-    // Script names array
-    JSON_Value* arrVal = json_value_init_array();
-    JSON_Array* arr    = json_value_get_array(arrVal);
+    JsonArray scriptsArr;
     for (const auto& name : m_scriptNames)
-        json_array_append_string(arr, name.c_str());
-    json_object_set_value(obj, "scripts", arrVal);
+        scriptsArr.Append(name);
+    root.Set("scripts", std::move(scriptsArr));
 
     // Property values object  { scriptName: { propName: { type, value } } }
-    JSON_Value*  propsVal = json_value_init_object();
-    JSON_Object* propsObj = json_value_get_object(propsVal);
-
+    JsonObject propsObj;
     for (const auto& [scriptName, propMap] : m_savedProperties)
     {
-        JSON_Value*  scriptVal = json_value_init_object();
-        JSON_Object* scriptObj = json_value_get_object(scriptVal);
-
+        JsonObject scriptObj;
         for (const auto& [propName, saved] : propMap)
         {
-            JSON_Value*  pVal = json_value_init_object();
-            JSON_Object* pObj = json_value_get_object(pVal);
-
-            json_object_set_number(pObj, "type", static_cast<double>(saved.type));
-
+            JsonObject pObj;
+            pObj.Set("type", static_cast<int>(saved.type));
             switch (static_cast<ScriptProperty::Type>(saved.type))
             {
-                case ScriptProperty::Type::Float:      json_object_set_number (pObj, "value", saved.value.f); break;
-                case ScriptProperty::Type::Int:        json_object_set_number (pObj, "value", saved.value.i); break;
-                case ScriptProperty::Type::Bool:       json_object_set_boolean(pObj, "value", saved.value.b); break;
-                case ScriptProperty::Type::GameObject: json_object_set_number (pObj, "value", saved.value.u); break;
+                case ScriptProperty::Type::Float:      pObj.Set("value", saved.value.f);                        break;
+                case ScriptProperty::Type::Int:        pObj.Set("value", saved.value.i);                        break;
+                case ScriptProperty::Type::Bool:       pObj.Set("value", saved.value.b);                        break;
+                case ScriptProperty::Type::GameObject: pObj.Set("value", static_cast<double>(saved.value.u));   break;
             }
-
-            json_object_set_value(scriptObj, propName.c_str(), pVal);
+            scriptObj.Set(propName, std::move(pObj));
         }
-
-        json_object_set_value(propsObj, scriptName.c_str(), scriptVal);
+        propsObj.Set(scriptName, std::move(scriptObj));
     }
-
-    json_object_set_value(obj, "properties", propsVal);
-    return val;
+    root.Set("properties", std::move(propsObj));
+    return root;
 }
 
-void CScript::Deserialize(JSON_Object* obj)
+void CScript::Deserialize(const JsonObject& obj)
 {
     m_scriptNames.clear();
     m_savedProperties.clear();
 
     // Script names
-    JSON_Array* arr = json_object_get_array(obj, "scripts");
-    if (arr)
+    JsonArray arr = obj.GetArray("scripts");
+    if (!arr.IsEmpty())
     {
-        const size_t count = json_array_get_count(arr);
-        for (size_t i = 0; i < count; ++i)
+        const int count = arr.Count();
+        for (int i = 0; i < count; ++i)
         {
-            const char* name = json_array_get_string(arr, i);
-            if (name) m_scriptNames.emplace_back(name);
+            const std::string name = arr.GetString(i);
+            if (!name.empty()) m_scriptNames.push_back(name);
         }
     }
 
     // Property values — load BEFORE CreateInstances() so ApplyProperties() can restore fields.
-    JSON_Object* propsObj = json_object_get_object(obj, "properties");
-    if (!propsObj) {
+    JsonObject propsObj = obj.GetObject("properties");
+    if (propsObj.IsEmpty()) {
         // No saved properties — still recreate instances with the script names we loaded.
         if (m_registered && !m_scriptNames.empty())
             CreateInstances();
         return;
     }
 
-    for (size_t si = 0; si < json_object_get_count(propsObj); ++si)
+    for (const auto& scriptName : propsObj.GetKeys())
     {
-        const char*  scriptName = json_object_get_name(propsObj, si);
-        JSON_Object* scriptObj  = json_object_get_object(propsObj, scriptName);
-        if (!scriptName || !scriptObj) continue;
+        JsonObject scriptObj = propsObj.GetObject(scriptName);
+        if (scriptObj.IsEmpty()) continue;
 
         auto& propMap = m_savedProperties[scriptName];
 
-        for (size_t pi = 0; pi < json_object_get_count(scriptObj); ++pi)
+        for (const auto& propName : scriptObj.GetKeys())
         {
-            const char*  propName = json_object_get_name(scriptObj, pi);
-            JSON_Object* pObj     = json_object_get_object(scriptObj, propName);
-            if (!propName || !pObj) continue;
+            JsonObject pObj = scriptObj.GetObject(propName);
+            if (pObj.IsEmpty()) continue;
 
             SavedProperty saved{};
-            saved.type = static_cast<uint8_t>(json_object_get_number(pObj, "type"));
+            saved.type = static_cast<uint8_t>(pObj.GetInt("type"));
 
             switch (static_cast<ScriptProperty::Type>(saved.type))
             {
-                case ScriptProperty::Type::Float:      saved.value.f = static_cast<float>   (json_object_get_number (pObj, "value")); break;
-                case ScriptProperty::Type::Int:        saved.value.i = static_cast<int32_t> (json_object_get_number (pObj, "value")); break;
-                case ScriptProperty::Type::Bool:       saved.value.b = json_object_get_boolean(pObj, "value") != 0;                   break;
-                case ScriptProperty::Type::GameObject: saved.value.u = static_cast<uint32_t>(json_object_get_number (pObj, "value")); break;
+                case ScriptProperty::Type::Float:      saved.value.f = pObj.GetFloat ("value");                        break;
+                case ScriptProperty::Type::Int:        saved.value.i = static_cast<int32_t> (pObj.GetInt("value"));    break;
+                case ScriptProperty::Type::Bool:       saved.value.b = pObj.GetBool  ("value");                        break;
+                case ScriptProperty::Type::GameObject: saved.value.u = static_cast<uint32_t>(pObj.GetDouble("value")); break;
             }
 
             propMap[propName] = saved;

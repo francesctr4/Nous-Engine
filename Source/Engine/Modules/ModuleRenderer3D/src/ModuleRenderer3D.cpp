@@ -29,7 +29,7 @@
 #include "Engine/Core/FileSystem/FileSystem.h"
 
 #include <filesystem>
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Utils/Math/FrustumCulling.h"
@@ -655,33 +655,29 @@ IGPUResourceFactory* ModuleRenderer3D::GetGPUFactory() const
 
 void ModuleRenderer3D::WriteShaderManifest(const Resource* matShader, const Resource* bgShader) const
 {
-	JSON_Value*  root    = json_value_init_object();
-	JSON_Object* rootObj = json_value_get_object(root);
+	JsonObject root;
 
 	auto addEntry = [&](const char* key, const Resource* shader)
 	{
-		JSON_Value*  entry    = json_value_init_object();
-		JSON_Object* entryObj = json_value_get_object(entry);
-		json_object_set_number(entryObj, "uid",         static_cast<double>(shader->GetUID()));
-		json_object_set_string(entryObj, "libraryPath", shader->GetLibraryPath().c_str());
-		json_object_set_value(rootObj, key, entry);
+		JsonObject entry;
+		entry.Set("uid",         static_cast<double>(shader->GetUID()));
+		entry.Set("libraryPath", shader->GetLibraryPath());
+		root.Set(key, std::move(entry));
 	};
 
 	addEntry("MaterialShader",   matShader);
 	addEntry("BackgroundShader", bgShader);
 
-	if (json_serialize_to_file_pretty(root, "Library/Shaders/shader_manifest.json") != JSONSuccess)
+	if (!JsonFile::SaveToFile(root, "Library/Shaders/shader_manifest.json"))
 		NOUS_WARN_C(CURRENT_CHANNEL, "Failed to write Library/Shaders/shader_manifest.json.");
 	else
 		NOUS_INFO_C(CURRENT_CHANNEL, "Shader manifest written to Library/Shaders/shader_manifest.json.");
-
-	json_value_free(root);
 }
 
 void ModuleRenderer3D::LoadShadersFromManifest()
 {
-	JSON_Value* root = json_parse_file("Library/Shaders/shader_manifest.json");
-	if (!root)
+	JsonObject root = JsonFile::LoadFromFile("Library/Shaders/shader_manifest.json");
+	if (root.IsEmpty())
 	{
 		NOUS_FATAL_C(CURRENT_CHANNEL,
 			"Library/Shaders/shader_manifest.json not found. "
@@ -689,17 +685,15 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 		return;
 	}
 
-	const JSON_Object* rootObj = json_value_get_object(root);
-
 	auto loadShader = [&](const char* key, const char* assetPath)
 	{
-		const JSON_Object* entry   = json_object_get_object(rootObj, key);
-		if (!entry) { NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: missing entry '%s'.", key); return; }
+		JsonObject entry = root.GetObject(key);
+		if (entry.IsEmpty()) { NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: missing entry '%s'.", key); return; }
 
-		const uint32   uid     = static_cast<uint32>(json_object_get_number(entry, "uid"));
-		const char* libPath = json_object_get_string(entry, "libraryPath");
+		const uint32      uid     = static_cast<uint32>(entry.GetDouble("uid", 0.0));
+		const std::string libPath = entry.GetString("libraryPath");
 
-		if (uid == 0 || !libPath)
+		if (uid == 0 || libPath.empty())
 		{ NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: invalid data for '%s'.", key); return; }
 
 		mModuleResourceManager->CreateResourceFromLibrary(
@@ -708,8 +702,6 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 
 	loadShader("MaterialShader",   "Assets/Shaders/BuiltIn.MaterialShader.glsl");
 	loadShader("BackgroundShader", "Assets/Shaders/BuiltIn.BackgroundShader.glsl");
-
-	json_value_free(root);
 
 	NOUS_INFO_C(CURRENT_CHANNEL, "Built-in shaders loaded from shader_manifest.json.");
 }

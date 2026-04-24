@@ -1,164 +1,158 @@
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionSerializer.h"
 #include "Engine/Core/Logger/Logger.h"
 
-constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
+#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
 
-#include <parson.h>
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
 // ---------------------------------------------------------------------------
 // Write helpers
 // ---------------------------------------------------------------------------
 
-static JSON_Value* SerializeMember(const ReflectedMember& m)
+static JsonObject SerializeMember(const ReflectedMember& m)
 {
-    JSON_Value*  v = json_value_init_object();
-    JSON_Object* o = json_value_get_object(v);
-    json_object_set_string(o, "name",       m.name.c_str());
-    json_object_set_number(o, "type",       static_cast<double>(m.type));
-    json_object_set_number(o, "offset",     m.offset);
-    json_object_set_number(o, "size",       m.size);
-    json_object_set_number(o, "arrayCount", m.arrayCount);
-    return v;
+    JsonObject o;
+    o.Set("name",       m.name);
+    o.Set("type",       static_cast<double>(m.type));
+    o.Set("offset",     static_cast<double>(m.offset));
+    o.Set("size",       static_cast<double>(m.size));
+    o.Set("arrayCount", static_cast<double>(m.arrayCount));
+    return o;
 }
 
-static JSON_Value* SerializeBinding(const ReflectedBinding& b)
+static JsonObject SerializeBinding(const ReflectedBinding& b)
 {
-    JSON_Value*  v = json_value_init_object();
-    JSON_Object* o = json_value_get_object(v);
-    json_object_set_number(o, "set",       b.set);
-    json_object_set_number(o, "binding",   b.binding);
-    json_object_set_number(o, "type",      static_cast<double>(b.type));
-    json_object_set_number(o, "count",     b.count);
-    json_object_set_string(o, "name",      b.name.c_str());
-    json_object_set_number(o, "stageMask", b.stageMask);
-    json_object_set_number(o, "blockSize", b.blockSize);
+    JsonObject o;
+    o.Set("set",       static_cast<double>(b.set));
+    o.Set("binding",   static_cast<double>(b.binding));
+    o.Set("type",      static_cast<double>(b.type));
+    o.Set("count",     static_cast<double>(b.count));
+    o.Set("name",      b.name);
+    o.Set("stageMask", static_cast<double>(b.stageMask));
+    o.Set("blockSize", static_cast<double>(b.blockSize));
 
-    JSON_Value* membersArr = json_value_init_array();
-    JSON_Array* mArr       = json_value_get_array(membersArr);
+    JsonArray membersArr;
     for (const auto& m : b.members)
-        json_array_append_value(mArr, SerializeMember(m));
-    json_object_set_value(o, "members", membersArr);
-
-    return v;
+        membersArr.Append(SerializeMember(m));
+    o.Set("members", std::move(membersArr));
+    return o;
 }
 
-static JSON_Value* SerializePushConstant(const ReflectedPushConstant& pc)
+static JsonObject SerializePushConstant(const ReflectedPushConstant& pc)
 {
-    JSON_Value*  v = json_value_init_object();
-    JSON_Object* o = json_value_get_object(v);
-    json_object_set_string(o, "name",      pc.name.c_str());
-    json_object_set_number(o, "offset",    pc.offset);
-    json_object_set_number(o, "size",      pc.size);
-    json_object_set_number(o, "stageMask", pc.stageMask);
+    JsonObject o;
+    o.Set("name",      pc.name);
+    o.Set("offset",    static_cast<double>(pc.offset));
+    o.Set("size",      static_cast<double>(pc.size));
+    o.Set("stageMask", static_cast<double>(pc.stageMask));
 
-    JSON_Value* membersArr = json_value_init_array();
-    JSON_Array* mArr       = json_value_get_array(membersArr);
+    JsonArray membersArr;
     for (const auto& m : pc.members)
-        json_array_append_value(mArr, SerializeMember(m));
-    json_object_set_value(o, "members", membersArr);
-
-    return v;
+        membersArr.Append(SerializeMember(m));
+    o.Set("members", std::move(membersArr));
+    return o;
 }
 
-static JSON_Value* SerializeVertexInput(const ReflectedInput& vi)
+static JsonObject SerializeVertexInput(const ReflectedInput& vi)
 {
-    JSON_Value*  v = json_value_init_object();
-    JSON_Object* o = json_value_get_object(v);
-    json_object_set_number(o, "location",   vi.location);
-    json_object_set_string(o, "name",       vi.name.c_str());
-    json_object_set_number(o, "components", vi.components);
-    json_object_set_number(o, "bitWidth",   vi.bitWidth);
-    json_object_set_number(o, "sizeBytes",  vi.sizeBytes);
-    json_object_set_number(o, "scalarType", static_cast<double>(vi.scalarType));
-    return v;
+    JsonObject o;
+    o.Set("location",   static_cast<double>(vi.location));
+    o.Set("name",       vi.name);
+    o.Set("components", static_cast<double>(vi.components));
+    o.Set("bitWidth",   static_cast<double>(vi.bitWidth));
+    o.Set("sizeBytes",  static_cast<double>(vi.sizeBytes));
+    o.Set("scalarType", static_cast<double>(vi.scalarType));
+    return o;
 }
 
-static JSON_Value* SerializeFragmentOutput(const ReflectedOutput& fo)
+static JsonObject SerializeFragmentOutput(const ReflectedOutput& fo)
 {
-    JSON_Value*  v = json_value_init_object();
-    JSON_Object* o = json_value_get_object(v);
-    json_object_set_number(o, "location",   fo.location);
-    json_object_set_string(o, "name",       fo.name.c_str());
-    json_object_set_number(o, "components", fo.components);
-    json_object_set_number(o, "bitWidth",   fo.bitWidth);
-    json_object_set_number(o, "scalarType", static_cast<double>(fo.scalarType));
-    return v;
+    JsonObject o;
+    o.Set("location",   static_cast<double>(fo.location));
+    o.Set("name",       fo.name);
+    o.Set("components", static_cast<double>(fo.components));
+    o.Set("bitWidth",   static_cast<double>(fo.bitWidth));
+    o.Set("scalarType", static_cast<double>(fo.scalarType));
+    return o;
 }
 
 // ---------------------------------------------------------------------------
 // Read helpers
 // ---------------------------------------------------------------------------
 
-static ReflectedMember DeserializeMember(const JSON_Object* o)
+static ReflectedMember DeserializeMember(const JsonObject& o)
 {
     ReflectedMember m;
-    if (const char* name = json_object_get_string(o, "name")) m.name = name;
-    m.type       = static_cast<DataType>(static_cast<uint8_t>(json_object_get_number(o, "type")));
-    m.offset     = static_cast<uint32_t>(json_object_get_number(o, "offset"));
-    m.size       = static_cast<uint32_t>(json_object_get_number(o, "size"));
-    m.arrayCount = static_cast<uint32_t>(json_object_get_number(o, "arrayCount"));
+    m.name       = o.GetString("name");
+    m.type       = static_cast<DataType>(static_cast<uint8_t>(o.GetDouble("type",       0.0)));
+    m.offset     = static_cast<uint32_t>(o.GetDouble("offset",     0.0));
+    m.size       = static_cast<uint32_t>(o.GetDouble("size",       0.0));
+    m.arrayCount = static_cast<uint32_t>(o.GetDouble("arrayCount", 0.0));
     return m;
 }
 
-static ReflectedBinding DeserializeBinding(const JSON_Object* o)
+static ReflectedBinding DeserializeBinding(const JsonObject& o)
 {
     ReflectedBinding b;
-    b.set       = static_cast<uint32_t>(json_object_get_number(o, "set"));
-    b.binding   = static_cast<uint32_t>(json_object_get_number(o, "binding"));
-    b.type      = static_cast<DescriptorType>(static_cast<uint8_t>(json_object_get_number(o, "type")));
-    b.count     = static_cast<uint32_t>(json_object_get_number(o, "count"));
-    if (const char* name = json_object_get_string(o, "name")) b.name = name;
-    b.stageMask = static_cast<uint32_t>(json_object_get_number(o, "stageMask"));
-    b.blockSize = static_cast<uint32_t>(json_object_get_number(o, "blockSize"));
+    b.set       = static_cast<uint32_t>(o.GetDouble("set",       0.0));
+    b.binding   = static_cast<uint32_t>(o.GetDouble("binding",   0.0));
+    b.type      = static_cast<DescriptorType>(static_cast<uint8_t>(o.GetDouble("type", 0.0)));
+    b.count     = static_cast<uint32_t>(o.GetDouble("count",     0.0));
+    b.name      = o.GetString("name");
+    b.stageMask = static_cast<uint32_t>(o.GetDouble("stageMask", 0.0));
+    b.blockSize = static_cast<uint32_t>(o.GetDouble("blockSize", 0.0));
 
-    if (const JSON_Array* members = json_object_get_array(o, "members"))
+    JsonArray members = o.GetArray("members");
+    if (!members.IsEmpty())
     {
-        const size_t count = json_array_get_count(members);
+        const int count = members.Count();
         b.members.reserve(count);
-        for (size_t i = 0; i < count; ++i)
-            b.members.push_back(DeserializeMember(json_array_get_object(members, i)));
+        for (int i = 0; i < count; ++i)
+            b.members.push_back(DeserializeMember(members.GetObject(i)));
     }
     return b;
 }
 
-static ReflectedPushConstant DeserializePushConstant(const JSON_Object* o)
+static ReflectedPushConstant DeserializePushConstant(const JsonObject& o)
 {
     ReflectedPushConstant pc;
-    if (const char* name = json_object_get_string(o, "name")) pc.name = name;
-    pc.offset    = static_cast<uint32_t>(json_object_get_number(o, "offset"));
-    pc.size      = static_cast<uint32_t>(json_object_get_number(o, "size"));
-    pc.stageMask = static_cast<uint32_t>(json_object_get_number(o, "stageMask"));
+    pc.name      = o.GetString("name");
+    pc.offset    = static_cast<uint32_t>(o.GetDouble("offset",    0.0));
+    pc.size      = static_cast<uint32_t>(o.GetDouble("size",      0.0));
+    pc.stageMask = static_cast<uint32_t>(o.GetDouble("stageMask", 0.0));
 
-    if (const JSON_Array* members = json_object_get_array(o, "members"))
+    JsonArray members = o.GetArray("members");
+    if (!members.IsEmpty())
     {
-        const size_t count = json_array_get_count(members);
+        const int count = members.Count();
         pc.members.reserve(count);
-        for (size_t i = 0; i < count; ++i)
-            pc.members.push_back(DeserializeMember(json_array_get_object(members, i)));
+        for (int i = 0; i < count; ++i)
+            pc.members.push_back(DeserializeMember(members.GetObject(i)));
     }
     return pc;
 }
 
-static ReflectedInput DeserializeVertexInput(const JSON_Object* o)
+static ReflectedInput DeserializeVertexInput(const JsonObject& o)
 {
     ReflectedInput vi;
-    vi.location   = static_cast<uint32_t>(json_object_get_number(o, "location"));
-    if (const char* name = json_object_get_string(o, "name")) vi.name = name;
-    vi.components = static_cast<uint8_t>(json_object_get_number(o, "components"));
-    vi.bitWidth   = static_cast<uint8_t>(json_object_get_number(o, "bitWidth"));
-    vi.sizeBytes  = static_cast<uint32_t>(json_object_get_number(o, "sizeBytes"));
-    vi.scalarType = static_cast<ScalarType>(static_cast<uint8_t>(json_object_get_number(o, "scalarType")));
+    vi.location   = static_cast<uint32_t>(o.GetDouble("location",   0.0));
+    vi.name       = o.GetString("name");
+    vi.components = static_cast<uint8_t>(o.GetDouble("components", 0.0));
+    vi.bitWidth   = static_cast<uint8_t>(o.GetDouble("bitWidth",   0.0));
+    vi.sizeBytes  = static_cast<uint32_t>(o.GetDouble("sizeBytes",  0.0));
+    vi.scalarType = static_cast<ScalarType>(static_cast<uint8_t>(o.GetDouble("scalarType", 0.0)));
     return vi;
 }
 
-static ReflectedOutput DeserializeFragmentOutput(const JSON_Object* o)
+static ReflectedOutput DeserializeFragmentOutput(const JsonObject& o)
 {
     ReflectedOutput fo;
-    fo.location   = static_cast<uint32_t>(json_object_get_number(o, "location"));
-    if (const char* name = json_object_get_string(o, "name")) fo.name = name;
-    fo.components = static_cast<uint8_t>(json_object_get_number(o, "components"));
-    fo.bitWidth   = static_cast<uint8_t>(json_object_get_number(o, "bitWidth"));
-    fo.scalarType = static_cast<ScalarType>(static_cast<uint8_t>(json_object_get_number(o, "scalarType")));
+    fo.location   = static_cast<uint32_t>(o.GetDouble("location",   0.0));
+    fo.name       = o.GetString("name");
+    fo.components = static_cast<uint8_t>(o.GetDouble("components", 0.0));
+    fo.bitWidth   = static_cast<uint8_t>(o.GetDouble("bitWidth",   0.0));
+    fo.scalarType = static_cast<ScalarType>(static_cast<uint8_t>(o.GetDouble("scalarType", 0.0)));
     return fo;
 }
 
@@ -171,53 +165,43 @@ bool nous::engine::shader_system::SerializeReflection(const PipelineReflectionRe
 {
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Serializing reflection to '%s'", jsonPath.c_str());
 
-    JSON_Value*  rootVal = json_value_init_object();
-    JSON_Object* root    = json_value_get_object(rootVal);
+    JsonObject root;
 
     // --- descriptorSets: array of { set, bindings[] } ---
-    JSON_Value* dsetsArr = json_value_init_array();
-    JSON_Array* dsets    = json_value_get_array(dsetsArr);
-
+    JsonArray dsetsArr;
     for (const auto& [setIndex, bindings] : reflection.descriptorSets)
     {
-        JSON_Value*  setVal = json_value_init_object();
-        JSON_Object* setObj = json_value_get_object(setVal);
-        json_object_set_number(setObj, "set", setIndex);
+        JsonObject setObj;
+        setObj.Set("set", static_cast<double>(setIndex));
 
-        JSON_Value* bindingsArr = json_value_init_array();
-        JSON_Array* bArr        = json_value_get_array(bindingsArr);
+        JsonArray bindingsArr;
         for (const auto& b : bindings)
-            json_array_append_value(bArr, SerializeBinding(b));
-        json_object_set_value(setObj, "bindings", bindingsArr);
+            bindingsArr.Append(SerializeBinding(b));
+        setObj.Set("bindings", std::move(bindingsArr));
 
-        json_array_append_value(dsets, setVal);
+        dsetsArr.Append(std::move(setObj));
     }
-    json_object_set_value(root, "descriptorSets", dsetsArr);
+    root.Set("descriptorSets", std::move(dsetsArr));
 
     // --- pushConstants ---
-    JSON_Value* pcArr = json_value_init_array();
-    JSON_Array* pcs   = json_value_get_array(pcArr);
+    JsonArray pcArr;
     for (const auto& pc : reflection.pushConstants)
-        json_array_append_value(pcs, SerializePushConstant(pc));
-    json_object_set_value(root, "pushConstants", pcArr);
+        pcArr.Append(SerializePushConstant(pc));
+    root.Set("pushConstants", std::move(pcArr));
 
     // --- vertexInputs ---
-    JSON_Value* viArr = json_value_init_array();
-    JSON_Array* vis   = json_value_get_array(viArr);
+    JsonArray viArr;
     for (const auto& vi : reflection.vertexInputs)
-        json_array_append_value(vis, SerializeVertexInput(vi));
-    json_object_set_value(root, "vertexInputs", viArr);
+        viArr.Append(SerializeVertexInput(vi));
+    root.Set("vertexInputs", std::move(viArr));
 
     // --- fragmentOutputs ---
-    JSON_Value* foArr = json_value_init_array();
-    JSON_Array* fos   = json_value_get_array(foArr);
+    JsonArray foArr;
     for (const auto& fo : reflection.fragmentOutputs)
-        json_array_append_value(fos, SerializeFragmentOutput(fo));
-    json_object_set_value(root, "fragmentOutputs", foArr);
+        foArr.Append(SerializeFragmentOutput(fo));
+    root.Set("fragmentOutputs", std::move(foArr));
 
-    const bool ok = json_serialize_to_file_pretty(rootVal, jsonPath.c_str()) == JSONSuccess;
-    json_value_free(rootVal);
-
+    const bool ok = JsonFile::SaveToFile(root, jsonPath);
     if (ok)
         NOUS_DEBUG_C(CURRENT_CHANNEL, "Serialized reflection to '%s'", jsonPath.c_str());
     else
@@ -229,67 +213,65 @@ bool nous::engine::shader_system::SerializeReflection(const PipelineReflectionRe
 bool nous::engine::shader_system::DeserializeReflection(const std::string& jsonPath,
                                               PipelineReflectionResult& outReflection)
 {
-    JSON_Value* rootVal = json_parse_file(jsonPath.c_str());
-    if (!rootVal)
+    JsonObject root = JsonFile::LoadFromFile(jsonPath);
+    if (root.IsEmpty())
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to parse reflection JSON '%s'", jsonPath.c_str());
         return false;
     }
 
-    const JSON_Object* root = json_value_get_object(rootVal);
-    if (!root) { json_value_free(rootVal); return false; }
-
     // --- descriptorSets ---
-    if (const JSON_Array* dsets = json_object_get_array(root, "descriptorSets"))
+    JsonArray dsets = root.GetArray("descriptorSets");
+    if (!dsets.IsEmpty())
     {
-        const size_t setCount = json_array_get_count(dsets);
-        for (size_t i = 0; i < setCount; ++i)
+        const int setCount = dsets.Count();
+        for (int i = 0; i < setCount; ++i)
         {
-            const JSON_Object* setObj   = json_array_get_object(dsets, i);
-            auto     setIndex = static_cast<uint32_t>(json_object_get_number(setObj, "set"));
+            JsonObject setObj   = dsets.GetObject(i);
+            auto setIndex = static_cast<uint32_t>(setObj.GetDouble("set", 0.0));
 
             std::vector<ReflectedBinding>& bindings = outReflection.descriptorSets[setIndex];
-            if (const JSON_Array* bindingsArr = json_object_get_array(setObj, "bindings"))
+            JsonArray bindingsArr = setObj.GetArray("bindings");
+            if (!bindingsArr.IsEmpty())
             {
-                const size_t bCount = json_array_get_count(bindingsArr);
+                const int bCount = bindingsArr.Count();
                 bindings.reserve(bCount);
-                for (size_t j = 0; j < bCount; ++j)
-                    bindings.push_back(DeserializeBinding(json_array_get_object(bindingsArr, j)));
+                for (int j = 0; j < bCount; ++j)
+                    bindings.push_back(DeserializeBinding(bindingsArr.GetObject(j)));
             }
         }
     }
 
     // --- pushConstants ---
-    if (const JSON_Array* pcs = json_object_get_array(root, "pushConstants"))
+    JsonArray pcs = root.GetArray("pushConstants");
+    if (!pcs.IsEmpty())
     {
-        const size_t count = json_array_get_count(pcs);
+        const int count = pcs.Count();
         outReflection.pushConstants.reserve(count);
-        for (size_t i = 0; i < count; ++i)
-            outReflection.pushConstants.push_back(
-                DeserializePushConstant(json_array_get_object(pcs, i)));
+        for (int i = 0; i < count; ++i)
+            outReflection.pushConstants.push_back(DeserializePushConstant(pcs.GetObject(i)));
     }
 
     // --- vertexInputs ---
-    if (const JSON_Array* vis = json_object_get_array(root, "vertexInputs"))
+    JsonArray vis = root.GetArray("vertexInputs");
+    if (!vis.IsEmpty())
     {
-        const size_t count = json_array_get_count(vis);
+        const int count = vis.Count();
         outReflection.vertexInputs.reserve(count);
-        for (size_t i = 0; i < count; ++i)
-            outReflection.vertexInputs.push_back(
-                DeserializeVertexInput(json_array_get_object(vis, i)));
+        for (int i = 0; i < count; ++i)
+            outReflection.vertexInputs.push_back(DeserializeVertexInput(vis.GetObject(i)));
     }
 
     // --- fragmentOutputs ---
-    if (const JSON_Array* fos = json_object_get_array(root, "fragmentOutputs"))
+    JsonArray fos = root.GetArray("fragmentOutputs");
+    if (!fos.IsEmpty())
     {
-        const size_t count = json_array_get_count(fos);
+        const int count = fos.Count();
         outReflection.fragmentOutputs.reserve(count);
-        for (size_t i = 0; i < count; ++i)
-            outReflection.fragmentOutputs.push_back(
-                DeserializeFragmentOutput(json_array_get_object(fos, i)));
+        for (int i = 0; i < count; ++i)
+            outReflection.fragmentOutputs.push_back(DeserializeFragmentOutput(fos.GetObject(i)));
     }
 
-    json_value_free(rootVal);
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Deserialized reflection from '%s'", jsonPath.c_str());
     return true;
 }

@@ -1,18 +1,16 @@
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
-JSON_Value* CPrefab::Serialize() const
+JsonObject CPrefab::Serialize() const
 {
-    JSON_Value* val = json_value_init_object();
-    JSON_Object* obj = json_value_get_object(val);
-    json_object_set_string(obj, "type", GetType().c_str());
-    json_object_set_string(obj, "prefabSourcePath", prefabSourcePath.c_str());
-    return val;
+    JsonObject root;
+    root.Set("type",             GetType());
+    root.Set("prefabSourcePath", prefabSourcePath);
+    return root;
 }
 
-void CPrefab::Deserialize(JSON_Object* obj)
+void CPrefab::Deserialize(const JsonObject& obj)
 {
-    const char* path = json_object_get_string(obj, "prefabSourcePath");
-    prefabSourcePath = path ? path : "";
+    prefabSourcePath = obj.GetString("prefabSourcePath");
 }

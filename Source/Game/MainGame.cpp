@@ -7,7 +7,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include <string>
 #include <filesystem>
 
@@ -35,22 +35,18 @@ static GameConfig LoadGameConfig(const char* argv0)
     const std::string configPath =
         (std::filesystem::path(argv0).parent_path() / "Library" / "Settings" / "game_config.json").string();
 
-    JSON_Value* root = json_parse_file(configPath.c_str());
-    if (!root)
+    JsonObject root = JsonFile::LoadFromFile(configPath);
+    if (root.IsEmpty())
     {
         NOUS_WARN_C(CURRENT_CHANNEL, "game_config.json not found at '%s' — using defaults.", configPath.c_str());
         return cfg;
     }
 
-    const JSON_Object* obj = json_value_get_object(root);
-
-    if (const char* scene = json_object_get_string(obj, "startScene"))
+    if (const std::string scene = root.GetString("startScene"); !scene.empty())
         cfg.startScene = scene;
 
-    if (const double fps = json_object_get_number(obj, "targetFPS"); fps > 0.0)
+    if (const double fps = root.GetDouble("targetFPS", 0.0); fps > 0.0)
         cfg.targetFPS = static_cast<float>(fps);
-
-    json_value_free(root);
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Loaded game_config.json: scene='%s', targetFPS=%.0f",
         cfg.startScene.c_str(), cfg.targetFPS);

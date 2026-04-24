@@ -7,34 +7,30 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 // -----------------------------------------------------------------------------
 // Serialization
 // -----------------------------------------------------------------------------
-JSON_Value* CMaterial::Serialize() const {
-    JSON_Value* objVal = json_value_init_object();
-    JSON_Object* obj = json_value_get_object(objVal);
-
-    json_object_set_string(obj, "type", GetType().c_str());
-
+JsonObject CMaterial::Serialize() const {
+    JsonObject root;
+    root.Set("type", GetType());
     if (material) {
-        json_object_set_string(obj, "assetPath", material->GetAssetsPath().c_str());
-        json_object_set_string(obj, "libraryPath", material->GetLibraryPath().c_str());
-        json_object_set_number(obj, "resourceUID", static_cast<double>(material->GetUID()));
+        root.Set("assetPath",   material->GetAssetsPath());
+        root.Set("libraryPath", material->GetLibraryPath());
+        root.Set("resourceUID", static_cast<double>(material->GetUID()));
     } else {
-        json_object_set_string(obj, "assetPath", "");
+        root.Set("assetPath", "");
     }
-
-    return objVal;
+    return root;
 }
 
-void CMaterial::Deserialize(JSON_Object* obj) {
-    const char* assetPath = json_object_get_string(obj, "assetPath");
+void CMaterial::Deserialize(const JsonObject& obj) {
+    const std::string assetPath = obj.GetString("assetPath");
     auto go = GetGameObject();
     Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
 
-    if (!assetPath || strlen(assetPath) == 0) {
+    if (assetPath.empty()) {
         // No on-disk material was referenced — this GO used the in-memory default
         // material (no assetPath, UID=0). Restore it so the mesh still renders
         // after a snapshot round-trip, instead of leaving material=nullptr.
@@ -45,10 +41,8 @@ void CMaterial::Deserialize(JSON_Object* obj) {
 
     if (!scene) { material = nullptr; return; }
 
-    const char* libraryPathRaw = json_object_get_string(obj, "libraryPath");
-    const std::string libraryPath = libraryPathRaw ? libraryPathRaw : "";
-    const JSON_Value* uidVal      = json_object_get_value(obj, "resourceUID");
-    const uint32 resourceUID         = uidVal ? static_cast<uint32>(json_value_get_number(uidVal)) : 0;
+    const std::string libraryPath = obj.GetString("libraryPath");
+    const uint32 resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
 
     // Try library path first (GAME mode / no .meta needed).
     if (!libraryPath.empty() && resourceUID != 0)

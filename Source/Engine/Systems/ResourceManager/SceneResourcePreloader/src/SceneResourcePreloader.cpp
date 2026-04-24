@@ -7,10 +7,10 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
-#include <cstring>
+#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
 #include <filesystem>
 #include <map>
-#include <parson.h>
 #include <ranges>
 #include <utility>
 
@@ -49,37 +49,34 @@ namespace
     // Walks the GameObjects JSON array and collects every unique CMesh request.
     // Key: (assetPath, submeshIndex) — mirrors ResourceManager's internal deduplication.
     void CollectMeshRequestsFromScene(
-        JSON_Array const* gameObjects,
+        const JsonArray& gameObjects,
         std::map<std::pair<std::string, int32_t>, MeshRequest>& outRequests)
     {
-        const size_t goCount = json_array_get_count(gameObjects);
-        for (size_t i = 0; i < goCount; ++i)
+        const int goCount = gameObjects.Count();
+        for (int i = 0; i < goCount; ++i)
         {
-            JSON_Object const* goObj = json_array_get_object(gameObjects, i);
-            JSON_Array const*  comps = json_object_get_array(goObj, "components");
-            if (!comps) continue;
+            JsonObject goObj = gameObjects.GetObject(i);
+            JsonArray  comps = goObj.GetArray("components");
+            if (comps.IsEmpty()) continue;
 
-            const size_t compCount = json_array_get_count(comps);
-            for (size_t j = 0; j < compCount; ++j)
+            const int compCount = comps.Count();
+            for (int j = 0; j < compCount; ++j)
             {
-                JSON_Object const* compObj = json_array_get_object(comps, j);
+                JsonObject compObj = comps.GetObject(j);
 
-                if (const char* type = json_object_get_string(compObj, "type");
-                    !type || std::strcmp(type, "CMesh") != 0)
+                if (compObj.GetString("type") != "CMesh")
                     continue;
 
-                const char* assetPath = json_object_get_string(compObj, "assetPath");
-                if (!assetPath || assetPath[0] == '\0') continue;
-
-                const char*       libRaw  = json_object_get_string(compObj, "libraryPath");
-                const JSON_Value* uidVal  = json_object_get_value(compObj, "resourceUID");
-                const JSON_Value* subIdxV = json_object_get_value(compObj, "submeshIndex");
+                const std::string assetPath = compObj.GetString("assetPath");
+                if (assetPath.empty()) continue;
 
                 MeshRequest req;
                 req.assetPath    = assetPath;
-                req.libraryPath  = libRaw  ? libRaw : "";
-                req.uid          = uidVal  ? static_cast<uint32>(json_value_get_number(uidVal))   : 0;
-                req.submeshIndex = subIdxV ? static_cast<int32_t>(json_value_get_number(subIdxV)) : -1;
+                req.libraryPath  = compObj.GetString("libraryPath");
+                req.uid          = static_cast<uint32>(compObj.GetDouble("resourceUID",  0.0));
+                req.submeshIndex = compObj.HasKey("submeshIndex")
+                                 ? static_cast<int32_t>(compObj.GetDouble("submeshIndex", 0.0))
+                                 : -1;
 
                 outRequests[{req.assetPath, req.submeshIndex}] = std::move(req);
             }
@@ -98,25 +95,19 @@ std::vector<std::future<void>> SceneResourcePreloader::PreloadSceneResourcesAsyn
 {
     std::vector<std::future<void>> futures;
 
-    JSON_Value* root = json_parse_file(sceneFilePath.c_str());
-    if (!root)
+    JsonObject root = JsonFile::LoadFromFile(sceneFilePath);
+    if (root.IsEmpty())
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "PreloadSceneResourcesAsync: failed to parse '%s'", sceneFilePath.c_str());
         return futures;
     }
 
-    JSON_Object const* rootObj     = json_value_get_object(root);
-    JSON_Array const*  gameObjects = json_object_get_array(rootObj, "GameObjects");
-
-    if (!gameObjects)
-    {
-        json_value_free(root);
+    JsonArray gameObjects = root.GetArray("GameObjects");
+    if (gameObjects.IsEmpty())
         return futures;
-    }
 
     std::map<std::pair<std::string, int32_t>, MeshRequest> uniqueRequests;
     CollectMeshRequestsFromScene(gameObjects, uniqueRequests);
-    json_value_free(root);
 
     futures.reserve(uniqueRequests.size());
 

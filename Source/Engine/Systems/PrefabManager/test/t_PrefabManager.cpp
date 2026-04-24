@@ -9,7 +9,9 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
 #include <glm/glm.hpp>
 #include <filesystem>
 #include <string>
@@ -36,46 +38,36 @@ TEST_F(t_CPrefab, Serialize_WritesType)
 {
     CPrefab c;
     c.prefabSourcePath = "Assets/Prefabs/Test.nprefab";
-    JSON_Value* val = c.Serialize();
-    ASSERT_NE(val, nullptr);
-    const char* type = json_object_get_string(json_value_get_object(val), "type");
-    EXPECT_STREQ(type, "CPrefab");
-    json_value_free(val);
+    JsonObject val = c.Serialize();
+    EXPECT_EQ(val.GetString("type"), "CPrefab");
 }
 
 TEST_F(t_CPrefab, Serialize_WritesSourcePath)
 {
     CPrefab c;
     c.prefabSourcePath = "Assets/Prefabs/Test.nprefab";
-    JSON_Value* val = c.Serialize();
-    ASSERT_NE(val, nullptr);
-    const char* path = json_object_get_string(json_value_get_object(val), "prefabSourcePath");
-    EXPECT_STREQ(path, "Assets/Prefabs/Test.nprefab");
-    json_value_free(val);
+    JsonObject val = c.Serialize();
+    EXPECT_EQ(val.GetString("prefabSourcePath"), "Assets/Prefabs/Test.nprefab");
 }
 
 TEST_F(t_CPrefab, Deserialize_ReadsSourcePath)
 {
-    JSON_Value* val = json_value_init_object();
-    JSON_Object* obj = json_value_get_object(val);
-    json_object_set_string(obj, "prefabSourcePath", "Assets/Prefabs/Foo.nprefab");
+    JsonObject obj;
+    obj.Set("prefabSourcePath", std::string("Assets/Prefabs/Foo.nprefab"));
 
     CPrefab c;
     c.Deserialize(obj);
     EXPECT_EQ(c.prefabSourcePath, "Assets/Prefabs/Foo.nprefab");
-    json_value_free(val);
 }
 
 TEST_F(t_CPrefab, Deserialize_MissingPath_DefaultsToEmpty)
 {
-    JSON_Value* val = json_value_init_object();
-    JSON_Object* obj = json_value_get_object(val);
+    JsonObject obj;
 
     CPrefab c;
     c.prefabSourcePath = "old_value";
     c.Deserialize(obj);
     EXPECT_TRUE(c.prefabSourcePath.empty());
-    json_value_free(val);
 }
 
 // =============================================================================
@@ -136,75 +128,68 @@ TEST_F(t_PrefabManager, SavePrefab_CreatesFile)
 TEST_F(t_PrefabManager, SavePrefab_Version_IsOne)
 {
     const std::string path = SaveSimplePrefab("save_version.nprefab");
-    JSON_Value* root = json_parse_file(path.c_str());
-    ASSERT_NE(root, nullptr);
-    const int version = static_cast<int>(json_object_get_number(json_value_get_object(root), "version"));
+    JsonObject root = JsonFile::LoadFromFile(path);
+    ASSERT_FALSE(root.IsEmpty());
+    const int version = static_cast<int>(root.GetDouble("version", 0.0));
     EXPECT_EQ(version, 1);
-    json_value_free(root);
 }
 
 TEST_F(t_PrefabManager, SavePrefab_NameMatchesRootGO)
 {
     const std::string path = SaveSimplePrefab("save_name.nprefab", "MyRoot");
-    JSON_Value* root = json_parse_file(path.c_str());
-    ASSERT_NE(root, nullptr);
-    const char* name = json_object_get_string(json_value_get_object(root), "name");
-    EXPECT_STREQ(name, "MyRoot");
-    json_value_free(root);
+    JsonObject root = JsonFile::LoadFromFile(path);
+    ASSERT_FALSE(root.IsEmpty());
+    EXPECT_EQ(root.GetString("name"), "MyRoot");
 }
 
 TEST_F(t_PrefabManager, SavePrefab_FileContainsGameObjectsArray)
 {
     const std::string path = SaveSimplePrefab("save_has_array.nprefab");
-    JSON_Value* root = json_parse_file(path.c_str());
-    ASSERT_NE(root, nullptr);
-    JSON_Array* arr = json_object_get_array(json_value_get_object(root), "GameObjects");
-    EXPECT_NE(arr, nullptr);
-    json_value_free(root);
+    JsonObject root = JsonFile::LoadFromFile(path);
+    ASSERT_FALSE(root.IsEmpty());
+    EXPECT_FALSE(root.GetArray("GameObjects").IsEmpty());
 }
 
 TEST_F(t_PrefabManager, SavePrefab_RootEntryHasParentZero)
 {
     const std::string path = SaveSimplePrefab("save_root_parent.nprefab");
-    JSON_Value* root = json_parse_file(path.c_str());
-    ASSERT_NE(root, nullptr);
-    JSON_Array* arr = json_object_get_array(json_value_get_object(root), "GameObjects");
-    ASSERT_NE(arr, nullptr);
+    JsonObject root = JsonFile::LoadFromFile(path);
+    ASSERT_FALSE(root.IsEmpty());
+    JsonArray arr = root.GetArray("GameObjects");
+    ASSERT_FALSE(arr.IsEmpty());
 
     bool foundRootEntry = false;
-    for (size_t i = 0; i < json_array_get_count(arr); ++i)
+    for (int i = 0; i < arr.Count(); ++i)
     {
-        JSON_Object* obj = json_array_get_object(arr, i);
-        if (static_cast<int>(json_object_get_number(obj, "parent")) == 0)
+        JsonObject obj = arr.GetObject(i);
+        if (static_cast<int>(obj.GetDouble("parent", -1.0)) == 0)
         {
             foundRootEntry = true;
             break;
         }
     }
     EXPECT_TRUE(foundRootEntry);
-    json_value_free(root);
 }
 
 TEST_F(t_PrefabManager, SavePrefab_ChildEntryHasNonZeroParent)
 {
     const std::string path = SaveSimplePrefab("save_child_parent.nprefab", "Root", true, "Child");
-    JSON_Value* root = json_parse_file(path.c_str());
-    ASSERT_NE(root, nullptr);
-    JSON_Array* arr = json_object_get_array(json_value_get_object(root), "GameObjects");
-    ASSERT_NE(arr, nullptr);
+    JsonObject root = JsonFile::LoadFromFile(path);
+    ASSERT_FALSE(root.IsEmpty());
+    JsonArray arr = root.GetArray("GameObjects");
+    ASSERT_FALSE(arr.IsEmpty());
 
     bool foundChild = false;
-    for (size_t i = 0; i < json_array_get_count(arr); ++i)
+    for (int i = 0; i < arr.Count(); ++i)
     {
-        JSON_Object* obj = json_array_get_object(arr, i);
-        if (static_cast<int>(json_object_get_number(obj, "parent")) != 0)
+        JsonObject obj = arr.GetObject(i);
+        if (static_cast<int>(obj.GetDouble("parent", 0.0)) != 0)
         {
             foundChild = true;
             break;
         }
     }
     EXPECT_TRUE(foundChild);
-    json_value_free(root);
 }
 
 TEST_F(t_PrefabManager, SavePrefab_StripsCPrefabFromOutput)
@@ -217,27 +202,26 @@ TEST_F(t_PrefabManager, SavePrefab_StripsCPrefabFromOutput)
     const std::string path = TempFile("save_strips_cprefab.nprefab");
     PrefabManager::SavePrefab(root, path);
 
-    JSON_Value* fileRoot = json_parse_file(path.c_str());
-    ASSERT_NE(fileRoot, nullptr);
-    JSON_Array* arr = json_object_get_array(json_value_get_object(fileRoot), "GameObjects");
-    ASSERT_NE(arr, nullptr);
+    JsonObject fileRoot = JsonFile::LoadFromFile(path);
+    ASSERT_FALSE(fileRoot.IsEmpty());
+    JsonArray arr = fileRoot.GetArray("GameObjects");
+    ASSERT_FALSE(arr.IsEmpty());
 
     bool hasCPrefab = false;
-    for (size_t i = 0; i < json_array_get_count(arr); ++i)
+    for (int i = 0; i < arr.Count(); ++i)
     {
-        JSON_Object* obj   = json_array_get_object(arr, i);
-        JSON_Array*  comps = json_object_get_array(obj, "components");
-        if (!comps) continue;
-        for (size_t j = 0; j < json_array_get_count(comps); ++j)
+        JsonObject obj  = arr.GetObject(i);
+        JsonArray comps = obj.GetArray("components");
+        if (comps.IsEmpty()) continue;
+        for (int j = 0; j < comps.Count(); ++j)
         {
-            const char* type = json_object_get_string(json_array_get_object(comps, j), "type");
-            if (type && std::string(type) == "CPrefab") { hasCPrefab = true; break; }
+            JsonObject comp = comps.GetObject(j);
+            if (comp.GetString("type") == "CPrefab") { hasCPrefab = true; break; }
         }
         if (hasCPrefab) break;
     }
 
     EXPECT_FALSE(hasCPrefab);
-    json_value_free(fileRoot);
 }
 
 // =============================================================================

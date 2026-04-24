@@ -16,8 +16,8 @@ public:
 
     std::string prefabSourcePath; // e.g. "Assets/Prefabs/MyPrefab.nprefab"
 
-    NOUS_ENGINE_API JSON_Value* Serialize() const override;
-    NOUS_ENGINE_API void Deserialize(JSON_Object* obj) override;
+    NOUS_ENGINE_API JsonObject Serialize() const override;
+    NOUS_ENGINE_API void Deserialize(const JsonObject& obj) override;
 };
 
 #endif // NOUS_ENGINE_CPREFAB_H

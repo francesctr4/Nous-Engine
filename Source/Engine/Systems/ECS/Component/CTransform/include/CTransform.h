@@ -6,9 +6,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include "Engine/EngineExport.h"
 
-typedef struct json_object_t JSON_Object;
-typedef struct json_value_t  JSON_Value;
-
 class CTransform : public Component {
 public:
     COMPONENT_TYPE(CTransform)
@@ -57,9 +54,9 @@ public:
     NOUS_ENGINE_API void UpdateMatrix();
 
     // ---------- JSON Serialization ----------
-    NOUS_ENGINE_API JSON_Value* Serialize() const override;
+    NOUS_ENGINE_API JsonObject Serialize() const override;
 
-    NOUS_ENGINE_API void Deserialize(JSON_Object* obj) override;
+    NOUS_ENGINE_API void Deserialize(const JsonObject& obj) override;
 };
 
 #endif //NOUS_ENGINE_CTRANSFORM_H

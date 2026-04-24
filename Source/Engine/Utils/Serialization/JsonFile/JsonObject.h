@@ -5,6 +5,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <string>
 #include <string_view>
+#include <vector>
 
 class JsonArray;
 class JsonFile;
@@ -28,6 +29,8 @@ public:
     void Set(std::string_view key, double value);
     void Set(std::string_view key, bool value);
     void Set(std::string_view key, std::string_view value);
+    // Prevent const char* from resolving to the bool overload (standard > user-defined conversion).
+    void Set(std::string_view key, const char* value) { Set(key, std::string_view(value ? value : "")); }
 
     // Write — GLM (stored as JSON number arrays)
     void Set(std::string_view key, const glm::vec2& value);
@@ -59,6 +62,9 @@ public:
     bool HasKey(std::string_view key) const;
     void Remove(std::string_view key);
     bool IsEmpty() const;
+
+    // Returns all key names in this object (order is insertion order in parson)
+    std::vector<std::string> GetKeys() const;
 
 private:
     friend class JsonArray;

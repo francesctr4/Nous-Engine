@@ -4,7 +4,9 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -44,14 +46,10 @@ TEST_F(t_ImporterMaterial, CreateNewMaterialFileWritesValidJson)
 {
     ASSERT_TRUE(ImporterMaterial::CreateNewMaterialFile(m_testFilePath));
 
-    JSON_Value* root = json_parse_file(m_testFilePath.c_str());
-    ASSERT_NE(root, nullptr);
-
-    JSON_Object* obj = json_value_get_object(root);
-    EXPECT_NE(json_object_get_array(obj, "uniforms"),      nullptr);
-    EXPECT_NE(json_object_get_array(obj, "texture_maps"),  nullptr);
-
-    json_value_free(root);
+    JsonObject obj = JsonFile::LoadFromFile(m_testFilePath);
+    ASSERT_FALSE(obj.IsEmpty());
+    EXPECT_FALSE(obj.GetArray("uniforms").IsEmpty());
+    EXPECT_FALSE(obj.GetArray("texture_maps").IsEmpty());
 }
 
 TEST_F(t_ImporterMaterial, CreateNewMaterialFileDeserializeRoundTrip)
