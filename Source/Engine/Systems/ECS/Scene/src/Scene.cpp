@@ -20,6 +20,7 @@
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
+#include <functional>
 #include <queue>
 
 // ── Constructor / Destructor ──────────────────────────────────────────────────
@@ -196,10 +197,23 @@ void Scene::SetName(const std::string& name) { m_Name = name; }
 // ── Serialization ─────────────────────────────────────────────────────────────
 
 void Scene::Serialize(const std::string& filepath) const {
+    // DFS from roots in m_OrderedEntities order, following CHierarchy::children
+    // at each node. This preserves sibling order across save/load round-trips.
+    // Using view<CEntityInfo>() here would serialize in EnTT's internal packed-array
+    // order, which differs from CHierarchy::children order and causes siblings to
+    // swap on every snapshot restore.
     JsonArray goArr;
-    for (auto entity : m_Registry.view<CEntityInfo>()) {
+    std::function<void(entt::entity)> writeDFS = [&](entt::entity entity) {
         GameObject go(entity, const_cast<entt::registry*>(&m_Registry));
         goArr.Append(go.Serialize());
+        if (const auto* h = m_Registry.try_get<CHierarchy>(entity))
+            for (auto child : h->children)
+                writeDFS(child);
+    };
+    for (auto entity : m_OrderedEntities) {
+        const auto* h = m_Registry.try_get<CHierarchy>(entity);
+        if (h && h->parent == entt::null)
+            writeDFS(entity);
     }
 
     JsonObject root;
@@ -235,12 +249,11 @@ void Scene::Deserialize(const std::string& filepath) {
 
     const int count = arr.Count();
     std::vector<std::pair<GameObject, uint32_t>> created;
-    // Iterate JSON in reverse: EnTT views traverse the packed array in reverse
-    // insertion order, so serialize already wrote entities in reverse-of-creation
-    // order. Emplacing them back in reverse-of-JSON order rebuilds the packed
-    // array so the next view iteration matches the JSON order — making save/load
-    // round-trips stable. Without this, sibling order flips on every save.
-    for (int i = count - 1; i >= 0; --i) {
+    // Forward iteration: Serialize now writes in DFS tree order (roots first,
+    // children in CHierarchy::children order). Iterating forward here preserves
+    // that order in `created`, so the parent-wiring loop below adds children to
+    // their parent's vector in the correct sibling order.
+    for (int i = 0; i < count; ++i) {
         JsonObject obj = arr.GetObject(i);
         if (obj.IsEmpty()) continue;
         // Read parentID from JSON BEFORE deserializing — GameObject::Deserialize()
@@ -256,8 +269,8 @@ void Scene::Deserialize(const std::string& filepath) {
 
     {
         std::lock_guard lock(m_Mutex);
-        for (auto it = created.rbegin(); it != created.rend(); ++it)
-            m_OrderedEntities.push_back(it->first.GetEntity());
+        for (auto& [go, parentID] : created)
+            m_OrderedEntities.push_back(go.GetEntity());
 
         for (auto& [go, parentID] : created) {
             if (parentID == 0) continue;
