@@ -24,7 +24,8 @@ void SetupCameraBindings(CameraAPI& camera, ModuleScene* moduleScene)
     camera.GetMainCamera = []() -> uint32_t {
         if (!s_scene || !s_scene->activeScene) return 0;
         for (GameObject& go : s_scene->activeScene->GetGameObjects()) {
-            if (go.HasComponent<CCamera>() && go.GetComponent<CCamera>().isMainCamera)
+            const CCamera* cam = go.TryGetComponent<CCamera>();
+            if (cam && cam->isMainCamera)
                 return go.GetID();
         }
         return 0;
