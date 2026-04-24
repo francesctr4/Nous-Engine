@@ -184,7 +184,7 @@ static std::filesystem::path GetExeDir()
 }
 
 ScriptManager::ScriptManager(ModuleInput* moduleInput, ModuleScene* moduleScene)
-    : m_libraryHandle(nullptr), m_scriptRegistry(nullptr),
+    : m_libraryHandle(nullptr), m_shadowDllPath(), m_scriptRegistry(nullptr),
       m_moduleInput(moduleInput), m_moduleScene(moduleScene),
       m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
 {
@@ -200,7 +200,25 @@ ScriptManager::~ScriptManager()
 bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
     UnloadScriptLibrary();
 
+#ifdef _WIN32
+    // Shadow-copy the DLL so the original is never locked by this process.
+    // The linker can then overwrite Scripts.dll freely on the next hot-reload.
+    const std::filesystem::path src(dllPath);
+    const std::filesystem::path shadow = src.parent_path() / (src.stem().string() + "_shadow" + src.extension().string());
+
+    std::error_code ec;
+    std::filesystem::copy_file(src, shadow, std::filesystem::copy_options::overwrite_existing, ec);
+    if (ec)
+    {
+        NOUS_ERROR("Failed to create shadow copy of script DLL: %s", ec.message().c_str());
+        return false;
+    }
+    m_shadowDllPath = shadow.string();
+    m_libraryHandle = LoadDLL(m_shadowDllPath);
+#else
     m_libraryHandle = LoadDLL(dllPath);
+#endif
+
     if (!m_libraryHandle) {
         NOUS_ERROR("Failed to load script library: %s", dllPath.c_str());
         return false;
@@ -244,14 +262,25 @@ bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
 void ScriptManager::UnloadScriptLibrary() {
     if (m_libraryHandle)
     {
-        // Clear registry before unloading
         m_scriptRegistry = nullptr;
 
         UnloadLibrary(m_libraryHandle);
         m_libraryHandle = nullptr;
 
-        // Small delay to ensure DLL is fully unloaded
+        // Small delay to ensure the OS fully releases the file handle.
         nous::engine::multithreading::NOUS_Thread::SleepMS(100);
+
+#ifdef _WIN32
+        // Delete the shadow copy so it can be recreated fresh on the next load.
+        if (!m_shadowDllPath.empty())
+        {
+            std::error_code ec;
+            std::filesystem::remove(m_shadowDllPath, ec);
+            if (ec)
+                NOUS_WARN("Could not delete shadow DLL '%s': %s", m_shadowDllPath.c_str(), ec.message().c_str());
+            m_shadowDllPath.clear();
+        }
+#endif
     }
 }
 

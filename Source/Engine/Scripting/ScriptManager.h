@@ -69,6 +69,7 @@ private:
     void UnloadLibrary(void* handle);
 
     void* m_libraryHandle;
+    std::string m_shadowDllPath;
     ScriptRegistry* m_scriptRegistry;
     EngineAPI* api;
 
