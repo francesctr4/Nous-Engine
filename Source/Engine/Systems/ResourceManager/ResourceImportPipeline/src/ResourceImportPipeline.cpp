@@ -5,6 +5,7 @@
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
@@ -318,44 +319,35 @@ bool ResourceImportPipeline::ImportCase3_TimestampCheck(const MetaFileData& meta
 
 bool ResourceImportPipeline::CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData)
 {
-    JsonFile metaFile;
-
-    metaFile.AppendValue("Name", inFileData.name);
-    metaFile.AppendValue("UID", static_cast<double>(inFileData.uid));
-    metaFile.AppendValue("Resource Type", std::to_underlying(inFileData.resourceType));
-    metaFile.AppendValue("Assets Path", inFileData.assetsPath);
-    metaFile.AppendValue("Library Path", inFileData.libraryPath);
-
-    return metaFile.SaveToFile(metaFilePath.c_str());
+    JsonObject metaObj;
+    metaObj.Set("Name",          inFileData.name);
+    metaObj.Set("UID",           static_cast<double>(inFileData.uid));
+    metaObj.Set("Resource Type", std::to_underlying(inFileData.resourceType));
+    metaObj.Set("Assets Path",   inFileData.assetsPath);
+    metaObj.Set("Library Path",  inFileData.libraryPath);
+    return JsonFile::SaveToFile(metaObj, metaFilePath);
 }
 
 bool ResourceImportPipeline::ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData)
 {
-    JsonFile metaFile;
-
-    if (!metaFile.LoadFromFile(metaFilePath.c_str()))
+    JsonObject metaObj = JsonFile::LoadFromFile(metaFilePath);
+    if (metaObj.IsEmpty())
         return false;
 
-    std::string r_fileName;
-    std::string r_assetsPath;
-    std::string r_libraryPath;
-    int         r_resourceType;
-    double      r_resourceUID;
-
-    if (!metaFile.GetValue("Name", r_fileName) ||
-        !metaFile.GetValue("UID", r_resourceUID) ||
-        !metaFile.GetValue("Resource Type", r_resourceType) ||
-        !metaFile.GetValue("Assets Path", r_assetsPath) ||
-        !metaFile.GetValue("Library Path", r_libraryPath))
+    if (!metaObj.HasKey("Name") ||
+        !metaObj.HasKey("UID") ||
+        !metaObj.HasKey("Resource Type") ||
+        !metaObj.HasKey("Assets Path") ||
+        !metaObj.HasKey("Library Path"))
     {
         return false;
     }
 
-    outFileData.name         = r_fileName;
-    outFileData.uid          = static_cast<uint32>(r_resourceUID);
-    outFileData.resourceType = static_cast<ResourceType>(r_resourceType);
-    outFileData.assetsPath   = r_assetsPath;
-    outFileData.libraryPath  = r_libraryPath;
+    outFileData.name         = metaObj.GetString("Name");
+    outFileData.uid          = static_cast<uint32>(metaObj.GetDouble("UID"));
+    outFileData.resourceType = static_cast<ResourceType>(metaObj.GetInt("Resource Type"));
+    outFileData.assetsPath   = metaObj.GetString("Assets Path");
+    outFileData.libraryPath  = metaObj.GetString("Library Path");
 
     return true;
 }

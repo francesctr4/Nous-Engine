@@ -1,4 +1,8 @@
 target_sources(Utils PRIVATE
+        JsonObject.h
+        JsonObject.cpp
+        JsonArray.h
+        JsonArray.cpp
         JsonFile.h
         JsonFile.cpp
 )
