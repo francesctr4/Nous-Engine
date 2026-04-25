@@ -1,7 +1,7 @@
 {
     "uniforms": [
         {
-            "name": "edgeWidth",
+            "name": "aoIntensity",
             "type": "float",
             "value": [
                 1
@@ -18,10 +18,10 @@
             ]
         },
         {
-            "name": "normalStrength",
+            "name": "dissolveSpeed",
             "type": "float",
             "value": [
-                1
+                -0.40000000596046448
             ]
         },
         {
@@ -35,17 +35,10 @@
             ]
         },
         {
-            "name": "noiseScale",
+            "name": "edgeWidth",
             "type": "float",
             "value": [
-                7.9899997711181641
-            ]
-        },
-        {
-            "name": "dissolveSpeed",
-            "type": "float",
-            "value": [
-                -0.40000000596046448
+                1
             ]
         },
         {
@@ -59,14 +52,14 @@
             ]
         },
         {
-            "name": "aoIntensity",
+            "name": "noiseScale",
             "type": "float",
             "value": [
-                1
+                7.9899997711181641
             ]
         },
         {
-            "name": "specularIntensity",
+            "name": "normalStrength",
             "type": "float",
             "value": [
                 1
@@ -74,6 +67,13 @@
         },
         {
             "name": "shininessScale",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "specularIntensity",
             "type": "float",
             "value": [
                 1
