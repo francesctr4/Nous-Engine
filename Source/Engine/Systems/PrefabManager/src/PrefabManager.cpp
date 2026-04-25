@@ -361,8 +361,9 @@ void PrefabManager::ReloadPrefabInstance(GameObject instanceRoot, Scene* scene)
         }
         else
         {
-            // Child GO — create fresh.
-            GameObject go = scene->CreateGameObjectDetached(name.empty() ? "GameObject" : name);
+            // Child GO — create fresh, reusing the prefab's UID so that repeated
+            // reload/save cycles don't generate a new random UID each time.
+            GameObject go = scene->CreateGameObjectDetached(name.empty() ? "GameObject" : name, nullptr, prefabUID);
 
             JsonArray comps = obj.GetArray("components");
             if (!comps.IsEmpty())

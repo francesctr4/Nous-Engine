@@ -268,9 +268,10 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, con
 }
 
 ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
-    const std::string& libraryPath, const int32_t submeshIndex, const std::string& assetsPath)
+    const std::string& libraryPath, const int32_t submeshIndex,
+    const std::string& assetsPath, const uint32 hintUID)
 {
-	return m_subMeshCache.RequestOrCreateFromLibrary(libraryPath, submeshIndex, assetsPath);
+	return m_subMeshCache.RequestOrCreateFromLibrary(libraryPath, submeshIndex, assetsPath, hintUID);
 }
 
 

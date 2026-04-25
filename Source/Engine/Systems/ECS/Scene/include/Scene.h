@@ -35,7 +35,8 @@ public:
 
     // Thread-safe deferred registration (for worker-thread scene loading)
     NOUS_ENGINE_API GameObject CreateGameObjectDetached(const std::string& name = "GameObject",
-                                                        GameObject* parent = nullptr);
+                                                        GameObject* parent = nullptr,
+                                                        uint32_t preferredUID = 0);
     NOUS_ENGINE_API void       RegisterGameObject(GameObject go);
 
     // Update

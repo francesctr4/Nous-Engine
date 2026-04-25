@@ -42,9 +42,11 @@ public:
     NOUS_ENGINE_API ResourceMesh* RequestOrCreate(const std::string& assetsPath, int32_t submeshIndex);
 
     // GAME path — derives a synthetic base UID from hash(libraryPath).
+    // Pass hintUID (e.g. from the scene file's "resourceUID" field) so that newly
+    // created resources get a stable UID instead of a random one.
     NOUS_ENGINE_API ResourceMesh* RequestOrCreateFromLibrary(
         const std::string& libraryPath, int32_t submeshIndex,
-        const std::string& assetsPath = "");
+        const std::string& assetsPath = "", uint32 hintUID = 0);
 
     // Remove all index entries that map to the given UID.
     // Caller MUST hold m_resourcesMutex.
@@ -58,7 +60,8 @@ private:
         CacheKey key,
         const std::string& libraryPath,
         int32_t submeshIndex,
-        const std::string& assetsPath);
+        const std::string& assetsPath,
+        uint32 hintUID = 0);
 
     std::map<CacheKey, uint32> m_index;
 

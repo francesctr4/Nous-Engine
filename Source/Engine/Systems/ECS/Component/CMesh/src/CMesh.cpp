@@ -51,7 +51,7 @@ void CMesh::Deserialize(const JsonObject& obj) {
         if (!libraryPath.empty())
         {
             mesh = scene->GetResourceManager()->RequestOrCreateSubMeshResourceFromLibrary(
-                libraryPath, submeshIndex, assetPathStr.c_str());
+                libraryPath, submeshIndex, assetPathStr.c_str(), resourceUID);
         }
         if (!mesh && !assetPathStr.empty())
         {

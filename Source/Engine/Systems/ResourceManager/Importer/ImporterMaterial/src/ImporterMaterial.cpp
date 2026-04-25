@@ -281,9 +281,16 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
 
     auto buildUniformsArray = [&]() -> JsonArray
     {
-        JsonArray uniArr;
+        std::vector<std::string> keys;
+        keys.reserve(material->uniformValues.size());
         for (const auto& [name, uv] : material->uniformValues)
+            keys.push_back(name);
+        std::sort(keys.begin(), keys.end());
+
+        JsonArray uniArr;
+        for (const auto& name : keys)
         {
+            const auto& uv = material->uniformValues.at(name);
             JsonObject entry;
             entry.Set("name", name);
             entry.Set("type", UniformValueTypeToString(uv.type));
@@ -308,9 +315,16 @@ bool ImporterMaterial::SaveMaterialToAssets(ResourceMaterial* material)
 
     auto buildTextureMapsArray = [&]() -> JsonArray
     {
-        JsonArray arr;
+        std::vector<std::string> keys;
+        keys.reserve(material->textureMaps.size());
         for (const auto& [name, map] : material->textureMaps)
+            keys.push_back(name);
+        std::sort(keys.begin(), keys.end());
+
+        JsonArray arr;
+        for (const auto& name : keys)
         {
+            const auto& map = material->textureMaps.at(name);
             if (!map.texture) continue;
             // Skip in-memory fallbacks (default checkerboard, white, black, flat-normal)
             // — they have no asset on disk, so persisting an entry for them would

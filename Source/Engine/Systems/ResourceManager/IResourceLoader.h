@@ -29,5 +29,5 @@ public:
 
     virtual ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(
         const std::string& libraryPath, int32_t submeshIndex,
-        const std::string& assetsPath) = 0;
+        const std::string& assetsPath, uint32 hintUID = 0) = 0;
 };

@@ -72,7 +72,7 @@ public:
 	// assetsPath and CMesh::Deserialize would drop the reference on the next load.
 	NOUS_ENGINE_API ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(
 	    const std::string& libraryPath, int32_t submeshIndex,
-	    const std::string& assetsPath) override;
+	    const std::string& assetsPath, uint32 hintUID = 0) override;
 
 	NOUS_ENGINE_API bool UnloadResource(uint32 uid);
 

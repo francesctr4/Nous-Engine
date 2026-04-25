@@ -52,7 +52,8 @@ ResourceMesh* SubMeshCache::RequestOrCreate(const std::string& assetsPath, int32
 }
 
 ResourceMesh* SubMeshCache::RequestOrCreateFromLibrary(
-    const std::string& libraryPath, int32_t submeshIndex, const std::string& assetsPath)
+    const std::string& libraryPath, int32_t submeshIndex,
+    const std::string& assetsPath, uint32 hintUID)
 {
     // Derive a stable synthetic base UID from the library path so dedup works
     // without a .meta file (GAME mode path).
@@ -77,7 +78,7 @@ ResourceMesh* SubMeshCache::RequestOrCreateFromLibrary(
         }
     }
 
-    return BuildAndRegister(key, libraryPath, submeshIndex, assetsPath);
+    return BuildAndRegister(key, libraryPath, submeshIndex, assetsPath, hintUID);
 }
 
 void SubMeshCache::EraseUID(uint32 uid)
@@ -101,7 +102,8 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
     CacheKey key,
     const std::string& libraryPath,
     int32_t submeshIndex,
-    const std::string& assetsPath)
+    const std::string& assetsPath,
+    uint32 hintUID)
 {
     const auto hierarchy = ImporterMesh::LoadHierarchy(libraryPath);
     if (submeshIndex < 0 || submeshIndex >= static_cast<int32_t>(hierarchy.size()))
@@ -139,8 +141,16 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
     uint32 uid;
     {
         std::lock_guard lock(m_resourcesMutex);
-        do { uid = static_cast<uint32>(Random::Generate()); }
-        while (uid == 0 || m_resources.contains(uid));
+        // Prefer the caller's hint UID (e.g. from a scene file's "resourceUID" field)
+        // so the UID stays stable across sessions. Fall back to random only if the
+        // hint is 0 or already occupied by a different resource.
+        if (hintUID != 0 && !m_resources.contains(hintUID))
+            uid = hintUID;
+        else
+        {
+            do { uid = static_cast<uint32>(Random::Generate()); }
+            while (uid == 0 || m_resources.contains(uid));
+        }
         m_resources[uid]  = mesh;
         m_index[key]      = uid;
     }

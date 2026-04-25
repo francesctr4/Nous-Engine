@@ -60,11 +60,14 @@ GameObject Scene::CreateGameObject(const std::string& name, GameObject* parent) 
     return go;
 }
 
-GameObject Scene::CreateGameObjectDetached(const std::string& name, GameObject* parent) {
+GameObject Scene::CreateGameObjectDetached(const std::string& name, GameObject* parent, uint32_t preferredUID) {
     uint32_t id;
     {
         std::lock_guard lock(m_Mutex);
-        id = GenerateUniqueID();
+        if (preferredUID != 0 && !m_IDToEntity.count(preferredUID))
+            id = preferredUID;
+        else
+            id = GenerateUniqueID();
     }
 
     const entt::entity entity = m_Registry.create();
@@ -296,7 +299,11 @@ void Scene::Deserialize(const std::string& filepath) {
     for (auto& [go, parentID] : created)
     {
         if (!go.IsValid()) continue;
-        if (go.TryGetComponent<CPrefab>())
+        // Only rebuild prefab children when the scene file predates inline serialization
+        // (i.e. the root was saved without its children). If children are already present
+        // they were deserialized from the scene file and must not be replaced — doing so
+        // would assign fresh random UIDs every load/save cycle.
+        if (go.TryGetComponent<CPrefab>() && go.GetChildren().empty())
             PrefabManager::ReloadPrefabInstance(go, this);
     }
 

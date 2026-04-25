@@ -34,7 +34,7 @@ namespace
         if (req.submeshIndex >= 0)
         {
             if (!req.libraryPath.empty())
-                return loader->RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex, req.assetPath);
+                return loader->RequestOrCreateSubMeshResourceFromLibrary(req.libraryPath, req.submeshIndex, req.assetPath, req.uid);
             return loader->RequestOrCreateSubMeshResource(req.assetPath, req.submeshIndex);
         }
 
