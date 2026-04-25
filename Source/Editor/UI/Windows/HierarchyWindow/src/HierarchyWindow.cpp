@@ -374,7 +374,7 @@ void HierarchyWindow::DrawSaveAsPrefabPopup()
     {
         if (!nameEmpty && m_prefabSaveTarget.IsValid())
         {
-            const std::string filePath = std::string("Assets/Prefabs/") + m_prefabNameBuffer + ".nprefab";
+            const std::string filePath = editorContext->GetAssetsBrowserDirectory() + "/" + m_prefabNameBuffer + ".nprefab";
             PrefabManager::SavePrefab(m_prefabSaveTarget, filePath);
 
             auto& cprefab = m_prefabSaveTarget.AddComponent<CPrefab>();

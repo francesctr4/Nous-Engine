@@ -59,6 +59,7 @@ ModuleEditor::ModuleEditor(EventSystem* eventSystem, nous::engine::multithreadin
 
     eventSystem->Subscribe(EventType::INPUT_EVENT, this);
     eventSystem->Subscribe(EventType::IMGUI_RECREATION, this);
+    eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
 
 ModuleEditor::~ModuleEditor() = default;
@@ -341,6 +342,13 @@ void ModuleEditor::AddEditorWindow(IEditorWindow* editorWindow)
 	editorWindows.push_back(editorWindow);
 }
 
+std::string ModuleEditor::GetAssetsBrowserDirectory() const
+{
+    if (IEditorWindow* w = const_cast<ModuleEditor*>(this)->GetEditorWindowByName("Assets"))
+        return static_cast<AssetsBrowser*>(w)->current_directory;
+    return "Assets";
+}
+
 IEditorWindow* ModuleEditor::GetEditorWindowByName(const std::string& name)
 {
 	for (auto* w : editorWindows)
@@ -359,6 +367,16 @@ void ModuleEditor::OnEvent(const Event &event)
 		{
 			const SDL_Event* sdlEvent = static_cast<SDL_Event*>(event.ctx.ptr[0]);
 			ImGui_ImplSDL3_ProcessEvent(sdlEvent);
+			break;
+		}
+		case EventType::DROP_FILE:
+		{
+			const std::string path = event.ctx.c ? event.ctx.c : "";
+			if (!path.empty())
+			{
+				for (auto* w : editorWindows)
+					w->OnFileDrop(path);
+			}
 			break;
 		}
 		case EventType::IMGUI_RECREATION:

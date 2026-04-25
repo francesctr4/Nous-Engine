@@ -252,10 +252,9 @@ void TextEditorWindow::Save()
         return;
     }
 
-    const char* basePath = (mMode == TextEditorMode::Shader) ? k_AssetsShaderPath : k_AssetsScriptPath;
     const char* ext = (mMode == TextEditorMode::Shader) ? k_GlslExtension : k_CppExtension;
 
-    std::filesystem::path savePath = std::filesystem::path(basePath)
+    std::filesystem::path savePath = std::filesystem::path(editorContext->GetAssetsBrowserDirectory())
         / (std::string(mFileNameBuffer) + ext);
 
     std::ofstream file(savePath);

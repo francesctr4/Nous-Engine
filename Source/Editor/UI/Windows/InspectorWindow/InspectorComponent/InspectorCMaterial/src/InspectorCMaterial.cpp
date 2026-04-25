@@ -125,13 +125,13 @@ void DrawDefaultShaderOption(RendererFrontend* rendererFrontend, CMaterial& mat,
 
 void LoadAndDisplayShaderOptions(RendererFrontend* rendererFrontend, CMaterial& mat, ModuleResourceManager* rm)
 {
-    const std::filesystem::path shadersDir = "Assets/Shaders/";
+    const std::filesystem::path shadersDir = "Assets/";
     if (!std::filesystem::exists(shadersDir))
         return;
 
     auto const* material = mat.material;
 
-    for (const auto& entry : std::filesystem::directory_iterator(shadersDir))
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(shadersDir))
     {
         if (!entry.is_regular_file()) continue;
         if (entry.path().extension() != ".glsl") continue;

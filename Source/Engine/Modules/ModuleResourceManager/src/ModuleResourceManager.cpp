@@ -69,7 +69,6 @@ ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, nous::eng
     , m_scenePreloader(this)
     , m_subMeshCache(resources, resourcesMutex, m_pendingUploads, m_pendingUploadsMutex)
 {
-	eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
 
 ModuleResourceManager::~ModuleResourceManager() = default;
@@ -128,8 +127,6 @@ bool ModuleResourceManager::CleanUp()
 
 void ModuleResourceManager::OnEvent(const Event& event)
 {
-	if (event.type == EventType::DROP_FILE)
-		ImportFile(event.ctx.c);
 }
 
 bool ModuleResourceManager::ImportFile(const std::string& path)

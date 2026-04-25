@@ -4,7 +4,7 @@
 # Requirements:
 #   <bin>/Scripts/SDK/include/Engine/.../IScript.inl
 #   <bin>/Scripts/SDK/src/EngineAPI.cpp
-#   @CMAKE_SOURCE_DIR@/Assets/Scripts/*.cpp
+#   @CMAKE_SOURCE_DIR@/Assets/**/*.cpp
 # Output:
 #   <bin>/Scripts/Scripts.so
 # ============================================================
@@ -40,9 +40,9 @@ EXE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # Dev:     compile from the source tree (live edits, never stale).
 # Shipped: compile from Assets/ next to the exe — delivery is self-contained, no fallback.
 if echo "$EXE_DIR" | grep -qF "@CMAKE_BINARY_DIR@"; then
-    SCRIPTS_ASSETS_DIR="@CMAKE_SOURCE_DIR@/Assets/Scripts"
+    SCRIPTS_ASSETS_DIR="@CMAKE_SOURCE_DIR@/Assets"
 else
-    SCRIPTS_ASSETS_DIR="$EXE_DIR/Assets/Scripts"
+    SCRIPTS_ASSETS_DIR="$EXE_DIR/Assets"
 fi
 
 mkdir -p "$SCRIPTS_OUTPUT_DIR"

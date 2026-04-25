@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_EDITORCONTEXT_H
 
 #include <cstddef>
+#include <string>
 
 class ImFont;
 
@@ -27,6 +28,8 @@ public:
     [[nodiscard]] virtual ModuleResourceManager*                GetResourceManager()  const = 0;
     [[nodiscard]] virtual RendererFrontend*                     GetRendererFrontend() const = 0;
     [[nodiscard]] virtual nous::engine::multithreading::NOUS_JobSystem*  GetJobSystem()        const = 0;
+
+    [[nodiscard]] virtual std::string GetAssetsBrowserDirectory() const = 0;
 
 };
 

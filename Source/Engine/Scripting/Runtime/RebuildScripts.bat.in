@@ -6,7 +6,7 @@ REM Nous Engine - RebuildScripts.bat (SDK-only, no engine source)
 REM Requirements:
 REM   <bin>\Scripts\SDK\include\Engine\...\IScript.inl
 REM   <bin>\Scripts\SDK\src\EngineAPI.cpp
-REM   @CMAKE_SOURCE_DIR@\Assets\Scripts\*.cpp
+REM   @CMAKE_SOURCE_DIR@\Assets\**\*.cpp
 REM Output:
 REM   <bin>\Scripts\Scripts.dll
 REM ============================================================
@@ -56,9 +56,9 @@ REM Shipped: compile from Assets\ next to the exe — delivery is self-contained
 set EXE_DIR_FWD=%EXE_DIR:\=/%
 echo %EXE_DIR_FWD% | findstr /I /C:"@CMAKE_BINARY_DIR@" >nul 2>&1
 if not errorlevel 1 (
-    set SCRIPTS_ASSETS_BIN_DIR=@CMAKE_SOURCE_DIR@\Assets\Scripts
+    set SCRIPTS_ASSETS_BIN_DIR=@CMAKE_SOURCE_DIR@\Assets
 ) else (
-    set SCRIPTS_ASSETS_BIN_DIR=%EXE_DIR%\Assets\Scripts
+    set SCRIPTS_ASSETS_BIN_DIR=%EXE_DIR%\Assets
 )
 
 if not exist "%SCRIPTS_OUTPUT_DIR%" mkdir "%SCRIPTS_OUTPUT_DIR%" >nul 2>&1

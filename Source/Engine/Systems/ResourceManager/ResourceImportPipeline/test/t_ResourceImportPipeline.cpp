@@ -244,3 +244,28 @@ TEST_F(t_ResourceImportPipeline, ImportDirectoryCallsImportForEachKnownFile)
     EXPECT_TRUE(pipeline->ImportDirectory("Assets"));
     EXPECT_EQ(mockImporter.importCallCount, 2);
 }
+
+// =====================================================
+// Meta path — adjacent to asset (not type-specific folder)
+// =====================================================
+
+TEST_F(t_ResourceImportPipeline, ImportFileCreatesMetaAdjacentToAsset)
+{
+    pipeline->EnsureLibraryDirectories();
+    CreateDummyFile("Assets/CustomFolder/SubFolder/test.png");
+
+    EXPECT_TRUE(pipeline->ImportFile("Assets/CustomFolder/SubFolder/test.png"));
+    EXPECT_TRUE(std::filesystem::exists("Assets/CustomFolder/SubFolder/test.png.meta"));
+    EXPECT_FALSE(std::filesystem::exists("Assets/Textures/test.png.meta"));
+}
+
+TEST_F(t_ResourceImportPipeline, ScanCreatesMetaAdjacentToAsset)
+{
+    pipeline->EnsureLibraryDirectories();
+    CreateDummyFile("Assets/CustomFolder/SubFolder/model.fbx");
+
+    pipeline->ScanAndImportAssets();
+
+    EXPECT_TRUE(std::filesystem::exists("Assets/CustomFolder/SubFolder/model.fbx.meta"));
+    EXPECT_FALSE(std::filesystem::exists("Assets/Meshes/model.fbx.meta"));
+}

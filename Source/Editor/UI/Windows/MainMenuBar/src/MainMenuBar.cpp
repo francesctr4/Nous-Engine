@@ -405,7 +405,8 @@ void MainMenuBar::FinishUpdate()
             ImGui::SetKeyboardFocusHere();
         }
 
-        ImGui::Text("Save to: %s/", kScenesDir);
+        const std::string saveDir = editorContext->GetAssetsBrowserDirectory();
+        ImGui::Text("Save to: %s/", saveDir.c_str());
         const bool enterPressed = ImGui::InputText("##sceneName", nameBuf, sizeof(nameBuf),
                                                    ImGuiInputTextFlags_EnterReturnsTrue);
         ImGui::SameLine();
@@ -423,7 +424,7 @@ void MainMenuBar::FinishUpdate()
             trimmed.find_first_of("\\/:*?\"<>|") == std::string::npos;
 
         const std::string targetPath = nameValid
-                                           ? (std::string(kScenesDir) + "/" + trimmed + kSceneExt)
+                                           ? (saveDir + "/" + trimmed + kSceneExt)
                                            : std::string();
         const bool overwriting = nameValid && nous::engine::filesystem::Exists(targetPath);
 
@@ -456,25 +457,25 @@ void MainMenuBar::FinishUpdate()
     // -------------------------------------------------------------------
     if (ImGui::BeginPopupModal(kOpenPopup, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        // Scan Assets/Scenes/*.nous each frame the popup is open — cheap, and
-        // keeps the list fresh if the user drops a scene in externally.
+        // Scan all of Assets/ recursively each frame the popup is open — keeps the
+        // list fresh if the user drops a scene in externally or saves to a subfolder.
         static int selectedIdx = -1;
         std::vector<std::string> sceneFiles;
 
         std::error_code ec;
-        if (std::filesystem::exists(kScenesDir, ec) && std::filesystem::is_directory(kScenesDir, ec))
+        if (std::filesystem::exists("Assets", ec) && std::filesystem::is_directory("Assets", ec))
         {
-            for (const auto& entry : std::filesystem::directory_iterator(kScenesDir, ec))
+            for (const auto& entry : std::filesystem::recursive_directory_iterator("Assets", ec))
             {
                 if (!entry.is_regular_file()) continue;
                 if (entry.path().extension().string() == kSceneExt)
-                    sceneFiles.push_back(entry.path().filename().string());
+                    sceneFiles.push_back(entry.path().generic_string());
             }
         }
 
         if (openOpen) selectedIdx = -1;
 
-        ImGui::Text("Select a scene from %s/:", kScenesDir);
+        ImGui::TextUnformatted("Select a scene:");
         ImGui::Separator();
 
         if (sceneFiles.empty())
@@ -493,8 +494,7 @@ void MainMenuBar::FinishUpdate()
                         selectedIdx = i;
                         if (ImGui::IsMouseDoubleClicked(0))
                         {
-                            const std::string chosen = std::string(kScenesDir) + "/" + sceneFiles[i];
-                            scene->LoadSceneAsync(chosen);
+                            scene->LoadSceneAsync(sceneFiles[selectedIdx]);
                             ImGui::CloseCurrentPopup();
                         }
                     }
@@ -508,8 +508,7 @@ void MainMenuBar::FinishUpdate()
         if (!canOpen) ImGui::BeginDisabled();
         if (ImGui::Button("Open", ImVec2(120, 0)))
         {
-            const std::string chosen = std::string(kScenesDir) + "/" + sceneFiles[selectedIdx];
-            scene->LoadSceneAsync(chosen);
+            scene->LoadSceneAsync(sceneFiles[selectedIdx]);
             ImGui::CloseCurrentPopup();
         }
         if (!canOpen) ImGui::EndDisabled();

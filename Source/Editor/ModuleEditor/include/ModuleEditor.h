@@ -58,6 +58,7 @@ public:
     ModuleResourceManager* GetResourceManager()         const override { return mModuleResourceManager; }
     RendererFrontend*      GetRendererFrontend()        const override;
     nous::engine::multithreading::NOUS_JobSystem* GetJobSystem() const override { return JobSystem; }
+    std::string GetAssetsBrowserDirectory() const override;
 
 private:
 

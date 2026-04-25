@@ -141,8 +141,7 @@ void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
 
         NOUS_DEBUG_C(CURRENT_CHANNEL, "Importing file: %s", path.c_str());
 
-        const std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType)
-                                       + fileName + extension + ".meta";
+        const std::string metaFilePath = fileDirectory + fileName + extension + ".meta";
 
         if (!nous::engine::filesystem::Exists(metaFilePath))
         {
@@ -251,7 +250,8 @@ bool ResourceImportPipeline::ImportFileFromExternal(const std::string& path, con
 bool ResourceImportPipeline::ImportFileFromAssets(const std::string& relativePath, const ResourceType resourceType,
                                                    const std::string& fileName, const std::string& extension) const
 {
-    const std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension + ".meta";
+    const std::string fileDirectory = nous::engine::filesystem::GetDirectory(relativePath);
+    const std::string metaFilePath  = fileDirectory + fileName + extension + ".meta";
 
     if (!nous::engine::filesystem::Exists(metaFilePath))
         return ImportCase1_NewAsset(relativePath, metaFilePath, resourceType, fileName);

@@ -2,10 +2,12 @@
 
 #include "Editor/EditorContext.h"
 #include <imgui.h>
+#include <string>
 #include <imgui_internal.h>
 
 class IEditorWindow
 {
+    friend class ModuleEditor;
 public:
     explicit IEditorWindow(const char* title, EditorContext* context, bool* p_open = nullptr, const bool start_open = true)
         : editorContext(context), title(title), internal_open(start_open), p_open(p_open ? p_open : &internal_open) {}
@@ -43,6 +45,7 @@ protected:
     virtual bool UpdatesWhenCollapsed() const { return false; }
     // NEW: Allow derived classes to inject ImGui flags dynamically
     virtual ImGuiWindowFlags GetWindowFlags() const { return 0; }
+    virtual void OnFileDrop(const std::string& /*path*/) {}
 
     const ImVec2& GetContentPos()  const { return contentPos; }
     const ImVec2& GetContentSize() const { return contentSize; }
