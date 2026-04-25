@@ -90,7 +90,7 @@ void TextEditorWindow::HandleDragDropTarget()
                 SwitchMode(TextEditorMode::Shader);
                 LoadFile(p);
             }
-            else if (ext == k_CppExtension)
+            else if (ext == k_CppExtension || ext == k_HeaderExtension)
             {
                 SwitchMode(TextEditorMode::Script);
                 LoadFile(p);
@@ -246,16 +246,26 @@ void TextEditorWindow::OpenFile()
 
 void TextEditorWindow::Save()
 {
-    if (mFileNameBuffer[0] == '\0')
+    std::filesystem::path savePath;
+
+    if (!mCurrentFilePath.empty())
     {
-        NOUS_WARN("[TextEditor] Cannot save: file name is empty.");
-        return;
+        // Editing a file loaded from disk — write back verbatim, preserving its
+        // original extension (.cpp, .h, .glsl, or anything else).
+        savePath = mCurrentFilePath;
     }
-
-    const char* ext = (mMode == TextEditorMode::Shader) ? k_GlslExtension : k_CppExtension;
-
-    std::filesystem::path savePath = std::filesystem::path(editorContext->GetAssetsBrowserDirectory())
-        / (std::string(mFileNameBuffer) + ext);
+    else
+    {
+        // New file — construct path from the filename buffer + mode-derived extension.
+        if (mFileNameBuffer[0] == '\0')
+        {
+            NOUS_WARN("[TextEditor] Cannot save: file name is empty.");
+            return;
+        }
+        const char* ext = (mMode == TextEditorMode::Shader) ? k_GlslExtension : k_CppExtension;
+        savePath = std::filesystem::path(editorContext->GetAssetsBrowserDirectory())
+            / (std::string(mFileNameBuffer) + ext);
+    }
 
     std::ofstream file(savePath);
     if (!file.is_open())

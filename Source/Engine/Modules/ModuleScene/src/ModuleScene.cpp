@@ -329,7 +329,7 @@ void ModuleScene::SaveScene(const std::string& path)
 
     // Mirror the saved scene to Library/Scenes/ so GameApp can load it
     // from Library without needing Assets/.
-    const std::string libraryPath = "Library/Scenes/" + filename;
+    const std::string libraryPath = "Library/Scenes/" + std::filesystem::path(path).filename().string();
     std::filesystem::create_directories("Library/Scenes");
     nous::engine::filesystem::CopyFile(path, libraryPath);
 
