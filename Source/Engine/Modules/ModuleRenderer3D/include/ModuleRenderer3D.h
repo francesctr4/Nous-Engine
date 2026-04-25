@@ -81,6 +81,10 @@ public:
 
 	NOUS_ENGINE_API void SetRenderMode(RenderMode mode) noexcept;
 
+	// Re-register the shader FileWatcher when a .glsl file is moved inside the editor.
+	// Must be called after the file has been physically moved to newPath.
+	NOUS_ENGINE_API void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath);
+
 private:
 	// ---------------------------------------------------------------------
 	// Internal Methods

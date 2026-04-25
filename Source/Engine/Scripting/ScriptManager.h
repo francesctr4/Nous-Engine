@@ -39,7 +39,8 @@ public:
     NOUS_ENGINE_API std::vector<std::string> GetAvailableScriptNames() const;
 
     // Script generation
-    NOUS_ENGINE_API static bool GenerateScript(const std::string& className);
+    NOUS_ENGINE_API static bool GenerateScript(const std::string& className,
+                                                const std::string& directory = "Assets/Scripts");
 
     // ---------------------------------------------------------------------------
     // CScript component registry — called by CScript::OnStart / OnDestroy

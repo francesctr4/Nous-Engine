@@ -503,10 +503,10 @@ void ScriptManager::RecompileScripts()
 // Script generation
 // ---------------------------------------------------------------------------
 
-bool ScriptManager::GenerateScript(const std::string& className)
+bool ScriptManager::GenerateScript(const std::string& className, const std::string& directory)
 {
     const std::string templatePath = (GetExeDir() / "Library" / "Scripts" / "ScriptTemplate.inl").string();
-    const std::string& outputPath = "Assets/Scripts/" + className + ".cpp";
+    const std::string outputPath = (std::filesystem::path(directory) / (className + ".cpp")).string();
 
     // Read the template file
     std::ifstream templateFile(templatePath);

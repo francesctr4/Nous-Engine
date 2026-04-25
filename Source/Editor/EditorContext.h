@@ -31,6 +31,9 @@ public:
 
     [[nodiscard]] virtual std::string GetAssetsBrowserDirectory() const = 0;
 
+    // Called when a .glsl file is moved in the AssetsBrowser — keeps the hot-reload watcher in sync.
+    virtual void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath) = 0;
+
 };
 
 #endif //NOUS_ENGINE_EDITORCONTEXT_H

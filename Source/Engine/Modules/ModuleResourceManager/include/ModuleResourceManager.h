@@ -76,6 +76,10 @@ public:
 
 	NOUS_ENGINE_API bool UnloadResource(uint32 uid);
 
+	// Update the in-memory assets path of a loaded resource after it has been moved on disk.
+	// No-op if the UID is not currently loaded.
+	NOUS_ENGINE_API void UpdateResourcePath(uint32 uid, const std::string& newAssetsPath);
+
 	// Returns a thread-safe snapshot copy of the resources map.
 	// Safe to call from any thread (e.g. editor UI) concurrently with resource loading.
 	NOUS_ENGINE_API std::unordered_map<uint32, Resource*> GetResourcesMap() const;

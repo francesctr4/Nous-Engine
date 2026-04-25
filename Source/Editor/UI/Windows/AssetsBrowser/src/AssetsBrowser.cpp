@@ -265,6 +265,17 @@ void AssetsBrowser::MoveAsset(const std::string& srcPath, const std::string& des
         JsonObject root = JsonFile::LoadFromFile(destMeta);
         root.Set("Assets Path", destPath);
         JsonFile::SaveToFile(root, destMeta);
+
+        // Keep in-memory ResourceManager path in sync for the current session.
+        MetaFileData meta;
+        if (ResourceImportPipeline::GetAssetMetaData(destPath, meta))
+        {
+            editorContext->GetResourceManager()->UpdateResourcePath(meta.uid, destPath);
+
+            // If this is a shader, re-register the file watcher so hot-reload keeps working.
+            if (std::filesystem::path(destPath).extension() == ".glsl")
+                editorContext->UpdateShaderWatcherPath(srcPath, destPath);
+        }
     }
 
     AddItemsFromDirectory(current_directory);
@@ -761,7 +772,7 @@ void AssetsBrowser::DrawContent()
             if (ImGui::Button("Create", ImVec2(120, 0)) || (enter_pressed && !name_empty))
             {
                 std::string script_name = script_name_buffer;
-                if (ScriptManager::GenerateScript(script_name))
+                if (ScriptManager::GenerateScript(script_name, script_creation_path))
                 {
                     NOUS_INFO("Successfully created script: %s", script_name.c_str());
                     AddItemsFromDirectory(current_directory);

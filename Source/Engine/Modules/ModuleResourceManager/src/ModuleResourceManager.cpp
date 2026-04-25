@@ -166,6 +166,14 @@ bool ModuleResourceManager::ResourceExists(const uint32 uid) const
 	return resources.contains(uid);
 }
 
+void ModuleResourceManager::UpdateResourcePath(const uint32 uid, const std::string& newAssetsPath)
+{
+	std::lock_guard lock(resourcesMutex);
+	auto it = resources.find(uid);
+	if (it != resources.end())
+		it->second->SetAssetsPath(newAssetsPath);
+}
+
 bool ModuleResourceManager::ClaimSlot(const uint32 uid)
 {
 	std::scoped_lock lock(resourcesMutex);

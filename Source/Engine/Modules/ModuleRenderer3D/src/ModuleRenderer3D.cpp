@@ -58,6 +58,15 @@ ModuleRenderer3D::~ModuleRenderer3D()
 	NOUS_DELETE(mRendererFrontend, MemoryTag::RENDERER);
 }
 
+void ModuleRenderer3D::UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath)
+{
+	m_shaderWatcher.Unwatch(oldPath);
+	m_shaderWatcher.Watch(newPath, [this, newPath](const std::string&)
+	{
+		mRendererFrontend->ReloadShaderByPath(newPath);
+	});
+}
+
 void ModuleRenderer3D::SetRenderMode(RenderMode mode) noexcept
 {
 	m_renderMode = mode;
@@ -163,10 +172,10 @@ bool ModuleRenderer3D::Start()
 		std::error_code ec;
 		int watchCount = 0;
 
-		for (const auto& entry : fs::directory_iterator("Assets/Shaders", ec))
+		for (const auto& entry : fs::recursive_directory_iterator("Assets", ec))
 		{
-			if (entry.path().extension() != ".glsl")
-				continue;
+			if (!entry.is_regular_file()) continue;
+			if (entry.path().extension() != ".glsl") continue;
 
 			// Normalize to forward slashes — must match the paths in ResourceManager.
 			const std::string normalizedPath = entry.path().generic_string();
@@ -178,9 +187,9 @@ bool ModuleRenderer3D::Start()
 		}
 
 		if (!ec)
-			NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Watching %d shader file(s) in Assets/Shaders/.", watchCount);
+			NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] Watching %d shader file(s) under Assets/.", watchCount);
 		else
-			NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Could not open Assets/Shaders/ for watching: %s", ec.message().c_str());
+			NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Could not scan Assets/ for shader watching: %s", ec.message().c_str());
 	}
 
 	return true;

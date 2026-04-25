@@ -97,18 +97,19 @@ void ResourceImportPipeline::ScanAndImportAssets()
             m_importerManager->Import(item.resourceType, item);
     }
 
-    // Mirror all scene files from Assets/Scenes/ → Library/Scenes/ so GameApp
-    // can always load them from Library/ without needing Assets/.
-    if (nous::engine::filesystem::Exists("Assets/Scenes"))
+    // Mirror ALL .nous scene files found anywhere inside Assets/ → Library/Scenes/.
+    // Library paths use the filename only; if two scenes share a name in different
+    // subdirectories the last one written wins — users should use unique scene names.
     {
-        for (const auto& entry : std::filesystem::directory_iterator("Assets/Scenes"))
+        std::error_code ec;
+        for (const auto& entry : std::filesystem::recursive_directory_iterator("Assets", ec))
         {
-            if (entry.path().extension() == ".nous")
-            {
-                const std::string src  = entry.path().string();
-                const std::string dest = "Library/Scenes/" + entry.path().filename().string();
-                nous::engine::filesystem::CopyFile(src, dest);
-            }
+            if (!entry.is_regular_file()) continue;
+            if (entry.path().extension() != ".nous") continue;
+
+            const std::string src  = entry.path().generic_string();
+            const std::string dest = "Library/Scenes/" + entry.path().filename().string();
+            nous::engine::filesystem::CopyFile(src, dest);
         }
     }
 }

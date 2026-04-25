@@ -3,7 +3,7 @@
 # ==============================
 
 set(SCRIPTS_OUTPUT_DIR  "${CMAKE_BINARY_DIR}/bin/Library/Scripts")
-set(SCRIPTS_SRC_DIR     "${CMAKE_SOURCE_DIR}/Assets/Scripts")
+set(SCRIPTS_SRC_DIR     "${CMAKE_SOURCE_DIR}/Assets")
 
 # Generate rebuild scripts with the source Assets/Scripts path baked in
 file(MAKE_DIRECTORY "${SCRIPTS_OUTPUT_DIR}")

@@ -20,7 +20,8 @@
 // ---------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------
 
-void CMaterialDrawDefaultMaterial(const GameObject* go, CMaterial& mat, ModuleResourceManager* rm)
+void CMaterialDrawDefaultMaterial(const GameObject* go, CMaterial& mat,
+                                   ModuleResourceManager* rm, const std::string& saveDir)
 {
     ImGui::Spacing();
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.78f, 0.33f, 1.0f));
@@ -43,7 +44,7 @@ void CMaterialDrawDefaultMaterial(const GameObject* go, CMaterial& mat, ModuleRe
                 c = '_';
         }
 
-        const std::string dir = "Assets/Materials/";
+        const std::string dir = saveDir + "/";
         std::string assetPath = dir + safeName + "_material.nmat";
 
         // Ensure uniqueness: append _1, _2, ... until we find a free path.

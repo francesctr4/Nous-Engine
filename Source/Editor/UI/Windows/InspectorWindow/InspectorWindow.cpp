@@ -257,7 +257,7 @@ void InspectorWindow::DrawMaterialComponent(const GameObject* go, CMaterial* cma
 
     if (cmaterial->material == rm->GetDefaultMaterial())
     {
-        CMaterialDrawDefaultMaterial(go, *cmaterial, rm);
+        CMaterialDrawDefaultMaterial(go, *cmaterial, rm, editorContext->GetAssetsBrowserDirectory());
         return;
     }
 

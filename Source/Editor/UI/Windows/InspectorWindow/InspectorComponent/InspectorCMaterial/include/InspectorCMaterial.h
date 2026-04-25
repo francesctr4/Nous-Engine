@@ -15,7 +15,8 @@ class GameObject;
 // ---------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------
 
-void CMaterialDrawDefaultMaterial(const GameObject* go, CMaterial& mat, ModuleResourceManager* rm);
+void CMaterialDrawDefaultMaterial(const GameObject* go, CMaterial& mat,
+                                   ModuleResourceManager* rm, const std::string& saveDir);
 
 // ---------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------

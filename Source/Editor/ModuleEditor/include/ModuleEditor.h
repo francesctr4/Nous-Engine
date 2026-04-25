@@ -59,6 +59,7 @@ public:
     RendererFrontend*      GetRendererFrontend()        const override;
     nous::engine::multithreading::NOUS_JobSystem* GetJobSystem() const override { return JobSystem; }
     std::string GetAssetsBrowserDirectory() const override;
+    void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath) override;
 
 private:
 
