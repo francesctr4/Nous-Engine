@@ -142,11 +142,8 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
                 break;
             }
 			case SDL_EVENT_DROP_FILE:
-			{ 
-				const char* droppedFileDirectory = e.drop.data;
+			{
 				eventSystem->Broadcast(Event(EventType::DROP_FILE, SendContext(e.drop.data)));
-				SDL_free(&droppedFileDirectory);
-
 				break;
 			}
 			case SDL_EVENT_QUIT:
