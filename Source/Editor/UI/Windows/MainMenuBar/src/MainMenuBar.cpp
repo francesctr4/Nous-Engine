@@ -1,9 +1,12 @@
 #include "Editor/UI/Windows/MainMenuBar/include/MainMenuBar.h"
+#include "Editor/GameExporter/include/GameExporter.h"
 
 #include "imgui.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
+
+#include <SDL3/SDL.h>
 
 #include <cstring>
 #include <filesystem>
@@ -13,6 +16,7 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <shellapi.h>
+#include <shlobj.h>
 #elif defined(__APPLE__)
 #include <cstdlib>
 #include <unistd.h>
@@ -21,6 +25,21 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #endif
+
+static std::string AssetPathToLibraryScene(const std::string& assetPath)
+{
+    return "Library/Scenes/" + std::filesystem::path(assetPath).filename().string();
+}
+
+static std::string GetDefaultBuildPath()
+{
+    const char* base = SDL_GetBasePath();
+    std::filesystem::path p = base ? base : ".";
+    std::string s = p.string();
+    if (!s.empty() && (s.back() == '/' || s.back() == '\\'))
+        s.pop_back();
+    return (std::filesystem::path(s) / "Delivery" / "Game").string();
+}
 
 static bool RequestBrowser(const char* url)
 {
@@ -72,6 +91,10 @@ void MainMenuBar::Update()
     openSaveAs   = false;
     openOpen     = false;
     openNewScene = false;
+
+    m_openBuild         = false;
+    m_openBuildAndRun   = false;
+    m_openBuildSettings = false;
 
     // Keyboard shortcuts (only when no modal dialog is open).
     if (!ImGui::IsPopupOpen(kSaveAsPopup) && !ImGui::IsPopupOpen(kOpenPopup) && !ImGui::IsPopupOpen(kNewScenePopup))
@@ -134,15 +157,27 @@ void MainMenuBar::DrawContent()
 
         if (ImGui::MenuItem("Build"))
         {
-            //std::system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\Nous-Engine.sln /p:Configuration=Release /m");
-            //std::system("..\\build.bat");
+            m_buildOutputPath   = GetDefaultBuildPath();
+            m_buildLaunchAfter  = false;
+            m_buildStartupScene = AssetPathToLibraryScene(editorContext->GetScene()->GetCurrentScenePath());
+            m_openBuild         = true;
+            editorContext->GetGameExporter()->StartExport({ m_buildOutputPath, m_buildStartupScene, false });
         }
 
         if (ImGui::MenuItem("Build & Run"))
         {
-            //std::system("\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\msbuild.exe\" ..\\Nous-Engine.sln /p:Configuration=Release /m");
-            //std::system("..\\build.bat");
-            //std::system("..\\Build\\Nous-Engine-v0.1\\Nous-Engine.exe");
+            m_buildOutputPath   = GetDefaultBuildPath();
+            m_buildLaunchAfter  = true;
+            m_buildStartupScene = AssetPathToLibraryScene(editorContext->GetScene()->GetCurrentScenePath());
+            m_openBuildAndRun   = true;
+            editorContext->GetGameExporter()->StartExport({ m_buildOutputPath, m_buildStartupScene, true });
+        }
+
+        if (ImGui::MenuItem("Build Settings..."))
+        {
+            if (m_buildOutputPath.empty())
+                m_buildOutputPath = GetDefaultBuildPath();
+            m_openBuildSettings = true;
         }
 
         if (ImGui::BeginMenu("Theme"))
@@ -371,6 +406,220 @@ void MainMenuBar::DrawContent()
     }
 }
 
+void MainMenuBar::DrawBuildModal()
+{
+    static bool s_scrollToBottom = false;
+
+    constexpr int c_totalSteps = 7; // steps 1-6 = pipeline work, step 7 = patch config
+    GameExporter* exporter = editorContext->GetGameExporter();
+
+    if (m_openBuild || m_openBuildAndRun)
+    {
+        m_buildLog.clear();
+        m_buildDone      = false;
+        m_buildSuccess   = false;
+        s_scrollToBottom = true;
+        ImGui::OpenPopup(kBuildModal);
+    }
+
+    if (exporter->IsRunning() || m_buildModalOpen)
+    {
+        exporter->DrainLog(m_buildLog);
+
+        bool success = false;
+        if (exporter->PollDone(success))
+        {
+            m_buildDone    = true;
+            m_buildSuccess = success;
+        }
+    }
+
+    const char* title = m_buildDone
+        ? (m_buildSuccess ? "Build Complete###BuildGameModal"
+                          : "Build Failed###BuildGameModal")
+        : "Building Game...###BuildGameModal";
+
+    ImGui::SetNextWindowSize(ImVec2(660, 420), ImGuiCond_Appearing);
+    if (ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_NoResize))
+    {
+        m_buildModalOpen = true;
+
+        if (!m_buildDone)
+        {
+            const float progress = static_cast<float>(exporter->GetCurrentStep()) /
+                                   static_cast<float>(c_totalSteps);
+            ImGui::ProgressBar(progress, ImVec2(-1.0f, 0.0f));
+            ImGui::Spacing();
+        }
+
+        const float logHeight = m_buildDone ? -52.0f : -34.0f;
+        ImGui::BeginChild("##buildlog", ImVec2(-1.0f, logHeight), true);
+        for (const auto& line : m_buildLog)
+            ImGui::TextUnformatted(line.c_str());
+        if (s_scrollToBottom || ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+        {
+            ImGui::SetScrollHereY(1.0f);
+            s_scrollToBottom = false;
+        }
+        ImGui::EndChild();
+
+        ImGui::Spacing();
+
+        if (!m_buildDone)
+        {
+            const bool cancelling = !exporter->IsRunning() && m_buildModalOpen;
+            if (cancelling) ImGui::BeginDisabled();
+            if (ImGui::Button("Cancel", ImVec2(120.0f, 0.0f)))
+                exporter->Cancel();
+            if (cancelling) ImGui::EndDisabled();
+        }
+        else
+        {
+            if (m_buildSuccess)
+                ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f),
+                                   "Build succeeded -> %s  |  Startup: %s",
+                                   m_buildOutputPath.c_str(), m_buildStartupScene.c_str());
+            else
+                ImGui::TextColored(ImVec4(0.9f, 0.2f, 0.2f, 1.0f),
+                                   "Build FAILED — see log above.");
+
+            ImGui::Spacing();
+
+            if (m_buildSuccess)
+            {
+                if (ImGui::Button("Open Folder", ImVec2(120.0f, 0.0f)))
+                {
+#ifdef _WIN32
+                    ShellExecuteA(nullptr, "explore",
+                                  m_buildOutputPath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+#endif
+                }
+                ImGui::SameLine();
+            }
+
+            if (ImGui::Button("OK", ImVec2(80.0f, 0.0f)))
+            {
+                m_buildModalOpen = false;
+                m_buildDone      = false;
+                ImGui::CloseCurrentPopup();
+            }
+        }
+
+        ImGui::EndPopup();
+    }
+    else
+    {
+        m_buildModalOpen = false;
+    }
+}
+
+void MainMenuBar::DrawBuildSettingsPopup()
+{
+    if (m_openBuildSettings)
+        ImGui::OpenPopup(kBuildSettingsPopup);
+
+    ImGui::SetNextWindowSize(ImVec2(520.0f, 0.0f), ImGuiCond_Appearing);
+    if (ImGui::BeginPopup(kBuildSettingsPopup))
+    {
+        static char s_pathBuf[512] = {};
+        static std::vector<std::string> s_sceneFiles;
+        static int s_selectedScene = -1;
+
+        if (m_openBuildSettings)
+        {
+            std::snprintf(s_pathBuf, sizeof(s_pathBuf), "%s", m_buildOutputPath.c_str());
+
+            // Refresh scene list from Library/Scenes/
+            s_sceneFiles.clear();
+            std::error_code ec;
+            for (const auto& entry : std::filesystem::directory_iterator("Library/Scenes", ec))
+            {
+                if (entry.is_regular_file() && entry.path().extension() == ".nous")
+                    s_sceneFiles.push_back(entry.path().filename().string());
+            }
+            std::sort(s_sceneFiles.begin(), s_sceneFiles.end());
+
+            // Default selection: match the current startup scene
+            s_selectedScene = -1;
+            const std::string currentFile = std::filesystem::path(m_buildStartupScene).filename().string();
+            for (int i = 0; i < static_cast<int>(s_sceneFiles.size()); ++i)
+            {
+                if (s_sceneFiles[i] == currentFile) { s_selectedScene = i; break; }
+            }
+        }
+
+        // ── Output path ──────────────────────────────────────────────────
+        ImGui::TextUnformatted("Output path:");
+        ImGui::SetNextItemWidth(380.0f);
+        ImGui::InputText("##buildSettingsPath", s_pathBuf, sizeof(s_pathBuf));
+        ImGui::SameLine();
+
+        if (ImGui::Button("Browse"))
+        {
+#ifdef _WIN32
+            BROWSEINFOA bi   = {};
+            bi.lpszTitle     = "Select output folder";
+            bi.ulFlags       = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+            LPITEMIDLIST pidl = SHBrowseForFolderA(&bi);
+            if (pidl)
+            {
+                char picked[MAX_PATH];
+                if (SHGetPathFromIDListA(pidl, picked))
+                    std::snprintf(s_pathBuf, sizeof(s_pathBuf), "%s", picked);
+                CoTaskMemFree(pidl);
+            }
+#endif
+        }
+
+        ImGui::TextDisabled("Default: <engine_dir>/Delivery/Game");
+        ImGui::Spacing();
+
+        // ── Startup scene ────────────────────────────────────────────────
+        ImGui::TextUnformatted("Startup scene:");
+        ImGui::SetNextItemWidth(460.0f);
+        const char* previewLabel = (s_selectedScene >= 0 && s_selectedScene < static_cast<int>(s_sceneFiles.size()))
+            ? s_sceneFiles[s_selectedScene].c_str()
+            : "(select a scene)";
+        if (ImGui::BeginCombo("##startupScene", previewLabel))
+        {
+            for (int i = 0; i < static_cast<int>(s_sceneFiles.size()); ++i)
+            {
+                const bool selected = (s_selectedScene == i);
+                if (ImGui::Selectable(s_sceneFiles[i].c_str(), selected))
+                    s_selectedScene = i;
+                if (selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::Spacing();
+
+        // ── Buttons ──────────────────────────────────────────────────────
+        const bool pathValid  = s_pathBuf[0] != '\0';
+        const bool sceneValid = s_selectedScene >= 0;
+        const bool canBuild   = pathValid && sceneValid;
+
+        if (!canBuild) ImGui::BeginDisabled();
+        if (ImGui::Button("Build", ImVec2(120.0f, 0.0f)))
+        {
+            m_buildOutputPath   = s_pathBuf;
+            m_buildStartupScene = "Library/Scenes/" + s_sceneFiles[s_selectedScene];
+            m_buildLaunchAfter  = false;
+            m_openBuild         = true;
+            editorContext->GetGameExporter()->StartExport({ m_buildOutputPath, m_buildStartupScene, false });
+            ImGui::CloseCurrentPopup();
+        }
+        if (!canBuild) ImGui::EndDisabled();
+
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120.0f, 0.0f)) ||
+            ImGui::IsKeyPressed(ImGuiKey_Escape))
+            ImGui::CloseCurrentPopup();
+
+        ImGui::EndPopup();
+    }
+}
+
 void MainMenuBar::FinishUpdate()
 {
     ModuleScene* scene = editorContext->GetScene();
@@ -381,6 +630,9 @@ void MainMenuBar::FinishUpdate()
     if (openSaveAs) ImGui::OpenPopup(kSaveAsPopup);
     if (openOpen) ImGui::OpenPopup(kOpenPopup);
     if (openNewScene) ImGui::OpenPopup(kNewScenePopup);
+
+    DrawBuildSettingsPopup();
+    DrawBuildModal();
 
     // -------------------------------------------------------------------
     // Save Scene As... modal

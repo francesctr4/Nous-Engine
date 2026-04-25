@@ -34,7 +34,7 @@
             ]
         },
         {
-            "uid": 2426011622,
+            "uid": 2273789773,
             "name": "PROP_Liquid_Tank",
             "parent": 2090891372,
             "components": [
@@ -66,7 +66,7 @@
                     "type": "CMesh",
                     "assetPath": "Assets\\Meshes\\PROP_Biotic_Liquid_Tank.fbx",
                     "libraryPath": "Library\\Meshes\\17960336.nmesh",
-                    "resourceUID": 2294750832,
+                    "resourceUID": 3001715243,
                     "submeshIndex": 0
                 },
                 {
@@ -77,7 +77,9 @@
                 },
                 {
                     "type": "CScript",
-                    "scripts": [],
+                    "scripts": [
+                        "SpinnerScript"
+                    ],
                     "properties": {
                         "SpinnerScript": {
                             "m_axisX": {

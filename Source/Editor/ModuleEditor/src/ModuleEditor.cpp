@@ -142,6 +142,8 @@ bool ModuleEditor::Awake()
 		}
 	}
 
+    m_gameExporter = NOUS_NEW<GameExporter>(MemoryTag::EDITOR);
+
 	AddEditorWindow(NOUS_NEW<MainMenuBar>(MemoryTag::EDITOR, "MainMenuBar", this));
 	AddEditorWindow(NOUS_NEW<AssetsBrowser>(MemoryTag::EDITOR, "Assets", this));
 	AddEditorWindow(NOUS_NEW<Resources>(MemoryTag::EDITOR, "Resources", this));
@@ -226,6 +228,9 @@ bool ModuleEditor::CleanUp()
         NOUS_DELETE(win, MemoryTag::EDITOR);
     }
 	editorWindows.clear();
+
+    NOUS_DELETE(m_gameExporter, MemoryTag::EDITOR);
+    m_gameExporter = nullptr;
 
 	return true;
 }

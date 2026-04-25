@@ -2,6 +2,6 @@
     "Name": "Wolf",
     "UID": 3984858807,
     "Resource Type": 0,
-    "Assets Path": "Assets\\Meshes\\Wolf.obj",
+    "Assets Path": "Assets\/Meshes\/Wolf.obj",
     "Library Path": "Library\\Meshes\\3984858807.nmesh"
 }

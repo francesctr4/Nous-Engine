@@ -1,13 +1,6 @@
 {
     "uniforms": [
         {
-            "name": "specularIntensity",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
             "name": "emissiveColor",
             "type": "vec4",
             "value": [
@@ -18,10 +11,10 @@
             ]
         },
         {
-            "name": "shininessScale",
+            "name": "specularIntensity",
             "type": "float",
             "value": [
-                -10
+                1
             ]
         },
         {
@@ -29,6 +22,13 @@
             "type": "float",
             "value": [
                 -8.8900003433227539
+            ]
+        },
+        {
+            "name": "shininessScale",
+            "type": "float",
+            "value": [
+                -10
             ]
         },
         {
@@ -51,19 +51,19 @@
     ],
     "texture_maps": [
         {
-            "name": "roughnessSampler",
-            "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Roughness.png",
-            "uid": 634917456,
-            "library_path": "Library\/Textures\/634917456.png"
-        },
-        {
             "name": "diffuseSampler",
             "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Albedo.png",
             "uid": 808705651,
             "library_path": "Library\/Textures\/808705651.png"
         },
         {
-            "name": "metallicSampler",
+            "name": "roughnessSampler",
+            "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Roughness.png",
+            "uid": 634917456,
+            "library_path": "Library\/Textures\/634917456.png"
+        },
+        {
+            "name": "specularSampler",
             "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Metallic.png",
             "uid": 4118552762,
             "library_path": "Library\/Textures\/4118552762.png"
@@ -75,7 +75,7 @@
             "library_path": "Library\/Textures\/808705651.png"
         },
         {
-            "name": "specularSampler",
+            "name": "metallicSampler",
             "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Metallic.png",
             "uid": 4118552762,
             "library_path": "Library\/Textures\/4118552762.png"

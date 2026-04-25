@@ -12,6 +12,7 @@ class ModuleCamera3D;
 class ModuleInput;
 class ModuleResourceManager;
 class RendererFrontend;
+class GameExporter;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 class EditorContext
@@ -28,6 +29,7 @@ public:
     [[nodiscard]] virtual ModuleResourceManager*                GetResourceManager()  const = 0;
     [[nodiscard]] virtual RendererFrontend*                     GetRendererFrontend() const = 0;
     [[nodiscard]] virtual nous::engine::multithreading::NOUS_JobSystem*  GetJobSystem()        const = 0;
+    [[nodiscard]] virtual GameExporter*                                  GetGameExporter()     const = 0;
 
     [[nodiscard]] virtual std::string GetAssetsBrowserDirectory() const = 0;
 

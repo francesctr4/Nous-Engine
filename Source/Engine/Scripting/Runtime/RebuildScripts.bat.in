@@ -79,9 +79,9 @@ set BUILD_MODE=%~1
 if /I "%BUILD_MODE%"=="Debug" goto :MODE_OK
 if /I "%BUILD_MODE%"=="Release" goto :MODE_OK
 
-REM Auto-detect from path
+REM Auto-detect from path using the already-normalised EXE_DIR_FWD
 set BUILD_MODE=Debug
-echo %BIN_DIR% | findstr /I "Debug" >nul && set BUILD_MODE=Debug
+echo %EXE_DIR_FWD% | findstr /I "Release" >nul && set BUILD_MODE=Release
 
 :MODE_OK
 echo [INFO] BUILD_MODE           = %BUILD_MODE%

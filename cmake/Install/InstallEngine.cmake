@@ -19,7 +19,7 @@ add_custom_target(InstallEngine
                 --config $<CONFIG>
                 --component InstallEngine
                 --prefix "${CMAKE_SOURCE_DIR}/Delivery/Engine"
-        DEPENDS EditorApp Nous-Editor Nous-Engine Scripts
+        DEPENDS EditorApp Nous-Editor Nous-Engine Scripts GameApp
         COMMENT "Packaging InstallEngine → Delivery/Engine"
         VERBATIM
 )
@@ -33,6 +33,12 @@ install(TARGETS EditorApp
 # Nous-Engine.dll + Nous-Editor.dll
 install(TARGETS Nous-Engine Nous-Editor
         RUNTIME DESTINATION .
+        COMPONENT InstallEngine
+)
+
+# GameApp.exe — pre-built game stub used by the in-engine Build pipeline.
+install(TARGETS GameApp
+        RUNTIME DESTINATION Library/GameBin
         COMPONENT InstallEngine
 )
 
@@ -77,6 +83,12 @@ install(CODE "
 # Assets/ — full source assets (editor needs them for importing)
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/Assets/"
         DESTINATION Assets
+        COMPONENT InstallEngine
+)
+
+# Game configuration — needed by the in-engine Build pipeline (copied into Library/Settings/).
+install(FILES "${CMAKE_SOURCE_DIR}/Source/Game/game_config.json"
+        DESTINATION Library/Settings
         COMPONENT InstallEngine
 )
 

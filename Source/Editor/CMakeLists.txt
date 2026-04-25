@@ -9,6 +9,7 @@
 set(EDITOR_NAME "Nous-Editor")
 
 add_subdirectory(ModuleEditor)
+add_subdirectory(GameExporter)
 add_subdirectory(UI)
 
 add_library(${EDITOR_NAME} SHARED EditorExport.h EditorContext.h)

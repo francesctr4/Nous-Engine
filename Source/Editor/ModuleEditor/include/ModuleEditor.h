@@ -7,6 +7,7 @@
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Editor/EditorContext.h"
+#include "Editor/GameExporter/include/GameExporter.h"
 
 #include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
@@ -58,6 +59,7 @@ public:
     ModuleResourceManager* GetResourceManager()         const override { return mModuleResourceManager; }
     RendererFrontend*      GetRendererFrontend()        const override;
     nous::engine::multithreading::NOUS_JobSystem* GetJobSystem() const override { return JobSystem; }
+    GameExporter* GetGameExporter() const override { return m_gameExporter; }
     std::string GetAssetsBrowserDirectory() const override;
     void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath) override;
 
@@ -85,6 +87,8 @@ private:
 	ModuleRenderer3D*      mModuleRenderer3D;
 
 	RendererBackendType currentBackendType;
+
+    GameExporter* m_gameExporter = nullptr;
 
 	// Custom allocator vector for editor windows
 	NOUS_Vector<IEditorWindow*> editorWindows;
