@@ -32,7 +32,10 @@ namespace
     std::filesystem::path ResolveLibraryDir(const std::filesystem::path& engineDir)
     {
         const auto deliveryLib = engineDir / "Library";
-        if (std::filesystem::exists(deliveryLib / "Shaders"))
+        // Library/GameBin/GameApp.exe only exists in a proper engine delivery (InstallEngine).
+        // In dev builds CMake copies Shaders to bin/Library/ but not the full content,
+        // so checking for Shaders/ gives a false positive — use GameBin as the indicator instead.
+        if (std::filesystem::exists(deliveryLib / "GameBin" / "GameApp.exe"))
             return deliveryLib;
         return std::filesystem::current_path() / "Library";
     }
