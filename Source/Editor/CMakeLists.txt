@@ -26,9 +26,15 @@ if (WIN32)
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:ModuleEditor>"
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:EditorUI>"
   )
+elseif (APPLE)
+  # macOS ld64 equivalent: -force_load per archive (--whole-archive is GNU ld only)
+  target_link_options(${EDITOR_NAME} PRIVATE
+    "-Wl,-force_load,$<TARGET_FILE:ModuleEditor>"
+    "-Wl,-force_load,$<TARGET_FILE:EditorUI>"
+  )
 elseif (UNIX)
-  # Mirror Windows /WHOLEARCHIVE: bake all static-lib symbols into the .so so
-  # consumers never hit circular-dependency ordering failures with the archives.
+  # Linux: bake all static-lib symbols into the .so so consumers never hit
+  # circular-dependency ordering failures with the raw archives.
   target_link_options(${EDITOR_NAME} PRIVATE
     "-Wl,--whole-archive,$<TARGET_FILE:ModuleEditor>,$<TARGET_FILE:EditorUI>,--no-whole-archive"
   )
