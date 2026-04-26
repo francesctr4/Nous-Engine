@@ -135,6 +135,10 @@ namespace
             }
         }
         if (!lineAccum.empty()) onLine(lineAccum);
+        // NOTE: pclose() calls waitpid() and blocks until the child process exits.
+        // If cancelFlag fired, the loop exits early but the child is still running,
+        // so Cancel() will not return immediately on Linux/macOS. A full fix requires
+        // fork+exec with SIGTERM on the child PID; popen does not expose the PID.
         const int status = pclose(pipe);
         return status != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0;
     }
@@ -177,6 +181,11 @@ bool GameExporterPlatform::CopySharedLibs(const std::filesystem::path& srcDir,
                                           std::error_code& ec,
                                           const std::unordered_set<std::string>& excludeStems)
 {
+    if (!std::filesystem::exists(srcDir, ec) || ec)
+    {
+        if (!ec) ec = std::make_error_code(std::errc::no_such_file_or_directory);
+        return false;
+    }
     std::filesystem::create_directories(dstDir, ec);
     if (ec) return false;
     for (const auto& entry : std::filesystem::directory_iterator(srcDir, ec))
@@ -411,9 +420,11 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
 #ifdef _WIN32
         ShellExecuteA(nullptr, "open", exePath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 #elif defined(__APPLE__)
-        system(("open \"" + exePath + "\"").c_str());
+        if (system(("open \"" + exePath + "\"").c_str()) != 0)
+            PostLog("[WARN] Could not launch game — 'open' returned non-zero.");
 #else
-        system(("xdg-open \"" + exePath + "\" &").c_str());
+        if (system(("xdg-open \"" + exePath + "\" &").c_str()) != 0)
+            PostLog("[WARN] Could not launch game — 'xdg-open' returned non-zero.");
 #endif
     }
 }

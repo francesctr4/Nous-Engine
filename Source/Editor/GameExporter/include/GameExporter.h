@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Editor/EditorExport.h"
+
 #include <atomic>
 #include <filesystem>
 #include <mutex>
@@ -26,13 +28,13 @@ namespace GameExporterPlatform
     constexpr std::string_view GetScriptLibName() { return "Scripts.so";   }
 #endif
 
-    bool CopySharedLibs(const std::filesystem::path& srcDir,
-                        const std::filesystem::path& dstDir,
-                        std::error_code& ec,
-                        const std::unordered_set<std::string>& excludeStems = {});
+    NOUS_EDITOR_API bool CopySharedLibs(const std::filesystem::path& srcDir,
+                                        const std::filesystem::path& dstDir,
+                                        std::error_code& ec,
+                                        const std::unordered_set<std::string>& excludeStems = {});
 
-    bool PatchGameConfig(const std::filesystem::path& configPath,
-                         const std::string& startScene);
+    NOUS_EDITOR_API bool PatchGameConfig(const std::filesystem::path& configPath,
+                                         const std::string& startScene);
 } // namespace GameExporterPlatform
 
 struct GameExportConfig
