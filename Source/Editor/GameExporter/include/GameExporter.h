@@ -7,6 +7,7 @@
 #include <string_view>
 #include <system_error>
 #include <thread>
+#include <unordered_set>
 #include <vector>
 
 namespace GameExporterPlatform
@@ -27,7 +28,8 @@ namespace GameExporterPlatform
 
     bool CopySharedLibs(const std::filesystem::path& srcDir,
                         const std::filesystem::path& dstDir,
-                        std::error_code& ec);
+                        std::error_code& ec,
+                        const std::unordered_set<std::string>& excludeStems = {});
 
     bool PatchGameConfig(const std::filesystem::path& configPath,
                          const std::string& startScene);

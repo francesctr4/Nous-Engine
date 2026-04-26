@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <unordered_set>
 
 #include <SDL3/SDL.h>
 
@@ -173,7 +174,8 @@ namespace
 
 bool GameExporterPlatform::CopySharedLibs(const std::filesystem::path& srcDir,
                                           const std::filesystem::path& dstDir,
-                                          std::error_code& ec)
+                                          std::error_code& ec,
+                                          const std::unordered_set<std::string>& excludeStems)
 {
     std::filesystem::create_directories(dstDir, ec);
     if (ec) return false;
@@ -181,6 +183,11 @@ bool GameExporterPlatform::CopySharedLibs(const std::filesystem::path& srcDir,
     {
         if (!entry.is_regular_file()) continue;
         if (entry.path().extension() != GetSharedLibExt()) continue;
+        if (!excludeStems.empty())
+        {
+            const std::string stem = entry.path().stem().string();
+            if (excludeStems.count(stem)) continue;
+        }
         std::filesystem::copy_file(entry.path(), dstDir / entry.path().filename(),
                                    std::filesystem::copy_options::overwrite_existing, ec);
         if (ec) return false;
@@ -322,7 +329,9 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
     // ── Step 3: Copy engine shared libs ───────────────────────────────────
     m_currentStep.store(3);
     PostLog("[INFO] Copying engine binaries...");
-    if (!GameExporterPlatform::CopySharedLibs(engineDir, outputDir, ec))
+    // Exclude editor-only libs — the game runtime does not depend on them.
+    static const std::unordered_set<std::string> c_editorOnlyLibs = { "Nous-Editor", "libNous-Editor" };
+    if (!GameExporterPlatform::CopySharedLibs(engineDir, outputDir, ec, c_editorOnlyLibs))
     { abort("Failed to copy shared libs: " + ec.message()); return; }
     if (checkCancel()) return;
 
