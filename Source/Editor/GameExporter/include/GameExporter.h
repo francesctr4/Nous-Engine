@@ -1,10 +1,37 @@
 #pragma once
 
 #include <atomic>
+#include <filesystem>
 #include <mutex>
 #include <string>
+#include <string_view>
+#include <system_error>
 #include <thread>
 #include <vector>
+
+namespace GameExporterPlatform
+{
+#ifdef _WIN32
+    constexpr std::string_view GetExeExtension()  { return ".exe";         }
+    constexpr std::string_view GetSharedLibExt()  { return ".dll";         }
+    constexpr std::string_view GetScriptLibName() { return "Scripts.dll";  }
+#elif defined(__APPLE__)
+    constexpr std::string_view GetExeExtension()  { return "";              }
+    constexpr std::string_view GetSharedLibExt()  { return ".dylib";        }
+    constexpr std::string_view GetScriptLibName() { return "Scripts.dylib"; }
+#else
+    constexpr std::string_view GetExeExtension()  { return "";             }
+    constexpr std::string_view GetSharedLibExt()  { return ".so";          }
+    constexpr std::string_view GetScriptLibName() { return "Scripts.so";   }
+#endif
+
+    bool CopySharedLibs(const std::filesystem::path& srcDir,
+                        const std::filesystem::path& dstDir,
+                        std::error_code& ec);
+
+    bool PatchGameConfig(const std::filesystem::path& configPath,
+                         const std::string& startScene);
+} // namespace GameExporterPlatform
 
 struct GameExportConfig
 {

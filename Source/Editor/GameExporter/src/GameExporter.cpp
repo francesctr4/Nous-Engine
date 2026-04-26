@@ -11,6 +11,9 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <shellapi.h>
+#else
+#include <cstdio>
+#include <sys/wait.h>
 #endif
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
@@ -32,10 +35,11 @@ namespace
     std::filesystem::path ResolveLibraryDir(const std::filesystem::path& engineDir)
     {
         const auto deliveryLib = engineDir / "Library";
-        // Library/GameBin/GameApp.exe only exists in a proper engine delivery (InstallEngine).
+        // Library/GameBin/GameApp only exists in a proper engine delivery (InstallEngine).
         // In dev builds CMake copies Shaders to bin/Library/ but not the full content,
         // so checking for Shaders/ gives a false positive — use GameBin as the indicator instead.
-        if (std::filesystem::exists(deliveryLib / "GameBin" / "GameApp.exe"))
+        const std::string gameExeName = "GameApp" + std::string(GameExporterPlatform::GetExeExtension());
+        if (std::filesystem::exists(deliveryLib / "GameBin" / gameExeName))
             return deliveryLib;
         return std::filesystem::current_path() / "Library";
     }
@@ -108,32 +112,32 @@ namespace
         CloseHandle(pi.hThread);
         return exitCode == 0;
     }
-#endif
-
-    bool CopyAllDlls(const std::filesystem::path& srcDir,
-                     const std::filesystem::path& dstDir,
-                     std::error_code& ec)
+#else
+    bool LaunchAndCapture(const std::string& cmd,
+                          const std::function<void(const std::string&)>& onLine,
+                          std::atomic<bool>& cancelFlag)
     {
-        std::filesystem::create_directories(dstDir, ec);
-        if (ec) return false;
-        for (const auto& entry : std::filesystem::directory_iterator(srcDir, ec))
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (!pipe) return false;
+        char buf[1024];
+        std::string lineAccum;
+        while (!cancelFlag.load() && fgets(buf, sizeof(buf), pipe))
         {
-            if (!entry.is_regular_file()) continue;
-            if (entry.path().extension() != ".dll") continue;
-            std::filesystem::copy_file(entry.path(), dstDir / entry.path().filename(),
-                                       std::filesystem::copy_options::overwrite_existing, ec);
-            if (ec) return false;
+            lineAccum += buf;
+            size_t pos;
+            while ((pos = lineAccum.find('\n')) != std::string::npos)
+            {
+                std::string line = lineAccum.substr(0, pos);
+                if (!line.empty() && line.back() == '\r') line.pop_back();
+                if (!line.empty()) onLine(line);
+                lineAccum.erase(0, pos + 1);
+            }
         }
-        return true;
+        if (!lineAccum.empty()) onLine(lineAccum);
+        const int status = pclose(pipe);
+        return status != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0;
     }
-
-    bool PatchGameConfig(const std::filesystem::path& configPath, const std::string& startScene)
-    {
-        JsonObject cfg = JsonFile::LoadFromFile(configPath.string());
-        if (cfg.IsEmpty()) return false;
-        cfg.Set("startScene", startScene);
-        return JsonFile::SaveToFile(cfg, configPath.string());
-    }
+#endif
 
     bool CopyLibraryContents(const std::filesystem::path& src,
                               const std::filesystem::path& dst,
@@ -164,6 +168,34 @@ namespace
         return true;
     }
 } // namespace
+
+// ─── GameExporterPlatform ─────────────────────────────────────────────────────
+
+bool GameExporterPlatform::CopySharedLibs(const std::filesystem::path& srcDir,
+                                          const std::filesystem::path& dstDir,
+                                          std::error_code& ec)
+{
+    std::filesystem::create_directories(dstDir, ec);
+    if (ec) return false;
+    for (const auto& entry : std::filesystem::directory_iterator(srcDir, ec))
+    {
+        if (!entry.is_regular_file()) continue;
+        if (entry.path().extension() != GetSharedLibExt()) continue;
+        std::filesystem::copy_file(entry.path(), dstDir / entry.path().filename(),
+                                   std::filesystem::copy_options::overwrite_existing, ec);
+        if (ec) return false;
+    }
+    return true;
+}
+
+bool GameExporterPlatform::PatchGameConfig(const std::filesystem::path& configPath,
+                                           const std::string& startScene)
+{
+    JsonObject cfg = JsonFile::LoadFromFile(configPath.string());
+    if (cfg.IsEmpty()) return false;
+    cfg.Set("startScene", startScene);
+    return JsonFile::SaveToFile(cfg, configPath.string());
+}
 
 // ─── GameExporter public API ──────────────────────────────────────────────────
 
@@ -259,16 +291,22 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
     // ── Step 2: Recompile scripts ─────────────────────────────────────────
     m_currentStep.store(2);
     PostLog("[INFO] Recompiling scripts...");
-#ifdef _WIN32
     {
-        const std::string batPath =
-            (engineDir / "Library" / "Scripts" / "RebuildScripts.bat").string();
 #ifdef NDEBUG
         const std::string buildMode = "Release";
 #else
         const std::string buildMode = "Debug";
 #endif
-        const std::string cmd = "\"" + batPath + "\" " + buildMode;
+
+#ifdef _WIN32
+        const std::string scriptPath =
+            (engineDir / "Library" / "Scripts" / "RebuildScripts.bat").string();
+        const std::string cmd = "\"" + scriptPath + "\" " + buildMode;
+#else
+        const std::string scriptPath =
+            (engineDir / "Library" / "Scripts" / "RebuildScripts.sh").string();
+        const std::string cmd = "bash \"" + scriptPath + "\" " + buildMode + " 2>&1";
+#endif
         const bool ok = LaunchAndCapture(cmd,
             [&](const std::string& line) { PostLog(line); },
             m_cancelRequested);
@@ -279,45 +317,44 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
             return;
         }
     }
-#else
-    PostLog("[WARN] Script recompilation not supported on this platform — skipping.");
-#endif
     if (checkCancel()) return;
 
-    // ── Step 3: Copy engine DLLs ──────────────────────────────────────────
+    // ── Step 3: Copy engine shared libs ───────────────────────────────────
     m_currentStep.store(3);
     PostLog("[INFO] Copying engine binaries...");
-    if (!CopyAllDlls(engineDir, outputDir, ec))
-    { abort("Failed to copy DLLs: " + ec.message()); return; }
+    if (!GameExporterPlatform::CopySharedLibs(engineDir, outputDir, ec))
+    { abort("Failed to copy shared libs: " + ec.message()); return; }
     if (checkCancel()) return;
 
-    // ── Step 4: Copy GameApp.exe ──────────────────────────────────────────
+    // ── Step 4: Copy GameApp executable ───────────────────────────────────
     m_currentStep.store(4);
-    PostLog("[INFO] Copying GameApp.exe...");
     {
-        // Engine delivery: Library/GameBin/GameApp.exe
-        // Dev build (CLion): GameApp.exe sits next to EditorApp.exe in bin/
-        const auto deliveryPath = engineDir / "Library" / "GameBin" / "GameApp.exe";
-        const auto devPath      = engineDir / "GameApp.exe";
+        const std::string gameExeName = "GameApp" + std::string(GameExporterPlatform::GetExeExtension());
+        PostLog("[INFO] Copying " + gameExeName + "...");
+        // Engine delivery: Library/GameBin/<gameExeName>
+        // Dev build: <gameExeName> sits next to EditorApp in bin/
+        const auto deliveryPath = engineDir / "Library" / "GameBin" / gameExeName;
+        const auto devPath      = engineDir / gameExeName;
         const auto src = std::filesystem::exists(deliveryPath) ? deliveryPath : devPath;
-        const auto dst = outputDir / "GameApp.exe";
+        const auto dst = outputDir / gameExeName;
         std::filesystem::copy_file(src, dst,
             std::filesystem::copy_options::overwrite_existing, ec);
-        if (ec) { abort("Failed to copy GameApp.exe: " + ec.message()); return; }
+        if (ec) { abort("Failed to copy " + gameExeName + ": " + ec.message()); return; }
     }
     if (checkCancel()) return;
 
-    // ── Step 5: Copy freshly compiled Scripts.dll ─────────────────────────
+    // ── Step 5: Copy freshly compiled Scripts shared lib ──────────────────
     m_currentStep.store(5);
-    PostLog("[INFO] Copying Scripts.dll...");
     {
-        const auto src     = engineDir / "Library" / "Scripts" / "Scripts.dll";
-        const auto dstDir  = outputDir / "Library" / "Scripts";
+        const auto scriptLibName = GameExporterPlatform::GetScriptLibName();
+        PostLog("[INFO] Copying " + std::string(scriptLibName) + "...");
+        const auto src    = engineDir / "Library" / "Scripts" / scriptLibName;
+        const auto dstDir = outputDir / "Library" / "Scripts";
         std::filesystem::create_directories(dstDir, ec);
         if (ec) { abort("Failed to create Library/Scripts: " + ec.message()); return; }
-        std::filesystem::copy_file(src, dstDir / "Scripts.dll",
+        std::filesystem::copy_file(src, dstDir / scriptLibName,
             std::filesystem::copy_options::overwrite_existing, ec);
-        if (ec) { abort("Failed to copy Scripts.dll: " + ec.message()); return; }
+        if (ec) { abort("Failed to copy " + std::string(scriptLibName) + ": " + ec.message()); return; }
     }
     if (checkCancel()) return;
 
@@ -350,7 +387,7 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
         else if (!config.startupScene.empty())
         {
             PostLog("[INFO] Setting startup scene: " + config.startupScene);
-            if (!PatchGameConfig(cfgDst, config.startupScene))
+            if (!GameExporterPlatform::PatchGameConfig(cfgDst, config.startupScene))
                 PostLog("[WARN] Could not patch game_config.json — startup scene unchanged.");
         }
     }
@@ -358,11 +395,16 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
     PostLog("[OK] Build succeeded -> " + outputDir.string());
     PostDone(true);
 
-#ifdef _WIN32
     if (config.launchAfter)
     {
-        const std::string exePath = (outputDir / "GameApp.exe").string();
+        const std::string exePath =
+            (outputDir / ("GameApp" + std::string(GameExporterPlatform::GetExeExtension()))).string();
+#ifdef _WIN32
         ShellExecuteA(nullptr, "open", exePath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-    }
+#elif defined(__APPLE__)
+        system(("open \"" + exePath + "\"").c_str());
+#else
+        system(("xdg-open \"" + exePath + "\" &").c_str());
 #endif
+    }
 }
