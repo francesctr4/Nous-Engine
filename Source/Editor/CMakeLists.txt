@@ -17,8 +17,8 @@ add_library(NousEngine::Editor ALIAS ${EDITOR_NAME})
 
 target_link_libraries(${EDITOR_NAME} PUBLIC
         NousEngine::Engine
-        ModuleEditor
         EditorUI
+        ModuleEditor
 )
 
 if (WIN32)
