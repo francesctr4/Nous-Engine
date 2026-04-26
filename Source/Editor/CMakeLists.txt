@@ -26,6 +26,12 @@ if (WIN32)
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:ModuleEditor>"
     "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:EditorUI>"
   )
+elseif (UNIX)
+  # Mirror Windows /WHOLEARCHIVE: bake all static-lib symbols into the .so so
+  # consumers never hit circular-dependency ordering failures with the archives.
+  target_link_options(${EDITOR_NAME} PRIVATE
+    "-Wl,--whole-archive,$<TARGET_FILE:ModuleEditor>,$<TARGET_FILE:EditorUI>,--no-whole-archive"
+  )
 endif()
 
 set_target_properties(${EDITOR_NAME} PROPERTIES
