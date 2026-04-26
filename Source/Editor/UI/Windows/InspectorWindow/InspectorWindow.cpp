@@ -250,7 +250,34 @@ void InspectorWindow::DrawMaterialComponent(const GameObject* go, CMaterial* cma
     if (!cmaterial->material)
         return;
 
-    ImGui::Text("Name: %s", cmaterial->material->GetName().c_str());
+    ImGui::Text("Name:");
+    ImGui::SameLine();
+    ImGui::Button(cmaterial->material->GetName().c_str(), ImVec2(200.0f, 0.0f));
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+        {
+            const auto* data = static_cast<const char*>(payload->Data);
+            const char* end = data + payload->DataSize;
+            while (data < end)
+            {
+                std::string path(data);
+                data += path.size() + 1;
+                if (std::filesystem::path(path).extension() == ".nmat")
+                {
+                    Resource* r = rm->CreateResource(path);
+                    if (r)
+                    {
+                        if (cmaterial->material && cmaterial->material != rm->GetDefaultMaterial())
+                            rm->UnloadResource(cmaterial->material->GetUID());
+                        cmaterial->material = down_cast<ResourceMaterial*>(r);
+                    }
+                    break;
+                }
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
     ImGui::Text("UID: %u", cmaterial->material->GetUID());
     ImGui::Text("Assets Path: %s", cmaterial->material->GetAssetsPath().c_str());
     ImGui::Text("Library Path: %s", cmaterial->material->GetLibraryPath().c_str());
