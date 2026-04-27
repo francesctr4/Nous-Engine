@@ -305,14 +305,12 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	if (m_renderMode == RenderMode::EDITOR)
 	{
 		std::vector<GeometryRenderData> outlinedGeometries;
-		if (sceneData.selectedObject.IsValid() && sceneData.selectedObject.HasComponent<CMesh>())
+		for (auto go : sceneData.selectedObjects)
 		{
+			if (!go.HasComponent<CMesh>()) continue;
 			GeometryRenderData data{};
-			auto selectedCopy = sceneData.selectedObject;
-			if (auto* t = selectedCopy.TryGetComponent<CTransform>())
-				data.model = t->worldMatrix;
-			if (auto* m = selectedCopy.TryGetComponent<CMesh>())
-				data.geometry = m->mesh;
+			if (auto* t = go.TryGetComponent<CTransform>()) data.model    = t->worldMatrix;
+			if (auto* m = go.TryGetComponent<CMesh>())      data.geometry = m->mesh;
 			outlinedGeometries.push_back(data);
 		}
 		mRendererFrontend->SetOutlinedGeometries(outlinedGeometries);
@@ -491,8 +489,8 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 					color);
 
 				// Only for the selected light: range sphere.
-				if (sceneData.selectedObject.IsValid() &&
-				    sceneData.selectedObject.GetEntity() == entity)
+				if (sceneData.primaryObject.IsValid() &&
+				    sceneData.primaryObject.GetEntity() == entity)
 				{
 					pointLightDebugs.emplace_back(
 						glm::translate(glm::mat4(1.0f), transform.position) *
@@ -516,8 +514,8 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			auto lightView2 = sceneData.registry->view<CLight, CTransform>();
 			for (auto [entity, light, transform] : lightView2.each())
 			{
-				const bool isSelected = sceneData.selectedObject.IsValid() &&
-				                        sceneData.selectedObject.GetEntity() == entity;
+				const bool isSelected = sceneData.primaryObject.IsValid() &&
+				                        sceneData.primaryObject.GetEntity() == entity;
 				const glm::vec4 color = glm::vec4(light.color, 1.0f);
 
 				if (light.type == LightType::Directional)

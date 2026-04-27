@@ -345,8 +345,7 @@ void Scene::DestroyEntity(entt::entity entity) {
 
     if (m_ModuleScene) {
         GameObject go(entity, &m_Registry);
-        if (m_ModuleScene->selectedGameObject == go)
-            m_ModuleScene->selectedGameObject = {};
+        m_ModuleScene->RemoveFromSelection(go);
     }
 
     if (const auto* h = m_Registry.try_get<CHierarchy>(entity)) {

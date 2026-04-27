@@ -90,8 +90,19 @@ void HierarchyWindow::HandleHierarchyDragDropPayloads()
         IM_ASSERT(payload->DataSize == sizeof(entt::entity));
         entt::entity e = *static_cast<const entt::entity*>(payload->Data);
         GameObject draggedGO(e, &m_Scene->GetRegistry());
-        if (draggedGO.IsValid())
+        if (!draggedGO.IsValid()) { ImGui::EndDragDropTarget(); return; }
+
+        ModuleScene* scene = editorContext->GetScene();
+        if (scene->IsSelected(draggedGO) && scene->selectedGameObjects.size() > 1)
+        {
+            for (auto go : scene->selectedGameObjects)
+                if (go.IsValid())
+                    m_ToReparent.push_back({go, {}});
+        }
+        else
+        {
             m_ToReparent.push_back({draggedGO, {}});
+        }
     }
 
     // Accept .nprefab files dragged from the AssetsBrowser
@@ -117,20 +128,20 @@ void HierarchyWindow::HandleSceneContextMenu()
         if (ImGui::MenuItem("Create Empty"))
         {
             GameObject go = m_Scene->CreateGameObject("GameObject", nullptr);
-            editorContext->GetScene()->selectedGameObject = go;
+            editorContext->GetScene()->SetSelection(go);
         }
         if (ImGui::MenuItem("Create Camera"))
         {
             GameObject go = m_Scene->CreateGameObject("Main Camera", nullptr);
             auto& cam = go.AddComponent<CCamera>();
             cam.isMainCamera = true;
-            editorContext->GetScene()->selectedGameObject = go;
+            editorContext->GetScene()->SetSelection(go);
         }
         if (ImGui::MenuItem("Create Light"))
         {
             GameObject go = m_Scene->CreateGameObject("Directional Light", nullptr);
             go.AddComponent<CLight>();
-            editorContext->GetScene()->selectedGameObject = go;
+            editorContext->GetScene()->SetSelection(go);
         }
         ImGui::EndPopup();
     }
@@ -139,9 +150,7 @@ void HierarchyWindow::HandleSceneContextMenu()
 void HierarchyWindow::HandleEmptyClickSelection() const
 {
     if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered())
-    {
-        editorContext->GetScene()->selectedGameObject = {};
-    }
+        editorContext->GetScene()->ClearSelection();
 }
 
 // ---------------------------------------------------------------------------------------
@@ -190,7 +199,7 @@ ImGuiTreeNodeFlags HierarchyWindow::BuildNodeFlags(GameObject obj) const
     if (obj.GetChildren().empty())
         flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
-    if (obj == editorContext->GetScene()->selectedGameObject)
+    if (editorContext->GetScene()->IsSelected(obj))
         flags |= ImGuiTreeNodeFlags_Selected;
     return flags;
 }
@@ -227,8 +236,36 @@ void HierarchyWindow::PopPrefabStyle(const bool applyTint) const
 
 void HierarchyWindow::HandleGameObjectSelection(GameObject obj) const
 {
+    if (ImGui::IsItemToggledOpen()) return;
+
+    ModuleScene* scene = editorContext->GetScene();
+
     if (ImGui::IsItemClicked())
-        editorContext->GetScene()->selectedGameObject = obj;
+    {
+        if (ImGui::GetIO().KeyCtrl)
+        {
+            scene->IsSelected(obj) ? scene->RemoveFromSelection(obj)
+                                   : scene->AddToSelection(obj);
+        }
+        else if (!scene->IsSelected(obj))
+        {
+            // Clicking an unselected item always replaces the selection.
+            scene->SetSelection(obj);
+        }
+        // Clicking an already-selected item without Ctrl does nothing on button-down
+        // so an ongoing multi-selection drag-drop can use the full selection set.
+    }
+
+    // Collapse multi-selection to this object only on mouse-release with no drag,
+    // so the user can still click a selected item to narrow the selection.
+    if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)
+        && !ImGui::GetIO().KeyCtrl
+        && scene->IsSelected(obj)
+        && scene->selectedGameObjects.size() > 1
+        && !ImGui::IsMouseDragPastThreshold(ImGuiMouseButton_Left))
+    {
+        scene->SetSelection(obj);
+    }
 }
 
 void HierarchyWindow::HandleGameObjectNodeContextMenu(GameObject obj)
@@ -238,9 +275,18 @@ void HierarchyWindow::HandleGameObjectNodeContextMenu(GameObject obj)
 
     if (ImGui::MenuItem("Delete"))
     {
-        m_ToDelete.push_back(obj);
-        if (editorContext->GetScene()->selectedGameObject == obj)
-            editorContext->GetScene()->selectedGameObject = {};
+        ModuleScene* scene = editorContext->GetScene();
+        if (scene->IsSelected(obj) && scene->selectedGameObjects.size() > 1)
+        {
+            for (auto go : scene->selectedGameObjects)
+                m_ToDelete.push_back(go);
+            scene->ClearSelection();
+        }
+        else
+        {
+            m_ToDelete.push_back(obj);
+            scene->RemoveFromSelection(obj);
+        }
     }
 
     ImGui::Separator();
@@ -277,8 +323,19 @@ void HierarchyWindow::HandleGameObjectNodeDragDropPayloads(GameObject obj)
         IM_ASSERT(payload->DataSize == sizeof(entt::entity));
         entt::entity e = *static_cast<const entt::entity*>(payload->Data);
         GameObject draggedGO(e, &m_Scene->GetRegistry());
-        if (draggedGO.IsValid() && draggedGO != obj && !IsChildOf(draggedGO, obj))
+        if (!draggedGO.IsValid()) { ImGui::EndDragDropTarget(); return; }
+
+        ModuleScene* scene = editorContext->GetScene();
+        if (scene->IsSelected(draggedGO) && scene->selectedGameObjects.size() > 1)
+        {
+            for (auto go : scene->selectedGameObjects)
+                if (go != obj && !IsChildOf(go, obj))
+                    m_ToReparent.emplace_back(go, obj);
+        }
+        else if (draggedGO != obj && !IsChildOf(draggedGO, obj))
+        {
             m_ToReparent.emplace_back(draggedGO, obj);
+        }
     }
 
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
@@ -327,8 +384,7 @@ void HierarchyWindow::ProcessPendingGameObjectDeletion()
 {
     for (auto go : m_ToDelete)
     {
-        if (editorContext->GetScene()->selectedGameObject == go)
-            editorContext->GetScene()->selectedGameObject = {};
+        editorContext->GetScene()->RemoveFromSelection(go);
         m_Scene->DestroyGameObject(go);
     }
     m_ToDelete.clear();

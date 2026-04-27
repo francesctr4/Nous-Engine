@@ -38,7 +38,13 @@ void InspectorWindow::DrawContent()
 {
     const ModuleScene* mScene = editorContext->GetScene();
 
-    GameObject go = mScene->selectedGameObject;
+    if (mScene->selectedGameObjects.size() > 1)
+    {
+        ImGui::TextDisabled("%zu objects selected.", mScene->selectedGameObjects.size());
+        return;
+    }
+
+    GameObject go = mScene->primarySelection;
     if (!go.IsValid())
     {
         ImGui::TextDisabled("No GameObject selected.");

@@ -283,6 +283,13 @@ void AssetsBrowser::MoveAsset(const std::string& srcPath, const std::string& des
 
 void AssetsBrowser::DeleteAsset(const std::string& assetPath)
 {
+    if (std::filesystem::is_directory(assetPath))
+    {
+        nous::engine::filesystem::DeleteDirectory(assetPath);
+        AddItemsFromDirectory(current_directory);
+        return;
+    }
+
     MetaFileData meta;
     const bool hasMeta = ResourceImportPipeline::GetAssetMetaData(assetPath, meta);
 
@@ -527,11 +534,14 @@ void AssetsBrowser::DrawContent()
 
                     if (item_data->fileType == FileType::FOLDER)
                     {
-                        if (ImGui::Button("##folder", LayoutItemSize))
+                        ImGui::Selectable("", item_is_selected, ImGuiSelectableFlags_None, LayoutItemSize);
+
+                        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                         {
                             directory_stack.push(current_directory);
                             current_directory = current_directory + "/" + item_data->name;
                             AddItemsFromDirectory(current_directory);
+                            Selection.Clear();
 
                             ImGui::PopID();
                             break;

@@ -179,9 +179,6 @@ UpdateStatus Application::PrepareUpdate()
 // ---------------------------------------------------------------------------
 static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::engine::multithreading::NOUS_JobSystem* jobSystem)
 {
-    if (input->GetKey(SDL_SCANCODE_M) == KeyState::DOWN)
-        ScriptManager::GenerateScript("PRUEBA_CREAR_SCRIPT_DESDE_MOTOR");
-
     if (input->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
         scene->SaveScene(scene->GetCurrentScenePath());
 

@@ -5,6 +5,7 @@
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include <string>
+#include <vector>
 #include <atomic>
 #include "Engine/Core/EventSystem/IEventListener.h"
 
@@ -87,10 +88,17 @@ public:
 	// Returns true if the active scene contains at least one CCamera with isMainCamera=true.
 	NOUS_ENGINE_API bool HasMainCamera() const;
 
+	NOUS_ENGINE_API bool IsSelected(GameObject go) const;
+	NOUS_ENGINE_API void AddToSelection(GameObject go);      // no-op if already in set; updates primarySelection
+	NOUS_ENGINE_API void RemoveFromSelection(GameObject go); // primarySelection = back() or {} after remove
+	NOUS_ENGINE_API void SetSelection(GameObject go);        // clears set, adds go, sets primarySelection
+	NOUS_ENGINE_API void ClearSelection();                   // empties both fields
+
 public:
 
 	Scene*         activeScene    = nullptr;
-	GameObject     selectedGameObject;           // null handle by default (IsValid() == false)
+	std::vector<GameObject> selectedGameObjects;  // ordered by selection time; empty = nothing selected
+	GameObject              primarySelection;      // last item added; invalid handle when set is empty
 	Camera*        gameCamera    = nullptr;
 	ScriptManager* scriptManager = nullptr;
 	// Set by GameViewport::Draw() each frame; applied in ModuleRenderer3D::PostUpdate()

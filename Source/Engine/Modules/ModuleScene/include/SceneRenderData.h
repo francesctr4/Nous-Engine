@@ -3,6 +3,7 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 
 #include <entt/entt.hpp>
+#include <vector>
 
 class Camera;
 
@@ -12,6 +13,7 @@ struct SceneRenderData
 {
     bool            hasActiveScene = false;
     Camera*         gameCamera     = nullptr;
-    GameObject      selectedObject;           // null handle if nothing selected
+    std::vector<GameObject> selectedObjects;  // empty if nothing selected
+    GameObject              primaryObject;    // invalid handle if nothing selected
     entt::registry* registry       = nullptr; // non-owning; valid for this frame only
 };

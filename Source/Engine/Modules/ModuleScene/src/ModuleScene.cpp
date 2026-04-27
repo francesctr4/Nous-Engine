@@ -71,7 +71,7 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading:
 
 ModuleScene::~ModuleScene()
 {
-	selectedGameObject = {};
+	ClearSelection();
 	NOUS_DELETE(gameCamera, MemoryTag::CAMERA);
 	NOUS_DELETE(activeScene, MemoryTag::SCENE);
 	NOUS_DELETE(scriptManager, MemoryTag::SCRIPTING_SYSTEM);
@@ -152,6 +152,41 @@ UpdateStatus ModuleScene::Update(const float dt)
 	return UpdateStatus::CONTINUE;
 }
 
+bool ModuleScene::IsSelected(const GameObject go) const
+{
+    return std::find(selectedGameObjects.begin(), selectedGameObjects.end(), go)
+           != selectedGameObjects.end();
+}
+
+void ModuleScene::AddToSelection(const GameObject go)
+{
+    if (!go.IsValid() || IsSelected(go)) return;
+    selectedGameObjects.push_back(go);
+    primarySelection = go;
+}
+
+void ModuleScene::RemoveFromSelection(const GameObject go)
+{
+    auto it = std::find(selectedGameObjects.begin(), selectedGameObjects.end(), go);
+    if (it == selectedGameObjects.end()) return;
+    selectedGameObjects.erase(it);
+    primarySelection = selectedGameObjects.empty() ? GameObject{} : selectedGameObjects.back();
+}
+
+void ModuleScene::SetSelection(const GameObject go)
+{
+    selectedGameObjects.clear();
+    if (!go.IsValid()) { primarySelection = {}; return; }
+    selectedGameObjects.push_back(go);
+    primarySelection = go;
+}
+
+void ModuleScene::ClearSelection()
+{
+    selectedGameObjects.clear();
+    primarySelection = {};
+}
+
 UpdateStatus ModuleScene::PostUpdate(float dt)
 {
 #ifdef _PROFILING
@@ -180,7 +215,8 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 	m_renderData                = {};
 	m_renderData.hasActiveScene = activeScene != nullptr;
 	m_renderData.gameCamera     = gameCamera;
-	m_renderData.selectedObject = selectedGameObject;
+	m_renderData.selectedObjects = selectedGameObjects;
+	m_renderData.primaryObject   = primarySelection;
 	m_renderData.registry       = activeScene ? &activeScene->GetRegistry() : nullptr;
 
 	return UpdateStatus::CONTINUE;
@@ -419,7 +455,7 @@ GameObject ModuleScene::InstantiatePrefab(const std::string& path, GameObject pa
 
 void ModuleScene::ClearScene()
 {
-    selectedGameObject = {};
+    ClearSelection();
     activeScene->Clear();
 }
 

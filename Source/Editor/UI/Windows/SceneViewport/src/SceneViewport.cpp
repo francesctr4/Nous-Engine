@@ -33,6 +33,7 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include <utility>
 
+#include "Engine/Core/Logger/Logger.h"
 #include "SDL3/SDL.h"
 
 SceneViewport::SceneViewport(const char* title, EditorContext* context, bool start_open)
@@ -102,16 +103,28 @@ void SceneViewport::DrawContent()
     // ImGuizmo::IsOver() retains stale state from the previous frame when no
     // gizmo was drawn (e.g. nothing selected). Only consult it when a gizmo is
     // actually visible this frame, otherwise picking would be incorrectly blocked.
-    const bool gizmoVisible = editorContext->GetScene()->selectedGameObject.IsValid() &&
-        editorContext->GetScene()->selectedGameObject.HasComponent<CTransform>();
+    GameObject primary = editorContext->GetScene()->primarySelection;
+    const bool gizmoVisible  = primary.IsValid() && primary.HasComponent<CTransform>();
     const bool gizmoBlocking = gizmoVisible && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
 
-    // Keep the camera orbit target in sync with the selected object's world position.
+    // Keep the camera orbit target at the gizmo position (centroid of all selected objects).
     ModuleCamera3D* cam3D = editorContext->GetCamera();
     if (gizmoVisible)
     {
-        const CTransform& t = editorContext->GetScene()->selectedGameObject.GetComponent<CTransform>();
-        cam3D->SetOrbitTarget(glm::vec3(t.worldMatrix[3]));
+        const auto& selectedGOs = editorContext->GetScene()->selectedGameObjects;
+        glm::vec3 centroid{0.0f};
+        int count = 0;
+        for (auto go : selectedGOs)
+        {
+            if (const auto* t = go.TryGetComponent<CTransform>())
+            {
+                centroid += glm::vec3(t->worldMatrix[3]);
+                count++;
+            }
+        }
+        if (count > 0)
+            centroid /= static_cast<float>(count);
+        cam3D->SetOrbitTarget(centroid);
     }
     else
     {
@@ -225,18 +238,58 @@ void SceneViewport::HandleGizmoInput()
         m_GizmoSpace = m_GizmoSpace == LOCAL ? WORLD : LOCAL;
     }
 
-    // Frame selected object (F) — move camera to look at the selected object
+    // Frame selected objects (F) — move camera to look at the centroid of all selected.
+    // Distance is driven by the bounding radius: how far the objects are spread from the
+    // centroid plus each object's own scale extent, so distant objects always fit in view.
     if (editorContext->GetInput()->GetKey(SDL_SCANCODE_F) == DOWN)
     {
-        GameObject selected = editorContext->GetScene()->selectedGameObject;
-        if (selected.IsValid() && selected.HasComponent<CTransform>())
+        const auto& selectedGOs = editorContext->GetScene()->selectedGameObjects;
+        glm::vec3 centroid{0.0f};
+        float maxScale = 0.0f;
+        int frameCount = 0;
+
+        for (auto go : selectedGOs)
         {
-            const CTransform& t = selected.GetComponent<CTransform>();
-            const auto worldPos = glm::vec3(t.worldMatrix[3]);
-            const float maxScale = glm::max(t.scale.x, glm::max(t.scale.y, t.scale.z));
-            const float distance = glm::max(maxScale * 500.0f, 500.0f);
-            editorContext->GetCamera()->FrameTarget(worldPos, distance);
+            if (!go.HasComponent<CTransform>()) continue;
+            const CTransform& t = go.GetComponent<CTransform>();
+            centroid += glm::vec3(t.worldMatrix[3]);
+            maxScale  = glm::max(maxScale, glm::max(t.scale.x, glm::max(t.scale.y, t.scale.z)));
+            frameCount++;
         }
+
+        if (frameCount > 0)
+        {
+            centroid /= static_cast<float>(frameCount);
+
+            // Second pass: measure how spread out the selection is from its centroid.
+            float spreadRadius = 0.0f;
+            for (auto go : selectedGOs)
+            {
+                if (!go.HasComponent<CTransform>()) continue;
+                const CTransform& t = go.GetComponent<CTransform>();
+                spreadRadius = glm::max(spreadRadius,
+                    glm::length(glm::vec3(t.worldMatrix[3]) - centroid));
+            }
+
+            // Take the larger of two independent drivers:
+            //  - object-size: maxScale * 500  (existing single-object formula, unchanged)
+            //  - spread:      spreadRadius * 2.5  (~1/tan(30°) with padding for ~60° FOV)
+            // For a single object spreadRadius == 0, so it reduces exactly to the original.
+            const float distance = glm::max(glm::max(maxScale * 500.0f, spreadRadius * 2.5f), 500.0f);
+            editorContext->GetCamera()->FrameTarget(centroid, distance);
+        }
+    }
+
+    // Delete selected objects (Supr key)
+    if ((editorContext->GetInput()->GetKey(SDL_SCANCODE_KP_PERIOD) == DOWN ||
+        editorContext->GetInput()->GetKey(SDL_SCANCODE_PAUSE) == DOWN)
+        && !ImGuizmo::IsUsing())
+    {
+        ModuleScene* scene = editorContext->GetScene();
+        const std::vector<GameObject> toDelete = scene->selectedGameObjects;
+        scene->ClearSelection();
+        for (auto go : toDelete)
+            scene->activeScene->DestroyGameObject(go);
     }
 
     // Toggle snapping with Left Ctrl
@@ -246,7 +299,8 @@ void SceneViewport::HandleGizmoInput()
 
 void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportSize) const
 {
-    GameObject selected = editorContext->GetScene()->selectedGameObject;
+    ModuleScene* scene    = editorContext->GetScene();
+    GameObject   selected = scene->primarySelection;
     if (!selected.IsValid() || !selected.HasComponent<CTransform>())
         return;
 
@@ -254,68 +308,84 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
     if (!cam)
         return;
 
-    // Get camera matrices — ImGuizmo renders via ImGui draw lists (not Vulkan),
-    // so it expects standard OpenGL-convention matrices. glm::perspective already produces that.
-    glm::mat4 view = cam->GetViewMatrix();
-
-    // Camera aspect ratio is driven from the panel each frame, so the camera's own
-    // projection matrix is already correct — no need to rebuild it here.
+    glm::mat4 view       = cam->GetViewMatrix();
     glm::mat4 projection = cam->GetProjectionMatrix();
 
-    // Get the object's transform matrix.
-    // Use worldMatrix so the gizmo is placed at the correct world position even
-    // when the selected object is a child of another GO.
     CTransform& transform = selected.GetComponent<CTransform>();
-    glm::mat4 objectMatrix = transform.worldMatrix;
 
-    // Configure ImGuizmo for this viewport
+    // Compute centroid of all selected objects that have a CTransform (world space).
+    const auto& selectedGOs = scene->selectedGameObjects;
+    glm::vec3 centroid{0.0f};
+    int count = 0;
+    for (auto go : selectedGOs)
+    {
+        if (const auto* t = go.TryGetComponent<CTransform>())
+        {
+            centroid += glm::vec3(t->worldMatrix[3]);
+            count++;
+        }
+    }
+    if (count > 1)
+        centroid /= static_cast<float>(count);
+
+    // Single-object: gizmo at the object's own world matrix.
+    // Multi-object:  use a cached matrix that is fed back each frame so Manipulate
+    //               receives the previous frame's output — making the decomposed delta
+    //               incremental rather than total-from-drag-start.
+    glm::mat4 objectMatrix;
+    if (count > 1)
+    {
+        // Reset the cache when not dragging, or when the selection set size changed
+        // mid-drag (e.g. Ctrl+click while holding LMB) to avoid applying a stale
+        // centroid delta to a different set of objects.
+        if (!ImGuizmo::IsUsing() || count != m_multiObjectGizmoCount)
+            m_multiObjectGizmoMatrix = glm::translate(glm::mat4(1.0f), centroid);
+        m_multiObjectGizmoCount = count;
+        objectMatrix = m_multiObjectGizmoMatrix;
+    }
+    else
+    {
+        m_multiObjectGizmoCount = 0;
+        objectMatrix = transform.worldMatrix;
+    }
+
     // SetImGuiContext is critical in DLL architectures where ImGui and ImGuizmo
-    // may not share the same global context
+    // may not share the same global context.
     ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::Enable(true);
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImGuizmo::SetRect(viewportPos.x, viewportPos.y, viewportSize.x, viewportSize.y);
 
-    // Map our enum to ImGuizmo operation
     ImGuizmo::OPERATION operation;
     switch (m_GizmoOperation)
     {
-    case GizmoOperation::TRANSLATE: operation = ImGuizmo::OPERATION::TRANSLATE;
-        break;
-    case GizmoOperation::ROTATE: operation = ImGuizmo::OPERATION::ROTATE;
-        break;
-    case GizmoOperation::SCALE: operation = ImGuizmo::OPERATION::SCALE;
-        break;
-    default: operation = ImGuizmo::OPERATION::TRANSLATE;
-        break;
+    case GizmoOperation::TRANSLATE: operation = ImGuizmo::OPERATION::TRANSLATE; break;
+    case GizmoOperation::ROTATE:    operation = ImGuizmo::OPERATION::ROTATE;    break;
+    case GizmoOperation::SCALE:     operation = ImGuizmo::OPERATION::SCALE;     break;
+    default:                        operation = ImGuizmo::OPERATION::TRANSLATE; break;
     }
 
-    // Set snap values based on current operation
     std::array snapValues = {0.0f, 0.0f, 0.0f};
     if (m_UseSnap)
     {
         switch (m_GizmoOperation)
         {
             using enum GizmoOperation;
-        case TRANSLATE:
-            snapValues[0] = snapValues[1] = snapValues[2] = m_TranslateSnap;
-            break;
-        case ROTATE:
-            snapValues[0] = snapValues[1] = snapValues[2] = m_RotateSnap;
-            break;
-        case SCALE:
-            snapValues[0] = snapValues[1] = snapValues[2] = m_ScaleSnap;
-            break;
+        case TRANSLATE: snapValues[0] = snapValues[1] = snapValues[2] = m_TranslateSnap; break;
+        case ROTATE:    snapValues[0] = snapValues[1] = snapValues[2] = m_RotateSnap;    break;
+        case SCALE:     snapValues[0] = snapValues[1] = snapValues[2] = m_ScaleSnap;     break;
         }
     }
 
-    // Scale mode must use LOCAL space (world scale doesn't make sense)
     ImGuizmo::MODE mode = (m_GizmoOperation == GizmoOperation::SCALE)
-                              ? ImGuizmo::LOCAL
-                              : static_cast<ImGuizmo::MODE>(std::to_underlying(m_GizmoSpace));
+        ? ImGuizmo::LOCAL
+        : static_cast<ImGuizmo::MODE>(std::to_underlying(m_GizmoSpace));
 
-    // Render and manipulate the gizmo
+    // Capture the matrix before Manipulate modifies it so we can compute
+    // the per-frame incremental delta in the multi-object path.
+    const glm::mat4 prevMatrix = objectMatrix;
+
     ImGuizmo::Manipulate(
         glm::value_ptr(view),
         glm::value_ptr(projection),
@@ -326,16 +396,16 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
         m_UseSnap ? snapValues.data() : nullptr
     );
 
-    // If the gizmo was manipulated, decompose the result into local space.
-    // objectMatrix now holds the NEW world matrix after Manipulate().
-    // For child GOs we must factor out the parent's world transform so that
-    // position/orientation/scale remain in the parent's local space.
-    if (ImGuizmo::IsUsing())
+    if (!ImGuizmo::IsUsing())
+        return;
+
+    if (count == 1)
     {
+        // Single-object path — factor out the parent's world transform to get local matrix.
         auto parentInverse = glm::mat4(1.0f);
         if (GameObject parent = selected.GetParent(); parent.IsValid())
         {
-            if (CTransform const* pt = parent.TryGetComponent<CTransform>())
+            if (const CTransform* pt = parent.TryGetComponent<CTransform>())
                 parentInverse = glm::inverse(pt->worldMatrix);
         }
 
@@ -348,13 +418,46 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
         glm::quat newOrientation;
         glm::decompose(newLocalMatrix, newScale, newOrientation, newPosition, skew, perspective);
 
-        transform.position = newPosition;
+        transform.position    = newPosition;
         transform.orientation = newOrientation;
-        transform.scale = newScale;
-        transform.eulerHint = transform.GetEulerAngles();
+        transform.scale       = newScale;
+        transform.eulerHint   = transform.GetEulerAngles();
         transform.MarkDirty();
-
         transform.UpdateMatrix();
+    }
+    else
+    {
+        // Multi-object path — update cache then decompose the incremental delta
+        // (prev→new) so we never re-apply the total drag offset.
+        m_multiObjectGizmoMatrix = objectMatrix;
+
+        glm::vec3 prevPos, prevScale, newPos, newScale, skew;
+        glm::vec4 perspective;
+        glm::quat prevRot, newRot;
+        glm::decompose(prevMatrix,    prevScale, prevRot, prevPos, skew, perspective);
+        glm::decompose(objectMatrix,  newScale,  newRot,  newPos,  skew, perspective);
+
+        const glm::vec3 translationDelta = newPos - prevPos;
+        const glm::quat rotationDelta    = newRot * glm::inverse(prevRot);
+        constexpr float c_scaleEpsilon  = 1e-6f;
+        const glm::vec3 scaleDelta = glm::vec3(
+            glm::abs(prevScale.x) > c_scaleEpsilon ? newScale.x / prevScale.x : 1.0f,
+            glm::abs(prevScale.y) > c_scaleEpsilon ? newScale.y / prevScale.y : 1.0f,
+            glm::abs(prevScale.z) > c_scaleEpsilon ? newScale.z / prevScale.z : 1.0f
+        );
+
+        for (auto go : selectedGOs)
+        {
+            if (CTransform* t = go.TryGetComponent<CTransform>())
+            {
+                t->position    += translationDelta;
+                t->orientation  = glm::normalize(rotationDelta * t->orientation);
+                t->scale       *= scaleDelta;
+                t->eulerHint    = t->GetEulerAngles();
+                t->MarkDirty();
+                t->UpdateMatrix();
+            }
+        }
     }
 }
 
@@ -411,7 +514,7 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
 
     if (geometries.empty())
     {
-        editorContext->GetScene()->selectedGameObject = {};
+        editorContext->GetScene()->ClearSelection();
         return;
     }
 
@@ -428,23 +531,31 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
     RendererFrontend const* frontend = editorContext->GetRendererFrontend();
     uint32_t objectID = frontend->PickObjectAt(pixelX, pixelY, projection, view, geometries);
 
-    // Select or deselect
+    // Select or deselect; Ctrl held = toggle, otherwise replace selection
+    ModuleScene* scene = editorContext->GetScene();
     if (objectID != 0)
     {
-        GameObject found = editorContext->GetScene()->activeScene->FindGameObjectByID(objectID);
+        GameObject found = scene->activeScene->FindGameObjectByID(objectID);
         if (found.IsValid())
         {
-            editorContext->GetScene()->selectedGameObject = found;
+            if (ImGui::GetIO().KeyCtrl)
+            {
+                scene->IsSelected(found) ? scene->RemoveFromSelection(found)
+                                         : scene->AddToSelection(found);
+            }
+            else
+            {
+                scene->SetSelection(found);
+            }
         }
         else
         {
-            // objectID didn't match any live GO — stale pick result; deselect.
-            editorContext->GetScene()->selectedGameObject = {};
+            scene->ClearSelection();  // stale pick result
         }
     }
     else
     {
-        editorContext->GetScene()->selectedGameObject = {};
+        scene->ClearSelection();  // click-nothing always clears
     }
 }
 

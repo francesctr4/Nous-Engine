@@ -4,6 +4,7 @@
 #include "Editor/EditorExport.h"
 #include <string>
 #include <cstdint>
+#include <glm/glm.hpp>
 
 struct ImVec2;
 struct VulkanContext;
@@ -53,5 +54,12 @@ private:
     float m_ScaleSnap = 0.1f;
 
     bool m_GizmoWasActive = false;
+
+    // Cached gizmo state for multi-object manipulation.
+    // Matrix is fed back as input to Manipulate each frame so the decomposed
+    // delta is incremental (prev→new), not total-from-drag-start.
+    // Count tracks the previous selection size to detect mid-drag changes.
+    mutable glm::mat4 m_multiObjectGizmoMatrix = glm::mat4(1.0f);
+    mutable int       m_multiObjectGizmoCount  = 0;
 
 };

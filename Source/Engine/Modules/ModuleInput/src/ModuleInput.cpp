@@ -6,6 +6,9 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
 
+// Uncomment to log every key press to the console (useful for identifying scancodes)
+#define NOUS_DEBUG_INPUT_LOG
+
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>
 #endif
@@ -153,6 +156,20 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			}
 		}
 	}
+
+
+#ifdef NOUS_DEBUG_INPUT_LOG
+	for (int i = 0; i < MAX_KEYBOARD_KEYS; ++i)
+	{
+		if (keyboard[i] == KeyState::DOWN)
+			NOUS_TRACE("[ModuleInput] Key DOWN — scancode %d (%s)", i, SDL_GetScancodeName(static_cast<SDL_Scancode>(i)));
+	}
+	for (int i = 0; i < MAX_MOUSE_BUTTONS; ++i)
+	{
+		if (mouseButtons[i] == KeyState::DOWN)
+			NOUS_TRACE("[ModuleInput] Mouse button DOWN — button %d", i);
+	}
+#endif
 
 	return ret;
 }
