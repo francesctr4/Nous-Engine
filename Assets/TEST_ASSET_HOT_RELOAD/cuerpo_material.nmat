@@ -1,0 +1,63 @@
+{
+    "uniforms": [
+        {
+            "name": "aoIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                0,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "emissiveColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "normalStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "shininessScale",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "specularIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        }
+    ],
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/TEST_ASSET_HOT_RELOAD\/cobblestone.png",
+            "uid": 2011796295,
+            "library_path": "Library\/Textures\/2011796295.png"
+        }
+    ],
+    "shader_uid": 3735378738,
+    "shader_asset_path": "Assets\\Shaders\\CelShading.glsl",
+    "shader_library_path": "Library\/Shaders\/3735378738"
+}
