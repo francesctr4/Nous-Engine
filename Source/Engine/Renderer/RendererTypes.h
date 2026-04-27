@@ -352,6 +352,11 @@ struct IRendererBackend
     // GPU resources. Used by the async compile path (RendererFrontend::FlushCompletedReloads).
     virtual bool ApplyCompiledShader(ResourceShader* shader) noexcept = 0;
 
+    // Block until the GPU has finished all in-flight work (vkDeviceWaitIdle).
+    // Lighter than ReleaseFrameResources — does NOT free command buffers or framebuffers.
+    // Use before destroying GPU resources outside the normal shutdown path (e.g. hot reload).
+    virtual void WaitForGPUIdle() noexcept = 0;
+
     // ─────────────────────────────── Picking ────────────────────────────────
     /**
      * @brief Render the scene to a pick buffer and read back the object ID

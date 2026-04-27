@@ -73,6 +73,7 @@ public:
 	void DestroyShader(ResourceShader* shader) noexcept override;
 	bool ReloadShader(ResourceShader* shader) noexcept override;
 	bool ApplyCompiledShader(ResourceShader* shader) noexcept override;
+	void WaitForGPUIdle() noexcept override;
 
 	uint32 PickObjectAt(int32 pixelX, int32 pixelY,
 						const glm::mat4& projection, const glm::mat4& view,

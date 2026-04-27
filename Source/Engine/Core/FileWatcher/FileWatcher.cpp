@@ -13,6 +13,17 @@ void FileWatcher::Watch(const std::string& path, Callback callback)
     m_entries[path] = Entry{ std::move(callback), lastWrite };
 }
 
+void FileWatcher::WatchIfNew(const std::string& path, Callback callback)
+{
+    if (m_entries.contains(path)) return;
+    Watch(path, std::move(callback));
+}
+
+bool FileWatcher::IsWatched(const std::string& path) const
+{
+    return m_entries.contains(path);
+}
+
 void FileWatcher::Unwatch(const std::string& path)
 {
     m_entries.erase(path);

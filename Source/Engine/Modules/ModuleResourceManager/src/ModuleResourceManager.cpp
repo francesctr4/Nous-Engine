@@ -14,9 +14,11 @@
 
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
+#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
 #include <future>
 #include <ranges>
+#include <thread>
 #include <utility>
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
@@ -61,6 +63,31 @@ namespace
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
+/*static*/ std::string ModuleResourceManager::NormalizeAssetPath(const std::string& path)
+{
+    std::string result = path;
+    std::replace(result.begin(), result.end(), '\\', '/');
+    return result;
+}
+
+/*static*/ std::string ModuleResourceManager::FindSourceAssetsDir()
+{
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    fs::path dir = fs::current_path(ec);
+    if (ec) return {};
+
+    for (int depth = 0; depth < 8; ++depth)
+    {
+        if (fs::exists(dir / "Assets", ec) && fs::exists(dir / "Source", ec))
+            return NormalizeAssetPath((dir / "Assets").generic_string());
+        fs::path parent = dir.parent_path();
+        if (parent == dir) break;
+        dir = std::move(parent);
+    }
+    return {};
+}
+
 ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
                                              IImporterManager* importerManager)
     : Module(eventSystem, jobSystem)
@@ -88,6 +115,15 @@ void ModuleResourceManager::ScanAndImportAssets()
 	m_importPipeline.ScanAndImportAssets();
 }
 
+void ModuleResourceManager::RegenerateLibrary()
+{
+	m_importPipeline.ClearLibraryFiles();
+	// This runs on a job-system worker. Sub-jobs can only run in parallel if other
+	// workers are free — with only 1 worker the queue would starve waiting on the latch.
+	const bool canParallelize = JobSystem && JobSystem->GetWorkerCount() > 1;
+	m_importPipeline.ScanAndImportAssets(canParallelize);
+}
+
 bool ModuleResourceManager::ImportDirectory(const std::string& directory)
 {
 	return m_importPipeline.ImportDirectory(directory);
@@ -101,12 +137,106 @@ bool ModuleResourceManager::Start()
 		std::scoped_lock lock(m_pendingUploadsMutex);
 		m_pendingUploads.insert(m_pendingUploads.end(), uploads.begin(), uploads.end());
 	}
+
+	if (m_isEditorMode)
+	{
+		m_sourceAssetsDir = FindSourceAssetsDir();
+		ScanAndRegisterWatchedAssets();
+	}
+
 	return true;
 }
 
 
+void ModuleResourceManager::ScanAndRegisterWatchedAssets()
+{
+	namespace fs = std::filesystem;
+	std::error_code ec;
+	int watchCount = 0;
+
+	const std::string watchBase = m_sourceAssetsDir.empty() ? "Assets" : m_sourceAssetsDir;
+	const fs::path sourceRoot = m_sourceAssetsDir.empty()
+	    ? fs::path{}
+	    : fs::path(m_sourceAssetsDir).parent_path();
+
+	for (auto& entry : fs::recursive_directory_iterator(watchBase, ec))
+	{
+		if (!entry.is_regular_file()) continue;
+		const auto ext = entry.path().extension();
+		if (ext == ".meta" || ext == ".nous") continue;
+		if (ext == ".glsl") continue;
+		if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb" || ext == ".dae") continue;
+
+		const std::string watchPath = NormalizeAssetPath(entry.path().generic_string());
+
+		std::string relKey;
+		if (!m_sourceAssetsDir.empty())
+			relKey = NormalizeAssetPath(fs::relative(entry.path(), sourceRoot, ec).generic_string());
+		else
+			relKey = watchPath;
+
+		// WatchIfNew (not Watch) so a periodic rescan does not reset the baseline
+		// mtime of a file that already has a pending modification.
+		m_assetWatcher.WatchIfNew(watchPath, [this, relKey](const std::string&)
+		{
+			NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload] FileWatcher fired for: %s", relKey.c_str());
+			DispatchReimportJob(relKey);
+		});
+		++watchCount;
+	}
+
+	if (ec)
+		NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] Could not scan for asset watching: %s", ec.message().c_str());
+}
+
+void ModuleResourceManager::RegisterAssetForHotReload(const std::string& assetsPath)
+{
+	if (!m_isEditorMode || m_sourceAssetsDir.empty() || assetsPath.empty())
+		return;
+
+	// Filter to types we hot-reload and skip sidecars.
+	const auto extPos = assetsPath.find_last_of('.');
+	if (extPos == std::string::npos) return;
+	const std::string ext = assetsPath.substr(extPos);
+	if (ext == ".meta" || ext == ".nous" || ext == ".glsl") return;
+	if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb" || ext == ".dae") return;
+
+	const std::string relKey = NormalizeAssetPath(assetsPath);
+
+	// Map "Assets/foo/bar.png" → "<sourceAssetsDir>/foo/bar.png".
+	// m_sourceAssetsDir already ends in "/Assets" (no trailing slash).
+	std::string watchPath;
+	if (relKey.size() > 7 && relKey.substr(0, 7) == "Assets/")
+		watchPath = m_sourceAssetsDir + "/" + relKey.substr(7);
+	else
+		watchPath = relKey;
+
+	m_assetWatcher.WatchIfNew(watchPath, [this, relKey](const std::string&)
+	{
+		NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload] FileWatcher fired for: %s", relKey.c_str());
+		DispatchReimportJob(relKey);
+	});
+}
+
 UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
+	if (m_isEditorMode)
+	{
+		// Drain any pending watch registrations queued from worker threads
+		// (e.g. scene preload) or from CreateResource on the main thread.
+		std::vector<std::string> pending;
+		{
+			std::scoped_lock lock(m_watchRegistrationMutex);
+			std::swap(pending, m_pendingWatchRegistrations);
+		}
+		for (const auto& assetsPath : pending)
+			RegisterAssetForHotReload(assetsPath);
+
+		++m_assetWatchFrameCounter;
+		if (m_assetWatchFrameCounter % 30 == 0)
+			m_assetWatcher.Poll();
+	}
+
 	return UpdateStatus::CONTINUE;
 }
 
@@ -122,6 +252,12 @@ UpdateStatus ModuleResourceManager::PostUpdate(float dt)
 
 bool ModuleResourceManager::CleanUp()
 {
+	// Wait for any in-flight reimport jobs to finish before tearing down.
+	// Worker lambdas capture `this` and write into m_readyUploads — letting them
+	// run after CleanUp returns would be a use-after-free.
+	while (m_inFlightJobCount.load(std::memory_order_acquire) > 0)
+		std::this_thread::yield();
+
 	return true;
 }
 
@@ -232,7 +368,24 @@ Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, Resource
 	}
 
 	resource->SetState(ResourceState::CPU_READY);
-	{ std::scoped_lock lock(resourcesMutex);        resources[uid] = resource; }
+	bool registerForHotReload = false;
+	{
+		std::scoped_lock lock(resourcesMutex);
+		resources[uid] = resource;
+		if ((type == ResourceType::TEXTURE || type == ResourceType::MATERIAL)
+		    && !assetsPath.empty())
+		{
+			m_pathToUID[NormalizeAssetPath(assetsPath)] = uid;
+			registerForHotReload = true;
+		}
+	}
+	// FileWatcher is single-threaded; LoadResourceIntoSlot may run on a worker
+	// (scene preload). Queue the assetsPath; PreUpdate drains it on the main thread.
+	if (registerForHotReload && m_isEditorMode)
+	{
+		std::scoped_lock lock(m_watchRegistrationMutex);
+		m_pendingWatchRegistrations.push_back(assetsPath);
+	}
 	{ std::scoped_lock lock(m_pendingUploadsMutex); m_pendingUploads.emplace_back(type, resource); }
 	resource->IncreaseReferenceCount();
 	resource->Validate();
@@ -381,11 +534,107 @@ bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
             return false;
         }
         resources.erase(resource->GetUID());
+        m_pathToUID.erase(NormalizeAssetPath(resource->GetAssetsPath()));
     }
 
     mImporterManager->Evict(type, resource);
     DeleteResource(resource);
     return true;
+}
+
+void ModuleResourceManager::SetGameMode() noexcept
+{
+    m_isEditorMode = false;
+}
+
+std::vector<ModuleResourceManager::PendingAssetUpload> ModuleResourceManager::TakeReadyAssetUploads()
+{
+    std::vector<PendingAssetUpload> result;
+    std::lock_guard lock(m_uploadQueueMutex);
+    std::swap(result, m_readyUploads);
+    return result;
+}
+
+void ModuleResourceManager::DispatchReimportJob(const std::string& normalizedPath)
+{
+    NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload] DispatchReimportJob called for: %s", normalizedPath.c_str());
+
+    // Resolve path → resource under resourcesMutex so the lookup and pointer capture are atomic.
+    uint32       uid = 0;
+    Resource*    resource    = nullptr;
+    ResourceType type        = ResourceType::UNKNOWN;
+    std::string  assetsPath;
+    std::string  libraryPath;
+    {
+        std::lock_guard lock(resourcesMutex);
+        const auto pathIt = m_pathToUID.find(normalizedPath);
+        if (pathIt == m_pathToUID.end())
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] '%s' not in m_pathToUID (%zu entries tracked).",
+                        normalizedPath.c_str(), m_pathToUID.size());
+            for (const auto& [p, id] : m_pathToUID)
+                NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload]   tracked: %s (uid=%u)", p.c_str(), id);
+            return;
+        }
+        uid = pathIt->second;
+        const auto resIt = resources.find(uid);
+        if (resIt == resources.end() || !resIt->second) return;   // evicted between watcher fire and dispatch
+        resource    = resIt->second;
+        type        = resource->GetType();
+        assetsPath  = resource->GetAssetsPath();
+        libraryPath = resource->GetLibraryPath();
+    }
+
+    // Dedup: at most one in-flight job per asset UID at a time.
+    {
+        std::lock_guard lock(m_reimportMutex);
+        if (!m_inFlightUIDs.insert(uid).second) return;
+    }
+    ++m_inFlightJobCount;
+
+    // Capture source dir so the job lambda can redirect Import to the source file.
+    const std::string sourceAssetsDir = m_sourceAssetsDir;
+
+    JobSystem->SubmitJob([this, uid, resource, type, assetsPath, libraryPath, sourceAssetsDir]
+    {
+        auto cleanup = [this, uid]
+        {
+            { std::lock_guard lock(m_reimportMutex); m_inFlightUIDs.erase(uid); }
+            --m_inFlightJobCount;
+        };
+
+        // 1. Read .meta sidecar to get confirmed library path / type.
+        MetaFileData metaData;
+        if (!ResourceImportPipeline::GetAssetMetaData(assetsPath, metaData))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] No .meta found for '%s' — skipping reimport.", assetsPath.c_str());
+            cleanup(); return;
+        }
+
+        // Redirect Import to the source file so it reads what the user actually edited,
+        // not the stale configure-time binary copy (e.g. Build/bin/Assets/...).
+        // assetsPath is like "Assets/foo/bar.nmat"; sourceAssetsDir ends with "/Assets".
+        if (!sourceAssetsDir.empty() && assetsPath.size() > 7
+            && assetsPath.substr(0, 7) == "Assets/")
+        {
+            metaData.assetsPath = sourceAssetsDir + "/" + assetsPath.substr(7);
+        }
+
+        // 2. Reimport source → Library binary (CPU only, no Vulkan).
+        if (!mImporterManager->Import(type, metaData))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] Import failed for '%s' — old asset kept.", assetsPath.c_str());
+            cleanup(); return;
+        }
+
+        // 3. Hand off to the main thread for Deserialize + GPU Release + Upload.
+        // Deserialize must NOT run here: it mutates live resource fields (e.g. poolOwnerShader via
+        // SetShader) that the main thread reads concurrently in DrawGeometryBatched, causing a crash.
+        { std::lock_guard lock(m_uploadQueueMutex); m_readyUploads.push_back({uid, type}); }
+        NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload] Queued GPU upload for '%s'.", assetsPath.c_str());
+
+        cleanup();
+    }, "ReimportAsset");
 }
 
 ResourceTexture*  ModuleResourceManager::GetDefaultTexture()    const { return m_builtinResources.GetDefaultTexture();    }

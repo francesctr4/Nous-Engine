@@ -345,8 +345,21 @@ void AssetsBrowser::DrawContent()
                 }, "Refresh Assets");
             }
 
-            if (ImGui::MenuItem("Regenerate Library"))
             {
+                const bool isRunning = m_isRegeneratingLibrary.load();
+                ImGui::BeginDisabled(isRunning);
+                if (ImGui::MenuItem(isRunning ? "Regenerating Library..." : "Regenerate Library"))
+                {
+                    m_isRegeneratingLibrary = true;
+                    auto* resourceManager = editorContext->GetResourceManager();
+                    editorContext->GetJobSystem()->SubmitJob([this, resourceManager]()
+                    {
+                        resourceManager->RegenerateLibrary();
+                        m_isRegeneratingLibrary = false;
+                        m_dirChanged.store(true, std::memory_order_release);
+                    }, "Regenerate Library");
+                }
+                ImGui::EndDisabled();
             }
 
             if (ImGui::MenuItem("Clear items"))

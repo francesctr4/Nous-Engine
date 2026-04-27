@@ -31,6 +31,7 @@
 #include <filesystem>
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Utils/Math/FrustumCulling.h"
 
@@ -195,11 +196,70 @@ bool ModuleRenderer3D::Start()
 	return true;
 }
 
+void ModuleRenderer3D::FlushPendingAssetUploads()
+{
+	auto uploads = mModuleResourceManager->TakeReadyAssetUploads();
+	if (uploads.empty()) return;
+
+	// Drain all in-flight GPU frames before destroying any resources.
+	// With triple-buffering, frames N-1 and N-2 may still reference the old
+	// VkImageView/VkSampler/VkBuffer handles. Destroying without waiting causes
+	// use-after-free validation errors and VK_ERROR_DEVICE_LOST on the second reload.
+	mRendererFrontend->WaitForGPUIdle();
+
+	IImporterManager* importer = mModuleResourceManager->GetImporterManager();
+	for (auto& [uid, type] : uploads)
+	{
+		Resource* resource = mModuleResourceManager->GetLoadedResource(uid);
+		if (!resource) continue;
+
+		// Save the generation BEFORE Deserialize — it resets texture generation to 0,
+		// which can collide with the previous value and fool the lazy descriptor-write
+		// guard into skipping the re-write after a hot-reload.
+		const uint32 preReloadGeneration = (type == ResourceType::TEXTURE)
+		    ? static_cast<ResourceTexture*>(resource)->generation : 0;
+
+		// Deserialize on the main thread so it never races with DrawGeometryBatched.
+		// The worker only ran Import (library binary write); we apply the result here.
+		if (!importer->Deserialize(type, resource->GetLibraryPath(), resource))
+		{
+			NOUS_ERROR("FlushPendingAssetUploads — Deserialize failed for '%s'; old asset kept.", resource->GetName().c_str());
+			continue;
+		}
+
+		importer->Release(type, resource, mRendererFrontend);
+
+		if (type == ResourceType::MATERIAL)
+		{
+			auto* mat = static_cast<ResourceMaterial*>(resource);
+			mat->internalID     = INVALID_ID;
+			mat->poolOwnerShader = nullptr;
+		}
+
+		if (!importer->Upload(type, resource, mRendererFrontend))
+		{
+			NOUS_ERROR("FlushPendingAssetUploads — failed to re-upload '%s'.", resource->GetName().c_str());
+			continue;
+		}
+
+		if (type == ResourceType::TEXTURE)
+		{
+			// Set generation to preReloadGeneration + 1 instead of a plain ++.
+			// Deserialize resets generation to 0, so ++ alone gives the same value
+			// as the pre-reload generation and the lazy write guard skips the update.
+			static_cast<ResourceTexture*>(resource)->generation = preReloadGeneration + 1;
+		}
+	}
+}
+
 UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 {
 #ifdef _PROFILING
 	ZoneScopedN("ModuleRenderer3D::PreUpdate");
 #endif
+	// Re-upload assets that were reimported since last frame (hot reload).
+	FlushPendingAssetUploads();
+
 	{
 #ifdef _PROFILING
 		ZoneScopedN("FlushCompletedReloads");

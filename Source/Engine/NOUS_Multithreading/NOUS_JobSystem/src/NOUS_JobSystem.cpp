@@ -86,6 +86,12 @@ const nous::engine::multithreading::NOUS_ThreadPool& nous::engine::multithreadin
 
 /// @return Number of pending unprocessed jobs.
 int nous::engine::multithreading::NOUS_JobSystem::GetPendingJobs() const
-{ 
-	return mPendingJobs; 
+{
+	return mPendingJobs;
+}
+
+/// @return Number of worker threads in the pool.
+size_t nous::engine::multithreading::NOUS_JobSystem::GetWorkerCount() const
+{
+	return mThreadPool->GetThreads().size();
 }

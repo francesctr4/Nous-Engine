@@ -839,6 +839,11 @@ void VulkanBackend::ReleaseFrameResources() noexcept
     m_frameResourcesReleased = true;
 }
 
+void VulkanBackend::WaitForGPUIdle() noexcept
+{
+    vkDeviceWaitIdle(vkContext->device.logicalDevice);
+}
+
 void VulkanBackend::Resized(uint16 width, uint16 height) noexcept
 {
     // Update the "framebuffer size generation", a counter which indicates when the

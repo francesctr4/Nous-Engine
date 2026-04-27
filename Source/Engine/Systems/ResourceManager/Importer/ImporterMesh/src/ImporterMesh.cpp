@@ -334,6 +334,8 @@ bool ImporterMesh::Deserialize(const std::string& libraryPath, Resource* outReso
     if (submeshes.empty()) return false;
 
     ResourceMesh* mesh = down_cast<ResourceMesh*>(outResource);
+    mesh->vertices.clear();
+    mesh->indices.clear();
 
     for (const auto& sub : submeshes)
     {

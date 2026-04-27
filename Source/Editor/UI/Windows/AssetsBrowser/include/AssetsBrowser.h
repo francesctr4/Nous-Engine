@@ -156,6 +156,9 @@ public:
     std::mutex         m_watchedDirMutex;
     std::string        m_watchedDir;
 
+    // Library regeneration state
+    std::atomic<bool>  m_isRegeneratingLibrary { false };
+
     // Script creation popup state
     bool show_create_script_popup = false;
     char script_name_buffer[128]  = "";

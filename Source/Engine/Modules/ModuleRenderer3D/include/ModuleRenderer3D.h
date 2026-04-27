@@ -91,6 +91,10 @@ private:
 	// ---------------------------------------------------------------------
 	[[nodiscard]] bool BuildRenderPacket(RenderPacket* packet, const SceneRenderData& sceneData);
 
+	// Release old GPU data + re-upload freshly-reimported assets.
+	// Drains TakeReadyAssetUploads() — called at the top of PreUpdate().
+	void FlushPendingAssetUploads();
+
 	// Writes Library/shader_manifest.json with the UIDs and library paths of the
 	// built-in shaders so GAME mode can load them without reading .meta files.
 	void WriteShaderManifest(const Resource* matShader, const Resource* bgShader) const;

@@ -11,6 +11,7 @@
 
 #include <filesystem>
 #include <format>
+#include <latch>
 #include <vector>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
@@ -42,6 +43,23 @@ ResourceImportPipeline::ResourceImportPipeline(IImporterManager* importerManager
 {
 }
 
+void ResourceImportPipeline::ClearLibraryFiles()
+{
+    namespace fs = std::filesystem;
+    static constexpr std::string_view c_libraryDirs[] = {
+        "Library/Meshes", "Library/Textures", "Library/Materials",
+        "Library/Shaders", "Library/Scenes"
+    };
+
+    for (const auto dir : c_libraryDirs)
+    {
+        std::error_code ec;
+        fs::remove_all(dir, ec);
+    }
+
+    EnsureLibraryDirectories();
+}
+
 bool ResourceImportPipeline::EnsureLibraryDirectories()
 {
     return nous::engine::filesystem::CreateDirectory("Library") &&
@@ -52,7 +70,7 @@ bool ResourceImportPipeline::EnsureLibraryDirectories()
            nous::engine::filesystem::CreateDirectory("Library/Scenes");
 }
 
-void ResourceImportPipeline::ScanAndImportAssets()
+void ResourceImportPipeline::ScanAndImportAssets(const bool parallelImports)
 {
     // Phase 1 (sequential): walk Assets/, write any missing .meta files, collect
     // MetaFileData for every file that actually needs import work.
@@ -60,7 +78,9 @@ void ResourceImportPipeline::ScanAndImportAssets()
     CollectPendingImports("Assets", pendingWork);
 
     // Phase 2: import in parallel when a job system is available, otherwise sequential.
-    if (m_jobSystem && !pendingWork.empty())
+    // parallelImports is false when called from a job-system worker with no other free
+    // workers — submitting sub-jobs and waiting on a latch would starve the queue.
+    if (m_jobSystem && parallelImports && !pendingWork.empty())
     {
         // Split mesh imports from everything else.
         // Assimp is CPU/memory-intensive: running many mesh jobs concurrently
@@ -69,27 +89,43 @@ void ResourceImportPipeline::ScanAndImportAssets()
         // all meshes run sequentially in one job — total is max(shaders, meshes)
         // rather than max(each mesh * contention_factor).
         std::vector<MetaFileData> meshWork;
+        int jobCount = 0;
         for (const auto& item : pendingWork)
         {
             if (item.resourceType == ResourceType::MESH)
                 meshWork.push_back(item);
             else
-                m_jobSystem->SubmitJob([this, item]()
-                {
-                    m_importerManager->Import(item.resourceType, item);
-                }, item.name);
+                ++jobCount;
+        }
+        if (!meshWork.empty())
+            ++jobCount;
+
+        // Use a latch instead of WaitForPendingJobs() so this function is safe to
+        // call from a job-system worker without deadlocking on the shared pending counter.
+        std::latch doneLatch{ jobCount };
+
+        for (const auto& item : pendingWork)
+        {
+            if (item.resourceType == ResourceType::MESH)
+                continue;
+            m_jobSystem->SubmitJob([this, item, &doneLatch]()
+            {
+                m_importerManager->Import(item.resourceType, item);
+                doneLatch.count_down();
+            }, item.name);
         }
 
         if (!meshWork.empty())
         {
-            m_jobSystem->SubmitJob([this, meshWork = std::move(meshWork)]()
+            m_jobSystem->SubmitJob([this, meshWork = std::move(meshWork), &doneLatch]()
             {
                 for (const auto& mesh : meshWork)
                     m_importerManager->Import(mesh.resourceType, mesh);
+                doneLatch.count_down();
             }, "MeshImports");
         }
 
-        m_jobSystem->WaitForPendingJobs();
+        doneLatch.wait();
     }
     else
     {

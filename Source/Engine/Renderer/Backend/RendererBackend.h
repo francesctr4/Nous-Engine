@@ -36,6 +36,7 @@ public:
 	void Shutdown();
 	void SetRenderMode(RenderMode mode) noexcept;
 	void ReleaseFrameResources() noexcept;
+	void WaitForGPUIdle() noexcept;
 
 	void Resized(uint16_t width, uint16_t height);
 

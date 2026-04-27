@@ -98,6 +98,12 @@ void RendererBackend::ReleaseFrameResources() noexcept
     }
 }
 
+void RendererBackend::WaitForGPUIdle() noexcept
+{
+    if (mBackendInterface)
+        mBackendInterface->WaitForGPUIdle();
+}
+
 void RendererBackend::Resized(uint16_t width, uint16_t height)
 {
     if (mBackendInterface)

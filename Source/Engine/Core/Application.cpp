@@ -88,7 +88,10 @@ Application::Application(const bool isGameMode)
         eventSystem, jobSystem, window, camera, resourceManager, scene));
 
     if (m_isGameMode)
+    {
         renderer->SetRenderMode(RenderMode::GAME);
+        resourceManager->SetGameMode();
+    }
 
     // 7. EDITOR — depends on all modules above.
     //    Constructed externally in MainEditor.cpp after this constructor returns.

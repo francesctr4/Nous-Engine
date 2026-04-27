@@ -17,8 +17,17 @@ public:
     using Callback = std::function<void(const std::string& path)>;
 
     // Register a file to watch. Fires callback when its last-write-time changes.
-    // Calling Watch() on an already-watched path replaces the existing callback.
+    // Calling Watch() on an already-watched path replaces the existing callback
+    // AND resets the lastWriteTime baseline — use WatchIfNew() to avoid that.
     void Watch(const std::string& path, Callback callback);
+
+    // Like Watch(), but is a no-op if the path is already registered.
+    // Use this for periodic rescans so an in-flight modification isn't silently
+    // swallowed by overwriting the baseline mtime.
+    void WatchIfNew(const std::string& path, Callback callback);
+
+    // Returns true if the path is currently registered.
+    bool IsWatched(const std::string& path) const;
 
     // Stop watching a file.
     void Unwatch(const std::string& path);

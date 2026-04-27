@@ -10,10 +10,14 @@
 #include "Engine/Systems/ResourceManager/SubMeshCache/include/SubMeshCache.h"
 #include "Engine/Systems/ResourceManager/IResourceLoader.h"
 
+#include "Engine/Core/FileWatcher/FileWatcher.h"
+
+#include <atomic>
 #include <future>
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -56,6 +60,10 @@ public:
 	// Called by Application::Awake() when not in game mode.
 	NOUS_ENGINE_API void ScanAndImportAssets();
 
+	// Editor-only: deletes all Library/ binaries, then runs a full reimport from Assets/.
+	// .meta sidecars are preserved so UIDs remain stable.
+	NOUS_ENGINE_API void RegenerateLibrary();
+
 	NOUS_ENGINE_API bool ResourceExists(uint32 uid) const;
 	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath) override;
 
@@ -95,6 +103,20 @@ public:
 	// Called by Renderer after GPU Release: evicts CPU data and deletes the resource object.
 	// Returns true if the resource was evicted, false if it was re-acquired (and re-queued for upload).
 	NOUS_ENGINE_API bool EvictResource(ResourceType type, Resource* resource);
+
+	struct PendingAssetUpload { uint32 uid; ResourceType type; };
+
+	// Hot reload — takes and clears the queue of reimported resources awaiting GPU upload.
+	// Called by ModuleRenderer3D::PreUpdate() each frame.
+	NOUS_ENGINE_API std::vector<PendingAssetUpload> TakeReadyAssetUploads();
+
+	// Call once (from Application) when running in game/standalone mode to suppress
+	// asset watching, which is editor-only.
+	NOUS_ENGINE_API void SetGameMode() noexcept;
+
+	// Dispatches an async reimport job for a tracked asset path.
+	// Public to allow direct testing; normally called only by the FileWatcher callback.
+	NOUS_ENGINE_API void DispatchReimportJob(const std::string& normalizedPath);
 
 	// Synchronous full teardown — caller must pass the GPU factory so GPU handles can
 	// be freed before Vulkan is shut down.  Only called from ModuleRenderer3D::CleanUp().
@@ -168,6 +190,44 @@ private:
 	BuiltinResources        m_builtinResources;
 	ResourceImportPipeline  m_importPipeline;
 	SceneResourcePreloader  m_scenePreloader;
+
+	// --- Asset hot reload (EDITOR only) ---
+	FileWatcher                               m_assetWatcher;
+	std::unordered_map<std::string, uint32>   m_pathToUID;         // normalized path → UID; protected by resourcesMutex
+	std::mutex                                m_reimportMutex;
+	std::unordered_set<uint32>                m_inFlightUIDs;       // protected by m_reimportMutex
+	std::atomic<int>                          m_inFlightJobCount{0};
+	std::mutex                                m_uploadQueueMutex;
+	std::vector<PendingAssetUpload>           m_readyUploads;       // worker → main thread handoff
+	bool                                      m_isEditorMode = true;
+	uint32_t                                  m_assetWatchFrameCounter = 0;
+	std::string                               m_sourceAssetsDir;  // absolute path to source Assets/ (editor only)
+
+	// Worker-thread callers (e.g. scene preload) push assetsPaths here; the main
+	// thread drains it in PreUpdate before Poll() and registers each with the
+	// (single-threaded) FileWatcher.
+	std::mutex                                m_watchRegistrationMutex;
+	std::vector<std::string>                  m_pendingWatchRegistrations;
+
+	// Declared after m_pathToUID/m_pendingWatchRegistrations/m_watchRegistrationMutex so
+	// those are initialized first (SubMeshCache stores references to them).
 	SubMeshCache            m_subMeshCache;
+
+	static std::string NormalizeAssetPath(const std::string& path);
+
+	// Walks up from the current working directory until finding a directory that
+	// has both Assets/ and Source/ children — that is the project root.
+	// Returns the absolute forward-slash path to its Assets/ child, or empty if not found.
+	static std::string FindSourceAssetsDir();
+
+	// Scans the source Assets/ directory and registers any unregistered files with
+	// m_assetWatcher. Safe to call repeatedly — uses WatchIfNew under the hood.
+	void ScanAndRegisterWatchedAssets();
+
+	// Registers a single asset with the FileWatcher for hot reload, mirroring the
+	// path layout used by ScanAndRegisterWatchedAssets. `assetsPath` is the
+	// engine-relative path (e.g. "Assets/Foo/bar.png"). No-op outside editor mode
+	// or if m_sourceAssetsDir could not be resolved.
+	void RegisterAssetForHotReload(const std::string& assetsPath);
 
 };

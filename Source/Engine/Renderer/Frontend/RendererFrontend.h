@@ -52,6 +52,7 @@ public:
 	[[nodiscard]] NOUS_ENGINE_API bool Initialize(RendererBackendType backendType);
 	NOUS_ENGINE_API void Shutdown() const;
 	NOUS_ENGINE_API void ReleaseFrameResources() const noexcept;
+	NOUS_ENGINE_API void WaitForGPUIdle() const noexcept;
 	NOUS_ENGINE_API void OnResized(uint16_t width, uint16_t height) const;
 
 	// ---------------------------------------------------------------------

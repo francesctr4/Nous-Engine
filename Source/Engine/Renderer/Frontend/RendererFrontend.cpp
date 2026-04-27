@@ -97,6 +97,12 @@ void RendererFrontend::ReleaseFrameResources() const noexcept
         mBackend->ReleaseFrameResources();
 }
 
+void RendererFrontend::WaitForGPUIdle() const noexcept
+{
+    if (mBackend)
+        mBackend->WaitForGPUIdle();
+}
+
 void RendererFrontend::OnResized(const uint16_t width, const uint16_t height) const
 {
 	mBackend->Resized(width, height);

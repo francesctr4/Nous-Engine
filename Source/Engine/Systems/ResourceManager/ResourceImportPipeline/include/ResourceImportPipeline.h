@@ -20,7 +20,7 @@ public:
     // and by external consumers that formerly called ModuleResourceManager directly.
     NOUS_ENGINE_API bool ImportFile(const std::string& path);
     NOUS_ENGINE_API bool ImportDirectory(const std::string& directory);
-    NOUS_ENGINE_API void ScanAndImportAssets();
+    NOUS_ENGINE_API void ScanAndImportAssets(bool parallelImports = true);
 
     // Reads the .meta sidecar for assetsPath and fills outData.
     // Returns false if the meta file is missing or malformed.
@@ -30,6 +30,10 @@ public:
     // Ensures Library/ subdirectories exist. Idempotent, safe to call repeatedly.
     // Public because ModuleResourceManager::Awake() calls it before ScanAndImportAssets.
     NOUS_ENGINE_API bool EnsureLibraryDirectories();
+
+    // Deletes all binary files inside Library/ subdirectories without touching .meta
+    // sidecars in Assets/. Call before ScanAndImportAssets() to force a full reimport.
+    NOUS_ENGINE_API void ClearLibraryFiles();
 
 private:
     static bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);

@@ -58,6 +58,9 @@ namespace nous::engine::multithreading
 		/// @return Number of pending unprocessed jobs.
 		NOUS_ENGINE_API int GetPendingJobs() const;
 
+		/// @return Number of worker threads in the pool.
+		NOUS_ENGINE_API size_t GetWorkerCount() const;
+
 	private:
 
 		NOUS_ThreadPool*			mThreadPool;
