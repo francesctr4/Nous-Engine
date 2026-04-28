@@ -36,6 +36,7 @@ private:
     void        TrySwitch(TextEditorMode target);  // guards unsaved changes before SwitchMode
     std::string GetScriptTemplate() const;
     void        TriggerScriptRecompile();
+    void        TriggerShaderImport(const std::filesystem::path& filePath);
 
     static constexpr const char* k_AssetsShaderPath   = "Assets/Shaders/";
     static constexpr const char* k_AssetsScriptPath   = "Assets/Scripts/";
@@ -45,7 +46,7 @@ private:
     static constexpr const char* k_ScriptTemplatePath = "Library/Scripts/ScriptTemplate.inl";
     static constexpr const char* k_ClassNameToken     = "$CLASSNAME$";
 
-    // Minimal GLSL template matching the engine's unified shader format.
+    // GLSL template matching the engine's unified shader format (no diffuse sampler).
     static constexpr const char* k_DefaultShaderSource =
         "#pragma stage vertex\n"
         "#version 450\n"
@@ -55,20 +56,32 @@ private:
         "layout(location = 2) in vec3 inColor;\n"
         "layout(location = 3) in vec2 inTexCoord;\n"
         "\n"
-        "layout(set = 0, binding = 0) uniform globalUniformObject\n"
+        "struct DirectionalLight { vec4 direction; vec4 color; };\n"
+        "struct PointLight        { vec4 position; vec4 color; };\n"
+        "struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };\n"
+        "\n"
+        "layout(set = 0, binding = 0) uniform GlobalUBO\n"
         "{\n"
-        "    mat4 projection;\n"
-        "    mat4 view;\n"
+        "    mat4             projection;\n"
+        "    mat4             view;\n"
+        "    vec4             viewPosition;\n"
+        "    vec4             ambientColor;\n"
+        "    DirectionalLight dirLight;\n"
+        "    ivec4            lightCountAndPad;\n"
+        "    PointLight       pointLights[16];\n"
+        "    vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime\n"
+        "    ivec4            spotLightCountAndPad;\n"
+        "    SpotLight        spotLights[8];\n"
         "} globalUBO;\n"
         "\n"
-        "layout(push_constant) uniform pushConstantObject\n"
+        "layout(set = 0, binding = 1) readonly buffer InstanceData\n"
         "{\n"
-        "    mat4 model;\n"
-        "} pushConstant;\n"
+        "    mat4 models[];\n"
+        "} instanceData;\n"
         "\n"
         "void main()\n"
         "{\n"
-        "    gl_Position = globalUBO.projection * globalUBO.view * pushConstant.model * vec4(inPosition, 1.0);\n"
+        "    gl_Position = globalUBO.projection * globalUBO.view * instanceData.models[gl_InstanceIndex] * vec4(inPosition, 1.0);\n"
         "}\n"
         "\n"
         "// -------------------------------------------------------------------\n"
@@ -78,9 +91,32 @@ private:
         "\n"
         "layout(location = 0) out vec4 fragColor;\n"
         "\n"
+        "struct DirectionalLight { vec4 direction; vec4 color; };\n"
+        "struct PointLight        { vec4 position; vec4 color; };\n"
+        "struct SpotLight         { vec4 position; vec4 direction; vec4 color; vec4 angles; };\n"
+        "\n"
+        "layout(set = 0, binding = 0) uniform GlobalUBO\n"
+        "{\n"
+        "    mat4             projection;\n"
+        "    mat4             view;\n"
+        "    vec4             viewPosition;\n"
+        "    vec4             ambientColor;\n"
+        "    DirectionalLight dirLight;\n"
+        "    ivec4            lightCountAndPad;\n"
+        "    PointLight       pointLights[16];\n"
+        "    vec4             time;  // x=totalTime, y=sin(t), z=cos(t), w=deltaTime\n"
+        "    ivec4            spotLightCountAndPad;\n"
+        "    SpotLight        spotLights[8];\n"
+        "} globalUBO;\n"
+        "\n"
+        "layout(set = 1, binding = 0) uniform InstanceUBO\n"
+        "{\n"
+        "    vec4 diffuseColor;  // rgb = tint, a = opacity (unused)\n"
+        "} instanceUBO;\n"
+        "\n"
         "void main()\n"
         "{\n"
-        "    fragColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
+        "    fragColor = instanceUBO.diffuseColor;\n"
         "}\n";
 
 private:

@@ -1,0 +1,47 @@
+{
+    "uniforms": [
+        {
+            "name": "aspectRatio",
+            "type": "float",
+            "value": [
+                0.60000002384185791
+            ]
+        },
+        {
+            "name": "colorBias",
+            "type": "float",
+            "value": [
+                0.019999999552965164
+            ]
+        },
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                0.14159291982650757,
+                0.14033988118171692,
+                0.14033988118171692,
+                1
+            ]
+        },
+        {
+            "name": "resolution",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "uvTiles",
+            "type": "vec2",
+            "value": [
+                1,
+                1
+            ]
+        }
+    ],
+    "texture_maps": [],
+    "shader_uid": 732153463,
+    "shader_asset_path": "Assets\/Shader Viewer\/MercurialGold.glsl",
+    "shader_library_path": "Library\/Shaders\/732153463"
+}

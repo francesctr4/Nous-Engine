@@ -1,6 +1,7 @@
 #include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
 
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
@@ -289,6 +290,8 @@ void TextEditorWindow::Save()
 
     if (mMode == TextEditorMode::Script)
         TriggerScriptRecompile();
+    else if (mMode == TextEditorMode::Shader)
+        TriggerShaderImport(savePath);
 }
 
 void TextEditorWindow::Delete()
@@ -392,6 +395,20 @@ std::string TextEditorWindow::GetScriptTemplate() const
     }
 
     return content;
+}
+
+void TextEditorWindow::TriggerShaderImport(const std::filesystem::path& filePath)
+{
+    ModuleResourceManager* rm = editorContext->GetResourceManager();
+    nous::engine::multithreading::NOUS_JobSystem* jobSystem = editorContext->GetJobSystem();
+
+    const std::string pathStr = filePath.generic_string();
+    jobSystem->SubmitJob([rm, pathStr]
+    {
+        rm->ImportFile(pathStr);
+    }, "Shader Import");
+
+    NOUS_INFO("[TextEditor] Shader import triggered for: %s", pathStr.c_str());
 }
 
 void TextEditorWindow::TriggerScriptRecompile()
