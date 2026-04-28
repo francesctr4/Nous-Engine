@@ -164,6 +164,10 @@ public:
     char script_name_buffer[128]  = "";
     std::string script_creation_path;
 
+    // Material creation popup state
+    bool show_create_material_popup = false;
+    char material_name_buffer[128]  = "";
+
     // Folder creation popup state
     bool show_create_folder_popup = false;
     char folder_name_buffer[128]  = "";

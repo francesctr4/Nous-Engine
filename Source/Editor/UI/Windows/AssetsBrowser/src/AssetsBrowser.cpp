@@ -2,6 +2,7 @@
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <format>
 #include <cmath>
 #include <chrono>
@@ -726,6 +727,13 @@ void AssetsBrowser::DrawContent()
                 ImGui::CloseCurrentPopup();
             }
 
+            if (ImGui::MenuItem("Create Material"))
+            {
+                memset(material_name_buffer, 0, sizeof(material_name_buffer));
+                show_create_material_popup = true;
+                ImGui::CloseCurrentPopup();
+            }
+
             ImGui::Separator();
             if (ImGui::MenuItem("Delete", "Del", false, Selection.Size > 0))
                 RequestDelete = true;
@@ -766,6 +774,64 @@ void AssetsBrowser::DrawContent()
             if (ImGui::Button("Cancel", ImVec2(120, 0)))
             {
                 memset(folder_name_buffer, 0, sizeof(folder_name_buffer));
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+
+        if (show_create_material_popup)
+        {
+            ImGui::OpenPopup("Create New Material");
+            show_create_material_popup = false;
+        }
+
+        if (ImGui::BeginPopupModal("Create New Material", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("Create material in: %s", current_directory.c_str());
+            ImGui::Spacing();
+            ImGui::Text("Material Name:");
+            ImGui::SetNextItemWidth(300.0f);
+            bool enter_pressed = ImGui::InputText("##MaterialName", material_name_buffer, IM_ARRAYSIZE(material_name_buffer),
+                                                  ImGuiInputTextFlags_EnterReturnsTrue);
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            const bool name_empty = strlen(material_name_buffer) == 0;
+            ImGui::BeginDisabled(name_empty);
+            if (ImGui::Button("Create", ImVec2(120, 0)) || (enter_pressed && !name_empty))
+            {
+                const std::string matPath = current_directory + "/" + material_name_buffer + ".nmat";
+                constexpr const char* defaultContent =
+                    "{\n"
+                    "    \"uniforms\": [],\n"
+                    "    \"texture_maps\": []\n"
+                    "}\n";
+
+                if (std::FILE* f = std::fopen(matPath.c_str(), "w"))
+                {
+                    std::fputs(defaultContent, f);
+                    std::fclose(f);
+                    editorContext->GetResourceManager()->ImportFile(matPath);
+                    NOUS_INFO("Created material: %s", matPath.c_str());
+                    AddItemsFromDirectory(current_directory);
+                }
+                else
+                {
+                    NOUS_ERROR("[AssetsBrowser] Failed to create material file: %s", matPath.c_str());
+                }
+
+                memset(material_name_buffer, 0, sizeof(material_name_buffer));
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndDisabled();
+
+            ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            {
+                memset(material_name_buffer, 0, sizeof(material_name_buffer));
                 ImGui::CloseCurrentPopup();
             }
 
