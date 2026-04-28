@@ -157,20 +157,38 @@ void MainMenuBar::DrawContent()
 
         if (ImGui::MenuItem("Build"))
         {
-            m_buildOutputPath   = GetDefaultBuildPath();
-            m_buildLaunchAfter  = false;
-            m_buildStartupScene = AssetPathToLibraryScene(editorContext->GetScene()->GetCurrentScenePath());
-            m_openBuild         = true;
-            editorContext->GetGameExporter()->StartExport({ m_buildOutputPath, m_buildStartupScene, false });
+            ModuleScene* scene = editorContext->GetScene();
+            if (scene->HasCurrentScenePath())
+            {
+                scene->SaveScene(scene->GetCurrentScenePath());
+                m_buildOutputPath   = GetDefaultBuildPath();
+                m_buildLaunchAfter  = false;
+                m_buildStartupScene = AssetPathToLibraryScene(scene->GetCurrentScenePath());
+                m_openBuild         = true;
+                editorContext->GetGameExporter()->StartExport({ m_buildOutputPath, m_buildStartupScene, false });
+            }
+            else
+            {
+                openSaveAs = true;
+            }
         }
 
         if (ImGui::MenuItem("Build & Run"))
         {
-            m_buildOutputPath   = GetDefaultBuildPath();
-            m_buildLaunchAfter  = true;
-            m_buildStartupScene = AssetPathToLibraryScene(editorContext->GetScene()->GetCurrentScenePath());
-            m_openBuildAndRun   = true;
-            editorContext->GetGameExporter()->StartExport({ m_buildOutputPath, m_buildStartupScene, true });
+            ModuleScene* scene = editorContext->GetScene();
+            if (scene->HasCurrentScenePath())
+            {
+                scene->SaveScene(scene->GetCurrentScenePath());
+                m_buildOutputPath   = GetDefaultBuildPath();
+                m_buildLaunchAfter  = true;
+                m_buildStartupScene = AssetPathToLibraryScene(scene->GetCurrentScenePath());
+                m_openBuildAndRun   = true;
+                editorContext->GetGameExporter()->StartExport({ m_buildOutputPath, m_buildStartupScene, true });
+            }
+            else
+            {
+                openSaveAs = true;
+            }
         }
 
         if (ImGui::MenuItem("Build Settings..."))
@@ -602,6 +620,10 @@ void MainMenuBar::DrawBuildSettingsPopup()
         if (!canBuild) ImGui::BeginDisabled();
         if (ImGui::Button("Build", ImVec2(120.0f, 0.0f)))
         {
+            ModuleScene* scene = editorContext->GetScene();
+            if (scene->HasCurrentScenePath())
+                scene->SaveScene(scene->GetCurrentScenePath());
+
             m_buildOutputPath   = s_pathBuf;
             m_buildStartupScene = "Library/Scenes/" + s_sceneFiles[s_selectedScene];
             m_buildLaunchAfter  = false;
