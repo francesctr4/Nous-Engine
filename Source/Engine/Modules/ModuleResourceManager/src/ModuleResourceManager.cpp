@@ -561,10 +561,8 @@ void ModuleResourceManager::DispatchReimportJob(const std::string& normalizedPat
 
     // Resolve path → resource under resourcesMutex so the lookup and pointer capture are atomic.
     uint32       uid = 0;
-    Resource*    resource    = nullptr;
     ResourceType type        = ResourceType::UNKNOWN;
     std::string  assetsPath;
-    std::string  libraryPath;
     {
         std::lock_guard lock(resourcesMutex);
         const auto pathIt = m_pathToUID.find(normalizedPath);
@@ -572,17 +570,13 @@ void ModuleResourceManager::DispatchReimportJob(const std::string& normalizedPat
         {
             NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] '%s' not in m_pathToUID (%zu entries tracked).",
                         normalizedPath.c_str(), m_pathToUID.size());
-            for (const auto& [p, id] : m_pathToUID)
-                NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload]   tracked: %s (uid=%u)", p.c_str(), id);
             return;
         }
         uid = pathIt->second;
         const auto resIt = resources.find(uid);
         if (resIt == resources.end() || !resIt->second) return;   // evicted between watcher fire and dispatch
-        resource    = resIt->second;
-        type        = resource->GetType();
-        assetsPath  = resource->GetAssetsPath();
-        libraryPath = resource->GetLibraryPath();
+        type        = resIt->second->GetType();
+        assetsPath  = resIt->second->GetAssetsPath();
     }
 
     // Dedup: at most one in-flight job per asset UID at a time.
@@ -592,10 +586,20 @@ void ModuleResourceManager::DispatchReimportJob(const std::string& normalizedPat
     }
     ++m_inFlightJobCount;
 
+    if (!JobSystem)
+    {
+        { std::lock_guard lock(m_reimportMutex); m_inFlightUIDs.erase(uid); }
+        --m_inFlightJobCount;
+        return;
+    }
+
     // Capture source dir so the job lambda can redirect Import to the source file.
     const std::string sourceAssetsDir = m_sourceAssetsDir;
 
-    JobSystem->SubmitJob([this, uid, resource, type, assetsPath, libraryPath, sourceAssetsDir]
+    // Only uid, type, assetsPath, sourceAssetsDir are safe to use on the worker:
+    // raw Resource* pointers must not be captured — EvictResource() can free them
+    // on the main thread while the job is running.
+    JobSystem->SubmitJob([this, uid, type, assetsPath, sourceAssetsDir]
     {
         auto cleanup = [this, uid]
         {

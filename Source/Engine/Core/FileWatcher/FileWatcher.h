@@ -1,5 +1,4 @@
-#ifndef FILEWATCHER_H
-#define FILEWATCHER_H
+#pragma once
 
 #include <filesystem>
 #include <functional>
@@ -48,5 +47,3 @@ private:
 
     std::unordered_map<std::string, Entry> m_entries;
 };
-
-#endif // FILEWATCHER_H
