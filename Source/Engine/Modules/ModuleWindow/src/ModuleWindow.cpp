@@ -48,6 +48,14 @@ bool ModuleWindow::Awake()
 
 bool ModuleWindow::Start()
 {
+    // Fire an initial resize event so all subscribers (ModuleScene, ModuleCamera3D, etc.)
+    // initialise their aspect ratios from the real window size rather than the serialised
+    // CCamera value, which may have been saved at a different aspect ratio in the editor.
+    int w = 0, h = 0;
+    SDL_GetWindowSizeInPixels(m_window, &w, &h);
+    if (w > 0 && h > 0)
+        eventSystem->Broadcast(Event(EventType::WINDOW_RESIZED, SendContext(w, h)));
+
     return true;
 }
 

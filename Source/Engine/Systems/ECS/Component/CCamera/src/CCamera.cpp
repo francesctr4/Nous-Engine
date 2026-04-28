@@ -51,6 +51,10 @@ void CCamera::OnUpdate(float /*deltaTime*/)
     Scene* scene = go.GetScene();
     if (!scene) return;
     Camera* gameCamera = scene->GetModuleScene()->gameCamera;
+
+    // Always derive aspect ratio from the actual window so it's correct on any display.
+    aspectRatio = scene->GetModuleScene()->GetWindowAspect();
+
     gameCamera->SetPos(transform->position);
     gameCamera->SetFront(transform->GetForward());
     gameCamera->SetUp(transform->GetUp());

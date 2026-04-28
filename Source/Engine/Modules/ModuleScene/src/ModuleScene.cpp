@@ -244,6 +244,8 @@ void ModuleScene::OnEvent(const Event& event)
 
 			const float newAspect = static_cast<float>(event.ctx.i32[0]) / static_cast<float>(event.ctx.i32[1]);
 
+			m_windowAspect = newAspect;
+
 			// Update the legacy fallback camera.
 			gameCamera->SetAspectRatio(newAspect);
 
@@ -388,7 +390,6 @@ void ModuleScene::LoadScene(const std::string& path)
 		f.get();
 
 	activeScene->Deserialize(path);
-	EnsureMainCamera();
 	// Snapshot already captures the complete pre-play state of every entity,
 	// including prefab instances. Refreshing from disk would destroy and recreate
 	// prefab children from their .nprefab source files, resetting them to their
@@ -438,7 +439,6 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 			// Scene graph construction — resource lookups hit the cache if preload ran,
 			// or load serially here if the pool was too small to parallelise.
 			activeScene->Deserialize(path);
-			EnsureMainCamera();
 			// RefreshPrefabInstances() must NOT run on the job thread — it calls
 			// DestroyGameObject → CMesh::OnDestroy → vkDeviceWaitIdle, which deadlocks
 			// when the main thread is rendering. Defer to PreUpdate() instead.
@@ -467,8 +467,6 @@ void ModuleScene::NewScene(const std::string& name)
     ClearScene();
     activeScene->SetName(name);
     m_currentScenePath.clear();
-
-    EnsureMainCamera();
 
     NOUS_INFO("[Scene] New scene '%s' created.", name.c_str());
 }
@@ -592,44 +590,6 @@ bool ModuleScene::HasMainCamera() const
     return false;
 }
 
-void ModuleScene::EnsureMainCamera() const
-{
-    if (!activeScene)
-        return;
-
-    // Check whether the loaded scene already has a main camera.
-    for (auto [entity, cam] : activeScene->GetRegistry().view<CCamera>().each())
-    {
-        if (cam.isMainCamera)
-            return; // Found one — nothing to do.
-    }
-
-    // No main camera found. Create a default one that mirrors the legacy gameCamera.
-    NOUS_INFO("No main CCamera found in scene — creating default 'Main Camera' GameObject.");
-
-    GameObject cameraGO = activeScene->CreateGameObject("Main Camera", nullptr);
-
-    // Position from the legacy orphan Camera so the view doesn't jump.
-    if (auto* t = cameraGO.TryGetComponent<CTransform>())
-    {
-        t->SetPosition(gameCamera->GetPos());
-        // Derive orientation from the legacy camera's front/up vectors.
-        const glm::vec3 fwd = gameCamera->GetFront();
-        const glm::vec3 up  = gameCamera->GetUp();
-        const glm::vec3 right = glm::normalize(glm::cross(fwd, up));
-        const glm::mat3 rotMat(right, up, -fwd); // column-major: right, up, -forward
-        t->SetOrientation(glm::normalize(glm::quat_cast(rotMat)));
-        t->UpdateMatrix();
-    }
-
-    // Mirror FOV and clip planes from the legacy camera.
-    auto& cam        = cameraGO.AddComponent<CCamera>();
-    cam.isMainCamera = true;
-    cam.fov          = gameCamera->GetVerticalFOV();   // degrees
-    cam.nearPlane    = gameCamera->GetNearPlane();
-    cam.farPlane     = gameCamera->GetFarPlane();
-    cam.aspectRatio  = gameCamera->GetAspectRatio();
-}
 
 void ModuleScene::RefreshPrefabInstances() const
 {

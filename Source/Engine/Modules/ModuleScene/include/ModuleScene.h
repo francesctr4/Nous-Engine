@@ -2,6 +2,7 @@
 
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
+#include "Engine/Core/Globals.h"
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include <string>
@@ -88,6 +89,9 @@ public:
 	// Returns true if the active scene contains at least one CCamera with isMainCamera=true.
 	NOUS_ENGINE_API bool HasMainCamera() const;
 
+	// Returns the aspect ratio of the current window, kept up-to-date by WINDOW_RESIZED events.
+	NOUS_ENGINE_API float GetWindowAspect() const { return m_windowAspect; }
+
 	NOUS_ENGINE_API bool IsSelected(GameObject go) const;
 	NOUS_ENGINE_API void AddToSelection(GameObject go);      // no-op if already in set; updates primarySelection
 	NOUS_ENGINE_API void RemoveFromSelection(GameObject go); // primarySelection = back() or {} after remove
@@ -105,6 +109,10 @@ public:
 	// before frustum build and DrawFrame() to override CCamera's authored aspect ratio.
 	// 0.0f = not yet set (first frame before the viewport has drawn).
 	float          gameViewportAspect = 0.0f;
+
+	// Last window aspect ratio received via WINDOW_RESIZED. Initialised to the compile-time
+	// default window size and updated on every resize to keep CCamera components in sync.
+	float          m_windowAspect = static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT);
 
 private:
 
@@ -131,14 +139,4 @@ private:
 	// After a scene is deserialized, re-instantiates any GO that carries a CPrefab
 	// component from its source .nprefab file, replacing stale inline children.
 	void RefreshPrefabInstances() const;
-
-	/**
-	 * @brief Ensures at least one GameObject with a main CCamera exists in the
-	 *        active scene. If none is found, a "Main Camera" GO is created and
-	 *        positioned at the current gameCamera location.
-	 *
-	 * Called at the end of every LoadScene job so that scenes saved before the
-	 * CCamera system existed automatically get a camera on load.
-	 */
-	void EnsureMainCamera() const;
 };

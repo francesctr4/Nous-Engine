@@ -194,9 +194,7 @@ void InspectorWindow::DrawCameraComponent(CCamera* ccamera) const
 
     if (ImGui::DragFloat("Far Plane", &ccamera->farPlane, 1.0f, ccamera->nearPlane + 0.01f, 100000.0f, "%.1f"))
         ccamera->farPlane = glm::max(ccamera->farPlane, ccamera->nearPlane + 0.01f);
-
-    ImGui::DragFloat("Aspect Ratio", &ccamera->aspectRatio, 0.01f, 0.1f, 10.0f, "%.3f");
-
+    
     ImGui::Unindent();
 }
 
