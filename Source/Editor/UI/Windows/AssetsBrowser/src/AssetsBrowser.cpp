@@ -1,5 +1,6 @@
 #include "Editor/UI/Windows/AssetsBrowser/include/AssetsBrowser.h"
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
+#include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -734,6 +735,13 @@ void AssetsBrowser::DrawContent()
                 ImGui::CloseCurrentPopup();
             }
 
+            if (ImGui::MenuItem("Create Shader"))
+            {
+                memset(shader_name_buffer, 0, sizeof(shader_name_buffer));
+                show_create_shader_popup = true;
+                ImGui::CloseCurrentPopup();
+            }
+
             ImGui::Separator();
             if (ImGui::MenuItem("Delete", "Del", false, Selection.Size > 0))
                 RequestDelete = true;
@@ -832,6 +840,59 @@ void AssetsBrowser::DrawContent()
             if (ImGui::Button("Cancel", ImVec2(120, 0)))
             {
                 memset(material_name_buffer, 0, sizeof(material_name_buffer));
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+
+        if (show_create_shader_popup)
+        {
+            ImGui::OpenPopup("Create New Shader");
+            show_create_shader_popup = false;
+        }
+
+        if (ImGui::BeginPopupModal("Create New Shader", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("Create shader in: %s", current_directory.c_str());
+            ImGui::Spacing();
+            ImGui::Text("Shader Name:");
+            ImGui::SetNextItemWidth(300.0f);
+            bool enter_pressed = ImGui::InputText("##ShaderName", shader_name_buffer, IM_ARRAYSIZE(shader_name_buffer),
+                                                  ImGuiInputTextFlags_EnterReturnsTrue);
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            const bool name_empty = strlen(shader_name_buffer) == 0;
+            ImGui::BeginDisabled(name_empty);
+            if (ImGui::Button("Create", ImVec2(120, 0)) || (enter_pressed && !name_empty))
+            {
+                const std::string shaderPath = current_directory + "/" + shader_name_buffer + ".glsl";
+
+                if (std::FILE* f = std::fopen(shaderPath.c_str(), "w"))
+                {
+                    std::fputs(TextEditorWindow::k_DefaultShaderSource, f);
+                    std::fclose(f);
+                    editorContext->GetResourceManager()->ImportFile(shaderPath);
+                    NOUS_INFO("Created shader: %s", shaderPath.c_str());
+                    AddItemsFromDirectory(current_directory);
+                }
+                else
+                {
+                    NOUS_ERROR("[AssetsBrowser] Failed to create shader file: %s", shaderPath.c_str());
+                }
+
+                memset(shader_name_buffer, 0, sizeof(shader_name_buffer));
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndDisabled();
+
+            ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            {
+                memset(shader_name_buffer, 0, sizeof(shader_name_buffer));
                 ImGui::CloseCurrentPopup();
             }
 

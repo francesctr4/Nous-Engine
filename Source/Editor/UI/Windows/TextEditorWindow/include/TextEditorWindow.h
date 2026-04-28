@@ -23,30 +23,8 @@ public:
     // Switches mode automatically based on file extension.
     void LoadFile(const std::filesystem::path& filePath);
 
-private:
-    void DrawTabs();
-    void DrawToolbar();
-    void HandleDragDropTarget();
-    void CreateNew();
-    void OpenFile();
-    void Save();
-    void Delete();
-
-    void        SwitchMode(TextEditorMode mode);
-    void        TrySwitch(TextEditorMode target);  // guards unsaved changes before SwitchMode
-    std::string GetScriptTemplate() const;
-    void        TriggerScriptRecompile();
-    void        TriggerShaderImport(const std::filesystem::path& filePath);
-
-    static constexpr const char* k_AssetsShaderPath   = "Assets/Shaders/";
-    static constexpr const char* k_AssetsScriptPath   = "Assets/Scripts/";
-    static constexpr const char* k_GlslExtension      = ".glsl";
-    static constexpr const char* k_CppExtension       = ".cpp";
-    static constexpr const char* k_HeaderExtension    = ".h";
-    static constexpr const char* k_ScriptTemplatePath = "Library/Scripts/ScriptTemplate.inl";
-    static constexpr const char* k_ClassNameToken     = "$CLASSNAME$";
-
     // GLSL template matching the engine's unified shader format (no diffuse sampler).
+    // Public so AssetsBrowser can write it when creating a new shader asset.
     static constexpr const char* k_DefaultShaderSource =
         "#pragma stage vertex\n"
         "#version 450\n"
@@ -120,6 +98,28 @@ private:
         "}\n";
 
 private:
+    void DrawTabs();
+    void DrawToolbar();
+    void HandleDragDropTarget();
+    void CreateNew();
+    void OpenFile();
+    void Save();
+    void Delete();
+
+    void        SwitchMode(TextEditorMode mode);
+    void        TrySwitch(TextEditorMode target);  // guards unsaved changes before SwitchMode
+    std::string GetScriptTemplate() const;
+    void        TriggerScriptRecompile();
+    void        TriggerShaderImport(const std::filesystem::path& filePath);
+
+    static constexpr const char* k_AssetsShaderPath   = "Assets/Shaders/";
+    static constexpr const char* k_AssetsScriptPath   = "Assets/Scripts/";
+    static constexpr const char* k_GlslExtension      = ".glsl";
+    static constexpr const char* k_CppExtension       = ".cpp";
+    static constexpr const char* k_HeaderExtension    = ".h";
+    static constexpr const char* k_ScriptTemplatePath = "Library/Scripts/ScriptTemplate.inl";
+    static constexpr const char* k_ClassNameToken     = "$CLASSNAME$";
+
     TextEditor            mTextEditor;
     TextEditorMode        mMode              = TextEditorMode::Shader;
     std::filesystem::path mCurrentFilePath;

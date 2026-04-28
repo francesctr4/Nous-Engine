@@ -168,6 +168,10 @@ public:
     bool show_create_material_popup = false;
     char material_name_buffer[128]  = "";
 
+    // Shader creation popup state
+    bool show_create_shader_popup = false;
+    char shader_name_buffer[128]  = "";
+
     // Folder creation popup state
     bool show_create_folder_popup = false;
     char folder_name_buffer[128]  = "";
