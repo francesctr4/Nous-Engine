@@ -169,7 +169,7 @@ static void ReflectAndSerialize(const std::vector<ShaderSource>& compiledSources
 
     PipelineReflectionResult pipeline = nous::engine::shader_system::MergeReflections(reflections);
 
-    const std::string reflectionJsonPath = shaderDir + "\\reflection.json";
+    const std::string reflectionJsonPath = (std::filesystem::path(shaderDir) / "reflection.json").string();
     if (!nous::engine::shader_system::SerializeReflection(pipeline, reflectionJsonPath))
     {
         NOUS_WARN("[ImporterShader] Failed to write reflection.json to '%s'.",
@@ -279,7 +279,7 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, Resource* outRe
     }
 
     // 3. Load reflection: try cached JSON first, fall back to live reflection
-    const std::string reflectionJsonPath = shaderDir + "\\reflection.json";
+    const std::string reflectionJsonPath = (std::filesystem::path(shaderDir) / "reflection.json").string();
 
     if (!nous::engine::shader_system::DeserializeReflection(reflectionJsonPath, shader->reflection))
     {
