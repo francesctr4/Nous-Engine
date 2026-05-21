@@ -63,8 +63,15 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading:
 #endif
 	const std::string scriptsDllPath =
         (std::filesystem::path(SDL_GetBasePath()) / "Library" / "Scripts" / kScriptsLib).string();
-	if (!scriptManager->LoadScriptLibrary(scriptsDllPath))
+	if (!std::filesystem::exists(scriptsDllPath))
+	{
+		NOUS_WARN("Script library not found — attempting to build from source...");
+		scriptManager->ReloadScriptLibrary(scriptsDllPath);
+	}
+	else if (!scriptManager->LoadScriptLibrary(scriptsDllPath))
+	{
 		NOUS_ERROR("Failed to load script library on startup");
+	}
 
 	eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }

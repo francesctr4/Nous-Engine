@@ -1,7 +1,7 @@
 # =========================================================
 # InstallEngine install component
 #
-# Produces a self-contained Delivery/Engine/ folder with
+# Produces a self-contained Delivery/Nous-Engine/ folder with
 # everything needed to run the editor.
 #
 # Must be included AFTER all subdirectories are added
@@ -10,17 +10,17 @@
 # Usage in CLion: Build → InstallEngine
 # Manual:
 #   cmake --install Build/Release-Windows --config Release \
-#         --component InstallEngine --prefix Delivery/Engine
+#         --component InstallEngine --prefix Delivery/Nous-Engine
 # =========================================================
 
 add_custom_target(InstallEngine
-        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${CMAKE_SOURCE_DIR}/Delivery/Engine"
+        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${CMAKE_SOURCE_DIR}/Delivery/Nous-Engine"
         COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}"
                 --config $<CONFIG>
                 --component InstallEngine
-                --prefix "${CMAKE_SOURCE_DIR}/Delivery/Engine"
+                --prefix "${CMAKE_SOURCE_DIR}/Delivery/Nous-Engine"
         DEPENDS EditorApp Nous-Editor Nous-Engine Scripts GameApp
-        COMMENT "Packaging InstallEngine → Delivery/Engine"
+        COMMENT "Packaging InstallEngine → Delivery/Nous-Engine"
         VERBATIM
 )
 
@@ -42,25 +42,22 @@ install(TARGETS GameApp
         COMPONENT InstallEngine
 )
 
-# Scripts.dll
+# Scripts.dll → BUILD OUTPUT lives in Library/Scripts/ (user-deletable, regenerable)
 install(TARGETS Scripts
         RUNTIME DESTINATION Library/Scripts
         COMPONENT InstallEngine
 )
 
-# Script build tools — RebuildScripts.bat/sh, ScriptTemplate.inl, SDK/ headers+src.
-# Excludes the Scripts shared library (already installed via install(TARGETS Scripts ...))
-# and build artifacts that are only needed during compilation.
-install(DIRECTORY "${CMAKE_BINARY_DIR}/bin/Library/Scripts/"
-        DESTINATION Library/Scripts
+# Script build tooling — RebuildScripts.bat/sh, ScriptTemplate.inl, SDK/ headers+src.
+# Installed to EngineCore/Scripts/ (NOT inside Library/) so it survives the user
+# wiping Library/. Without this split, deleting Library/ takes the bat + SDK with
+# it and the engine has no way to regenerate Scripts.dll on next launch.
+install(DIRECTORY "${CMAKE_BINARY_DIR}/bin/EngineCore/Scripts/"
+        DESTINATION EngineCore/Scripts
         COMPONENT InstallEngine
-        PATTERN "*.dll"    EXCLUDE   # Windows shared library
         PATTERN "*.pdb"    EXCLUDE   # Windows debug symbols
         PATTERN "*.exp"    EXCLUDE   # Windows export file
         PATTERN "*.lib"    EXCLUDE   # Windows import library
-        PATTERN "*.so"     EXCLUDE   # Linux shared library
-        PATTERN "*.so.*"   EXCLUDE   # Linux versioned shared library (e.g. libFoo.so.1.0)
-        PATTERN "*.dylib"  EXCLUDE   # macOS shared library
         PATTERN "*.rsp"    EXCLUDE   # compiler response file
         PATTERN "obj"      EXCLUDE
 )

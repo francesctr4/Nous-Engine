@@ -3,12 +3,19 @@ setlocal EnableDelayedExpansion
 
 REM ============================================================
 REM Nous Engine - RebuildScripts.bat (SDK-only, no engine source)
+REM
+REM Layout (relative to this script):
+REM   %~dp0 .................... <exe_dir>\EngineCore\Scripts\  (tooling)
+REM   %~dp0\SDK\ ............... script SDK headers + EngineAPI.cpp
+REM   %~dp0\..\..\Library\Scripts\Scripts.dll ...... build output
+REM
 REM Requirements:
-REM   <bin>\Scripts\SDK\include\Engine\...\IScript.inl
-REM   <bin>\Scripts\SDK\src\EngineAPI.cpp
-REM   @CMAKE_SOURCE_DIR@\Assets\**\*.cpp
+REM   <tooling>\SDK\include\Engine\...\IScript.inl
+REM   <tooling>\SDK\src\EngineAPI.cpp
+REM   @CMAKE_SOURCE_DIR@\Assets\**\*.cpp   (dev build — source tree)
+REM   <exe_dir>\Assets\**\*.cpp            (shipped — Assets next to exe)
 REM Output:
-REM   <bin>\Scripts\Scripts.dll
+REM   <exe_dir>\Library\Scripts\Scripts.dll
 REM ============================================================
 
 REM -----------------------------
@@ -42,13 +49,14 @@ if errorlevel 1 (
 )
 
 REM -----------------------------
-REM 2) Resolve bin dirs
+REM 2) Resolve dirs (tooling lives in EngineCore\Scripts, output in Library\Scripts)
 REM -----------------------------
 REM Normalize all paths up front using %%~fI to expand any ".." segments.
 REM This is required so that "if not exist" checks work correctly.
 set SCRIPT_DIR=%~dp0
-for %%I in ("%SCRIPT_DIR%.") do set SCRIPTS_OUTPUT_DIR=%%~fI
+for %%I in ("%SCRIPT_DIR%.") do set SCRIPTS_TOOLING_DIR=%%~fI
 for %%I in ("%SCRIPT_DIR%..\..") do set EXE_DIR=%%~fI
+for %%I in ("%SCRIPT_DIR%..\..\Library\Scripts") do set SCRIPTS_OUTPUT_DIR=%%~fI
 
 REM Detect dev vs shipped build: dev exe lives under CMAKE_BINARY_DIR, shipped does not.
 REM Dev:     compile from the source tree (live edits, never stale).
@@ -87,9 +95,9 @@ echo %EXE_DIR_FWD% | findstr /I "Release" >nul && set BUILD_MODE=Release
 echo [INFO] BUILD_MODE           = %BUILD_MODE%
 
 REM -----------------------------
-REM 3) SDK paths (required)
+REM 3) SDK paths (required) — live next to this bat in EngineCore\Scripts\SDK
 REM -----------------------------
-set SDK_DIR=%SCRIPTS_OUTPUT_DIR%\SDK
+set SDK_DIR=%SCRIPTS_TOOLING_DIR%\SDK
 set SDK_INCLUDE=%SDK_DIR%\include
 set SDK_ENGINE_API_CPP=%SDK_DIR%\src\EngineAPI.cpp
 
@@ -128,6 +136,7 @@ REM 4) Diagnostics
 REM -----------------------------
 echo ============================================================
 echo [INFO] EXE_DIR              = %EXE_DIR%
+echo [INFO] SCRIPTS_TOOLING_DIR  = %SCRIPTS_TOOLING_DIR%
 echo [INFO] SCRIPTS_OUTPUT_DIR   = %SCRIPTS_OUTPUT_DIR%
 echo [INFO] SCRIPTS_ASSETS_BIN_DIR= %SCRIPTS_ASSETS_BIN_DIR%
 echo [INFO] SDK_INCLUDE          = %SDK_INCLUDE%
@@ -135,7 +144,7 @@ echo [INFO] SDK_ENGINE_API_CPP   = %SDK_ENGINE_API_CPP%
 echo ============================================================
 
 REM -----------------------------
-REM 5) Generate response file
+REM 5) Generate response file (kept in OUTPUT dir alongside the DLL)
 REM -----------------------------
 set RSP=%SCRIPTS_OUTPUT_DIR%\scripts_build.rsp
 break > "%RSP%"

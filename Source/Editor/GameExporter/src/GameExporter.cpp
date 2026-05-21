@@ -316,11 +316,11 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
 
 #ifdef _WIN32
         const std::string scriptPath =
-            (engineDir / "Library" / "Scripts" / "RebuildScripts.bat").string();
+            (engineDir / "EngineCore" / "Scripts" / "RebuildScripts.bat").string();
         const std::string cmd = "\"" + scriptPath + "\" " + buildMode;
 #else
         const std::string scriptPath =
-            (engineDir / "Library" / "Scripts" / "RebuildScripts.sh").string();
+            (engineDir / "EngineCore" / "Scripts" / "RebuildScripts.sh").string();
         const std::string cmd = "bash \"" + scriptPath + "\" " + buildMode + " 2>&1";
 #endif
         const bool ok = LaunchAndCapture(cmd,

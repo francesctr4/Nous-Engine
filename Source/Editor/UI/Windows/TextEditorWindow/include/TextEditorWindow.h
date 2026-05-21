@@ -117,7 +117,7 @@ private:
     static constexpr const char* k_GlslExtension      = ".glsl";
     static constexpr const char* k_CppExtension       = ".cpp";
     static constexpr const char* k_HeaderExtension    = ".h";
-    static constexpr const char* k_ScriptTemplatePath = "Library/Scripts/ScriptTemplate.inl";
+    static constexpr const char* k_ScriptTemplatePath = "EngineCore/Scripts/ScriptTemplate.inl";
     static constexpr const char* k_ClassNameToken     = "$CLASSNAME$";
 
     TextEditor            mTextEditor;

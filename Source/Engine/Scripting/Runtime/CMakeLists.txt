@@ -1,36 +1,49 @@
 # ==============================
 # Nous Engine - Scripts DLL (Hot Reload)
 # ==============================
+#
+# Directory layout (next to the engine executable):
+#
+#   <bin>/Library/Scripts/Scripts.dll   ← BUILD OUTPUT (user-deletable; regenerable)
+#   <bin>/EngineCore/Scripts/           ← BUILD TOOLING (must survive Library deletion)
+#       ├── RebuildScripts.bat / .sh    ← script that compiles Scripts.dll
+#       ├── ScriptTemplate.inl          ← template used when creating a new script
+#       └── SDK/                        ← engine headers + EngineAPI.cpp the bat consumes
+#
+# Splitting tooling out of Library/ lets the engine regenerate Scripts.dll
+# when the user wipes Library/ — otherwise the bat itself is deleted along
+# with everything else and there's nothing left to rebuild from.
 
-set(SCRIPTS_OUTPUT_DIR  "${CMAKE_BINARY_DIR}/bin/Library/Scripts")
-set(SCRIPTS_SRC_DIR     "${CMAKE_SOURCE_DIR}/Assets")
+set(SCRIPTS_OUTPUT_DIR   "${CMAKE_BINARY_DIR}/bin/Library/Scripts")
+set(SCRIPTS_TOOLING_DIR  "${CMAKE_BINARY_DIR}/bin/EngineCore/Scripts")
+set(SCRIPTS_SRC_DIR      "${CMAKE_SOURCE_DIR}/Assets")
 
-# Generate rebuild scripts with the source Assets/Scripts path baked in
 file(MAKE_DIRECTORY "${SCRIPTS_OUTPUT_DIR}")
+file(MAKE_DIRECTORY "${SCRIPTS_TOOLING_DIR}")
 
 if(WIN32)
     configure_file(
             "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.bat.in"
-            "${SCRIPTS_OUTPUT_DIR}/RebuildScripts.bat"
+            "${SCRIPTS_TOOLING_DIR}/RebuildScripts.bat"
             @ONLY
     )
 else()
     configure_file(
             "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.sh.in"
-            "${SCRIPTS_OUTPUT_DIR}/RebuildScripts.sh"
+            "${SCRIPTS_TOOLING_DIR}/RebuildScripts.sh"
             @ONLY
     )
     # Ensure the script is executable after configuration
-    file(CHMOD "${SCRIPTS_OUTPUT_DIR}/RebuildScripts.sh"
+    file(CHMOD "${SCRIPTS_TOOLING_DIR}/RebuildScripts.sh"
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                         GROUP_READ GROUP_EXECUTE
                         WORLD_READ WORLD_EXECUTE
     )
 endif()
 file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.inl"
-        DESTINATION "${SCRIPTS_OUTPUT_DIR}")
+        DESTINATION "${SCRIPTS_TOOLING_DIR}")
 
-set(SCRIPTS_SDK_DIR "${SCRIPTS_OUTPUT_DIR}/SDK")
+set(SCRIPTS_SDK_DIR "${SCRIPTS_TOOLING_DIR}/SDK")
 set(SCRIPTS_SDK_INCLUDE_DIR "${SCRIPTS_SDK_DIR}/include")
 set(SCRIPTS_SDK_SRC_DIR "${SCRIPTS_SDK_DIR}/src")
 

@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
 # ============================================================
 # Nous Engine - RebuildScripts.sh (SDK-only, no engine source)
+#
+# Layout (relative to this script):
+#   $SCRIPT_DIR ............. <exe_dir>/EngineCore/Scripts/  (tooling)
+#   $SCRIPT_DIR/SDK/ ........ script SDK headers + EngineAPI.cpp
+#   $SCRIPT_DIR/../../Library/Scripts/Scripts.{so,dylib} ..... build output
+#
 # Requirements:
-#   <bin>/Scripts/SDK/include/Engine/.../IScript.inl
-#   <bin>/Scripts/SDK/src/EngineAPI.cpp
-#   @CMAKE_SOURCE_DIR@/Assets/**/*.cpp
+#   <tooling>/SDK/include/Engine/.../IScript.inl
+#   <tooling>/SDK/src/EngineAPI.cpp
+#   @CMAKE_SOURCE_DIR@/Assets/**/*.cpp   (dev build)
+#   <exe_dir>/Assets/**/*.cpp            (shipped)
 # Output:
-#   <bin>/Scripts/Scripts.so
+#   <exe_dir>/Library/Scripts/Scripts.{so,dylib}
 # ============================================================
 
 set -euo pipefail
@@ -30,11 +37,13 @@ fi
 echo "[INFO] CXX_COMPILER          = $CXX_COMPILER"
 
 # -----------------------------
-# 2) Resolve paths
+# 2) Resolve paths (tooling lives in EngineCore/Scripts, output in Library/Scripts)
 # -----------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPTS_OUTPUT_DIR="$SCRIPT_DIR"
+SCRIPTS_TOOLING_DIR="$SCRIPT_DIR"
 EXE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SCRIPTS_OUTPUT_DIR="$EXE_DIR/Library/Scripts"
+mkdir -p "$SCRIPTS_OUTPUT_DIR"
 
 # Detect dev vs shipped: dev exe lives under CMAKE_BINARY_DIR, shipped does not.
 # Dev:     compile from the source tree (live edits, never stale).
@@ -44,8 +53,6 @@ if echo "$EXE_DIR" | grep -qF "@CMAKE_BINARY_DIR@"; then
 else
     SCRIPTS_ASSETS_DIR="$EXE_DIR/Assets"
 fi
-
-mkdir -p "$SCRIPTS_OUTPUT_DIR"
 
 SCRIPTS_OBJ_DIR="$SCRIPTS_OUTPUT_DIR/obj"
 mkdir -p "$SCRIPTS_OBJ_DIR"
@@ -70,9 +77,9 @@ fi
 echo "[INFO] BUILD_MODE            = $BUILD_MODE"
 
 # -----------------------------
-# 3) SDK paths (required)
+# 3) SDK paths (required) — live next to this script in EngineCore/Scripts/SDK
 # -----------------------------
-SDK_DIR="$SCRIPTS_OUTPUT_DIR/SDK"
+SDK_DIR="$SCRIPTS_TOOLING_DIR/SDK"
 SDK_INCLUDE="$SDK_DIR/include"
 SDK_ENGINE_API_CPP="$SDK_DIR/src/EngineAPI.cpp"
 
@@ -114,6 +121,7 @@ fi
 # -----------------------------
 echo "============================================================"
 echo "[INFO] EXE_DIR               = $EXE_DIR"
+echo "[INFO] SCRIPTS_TOOLING_DIR   = $SCRIPTS_TOOLING_DIR"
 echo "[INFO] SCRIPTS_OUTPUT_DIR    = $SCRIPTS_OUTPUT_DIR"
 echo "[INFO] SCRIPTS_ASSETS_DIR    = $SCRIPTS_ASSETS_DIR"
 echo "[INFO] SDK_INCLUDE           = $SDK_INCLUDE"

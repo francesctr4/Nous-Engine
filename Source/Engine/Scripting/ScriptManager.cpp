@@ -204,9 +204,17 @@ bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
     // Shadow-copy the DLL so the original is never locked by this process.
     // The linker can then overwrite Scripts.dll freely on the next hot-reload.
     const std::filesystem::path src(dllPath);
+
+    if (!std::filesystem::exists(src))
+    {
+        NOUS_WARN("Script library not found at '%s' — scripting disabled", dllPath.c_str());
+        return false;
+    }
+
     const std::filesystem::path shadow = src.parent_path() / (src.stem().string() + "_shadow" + src.extension().string());
 
     std::error_code ec;
+    std::filesystem::create_directories(src.parent_path(), ec);
     std::filesystem::copy_file(src, shadow, std::filesystem::copy_options::overwrite_existing, ec);
     if (ec)
     {
@@ -290,7 +298,7 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     UnloadScriptLibrary();
 
 #ifdef _WIN32
-    const std::wstring batPath = (GetExeDir() / "Library" / "Scripts" / "RebuildScripts.bat").wstring();
+    const std::wstring batPath = (GetExeDir() / "EngineCore" / "Scripts" / "RebuildScripts.bat").wstring();
     std::wstring cmd;
 #ifdef _DEBUG
     cmd = batPath + L" Debug";
@@ -321,7 +329,7 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
 
     NOUS_INFO("Scripts recompiled successfully!");
 #else
-    const std::string shPath = (GetExeDir() / "Library" / "Scripts" / "RebuildScripts.sh").string();
+    const std::string shPath = (GetExeDir() / "EngineCore" / "Scripts" / "RebuildScripts.sh").string();
 #ifdef _DEBUG
     const std::string cmd = "bash \"" + shPath + "\" Debug 2>&1";
 #else
@@ -505,7 +513,7 @@ void ScriptManager::RecompileScripts()
 
 bool ScriptManager::GenerateScript(const std::string& className, const std::string& directory)
 {
-    const std::string templatePath = (GetExeDir() / "Library" / "Scripts" / "ScriptTemplate.inl").string();
+    const std::string templatePath = (GetExeDir() / "EngineCore" / "Scripts" / "ScriptTemplate.inl").string();
     const std::string outputPath = (std::filesystem::path(directory) / (className + ".cpp")).string();
 
     // Read the template file
