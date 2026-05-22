@@ -95,12 +95,9 @@ private:
 	// Drains TakeReadyAssetUploads() — called at the top of PreUpdate().
 	void FlushPendingAssetUploads();
 
-	// Writes Library/shader_manifest.json with the UIDs and library paths of the
-	// built-in shaders so GAME mode can load them without reading .meta files.
-	void WriteShaderManifest(const Resource* matShader, const Resource* bgShader) const;
-
 	// Reads Library/shader_manifest.json and loads built-in shaders via
-	// CreateResourceFromLibrary — no .meta files required.
+	// CreateResourceFromLibrary — no .meta files required. The manifest itself is
+	// written by ResourceImportPipeline at the end of ScanAndImportAssets.
 	void LoadShadersFromManifest();
 
 private:

@@ -39,6 +39,13 @@ private:
     static bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
     static bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
 
+    // Writes Library/Shaders/shader_manifest.json from the .meta files of the built-in
+    // shaders. Called at the tail of ScanAndImportAssets so the manifest is always in
+    // sync with the library after any import pass — initial startup, RegenerateLibrary,
+    // or a manual Library/ nuke followed by a relaunch. GAME mode requires the manifest
+    // to locate built-in shaders without reading .meta files at runtime.
+    static void WriteShaderManifest();
+
     bool ImportFileFromExternal(const std::string& path, ResourceType resourceType,
                                 const std::string& fileName, const std::string& extension);
     bool ImportFileFromAssets(const std::string& relativePath, ResourceType resourceType,

@@ -148,6 +148,41 @@ void ResourceImportPipeline::ScanAndImportAssets(const bool parallelImports)
             nous::engine::filesystem::CopyFile(src, dest);
         }
     }
+
+    WriteShaderManifest();
+}
+
+void ResourceImportPipeline::WriteShaderManifest()
+{
+    // Built-in shaders that GAME mode loads via the manifest (no .meta read at runtime).
+    // Asset paths mirror the CreateResource calls in ModuleRenderer3D::Start.
+    struct Entry { const char* key; const char* assetsPath; };
+    static constexpr Entry c_builtIns[] = {
+        { "MaterialShader",   "Assets/Shaders/BuiltIn.MaterialShader.glsl"   },
+        { "BackgroundShader", "Assets/Shaders/BuiltIn.BackgroundShader.glsl" },
+    };
+
+    JsonObject root;
+    for (const auto& [key, assetsPath] : c_builtIns)
+    {
+        MetaFileData meta;
+        if (!GetAssetMetaData(assetsPath, meta))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL,
+                "shader_manifest.json: missing .meta for built-in shader '%s' — manifest not written.",
+                assetsPath);
+            return;
+        }
+        JsonObject entry;
+        entry.Set("uid",         static_cast<double>(meta.uid));
+        entry.Set("libraryPath", meta.libraryPath);
+        root.Set(key, std::move(entry));
+    }
+
+    if (!JsonFile::SaveToFile(root, "Library/Shaders/shader_manifest.json"))
+        NOUS_WARN_C(CURRENT_CHANNEL, "Failed to write Library/Shaders/shader_manifest.json.");
+    else
+        NOUS_INFO_C(CURRENT_CHANNEL, "Shader manifest written to Library/Shaders/shader_manifest.json.");
 }
 
 void ResourceImportPipeline::CollectPendingImports(const std::string& directory,

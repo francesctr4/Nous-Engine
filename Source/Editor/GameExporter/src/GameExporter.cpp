@@ -35,27 +35,31 @@ namespace
     // In a dev build (CLion), the exe is in Build/.../bin/ but Library/ lives at the project root (cwd).
     std::filesystem::path ResolveLibraryDir(const std::filesystem::path& engineDir)
     {
-        const auto deliveryLib = engineDir / "Library";
-        // Library/GameBin/GameApp only exists in a proper engine delivery (InstallEngine).
+        // EngineCore/GameBin/GameApp only exists in a proper engine delivery (InstallEngine).
         // In dev builds CMake copies Shaders to bin/Library/ but not the full content,
-        // so checking for Shaders/ gives a false positive — use GameBin as the indicator instead.
+        // so checking for Shaders/ gives a false positive — use GameApp as the indicator instead.
         const std::string gameExeName = "GameApp" + std::string(GameExporterPlatform::GetExeExtension());
-        if (std::filesystem::exists(deliveryLib / "GameBin" / gameExeName))
-            return deliveryLib;
+        if (std::filesystem::exists(engineDir / "EngineCore" / "GameBin" / gameExeName))
+            return engineDir / "Library";
         return std::filesystem::current_path() / "Library";
     }
 
     // game_config.json source resolution:
-    // - Delivery: Library/Settings/game_config.json next to the executable
-    // - Dev build: Source/Game/game_config.json at the project root (cwd)
+    // - Delivery: EngineCore/GameBin/game_config.json (paired with GameApp template,
+    //   outside Library/ so it survives the user wiping Library/)
+    // - Dev build (CLion): bin/Library/Settings/game_config.json — the GameConfig CMake
+    //   target copies Source/Game/game_config.json there so direct GameApp dev runs find
+    //   it next to the exe. Resolved relative to engineDir (= bin/) so it works regardless
+    //   of the launch cwd.
+    // - Last-resort: source tree, only valid when launched from the project root.
     std::filesystem::path ResolveGameConfigSource(const std::filesystem::path& engineDir)
     {
-        const auto deliveryCfg = engineDir / "Library" / "Settings" / "game_config.json";
+        const auto deliveryCfg = engineDir / "EngineCore" / "GameBin" / "game_config.json";
         if (std::filesystem::exists(deliveryCfg))
             return deliveryCfg;
-        const auto libCfg = std::filesystem::current_path() / "Library" / "Settings" / "game_config.json";
-        if (std::filesystem::exists(libCfg))
-            return libCfg;
+        const auto devCfg = engineDir / "Library" / "Settings" / "game_config.json";
+        if (std::filesystem::exists(devCfg))
+            return devCfg;
         return std::filesystem::current_path() / "Source" / "Game" / "game_config.json";
     }
 
@@ -157,7 +161,7 @@ namespace
             if (ec) return false;
             const std::string relStr = rel.generic_string();
 
-            if (relStr.starts_with("Scripts") || relStr.starts_with("GameBin"))
+            if (relStr.starts_with("Scripts"))
                 continue;
             if (entry.path().filename().string() == "_simulation_snapshot.nous")
                 continue;
@@ -349,9 +353,9 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
     {
         const std::string gameExeName = "GameApp" + std::string(GameExporterPlatform::GetExeExtension());
         PostLog("[INFO] Copying " + gameExeName + "...");
-        // Engine delivery: Library/GameBin/<gameExeName>
+        // Engine delivery: EngineCore/GameBin/<gameExeName>
         // Dev build: <gameExeName> sits next to EditorApp in bin/
-        const auto deliveryPath = engineDir / "Library" / "GameBin" / gameExeName;
+        const auto deliveryPath = engineDir / "EngineCore" / "GameBin" / gameExeName;
         const auto devPath      = engineDir / gameExeName;
         const auto src = std::filesystem::exists(deliveryPath) ? deliveryPath : devPath;
         const auto dst = outputDir / gameExeName;
@@ -376,7 +380,7 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
     }
     if (checkCancel()) return;
 
-    // ── Step 6: Mirror Library/ (excluding Scripts/ and GameBin/) ────────
+    // ── Step 6: Mirror Library/ (excluding Scripts/) ─────────────────────
     m_currentStep.store(6);
     PostLog("[INFO] Copying Library...");
     {

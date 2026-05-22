@@ -37,8 +37,11 @@ install(TARGETS Nous-Engine Nous-Editor
 )
 
 # GameApp.exe — pre-built game stub used by the in-engine Build pipeline.
+# Installed to EngineCore/GameBin/ (NOT inside Library/) so it survives the user
+# wiping Library/. Without this split, deleting Library/ takes GameApp with it
+# and the next exported build has no executable to copy.
 install(TARGETS GameApp
-        RUNTIME DESTINATION Library/GameBin
+        RUNTIME DESTINATION EngineCore/GameBin
         COMPONENT InstallEngine
 )
 
@@ -83,9 +86,13 @@ install(DIRECTORY "${CMAKE_SOURCE_DIR}/Assets/"
         COMPONENT InstallEngine
 )
 
-# Game configuration — needed by the in-engine Build pipeline (copied into Library/Settings/).
+# Game configuration template — read by the in-engine Build pipeline as the source
+# game_config.json to copy (and patch) into the exported game's Library/Settings/.
+# Paired with the GameApp template under EngineCore/GameBin/ so it survives the user
+# wiping Library/. Otherwise the next exported build has no startup-scene config and
+# the game falls back to the hardcoded default scene.
 install(FILES "${CMAKE_SOURCE_DIR}/Source/Game/game_config.json"
-        DESTINATION Library/Settings
+        DESTINATION EngineCore/GameBin
         COMPONENT InstallEngine
 )
 

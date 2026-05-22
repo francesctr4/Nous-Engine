@@ -106,19 +106,14 @@ bool ModuleRenderer3D::Start()
 	else
 	{
 		// EDITOR mode: load via asset path (reads .meta to resolve UID).
-		// Capture return values so we can persist the manifest for GAME mode.
-		Resource* matShader = mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
-		Resource* bgShader  = mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
-
+		// The shader manifest is written by ResourceImportPipeline at the end of
+		// ScanAndImportAssets, so no manifest write is needed here.
+		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
+		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
 		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
 		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
 		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
 		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
-
-		if (matShader && bgShader)
-			WriteShaderManifest(matShader, bgShader);
-		else
-			NOUS_WARN_C(CURRENT_CHANNEL, "Could not write shader_manifest.json — one or more built-in shaders failed to load.");
 	}
 
 	// Drain the initial upload queue — includes the default texture/material (queued
@@ -718,27 +713,6 @@ RendererFrontend* ModuleRenderer3D::GetRendererFrontend() const
 IGPUResourceFactory* ModuleRenderer3D::GetGPUFactory() const
 {
 	return mRendererFrontend;
-}
-
-void ModuleRenderer3D::WriteShaderManifest(const Resource* matShader, const Resource* bgShader) const
-{
-	JsonObject root;
-
-	auto addEntry = [&](const char* key, const Resource* shader)
-	{
-		JsonObject entry;
-		entry.Set("uid",         static_cast<double>(shader->GetUID()));
-		entry.Set("libraryPath", shader->GetLibraryPath());
-		root.Set(key, std::move(entry));
-	};
-
-	addEntry("MaterialShader",   matShader);
-	addEntry("BackgroundShader", bgShader);
-
-	if (!JsonFile::SaveToFile(root, "Library/Shaders/shader_manifest.json"))
-		NOUS_WARN_C(CURRENT_CHANNEL, "Failed to write Library/Shaders/shader_manifest.json.");
-	else
-		NOUS_INFO_C(CURRENT_CHANNEL, "Shader manifest written to Library/Shaders/shader_manifest.json.");
 }
 
 void ModuleRenderer3D::LoadShadersFromManifest()
