@@ -17,16 +17,21 @@ static const std::unordered_map<ResourceType, std::string> resourceTypeToLibrary
 
 static const std::unordered_map<std::string_view, ResourceType> extensionToResourceType
 {
-	{"fbx", ResourceType::MESH},
-	{"obj", ResourceType::MESH},
+	{"fbx",  ResourceType::MESH},
+	{"obj",  ResourceType::MESH},
+	{"glb",  ResourceType::MESH},
+	{"gltf", ResourceType::MESH},
 	{"nmesh", ResourceType::MESH},
 
 	{"nmat", ResourceType::MATERIAL},
 
-	{"png", ResourceType::TEXTURE},
+	{"png",  ResourceType::TEXTURE},
+	{"jpg",  ResourceType::TEXTURE},
+	{"jpeg", ResourceType::TEXTURE},
+	{"tga",  ResourceType::TEXTURE},
 
 	{"glsl", ResourceType::SHADER},
-	{"spv", ResourceType::SHADER},
+	{"spv",  ResourceType::SHADER},
 };
 
 static const std::unordered_map<ResourceType, std::string> resourceTypeToAssetsFolder

@@ -161,10 +161,14 @@ void SceneViewport::HandleDragAndDropTarget() const
         return;
     }
 
-    const auto* payload_data = (const char*)payload->Data;
+    const auto* payload_data = static_cast<const char*>(payload->Data);
+    const char* payload_end  = payload_data + payload->DataSize;
     std::vector<std::string> filePaths;
 
-    while (*payload_data)
+    // Payloads are null-terminated path runs; bound the walk by DataSize so we
+    // never read past the buffer when the last path's terminator lands exactly
+    // at the end (otherwise *payload_data reads uninitialized memory).
+    while (payload_data < payload_end && *payload_data)
     {
         std::string path(payload_data);
 

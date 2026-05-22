@@ -587,6 +587,12 @@ void AssetsBrowser::DrawContent()
                     if (ImGui::IsItemToggledSelection())
                         item_is_selected = !item_is_selected;
 
+                    if (ImGui::BeginItemTooltip())
+                    {
+                        ImGui::TextUnformatted(item_data->name.c_str());
+                        ImGui::EndTooltip();
+                    }
+
                     if (item_curr_idx_to_focus == item_idx)
                         ImGui::SetKeyboardFocusHere(-1);
 
