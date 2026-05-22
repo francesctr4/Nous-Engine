@@ -881,6 +881,7 @@ void AssetsBrowser::DrawContent()
                     std::fputs(TextEditorWindow::k_DefaultShaderSource, f);
                     std::fclose(f);
                     editorContext->GetResourceManager()->ImportFile(shaderPath);
+                    editorContext->WatchShaderFile(shaderPath);
                     NOUS_INFO("Created shader: %s", shaderPath.c_str());
                     AddItemsFromDirectory(current_directory);
                 }

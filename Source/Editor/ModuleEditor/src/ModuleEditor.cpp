@@ -352,6 +352,11 @@ void ModuleEditor::UpdateShaderWatcherPath(const std::string& oldPath, const std
     mModuleRenderer3D->UpdateShaderWatcherPath(oldPath, newPath);
 }
 
+void ModuleEditor::WatchShaderFile(const std::string& path)
+{
+    mModuleRenderer3D->WatchShaderFile(path);
+}
+
 std::string ModuleEditor::GetAssetsBrowserDirectory() const
 {
     if (IEditorWindow* w = const_cast<ModuleEditor*>(this)->GetEditorWindowByName("Assets"))

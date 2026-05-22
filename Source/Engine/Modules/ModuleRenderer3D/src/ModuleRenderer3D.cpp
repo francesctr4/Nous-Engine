@@ -62,9 +62,17 @@ ModuleRenderer3D::~ModuleRenderer3D()
 void ModuleRenderer3D::UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath)
 {
 	m_shaderWatcher.Unwatch(oldPath);
-	m_shaderWatcher.Watch(newPath, [this, newPath](const std::string&)
+	WatchShaderFile(newPath);
+}
+
+void ModuleRenderer3D::WatchShaderFile(const std::string& path)
+{
+	if (m_renderMode != RenderMode::EDITOR) return;
+
+	const std::string normalizedPath = std::filesystem::path(path).generic_string();
+	m_shaderWatcher.Watch(normalizedPath, [this, normalizedPath](const std::string&)
 	{
-		mRendererFrontend->ReloadShaderByPath(newPath);
+		mRendererFrontend->ReloadShaderByPath(normalizedPath);
 	});
 }
 

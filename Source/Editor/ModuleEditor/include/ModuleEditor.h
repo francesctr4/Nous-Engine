@@ -62,6 +62,7 @@ public:
     GameExporter* GetGameExporter() const override { return m_gameExporter; }
     std::string GetAssetsBrowserDirectory() const override;
     void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath) override;
+    void WatchShaderFile(const std::string& path) override;
 
 private:
 

@@ -85,6 +85,9 @@ public:
 	// Must be called after the file has been physically moved to newPath.
 	NOUS_ENGINE_API void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath);
 
+	// Register a newly created .glsl file with the shader FileWatcher so hot-reload picks it up.
+	NOUS_ENGINE_API void WatchShaderFile(const std::string& path);
+
 private:
 	// ---------------------------------------------------------------------
 	// Internal Methods
