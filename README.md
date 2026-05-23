@@ -13,7 +13,7 @@
 
 ---
 
-![Showcase](https://github.com/user-attachments/assets/384d2461-457c-42ee-ba22-7a63221d16c2)
+<img width="1920" height="1036" alt="image_2026-05-23_11-28-28" src="https://github.com/user-attachments/assets/d756e371-08c8-4bb6-a0d5-57b803a21ed4" />
 
 ---
 
@@ -66,7 +66,19 @@ Pull requests are welcome! If you'd like to suggest improvements, add features, 
 
 ### **Changelog**
 
-#### Version 0.5 - Scripting System and Major Improvements (Current)
+#### Version 0.6 - New Shader System, Scripting Upgrades, New Editor Features and Standalone Game Exporter (Current)
+
+v0.6 introduces four major areas of work:
+
+- **Shader System**: Completely rewritten around GLSL → SPIR-V compilation, reflection-driven pipeline generation, and live hot reloading. Supports Forward PBR and Blinn–Phong lighting (including point and spot lights), per-material shader assignment, and automatic texture/uniform binding through shader reflection.
+
+- **Scripting System**: Scripts are now component-based and attached directly to GameObjects. Added serialization for inspector-edited values (including GameObject references), real-time editing in the editor, hot reloading during Play mode through DLL shadow-copying, and time-controlled simulation features such as Play, Stop, Resume, and Step. Expanded scripting bindings now include Camera, Component, GameObject, Scene, Time, Light, and Material APIs.
+
+- **Editor**: Added integrated Shader and Script editors, along with Create Shader / Create Material workflows directly from the Assets Browser. Implemented hot reloading for textures and materials, GameObject multi-selection, a fully completed Prefab System, quaternion-based ImGuizmo rotations, pixel-perfect mouse picking, stencil-buffer outlines, shader-based grid and major refactors of the Inspector, Hierarchy, and Console windows.
+
+- **Standalone Game Export**: Added an in-editor Game Exporter capable of generating standalone executables with a CMake-based install system and a `game_config.json` runtime configuration. Initial support targets Windows, with planned cross-platform support.
+
+#### Version 0.5 - Scripting System and Major Improvements
 The v0.5 release introduces major architectural improvements, new Scripting System, and powerful tooling upgrades across the entire engine:
 
 #### Scripting System
