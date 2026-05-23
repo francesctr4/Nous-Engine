@@ -89,6 +89,10 @@ public:
 	// Returns true if the active scene contains at least one CCamera with isMainCamera=true.
 	NOUS_ENGINE_API bool HasMainCamera() const;
 
+	// True while a LoadSceneAsync job is in flight. Read by ModuleRenderer3D to skip
+	// per-entity iteration that would otherwise race the worker thread mutating the registry.
+	NOUS_ENGINE_API bool IsLoadingScene() const { return m_isLoadingScene.load(std::memory_order_acquire); }
+
 	// Returns the aspect ratio of the current window, kept up-to-date by WINDOW_RESIZED events.
 	NOUS_ENGINE_API float GetWindowAspect() const { return m_windowAspect; }
 

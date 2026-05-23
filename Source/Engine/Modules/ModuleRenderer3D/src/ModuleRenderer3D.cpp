@@ -349,6 +349,24 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 	const SceneRenderData& sceneData = mModuleScene->GetRenderData();
 
+	// While LoadSceneAsync is in flight, the worker thread is mutating the registry and
+	// creating CMaterial/ResourceMaterial entries (assigning instance-pool slots). Any
+	// view<>() iteration here races those mutations (EnTT is not thread-safe), and any
+	// material whose internalID is read mid-construction can index out-of-bounds into
+	// VulkanShader::instanceStates in DrawGeometryBatched. Drop all scene render state
+	// for this frame; only the UI pass will draw.
+	const bool isLoadingScene = mModuleScene->IsLoadingScene();
+	if (isLoadingScene)
+	{
+		mMeshAABBCache.clear();
+		mRendererFrontend->SetOutlinedGeometries({});
+		mRendererFrontend->SetBoundingBoxes({});
+		mRendererFrontend->SetCameraFrustums({});
+		mRendererFrontend->SetPointLightDebugs({});
+		mRendererFrontend->SetDirectionalLightDebugs({});
+		mRendererFrontend->SetSpotLightDebugs({});
+	}
+
 	m_totalTime += dt;
 
 	RenderPacket packet{};
@@ -365,7 +383,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		packet.gameCamera->SetAspectRatio(mModuleScene->gameViewportAspect);
 
 	// Editor-only: selection outline.
-	if (m_renderMode == RenderMode::EDITOR)
+	if (m_renderMode == RenderMode::EDITOR && !isLoadingScene)
 	{
 		std::vector<GeometryRenderData> outlinedGeometries;
 		for (auto go : sceneData.selectedObjects)
@@ -383,7 +401,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	// Runs in EDITOR mode (always needed for bounding box overlays) and in any
 	// mode when frustum culling is enabled. Without this, BuildRenderPacket would
 	// find an empty cache and silently skip all culling in GAME mode.
-	if (m_renderMode == RenderMode::EDITOR || frustumCullingEnabled)
+	//
+	// While LoadSceneAsync is in flight the cache was already cleared at the top of
+	// PostUpdate and iteration is skipped here — see the comment near isLoadingScene.
+	if (!isLoadingScene && (m_renderMode == RenderMode::EDITOR || frustumCullingEnabled))
 	{
 #ifdef _PROFILING
 		ZoneScopedN("AABB Cache");
@@ -469,7 +490,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	}
 
 	// Editor-only: camera frustum overlays.
-	if (m_renderMode == RenderMode::EDITOR)
+	if (m_renderMode == RenderMode::EDITOR && !isLoadingScene)
 	{
 #ifdef _PROFILING
 		ZoneScopedN("Frustum Build");
@@ -527,7 +548,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	// Editor-only: point light debug spheres.
 	//   Small marker sphere at every point light's position (always visible).
 	//   Larger range sphere shown only when the light's GameObject is selected.
-	if (m_renderMode == RenderMode::EDITOR)
+	if (m_renderMode == RenderMode::EDITOR && !isLoadingScene)
 	{
 #ifdef _PROFILING
 		ZoneScopedN("Light Debugs");
@@ -771,6 +792,12 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	packet->hasDirectionalLight   = false;
 	packet->activePointLightCount = 0;
 	packet->activeSpotLightCount  = 0;
+
+	// Don't iterate the registry while LoadSceneAsync is mutating it on a worker thread.
+	// Returning here leaves the packet empty — UI pass still draws, but no scene geometry
+	// is fed to DrawGeometryBatched (which would otherwise crash on a torn material->internalID).
+	if (mModuleScene->IsLoadingScene())
+		return true;
 
 	// Per-pass frustum planes.
 	// In EDITOR mode both frustums are ALWAYS applied (independent of frustumCullingEnabled).

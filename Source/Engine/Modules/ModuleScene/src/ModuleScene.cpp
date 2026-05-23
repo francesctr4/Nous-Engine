@@ -7,6 +7,7 @@
 #include "Engine/Core/Logger/Logger.h"
 
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
@@ -570,9 +571,23 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
         meshComp.mesh        = meshResource;
         meshComp.submeshIndex = i;
 
-        // Default material — user can reassign via Inspector.
-        auto& matComp    = childGO.AddComponent<CMaterial>();
-        matComp.material = mModuleResourceManager->GetDefaultMaterial();
+        // If the import baked a per-submesh material (V3 binary), resolve it via
+        // the ResourceManager. Falls back to the default material when the field
+        // is empty (V2 binary) or the .nmat asset is missing/unloadable.
+        auto& matComp = childGO.AddComponent<CMaterial>();
+        ResourceMaterial* resolved = nullptr;
+        if (!sub.materialAssetPath.empty())
+        {
+            resolved = down_cast<ResourceMaterial*>(
+                mModuleResourceManager->CreateResource(sub.materialAssetPath));
+            if (!resolved)
+            {
+                NOUS_WARN("[SpawnMeshAsHierarchy] Material '%s' (submesh %d of '%s') "
+                          "failed to load — using default.",
+                          sub.materialAssetPath.c_str(), i, assetsPath.c_str());
+            }
+        }
+        matComp.material = resolved ? resolved : mModuleResourceManager->GetDefaultMaterial();
 
         activeScene->RegisterGameObject(childGO);
     }

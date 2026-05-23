@@ -12,12 +12,16 @@
 // One logical submesh extracted from an Assimp scene node.
 // localTransform is the accumulated world transform from the scene root to this
 // node (column-major, GLM convention). Vertices are in the submesh's local space.
+// materialAssetPath is the Assets/-relative path to the generated .nmat sibling
+// (empty for legacy V2 binaries or submeshes whose assimp material had no usable
+// texture slots). SpawnMeshAsHierarchy resolves it to a ResourceMaterial.
 struct SubMeshData
 {
     std::string         name;
     glm::mat4           localTransform { 1.0f };
     std::vector<Vertex3D>  vertices;
     std::vector<uint32_t>  indices;
+    std::string         materialAssetPath;
 };
 
 struct ImporterMesh : Importer

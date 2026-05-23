@@ -41,7 +41,10 @@ public:
 
     // Update
     void Update(float deltaTime);
-    NOUS_ENGINE_API void UpdateWorldMatrices();
+    // force=true recomputes every transform unconditionally, ignoring m_localDirty.
+    // Use after async deserialization, where a racing main-thread call may have
+    // already cleared dirty flags before parent-child wiring was complete.
+    NOUS_ENGINE_API void UpdateWorldMatrices(bool force = false);
 
     // Lookup
     NOUS_ENGINE_API GameObject FindGameObjectByID(uint32_t id);
