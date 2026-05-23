@@ -1,0 +1,48 @@
+{
+    "uniforms": [
+        {
+            "name": "aspectRatio",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "colorBias",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "uvOffset",
+            "type": "vec2",
+            "value": [
+                1,
+                1
+            ]
+        },
+        {
+            "name": "uvTiles",
+            "type": "vec2",
+            "value": [
+                1,
+                1
+            ]
+        }
+    ],
+    "texture_maps": [],
+    "shader_asset_path": "Assets\/Shader Viewer\/RecursiveNoiseExperiment.glsl",
+    "shader_uid": 753995927,
+    "shader_library_path": "Library\/Shaders\/753995927"
+}
