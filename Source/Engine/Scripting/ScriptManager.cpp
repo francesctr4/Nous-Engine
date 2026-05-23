@@ -306,9 +306,46 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     cmd = batPath + L" Release";
 #endif
 
-    DWORD exitCode = 0;
-    bool ran = RunProcessCaptureLive(cmd, exitCode, [](const std::string& line)
+    // Track which specific failure the .bat reported, so we can emit a
+    // human-readable explanation (and install hints) on non-zero exit.
+    enum class BuildFailureCause
     {
+        None,
+        VswhereMissing,             // VS Installer not present
+        VsCppToolsMissing,          // VS found, but C++ workload not installed
+        Vcvars64Missing,            // VS install corrupted / partial
+        VcvarsInitFailed,           // vcvars64.bat returned non-zero
+        SdkHeadersMissing,          // engine packaging issue (not user-fixable)
+        SdkEngineApiMissing,        // engine packaging issue (not user-fixable)
+        ScriptsFolderMissing,       // no Assets/Scripts directory
+        CompilationFailed           // user script compile error
+    };
+    BuildFailureCause failureCause = BuildFailureCause::None;
+
+    DWORD exitCode = 0;
+    bool ran = RunProcessCaptureLive(cmd, exitCode, [&failureCause](const std::string& line)
+    {
+        // Classify [ERROR] markers emitted by RebuildScripts.bat.
+        if (line.find("[ERROR]") != std::string::npos)
+        {
+            if (line.find("vswhere.exe not found") != std::string::npos)
+                failureCause = BuildFailureCause::VswhereMissing;
+            else if (line.find("Visual Studio C++ Build Tools not found") != std::string::npos)
+                failureCause = BuildFailureCause::VsCppToolsMissing;
+            else if (line.find("vcvars64.bat not found") != std::string::npos)
+                failureCause = BuildFailureCause::Vcvars64Missing;
+            else if (line.find("Failed to initialize MSVC environment") != std::string::npos)
+                failureCause = BuildFailureCause::VcvarsInitFailed;
+            else if (line.find("Script SDK headers missing") != std::string::npos)
+                failureCause = BuildFailureCause::SdkHeadersMissing;
+            else if (line.find("Script SDK EngineAPI.cpp missing") != std::string::npos)
+                failureCause = BuildFailureCause::SdkEngineApiMissing;
+            else if (line.find("Scripts source folder missing") != std::string::npos)
+                failureCause = BuildFailureCause::ScriptsFolderMissing;
+            else if (line.find("Script compilation failed") != std::string::npos)
+                failureCause = BuildFailureCause::CompilationFailed;
+        }
+
         if (line.find("error") != std::string::npos || line.find("fatal") != std::string::npos)
             NOUS_ERROR("[ScriptManager::ReloadScriptLibrary] %s", line.c_str());
         else
@@ -324,6 +361,59 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     if (exitCode != 0)
     {
         NOUS_ERROR("Scripts recompilation failed! ExitCode=%lu", (unsigned long)exitCode);
+
+        // Emit a clear, user-facing explanation for environment-setup failures.
+        // Compilation errors are already self-explanatory in the captured log above.
+        switch (failureCause)
+        {
+        case BuildFailureCause::VswhereMissing:
+            NOUS_ERROR("Cause: Visual Studio Installer is not present on this machine.");
+            NOUS_ERROR("       The script hot-reload feature requires Visual Studio 2022 (Community, Professional,");
+            NOUS_ERROR("       or Build Tools) with the 'Desktop development with C++' workload installed.");
+            NOUS_ERROR("       Download: https://visualstudio.microsoft.com/downloads/");
+            NOUS_ERROR("       Expected vswhere.exe at: %%ProgramFiles(x86)%%\\Microsoft Visual Studio\\Installer\\vswhere.exe");
+            break;
+
+        case BuildFailureCause::VsCppToolsMissing:
+            NOUS_ERROR("Cause: Visual Studio is installed, but the C++ build tools are missing.");
+            NOUS_ERROR("       Open the Visual Studio Installer and add the 'Desktop development with C++' workload");
+            NOUS_ERROR("       (must include 'MSVC v143 - VS 2022 C++ x64/x86 build tools' and a Windows 10/11 SDK).");
+            NOUS_ERROR("       Without it, Scripts.dll cannot be compiled at runtime.");
+            break;
+
+        case BuildFailureCause::Vcvars64Missing:
+            NOUS_ERROR("Cause: Visual Studio is installed, but 'vcvars64.bat' is missing.");
+            NOUS_ERROR("       Your VS installation appears incomplete or corrupted. Repair it via the");
+            NOUS_ERROR("       Visual Studio Installer (More -> Repair) and ensure the C++ workload is selected.");
+            break;
+
+        case BuildFailureCause::VcvarsInitFailed:
+            NOUS_ERROR("Cause: 'vcvars64.bat' was found but failed to initialize the MSVC environment.");
+            NOUS_ERROR("       This usually indicates a corrupted Visual Studio installation or a missing");
+            NOUS_ERROR("       Windows SDK component. Try repairing VS via the Visual Studio Installer.");
+            break;
+
+        case BuildFailureCause::SdkHeadersMissing:
+        case BuildFailureCause::SdkEngineApiMissing:
+            NOUS_ERROR("Cause: The packaged Script SDK is incomplete (engine deployment issue).");
+            NOUS_ERROR("       Verify that the 'EngineCore/Scripts/SDK' folder exists next to the executable");
+            NOUS_ERROR("       and contains the SDK headers and 'src/EngineAPI.cpp'.");
+            break;
+
+        case BuildFailureCause::ScriptsFolderMissing:
+            NOUS_ERROR("Cause: No scripts source folder was found.");
+            NOUS_ERROR("       Expected an 'Assets' directory containing one or more .cpp script files.");
+            break;
+
+        case BuildFailureCause::CompilationFailed:
+            NOUS_ERROR("Cause: One or more user scripts failed to compile. See the cl.exe output above.");
+            break;
+
+        case BuildFailureCause::None:
+        default:
+            NOUS_ERROR("Cause: Unknown. Inspect the captured build output above for details.");
+            break;
+        }
         return false;
     }
 
