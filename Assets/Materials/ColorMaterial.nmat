@@ -1,0 +1,18 @@
+{
+    "uniforms": [
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        }
+    ],
+    "texture_maps": [],
+    "shader_uid": 3061486723,
+    "shader_asset_path": "Assets\/Shaders\/ColorShader.glsl",
+    "shader_library_path": "Library\/Shaders\/3061486723"
+}

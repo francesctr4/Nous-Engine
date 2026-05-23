@@ -8,13 +8,6 @@
             ]
         },
         {
-            "name": "aspectRatio",
-            "type": "float",
-            "value": [
-                0.94999998807907104
-            ]
-        },
-        {
             "name": "diffuseColor",
             "type": "vec4",
             "value": [
@@ -42,13 +35,6 @@
             ]
         },
         {
-            "name": "resolution",
-            "type": "float",
-            "value": [
-                100
-            ]
-        },
-        {
             "name": "shininessScale",
             "type": "float",
             "value": [
@@ -61,18 +47,17 @@
             "value": [
                 1
             ]
-        },
-        {
-            "name": "uvTiles",
-            "type": "vec2",
-            "value": [
-                1,
-                1
-            ]
         }
     ],
-    "texture_maps": [],
-    "shader_uid": 2044455611,
-    "shader_asset_path": "Assets\/Shader Viewer\/2DNoiseContours.glsl",
-    "shader_library_path": "Library\/Shaders\/2044455611"
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/Textures\/wolf_diffuse.png",
+            "uid": 3094643500,
+            "library_path": "Library\/Textures\/3094643500.png"
+        }
+    ],
+    "shader_uid": 3735378738,
+    "shader_asset_path": "Assets\/Shaders\/CelShading.glsl",
+    "shader_library_path": "Library\/Shaders\/3735378738"
 }

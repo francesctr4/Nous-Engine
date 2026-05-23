@@ -4746,7 +4746,7 @@
                     "type": "CMesh",
                     "assetPath": "Assets\/Meshes\/SpherePBR.fbx",
                     "libraryPath": "Library\\Meshes\\827778096.nmesh",
-                    "resourceUID": 1421251309,
+                    "resourceUID": 4215767464,
                     "submeshIndex": 0
                 },
                 {
@@ -4845,7 +4845,7 @@
                     "type": "CMesh",
                     "assetPath": "Assets\/Meshes\/SpherePBR.fbx",
                     "libraryPath": "Library\\Meshes\\827778096.nmesh",
-                    "resourceUID": 1421251309,
+                    "resourceUID": 4215767464,
                     "submeshIndex": 0
                 },
                 {
@@ -4944,7 +4944,7 @@
                     "type": "CMesh",
                     "assetPath": "Assets\/Meshes\/SpherePBR.fbx",
                     "libraryPath": "Library\\Meshes\\827778096.nmesh",
-                    "resourceUID": 1421251309,
+                    "resourceUID": 4215767464,
                     "submeshIndex": 0
                 },
                 {
@@ -5027,6 +5027,99 @@
                     "assetPath": "Assets\/Materials\/Wolf_CelShading.nmat",
                     "libraryPath": "Library\/Materials\/2492123717.nmat",
                     "resourceUID": 2492123717
+                }
+            ]
+        },
+        {
+            "uid": 1355706312,
+            "name": "SpherePBR.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "uid": 3556607738,
+            "name": "Sphere",
+            "parent": 1355706312,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -11.45235538482666,
+                        314.92977905273438,
+                        13.407148361206055
+                    ],
+                    "orientation": [
+                        0.70710670948028564,
+                        -0.7071068286895752,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90.000007629394531,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        2.8863170146942139,
+                        2.8858816623687744,
+                        2.8855795860290527
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Meshes\/SpherePBR.fbx",
+                    "libraryPath": "Library\\Meshes\\827778096.nmesh",
+                    "resourceUID": 4215767464,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Materials\/ColorMaterial.nmat",
+                    "libraryPath": "Library\/Materials\/1090278103.nmat",
+                    "resourceUID": 1090278103
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [
+                        "BounceZ"
+                    ],
+                    "properties": {
+                        "BounceZ": {
+                            "m_interval": {
+                                "type": 0,
+                                "value": 150
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 1
+                            }
+                        }
+                    }
                 }
             ]
         }

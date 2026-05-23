@@ -1,7 +1,17 @@
 {
     "uniforms": [
         {
-            "name": "aoIntensity",
+            "name": "albedoColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "aoStrength",
             "type": "float",
             "value": [
                 1
@@ -28,6 +38,13 @@
             ]
         },
         {
+            "name": "metallic",
+            "type": "float",
+            "value": [
+                10
+            ]
+        },
+        {
             "name": "normalStrength",
             "type": "float",
             "value": [
@@ -35,24 +52,9 @@
             ]
         },
         {
-            "name": "shininessScale",
+            "name": "roughness",
             "type": "float",
             "value": [
-                1
-            ]
-        },
-        {
-            "name": "specularIntensity",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
-            "name": "uvOffset",
-            "type": "vec2",
-            "value": [
-                1,
                 1
             ]
         }
@@ -71,12 +73,6 @@
             "library_path": "Library\/Textures\/216461560.png"
         },
         {
-            "name": "diffuseSampler",
-            "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Albedo.png",
-            "uid": 808705651,
-            "library_path": "Library\/Textures\/808705651.png"
-        },
-        {
             "name": "metallicSampler",
             "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Metallic.png",
             "uid": 4118552762,
@@ -93,21 +89,9 @@
             "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Roughness.png",
             "uid": 634917456,
             "library_path": "Library\/Textures\/634917456.png"
-        },
-        {
-            "name": "shininessSampler",
-            "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Roughness.png",
-            "uid": 634917456,
-            "library_path": "Library\/Textures\/634917456.png"
-        },
-        {
-            "name": "specularSampler",
-            "asset_path": "Assets\/Textures\/Fancy_Scaled_Gold_Metallic.png",
-            "uid": 4118552762,
-            "library_path": "Library\/Textures\/4118552762.png"
         }
     ],
-    "shader_uid": 753995927,
-    "shader_asset_path": "Assets\/Shader Viewer\/RecursiveNoiseExperiment.glsl",
-    "shader_library_path": "Library\/Shaders\/753995927"
+    "shader_uid": 1190405774,
+    "shader_asset_path": "Assets\/Shaders\/ForwardPBR.glsl",
+    "shader_library_path": "Library\/Shaders\/1190405774"
 }
