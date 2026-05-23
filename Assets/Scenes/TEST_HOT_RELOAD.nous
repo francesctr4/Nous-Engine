@@ -1,0 +1,166 @@
+{
+    "name": "TEST_HOT_RELOAD",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 2814761471,
+            "name": "Lagiacrus Head",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -356.59796142578125,
+                        157.9481201171875,
+                        -846.6710205078125
+                    ],
+                    "orientation": [
+                        0.76185643672943115,
+                        0,
+                        -0.64774590730667114,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -80.743728637695312,
+                        0
+                    ],
+                    "scale": [
+                        0.99999994039535522,
+                        1,
+                        0.99999994039535522
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Lagiacrus_Head.fbx",
+                    "libraryPath": "Library\\Meshes\\4162411114.nmesh",
+                    "resourceUID": 4162411114
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\Lagiacrus_Head.nmat",
+                    "libraryPath": "Library\\Materials\\1732592393.nmat",
+                    "resourceUID": 1732592393
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [
+                        "HotReloadTest",
+                        "StringFieldTest"
+                    ],
+                    "properties": {
+                        "HotReloadTest": {
+                            "m_interval": {
+                                "type": 0,
+                                "value": 1
+                            },
+                            "m_version": {
+                                "type": 0,
+                                "value": 1
+                            }
+                        },
+                        "StringFieldTest": {
+                            "m_message": {
+                                "type": 4,
+                                "value": "RYKAAAAAAAAAAAAAAAN"
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "uid": 2204086558,
+            "name": "Rotator",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [
+                        "MoveScriptGameObject"
+                    ],
+                    "properties": {
+                        "MoveScriptGameObject": {
+                            "m_amplitude": {
+                                "type": 0,
+                                "value": 200
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 1
+                            },
+                            "m_target": {
+                                "type": 3,
+                                "value": 2814761471
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "uid": 94147395,
+            "name": "Main Camera",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        120.5,
+                        410.01998901367188
+                    ],
+                    "orientation": [
+                        0.99737811088562012,
+                        0.072367854416370392,
+                        -0,
+                        -0
+                    ],
+                    "rotation": [
+                        8.3000001907348633,
+                        -0,
+                        -0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CCamera",
+                    "fov": 60.000003814697266,
+                    "nearPlane": 0.10000000149011612,
+                    "farPlane": 10000,
+                    "aspectRatio": 0.81844800710678101,
+                    "isMainCamera": true
+                }
+            ]
+        }
+    ]
+}

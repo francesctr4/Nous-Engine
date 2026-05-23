@@ -1,0 +1,45 @@
+{
+    "name": "Cypher",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 550701904,
+            "name": "Cypher",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.70710676908493042,
+                        0,
+                        -0.70710676908493042,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -90,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx"
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\cypher_material.nmat"
+                }
+            ]
+        }
+    ]
+}

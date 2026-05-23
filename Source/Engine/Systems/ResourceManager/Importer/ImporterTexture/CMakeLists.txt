@@ -5,6 +5,3 @@ target_sources(ResourceManager PRIVATE
         src/${CLASS_NAME}.cpp
 )
 
-if (NOUS_BUILD_TESTS)
-    add_subdirectory(test)
-endif()

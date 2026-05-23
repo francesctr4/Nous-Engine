@@ -1,0 +1,2 @@
+add_subdirectory(InspectorCMaterial)
+add_subdirectory(InspectorCScript)

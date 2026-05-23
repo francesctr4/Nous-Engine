@@ -3,7 +3,6 @@
 # ==============================
 
 add_subdirectory(ModuleCamera3D)
-add_subdirectory(ModuleFileSystem)
 add_subdirectory(ModuleInput)
 add_subdirectory(ModuleRenderer3D)
 add_subdirectory(ModuleResourceManager)
@@ -33,7 +32,6 @@ target_include_directories(Modules PUBLIC
 
 target_link_libraries(Modules PUBLIC
         ModuleCamera3D
-        ModuleFileSystem
         ModuleInput
         ModuleRenderer3D
         ModuleResourceManager

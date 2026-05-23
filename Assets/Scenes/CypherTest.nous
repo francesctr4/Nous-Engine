@@ -1,0 +1,317 @@
+{
+    "name": "CypherTest",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 4180288073,
+            "name": "untitled1",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        181.82832336425781,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx",
+                    "libraryPath": "Library\\Meshes\\781487361.nmesh",
+                    "resourceUID": 2184299717,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\untitled1_material_1.nmat",
+                    "libraryPath": "Library\/Materials\/13660785.nmat",
+                    "resourceUID": 13660785
+                },
+                {
+                    "type": "CPrefab",
+                    "prefabSourcePath": "Assets\\Prefabs\\untitled1.nprefab"
+                }
+            ]
+        },
+        {
+            "uid": 3382066282,
+            "name": "untitled1",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        94.860244750976562,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx",
+                    "libraryPath": "Library\\Meshes\\781487361.nmesh",
+                    "resourceUID": 2184299717,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\untitled1_material_1.nmat",
+                    "libraryPath": "Library\/Materials\/13660785.nmat",
+                    "resourceUID": 13660785
+                },
+                {
+                    "type": "CPrefab",
+                    "prefabSourcePath": "Assets\\Prefabs\\untitled1.nprefab"
+                }
+            ]
+        },
+        {
+            "uid": 130190320,
+            "name": "untitled1",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -92.593460083007812,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx",
+                    "libraryPath": "Library\\Meshes\\781487361.nmesh",
+                    "resourceUID": 2184299717,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\untitled1_material_1.nmat",
+                    "libraryPath": "Library\/Materials\/13660785.nmat",
+                    "resourceUID": 13660785
+                },
+                {
+                    "type": "CPrefab",
+                    "prefabSourcePath": "Assets\\Prefabs\\untitled1.nprefab"
+                }
+            ]
+        },
+        {
+            "uid": 1785916537,
+            "name": "untitled1",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx",
+                    "libraryPath": "Library\\Meshes\\781487361.nmesh",
+                    "resourceUID": 2184299717,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\untitled1_material.nmat",
+                    "libraryPath": "Library\/Materials\/2051018778.nmat",
+                    "resourceUID": 2051018778
+                }
+            ]
+        },
+        {
+            "uid": 2728032681,
+            "name": "Main Camera",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        120.5,
+                        410.01998901367188
+                    ],
+                    "orientation": [
+                        0.99737811088562012,
+                        0.072367854416370392,
+                        -0,
+                        -0
+                    ],
+                    "rotation": [
+                        8.3000001907348633,
+                        -0,
+                        -0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CCamera",
+                    "fov": 60.000003814697266,
+                    "nearPlane": 0.10000000149011612,
+                    "farPlane": 10000,
+                    "aspectRatio": 1.6017191410064697,
+                    "isMainCamera": true
+                }
+            ]
+        },
+        {
+            "uid": 351354555,
+            "name": "Directional Light",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -28.980644226074219,
+                        27.100624084472656,
+                        0
+                    ],
+                    "orientation": [
+                        0.99988216161727905,
+                        0.00050638988614082336,
+                        0.00013817951548844576,
+                        -0.015341058373451233
+                    ],
+                    "rotation": [
+                        0.057778272777795792,
+                        0.016722550615668297,
+                        -1.7580167055130005
+                    ],
+                    "scale": [
+                        0.99999433755874634,
+                        0.99999535083770752,
+                        0.99999457597732544
+                    ]
+                },
+                {
+                    "type": "CLight",
+                    "lightType": "Directional",
+                    "colorR": 1,
+                    "colorG": 1,
+                    "colorB": 1,
+                    "intensity": 1,
+                    "range": 10
+                }
+            ]
+        },
+        {
+            "uid": 1038336084,
+            "name": "untitled1",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -185.96565246582031,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx",
+                    "libraryPath": "Library\\Meshes\\781487361.nmesh",
+                    "resourceUID": 2184299717,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\untitled1_material_2.nmat",
+                    "libraryPath": "Library\/Materials\/2888292790.nmat",
+                    "resourceUID": 2888292790
+                }
+            ]
+        }
+    ]
+}

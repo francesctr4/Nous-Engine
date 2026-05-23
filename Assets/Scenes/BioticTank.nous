@@ -1,0 +1,206 @@
+{
+    "name": "BioticTank",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 1706283788,
+            "name": "Main Camera",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        32.761692047119141,
+                        54.166206359863281
+                    ],
+                    "orientation": [
+                        0.99119430780410767,
+                        -0.13241550326347351,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -15.21839427947998,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        0.99999815225601196,
+                        0.99999815225601196
+                    ]
+                },
+                {
+                    "type": "CCamera",
+                    "fov": 60.000003814697266,
+                    "nearPlane": 0.10000000149011612,
+                    "farPlane": 10000,
+                    "aspectRatio": 1.8879055976867676,
+                    "isMainCamera": true
+                }
+            ]
+        },
+        {
+            "uid": 2090891372,
+            "name": "PROP_Biotic_Liquid_Tank.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CPrefab",
+                    "prefabSourcePath": "Assets\/Prefabs\/PROP_Biotic_Liquid_Tank.nprefab"
+                }
+            ]
+        },
+        {
+            "uid": 2426011622,
+            "name": "PROP_Liquid_Tank",
+            "parent": 2090891372,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\PROP_Biotic_Liquid_Tank.fbx",
+                    "libraryPath": "Library\\Meshes\\17960336.nmesh",
+                    "resourceUID": 2294750832,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\PROP_Liquid_Tank_material.nmat",
+                    "libraryPath": "Library\\Materials\\2017331328.nmat",
+                    "resourceUID": 2017331328
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [],
+                    "properties": {
+                        "SpinnerScript": {
+                            "m_axisX": {
+                                "type": 0,
+                                "value": 0
+                            },
+                            "m_axisY": {
+                                "type": 0,
+                                "value": 1
+                            },
+                            "m_axisZ": {
+                                "type": 0,
+                                "value": 0
+                            },
+                            "m_speedDegPerSec": {
+                                "type": 0,
+                                "value": 90
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "uid": 3796635500,
+            "name": "Point Light",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        20.049531936645508,
+                        16.803581237792969
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CLight",
+                    "lightType": "Point",
+                    "colorR": 1,
+                    "colorG": 0,
+                    "colorB": 0,
+                    "intensity": 10,
+                    "range": 20
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [
+                        "OrbitLight"
+                    ],
+                    "properties": {
+                        "OrbitLight": {
+                            "m_radius": {
+                                "type": 0,
+                                "value": 14.899999618530273
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 3.5999999046325684
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

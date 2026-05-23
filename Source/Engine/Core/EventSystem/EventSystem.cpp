@@ -1,21 +1,22 @@
 #include "EventSystem.h"
 #include "Engine/Core/Logger/Logger.h"   // uses your NOUS_INFO / NOUS_WARN macros
 #include <algorithm>
+#include <ranges>
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_EVENTSYSTEM;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_EVENTSYSTEM;
 
 // --------------------------------------------------
 // Constructor / Destructor
 // --------------------------------------------------
 EventSystem::EventSystem()
 {
-    NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Initialized", __FUNCTION__);
+    NOUS_INFO_C(CURRENT_CHANNEL, "Initialized");
 }
 
 EventSystem::~EventSystem()
 {
     Clear();
-    NOUS_INFO("[%s] Shutdown and cleared all listeners", __FUNCTION__);
+    NOUS_INFO("Shutdown and cleared all listeners");
 }
 
 // --------------------------------------------------
@@ -25,16 +26,14 @@ void EventSystem::Subscribe(EventType type, IEventListener* listener)
 {
     std::scoped_lock lock(m_Mutex);
 
-    auto& list = m_Listeners[type];
-    if (std::find(list.begin(), list.end(), listener) == list.end())
+    if (auto& list = m_Listeners[type]; std::ranges::find(list, listener) == list.end())
     {
         list.push_back(listener);
-        NOUS_INFO("[%s] Listener subscribed to event type: %d", __FUNCTION__, static_cast<int>(type));
+        NOUS_INFO("Listener subscribed to event type: %d", static_cast<int>(type));
     }
     else
     {
-        NOUS_WARN("[%s] Attempted to subscribe duplicate listener to event type: %d",
-                  __FUNCTION__, static_cast<int>(type));
+        NOUS_WARN("Attempted to subscribe duplicate listener to event type: %d", static_cast<int>(type));
     }
 }
 
@@ -42,17 +41,15 @@ void EventSystem::Unsubscribe(EventType type, IEventListener* listener)
 {
     std::scoped_lock lock(m_Mutex);
 
-    auto it = m_Listeners.find(type);
-    if (it != m_Listeners.end())
+    if (const auto it = m_Listeners.find(type); it != m_Listeners.end())
     {
         auto& vec = it->second;
-        vec.erase(std::remove(vec.begin(), vec.end(), listener), vec.end());
-        NOUS_INFO("[%s] Listener unsubscribed from event type: %d", __FUNCTION__, static_cast<int>(type));
+        std::erase(vec, listener);
+        NOUS_INFO("Listener unsubscribed from event type: %d", static_cast<int>(type));
     }
     else
     {
-        NOUS_WARN("[%s] Tried to unsubscribe listener from unregistered event type: %d",
-                  __FUNCTION__, static_cast<int>(type));
+        NOUS_WARN("Tried to unsubscribe listener from unregistered event type: %d", static_cast<int>(type));
     }
 }
 
@@ -63,22 +60,13 @@ void EventSystem::Broadcast(const Event& evt)
 {
     std::scoped_lock lock(m_Mutex);
 
-    auto it = m_Listeners.find(evt.type);
-    if (it != m_Listeners.end())
+    if (const auto it = m_Listeners.find(evt.type); it != m_Listeners.end())
     {
         for (IEventListener* listener : it->second)
         {
             if (listener)
                 listener->OnEvent(evt);
         }
-
-        NOUS_TRACE("[%s] Broadcasted event type: %d to %zu listener(s)", __FUNCTION__,
-                   static_cast<int>(evt.type), it->second.size());
-    }
-    else
-    {
-        NOUS_WARN("[%s] Broadcasted event type: %d (no listeners registered)", __FUNCTION__,
-                   static_cast<int>(evt.type));
     }
 }
 
@@ -89,7 +77,7 @@ void EventSystem::Queue(const Event& evt)
 {
     std::scoped_lock lock(m_Mutex);
     m_Queue.push(evt);
-    NOUS_INFO("[%s] Queued event type: %d", __FUNCTION__, static_cast<int>(evt.type));
+    NOUS_INFO("Queued event type: %d", static_cast<int>(evt.type));
 }
 
 // --------------------------------------------------
@@ -105,7 +93,7 @@ void EventSystem::DispatchQueued()
     }
 
     if (!tempQueue.empty())
-        NOUS_DEBUG("[%s] Dispatching %zu queued event(s)", __FUNCTION__, tempQueue.size());
+        NOUS_DEBUG("Dispatching %zu queued event(s)", tempQueue.size());
 
     while (!tempQueue.empty())
     {
@@ -122,11 +110,11 @@ void EventSystem::Clear()
     std::scoped_lock lock(m_Mutex);
 
     size_t listenerCount = 0;
-    for (const auto& [_, vec] : m_Listeners)
+    for (const auto& vec : m_Listeners | std::views::values)
         listenerCount += vec.size();
 
     m_Listeners.clear();
     while (!m_Queue.empty()) m_Queue.pop();
 
-    NOUS_DEBUG("[%s] Cleared %zu listeners and emptied event queue", __FUNCTION__, listenerCount);
+    NOUS_DEBUG("Cleared %zu listeners and emptied event queue", listenerCount);
 }

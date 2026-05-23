@@ -7,6 +7,31 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 
 	uint32 imageCount = static_cast<uint32>(vkContext->swapChain.swapChainFramebuffers.size());
 
+	if (vkContext->renderMode == RenderMode::GAME)
+	{
+		// GAME mode: create framebuffers that target swapchain image views directly.
+		for (uint32 i = 0; i < imageCount; ++i)
+		{
+			std::array<VkImageView, 2> attachments = {
+				vkContext->swapChain.swapChainImageViews[i],
+				vkContext->swapChain.depthAttachment.view
+			};
+
+			VkFramebufferCreateInfo fbInfo{};
+			fbInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			fbInfo.renderPass      = vkContext->gameSwapchainRenderpass.handle;
+			fbInfo.attachmentCount = static_cast<uint32>(attachments.size());
+			fbInfo.pAttachments    = attachments.data();
+			fbInfo.width           = vkContext->framebufferWidth;
+			fbInfo.height          = vkContext->framebufferHeight;
+			fbInfo.layers          = 1;
+
+			VK_CHECK(vkCreateFramebuffer(vkContext->device.logicalDevice, &fbInfo,
+				vkContext->allocator, &vkContext->gameSwapchainFramebuffers[i]));
+		}
+		return ret;
+	}
+
 	for (uint16 i = 0; i < imageCount; ++i)
 	{
 		// Scene Viewport Attachments
@@ -42,7 +67,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 			vkContext->allocator, &vkContext->imGuiResources.m_GameViewportFramebuffers[i]));
 
 		// UI Attachments
-		
+
 		std::array<VkImageView, 2> uiAttachments = { vkContext->swapChain.swapChainImageViews[i], vkContext->swapChain.depthAttachment.view};
 
 		VkFramebufferCreateInfo uiFramebufferCreateInfo{};
@@ -58,6 +83,22 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 			vkContext->allocator, &vkContext->swapChain.swapChainFramebuffers[i]));
 	}
 
+	// Pick Framebuffer (single — used for on-demand mouse picking)
+
+	std::array<VkImageView, 2> pickAttachments = { vkContext->imGuiResources.m_PickImage.view, vkContext->imGuiResources.m_PickDepthAttachment.view };
+
+	VkFramebufferCreateInfo pickFramebufferCreateInfo{};
+	pickFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	pickFramebufferCreateInfo.renderPass = vkContext->pickRenderpass.handle;
+	pickFramebufferCreateInfo.attachmentCount = static_cast<uint32>(pickAttachments.size());
+	pickFramebufferCreateInfo.pAttachments = pickAttachments.data();
+	pickFramebufferCreateInfo.width = vkContext->framebufferWidth;
+	pickFramebufferCreateInfo.height = vkContext->framebufferHeight;
+	pickFramebufferCreateInfo.layers = 1;
+
+	VK_CHECK(vkCreateFramebuffer(vkContext->device.logicalDevice, &pickFramebufferCreateInfo,
+		vkContext->allocator, &vkContext->imGuiResources.m_PickFramebuffer));
+
     return ret;
 }
 
@@ -65,7 +106,26 @@ void NOUS_VulkanFramebuffer::DestroyFramebuffers(VulkanContext* vkContext)
 {
     NOUS_DEBUG("Destroying Framebuffers...");
 
-    for (uint16 i = 0; i < vkContext->swapChain.swapChainFramebuffers.size(); ++i) 
+    if (vkContext->renderMode == RenderMode::GAME)
+    {
+        for (uint32 i = 0; i < vkContext->gameSwapchainFramebuffers.size(); ++i)
+        {
+            if (vkContext->gameSwapchainFramebuffers[i])
+            {
+                vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->gameSwapchainFramebuffers[i], vkContext->allocator);
+                vkContext->gameSwapchainFramebuffers[i] = VK_NULL_HANDLE;
+            }
+        }
+        return;
+    }
+
+    if (vkContext->imGuiResources.m_PickFramebuffer)
+    {
+		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_PickFramebuffer, vkContext->allocator);
+		vkContext->imGuiResources.m_PickFramebuffer = VK_NULL_HANDLE;
+    }
+
+    for (uint16 i = 0; i < vkContext->swapChain.swapChainFramebuffers.size(); ++i)
     {
 		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportFramebuffers[i], vkContext->allocator);
 		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportFramebuffers[i], vkContext->allocator);

@@ -2,12 +2,13 @@
 #define FILEHANDLE_H
 
 #include "Engine/Core/Globals.h"
+#include "Engine/EngineExport.h"
 
 #include <string>
 #include <memory>
 #include <fstream>
 
-enum class FileMode
+enum class FileMode : int8_t
 {
 	UNKNOWN = -1,
 
@@ -16,7 +17,7 @@ enum class FileMode
 	READ_AND_WRITE
 };
 
-class FileHandle
+class NOUS_ENGINE_API FileHandle
 {
 public:
 
@@ -30,7 +31,7 @@ public:
 	bool ReadAllBytes(char** outBytes, uint64* outBytesRead);
 	
 	bool ReadLine(std::string& outLine);
-	bool WriteLine(std::string line);
+	bool WriteLine(const std::string& line);
 	 
 	bool Write(uint64 dataSize, const void* data, uint64* outBytesWritten);
 

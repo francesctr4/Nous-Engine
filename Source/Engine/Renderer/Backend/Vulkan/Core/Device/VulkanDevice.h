@@ -6,7 +6,11 @@
 
 #include <optional>
 
-const std::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+#ifdef __APPLE__
+const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset" };
+#else
+const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+#endif
 
 struct VkPhysicalDeviceQueueFamilyIndices
 {
@@ -31,10 +35,15 @@ struct VkPhysicalDeviceRequirements
 	bool extensionsSupported;
 	bool swapChainAdequate;
 
-	bool Completed() 
+	bool Completed() const
 	{
+#ifdef __APPLE__
+		// MoltenVK/Apple Silicon: no discrete GPU, no geometry shader support
+		return samplerAnisotropy && queueFamilies && extensionsSupported && swapChainAdequate;
+#else
 		return discreteGPU && geometryShader && samplerAnisotropy &&
 			queueFamilies && extensionsSupported && swapChainAdequate;
+#endif
 	}
 };
 
@@ -48,16 +57,16 @@ namespace NOUS_VulkanDevice
 
 	bool IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
-	VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	VkPhysicalDeviceQueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& physicalDevice, const VulkanContext* vkContext);
 
-	bool CheckDeviceExtensionSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	bool CheckDeviceExtensionSupport(const VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
 
-	VkSwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& physicalDevice, VulkanContext* vkContext);
+	VkSwapChainSupportDetails QuerySwapChainSupport(const VkPhysicalDevice& physicalDevice, const VulkanContext* vkContext);
 
-	int32 FindMemoryIndex(VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties);
+	int32 FindMemoryIndex(const VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties);
 
-	VkFormat FindDepthFormat(VkPhysicalDevice& physicalDevice);
-	VkFormat FindSupportedFormat(VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat FindDepthFormat(const VkPhysicalDevice& physicalDevice);
+	VkFormat FindSupportedFormat(const VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 	VkSampleCountFlagBits GetMaxUsableSampleCount(const VkPhysicalDeviceProperties& properties); // Multisampling
 

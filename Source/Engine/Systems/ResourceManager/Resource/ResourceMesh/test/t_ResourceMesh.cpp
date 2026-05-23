@@ -1,32 +1,27 @@
 #include <gtest/gtest.h>
 
-// =====================================================
-// 🧩 Minimal Test Fixture Template
-// =====================================================
-
-// This fixture provides a clean setup/teardown structure
-class t_ResourceMesh : public ::testing::Test {
-protected:
-    // Called before each test
-    void SetUp() override {
-        // Initialize resources or objects here
-        initialized = true;
-    }
-
-    // Called after each test
-    void TearDown() override {
-        // Clean up resources here
-        initialized = false;
-    }
-
-    bool initialized = false;
-};
+#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 
 // =====================================================
-// 🧪 Example Tests
+// Tests — ResourceMesh
 // =====================================================
 
-// Sanity test to check fixture setup
-TEST_F(t_ResourceMesh, TEST) {
-    EXPECT_TRUE(initialized);
+TEST(t_ResourceMesh, ConstructorSetsTypeMeshAndUID)
+{
+    ResourceMesh mesh(42);
+    EXPECT_EQ(mesh.GetType(), ResourceType::MESH);
+    EXPECT_EQ(mesh.GetUID(), 42u);
+}
+
+TEST(t_ResourceMesh, VerticesAndIndicesDefaultToEmpty)
+{
+    ResourceMesh mesh;
+    EXPECT_TRUE(mesh.vertices.empty());
+    EXPECT_TRUE(mesh.indices.empty());
+}
+
+TEST(t_ResourceMesh, RefCountStartsAtZero)
+{
+    ResourceMesh mesh(1);
+    EXPECT_EQ(mesh.GetReferenceCount(), 0u);
 }

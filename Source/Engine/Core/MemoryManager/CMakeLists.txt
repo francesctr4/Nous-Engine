@@ -7,6 +7,10 @@ add_library(${CLASS_NAME} STATIC
 
 add_subdirectory(CustomAllocators)
 
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()
+
 target_include_directories(${CLASS_NAME} PUBLIC
         ${CMAKE_SOURCE_DIR}/Source
 )

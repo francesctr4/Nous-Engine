@@ -9,7 +9,7 @@
 
 #include "RendererTypes.h"
 
-namespace NOUS_Renderer
+namespace nous::engine::renderer
 {
     // Acts as a linkage anchor for the Renderer module.
     // You can also place explicit template instantiations here later if needed.

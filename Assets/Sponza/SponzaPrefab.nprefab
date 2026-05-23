@@ -1,0 +1,4569 @@
+{
+    "name": "Sponza.gltf",
+    "version": 1,
+    "GameObjects": [
+        {
+            "uid": 2163271059,
+            "name": "Sponza.gltf",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        -0.50426673889160156
+                    ],
+                    "orientation": [
+                        0.70710688829421997,
+                        0,
+                        0.70710664987564087,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        89.980216979980469,
+                        0
+                    ],
+                    "scale": [
+                        25.746206283569336,
+                        25.746831893920898,
+                        25.746206283569336
+                    ]
+                }
+            ]
+        },
+        {
+            "uid": 3003364992,
+            "name": "meshes[0]-0",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 809649641,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_0.nmat",
+                    "libraryPath": "Library\/Materials\/4207805252.nmat",
+                    "resourceUID": 4207805252
+                }
+            ]
+        },
+        {
+            "uid": 2842417123,
+            "name": "meshes[0]-1",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 53974,
+                    "submeshIndex": 1
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_1.nmat",
+                    "libraryPath": "Library\/Materials\/2177778803.nmat",
+                    "resourceUID": 2177778803
+                }
+            ]
+        },
+        {
+            "uid": 1271263999,
+            "name": "meshes[0]-2",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3157032199,
+                    "submeshIndex": 2
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_2.nmat",
+                    "libraryPath": "Library\/Materials\/3101398629.nmat",
+                    "resourceUID": 3101398629
+                }
+            ]
+        },
+        {
+            "uid": 3374993973,
+            "name": "meshes[0]-3",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 323599508,
+                    "submeshIndex": 3
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_3.nmat",
+                    "libraryPath": "Library\/Materials\/23694456.nmat",
+                    "resourceUID": 23694456
+                }
+            ]
+        },
+        {
+            "uid": 460265778,
+            "name": "meshes[0]-4",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2596120445,
+                    "submeshIndex": 4
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 573387056,
+            "name": "meshes[0]-5",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3583942512,
+                    "submeshIndex": 5
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 464430165,
+            "name": "meshes[0]-6",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2578516115,
+                    "submeshIndex": 6
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 1029669266,
+            "name": "meshes[0]-7",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 333223681,
+                    "submeshIndex": 7
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_7.nmat",
+                    "libraryPath": "Library\/Materials\/62282127.nmat",
+                    "resourceUID": 62282127
+                }
+            ]
+        },
+        {
+            "uid": 170151979,
+            "name": "meshes[0]-8",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1608112357,
+                    "submeshIndex": 8
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 2312255413,
+            "name": "meshes[0]-9",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 543563927,
+                    "submeshIndex": 9
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_8.nmat",
+                    "libraryPath": "Library\/Materials\/2931736212.nmat",
+                    "resourceUID": 2931736212
+                }
+            ]
+        },
+        {
+            "uid": 3312473503,
+            "name": "meshes[0]-10",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2830913334,
+                    "submeshIndex": 10
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 3043463320,
+            "name": "meshes[0]-11",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 240816303,
+                    "submeshIndex": 11
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 677344305,
+            "name": "meshes[0]-12",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 857362417,
+                    "submeshIndex": 12
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_9.nmat",
+                    "libraryPath": "Library\/Materials\/850260882.nmat",
+                    "resourceUID": 850260882
+                }
+            ]
+        },
+        {
+            "uid": 2739626195,
+            "name": "meshes[0]-13",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 175016044,
+                    "submeshIndex": 13
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 1751393762,
+            "name": "meshes[0]-14",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3826256045,
+                    "submeshIndex": 14
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 2554065453,
+            "name": "meshes[0]-15",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2249322981,
+                    "submeshIndex": 15
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 3608709426,
+            "name": "meshes[0]-16",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1798340347,
+                    "submeshIndex": 16
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 2625818526,
+            "name": "meshes[0]-17",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1208709061,
+                    "submeshIndex": 17
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 2730975159,
+            "name": "meshes[0]-18",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1211723159,
+                    "submeshIndex": 18
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 127930761,
+            "name": "meshes[0]-19",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1306219178,
+                    "submeshIndex": 19
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 742440641,
+            "name": "meshes[0]-20",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1425950712,
+                    "submeshIndex": 20
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 660674836,
+            "name": "meshes[0]-21",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 4061830115,
+                    "submeshIndex": 21
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 1453413331,
+            "name": "meshes[0]-22",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 4293950354,
+                    "submeshIndex": 22
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 3339822993,
+            "name": "meshes[0]-23",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2267608136,
+                    "submeshIndex": 23
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 2009128155,
+            "name": "meshes[0]-24",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 961123692,
+                    "submeshIndex": 24
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 3212499430,
+            "name": "meshes[0]-25",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 867005054,
+                    "submeshIndex": 25
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 1038903521,
+            "name": "meshes[0]-26",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 51084638,
+                    "submeshIndex": 26
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 1760259344,
+            "name": "meshes[0]-27",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 185962276,
+                    "submeshIndex": 27
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 3274936921,
+            "name": "meshes[0]-28",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2553387965,
+                    "submeshIndex": 28
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 612998119,
+            "name": "meshes[0]-29",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2274881476,
+                    "submeshIndex": 29
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 1453635295,
+            "name": "meshes[0]-30",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 886604978,
+                    "submeshIndex": 30
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 957380318,
+            "name": "meshes[0]-31",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1295547169,
+                    "submeshIndex": 31
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 2435096568,
+            "name": "meshes[0]-32",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3734054276,
+                    "submeshIndex": 32
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 233037048,
+            "name": "meshes[0]-33",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 185080247,
+                    "submeshIndex": 33
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_6.nmat",
+                    "libraryPath": "Library\/Materials\/2759623034.nmat",
+                    "resourceUID": 2759623034
+                }
+            ]
+        },
+        {
+            "uid": 1459577064,
+            "name": "meshes[0]-34",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2503422045,
+                    "submeshIndex": 34
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 1226991653,
+            "name": "meshes[0]-35",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1229799077,
+                    "submeshIndex": 35
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 756323646,
+            "name": "meshes[0]-36",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2975750986,
+                    "submeshIndex": 36
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 1604231074,
+            "name": "meshes[0]-37",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3842787589,
+                    "submeshIndex": 37
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 2733377761,
+            "name": "meshes[0]-38",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 620248586,
+                    "submeshIndex": 38
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_10.nmat",
+                    "libraryPath": "Library\/Materials\/1422921434.nmat",
+                    "resourceUID": 1422921434
+                }
+            ]
+        },
+        {
+            "uid": 3131082634,
+            "name": "meshes[0]-39",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1949077634,
+                    "submeshIndex": 39
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 1170564514,
+            "name": "meshes[0]-40",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1571553557,
+                    "submeshIndex": 40
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_10.nmat",
+                    "libraryPath": "Library\/Materials\/1422921434.nmat",
+                    "resourceUID": 1422921434
+                }
+            ]
+        },
+        {
+            "uid": 3693778172,
+            "name": "meshes[0]-41",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2238561884,
+                    "submeshIndex": 41
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 3980855801,
+            "name": "meshes[0]-42",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 4119505704,
+                    "submeshIndex": 42
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_10.nmat",
+                    "libraryPath": "Library\/Materials\/1422921434.nmat",
+                    "resourceUID": 1422921434
+                }
+            ]
+        },
+        {
+            "uid": 232966837,
+            "name": "meshes[0]-43",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 623394234,
+                    "submeshIndex": 43
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 4245248455,
+            "name": "meshes[0]-44",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1576078522,
+                    "submeshIndex": 44
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_9.nmat",
+                    "libraryPath": "Library\/Materials\/850260882.nmat",
+                    "resourceUID": 850260882
+                }
+            ]
+        },
+        {
+            "uid": 1401841706,
+            "name": "meshes[0]-45",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1986424172,
+                    "submeshIndex": 45
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 1543415382,
+            "name": "meshes[0]-46",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2094983006,
+                    "submeshIndex": 46
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_8.nmat",
+                    "libraryPath": "Library\/Materials\/2931736212.nmat",
+                    "resourceUID": 2931736212
+                }
+            ]
+        },
+        {
+            "uid": 1985889351,
+            "name": "meshes[0]-47",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2478282927,
+                    "submeshIndex": 47
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_7.nmat",
+                    "libraryPath": "Library\/Materials\/62282127.nmat",
+                    "resourceUID": 62282127
+                }
+            ]
+        },
+        {
+            "uid": 3449222724,
+            "name": "meshes[0]-48",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3203031269,
+                    "submeshIndex": 48
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_5.nmat",
+                    "libraryPath": "Library\/Materials\/4090156335.nmat",
+                    "resourceUID": 4090156335
+                }
+            ]
+        },
+        {
+            "uid": 1383208104,
+            "name": "meshes[0]-49",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 473930521,
+                    "submeshIndex": 49
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_11.nmat",
+                    "libraryPath": "Library\/Materials\/4276045203.nmat",
+                    "resourceUID": 4276045203
+                }
+            ]
+        },
+        {
+            "uid": 1228404444,
+            "name": "meshes[0]-50",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3808729110,
+                    "submeshIndex": 50
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_12.nmat",
+                    "libraryPath": "Library\/Materials\/554023680.nmat",
+                    "resourceUID": 554023680
+                }
+            ]
+        },
+        {
+            "uid": 1838507417,
+            "name": "meshes[0]-51",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1475857896,
+                    "submeshIndex": 51
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 918443092,
+            "name": "meshes[0]-52",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 148886536,
+                    "submeshIndex": 52
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_13.nmat",
+                    "libraryPath": "Library\/Materials\/3178596248.nmat",
+                    "resourceUID": 3178596248
+                }
+            ]
+        },
+        {
+            "uid": 1056340456,
+            "name": "meshes[0]-53",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2510665095,
+                    "submeshIndex": 53
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_0.nmat",
+                    "libraryPath": "Library\/Materials\/4207805252.nmat",
+                    "resourceUID": 4207805252
+                }
+            ]
+        },
+        {
+            "uid": 1513332529,
+            "name": "meshes[0]-54",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1452957612,
+                    "submeshIndex": 54
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_14.nmat",
+                    "libraryPath": "Library\/Materials\/1094736423.nmat",
+                    "resourceUID": 1094736423
+                }
+            ]
+        },
+        {
+            "uid": 1749411020,
+            "name": "meshes[0]-55",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1744612199,
+                    "submeshIndex": 55
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_15.nmat",
+                    "libraryPath": "Library\/Materials\/1675671991.nmat",
+                    "resourceUID": 1675671991
+                }
+            ]
+        },
+        {
+            "uid": 1733725397,
+            "name": "meshes[0]-56",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 560958946,
+                    "submeshIndex": 56
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_16.nmat",
+                    "libraryPath": "Library\/Materials\/1514128743.nmat",
+                    "resourceUID": 1514128743
+                }
+            ]
+        },
+        {
+            "uid": 421991647,
+            "name": "meshes[0]-57",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3153751788,
+                    "submeshIndex": 57
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_14.nmat",
+                    "libraryPath": "Library\/Materials\/1094736423.nmat",
+                    "resourceUID": 1094736423
+                }
+            ]
+        },
+        {
+            "uid": 4102704076,
+            "name": "meshes[0]-58",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1867830177,
+                    "submeshIndex": 58
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_15.nmat",
+                    "libraryPath": "Library\/Materials\/1675671991.nmat",
+                    "resourceUID": 1675671991
+                }
+            ]
+        },
+        {
+            "uid": 880718865,
+            "name": "meshes[0]-59",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3236634447,
+                    "submeshIndex": 59
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_14.nmat",
+                    "libraryPath": "Library\/Materials\/1094736423.nmat",
+                    "resourceUID": 1094736423
+                }
+            ]
+        },
+        {
+            "uid": 2208367228,
+            "name": "meshes[0]-60",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2471795150,
+                    "submeshIndex": 60
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_16.nmat",
+                    "libraryPath": "Library\/Materials\/1514128743.nmat",
+                    "resourceUID": 1514128743
+                }
+            ]
+        },
+        {
+            "uid": 3346713409,
+            "name": "meshes[0]-61",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3989724268,
+                    "submeshIndex": 61
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_15.nmat",
+                    "libraryPath": "Library\/Materials\/1675671991.nmat",
+                    "resourceUID": 1675671991
+                }
+            ]
+        },
+        {
+            "uid": 4085609289,
+            "name": "meshes[0]-62",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2172792882,
+                    "submeshIndex": 62
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_13.nmat",
+                    "libraryPath": "Library\/Materials\/3178596248.nmat",
+                    "resourceUID": 3178596248
+                }
+            ]
+        },
+        {
+            "uid": 1533620154,
+            "name": "meshes[0]-63",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1383671899,
+                    "submeshIndex": 63
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_17.nmat",
+                    "libraryPath": "Library\/Materials\/4094926219.nmat",
+                    "resourceUID": 4094926219
+                }
+            ]
+        },
+        {
+            "uid": 2694171705,
+            "name": "meshes[0]-64",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3027111210,
+                    "submeshIndex": 64
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_18.nmat",
+                    "libraryPath": "Library\/Materials\/1034510538.nmat",
+                    "resourceUID": 1034510538
+                }
+            ]
+        },
+        {
+            "uid": 4056879877,
+            "name": "meshes[0]-65",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 96528867,
+                    "submeshIndex": 65
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_19.nmat",
+                    "libraryPath": "Library\/Materials\/1268077051.nmat",
+                    "resourceUID": 1268077051
+                }
+            ]
+        },
+        {
+            "uid": 506363306,
+            "name": "meshes[0]-66",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2391510335,
+                    "submeshIndex": 66
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_18.nmat",
+                    "libraryPath": "Library\/Materials\/1034510538.nmat",
+                    "resourceUID": 1034510538
+                }
+            ]
+        },
+        {
+            "uid": 3012688406,
+            "name": "meshes[0]-67",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2305678026,
+                    "submeshIndex": 67
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_19.nmat",
+                    "libraryPath": "Library\/Materials\/1268077051.nmat",
+                    "resourceUID": 1268077051
+                }
+            ]
+        },
+        {
+            "uid": 805395270,
+            "name": "meshes[0]-68",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 456859821,
+                    "submeshIndex": 68
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_18.nmat",
+                    "libraryPath": "Library\/Materials\/1034510538.nmat",
+                    "resourceUID": 1034510538
+                }
+            ]
+        },
+        {
+            "uid": 985913097,
+            "name": "meshes[0]-69",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1179318086,
+                    "submeshIndex": 69
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_17.nmat",
+                    "libraryPath": "Library\/Materials\/4094926219.nmat",
+                    "resourceUID": 4094926219
+                }
+            ]
+        },
+        {
+            "uid": 621610060,
+            "name": "meshes[0]-70",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1693653192,
+                    "submeshIndex": 70
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_19.nmat",
+                    "libraryPath": "Library\/Materials\/1268077051.nmat",
+                    "resourceUID": 1268077051
+                }
+            ]
+        },
+        {
+            "uid": 3984282221,
+            "name": "meshes[0]-71",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2020974605,
+                    "submeshIndex": 71
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_18.nmat",
+                    "libraryPath": "Library\/Materials\/1034510538.nmat",
+                    "resourceUID": 1034510538
+                }
+            ]
+        },
+        {
+            "uid": 1098039799,
+            "name": "meshes[0]-72",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 267159371,
+                    "submeshIndex": 72
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_17.nmat",
+                    "libraryPath": "Library\/Materials\/4094926219.nmat",
+                    "resourceUID": 4094926219
+                }
+            ]
+        },
+        {
+            "uid": 2946340422,
+            "name": "meshes[0]-73",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 898856905,
+                    "submeshIndex": 73
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_20.nmat",
+                    "libraryPath": "Library\/Materials\/2316235633.nmat",
+                    "resourceUID": 2316235633
+                }
+            ]
+        },
+        {
+            "uid": 462804329,
+            "name": "meshes[0]-74",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 882366497,
+                    "submeshIndex": 74
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_21.nmat",
+                    "libraryPath": "Library\/Materials\/2432897223.nmat",
+                    "resourceUID": 2432897223
+                }
+            ]
+        },
+        {
+            "uid": 1544765269,
+            "name": "meshes[0]-75",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3055321112,
+                    "submeshIndex": 75
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_20.nmat",
+                    "libraryPath": "Library\/Materials\/2316235633.nmat",
+                    "resourceUID": 2316235633
+                }
+            ]
+        },
+        {
+            "uid": 2003056174,
+            "name": "meshes[0]-76",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 322649350,
+                    "submeshIndex": 76
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_21.nmat",
+                    "libraryPath": "Library\/Materials\/2432897223.nmat",
+                    "resourceUID": 2432897223
+                }
+            ]
+        },
+        {
+            "uid": 4192015797,
+            "name": "meshes[0]-77",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1916167367,
+                    "submeshIndex": 77
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_20.nmat",
+                    "libraryPath": "Library\/Materials\/2316235633.nmat",
+                    "resourceUID": 2316235633
+                }
+            ]
+        },
+        {
+            "uid": 479906268,
+            "name": "meshes[0]-78",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 205586825,
+                    "submeshIndex": 78
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_21.nmat",
+                    "libraryPath": "Library\/Materials\/2432897223.nmat",
+                    "resourceUID": 2432897223
+                }
+            ]
+        },
+        {
+            "uid": 3403612326,
+            "name": "meshes[0]-79",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1954640025,
+                    "submeshIndex": 79
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_20.nmat",
+                    "libraryPath": "Library\/Materials\/2316235633.nmat",
+                    "resourceUID": 2316235633
+                }
+            ]
+        },
+        {
+            "uid": 222650801,
+            "name": "meshes[0]-80",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 4118614516,
+                    "submeshIndex": 80
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_21.nmat",
+                    "libraryPath": "Library\/Materials\/2432897223.nmat",
+                    "resourceUID": 2432897223
+                }
+            ]
+        },
+        {
+            "uid": 1146314293,
+            "name": "meshes[0]-81",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3127244915,
+                    "submeshIndex": 81
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_1.nmat",
+                    "libraryPath": "Library\/Materials\/2177778803.nmat",
+                    "resourceUID": 2177778803
+                }
+            ]
+        },
+        {
+            "uid": 3641046701,
+            "name": "meshes[0]-82",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 194885143,
+                    "submeshIndex": 82
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_2.nmat",
+                    "libraryPath": "Library\/Materials\/3101398629.nmat",
+                    "resourceUID": 3101398629
+                }
+            ]
+        },
+        {
+            "uid": 1022372466,
+            "name": "meshes[0]-83",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2017546555,
+                    "submeshIndex": 83
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_1.nmat",
+                    "libraryPath": "Library\/Materials\/2177778803.nmat",
+                    "resourceUID": 2177778803
+                }
+            ]
+        },
+        {
+            "uid": 2679335796,
+            "name": "meshes[0]-84",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1372665831,
+                    "submeshIndex": 84
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_2.nmat",
+                    "libraryPath": "Library\/Materials\/3101398629.nmat",
+                    "resourceUID": 3101398629
+                }
+            ]
+        },
+        {
+            "uid": 1864689717,
+            "name": "meshes[0]-85",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 459819255,
+                    "submeshIndex": 85
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_1.nmat",
+                    "libraryPath": "Library\/Materials\/2177778803.nmat",
+                    "resourceUID": 2177778803
+                }
+            ]
+        },
+        {
+            "uid": 2673527001,
+            "name": "meshes[0]-86",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1077313017,
+                    "submeshIndex": 86
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_2.nmat",
+                    "libraryPath": "Library\/Materials\/3101398629.nmat",
+                    "resourceUID": 3101398629
+                }
+            ]
+        },
+        {
+            "uid": 3754333589,
+            "name": "meshes[0]-87",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1195367163,
+                    "submeshIndex": 87
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_1.nmat",
+                    "libraryPath": "Library\/Materials\/2177778803.nmat",
+                    "resourceUID": 2177778803
+                }
+            ]
+        },
+        {
+            "uid": 2853972056,
+            "name": "meshes[0]-88",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 188964974,
+                    "submeshIndex": 88
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_2.nmat",
+                    "libraryPath": "Library\/Materials\/3101398629.nmat",
+                    "resourceUID": 3101398629
+                }
+            ]
+        },
+        {
+            "uid": 3202388963,
+            "name": "meshes[0]-89",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3527732856,
+                    "submeshIndex": 89
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_1.nmat",
+                    "libraryPath": "Library\/Materials\/2177778803.nmat",
+                    "resourceUID": 2177778803
+                }
+            ]
+        },
+        {
+            "uid": 4262162898,
+            "name": "meshes[0]-90",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1336364801,
+                    "submeshIndex": 90
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_2.nmat",
+                    "libraryPath": "Library\/Materials\/3101398629.nmat",
+                    "resourceUID": 3101398629
+                }
+            ]
+        },
+        {
+            "uid": 375625344,
+            "name": "meshes[0]-91",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 493762037,
+                    "submeshIndex": 91
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_1.nmat",
+                    "libraryPath": "Library\/Materials\/2177778803.nmat",
+                    "resourceUID": 2177778803
+                }
+            ]
+        },
+        {
+            "uid": 4005706812,
+            "name": "meshes[0]-92",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2013429144,
+                    "submeshIndex": 92
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_2.nmat",
+                    "libraryPath": "Library\/Materials\/3101398629.nmat",
+                    "resourceUID": 3101398629
+                }
+            ]
+        },
+        {
+            "uid": 222004022,
+            "name": "meshes[0]-93",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 144804274,
+                    "submeshIndex": 93
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_1.nmat",
+                    "libraryPath": "Library\/Materials\/2177778803.nmat",
+                    "resourceUID": 2177778803
+                }
+            ]
+        },
+        {
+            "uid": 4173955134,
+            "name": "meshes[0]-94",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 103977494,
+                    "submeshIndex": 94
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_2.nmat",
+                    "libraryPath": "Library\/Materials\/3101398629.nmat",
+                    "resourceUID": 3101398629
+                }
+            ]
+        },
+        {
+            "uid": 1660240427,
+            "name": "meshes[0]-95",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3868644703,
+                    "submeshIndex": 95
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_22.nmat",
+                    "libraryPath": "Library\/Materials\/659735870.nmat",
+                    "resourceUID": 659735870
+                }
+            ]
+        },
+        {
+            "uid": 734622759,
+            "name": "meshes[0]-96",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 1940026238,
+                    "submeshIndex": 96
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_23.nmat",
+                    "libraryPath": "Library\/Materials\/456603112.nmat",
+                    "resourceUID": 456603112
+                }
+            ]
+        },
+        {
+            "uid": 3194265918,
+            "name": "meshes[0]-97",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2822559476,
+                    "submeshIndex": 97
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_3.nmat",
+                    "libraryPath": "Library\/Materials\/23694456.nmat",
+                    "resourceUID": 23694456
+                }
+            ]
+        },
+        {
+            "uid": 4224063745,
+            "name": "meshes[0]-98",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2061135599,
+                    "submeshIndex": 98
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_23.nmat",
+                    "libraryPath": "Library\/Materials\/456603112.nmat",
+                    "resourceUID": 456603112
+                }
+            ]
+        },
+        {
+            "uid": 3773662265,
+            "name": "meshes[0]-99",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 3861543092,
+                    "submeshIndex": 99
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_3.nmat",
+                    "libraryPath": "Library\/Materials\/23694456.nmat",
+                    "resourceUID": 23694456
+                }
+            ]
+        },
+        {
+            "uid": 1754600492,
+            "name": "meshes[0]-100",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 902888584,
+                    "submeshIndex": 100
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        },
+        {
+            "uid": 870318595,
+            "name": "meshes[0]-101",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 2120517667,
+                    "submeshIndex": 101
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_24.nmat",
+                    "libraryPath": "Library\/Materials\/2448582546.nmat",
+                    "resourceUID": 2448582546
+                }
+            ]
+        },
+        {
+            "uid": 2176807513,
+            "name": "meshes[0]-102",
+            "parent": 2163271059,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.0080000003799796104,
+                        0.0080000003799796104,
+                        0.0080000003799796104
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Sponza\/Sponza.gltf",
+                    "libraryPath": "Library\/Meshes\/3962232338.nmesh",
+                    "resourceUID": 4285608798,
+                    "submeshIndex": 102
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Sponza\/Sponza_Material_4.nmat",
+                    "libraryPath": "Library\/Materials\/4246612366.nmat",
+                    "resourceUID": 4246612366
+                }
+            ]
+        }
+    ]
+}

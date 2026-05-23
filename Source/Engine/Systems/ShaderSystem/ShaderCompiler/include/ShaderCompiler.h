@@ -5,7 +5,10 @@
 
 #include <string>
 
-namespace NOUS_ShaderSystem
+#include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
+#include "Engine/Systems/ShaderSystem/ShaderTypes.h"
+
+namespace nous::engine::shader_system
 {
     /**
      * Compiles a GLSL file into a SPIR-V binary file.
@@ -20,6 +23,11 @@ namespace NOUS_ShaderSystem
                                     const std::string& spvPath,
                                     bool optimize = true,
                                     bool debugInfo = true);
+
+    ShaderCompileResult CompileGlslStringToSpirv(std::string_view glsl,
+                                                 ShaderStage stage,
+                                                 const ShaderCompilerConfig& config,
+                                                 std::string_view virtualPath);
 }
 
 #endif //NOUS_ENGINE_SHADERCOMPILATOR_H

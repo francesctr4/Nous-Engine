@@ -10,9 +10,9 @@
 
 // A standard-conforming STL allocator that routes to your MemoryManager.
 //
-//  - Uses MemoryManager::Allocate(size, tag) which internally records the size
+//  - Uses nous::engine::memory::Allocate(size, tag) which internally records the size
 //    in DynamicAllocator's map.
-//  - Uses the new size-less MemoryManager::Free(void* block, MemoryTag tag),
+//  - Uses the new size-less nous::engine::memory::Free(void* block, MemoryTag tag),
 //    which looks up the original size via DynamicAllocator::GetRecordedSize
 //    and keeps stats correct.
 //
@@ -58,7 +58,7 @@ public:
         }
 
         const std::size_t bytes = n * sizeof(T);
-        void* p = MemoryManager::Allocate(static_cast<uint64>(bytes), tag_);
+        void* p = nous::engine::memory::Allocate(static_cast<uint64>(bytes), tag_);
         if (!p) {
             throw std::bad_alloc();
         }
@@ -68,20 +68,25 @@ public:
     // Deallocate n elements of T.
     //
     // We ignore n and route to the new size-less free path:
-    //   MemoryManager::Free(void* block, MemoryTag tag)
+    //   nous::engine::memory::Free(void* block, MemoryTag tag)
     //
     // That function uses DynamicAllocator::GetRecordedSize(block) to:
     //   - look up the original requested size
     //   - update stats correctly
     //   - free via DynamicAllocator::Free(void*)
     void deallocate(pointer p, size_type /*n*/) noexcept {
-        // MemoryManager::Free already early-outs if p == nullptr.
-        MemoryManager::Free(static_cast<void*>(p), tag_);
+        // nous::engine::memory::Free already early-outs if p == nullptr.
+        nous::engine::memory::Free(static_cast<void*>(p), tag_);
     }
 
-    // Max elements we can allocate
-    constexpr size_type max_size() const noexcept {
-        return std::numeric_limits<size_type>::max() / sizeof(T);
+    // Max elements that could theoretically fit in the pool.
+    // Queries the live pool capacity so containers don't attempt reserves beyond it.
+    // Falls back to the theoretical maximum if the pool isn't initialised yet.
+    size_type max_size() const noexcept {
+        const uint64 poolSize = nous::engine::memory::GetMemoryConfig().totalAllocationSize;
+        if (poolSize == 0)
+            return std::numeric_limits<size_type>::max() / sizeof(T);
+        return static_cast<size_type>(poolSize / sizeof(T));
     }
 
     // Access / change tag

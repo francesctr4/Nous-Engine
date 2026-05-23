@@ -38,6 +38,15 @@
     },
     {
       "name" : "shaderc"
+    },
+    {
+      "name" : "spirv-reflect"
+    },
+    {
+      "name" : "imguizmo"
+    },
+    {
+      "name" : "entt"
     }
   ]
 }

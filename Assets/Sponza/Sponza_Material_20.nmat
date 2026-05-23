@@ -1,0 +1,69 @@
+{
+    "uniforms": [
+        {
+            "name": "aoIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "emissiveColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "normalStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "shininessScale",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "specularIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        }
+    ],
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/Sponza\/16275776544635328252.png",
+            "uid": 3842081939,
+            "library_path": "Library\/Textures\/3842081939.png"
+        },
+        {
+            "name": "normalSampler",
+            "asset_path": "Assets\/Sponza\/14170708867020035030.jpg",
+            "uid": 1466543989,
+            "library_path": "Library\/Textures\/1466543989.png"
+        }
+    ],
+    "shader_asset_path": "Assets\/Shaders\/ForwardBlinnPhong.glsl",
+    "shader_uid": 4126860508,
+    "shader_library_path": "Library\/Shaders\/4126860508"
+}

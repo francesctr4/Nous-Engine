@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <functional>
+#include <utility>
 #include <cstdio>
 
 // Export macros
@@ -24,8 +25,8 @@ public:
     using Factory = std::function<IScript*()>;
 
     void Register(const std::string& name, Factory factory) {
-        factories[name] = factory;
-        printf("[ScriptRegistry] Registered: %s", name.c_str());
+        factories[name] = std::move(factory);
+        printf("[ScriptRegistry] Registered: %s\n", name.c_str());
     }
 
     IScript* Create(const std::string& name) const {

@@ -7,10 +7,19 @@
 #include <vulkan/vulkan.h>
 
 #include <future>
+#include <thread>
 #include <array>
 #include <deque>
+#include <unordered_map>
+#include <vector>
 
 class Freelist;
+
+// Forward declarations for injected dependencies
+class ModuleWindow;
+class ModuleResourceManager;
+class EventSystem;
+namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 struct VulkanImage
 {
@@ -22,7 +31,7 @@ struct VulkanImage
     uint32 height;
 };
 
-enum class VulkanRenderPassState 
+enum class VulkanRenderPassState : uint8_t
 {
     READY,
     RECORDING,
@@ -92,7 +101,7 @@ struct VkSwapChainSupportDetails
     VkSurfaceCapabilitiesKHR capabilities;
 };
 
-enum class VulkanCommandBufferState
+enum class VulkanCommandBufferState : uint8_t
 {
     READY,
     RECORDING,
@@ -132,9 +141,11 @@ struct VulkanDevice
     bool supportsDeviceLocalHostVisible;
 
     VkCommandPool mainGraphicsCommandPool;
+    VkCommandPool mainTransferCommandPool;
 
     /* MULTITHREADING */
-    std::unordered_map<uint32, VkCommandPool> workerCommandPools;
+    std::mutex workerCommandPoolsMutex;
+    std::unordered_map<std::thread::id, VkCommandPool> workerCommandPools;
 
     VkQueue graphicsQueue;
     std::mutex graphicsQueueMutex;
@@ -142,6 +153,7 @@ struct VulkanDevice
     VkQueue presentQueue;
     VkQueue computeQueue;
     VkQueue transferQueue;
+    std::mutex transferQueueMutex;
 
     VkPhysicalDeviceProperties properties;
     VkPhysicalDeviceFeatures features;
@@ -190,156 +202,6 @@ struct VulkanGeometryData
     uint64 indexBufferOffset;
 };
 
-#pragma region MATERIAL_SHADER
-
-constexpr uint32 VULKAN_MATERIAL_SHADER_STAGE_COUNT = 2;
-constexpr uint32 VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT = 2;
-constexpr uint32 VULKAN_MATERIAL_SHADER_SAMPLER_COUNT = 1;
-
-// Max number of material instances
-// TODO: make configurable
-constexpr uint32 VULKAN_MAX_MATERIAL_COUNT = 1024;
-
-struct VulkanMaterialShaderInstanceState 
-{
-    // Per frame
-    std::array<VkDescriptorSet, 3> descriptorSets;
-    // Per descriptor
-    std::array<VulkanDescriptorState, VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT> descriptorStates;
-};
-
-struct VulkanMaterialShaderGlobalUBO
-{
-    glm::mat4x4 projection;   // 64 bytes
-    glm::mat4x4 view;         // 64 bytes
-
-    glm::mat4x4 m_reserved0;  // 64 bytes, reserved for future use
-    glm::mat4x4 m_reserved1;  // 64 bytes, reserved for future use
-};
-
-struct VulkanMaterialShaderInstanceUBO
-{
-    glm::vec4 diffuseColor;   // 16 bytes
-
-    glm::vec4 v_reserved0;     // 16 bytes, reserved for future use
-    glm::vec4 v_reserved1;     // 16 bytes, reserved for future use
-    glm::vec4 v_reserved2;     // 16 bytes, reserved for future use
-
-    glm::mat4x4 m_reserved0;  // 64 bytes, reserved for future use
-    glm::mat4x4 m_reserved1;  // 64 bytes, reserved for future use
-    glm::mat4x4 m_reserved2;  // 64 bytes, reserved for future use
-};
-
-struct VulkanMaterialShader 
-{
-    // Vertex and Fragment Stages
-    std::array<VulkanShaderStage, VULKAN_MATERIAL_SHADER_STAGE_COUNT> stages;
-
-    VkDescriptorPool globalDescriptorPool;
-    VkDescriptorSetLayout globalDescriptorSetLayout;
-
-    // One descriptor set per frame - max 3 for triple-buffering.
-    std::array<VkDescriptorSet, 3> globalDescriptorSets;
-
-    // Global uniform object.
-    VulkanMaterialShaderGlobalUBO globalUBO;
-
-    // Global uniform buffer.
-    VulkanBuffer globalUniformBuffer;
-
-    VkDescriptorPool localDescriptorPool;
-    VkDescriptorSetLayout localDescriptorSetLayout;
-
-    // Local uniform buffers.
-    VulkanBuffer localUniformBuffer;
-    // TODO: manage a free list of some kind here instead.
-    uint32 localUniformBufferIndex;
-
-    std::array<TextureMapType, VULKAN_MATERIAL_SHADER_SAMPLER_COUNT> samplerUsage;
-
-    // TODO: make dynamic
-    std::array<VulkanMaterialShaderInstanceState, VULKAN_MAX_MATERIAL_COUNT> instanceStates;
-
-    VulkanPipeline pipeline;
-};
-
-#pragma endregion
-
-#pragma region UI_SHADER
-
-constexpr uint32 VULKAN_UI_SHADER_STAGE_COUNT = 2;
-constexpr uint32 VULKAN_UI_SHADER_DESCRIPTOR_COUNT = 2;
-constexpr uint32 VULKAN_UI_SHADER_SAMPLER_COUNT = 1;
-
-// Max number of ui control instances.
-// TODO: make configurable.
-constexpr uint32 VULKAN_MAX_UI_COUNT = 1024;
-
-struct VulkanUIShaderInstanceState
-{
-    // Per frame
-    std::array<VkDescriptorSet, 3> descriptorSets;
-    // Per descriptor
-    std::array<VulkanDescriptorState, VULKAN_UI_SHADER_DESCRIPTOR_COUNT> descriptorStates;
-};
-
-struct VulkanUIShaderGlobalUBO
-{
-    glm::mat4x4 projection;   // 64 bytes
-    glm::mat4x4 view;         // 64 bytes
-
-    glm::mat4x4 m_reserved0;  // 64 bytes, reserved for future use
-    glm::mat4x4 m_reserved1;  // 64 bytes, reserved for future use
-};
-
-struct VulkanUIShaderInstanceUBO
-{
-    glm::vec4 diffuseColor;   // 16 bytes
-
-    glm::vec4 v_reserved0;     // 16 bytes, reserved for future use
-    glm::vec4 v_reserved1;     // 16 bytes, reserved for future use
-    glm::vec4 v_reserved2;     // 16 bytes, reserved for future use
-
-    glm::mat4x4 m_reserved0;  // 64 bytes, reserved for future use
-    glm::mat4x4 m_reserved1;  // 64 bytes, reserved for future use
-    glm::mat4x4 m_reserved2;  // 64 bytes, reserved for future use
-};
-
-struct VulkanUIShader
-{
-    // Vertex and Fragment Stages
-    std::array<VulkanShaderStage, VULKAN_UI_SHADER_STAGE_COUNT> stages;
-
-    VkDescriptorPool globalDescriptorPool;
-    VkDescriptorSetLayout globalDescriptorSetLayout;
-
-    // One descriptor set per frame - max 3 for triple-buffering.
-    std::array<VkDescriptorSet, 3> globalDescriptorSets;
-
-    // Global uniform object.
-    VulkanMaterialShaderGlobalUBO globalUBO;
-
-    // Global uniform buffer.
-    VulkanBuffer globalUniformBuffer;
-
-    VkDescriptorPool localDescriptorPool;
-    VkDescriptorSetLayout localDescriptorSetLayout;
-
-    // Local uniform buffers.
-    VulkanBuffer localUniformBuffer;
-    // TODO: manage a free list of some kind here instead.
-    uint32 localUniformBufferIndex;
-
-    std::array<TextureMapType, VULKAN_UI_SHADER_SAMPLER_COUNT> samplerUsage;
-
-    // TODO: make dynamic
-    std::array<VulkanUIShaderInstanceState, VULKAN_MAX_UI_COUNT> instanceStates;
-
-    VulkanPipeline pipeline;
-};
-
-#pragma endregion
-
 struct VulkanImGuiResources
 {
     // ---------- Editor Resources ---------- //
@@ -362,6 +224,11 @@ struct VulkanImGuiResources
 
     VkSampler m_GameViewportTextureSampler;
     std::array<VkDescriptorSet, 3> m_GameViewportDescriptorSets;
+
+    // ---------- Pick (Mouse Picking) Resources ---------- //
+    VulkanImage m_PickImage;
+    VulkanImage m_PickDepthAttachment;
+    VkFramebuffer m_PickFramebuffer;
 };
 
 struct VulkanSubmitTask {
@@ -400,9 +267,16 @@ struct VulkanContext
 
     VulkanSwapChain swapChain;
 
+    RenderMode renderMode = RenderMode::EDITOR;
+
     VulkanRenderpass sceneRenderpass;
     VulkanRenderpass gameRenderpass;
     VulkanRenderpass uiRenderpass;
+    VulkanRenderpass pickRenderpass;
+
+    // GAME mode only: non-offscreen renderpass + framebuffers targeting swapchain directly.
+    VulkanRenderpass gameSwapchainRenderpass{};
+    std::array<VkFramebuffer, 3> gameSwapchainFramebuffers{};
 
     VulkanBuffer objectVertexBuffer;
     VulkanBuffer objectIndexBuffer;
@@ -419,20 +293,74 @@ struct VulkanContext
     uint32 currentFrame;
     bool recreatingSwapchain;
 
-    VulkanMaterialShader materialShader;
-    VulkanMaterialShader gameShader;
-    VulkanUIShader uiShader;
+    // ── Built-in shaders via the ResourceShader / VulkanShader system ─────────
+    // Loaded in Initialize(); destroyed in Shutdown().
+    // internalData points to a heap-allocated VulkanShader.
+    class ResourceShader* builtInMaterialShader = nullptr;
+    class ResourceShader* builtInGameShader     = nullptr;
+    class ResourceShader* builtInPickShader     = nullptr;
+    class ResourceShader* builtInOutlineShader  = nullptr; // Scene renderpass only; ResourceManager-owned
+    class ResourceShader* builtInGridShader     = nullptr; // Scene renderpass only; ResourceManager-owned
+
+    // ── Background gradient shader ─────────────────────────────────────────────
+    class ResourceShader* builtInSceneBackgroundShader = nullptr; // Scene renderpass; ResourceManager-owned
+    class ResourceShader* builtInGameBackgroundShader  = nullptr; // Game renderpass; VulkanBackend-owned clone
+
+    // ── Editor grid resources ──────────────────────────────────────────────────
+    VulkanBuffer gridVertexBuffer{};
+    uint32       gridVertexCount = 0;
+
+    // ── Bounding box shader ────────────────────────────────────────────────────
+    class ResourceShader* builtInBoundingBoxShader = nullptr; // Scene renderpass; ResourceManager-owned
+
+    // ── Bounding box unit-cube wireframe (static, shared for all boxes) ────────
+    VulkanBuffer boundingBoxVertexBuffer{};
+    uint32       boundingBoxVertexCount = 0;
+
+    // ── Camera frustum wireframe (dynamic, updated each frame) ─────────────────
+    // Capacity: k_MaxCameraFrustums (8) × 24 vertices (12 edges × 2 endpoints)
+    VulkanBuffer frustumVertexBuffer{};
+    uint32       frustumVertexCapacity = 0; // in vertices
+
+    // ── Point light debug sphere wireframe (static, shared for all lights) ─────
+    // 3 great-circle rings (XY, XZ, YZ planes) as line lists; scaled per-draw.
+    VulkanBuffer pointLightSphereVertexBuffer{};
+    uint32       pointLightSphereVertexCount = 0;
+
+    // ── Directional light debug pyramid wireframe (static, shared for all dir lights) ─
+    // Narrow pyramid pointing in local -Y (8 edges = 16 line endpoints). LINE_LIST.
+    VulkanBuffer dirLightPyramidVertexBuffer{};
+    uint32       dirLightPyramidVertexCount = 0;
+
+    // ── Spot light debug cone wireframe (static, shared for all spot lights) ──────
+    // Apex at origin, base circle at y=-1 (24 segments + 24 spokes = 96 endpoints). LINE_LIST.
+    VulkanBuffer spotLightConeVertexBuffer{};
+    uint32       spotLightConeVertexCount = 0;
+
+    // ── Per-frame instance SSBO (model matrices for GPU instancing) ────────────
+    // One buffer per frame-in-flight (triple-buffered). Persistently mapped.
+    // Layout: mat4[c_maxInstances] — indexed by gl_InstanceIndex in the shader.
+    std::array<VulkanBuffer, 3> instanceSSBO{};
+    std::array<void*, 3>        instanceSSBOMapped{};
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
+    std::mutex geometriesMutex;     // guards slot scan + ID assignment in CreateGeometry/DestroyGeometry
+    std::mutex vertexBufferMutex;   // guards objectVertexBuffer freelist (Allocate/Free)
+    std::mutex indexBufferMutex;    // guards objectIndexBuffer freelist (Allocate/Free)
 
     VulkanImGuiResources imGuiResources;
 
     std::deque<VulkanSubmitTask> submitQueue;
     std::mutex submitQueueMutex;
-    std::condition_variable submitQueueCV;
 
     bool isShuttingDown = false;
+
+    // ── Injected dependencies (set before Initialize(), not owned) ─────────────
+    ModuleWindow*                              window          = nullptr;
+    EventSystem*                               eventSystem     = nullptr;
+    nous::engine::multithreading::NOUS_JobSystem*        jobSystem       = nullptr;
+    ModuleResourceManager*                     resourceManager = nullptr;
 };
 
 struct VulkanTextureData 

@@ -1,5 +1,4 @@
-#ifndef MODULEWINDOW_H
-#define MODULEWINDOW_H
+#pragma once
 
 #include "Engine/Modules/Module.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
@@ -13,10 +12,10 @@ class ModuleWindow : public Module, public IEventListener
 public:
 
 	// Constructor
-	ModuleWindow(Application* app);
+	ModuleWindow(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem);
 
 	// Destructor
-	virtual ~ModuleWindow();
+	~ModuleWindow() override;
 
 	bool Awake() override;
 	bool Start() override;
@@ -24,17 +23,22 @@ public:
 
 	void OnEvent(const Event& event) override;
 
-	// ---------------------------------------- \\
+	// ----------------------------------------
 
-	void SetTitle(const char* title);
+	void SetTitle(const char* title) const;
 
-    NOUS_ENGINE_API SDL_Window* GetSDL_Window();
-    void GetFramebufferSize(int32* width, int32* height);
+	void Maximize() const;
+	NOUS_ENGINE_API void SetFullscreen(bool fullscreen) const;
+
+	NOUS_ENGINE_API void SetMinimized(bool value);
+	[[nodiscard]] NOUS_ENGINE_API bool IsMinimized() const;
+
+    [[nodiscard]] NOUS_ENGINE_API SDL_Window* GetSDL_Window() const;
+    void GetFramebufferSize(int32* width, int32* height) const;
 
 private:
 
-	SDL_Window* window;
+	SDL_Window* m_window;
+	bool m_isMinimized;
 
 };
-
-#endif // MODULEWINDOW_H

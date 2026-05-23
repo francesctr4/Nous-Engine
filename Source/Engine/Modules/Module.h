@@ -4,14 +4,15 @@
 #include "Engine/Core/UpdateStatus.h"
 #include "Engine/EngineExport.h"
 
-struct Event;
-class Application;
+// Forward Declarations
+class EventSystem;
+namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 class Module
 {
 public:
 
-	NOUS_ENGINE_API explicit Module(Application* app);
+	NOUS_ENGINE_API Module(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem);
 	NOUS_ENGINE_API virtual ~Module();
 
 	NOUS_ENGINE_API virtual bool Awake();
@@ -23,10 +24,11 @@ public:
 
 	NOUS_ENGINE_API virtual bool CleanUp();
 
-public:
+protected:
 
-	Application* App;
-	
+	EventSystem* eventSystem;
+	nous::engine::multithreading::NOUS_JobSystem* JobSystem;
+
 };
 
 #endif // MODULE_H

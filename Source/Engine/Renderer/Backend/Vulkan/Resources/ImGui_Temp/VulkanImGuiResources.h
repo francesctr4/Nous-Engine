@@ -19,6 +19,9 @@ namespace NOUS_ImGuiVulkanResources
 	NOUS_ENGINE_API void CreateViewportImages(VulkanContext* vkContext);
 	NOUS_ENGINE_API void CreateViewportDepthResources(VulkanContext* vkContext);
 
+	NOUS_ENGINE_API void CreatePickResources(VulkanContext* vkContext);
+	NOUS_ENGINE_API void DestroyPickResources(VulkanContext* vkContext);
+
 	// ----------------------------------------------------------------------------------- //
 
 	NOUS_ENGINE_API unsigned long long GetViewportTexture(VkDescriptorSet descriptorSet);

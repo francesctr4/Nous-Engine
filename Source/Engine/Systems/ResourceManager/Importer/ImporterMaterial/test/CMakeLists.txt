@@ -16,6 +16,7 @@ target_include_directories(${TEST_NAME}
 
 # These must match the packages found in your main Nous Engine build
 find_package(GTest CONFIG REQUIRED)
+find_package(parson CONFIG REQUIRED)
 
 target_link_libraries(${TEST_NAME}
         PRIVATE
@@ -23,15 +24,14 @@ target_link_libraries(${TEST_NAME}
         NousEngine::Editor
         GTest::gtest
         GTest::gtest_main
+        parson::parson
 )
-
-# Register test
-include(GoogleTest)
 
 set_target_properties(${TEST_NAME} PROPERTIES
         VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-gtest_discover_tests(${TEST_NAME}
+add_test(NAME ${TEST_NAME}
+        COMMAND ${TEST_NAME}
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )

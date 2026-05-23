@@ -4,8 +4,9 @@
 #include <unordered_map>
 #include <mutex>
 #include "Engine/Core/MemoryManager/CustomAllocators/FreeList/include/FreeList.h"
+#include "Engine/EngineExport.h"
 
-class DynamicAllocator
+class NOUS_ENGINE_API DynamicAllocator
 {
 public:
     static uint64 GetMemoryRequirement(uint64 totalSize);
@@ -46,7 +47,18 @@ private:
         void*    userMemory;
         Freelist* freelist;
 
-        // ✅ Track sizes per pointer for size-less free & accurate stats
+        // Tracks sizes per pointer for size-less free & accurate stats.
+        //
+        // NOTE (thesis): allocMap uses the system allocator for its internal nodes,
+        // meaning those allocations bypass MemoryManager tracking. Using
+        // NOUS_STLAllocator here would close that gap, but it creates a circular
+        // bootstrap dependency: allocMap insertion → NOUS_STLAllocator::allocate →
+        // nous::engine::memory::Allocate → DynamicAllocator::Allocate → allocMap insertion
+        // (deadlock on mapMutex, since std::mutex is non-recursive). Solving this
+        // requires either a separate node pool, a recursive mutex + re-entrancy guard,
+        // or a custom open-addressing hash map that lives entirely within the managed
+        // region. Left as a known limitation: map-node overhead is pool memory but
+        // is not individually itemised in the tracking stats.
         mutable std::mutex mapMutex;
         std::unordered_map<void*, AllocInfo> allocMap;
 

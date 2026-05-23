@@ -6,6 +6,10 @@ add_library(ResourceManager STATIC)
 
 add_subdirectory(Importer)
 add_subdirectory(Resource)
+add_subdirectory(BuiltinResources)
+add_subdirectory(ResourceImportPipeline)
+add_subdirectory(SubMeshCache)
+add_subdirectory(SceneResourcePreloader)
 
 set_target_properties(ResourceManager PROPERTIES
         CXX_STANDARD 23
@@ -21,4 +25,5 @@ target_compile_definitions(ResourceManager PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(ResourceManager PUBLIC
         glm::glm
+        ShaderSystem
 )

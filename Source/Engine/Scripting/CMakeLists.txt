@@ -11,6 +11,10 @@ add_subdirectory(EngineAPI)
 add_subdirectory(Internal)
 add_subdirectory(Runtime)
 
+if(NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()
+
 target_include_directories(Scripting PUBLIC
         ${CMAKE_SOURCE_DIR}/Source
 )

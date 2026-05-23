@@ -1,18 +1,49 @@
 # ==============================
 # Nous Engine - Scripts DLL (Hot Reload)
 # ==============================
+#
+# Directory layout (next to the engine executable):
+#
+#   <bin>/Library/Scripts/Scripts.dll   ← BUILD OUTPUT (user-deletable; regenerable)
+#   <bin>/EngineCore/Scripts/           ← BUILD TOOLING (must survive Library deletion)
+#       ├── RebuildScripts.bat / .sh    ← script that compiles Scripts.dll
+#       ├── ScriptTemplate.inl          ← template used when creating a new script
+#       └── SDK/                        ← engine headers + EngineAPI.cpp the bat consumes
+#
+# Splitting tooling out of Library/ lets the engine regenerate Scripts.dll
+# when the user wipes Library/ — otherwise the bat itself is deleted along
+# with everything else and there's nothing left to rebuild from.
 
-set(SCRIPTS_OUTPUT_DIR     "${CMAKE_BINARY_DIR}/bin/Scripts")
-set(SCRIPTS_ASSETS_BIN_DIR "${CMAKE_BINARY_DIR}/bin/Assets/Scripts")
+set(SCRIPTS_OUTPUT_DIR   "${CMAKE_BINARY_DIR}/bin/Library/Scripts")
+set(SCRIPTS_TOOLING_DIR  "${CMAKE_BINARY_DIR}/bin/EngineCore/Scripts")
+set(SCRIPTS_SRC_DIR      "${CMAKE_SOURCE_DIR}/Assets")
 
-# Tools/templates copied next to the scripts output
 file(MAKE_DIRECTORY "${SCRIPTS_OUTPUT_DIR}")
-file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.bat"
-        DESTINATION "${SCRIPTS_OUTPUT_DIR}")
-file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.inl"
-        DESTINATION "${SCRIPTS_OUTPUT_DIR}")
+file(MAKE_DIRECTORY "${SCRIPTS_TOOLING_DIR}")
 
-set(SCRIPTS_SDK_DIR "${SCRIPTS_OUTPUT_DIR}/SDK")
+if(WIN32)
+    configure_file(
+            "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.bat.in"
+            "${SCRIPTS_TOOLING_DIR}/RebuildScripts.bat"
+            @ONLY
+    )
+else()
+    configure_file(
+            "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.sh.in"
+            "${SCRIPTS_TOOLING_DIR}/RebuildScripts.sh"
+            @ONLY
+    )
+    # Ensure the script is executable after configuration
+    file(CHMOD "${SCRIPTS_TOOLING_DIR}/RebuildScripts.sh"
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                        GROUP_READ GROUP_EXECUTE
+                        WORLD_READ WORLD_EXECUTE
+    )
+endif()
+file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.inl"
+        DESTINATION "${SCRIPTS_TOOLING_DIR}")
+
+set(SCRIPTS_SDK_DIR "${SCRIPTS_TOOLING_DIR}/SDK")
 set(SCRIPTS_SDK_INCLUDE_DIR "${SCRIPTS_SDK_DIR}/include")
 set(SCRIPTS_SDK_SRC_DIR "${SCRIPTS_SDK_DIR}/src")
 
@@ -30,6 +61,7 @@ file(COPY
 
 file(COPY
         "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.h"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/NOUS_SCANCODE.h"
         DESTINATION
         "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/EngineAPI"
 )
@@ -53,16 +85,10 @@ foreach(hdr IN LISTS SDK_BINDINGS_HEADERS)
     file(COPY "${hdr}" DESTINATION "${SCRIPTS_SDK_INCLUDE_DIR}/${rel_dir}")
 endforeach()
 
-# Ensure bin/Assets/Scripts exists (it should, if you stage assets on configure)
-if(NOT EXISTS "${SCRIPTS_ASSETS_BIN_DIR}")
-    message(WARNING "Binary scripts assets directory not found: ${SCRIPTS_ASSETS_BIN_DIR}")
-    message(WARNING "Make sure your configure-time asset replication stages Assets/Scripts into bin/Assets/Scripts.")
-endif()
-
-# Discover script sources ONLY from binary assets path
+# Discover script sources from source Assets/Scripts — edits there take effect immediately
 file(GLOB_RECURSE SCRIPT_SOURCES
         CONFIGURE_DEPENDS
-        "${SCRIPTS_ASSETS_BIN_DIR}/*.cpp"
+        "${SCRIPTS_SRC_DIR}/*.cpp"
         "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.cpp"
 )
 
@@ -81,10 +107,10 @@ set_target_properties(Scripts PROPERTIES
         CXX_EXTENSIONS OFF
 )
 
-# Include engine headers + binary scripts include dir
+# Include engine headers + source scripts dir
 target_include_directories(Scripts PUBLIC
         "${CMAKE_SOURCE_DIR}/Source/"
-        "${SCRIPTS_ASSETS_BIN_DIR}"
+        "${SCRIPTS_SRC_DIR}"
 )
 
 # Platform specifics

@@ -2,7 +2,6 @@
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
-#include "Engine/Core/Application.h"
 
 #include <unordered_map>
 
@@ -11,83 +10,70 @@
 Resources::Resources(const char* title, EditorContext* context, bool start_open)
     : IEditorWindow(title, context, nullptr, start_open)
 {
-    Init();
 }
 
-void Resources::Init()
+void Resources::DrawContent()
 {
+    std::unordered_map<uint32, Resource*> resourcesMap = editorContext->GetResourceManager()->GetResourcesMap();
+    auto currentResourceCount = static_cast<uint32>(resourcesMap.size());
 
-}
+    ImGui::TextColored(
+        ImVec4(1.f, 0.5f, 0.5f, 1.f),
+        "Total Resources Loaded: %d",
+        currentResourceCount
+    );
 
-void Resources::Draw()
-{
-    static uint32 previousResourceCount = 0;
+    ImGui::Spacing();
 
-    if (*p_open)
+    // Calculate available space after previous widgets
+    ImVec2 availableSpace = ImGui::GetContentRegionAvail();
+
+    // Add ScrollY to flags for table scrolling if needed
+    static ImGuiTableFlags flags =
+        ImGuiTableFlags_SizingFixedFit |
+        ImGuiTableFlags_RowBg |
+        ImGuiTableFlags_Borders |
+        ImGuiTableFlags_Resizable |
+        ImGuiTableFlags_Reorderable |
+        ImGuiTableFlags_Hideable |
+        ImGuiTableFlags_ScrollY; // <-- Added ScrollY flag
+
+    if (ImGui::BeginTable("ResourcesTable", 4, flags, ImVec2(0, availableSpace.y)))
     {
-        if (ImGui::Begin(title, p_open))
+        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("UID", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("References", ImGuiTableColumnFlags_WidthStretch);
+
+        AlignHeadersToCenter();
+
+        for (const auto& [UID, Resource] : resourcesMap)
         {
-            std::unordered_map<UID, Resource*> resourcesMap = External->resourceManager->GetResourcesMap();
-            uint32 currentResourceCount = resourcesMap.size();
+            if (!Resource) continue; // skip in-progress loads (nullptr placeholder)
 
-            ImGui::TextColored(
-                ImVec4(1.f, 0.5f, 0.5f, 1.f),
-                "Total Resources Loaded: %d",
-                currentResourceCount
-            );
+            ImVec4 textColor;
+            ChooseTextColor(Resource->GetType(), textColor);
 
-            ImGui::Spacing();
+            ImGui::TableNextRow();
 
-            // Calculate available space after previous widgets
-            ImVec2 availableSpace = ImGui::GetContentRegionAvail();
-
-            // Add ScrollY to flags for table scrolling if needed
-            static ImGuiTableFlags flags =
-                ImGuiTableFlags_SizingFixedFit |
-                ImGuiTableFlags_RowBg |
-                ImGuiTableFlags_Borders |
-                ImGuiTableFlags_Resizable |
-                ImGuiTableFlags_Reorderable |
-                ImGuiTableFlags_Hideable |
-                ImGuiTableFlags_ScrollY;  // <-- Added ScrollY flag
-
-            if (ImGui::BeginTable("ResourcesTable", 4, flags, ImVec2(0, availableSpace.y)))
-            {
-                ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("UID", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("References", ImGuiTableColumnFlags_WidthStretch);
-
-                AlignHeadersToCenter();
-
-                for (const auto& [UID, Resource] : resourcesMap)
-                {
-                    ImVec4 textColor;
-                    ChooseTextColor(Resource->GetType(), textColor);
-
-                    ImGui::TableNextRow();
-
-                    DisplayResource(Resource, textColor);
-                }
-
-                // Scroll to the bottom if a new resource is added (now affects the table's scroll)
-                if (currentResourceCount > previousResourceCount)
-                {
-                    ImGui::SetScrollHereY(1.0f);
-                }
-
-                ImGui::EndTable();
-            }
-
-            previousResourceCount = currentResourceCount;
+            DisplayResource(Resource, textColor);
         }
-        ImGui::End();
+
+        // Scroll to the bottom if a new resource is added (now affects the table's scroll)
+        if (currentResourceCount > previousResourceCount)
+        {
+            ImGui::SetScrollHereY(1.0f);
+        }
+
+        ImGui::EndTable();
     }
+
+    previousResourceCount = currentResourceCount;
 }
 
 // ------------------------------------------------------------------------------------------------------------ //
 
-void Resources::AlignHeadersToCenter()
+void Resources::AlignHeadersToCenter() const
 {
     ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
 
@@ -111,26 +97,31 @@ void Resources::AlignHeadersToCenter()
     }
 }
 
-void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor)
+void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor) const
 {
     switch (type)
     {
-        case ResourceType::MESH:
+    case ResourceType::MESH:
         {
             textColor = ImVec4(0.0f, 0.8f, 0.5f, 1.0f);
             break;
         }
-        case ResourceType::TEXTURE:
+    case ResourceType::TEXTURE:
         {
             textColor = ImVec4(0.5f, 0.8f, 0.0f, 1.0f);
             break;
         }
-        case ResourceType::MATERIAL:
+    case ResourceType::MATERIAL:
         {
             textColor = ImVec4(0.8f, 0.5f, 0.0f, 1.0f);
             break;
         }
-        default:
+    case ResourceType::SHADER:
+        {
+            textColor = ImVec4(0.7f, 0.2f, 1.0f, 1.0f);
+            break;
+        }
+    default:
         {
             textColor = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
             break;
@@ -138,7 +129,7 @@ void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor)
     }
 }
 
-void Resources::DisplayResource(const Resource* resource, const ImVec4& textColor)
+void Resources::DisplayResource(const Resource* resource, const ImVec4& textColor) const
 {
     ImGui::TableSetColumnIndex(0);
     ImGui::PushStyleColor(ImGuiCol_Text, textColor);
@@ -152,7 +143,9 @@ void Resources::DisplayResource(const Resource* resource, const ImVec4& textColo
 
     ImGui::TableSetColumnIndex(2);
     ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-    ImGui::Text("%s", Resource::GetLibraryExtensionFromType(resource->GetType()).c_str());
+    ImGui::Text("%s", resource->GetType() == ResourceType::SHADER
+                          ? "spv"
+                          : Resource::GetLibraryExtensionFromType(resource->GetType()).c_str());
     ImGui::PopStyleColor();
 
     ImGui::TableSetColumnIndex(3);

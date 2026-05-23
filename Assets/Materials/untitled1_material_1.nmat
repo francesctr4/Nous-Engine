@@ -1,0 +1,94 @@
+{
+    "uniforms": [
+        {
+            "name": "aoIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "dissolveSpeed",
+            "type": "float",
+            "value": [
+                -0.40000000596046448
+            ]
+        },
+        {
+            "name": "edgeColor",
+            "type": "vec4",
+            "value": [
+                0,
+                1,
+                0,
+                1
+            ]
+        },
+        {
+            "name": "edgeWidth",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "emissiveColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "noiseScale",
+            "type": "float",
+            "value": [
+                7.9899997711181641
+            ]
+        },
+        {
+            "name": "normalStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "shininessScale",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "specularIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        }
+    ],
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/Textures\/paving.png",
+            "uid": 712465958,
+            "library_path": "Library\/Textures\/712465958.png"
+        }
+    ],
+    "shader_uid": 2354751242,
+    "shader_asset_path": "Assets\\Shaders\\Dissolve.glsl",
+    "shader_library_path": "Library\/Shaders\/2354751242"
+}

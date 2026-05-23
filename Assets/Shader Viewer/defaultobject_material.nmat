@@ -1,0 +1,78 @@
+{
+    "uniforms": [
+        {
+            "name": "aoIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "aspectRatio",
+            "type": "float",
+            "value": [
+                0.94999998807907104
+            ]
+        },
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "emissiveColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "normalStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "resolution",
+            "type": "float",
+            "value": [
+                100
+            ]
+        },
+        {
+            "name": "shininessScale",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "specularIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "uvTiles",
+            "type": "vec2",
+            "value": [
+                1,
+                1
+            ]
+        }
+    ],
+    "texture_maps": [],
+    "shader_uid": 2044455611,
+    "shader_asset_path": "Assets\/Shader Viewer\/2DNoiseContours.glsl",
+    "shader_library_path": "Library\/Shaders\/2044455611"
+}

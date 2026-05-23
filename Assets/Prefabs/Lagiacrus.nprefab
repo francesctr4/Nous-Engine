@@ -1,0 +1,45 @@
+{
+    "name": "Lagiacrus Head",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 2814761471,
+            "name": "Lagiacrus Head",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.70710676908493042,
+                        0,
+                        -0.70710676908493042,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -90,
+                        0
+                    ],
+                    "scale": [
+                        0.99999994039535522,
+                        1,
+                        0.99999994039535522
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Lagiacrus_Head.fbx"
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\Lagiacrus_Head.nmat"
+                }
+            ]
+        }
+    ]
+}

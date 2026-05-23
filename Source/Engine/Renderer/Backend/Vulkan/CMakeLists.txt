@@ -11,7 +11,6 @@ add_library(VulkanBackend STATIC
 add_subdirectory(Core)
 add_subdirectory(Rendering)
 add_subdirectory(Resources)
-add_subdirectory(Shaders)
 add_subdirectory(Utils)
 
 set_target_properties(VulkanBackend PROPERTIES

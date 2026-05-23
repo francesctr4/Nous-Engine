@@ -1,5 +1,4 @@
-#ifndef NOUS_JOB_SYSTEM_H
-#define NOUS_JOB_SYSTEM_H
+#pragma once
 
 #include "Engine/EngineExport.h"
 
@@ -8,7 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 
-namespace NOUS_Multithreading
+namespace nous::engine::multithreading
 {
 	// Forward declarations
 	class NOUS_ThreadPool;
@@ -16,10 +15,10 @@ namespace NOUS_Multithreading
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Maximum hardware threads available, minus one reserved for the main thread.
 	///////////////////////////////////////////////////////////////////////////
-	const uint8_t c_MAX_HARDWARE_THREADS = []()
-		{
+	inline const uint8_t c_MAX_HARDWARE_THREADS = []
+	{
 			const unsigned int hardwareThreads = std::thread::hardware_concurrency();
-			return (hardwareThreads == 0) ? 0 : (hardwareThreads - 1);
+			return hardwareThreads == 0 ? 0 : hardwareThreads - 1;
 		}();
 
 	///////////////////////////////////////////////////////////////////////////
@@ -59,6 +58,9 @@ namespace NOUS_Multithreading
 		/// @return Number of pending unprocessed jobs.
 		NOUS_ENGINE_API int GetPendingJobs() const;
 
+		/// @return Number of worker threads in the pool.
+		NOUS_ENGINE_API size_t GetWorkerCount() const;
+
 	private:
 
 		NOUS_ThreadPool*			mThreadPool;
@@ -69,5 +71,3 @@ namespace NOUS_Multithreading
 
 	};
 }
-
-#endif // NOUS_JOB_SYSTEM_H

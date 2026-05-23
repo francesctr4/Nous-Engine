@@ -1,5 +1,4 @@
-#ifndef NOUS_THREAD_POOL_H
-#define NOUS_THREAD_POOL_H
+#pragma once
 
 #include "Engine/EngineExport.h"
 
@@ -8,7 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 
-namespace NOUS_Multithreading
+namespace nous::engine::multithreading
 {
 	// Forward declarations
 	class NOUS_Job;
@@ -38,8 +37,9 @@ namespace NOUS_Multithreading
 		/// @return A vector of NOUS_Thread contained inside the thread pool.
 		NOUS_ENGINE_API const std::vector<NOUS_Thread*>& GetThreads() const;
 
-		/// @return A queue of NOUS_Job to be executed by the thread pool.
-		NOUS_ENGINE_API const std::queue<NOUS_Job*>& GetJobQueue() const;
+		/// @return A snapshot copy of the pending job queue, taken under the internal lock.
+		/// @note Safe for cross-thread inspection (e.g. debug UI). Job pointers are valid at snapshot time only.
+		NOUS_ENGINE_API std::queue<NOUS_Job*> GetJobQueueSnapshot() const;
 
 	private:
 
@@ -50,11 +50,9 @@ namespace NOUS_Multithreading
 		std::queue<NOUS_Job*>		mJobQueue;
 		std::vector<NOUS_Thread*>	mThreads;
 
-		std::mutex					mMutex;
+		mutable std::mutex			mMutex;
 		std::condition_variable		mConditionVar;
 		std::atomic<bool>			mShutdown;
 
 	};
 }
-
-#endif // NOUS_THREAD_POOL_H

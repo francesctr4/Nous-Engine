@@ -3,27 +3,36 @@
 
 #include <Engine/Core/Globals.h>
 #include <memory>
+#include <unordered_map>
+
+#include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 
 class Resource;
-enum class ResourceType;
+enum class ResourceType : int8_t;
 
 struct Importer;
 struct MetaFileData;
+class IGPUResourceFactory;
+class ModuleResourceManager;
 
-constexpr int16 c_NUM_IMPORTERS = 3;
-
-class ImporterManager
+class ImporterManager : public IImporterManager
 {
 public:
 
-    static bool Import(const ResourceType& type, const MetaFileData& metaFileData);
-    static bool Save(const ResourceType& type, const MetaFileData& metaFileData, Resource*& inResource);
-    static bool Load(const ResourceType& type, const std::string& libraryPath, Resource* outResource);
-    static bool Unload(const ResourceType& type, Resource* inResource);
+    // IImporterManager overrides
+    void Init(ModuleResourceManager* resourceManager) override;
+    bool Import(ResourceType type, const MetaFileData& metaFileData) override;
+    bool Deserialize(ResourceType type, const std::string& libraryPath, Resource* resource) override;
+    void Evict(ResourceType type, Resource* resource) override;
+    bool Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu) override;
+    void Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu) override;
+
+    // Asset pipeline (non-virtual)
+    static bool Save(ResourceType type, const MetaFileData& metaFileData, Resource*& inResource);
 
 private:
 
-    static const std::array<std::unique_ptr<Importer>, c_NUM_IMPORTERS> importers;
+    static const std::unordered_map<ResourceType, std::unique_ptr<Importer>> importers;
 
 };
 

@@ -3,20 +3,45 @@
 
 #include "Engine/Core/Logger/Logger.h"
 
-uint64 Freelist::GetMemoryRequirement(uint64 totalSize) 
+uint64 Freelist::GetMemoryRequirement(uint64 totalSize)
 {
-    const uint64 maxEntries = totalSize / (sizeof(void*) * sizeof(Node));
+    // Guarantee at least 1 node so the constructor can safely initialize
+    // the head node.  Without this, a tiny totalSize (e.g. 4) truncates
+    // maxEntries to 0 and the constructor writes a node out-of-bounds.
+    const uint64 maxEntries = (totalSize < sizeof(void*) * sizeof(Node))
+                            ? 1
+                            : totalSize / (sizeof(void*) * sizeof(Node));
     return sizeof(InternalState) + (sizeof(Node) * maxEntries);
 }
 
 Freelist::Freelist(uint64 totalSize, void* memory)
 {
+    if (!memory)
+    {
+        NOUS_FATAL("Freelist::Freelist() called with null memory pointer!");
+        return;
+    }
+
+    if (totalSize == 0)
+    {
+        NOUS_FATAL("Freelist::Freelist() called with totalSize == 0!");
+        return;
+    }
+
     state_ = reinterpret_cast<InternalState*>(memory);
     new (state_) InternalState();
 
     state_->nodes = reinterpret_cast<Node*>(reinterpret_cast<char*>(memory) + sizeof(InternalState));
-    state_->maxEntries = totalSize / (sizeof(void*) * sizeof(Node));
+    state_->maxEntries = (totalSize < sizeof(void*) * sizeof(Node))
+                       ? 1
+                       : totalSize / (sizeof(void*) * sizeof(Node));
     state_->totalSize = totalSize;
+
+    if (totalSize < sizeof(void*) * sizeof(Node))
+    {
+        NOUS_WARN("Freelist::Freelist() totalSize (%llu) is very small — only 1 node available. "
+                  "Consider a larger buffer or skipping the freelist.", totalSize);
+    }
 
     // Initialize first node
     state_->head = &state_->nodes[0];
@@ -25,23 +50,42 @@ Freelist::Freelist(uint64 totalSize, void* memory)
     state_->head->next = nullptr;
 
     // Initialize remaining nodes
-    for (uint64 i = 1; i < state_->maxEntries; ++i) 
+    for (uint64 i = 1; i < state_->maxEntries; ++i)
     {
         state_->nodes[i] = Node();
     }
 }
 
-Freelist::~Freelist() 
+Freelist::~Freelist()
 {
-    if (state_) 
+    if (state_)
     {
-        MemoryManager::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
+        const uint64 free = FreeSpace();
+        if (free < state_->totalSize)
+        {
+            NOUS_WARN("Freelist::~Freelist() — %llu bytes still allocated at destruction (totalSize=%llu). "
+                      "Possible memory leak.", state_->totalSize - free, state_->totalSize);
+        }
+        nous::engine::memory::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
     }
 }
 
 bool Freelist::Allocate(uint64 size, uint64* outOffset)
 {
     if (!outOffset || !state_) return false;
+
+    if (size == 0)
+    {
+        NOUS_WARN("Freelist::Allocate() called with size == 0.");
+        return false;
+    }
+
+    if (size > state_->totalSize)
+    {
+        NOUS_ERROR("Freelist::Allocate() requested size (%llu) exceeds totalSize (%llu).",
+                   size, state_->totalSize);
+        return false;
+    }
 
     Node* current = state_->head;
     Node* previous = nullptr;
@@ -84,13 +128,47 @@ bool Freelist::Allocate(uint64 size, uint64* outOffset)
     return false;
 }
 
-bool Freelist::Free(uint64 size, uint64 offset) 
+bool Freelist::Free(uint64 size, uint64 offset)
 {
     if (!state_ || size == 0) return false;
 
-    if (!state_->head) 
+    // Bounds check: freed region must lie entirely within the managed pool.
+    if (offset + size > state_->totalSize)
+    {
+        NOUS_ERROR("Freelist::Free() out-of-bounds: offset(%llu) + size(%llu) = %llu exceeds totalSize(%llu). "
+                   "Possible double-free or corruption.",
+                   offset, size, offset + size, state_->totalSize);
+        return false;
+    }
+
+    // Double-free detection: check if this region overlaps any existing free node.
+#ifndef NDEBUG
+    {
+        Node* check = state_->head;
+        while (check)
+        {
+            const uint64 freeEnd  = check->offset + check->size;
+            const uint64 blockEnd = offset + size;
+            if (offset < freeEnd && blockEnd > check->offset)
+            {
+                NOUS_ERROR("Freelist::Free() double-free detected: "
+                           "block [%llu, %llu) overlaps free node [%llu, %llu).",
+                           offset, blockEnd, check->offset, freeEnd);
+                return false;
+            }
+            check = check->next;
+        }
+    }
+#endif
+
+    if (!state_->head)
     {
         Node* newNode = GetNode();
+        if (!newNode)
+        {
+            NOUS_ERROR("Freelist::Free(). Out of free-list nodes — cannot track freed block at offset %llu.", offset);
+            return false;
+        }
         newNode->offset = offset;
         newNode->size = size;
         state_->head = newNode;
@@ -109,9 +187,14 @@ bool Freelist::Free(uint64 size, uint64 offset)
 
             return true;
         }
-        else if (current->offset > offset) 
+        else if (current->offset > offset)
         {
             Node* new_node = GetNode();
+            if (!new_node)
+            {
+                NOUS_ERROR("Freelist::Free(). Out of free-list nodes — cannot track freed block at offset %llu.", offset);
+                return false;
+            }
             new_node->offset = offset;
             new_node->size = size;
 
@@ -140,21 +223,45 @@ bool Freelist::Free(uint64 size, uint64 offset)
         current = current->next;
     }
 
-    // Log warning about possible corruption
-    NOUS_WARN("Freelist::Free(). WARNING: Possible Memory Corruption.");
+    // Freed block is after all existing free blocks — append to the end.
+    Node* new_node = GetNode();
+    if (!new_node)
+    {
+        NOUS_ERROR("Freelist::Free(). Out of free-list nodes — cannot track freed block at offset %llu.", offset);
+        return false;
+    }
 
-    return false;
+    new_node->offset = offset;
+    new_node->size = size;
+    new_node->next = nullptr;
+
+    if (previous)
+    {
+        previous->next = new_node;
+        MergeWithNext(previous);
+    }
+    else
+    {
+        state_->head = new_node;
+    }
+
+    return true;
 }
 
 void Freelist::Clear()
 {
     if (!state_) return;
 
-    for (uint64 i = 1; i < state_->maxEntries; ++i) 
+    // Reset ALL nodes to INVALID before resetting the head.
+    // Skipping this leaves dangling `next` pointers when multiple
+    // nodes were live, producing a corrupt list after Clear().
+    for (uint64 i = 0; i < state_->maxEntries; ++i)
     {
-        state_->nodes[i] = Node();
+        state_->nodes[i] = Node(); // sets offset/size = INVALID_ID, next = nullptr
     }
 
+    // Re-establish a single free node covering the whole pool.
+    state_->head = &state_->nodes[0];
     state_->head->offset = 0;
     state_->head->size = state_->totalSize;
     state_->head->next = nullptr;
@@ -184,7 +291,9 @@ bool Freelist::Resize(uint64 newSize, uint64* memoryRequirement, void* newMemory
     }
 
     // Calculate new memory requirements
-    uint64_t maxEntries = newSize / (sizeof(void*) * sizeof(Node));
+    uint64_t maxEntries = (newSize < sizeof(void*) * sizeof(Node))
+                        ? 1
+                        : newSize / (sizeof(void*) * sizeof(Node));
     *memoryRequirement = sizeof(InternalState) + (sizeof(Node) * maxEntries);
 
     // If just querying memory requirement, return early
@@ -201,7 +310,7 @@ bool Freelist::Resize(uint64 newSize, uint64* memoryRequirement, void* newMemory
     *outOldMemory = reinterpret_cast<void*>(oldState);
 
     // Initialize new memory block
-    MemoryManager::ZeroMemory(newMemory, *memoryRequirement);
+    nous::engine::memory::ZeroMemory(newMemory, *memoryRequirement);
     state_ = reinterpret_cast<InternalState*>(newMemory);
     state_->nodes = reinterpret_cast<Node*>(reinterpret_cast<char*>(newMemory) + sizeof(InternalState));
     state_->maxEntries = maxEntries;
@@ -263,13 +372,15 @@ bool Freelist::Resize(uint64 newSize, uint64* memoryRequirement, void* newMemory
 
 Freelist::Node* Freelist::GetNode()
 {
-    for (uint64 i = 1; i < state_->maxEntries; ++i) 
+    // Search from index 0 (not 1) so that nodes[0] can be reclaimed after
+    // being returned via ReturnNode.  Starting at 1 permanently lost any
+    // slot that was returned while it was the head node.
+    for (uint64 i = 0; i < state_->maxEntries; ++i)
     {
-        if (state_->nodes[i].offset == INVALID_ID) 
+        if (state_->nodes[i].offset == INVALID_ID)
         {
             state_->nodes[i].offset = 0;
             state_->nodes[i].size = 0;
-
             return &state_->nodes[i];
         }
     }

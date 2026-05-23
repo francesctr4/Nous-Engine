@@ -1,0 +1,7 @@
+{
+    "Name": "ForwardPBR",
+    "UID": 1190405774,
+    "Resource Type": 3,
+    "Assets Path": "Assets\\Shaders\\ForwardPBR.glsl",
+    "Library Path": "Library\\Shaders\\1190405774"
+}

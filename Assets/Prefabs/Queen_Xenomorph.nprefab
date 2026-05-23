@@ -1,0 +1,45 @@
+{
+    "name": "Queen Xenomorph",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 595142034,
+            "name": "Queen Xenomorph",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.30000001192092896,
+                        0.30000001192092896,
+                        0.30000001192092896
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Queen_Xenomorph.fbx"
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\queen_xenomorph.nmat"
+                }
+            ]
+        }
+    ]
+}

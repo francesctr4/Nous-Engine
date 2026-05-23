@@ -1,42 +1,90 @@
 #include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
-#include "Engine/Core/Application.h"
+#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Core/FileSystem/FileSystem.h"
 
-// Parson
-#include <parson.h>
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
-JSON_Value *CMesh::Serialize() const {
-    JSON_Value* objVal = json_value_init_object();
-    JSON_Object* obj = json_value_get_object(objVal);
+JsonObject CMesh::Serialize() const {
+    JsonObject root;
+    root.Set("type",      GetType());
+    root.Set("assetPath", mesh ? mesh->GetAssetsPath() : "");
 
-    json_object_set_string(obj, "type", GetType().c_str());
-
-    if (mesh) {
-        // Save the asset path to recreate the resource later
-        json_object_set_string(obj, "assetPath", mesh->GetAssetsPath().c_str());
-    } else {
-        json_object_set_string(obj, "assetPath", "");
+    // Store library path and UID so GameApp can load without .meta files.
+    if (mesh)
+    {
+        root.Set("libraryPath", mesh->GetLibraryPath());
+        root.Set("resourceUID", static_cast<double>(mesh->GetUID()));
     }
 
-    return objVal;
+    // Only write submeshIndex for actual sub-resources; omit for merged meshes so
+    // old scene files (without this field) continue to load via CreateResource().
+    if (submeshIndex >= 0)
+        root.Set("submeshIndex", submeshIndex);
+
+    return root;
 }
 
-void CMesh::Deserialize(JSON_Object *obj) {
-    const char* assetPath = json_object_get_string(obj, "assetPath");
-    if (assetPath && strlen(assetPath) > 0) {
-        // Create or load the resource via the resource manager
-        mesh = down_cast<ResourceMesh*>(
-                External->resourceManager->CreateResource(assetPath)
-        );
-    } else {
+void CMesh::Deserialize(const JsonObject& obj) {
+    const std::string assetPathStr = obj.GetString("assetPath");
+    const std::string libraryPath  = obj.GetString("libraryPath");
+
+    // Neither path set — GO has no mesh reference, leave it null.
+    if (assetPathStr.empty() && libraryPath.empty())
+    {
         mesh = nullptr;
+        return;
+    }
+    const uint32 resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
+
+    if (obj.HasKey("submeshIndex"))
+    {
+        submeshIndex = obj.GetInt("submeshIndex");
+
+        auto go = GetGameObject();
+        Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
+        if (!scene) { mesh = nullptr; return; }
+
+        if (!libraryPath.empty())
+        {
+            mesh = scene->GetResourceManager()->RequestOrCreateSubMeshResourceFromLibrary(
+                libraryPath, submeshIndex, assetPathStr.c_str(), resourceUID);
+        }
+        if (!mesh && !assetPathStr.empty())
+        {
+            mesh = scene->GetResourceManager()->RequestOrCreateSubMeshResource(assetPathStr.c_str(), submeshIndex);
+        }
+    }
+    else
+    {
+        submeshIndex = -1;
+
+        auto go = GetGameObject();
+        Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
+        if (!scene) { mesh = nullptr; return; }
+
+        // Try library path first (GAME mode / no .meta needed).
+        if (!libraryPath.empty() && resourceUID != 0)
+        {
+            mesh = down_cast<ResourceMesh*>(scene->GetResourceManager()->CreateResourceFromLibrary(
+                resourceUID, ResourceType::MESH, nous::engine::filesystem::GetFilename(assetPathStr),
+                assetPathStr, libraryPath));
+        }
+        if (!mesh && !assetPathStr.empty())
+        {
+            mesh = down_cast<ResourceMesh*>(scene->GetResourceManager()->CreateResource(assetPathStr.c_str()));
+        }
     }
 }
 
 void CMesh::OnDestroy() {
-    if (mesh->IsValid())
+    auto go = GetGameObject();
+    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
+    if (mesh && mesh->IsValid() && scene)
     {
-        External->resourceManager->UnloadResource(mesh->GetUID());
+        scene->GetResourceManager()->UnloadResource(mesh->GetUID());
     }
 }

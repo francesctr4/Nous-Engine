@@ -6,14 +6,20 @@
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>
 #include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
+#include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 #ifdef _WIN32
-#include <Windows.h>
+#  include <Windows.h>
+#elif defined(__APPLE__)
+#  include <dlfcn.h>
+#  include <mach-o/dyld.h>   // _NSGetExecutablePath
+#  include <climits>          // PATH_MAX
 #else
-#include <dlfcn.h>
+#  include <dlfcn.h>
 #endif
 
 #ifdef _WIN32
@@ -159,7 +165,28 @@ static bool RunProcessCaptureLive(const std::wstring& commandLine, DWORD& outExi
 
 #endif // _WIN32
 
-ScriptManager::ScriptManager() : m_libraryHandle(nullptr), m_scriptRegistry(nullptr)
+// Returns the directory containing the running executable (no trailing separator).
+static std::filesystem::path GetExeDir()
+{
+#ifdef _WIN32
+    char buf[MAX_PATH];
+    GetModuleFileNameA(nullptr, buf, MAX_PATH);
+    return std::filesystem::path(buf).parent_path();
+#elif defined(__APPLE__)
+    char buf[PATH_MAX];
+    uint32_t size = sizeof(buf);
+    if (_NSGetExecutablePath(buf, &size) == 0)
+        return std::filesystem::canonical(buf).parent_path();
+    return std::filesystem::current_path();
+#else
+    return std::filesystem::canonical("/proc/self/exe").parent_path();
+#endif
+}
+
+ScriptManager::ScriptManager(ModuleInput* moduleInput, ModuleScene* moduleScene)
+    : m_libraryHandle(nullptr), m_shadowDllPath(), m_scriptRegistry(nullptr),
+      m_moduleInput(moduleInput), m_moduleScene(moduleScene),
+      m_scriptComponents(MemoryTag::SCRIPTING_SYSTEM)
 {
     ScriptBindings::InitializeBindings(api);
 }
@@ -173,7 +200,33 @@ ScriptManager::~ScriptManager()
 bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
     UnloadScriptLibrary();
 
+#ifdef _WIN32
+    // Shadow-copy the DLL so the original is never locked by this process.
+    // The linker can then overwrite Scripts.dll freely on the next hot-reload.
+    const std::filesystem::path src(dllPath);
+
+    if (!std::filesystem::exists(src))
+    {
+        NOUS_WARN("Script library not found at '%s' — scripting disabled", dllPath.c_str());
+        return false;
+    }
+
+    const std::filesystem::path shadow = src.parent_path() / (src.stem().string() + "_shadow" + src.extension().string());
+
+    std::error_code ec;
+    std::filesystem::create_directories(src.parent_path(), ec);
+    std::filesystem::copy_file(src, shadow, std::filesystem::copy_options::overwrite_existing, ec);
+    if (ec)
+    {
+        NOUS_ERROR("Failed to create shadow copy of script DLL: %s", ec.message().c_str());
+        return false;
+    }
+    m_shadowDllPath = shadow.string();
+    m_libraryHandle = LoadDLL(m_shadowDllPath);
+#else
     m_libraryHandle = LoadDLL(dllPath);
+#endif
+
     if (!m_libraryHandle) {
         NOUS_ERROR("Failed to load script library: %s", dllPath.c_str());
         return false;
@@ -196,7 +249,7 @@ bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
         return false;
     }
 
-    ScriptBindings::SetupAllBindings(*api);
+    ScriptBindings::SetupAllBindings(*api, m_moduleInput, m_moduleScene);
 
     // Set the API pointer inside the scripts DLL
     using SetEngineAPIFunc = void(*)(EngineAPI*);
@@ -217,38 +270,45 @@ bool ScriptManager::LoadScriptLibrary(const std::string& dllPath) {
 void ScriptManager::UnloadScriptLibrary() {
     if (m_libraryHandle)
     {
-        // Clear registry before unloading
         m_scriptRegistry = nullptr;
 
         UnloadLibrary(m_libraryHandle);
         m_libraryHandle = nullptr;
 
-        // Small delay to ensure DLL is fully unloaded
-        NOUS_Multithreading::NOUS_Thread::SleepMS(100);
+        // Small delay to ensure the OS fully releases the file handle.
+        nous::engine::multithreading::NOUS_Thread::SleepMS(100);
+
+#ifdef _WIN32
+        // Delete the shadow copy so it can be recreated fresh on the next load.
+        if (!m_shadowDllPath.empty())
+        {
+            std::error_code ec;
+            std::filesystem::remove(m_shadowDllPath, ec);
+            if (ec)
+                NOUS_WARN("Could not delete shadow DLL '%s': %s", m_shadowDllPath.c_str(), ec.message().c_str());
+            m_shadowDllPath.clear();
+        }
+#endif
     }
 }
 
 bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
 {
     NOUS_INFO("Reloading script library...");
-
-    // Unload current library first
     UnloadScriptLibrary();
 
 #ifdef _WIN32
+    const std::wstring batPath = (GetExeDir() / "EngineCore" / "Scripts" / "RebuildScripts.bat").wstring();
     std::wstring cmd;
 #ifdef _DEBUG
-    cmd = L"Scripts\\RebuildScripts.bat Debug";
+    cmd = batPath + L" Debug";
 #else
-    cmd = L"Scripts\\RebuildScripts.bat Release";
+    cmd = batPath + L" Release";
 #endif
 
     DWORD exitCode = 0;
     bool ran = RunProcessCaptureLive(cmd, exitCode, [](const std::string& line)
     {
-        // Route to your engine console:
-        // Use INFO for normal lines, ERROR if it looks like an error.
-        // (Simple heuristic; feel free to tighten.)
         if (line.find("error") != std::string::npos || line.find("fatal") != std::string::npos)
             NOUS_ERROR("[ScriptManager::ReloadScriptLibrary] %s", line.c_str());
         else
@@ -269,51 +329,54 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
 
     NOUS_INFO("Scripts recompiled successfully!");
 #else
-    // Keep your old path or implement posix_spawn + pipe on Linux
-    int result = std::system("./Scripts/RebuildScripts.sh");
-    if (result != 0) return false;
+    const std::string shPath = (GetExeDir() / "EngineCore" / "Scripts" / "RebuildScripts.sh").string();
+#ifdef _DEBUG
+    const std::string cmd = "bash \"" + shPath + "\" Debug 2>&1";
+#else
+    const std::string cmd = "bash \"" + shPath + "\" Release 2>&1";
 #endif
 
-    // Wait for file system and ensure DLL can be loaded
-    if (!WaitForDLLUnload(dllPath)) {
-        NOUS_ERROR("DLL is still locked, cannot reload");
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe)
+    {
+        NOUS_ERROR("Failed to launch script build process (popen failed).");
         return false;
     }
+
+    char buffer[256];
+    while (fgets(buffer, sizeof(buffer), pipe))
+    {
+        std::string line(buffer);
+        if (!line.empty() && line.back() == '\n') line.pop_back();
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+
+        if (line.find("error") != std::string::npos || line.find("ERROR") != std::string::npos)
+            NOUS_ERROR("[ScriptManager::ReloadScriptLibrary] %s", line.c_str());
+        else
+            NOUS_INFO("[ScriptManager::ReloadScriptLibrary] %s", line.c_str());
+    }
+
+    const int exitCode = pclose(pipe);
+    if (exitCode != 0)
+    {
+        NOUS_ERROR("Scripts recompilation failed! ExitCode=%d", exitCode);
+        return false;
+    }
+
+    NOUS_INFO("Scripts recompiled successfully!");
+#endif
 
     return LoadScriptLibrary(dllPath);
 }
 
-bool ScriptManager::WaitForDLLUnload(const std::string& dllPath, int maxRetries) {
-#ifdef _WIN32
-    for (int i = 0; i < maxRetries; ++i) {
-        HANDLE fileHandle = CreateFileA(
-                dllPath.c_str(),
-                GENERIC_READ,
-                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                NULL,
-                OPEN_EXISTING,
-                FILE_ATTRIBUTE_NORMAL,
-                NULL
-        );
 
-        if (fileHandle != INVALID_HANDLE_VALUE) {
-            CloseHandle(fileHandle);
-            return true; // File is accessible
-        }
-
-        DWORD error = GetLastError();
-        if (error == ERROR_SHARING_VIOLATION) {
-            // DLL is still locked, wait and retry
-            NOUS_Multithreading::NOUS_Thread::SleepMS(50);
-        } else if (error == ERROR_FILE_NOT_FOUND) {
-            // DLL doesn't exist yet (might be compiling)
-            NOUS_Multithreading::NOUS_Thread::SleepMS(100);
-        } else {
-            break; // Other error
-        }
-    }
-#endif
-    return true; // On non-Windows or if we can't check, just proceed
+std::vector<std::string> ScriptManager::GetAvailableScriptNames() const
+{
+    std::vector<std::string> names;
+    if (!m_scriptRegistry) return names;
+    for (const auto& [name, _] : m_scriptRegistry->GetAll())
+        names.push_back(name);
+    return names;
 }
 
 IScript* ScriptManager::CreateScriptInstance(const std::string& scriptName) {
@@ -359,10 +422,99 @@ void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
 #endif
 }
 
-bool ScriptManager::GenerateScript(const std::string& className)
+// ---------------------------------------------------------------------------
+// CScript component registry
+// ---------------------------------------------------------------------------
+
+void ScriptManager::RegisterScriptComponent(CScript* component)
 {
-    const std::string& templatePath = "Scripts/ScriptTemplate.inl";
-    const std::string& outputPath = "Assets/Scripts/" + className + ".cpp";
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    m_scriptComponents.push_back(component);
+}
+
+void ScriptManager::UnregisterScriptComponent(CScript* component)
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    auto it = std::find(m_scriptComponents.begin(), m_scriptComponents.end(), component);
+    if (it != m_scriptComponents.end())
+        m_scriptComponents.erase(it);
+}
+
+void ScriptManager::DispatchLateUpdate(float dt)
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+        if (cs) cs->LateUpdate(dt);
+}
+
+void ScriptManager::DispatchFixedUpdate(float fixedDt)
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+        if (cs) cs->FixedUpdate(fixedDt);
+}
+
+void ScriptManager::RecreateAllInstances()
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+        if (cs) cs->RecreateInstances();
+}
+
+void ScriptManager::StartAllInstances()
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+        if (cs) cs->StartInstances();
+}
+
+void ScriptManager::CleanupScripts()
+{
+    std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+    for (auto* cs : m_scriptComponents)
+    {
+        if (cs)
+        {
+            cs->ClearInstances();
+            cs->ClearRegistrationState();
+        }
+    }
+    m_scriptComponents.clear();
+    NOUS_INFO("Cleaned up all CScript instances");
+}
+
+void ScriptManager::RecompileScripts()
+{
+    const std::string dllPath =
+        (GetExeDir() / "Library" / "Scripts" / "Scripts.dll").string();
+
+    {
+        std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+        for (auto* cs : m_scriptComponents)
+            if (cs) cs->ClearInstances();
+    }
+
+    if (ReloadScriptLibrary(dllPath))
+    {
+        std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
+        for (auto* cs : m_scriptComponents)
+            if (cs) cs->RecreateInstances();
+        NOUS_INFO("Script hot-reload completed successfully");
+    }
+    else
+    {
+        NOUS_ERROR("Script hot-reload failed");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Script generation
+// ---------------------------------------------------------------------------
+
+bool ScriptManager::GenerateScript(const std::string& className, const std::string& directory)
+{
+    const std::string templatePath = (GetExeDir() / "EngineCore" / "Scripts" / "ScriptTemplate.inl").string();
+    const std::string outputPath = (std::filesystem::path(directory) / (className + ".cpp")).string();
 
     // Read the template file
     std::ifstream templateFile(templatePath);

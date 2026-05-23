@@ -15,7 +15,3 @@ find_package(glm CONFIG REQUIRED)
 target_link_libraries(${CLASS_NAME} PUBLIC
         glm::glm
 )
-
-if (NOUS_BUILD_TESTS)
-    add_subdirectory(test)
-endif()

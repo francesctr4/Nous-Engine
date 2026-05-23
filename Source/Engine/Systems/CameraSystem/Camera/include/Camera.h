@@ -3,7 +3,9 @@
 
 #include <glm/glm.hpp>
 
-class Camera
+#include "Engine/EngineExport.h"
+
+class NOUS_ENGINE_API Camera
 {
 public:
     Camera();

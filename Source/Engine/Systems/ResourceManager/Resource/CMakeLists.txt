@@ -7,3 +7,4 @@ target_sources(ResourceManager PRIVATE
 add_subdirectory(ResourceMaterial)
 add_subdirectory(ResourceMesh)
 add_subdirectory(ResourceTexture)
+add_subdirectory(ResourceShader)

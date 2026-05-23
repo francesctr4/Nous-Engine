@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# ============================================================
+# Nous Engine - RebuildScripts.sh (SDK-only, no engine source)
+#
+# Layout (relative to this script):
+#   $SCRIPT_DIR ............. <exe_dir>/EngineCore/Scripts/  (tooling)
+#   $SCRIPT_DIR/SDK/ ........ script SDK headers + EngineAPI.cpp
+#   $SCRIPT_DIR/../../Library/Scripts/Scripts.{so,dylib} ..... build output
+#
+# Requirements:
+#   <tooling>/SDK/include/Engine/.../IScript.inl
+#   <tooling>/SDK/src/EngineAPI.cpp
+#   @CMAKE_SOURCE_DIR@/Assets/**/*.cpp   (dev build)
+#   <exe_dir>/Assets/**/*.cpp            (shipped)
+# Output:
+#   <exe_dir>/Library/Scripts/Scripts.{so,dylib}
+# ============================================================
+
+set -euo pipefail
+
+# -----------------------------
+# 1) Find C++ compiler
+# -----------------------------
+CXX_COMPILER=""
+for candidate in c++ g++ clang++; do
+    if command -v "$candidate" &>/dev/null; then
+        CXX_COMPILER="$candidate"
+        break
+    fi
+done
+
+if [ -z "$CXX_COMPILER" ]; then
+    echo "[ERROR] No C++ compiler found (tried c++, g++, clang++)"
+    exit 1
+fi
+
+echo "[INFO] CXX_COMPILER          = $CXX_COMPILER"
+
+# -----------------------------
+# 2) Resolve paths (tooling lives in EngineCore/Scripts, output in Library/Scripts)
+# -----------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPTS_TOOLING_DIR="$SCRIPT_DIR"
+EXE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SCRIPTS_OUTPUT_DIR="$EXE_DIR/Library/Scripts"
+mkdir -p "$SCRIPTS_OUTPUT_DIR"
+
+# Detect dev vs shipped: dev exe lives under CMAKE_BINARY_DIR, shipped does not.
+# Dev:     compile from the source tree (live edits, never stale).
+# Shipped: compile from Assets/ next to the exe — delivery is self-contained, no fallback.
+if echo "$EXE_DIR" | grep -qF "@CMAKE_BINARY_DIR@"; then
+    SCRIPTS_ASSETS_DIR="@CMAKE_SOURCE_DIR@/Assets"
+else
+    SCRIPTS_ASSETS_DIR="$EXE_DIR/Assets"
+fi
+
+SCRIPTS_OBJ_DIR="$SCRIPTS_OUTPUT_DIR/obj"
+mkdir -p "$SCRIPTS_OBJ_DIR"
+
+# -----------------------------
+# 2.5) Build configuration
+# Usage:
+#   RebuildScripts.sh
+#   RebuildScripts.sh Debug
+#   RebuildScripts.sh Release
+# -----------------------------
+BUILD_MODE="${1:-}"
+
+if [ "$BUILD_MODE" != "Debug" ] && [ "$BUILD_MODE" != "Release" ]; then
+    # Auto-detect from path
+    case "$EXE_DIR" in
+        *[Rr]elease*) BUILD_MODE="Release" ;;
+        *)             BUILD_MODE="Debug"   ;;
+    esac
+fi
+
+echo "[INFO] BUILD_MODE            = $BUILD_MODE"
+
+# -----------------------------
+# 3) SDK paths (required) — live next to this script in EngineCore/Scripts/SDK
+# -----------------------------
+SDK_DIR="$SCRIPTS_TOOLING_DIR/SDK"
+SDK_INCLUDE="$SDK_DIR/include"
+SDK_ENGINE_API_CPP="$SDK_DIR/src/EngineAPI.cpp"
+
+# -----------------------------
+# 3.5) Sync SDK headers from source so hot-reload always uses the latest
+#      engine headers without requiring a full engine rebuild.
+# -----------------------------
+ENGINE_SCRIPTING_SRC="@CMAKE_SOURCE_DIR@/Source/Engine/Scripting"
+if [ -d "$ENGINE_SCRIPTING_SRC" ]; then
+    while IFS= read -r -d '' f; do
+        rel="${f#"$ENGINE_SCRIPTING_SRC"/}"
+        dest_dir="$SDK_INCLUDE/Engine/Scripting/$(dirname "$rel")"
+        mkdir -p "$dest_dir"
+        cp "$f" "$dest_dir/"
+    done < <(find "$ENGINE_SCRIPTING_SRC" \( -name "*.inl" -o -name "*.h" \) -print0)
+fi
+
+# Validate SDK
+if [ ! -f "$SDK_INCLUDE/Engine/Scripting/Internal/IScript.inl" ]; then
+    echo "[ERROR] Script SDK headers missing."
+    echo "        Expected: $SDK_INCLUDE/Engine/Scripting/Internal/IScript.inl"
+    exit 1
+fi
+
+if [ ! -f "$SDK_ENGINE_API_CPP" ]; then
+    echo "[ERROR] Script SDK EngineAPI.cpp missing."
+    echo "        Expected: $SDK_ENGINE_API_CPP"
+    exit 1
+fi
+
+# Validate scripts exist
+if [ ! -d "$SCRIPTS_ASSETS_DIR" ]; then
+    echo "[ERROR] Scripts source folder missing: $SCRIPTS_ASSETS_DIR"
+    exit 1
+fi
+
+# -----------------------------
+# 4) Diagnostics
+# -----------------------------
+echo "============================================================"
+echo "[INFO] EXE_DIR               = $EXE_DIR"
+echo "[INFO] SCRIPTS_TOOLING_DIR   = $SCRIPTS_TOOLING_DIR"
+echo "[INFO] SCRIPTS_OUTPUT_DIR    = $SCRIPTS_OUTPUT_DIR"
+echo "[INFO] SCRIPTS_ASSETS_DIR    = $SCRIPTS_ASSETS_DIR"
+echo "[INFO] SDK_INCLUDE           = $SDK_INCLUDE"
+echo "[INFO] SDK_ENGINE_API_CPP    = $SDK_ENGINE_API_CPP"
+echo "============================================================"
+
+# -----------------------------
+# 5) Collect sources
+# -----------------------------
+SOURCES=("$SDK_ENGINE_API_CPP")
+
+while IFS= read -r -d '' f; do
+    SOURCES+=("$f")
+done < <(find "$SCRIPTS_ASSETS_DIR" -name "*.cpp" -print0)
+
+# -----------------------------
+# 6) Build flags
+# -----------------------------
+if [ "$(uname)" = "Darwin" ]; then
+    SHARED_FLAGS=(-dynamiclib)
+    SCRIPTS_LIB="Scripts.dylib"
+else
+    SHARED_FLAGS=(-shared -fPIC)
+    SCRIPTS_LIB="Scripts.so"
+fi
+
+FLAGS=(-std=c++23 "${SHARED_FLAGS[@]}" -DSCRIPTS_EXPORTS -I"$SDK_INCLUDE")
+
+if [ "$BUILD_MODE" = "Debug" ]; then
+    FLAGS+=(-g -O0 -D_DEBUG)
+else
+    FLAGS+=(-O2 -DNDEBUG)
+fi
+
+OUTPUT="$SCRIPTS_OUTPUT_DIR/$SCRIPTS_LIB"
+
+# -----------------------------
+# 7) Compile
+# -----------------------------
+"$CXX_COMPILER" "${FLAGS[@]}" "${SOURCES[@]}" -o "$OUTPUT"
+
+echo "[OK] Scripts compiled successfully: $OUTPUT"
+exit 0
