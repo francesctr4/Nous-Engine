@@ -211,7 +211,13 @@ UpdateStatus ModuleScene::PostUpdate(float dt)
 	}
 
 	// Propagate parent transforms top-down before the renderer reads world matrices.
-	if (activeScene)
+	// Skipped while LoadSceneAsync is in flight: the worker thread is mutating the EnTT
+	// registry inside Scene::Deserialize (entity creation, CHierarchy wiring) AND calls
+	// UpdateWorldMatrices(true) itself at the end of Deserialize. Iterating the registry
+	// here in parallel would race the worker's mutations (EnTT views are not concurrent-safe)
+	// and would also produce torn writes on CTransform::worldMatrix. Once the worker clears
+	// m_isLoadingScene, every world matrix is already correct, so we resume next frame.
+	if (activeScene && !m_isLoadingScene.load(std::memory_order_acquire))
 	{
 #ifdef _PROFILING
         ZoneScopedN("UpdateWorldMatrices");
