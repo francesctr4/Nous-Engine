@@ -78,6 +78,8 @@ v0.6 introduces four major areas of work:
 
 - **Standalone Game Export**: Added an in-editor Game Exporter capable of generating standalone executables with a CMake-based install system and a `game_config.json` runtime configuration. Initial support targets Windows, with planned cross-platform support.
 
+<img width="1920" height="1038" alt="image" src="https://github.com/user-attachments/assets/47601c5a-a57b-4e65-86b7-794405848657" />
+
 #### Version 0.5 - Scripting System and Major Improvements
 The v0.5 release introduces major architectural improvements, new Scripting System, and powerful tooling upgrades across the entire engine:
 
