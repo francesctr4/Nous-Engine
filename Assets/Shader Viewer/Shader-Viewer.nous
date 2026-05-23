@@ -64,7 +64,7 @@
                 },
                 {
                     "type": "CMesh",
-                    "assetPath": "Assets\/Meshes\/Rectangle.obj",
+                    "assetPath": "Assets\/Shader Viewer\/Rectangle.obj",
                     "libraryPath": "Library\/Meshes\/449846624.nmesh",
                     "resourceUID": 3418053541,
                     "submeshIndex": 0

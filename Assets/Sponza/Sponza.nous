@@ -4751,7 +4751,7 @@
                 },
                 {
                     "type": "CMaterial",
-                    "assetPath": "Assets\/Meshes\/SpherePBR_DefaultMaterial.nmat",
+                    "assetPath": "Assets\/Materials\/SpherePBR_DefaultMaterial.nmat",
                     "libraryPath": "Library\/Materials\/980236635.nmat",
                     "resourceUID": 980236635
                 },
