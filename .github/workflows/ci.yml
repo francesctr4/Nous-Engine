@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: ${{ matrix.preset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            preset: Debug-Windows
+          - os: ubuntu-latest
+            preset: Debug-Linux
+          - os: macos-latest
+            preset: Debug-macOS
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Clone vcpkg as a sibling of the repo — matches the toolchainFile path in CMakePresets.json
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: ${{ github.workspace }}/../vcpkg
+          vcpkgJsonGlob: vcpkg.json
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            ninja-build \
+            libvulkan-dev \
+            libwayland-dev \
+            libx11-xcb-dev \
+            libxrandr-dev \
+            libxext-dev \
+            libxcb-dri2-0-dev \
+            pkg-config \
+            libltdl-dev \
+            autoconf \
+            automake \
+            libtool
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Install Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja -y
+
+      # Set up MSVC environment so CMake picks cl.exe instead of MinGW (both are on PATH on windows-latest)
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }} -DNOUS_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build Build/${{ matrix.preset }} --parallel
+
+      - name: Test
+        run: ctest --test-dir Build/${{ matrix.preset }} --output-on-failure --parallel

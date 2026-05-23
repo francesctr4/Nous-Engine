@@ -3,7 +3,7 @@
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-namespace NOUS_Multithreading
+namespace nous::engine::multithreading
 {
     NOUS_Thread* sMainThread = nullptr;
 
@@ -34,7 +34,7 @@ namespace NOUS_Multithreading
 
     /// @brief Retrieves the main thread instance.
     /// @return Pointer to the main thread object, or nullptr if not registered.
-    NOUS_Multithreading::NOUS_Thread* GetMainThread()
+    NOUS_Thread* GetMainThread()
     {
         return sMainThread;
     }

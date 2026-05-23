@@ -25,13 +25,11 @@ target_link_libraries(${TEST_NAME}
         GTest::gtest_main
 )
 
-# Register test
-include(GoogleTest)
-
 set_target_properties(${TEST_NAME} PROPERTIES
         VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-gtest_discover_tests(${TEST_NAME}
+add_test(NAME ${TEST_NAME}
+        COMMAND ${TEST_NAME}
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )

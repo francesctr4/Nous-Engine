@@ -1,0 +1,293 @@
+{
+    "name": "PBRSphere",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 1302664073,
+            "name": "SpherePBR.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CPrefab",
+                    "prefabSourcePath": "Assets\/Prefabs\/SpherePBR.nprefab"
+                }
+            ]
+        },
+        {
+            "uid": 894767494,
+            "name": "Sphere",
+            "parent": 1302664073,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.70710676908493042,
+                        -0.70710676908493042,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        100,
+                        99.994979858398438,
+                        99.994979858398438
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\SpherePBR.fbx",
+                    "libraryPath": "Library\\Meshes\\827778096.nmesh",
+                    "resourceUID": 4274558043,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\Sphere_material.nmat",
+                    "libraryPath": "Library\\Materials\\1852952231.nmat",
+                    "resourceUID": 1852952231
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [],
+                    "properties": {
+                        "MoveScript": {
+                            "m_amplitude": {
+                                "type": 0,
+                                "value": 200
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 5
+                            }
+                        },
+                        "RotateY": {
+                            "m_speed": {
+                                "type": 0,
+                                "value": 90
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "uid": 2819515318,
+            "name": "Directional Light",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CLight",
+                    "lightType": "Directional",
+                    "colorR": 1,
+                    "colorG": 1,
+                    "colorB": 1,
+                    "intensity": 1,
+                    "range": 10
+                }
+            ]
+        },
+        {
+            "uid": 413592492,
+            "name": "Main Camera",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        104.42205047607422,
+                        74.585136413574219,
+                        221.43524169921875
+                    ],
+                    "orientation": [
+                        0.96484285593032837,
+                        -0.1392214298248291,
+                        0.22064012289047241,
+                        0.031837228685617447
+                    ],
+                    "rotation": [
+                        -16.421573638916016,
+                        25.761812210083008,
+                        1.1375956091796979e-05
+                    ],
+                    "scale": [
+                        0.99999940395355225,
+                        1,
+                        0.9999997615814209
+                    ]
+                },
+                {
+                    "type": "CCamera",
+                    "fov": 60.000003814697266,
+                    "nearPlane": 0.10000000149011612,
+                    "farPlane": 10000,
+                    "aspectRatio": 1.8879055976867676,
+                    "isMainCamera": true
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [
+                        "CameraMovement"
+                    ],
+                    "properties": {
+                        "CameraMovement": {
+                            "m_speed": {
+                                "type": 0,
+                                "value": 50
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "uid": 2874973074,
+            "name": "Point Light",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        80.524810791015625,
+                        86.47216796875,
+                        152.3511962890625
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CLight",
+                    "lightType": "Point",
+                    "colorR": 0,
+                    "colorG": 0.41592931747436523,
+                    "colorB": 1,
+                    "intensity": 12.159999847412109,
+                    "range": 137.30000305175781
+                }
+            ]
+        },
+        {
+            "uid": 1004804175,
+            "name": "Rotator",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [
+                        "MoveScriptGameObject"
+                    ],
+                    "properties": {
+                        "MoveScriptGameObject": {
+                            "m_amplitude": {
+                                "type": 0,
+                                "value": 200
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 1
+                            },
+                            "m_target": {
+                                "type": 3,
+                                "value": 1302664073
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

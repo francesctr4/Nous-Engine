@@ -7,77 +7,102 @@
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
-GameViewport::GameViewport(const char* title, EditorContext* context, bool start_open)
-    : IEditorWindow(title, context, nullptr, start_open)
-{
-    Init();
-}
+#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
+
+GameViewport::GameViewport(const char* title, EditorContext* context, const bool start_open)
+    : IEditorWindow(title, context, nullptr, start_open) {}
 
 void GameViewport::Init()
 {
     CreateGameViewportDescriptorSets();
 }
 
-void GameViewport::Draw()
+bool GameViewport::UpdatesWhenCollapsed() const
 {
-    if (*p_open)
+    return true;
+}
+
+void GameViewport::OnLayoutUpdated(const ImVec2& panelSize)
+{
+    if (ModuleScene* scene = editorContext->GetScene())
+        scene->gameViewportAspect = panelSize.x / panelSize.y;
+}
+
+bool GameViewport::Begin(bool& outVisible)
+{
+    const bool ok = IEditorWindow::Begin(outVisible);
+
+    // ModuleEditor resets the gate to disabled each frame; we flip it on only when
+    // the GameViewport (or one of its child windows) actually has keyboard focus.
+    // Querying after ImGui::Begin works whether the window is visible or collapsed
+    // because the window is still on ImGui's stack until End() is called.
+    if (ModuleInput* moduleInput = editorContext->GetInput())
     {
-        if (ImGui::Begin(title, p_open))
-        {
-            // Get the size of the window's content area
-            ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
-            ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
-            ImVec2 windowPos = ImGui::GetWindowPos();
-            ImVec2 squareSize = ImVec2(contentMax.x - contentMin.x, contentMax.y - contentMin.y);
-            ImVec2 squarePos = ImVec2(windowPos.x + contentMin.x, windowPos.y + contentMin.y);
-            ImVec2 squareEnd = ImVec2(squarePos.x + squareSize.x, squarePos.y + squareSize.y);
-
-            ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-            // Draw gray background
-            drawList->AddRectFilled(squarePos, squareEnd, IM_COL32(100, 100, 100, 255));
-
-            // Calculate aspect ratios and UV coordinates
-            float textureWidth = 1920.0f;
-            float textureHeight = 1080.0f;
-
-            float textureAspect = textureWidth / textureHeight;
-            float viewportAspect = squareSize.x / squareSize.y;
-
-            ImVec2 uvMin(0.0f, 0.0f);
-            ImVec2 uvMax(1.0f, 1.0f);
-
-            if (viewportAspect < textureAspect)
-            {
-                // Viewport is narrower: crop left/right
-                float cropFactor = textureAspect / viewportAspect;
-                uvMin.x = 0.5f - 0.5f / cropFactor;
-                uvMax.x = 0.5f + 0.5f / cropFactor;
-            }
-            else if (viewportAspect > textureAspect)
-            {
-                // Viewport is wider: crop top/bottom
-                float cropFactor = viewportAspect / textureAspect;
-                uvMin.y = 0.5f - 0.5f / cropFactor;
-                uvMax.y = 0.5f + 0.5f / cropFactor;
-            }
-
-            // Position the image at the start of the content region and render
-            ImGui::SetCursorPos(contentMin); // Position relative to window's content area
-
-            VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
-
-            ImGui::Image(
-                    static_cast<ImTextureID>(
-                            NOUS_ImGuiVulkanResources::GetViewportTexture(
-                                    vkContext->imGuiResources.m_GameViewportDescriptorSets[vkContext->imageIndex])),
-                    squareSize, uvMin, uvMax);
-
-            // Draw white border on top
-            drawList->AddRect(squarePos, squareEnd, IM_COL32(255, 255, 255, 255));
-        }
-        ImGui::End();
+        const bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+        if (focused)
+            moduleInput->SetScriptInputEnabled(true);
     }
+
+    return ok;
+}
+
+void GameViewport::DrawContent()
+{
+    // Constants
+    constexpr ImVec2 uvMin(0.0f, 0.0f);
+    constexpr ImVec2 uvMax(1.0f, 1.0f);
+	constexpr auto backgroundColor = IM_COL32(100, 100, 100, 255);
+	constexpr auto borderColor = IM_COL32(255, 255, 255, 255);
+
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+    // Background
+    drawList->AddRectFilled(
+        contentPos,
+        contentEnd,
+        backgroundColor
+    );
+
+    ModuleScene* scene = editorContext->GetScene();
+    if (!scene || !scene->HasMainCamera())
+    {
+        constexpr auto  textColor = IM_COL32(200, 200, 200, 255);
+        constexpr char  message[] = "No game camera in scene";
+        constexpr float fontSize  = 20.0f;
+        ImFont*         font      = ImGui::GetFont();
+        const ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, -1.0f, message);
+        const ImVec2 textPos(
+            contentPos.x + (contentSize.x - textSize.x) * 0.5f,
+            contentPos.y + (contentSize.y - textSize.y) * 0.5f
+        );
+        drawList->AddText(font, fontSize, textPos, textColor, message);
+
+        drawList->AddRect(contentPos, contentEnd, borderColor);
+        return;
+    }
+
+    // Rendering context
+    const VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+
+    // Main image
+    ImGui::SetCursorPos(contentMin);
+    ImGui::Image(
+        NOUS_ImGuiVulkanResources::GetViewportTexture(
+            vkContext->imGuiResources
+                .m_GameViewportDescriptorSets[vkContext->imageIndex]
+        ),
+        contentSize,
+        uvMin,
+        uvMax
+    );
+
+    // Overlay / border
+    drawList->AddRect(
+        contentPos,
+        contentEnd,
+        borderColor
+    );
 }
 
 void GameViewport::CreateGameViewportDescriptorSets()
@@ -95,7 +120,7 @@ void GameViewport::CreateGameViewportDescriptorSets()
 
 void GameViewport::DestroyGameViewportDescriptorSets()
 {
-    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+    const VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 
     for (uint32 i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
     {

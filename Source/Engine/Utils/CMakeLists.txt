@@ -22,6 +22,9 @@ target_compile_definitions(Utils PRIVATE
         NOUS_ENGINE_EXPORTS
 )
 
+find_package(parson CONFIG REQUIRED)
+
 target_link_libraries(Utils PUBLIC
         glm::glm
+        parson::parson
 )

@@ -1,21 +1,32 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
 
-ModuleInput::ModuleInput(Application* app) : Module(app)
-{
-	NOUS_TRACE("%s()", __FUNCTION__);
+// Uncomment to log every key press to the console (useful for identifying scancodes)
+#define NOUS_DEBUG_INPUT_LOG
 
+#ifdef _PROFILING
+#include <tracy/Tracy.hpp>
+#endif
+
+static KeyState AdvanceKeyState(KeyState current, bool pressed)
+{
+	if (pressed)
+		return (current == KeyState::IDLE) ? KeyState::DOWN : KeyState::REPEAT;
+	return (current == KeyState::REPEAT || current == KeyState::DOWN) ? KeyState::UP : KeyState::IDLE;
+}
+
+ModuleInput::ModuleInput(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem)
+    : Module(eventSystem, jobSystem)
+{
 	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 
-	MemoryManager::SetMemory(keyboard, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_KEYBOARD_KEYS);
-	MemoryManager::SetMemory(mouseButtons, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_MOUSE_BUTTONS);
+	nous::engine::memory::SetMemory(keyboard, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_KEYBOARD_KEYS);
+	nous::engine::memory::SetMemory(mouseButtons, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_MOUSE_BUTTONS);
 
 	mouseX = 0;
 	mouseY = 0;
@@ -27,15 +38,11 @@ ModuleInput::ModuleInput(Application* app) : Module(app)
 
 ModuleInput::~ModuleInput()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	NOUS_DELETE_ARRAY(keyboard, MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 }
 
 bool ModuleInput::Awake()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	bool ret = true;
 
 	if (!SDL_InitSubSystem(SDL_INIT_EVENTS))
@@ -49,47 +56,24 @@ bool ModuleInput::Awake()
 
 bool ModuleInput::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
 }
 
 UpdateStatus ModuleInput::PreUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
+#ifdef _PROFILING
+	ZoneScopedN("ModuleInput::PreUpdate");
+#endif
 	UpdateStatus ret = UpdateStatus::CONTINUE;
 
 	SDL_PumpEvents();
 
 	// --------------- Handle Keyboard State --------------- \\
-	
+
     const uint8* keys = reinterpret_cast<const uint8*>(SDL_GetKeyboardState(NULL));
 
 	for (int i = 0; i < MAX_KEYBOARD_KEYS; ++i)
-	{
-		if (keys[i] == 1)
-		{
-			if (keyboard[i] == KeyState::IDLE) 
-			{
-				keyboard[i] = KeyState::DOWN;
-			}
-			else 
-			{
-				keyboard[i] = KeyState::REPEAT;
-			}
-		}
-		else
-		{
-			if (keyboard[i] == KeyState::REPEAT || keyboard[i] == KeyState::DOWN) 
-			{
-				keyboard[i] = KeyState::UP;
-			}
-			else 
-			{
-				keyboard[i] = KeyState::IDLE;
-			}
-		}
-	}
+		keyboard[i] = m_imguiCaptureKeyboard ? AdvanceKeyState(keyboard[i], false) : AdvanceKeyState(keyboard[i], keys[i] == 1);
 
 	// --------------- Handle Mouse State --------------- \\
 
@@ -97,31 +81,8 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 
 	mouseZ = 0;
 
-	for (int i = 0; i < 5; ++i)
-	{
-		if (buttons & SDL_BUTTON_MASK(i))
-		{
-			if (mouseButtons[i] == KeyState::IDLE) 
-			{
-				mouseButtons[i] = KeyState::DOWN;
-			}
-			else 
-			{
-				mouseButtons[i] = KeyState::REPEAT;
-			}	
-		}
-		else
-		{
-			if (mouseButtons[i] == KeyState::REPEAT || mouseButtons[i] == KeyState::DOWN)
-			{
-				mouseButtons[i] = KeyState::UP;
-			}
-			else 
-			{
-				mouseButtons[i] = KeyState::IDLE;
-			}
-		}
-	}
+	for (int i = 0; i < MAX_MOUSE_BUTTONS; ++i)
+		mouseButtons[i] = AdvanceKeyState(mouseButtons[i], (buttons & SDL_BUTTON_MASK(i)) != 0);
 
 	mouseXMotion = 0;
 	mouseYMotion = 0;
@@ -131,44 +92,17 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
 	{
-        App->BroadcastEvent(Event(EventType::INPUT_EVENT, SendContext(&e)));
+        eventSystem->Broadcast(Event(EventType::INPUT_EVENT, SendContext(&e)));
 
 		switch (e.type)
 		{
 			case SDL_EVENT_KEY_DOWN:
 			{
-				// Handle key press event
-				/*KeyState state = GetKey(e.key.keysym.scancode);
-				App->BroadcastEvent(Event(EventType::KEY_PRESSED, { .int64 = {e.key.keysym.scancode, static_cast<int64>(state) }}));*/
-
 				if (GetKey(SDL_SCANCODE_ESCAPE) == KeyState::DOWN)
 				{
 					ret = UpdateStatus::STOP;
 				}
 
-				break;
-			}
-			case SDL_EVENT_KEY_UP:
-			{
-				// Handle key release event
-				/*KEY_STATE state = GetKey(e.key.keysym.scancode);
-				App->BroadcastEvent(Event(EventType::KEY_RELEASED, { .int64 = {e.key.keysym.scancode, state }));*/
-				//NOUS_ERROR(" ");
-				break;
-			}
-            case SDL_EVENT_MOUSE_BUTTON_DOWN:
-			{
-				// Handle mouse button press event
-				/*KEY_STATE state = GetMouseButton(e.button.button);
-				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_PRESSED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));*/
-				
-				break;
-			}
-			case SDL_EVENT_MOUSE_BUTTON_UP:
-			{
-				// Handle mouse button release event
-				/*KEY_STATE state = GetMouseButton(e.button.button);
-				App->BroadcastEvent(Event(EventType::MOUSE_BUTTON_RELEASED, { .int32 = {e.button.button, state, e.button.x, e.button.y }));*/
 				break;
 			}
 			case SDL_EVENT_MOUSE_WHEEL:
@@ -179,7 +113,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 			case SDL_EVENT_MOUSE_MOTION:
 			{
 				mouseX = e.motion.x;
-				mouseX = e.motion.y;
+				mouseY = e.motion.y;
 
 				mouseXMotion = e.motion.xrel;
 				mouseYMotion = e.motion.yrel;
@@ -190,32 +124,29 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
                 int width = e.window.data1;
                 int height = e.window.data2;
 
-                if (width != cachedFramebufferWidth || height != cachedFramebufferHeight)
+                if (width != m_lastWindowWidth || height != m_lastWindowHeight)
                 {
-					cachedFramebufferWidth = width;
-					cachedFramebufferHeight = height;
+					m_lastWindowWidth  = width;
+					m_lastWindowHeight = height;
 
-					App->BroadcastEvent(Event(EventType::WINDOW_RESIZED, SendContext(cachedFramebufferWidth, cachedFramebufferHeight)));
+					eventSystem->Broadcast(Event(EventType::WINDOW_RESIZED, SendContext(width, height)));
                 }
 
                 break;
             }
             case SDL_EVENT_WINDOW_MINIMIZED:
-            {
-                App->isMinimized = true;
+			{
+				eventSystem->Broadcast(Event(EventType::WINDOW_MINIMIZED, SendContext(true)));
                 break;
             }
             case SDL_EVENT_WINDOW_RESTORED:
             {
-                App->isMinimized = false;
+				eventSystem->Broadcast(Event(EventType::WINDOW_MINIMIZED, SendContext(false)));
                 break;
             }
 			case SDL_EVENT_DROP_FILE:
-			{ 
-				const char* droppedFileDirectory = e.drop.data;
-				App->BroadcastEvent(Event(EventType::DROP_FILE, SendContext(e.drop.data)));
-				SDL_free(&droppedFileDirectory);
-
+			{
+				eventSystem->Broadcast(Event(EventType::DROP_FILE, SendContext(e.drop.data)));
 				break;
 			}
 			case SDL_EVENT_QUIT:
@@ -226,13 +157,25 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 		}
 	}
 
+
+#ifdef NOUS_DEBUG_INPUT_LOG
+	for (int i = 0; i < MAX_KEYBOARD_KEYS; ++i)
+	{
+		if (keyboard[i] == KeyState::DOWN)
+			NOUS_TRACE("[ModuleInput] Key DOWN — scancode %d (%s)", i, SDL_GetScancodeName(static_cast<SDL_Scancode>(i)));
+	}
+	for (int i = 0; i < MAX_MOUSE_BUTTONS; ++i)
+	{
+		if (mouseButtons[i] == KeyState::DOWN)
+			NOUS_TRACE("[ModuleInput] Mouse button DOWN — button %d", i);
+	}
+#endif
+
 	return ret;
 }
 
 bool ModuleInput::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	SDL_QuitSubSystem(SDL_INIT_EVENTS);
 	SDL_Quit();
 
@@ -243,7 +186,7 @@ void ModuleInput::OnEvent(const Event& event)
 {
 	switch (event.type)
 	{
-		
+		default: break;
 	}
 }
 
@@ -256,6 +199,81 @@ KeyState ModuleInput::GetMouseButton(int id) const
 {
 	return mouseButtons[id];
 }
+
+void ModuleInput::SetImGuiCaptureKeyboard(bool captured)
+{
+	m_imguiCaptureKeyboard = captured;
+}
+
+void ModuleInput::SetMouseCaptured(bool captured)
+{
+	// In editor mode keep the OS cursor visible (ImGui panels need it) but still record the
+	// logical capture state so script logic — IsMouseCaptured() checks, Escape toggles,
+	// mouse-look-gated-on-capture branches — behaves identically to game mode.
+	if (!m_gameMode)
+	{
+		m_mouseCaptured = captured;
+		return;
+	}
+
+	// SDL3 made relative-mouse-mode per-window. We can't rely on SDL_GetMouseFocus()
+	// because at the moment a script's Start() runs (e.g. right after launching a
+	// standalone game), the cursor may not yet be over the new window — focus is
+	// nullptr and capture would silently no-op. Targeting the first open window
+	// via SDL_GetWindows() works regardless of focus state.
+	int windowCount = 0;
+	SDL_Window** windows = SDL_GetWindows(&windowCount);
+	if (!windows || windowCount == 0)
+	{
+		NOUS_WARN("SetMouseCaptured: no SDL window open — ignoring");
+		if (windows) SDL_free(windows);
+		return;
+	}
+
+	const bool ok = SDL_SetWindowRelativeMouseMode(windows[0], captured);
+	SDL_free(windows);
+
+	if (!ok)
+	{
+		NOUS_ERROR("SDL_SetWindowRelativeMouseMode failed: %s", SDL_GetError());
+		return;
+	}
+
+	m_mouseCaptured = captured;
+}
+
+void ModuleInput::SetScriptInputEnabled(bool enabled)
+{
+	if (enabled == m_scriptInputEnabled)
+		return;
+
+	if (!enabled)
+	{
+		// Falling edge — drop a live capture so the cursor reappears in the rest of the
+		// editor. Remember whether we did so we can restore on the rising edge.
+		if (m_mouseCaptured)
+		{
+			SetMouseCaptured(false);
+			m_captureSuspendedByGate = true;
+		}
+	}
+	else
+	{
+		// Rising edge — clamp leftover deltas accumulated while scripts were paused so
+		// the camera doesn't snap by the full off-panel mouse travel on the first frame.
+		mouseXMotion = 0;
+		mouseYMotion = 0;
+
+		if (m_captureSuspendedByGate)
+		{
+			SetMouseCaptured(true);
+			m_captureSuspendedByGate = false;
+		}
+	}
+
+	m_scriptInputEnabled = enabled;
+}
+
 
 int32 ModuleInput::GetMouseX() const
 {

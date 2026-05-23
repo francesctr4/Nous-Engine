@@ -1,0 +1,194 @@
+@echo off
+setlocal EnableDelayedExpansion
+
+REM ============================================================
+REM Nous Engine - RebuildScripts.bat (SDK-only, no engine source)
+REM
+REM Layout (relative to this script):
+REM   %~dp0 .................... <exe_dir>\EngineCore\Scripts\  (tooling)
+REM   %~dp0\SDK\ ............... script SDK headers + EngineAPI.cpp
+REM   %~dp0\..\..\Library\Scripts\Scripts.dll ...... build output
+REM
+REM Requirements:
+REM   <tooling>\SDK\include\Engine\...\IScript.inl
+REM   <tooling>\SDK\src\EngineAPI.cpp
+REM   @CMAKE_SOURCE_DIR@\Assets\**\*.cpp   (dev build — source tree)
+REM   <exe_dir>\Assets\**\*.cpp            (shipped — Assets next to exe)
+REM Output:
+REM   <exe_dir>\Library\Scripts\Scripts.dll
+REM ============================================================
+
+REM -----------------------------
+REM 1) Setup MSVC environment
+REM -----------------------------
+set VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+if not exist "%VSWHERE%" (
+    echo [ERROR] vswhere.exe not found
+    exit /b 1
+)
+
+for /f "usebackq tokens=*" %%i in (`
+    "%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+`) do set VS_PATH=%%i
+
+if "%VS_PATH%"=="" (
+    echo [ERROR] Visual Studio C++ Build Tools not found
+    exit /b 1
+)
+
+set VCVARS64=%VS_PATH%\VC\Auxiliary\Build\vcvars64.bat
+if not exist "%VCVARS64%" (
+    echo [ERROR] vcvars64.bat not found
+    exit /b 1
+)
+
+call "%VCVARS64%"
+if errorlevel 1 (
+    echo [ERROR] Failed to initialize MSVC environment
+    exit /b 1
+)
+
+REM -----------------------------
+REM 2) Resolve dirs (tooling lives in EngineCore\Scripts, output in Library\Scripts)
+REM -----------------------------
+REM Normalize all paths up front using %%~fI to expand any ".." segments.
+REM This is required so that "if not exist" checks work correctly.
+set SCRIPT_DIR=%~dp0
+for %%I in ("%SCRIPT_DIR%.") do set SCRIPTS_TOOLING_DIR=%%~fI
+for %%I in ("%SCRIPT_DIR%..\..") do set EXE_DIR=%%~fI
+for %%I in ("%SCRIPT_DIR%..\..\Library\Scripts") do set SCRIPTS_OUTPUT_DIR=%%~fI
+
+REM Detect dev vs shipped build: dev exe lives under CMAKE_BINARY_DIR, shipped does not.
+REM Dev:     compile from the source tree (live edits, never stale).
+REM Shipped: compile from Assets\ next to the exe — delivery is self-contained, no fallback.
+set EXE_DIR_FWD=%EXE_DIR:\=/%
+echo %EXE_DIR_FWD% | findstr /I /C:"@CMAKE_BINARY_DIR@" >nul 2>&1
+if not errorlevel 1 (
+    set SCRIPTS_ASSETS_BIN_DIR=@CMAKE_SOURCE_DIR@\Assets
+) else (
+    set SCRIPTS_ASSETS_BIN_DIR=%EXE_DIR%\Assets
+)
+
+if not exist "%SCRIPTS_OUTPUT_DIR%" mkdir "%SCRIPTS_OUTPUT_DIR%" >nul 2>&1
+
+set SCRIPTS_OBJ_DIR=%SCRIPTS_OUTPUT_DIR%\obj
+
+if not exist "%SCRIPTS_OBJ_DIR%" mkdir "%SCRIPTS_OBJ_DIR%"
+
+REM -----------------------------
+REM 2.5) Build configuration (auto-detect + override)
+REM Usage:
+REM   RebuildScripts.bat
+REM   RebuildScripts.bat Debug
+REM   RebuildScripts.bat Release
+REM -----------------------------
+set BUILD_MODE=%~1
+
+if /I "%BUILD_MODE%"=="Debug" goto :MODE_OK
+if /I "%BUILD_MODE%"=="Release" goto :MODE_OK
+
+REM Auto-detect from path using the already-normalised EXE_DIR_FWD
+set BUILD_MODE=Debug
+echo %EXE_DIR_FWD% | findstr /I "Release" >nul && set BUILD_MODE=Release
+
+:MODE_OK
+echo [INFO] BUILD_MODE           = %BUILD_MODE%
+
+REM -----------------------------
+REM 3) SDK paths (required) — live next to this bat in EngineCore\Scripts\SDK
+REM -----------------------------
+set SDK_DIR=%SCRIPTS_TOOLING_DIR%\SDK
+set SDK_INCLUDE=%SDK_DIR%\include
+set SDK_ENGINE_API_CPP=%SDK_DIR%\src\EngineAPI.cpp
+
+REM -----------------------------
+REM 3.5) Sync SDK headers from source so hot-reload always uses the latest
+REM      engine headers without requiring a full engine rebuild.
+REM -----------------------------
+set ENGINE_SCRIPTING_SRC=@CMAKE_SOURCE_DIR@\Source\Engine\Scripting
+if exist "%ENGINE_SCRIPTING_SRC%" (
+    xcopy /S /Y /Q "%ENGINE_SCRIPTING_SRC%\*.inl" "%SDK_INCLUDE%\Engine\Scripting\" >nul 2>&1
+    xcopy /S /Y /Q "%ENGINE_SCRIPTING_SRC%\*.h"   "%SDK_INCLUDE%\Engine\Scripting\" >nul 2>&1
+)
+
+REM Validate SDK exists
+if not exist "%SDK_INCLUDE%\Engine\Scripting\Internal\IScript.inl" (
+    echo [ERROR] Script SDK headers missing.
+    echo         Expected: "%SDK_INCLUDE%\Engine\Scripting\Internal\IScript.inl"
+    exit /b 1
+)
+
+if not exist "%SDK_ENGINE_API_CPP%" (
+    echo [ERROR] Script SDK EngineAPI.cpp missing.
+    echo         Expected: "%SDK_ENGINE_API_CPP%"
+    exit /b 1
+)
+
+REM Validate scripts exist
+if not exist "%SCRIPTS_ASSETS_BIN_DIR%" (
+    echo [ERROR] Scripts source folder missing:
+    echo         "%SCRIPTS_ASSETS_BIN_DIR%"
+    exit /b 1
+)
+
+REM -----------------------------
+REM 4) Diagnostics
+REM -----------------------------
+echo ============================================================
+echo [INFO] EXE_DIR              = %EXE_DIR%
+echo [INFO] SCRIPTS_TOOLING_DIR  = %SCRIPTS_TOOLING_DIR%
+echo [INFO] SCRIPTS_OUTPUT_DIR   = %SCRIPTS_OUTPUT_DIR%
+echo [INFO] SCRIPTS_ASSETS_BIN_DIR= %SCRIPTS_ASSETS_BIN_DIR%
+echo [INFO] SDK_INCLUDE          = %SDK_INCLUDE%
+echo [INFO] SDK_ENGINE_API_CPP   = %SDK_ENGINE_API_CPP%
+echo ============================================================
+
+REM -----------------------------
+REM 5) Generate response file (kept in OUTPUT dir alongside the DLL)
+REM -----------------------------
+set RSP=%SCRIPTS_OUTPUT_DIR%\scripts_build.rsp
+break > "%RSP%"
+
+>>"%RSP%" echo /nologo
+>>"%RSP%" echo /std:c++latest
+>>"%RSP%" echo /EHsc
+>>"%RSP%" echo /LD
+>>"%RSP%" echo /DSCRIPTS_EXPORTS
+
+>>"%RSP%" echo /Fo"%SCRIPTS_OBJ_DIR%\\"
+
+REM Config-specific flags
+if /I "%BUILD_MODE%"=="Debug" (
+    >>"%RSP%" echo /MDd
+    >>"%RSP%" echo /Od
+    >>"%RSP%" echo /Zi
+    >>"%RSP%" echo /D_DEBUG
+) else (
+    >>"%RSP%" echo /MD
+    >>"%RSP%" echo /O2
+    >>"%RSP%" echo /DNDEBUG
+)
+
+REM SDK includes + SDK EngineAPI.cpp (compiled into Scripts.dll)
+>>"%RSP%" echo /I"%SDK_INCLUDE%"
+>>"%RSP%" echo "%SDK_ENGINE_API_CPP%"
+
+REM Output
+>>"%RSP%" echo /Fe:"%SCRIPTS_OUTPUT_DIR%\Scripts.dll"
+
+REM Script sources (recursive)
+for /R "%SCRIPTS_ASSETS_BIN_DIR%" %%F in (*.cpp) do (
+    >>"%RSP%" echo "%%F"
+)
+
+REM -----------------------------
+REM 6) Build
+REM -----------------------------
+cl @"%RSP%"
+if errorlevel 1 (
+    echo [ERROR] Script compilation failed
+    exit /b 1
+)
+
+echo [OK] Scripts compiled successfully: "%SCRIPTS_OUTPUT_DIR%\Scripts.dll"
+exit /b 0

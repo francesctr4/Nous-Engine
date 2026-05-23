@@ -1,23 +1,22 @@
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
-#include "Engine/Core/Application.h"
+#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 
-#include "Editor/UI/IEditorWindow.inl"
+#include "Editor/UI/IEditorWindow.h"
 #include "Editor/UI/ImGuiCustom/ImGuiCustom.h"
 
 // ImGui_Temp
 #include "imgui.h"
-#include "imgui_stdlib.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
+#include <ImGuizmo.h>
 
 #pragma region EDITOR WINDOWS
 
@@ -29,41 +28,48 @@
 #include "Editor/UI/Windows/SceneViewport/include/SceneViewport.h"
 #include "Editor/UI/Windows/GameViewport/include/GameViewport.h"
 #include "Editor/UI/Windows/HierarchyWindow/include/HierarchyWindow.h"
-#include "Editor/UI/Windows/InspectorWindow/include/InspectorWindow.h"
+#include "Editor/UI/Windows/InspectorWindow/InspectorWindow.h"
 #include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
 #include "Editor/UI/Windows/MemoryWindow/include/MemoryWindow.h"
+#include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
 
 #pragma endregion
 
 #include <vector>
 #include <memory>
+#include <SDL3/SDL_keyboard.h>
 
+#include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Core/Logger/Logger.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
 
-ModuleEditor::ModuleEditor(Application* app) : Module(app),
-    editorWindows(MemoryTag::EDITOR),
-    fonts(MemoryTag::EDITOR)
+ModuleEditor::ModuleEditor(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
+	ModuleWindow* moduleWindow,
+	ModuleInput* moduleInput,
+	ModuleCamera3D* moduleCamera3D,
+	ModuleResourceManager* moduleResourceManager,
+	ModuleScene* moduleScene,
+	ModuleRenderer3D* moduleRenderer3D)
+: Module(eventSystem, jobSystem), mModuleWindow(moduleWindow), mModuleInput(moduleInput), mModuleCamera3D(moduleCamera3D),
+   mModuleResourceManager(moduleResourceManager), mModuleScene(moduleScene), mModuleRenderer3D(moduleRenderer3D),
+  editorWindows(MemoryTag::EDITOR), fonts(MemoryTag::EDITOR)
 {
-	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
 	currentBackendType = RendererBackendType::UNKNOWN;
 
-    App->eventSystem->Subscribe(EventType::INPUT_EVENT, this);
-    App->eventSystem->Subscribe(EventType::IMGUI_RECREATION, this);
+    eventSystem->Subscribe(EventType::INPUT_EVENT, this);
+    eventSystem->Subscribe(EventType::IMGUI_RECREATION, this);
+    eventSystem->Subscribe(EventType::DROP_FILE, this);
 }
 
-ModuleEditor::~ModuleEditor()
-{
-	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
-}
+ModuleEditor::~ModuleEditor() = default;
 
 bool ModuleEditor::Awake()
 {
-	NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
+	nous::engine::filesystem::CopyFile(R"(Assets\Settings\imgui.ini)", "imgui.ini");
 
-	App->renderer->GetRendererFrontend()->SetEditorOverlay(this);
-	currentBackendType = App->renderer->GetRendererFrontend()->GetBackendType();
+	mModuleRenderer3D->GetRendererFrontend()->SetEditorOverlay(this);
+	currentBackendType = mModuleRenderer3D->GetRendererFrontend()->GetBackendType();
 
 	// Setup Dear ImGui_Temp context
 	IMGUI_CHECKVERSION();
@@ -73,22 +79,32 @@ bool ModuleEditor::Awake()
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
 
-	ImGuiCustom::ImGuiTheme_RedGrey();
+	nous::editor::imgui::ImGuiTheme_RedGrey();
 
 	fonts.push_back(io.Fonts->AddFontFromFileTTF(R"(Assets\Fonts\tahoma.ttf)", 15.0f));
 
 	// Optionally, load more fonts as needed
 	fonts.push_back(io.Fonts->AddFontFromFileTTF(R"(Assets\Fonts\tahoma.ttf)", 12.0f));
 
+	// Font Awesome icon font (fonts[2]) — used by AssetsBrowser for file-type icons
+	{
+		static constexpr ImWchar c_iconRanges[] = { 0xE000, 0xF8FF, 0 };
+		ImFontConfig iconConfig;
+		iconConfig.MergeMode = false;
+		iconConfig.PixelSnapH = true;
+		iconConfig.GlyphMinAdvanceX = 64.0f;
+		fonts.push_back(io.Fonts->AddFontFromFileTTF(R"(Assets\Fonts\fa-solid-900.ttf)", 64.0f, &iconConfig, c_iconRanges));
+	}
+
 	switch (currentBackendType)
 	{
 		case RendererBackendType::VULKAN:
 		{
-            NOUS_INFO_C(CURRENT_CHANNEL, "[%s] Using Renderer Backend: %d (Vulkan)", __FUNCTION__, currentBackendType);
-			VulkanContext* vkContext = GetVulkanContext();
+            NOUS_INFO_C(CURRENT_CHANNEL, "Using Renderer Backend: %d (Vulkan)", currentBackendType);
+			const VulkanContext* vkContext = GetVulkanContext();
 
 			// Setup Platform/Renderer backends
-			ImGui_ImplSDL3_InitForVulkan(App->window->GetSDL_Window());
+			ImGui_ImplSDL3_InitForVulkan(mModuleWindow->GetSDL_Window());
 
 			ImGui_ImplVulkan_InitInfo imGuiVulkanInitInfo{};
 
@@ -109,22 +125,24 @@ bool ModuleEditor::Awake()
 			NOUS_ASSERT(ImGui_ImplVulkan_Init(&imGuiVulkanInitInfo))
 			break;
 		}
-		case RendererBackendType::OPENGL:
-		{
-
-			break;
-		}
-		case RendererBackendType::DIRECTX:
-		{
-
-			break;
-		}
+		// case RendererBackendType::OPENGL:
+		// {
+		//
+		// 	break;
+		// }
+		// case RendererBackendType::DIRECTX:
+		// {
+		//
+		// 	break;
+		// }
 		default:
 		{
 
 			break;
 		}
 	}
+
+    m_gameExporter = NOUS_NEW<GameExporter>(MemoryTag::EDITOR);
 
 	AddEditorWindow(NOUS_NEW<MainMenuBar>(MemoryTag::EDITOR, "MainMenuBar", this));
 	AddEditorWindow(NOUS_NEW<AssetsBrowser>(MemoryTag::EDITOR, "Assets", this));
@@ -137,31 +155,44 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(NOUS_NEW<InspectorWindow>(MemoryTag::EDITOR, "Inspector", this));
 	AddEditorWindow(NOUS_NEW<ConsoleWindow>(MemoryTag::EDITOR, "Console", this));
 	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryTag::EDITOR, "Memory Manager", this));
+	AddEditorWindow(NOUS_NEW<TextEditorWindow>(MemoryTag::EDITOR, "Text Editor", this));
 
 	return true;
 }
 
 bool ModuleEditor::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	return true;
 }
 
 void ModuleEditor::DrawEditor()
 {
-    NOUS_TRACE_C(CURRENT_CHANNEL, "%s()", __FUNCTION__);
-
 	InitFrame(currentBackendType);
 
 	InternalDrawEditor();
 
 	EndFrame(currentBackendType);
+
+	// The ImGui SDL3 backend (v1.91+) only calls SDL_StartTextInput/SDL_StopTextInput
+	// through its IME callback, which only fires for built-in InputText widgets.
+	// Custom text widgets (e.g. ImGuiColorTextEdit) set io.WantTextInput but get no
+	// SDL text input, so typed characters never arrive. Bridge the gap here.
+	const ImGuiIO& io = ImGui::GetIO();
+	if (io.WantTextInput)
+		SDL_StartTextInput(mModuleWindow->GetSDL_Window());
+	else
+		SDL_StopTextInput(mModuleWindow->GetSDL_Window());
+
+	mModuleInput->SetImGuiCaptureKeyboard(io.WantTextInput);
 }
 
 bool ModuleEditor::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	// Wait for the GPU and free command buffers/framebuffers BEFORE destroying
+	// any Vulkan resources.  The last frame's command buffers still reference
+	// ImGui's vertex/index buffers, pipeline, and descriptor sets, and the
+	// framebuffers still reference the viewport image views.
+	mModuleRenderer3D->GetRendererFrontend()->ReleaseFrameResources();
 
 	switch (currentBackendType)
 	{
@@ -172,17 +203,16 @@ bool ModuleEditor::CleanUp()
 
 			break;
 		}
-
-		case RendererBackendType::OPENGL:
-		{
-
-			break;
-		}
-		case RendererBackendType::DIRECTX:
-		{
-
-			break;
-		}
+		// case RendererBackendType::OPENGL:
+		// {
+		//
+		// 	break;
+		// }
+		// case RendererBackendType::DIRECTX:
+		// {
+		//
+		// 	break;
+		// }
 		default:
 		{
 
@@ -199,10 +229,13 @@ bool ModuleEditor::CleanUp()
     }
 	editorWindows.clear();
 
+    NOUS_DELETE(m_gameExporter, MemoryTag::EDITOR);
+    m_gameExporter = nullptr;
+
 	return true;
 }
 
-void ModuleEditor::InitFrame(RendererBackendType backendType)
+void ModuleEditor::InitFrame(const RendererBackendType backendType)
 {
 	switch (backendType)
 	{
@@ -211,17 +244,16 @@ void ModuleEditor::InitFrame(RendererBackendType backendType)
 			ImGui_ImplVulkan_NewFrame();
 			break;
 		}
-
-		case RendererBackendType::OPENGL:
-		{
-
-			break;
-		}
-		case RendererBackendType::DIRECTX:
-		{
-
-			break;
-		}
+		// case RendererBackendType::OPENGL:
+		// {
+		//
+		// 	break;
+		// }
+		// case RendererBackendType::DIRECTX:
+		// {
+		//
+		// 	break;
+		// }
 		default:
 		{
 
@@ -231,17 +263,18 @@ void ModuleEditor::InitFrame(RendererBackendType backendType)
 
 	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 }
 
 void ModuleEditor::InternalDrawEditor()
 {
 	// Set DockSpace Invisible Window Flags
-	ImGuiWindowFlags window = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
+	constexpr ImGuiWindowFlags window = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
 	// Get Window Viewport
-	ImGuiViewport* viewport = ImGui::GetWindowViewport();
+	const ImGuiViewport* viewport = ImGui::GetWindowViewport();
 
 	// Set Window Parameters
 	ImGui::SetNextWindowPos(viewport->Pos);
@@ -255,7 +288,7 @@ void ModuleEditor::InternalDrawEditor()
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 	// Begin DockSpace Invisible Window with the flags
-	ImGui::Begin("Dockspace", 0, window);
+	ImGui::Begin("Dockspace", nullptr, window);
 
 	// Apply Window Style Parameters
 	ImGui::PopStyleVar(3);
@@ -268,17 +301,20 @@ void ModuleEditor::InternalDrawEditor()
 
 	ImGui::ShowDemoWindow();
 
-	//ImGui_Temp::Begin("camerapos");
-	//ImGui_Temp::Text("%f,%f,%f", App->camera->GetCamera()->GetPos().x, App->camera->GetCamera()->GetPos().y, App->camera->GetCamera()->GetPos().z);
-	//ImGui_Temp::End();
+	// Default the script-input gate to disabled each frame; GameViewport::Begin() will
+	// flip it back on when (and only when) its window has focus this frame. Doing the
+	// reset here covers the closed-window case too: if GameViewport isn't being drawn,
+	// nothing re-enables the gate and scripts stay paused.
+	if (mModuleInput)
+		mModuleInput->SetScriptInputEnabled(false);
 
-	for (auto& win : editorWindows)
+	for (const auto& win : editorWindows)
 	{
 		win->Draw();
 	}
 }
 
-void ModuleEditor::EndFrame(RendererBackendType backendType)
+void ModuleEditor::EndFrame(const RendererBackendType backendType)
 {
 	ImGui::Render();
 
@@ -290,17 +326,16 @@ void ModuleEditor::EndFrame(RendererBackendType backendType)
 
 			break;
 		}
-
-		case RendererBackendType::OPENGL:
-		{
-
-			break;
-		}
-		case RendererBackendType::DIRECTX:
-		{
-
-			break;
-		}
+		// case RendererBackendType::OPENGL:
+		// {
+		//
+		// 	break;
+		// }
+		// case RendererBackendType::DIRECTX:
+		// {
+		//
+		// 	break;
+		// }
 		default:
 		{
 
@@ -319,7 +354,24 @@ void ModuleEditor::AddEditorWindow(IEditorWindow* editorWindow)
 	editorWindows.push_back(editorWindow);
 }
 
-IEditorWindow* ModuleEditor::GetEditorWindowByName(std::string name)
+void ModuleEditor::UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath)
+{
+    mModuleRenderer3D->UpdateShaderWatcherPath(oldPath, newPath);
+}
+
+void ModuleEditor::WatchShaderFile(const std::string& path)
+{
+    mModuleRenderer3D->WatchShaderFile(path);
+}
+
+std::string ModuleEditor::GetAssetsBrowserDirectory() const
+{
+    if (IEditorWindow* w = const_cast<ModuleEditor*>(this)->GetEditorWindowByName("Assets"))
+        return static_cast<AssetsBrowser*>(w)->current_directory;
+    return "Assets";
+}
+
+IEditorWindow* ModuleEditor::GetEditorWindowByName(const std::string& name)
 {
 	for (auto* w : editorWindows)
 	{
@@ -335,8 +387,18 @@ void ModuleEditor::OnEvent(const Event &event)
 	{
 		case EventType::INPUT_EVENT:
 		{
-			auto* sdlEvent = reinterpret_cast<SDL_Event*>(event.ctx.u64[0]);
-            ImGui_ImplSDL3_ProcessEvent(sdlEvent);
+			const SDL_Event* sdlEvent = static_cast<SDL_Event*>(event.ctx.ptr[0]);
+			ImGui_ImplSDL3_ProcessEvent(sdlEvent);
+			break;
+		}
+		case EventType::DROP_FILE:
+		{
+			const std::string path = event.ctx.c ? event.ctx.c : "";
+			if (!path.empty())
+			{
+				for (auto* w : editorWindows)
+					w->OnFileDrop(path);
+			}
 			break;
 		}
 		case EventType::IMGUI_RECREATION:
@@ -356,13 +418,20 @@ void ModuleEditor::OnEvent(const Event &event)
                     GameViewport::CreateGameViewportDescriptorSets();
                     break;
                 }
+                default: break;
             }
 			break;
 		}
+		default: break;
 	}
 }
 
-ImFont *ModuleEditor::GetFont(size_t index) const
+RendererFrontend* ModuleEditor::GetRendererFrontend() const
+{
+    return mModuleRenderer3D->GetRendererFrontend();
+}
+
+ImFont *ModuleEditor::GetFont(const size_t index) const
 {
     if (index >= fonts.size())
     {

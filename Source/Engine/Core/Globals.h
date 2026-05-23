@@ -6,12 +6,13 @@
 #include <stdexcept>
 #include <limits>
 
-constexpr const char* TITLE = "Nous Engine";
+constexpr auto TITLE = "Nous Engine";
 constexpr int WINDOW_WIDTH = 800;
 constexpr int WINDOW_HEIGHT = 600;
-constexpr float DEFAULT_TARGET_FPS = 144.00f;
+constexpr float DEFAULT_TARGET_FPS    = 144.00F;
+constexpr float DEFAULT_SPIN_THRESHOLD = 0.002F;  // spin for the last 2ms before frame deadline
 
-// ---------- Type Definitions ---------- \\
+// ---------- Type Definitions ----------
 
 using uint8 = std::uint8_t;
 using uint16 = std::uint16_t;
@@ -23,49 +24,46 @@ using int16 = std::int16_t;
 using int32 = std::int32_t;
 using int64 = std::int64_t;
 
-// -------------------------------------- \\
-
-static int32 cachedFramebufferWidth = 0;
-static int32 cachedFramebufferHeight = 0;
+// --------------------------------------
 
 /**
- * @brief Any id set to this should be considered invalid,
+ * @brief Any id set to this should be considered invalid
  * and not actually pointing to a real object.
  */
-constexpr unsigned int INVALID_ID = 4294967295U;
+constexpr uint32 INVALID_ID = std::numeric_limits<uint32>::max();
 
-// Gibibytes (2^30)
-constexpr uint64 GiB(uint64 amount) 
+// Gibibyte (2^30)
+constexpr uint64 GiB(const uint64 amount)
 {
     return amount * 1024ULL * 1024 * 1024;
 }
 
-// Mebibytes (2^20)
-constexpr uint64 MiB(uint64 amount) 
+// Mebibyte (2^20)
+constexpr uint64 MiB(const uint64 amount)
 {
     return amount * 1024ULL * 1024;
 }
 
-// Kibibytes (2^10)
-constexpr uint64 KiB(uint64 amount) 
+// Kibibyte (2^10)
+constexpr uint64 KiB(const uint64 amount)
 {
     return amount * 1024ULL;
 }
 
 // Gigabytes (10^9)
-constexpr uint64 GB(uint64 amount) 
+constexpr uint64 GB(const uint64 amount)
 {
     return amount * 1000ULL * 1000 * 1000;
 }
 
 // Megabytes (10^6)
-constexpr uint64 MB(uint64 amount) 
+constexpr uint64 MB(const uint64 amount)
 {
     return amount * 1000ULL * 1000;
 }
 
 // Kilobytes (10^3)
-constexpr uint64 KB(uint64 amount) 
+constexpr uint64 KB(const uint64 amount)
 {
     return amount * 1000ULL;
 }
@@ -73,9 +71,9 @@ constexpr uint64 KB(uint64 amount)
 // --------------------- Homemade Casts --------------------- //
 
 // Ensures the value can be narrowed to a smaller type without losing data in the process.
-// e.g. Converting from uint64 to uint8.
+// e.g., Converting from uint64 to uint8.
 template<typename Target, typename Source>
-Target narrow_cast(Source v)
+auto narrow_cast(Source v)
 {
     auto r = static_cast<Target>(v);
 
@@ -89,9 +87,9 @@ Target narrow_cast(Source v)
 
 // Ensures the value fits within the limits of the target type to prevent overflows or underflows.
 // Useful to throw an error if we are casting a negative number to uint.
-// e.g. Converting from int64 to uint8.
+// e.g., Converting from int64 to uint8.
 template <typename Target, typename Source>
-Target safe_cast(Source value)
+auto safe_cast(Source value)
 {
     if (value < std::numeric_limits<Target>::min() || value > std::numeric_limits<Target>::max())
     {
@@ -102,9 +100,9 @@ Target safe_cast(Source value)
 }
 
 // Safe downcasting utility for polymorphic types (pointers only)
-// e.g. Converting from Resource* to ResourceMesh*.
+// e.g., Converting from Resource* to ResourceMesh*.
 template <typename Target, typename Source>
-Target down_cast(Source ptr) 
+auto down_cast(Source ptr)
 {
     assert(dynamic_cast<Target>(ptr) != nullptr && "down_cast failed");
 

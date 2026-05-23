@@ -11,27 +11,8 @@ function(copy_assets)
         return()
     endif()
 
-    # Ensure destination exists
-    file(MAKE_DIRECTORY "${ASSETS_BIN_DIR}")
-
-    # Optional: stage only specific subfolders (recommended)
-    set(_ASSET_SUBDIRS
-            Fonts
-            Materials
-            Meshes
-            Scenes
-            Scripts
-            Settings
-            Shaders
-            Textures
-    )
-
-    foreach(_dir IN LISTS _ASSET_SUBDIRS)
-        if(EXISTS "${ASSETS_SRC_DIR}/${_dir}")
-            file(COPY "${ASSETS_SRC_DIR}/${_dir}"
-                    DESTINATION "${ASSETS_BIN_DIR}")
-        endif()
-    endforeach()
+    # Copy the entire Assets/ tree so user-created subfolders are staged automatically.
+    file(COPY "${ASSETS_SRC_DIR}" DESTINATION "${CMAKE_BINARY_DIR}/bin")
 
     message(STATUS "Staged Assets -> ${ASSETS_BIN_DIR} (configure-time)")
 endfunction()

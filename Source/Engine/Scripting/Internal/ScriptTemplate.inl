@@ -87,6 +87,11 @@ public:
 private:
 
     // ----- ATTRIBUTES ----- //
+    // Use SCRIPT_FIELD to declare a field AND expose it to the Inspector automatically:
+    //   SCRIPT_FIELD(float, m_speed,  1.0f)
+    //   SCRIPT_FIELD(int,   m_count,  3)
+    //   SCRIPT_FIELD(bool,  m_active, true)
+    // Regular (non-exposed) fields: float m_time = 0.0f;
     /*coding_start::$CLASSNAME$*/
     /*coding_end::$CLASSNAME$*/
 

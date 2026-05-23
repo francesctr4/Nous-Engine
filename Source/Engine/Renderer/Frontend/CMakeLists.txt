@@ -4,6 +4,8 @@
 
 add_library(RendererFrontend STATIC
         IEditorOverlay.h
+        GroupGeometries.h
+        GroupGeometries.cpp
         RendererFrontend.h
         RendererFrontend.cpp
 )
@@ -23,3 +25,7 @@ target_compile_definitions(RendererFrontend PRIVATE NOUS_ENGINE_EXPORTS)
 target_link_libraries(RendererFrontend PUBLIC
         glm::glm
 )
+
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()

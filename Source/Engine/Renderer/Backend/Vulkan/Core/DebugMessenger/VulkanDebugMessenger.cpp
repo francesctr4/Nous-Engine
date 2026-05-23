@@ -71,6 +71,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL NOUS_VulkanDebugMessenger::DebugCallback(VkDebugU
         NOUS_ERROR("Validation layer: %s", pCallbackData->pMessage);
         break;
     }
+    default: break;
     }
 
     return VK_FALSE;

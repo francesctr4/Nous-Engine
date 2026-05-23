@@ -1,7 +1,7 @@
 #ifndef IMGUICUSTOM_H
 #define IMGUICUSTOM_H
 
-namespace ImGuiCustom
+namespace nous::editor::imgui
 {
     // Themes
     void ImGuiTheme_OrangeGrey();

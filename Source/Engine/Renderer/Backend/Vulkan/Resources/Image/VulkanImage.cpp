@@ -146,7 +146,7 @@ void NOUS_VulkanImage::CopyBufferToVulkanImage(VulkanContext* vkContext, VulkanI
 {
     // Region to copy
     VkBufferImageCopy bufferImageCopyRegion;
-    MemoryManager::ZeroMemory(&bufferImageCopyRegion, sizeof(VkBufferImageCopy));
+    nous::engine::memory::ZeroMemory(&bufferImageCopyRegion, sizeof(VkBufferImageCopy));
 
     bufferImageCopyRegion.bufferOffset = 0;
     bufferImageCopyRegion.bufferRowLength = 0;

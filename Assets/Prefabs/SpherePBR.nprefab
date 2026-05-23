@@ -1,0 +1,103 @@
+{
+    "name": "SpherePBR.fbx",
+    "version": 1,
+    "GameObjects": [
+        {
+            "uid": 1302664073,
+            "name": "SpherePBR.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "uid": 894767494,
+            "name": "Sphere",
+            "parent": 1302664073,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.70710676908493042,
+                        -0.70710676908493042,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        100,
+                        99.994979858398438,
+                        99.994979858398438
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\SpherePBR.fbx",
+                    "libraryPath": "Library\\Meshes\\827778096.nmesh",
+                    "resourceUID": 4274558043,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\Sphere_material.nmat",
+                    "libraryPath": "Library\\Materials\\1852952231.nmat",
+                    "resourceUID": 1852952231
+                },
+                {
+                    "type": "CScript",
+                    "scripts": [],
+                    "properties": {
+                        "MoveScript": {
+                            "m_amplitude": {
+                                "type": 0,
+                                "value": 200
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 5
+                            }
+                        },
+                        "RotateY": {
+                            "m_speed": {
+                                "type": 0,
+                                "value": 90
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

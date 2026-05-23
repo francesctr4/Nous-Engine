@@ -5,49 +5,61 @@
 
 void NOUS_ImGuiVulkanResources::CreateImGuiVulkanResources(VulkanContext* vkContext)
 {
+	// Descriptor pool is always needed (material descriptors use it in all modes).
 	CreateImGuiDescriptorPool(vkContext);
+
+	if (vkContext->renderMode == RenderMode::GAME)
+	{
+		// GAME mode: no offscreen viewport images, samplers, depth, or pick resources.
+		return;
+	}
 
 	CreateViewportTextureSampler(vkContext, &vkContext->imGuiResources.m_ViewportTextureSampler);
 	CreateViewportTextureSampler(vkContext, &vkContext->imGuiResources.m_GameViewportTextureSampler);
 
 	CreateViewportImages(vkContext);
 	CreateViewportDepthResources(vkContext);
+	CreatePickResources(vkContext);
 }
 
 void NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(VulkanContext* vkContext)
 {
-	// Game Viewport
-	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
-
-	for (int i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
+	if (vkContext->renderMode != RenderMode::GAME)
 	{
-		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportImages[i]);
+		// Pick Resources
+		DestroyPickResources(vkContext);
+
+		// Game Viewport
+		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
+
+		for (int i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
+		{
+			NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportImages[i]);
+		}
+
+		vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportTextureSampler, vkContext->allocator);
+
+		// Scene Viewport
+		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
+
+		for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
+		{
+			NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportImages[i]);
+		}
+
+		vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportTextureSampler, vkContext->allocator);
 	}
 
-	vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportTextureSampler, vkContext->allocator);
-
-	// Scene Viewport
-	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportDepthAttachment);
-
-	for (int i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
-	{
-		NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_ViewportImages[i]);
-	}
-
-	vkDestroySampler(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportTextureSampler, vkContext->allocator);
-
-	// Editor
+	// Descriptor pool is always created.
 	vkDestroyDescriptorPool(vkContext->device.logicalDevice, vkContext->imGuiResources.descriptorPool, vkContext->allocator);
 }
 
 void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkContext)
 {
-	// Destroy all
+	if (vkContext->renderMode == RenderMode::GAME)
+		return; // Nothing to recreate in GAME mode (no offscreen images).
 
-	//DestroyGameViewportDescriptorSets(vkContext);
-	//DestroySceneViewportDescriptorSets(vkContext);
-
-	// --------------------------
+	DestroyPickResources(vkContext);
 
 	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_GameViewportDepthAttachment);
 
@@ -65,11 +77,7 @@ void NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(VulkanContext* vkCo
 
 	CreateViewportImages(vkContext);
 	CreateViewportDepthResources(vkContext);
-
-	// ------------------------
-
-	//CreateSceneViewportDescriptorSets(vkContext);
-	//CreateGameViewportDescriptorSets(vkContext);
+	CreatePickResources(vkContext);
 }
 
 // ----------------------------------------------------------------------------------- //
@@ -191,6 +199,14 @@ void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkCo
 	// Depth resources
 	vkContext->device.depthFormat = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
 
+	// Include the stencil aspect when the chosen depth format has a stencil component.
+	// Stencil-only formats (D32_SFLOAT) must NOT include VK_IMAGE_ASPECT_STENCIL_BIT.
+	const VkImageAspectFlags depthAspect =
+		(vkContext->device.depthFormat == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+		 vkContext->device.depthFormat == VK_FORMAT_D24_UNORM_S8_UINT)
+		? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)
+		: VK_IMAGE_ASPECT_DEPTH_BIT;
+
 	// Create depth image and its view.
 	NOUS_VulkanImage::CreateVulkanImage(
 		vkContext,
@@ -204,12 +220,12 @@ void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkCo
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		true,  // Create view
-		VK_IMAGE_ASPECT_DEPTH_BIT,  // Use VK_IMAGE_ASPECT_DEPTH_BIT | STENCIL if needed
+		depthAspect,
 		&vkContext->imGuiResources.m_ViewportDepthAttachment
 	);
 
 	// ------------------------------------------------------------------------------------------------- //
-	 
+
 	// Create depth image and its view.
 	NOUS_VulkanImage::CreateVulkanImage(
 		vkContext,
@@ -223,9 +239,54 @@ void NOUS_ImGuiVulkanResources::CreateViewportDepthResources(VulkanContext* vkCo
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		true,  // Create view
-		VK_IMAGE_ASPECT_DEPTH_BIT,  // Use VK_IMAGE_ASPECT_DEPTH_BIT | STENCIL if needed
+		depthAspect,
 		&vkContext->imGuiResources.m_GameViewportDepthAttachment
 	);
+}
+
+void NOUS_ImGuiVulkanResources::CreatePickResources(VulkanContext* vkContext)
+{
+	// Pick color image — R8G8B8A8_UNORM (no sRGB gamma) so raw ID bytes are preserved.
+	NOUS_VulkanImage::CreateVulkanImage(
+		vkContext,
+		VK_IMAGE_TYPE_2D,
+		vkContext->framebufferWidth,
+		vkContext->framebufferHeight,
+		1,
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		true,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		&vkContext->imGuiResources.m_PickImage
+	);
+
+	// Pick depth image
+	vkContext->device.depthFormat = NOUS_VulkanDevice::FindDepthFormat(vkContext->device.physicalDevice);
+
+	NOUS_VulkanImage::CreateVulkanImage(
+		vkContext,
+		VK_IMAGE_TYPE_2D,
+		vkContext->framebufferWidth,
+		vkContext->framebufferHeight,
+		1,
+		VK_SAMPLE_COUNT_1_BIT,
+		vkContext->device.depthFormat,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		true,
+		VK_IMAGE_ASPECT_DEPTH_BIT,
+		&vkContext->imGuiResources.m_PickDepthAttachment
+	);
+}
+
+void NOUS_ImGuiVulkanResources::DestroyPickResources(VulkanContext* vkContext)
+{
+	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_PickDepthAttachment);
+	NOUS_VulkanImage::DestroyVulkanImage(vkContext, &vkContext->imGuiResources.m_PickImage);
 }
 
 unsigned long long int NOUS_ImGuiVulkanResources::GetViewportTexture(VkDescriptorSet descriptorSet)

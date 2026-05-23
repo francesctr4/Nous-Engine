@@ -6,6 +6,7 @@
 #include "Engine/Utils/Math/Vertex.inl"
 
 #include <vector>
+#include <glm/glm.hpp>
 
 class ResourceMaterial;
 
@@ -15,17 +16,23 @@ public:
 
 	// Constructor & Destructor
 
-	ResourceMesh(UID uid = 0);
-	~ResourceMesh() override;
+	NOUS_ENGINE_API ResourceMesh(uint32 uid = 0);
+	NOUS_ENGINE_API ~ResourceMesh() override;
 
 public:
 
-	uint32 ID;
+	// GPU-side slot index into VulkanContext::geometries[].
+	// Set by VulkanBackend::CreateGeometry, cleared to INVALID_ID on destroy.
+	// Used every frame to locate the vertex/index buffer offsets for this mesh.
 	uint32 internalID;
-	uint32 generation;
 
 	std::vector<Vertex3D> vertices;
 	std::vector<uint32> indices;
+
+	// Local-space AABB computed once after import. Used every frame by the
+	// AABB cache pass — avoids iterating all vertices per frame.
+	glm::vec3 localAABBMin {0.f};
+	glm::vec3 localAABBMax {0.f};
 };
 
 #endif // RESOURCEMESH_H

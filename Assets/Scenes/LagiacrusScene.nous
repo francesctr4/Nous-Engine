@@ -3,48 +3,250 @@
     "version": 0.10000000000000001,
     "GameObjects": [
         {
-            "uid": 298497733,
+            "uid": 2814761471,
             "name": "Lagiacrus Head",
             "parent": 0,
             "components": [
                 {
                     "type": "CTransform",
                     "position": [
-                        -74.300003051757812,
-                        98.400001525878906,
-                        -246.19999694824219
+                        -356.59796142578125,
+                        157.9481201171875,
+                        -846.6710205078125
+                    ],
+                    "orientation": [
+                        0.76185643672943115,
+                        0,
+                        -0.64774590730667114,
+                        0
                     ],
                     "rotation": [
-                        0.69999998807907104,
-                        -119,
+                        0,
+                        -80.743728637695312,
                         0
                     ],
                     "scale": [
-                        1.0299999713897705,
+                        0.99999994039535522,
+                        1,
+                        0.99999994039535522
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Lagiacrus_Head.fbx",
+                    "libraryPath": "Library\\Meshes\\4162411114.nmesh",
+                    "resourceUID": 4162411114
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\Lagiacrus_Head.nmat",
+                    "libraryPath": "Library\\Materials\\1732592393.nmat",
+                    "resourceUID": 1732592393
+                }
+            ]
+        },
+        {
+            "uid": 550701904,
+            "name": "Cypher",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -282.29623413085938,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.79473936557769775,
+                        0,
+                        -0.60695087909698486,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -74.738716125488281,
+                        0
+                    ],
+                    "scale": [
+                        0.99999922513961792,
+                        1,
+                        0.99999922513961792
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Cypher_S0_Skelmesh.fbx",
+                    "libraryPath": "Library\\Meshes\\781487361.nmesh",
+                    "resourceUID": 781487361
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\cypher_material.nmat",
+                    "libraryPath": "Library\\Materials\\3904711568.nmat",
+                    "resourceUID": 3904711568
+                }
+            ]
+        },
+        {
+            "uid": 595142034,
+            "name": "Queen Xenomorph",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        0.5,
+                        0.5,
+                        0.5
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Queen_Xenomorph.fbx",
+                    "libraryPath": "Library\\Meshes\\2926293762.nmesh",
+                    "resourceUID": 2926293762
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\queen_xenomorph.nmat",
+                    "libraryPath": "Library\\Materials\\1438301404.nmat",
+                    "resourceUID": 1438301404
+                }
+            ]
+        },
+        {
+            "uid": 1487752541,
+            "name": "Wolf",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        190.737548828125,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.56610256433486938,
+                        0,
+                        -0.82433480024337769,
+                        0
+                    ],
+                    "rotation": [
+                        180,
+                        -68.957778930664062,
+                        180
+                    ],
+                    "scale": [
+                        0.99998337030410767,
+                        1,
+                        0.99998337030410767
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\\Meshes\\Wolf.obj",
+                    "libraryPath": "Library\\Meshes\\3984858807.nmesh",
+                    "resourceUID": 3984858807
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\Materials\\wolf_material.nmat",
+                    "libraryPath": "Library\\Materials\\1782489807.nmat",
+                    "resourceUID": 1782489807
+                }
+            ]
+        },
+        {
+            "uid": 2204086558,
+            "name": "Rotator",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
                         1,
                         1
                     ]
                 },
                 {
-                    "type": "CMesh",
-                    "assetPath": "Assets\\Meshes\\Lagiacrus_Head.fbx"
+                    "type": "CScript",
+                    "scripts": [
+                        "MoveScriptGameObject"
+                    ],
+                    "properties": {
+                        "MoveScriptGameObject": {
+                            "m_amplitude": {
+                                "type": 0,
+                                "value": 200
+                            },
+                            "m_speed": {
+                                "type": 0,
+                                "value": 1
+                            },
+                            "m_target": {
+                                "type": 3,
+                                "value": 2814761471
+                            }
+                        }
+                    }
                 }
             ]
         },
         {
-            "uid": 4095839088,
-            "name": "adioooos",
+            "uid": 3268259536,
+            "name": "Main Camera",
             "parent": 0,
             "components": [
                 {
                     "type": "CTransform",
                     "position": [
                         0,
+                        120.5,
+                        410.01998901367188
+                    ],
+                    "orientation": [
+                        0.99737799167633057,
+                        0.072367846965789795,
                         0,
                         0
                     ],
                     "rotation": [
-                        0,
+                        8.3000001907348633,
                         0,
                         0
                     ],
@@ -53,181 +255,14 @@
                         1,
                         1
                     ]
-                }
-            ]
-        },
-        {
-            "uid": 398395914,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
+                },
                 {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 1588395522,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 3115871554,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 1422535452,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 861740340,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 862599577,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "uid": 2658219374,
-            "name": "adioooos",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
+                    "type": "CCamera",
+                    "fov": 60,
+                    "nearPlane": 0.10000000149011612,
+                    "farPlane": 10000,
+                    "aspectRatio": 1.8879055976867676,
+                    "isMainCamera": true
                 }
             ]
         }

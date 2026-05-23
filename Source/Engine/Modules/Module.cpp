@@ -1,6 +1,9 @@
 #include "Module.h"
 
-Module::Module(Application* app) : App(app) {}
+Module::Module(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem) :
+    eventSystem(eventSystem),
+    JobSystem(jobSystem)
+{}
 
 Module::~Module() = default;
 

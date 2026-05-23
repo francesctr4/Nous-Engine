@@ -1,9 +1,22 @@
 {
-  "diffuse_color": [
-    1,
-    1,
-    1,
-    1
-  ],
-  "diffuse_map_path": "Assets\\Textures\\cypher_tex.png"
+    "uniforms": [
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        }
+    ],
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/Textures\/cypher_tex.png",
+            "uid": 211668797,
+            "library_path": "Library\/Textures\/211668797.png"
+        }
+    ]
 }

@@ -4,723 +4,673 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Core/Application.h"
-#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <filesystem>
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Utils/Serialization/Random/Random.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
-#include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
+#include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
+#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
+#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
-constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
+#include <future>
+#include <ranges>
+#include <thread>
+#include <utility>
 
-ModuleResourceManager::ModuleResourceManager(Application* app) : Module(app)
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+
+#include <unordered_map>
+
+// ---------------------------------------------------------------------------
+// Resource factory table — one entry per ResourceType.
+// Adding a new type: add one entry here; no other edits required.
+// ---------------------------------------------------------------------------
+namespace
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+    struct ResourceFactory
+    {
+        Resource* (*create)();
+        void      (*destroy)(Resource*);
+    };
 
-	App->eventSystem->Subscribe(EventType::DROP_FILE, this);
+    const std::unordered_map<ResourceType, ResourceFactory> k_ResourceFactories =
+    {
+        { ResourceType::MESH,
+          { []() -> Resource* { return NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH); },
+            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_MESH); } }},
+        { ResourceType::MATERIAL,
+          { []() -> Resource* { return NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL); },
+            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_MATERIAL); } }},
+        { ResourceType::TEXTURE,
+          { []() -> Resource* { return NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE); },
+            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_TEXTURE); } }},
+        { ResourceType::SHADER,
+          { []() -> Resource* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER); },
+            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_SHADER); } }},
+    };
+
+    Resource* InstantiateResource(const ResourceType type)
+    {
+        const auto it = k_ResourceFactories.find(type);
+        if (it == k_ResourceFactories.end()) return nullptr;
+        return it->second.create();
+    }
 }
 
-ModuleResourceManager::~ModuleResourceManager()
+constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
+
+/*static*/ std::string ModuleResourceManager::NormalizeAssetPath(const std::string& path)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+    std::string result = path;
+    std::replace(result.begin(), result.end(), '\\', '/');
+    return result;
 }
+
+/*static*/ std::string ModuleResourceManager::FindSourceAssetsDir()
+{
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    fs::path dir = fs::current_path(ec);
+    if (ec) return {};
+
+    for (int depth = 0; depth < 8; ++depth)
+    {
+        if (fs::exists(dir / "Assets", ec) && fs::exists(dir / "Source", ec))
+            return NormalizeAssetPath((dir / "Assets").generic_string());
+        fs::path parent = dir.parent_path();
+        if (parent == dir) break;
+        dir = std::move(parent);
+    }
+    return {};
+}
+
+ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
+                                             IImporterManager* importerManager)
+    : Module(eventSystem, jobSystem)
+    , mImporterManager(importerManager)
+    , m_importPipeline(importerManager, jobSystem)
+    , m_scenePreloader(this)
+    , m_subMeshCache(resources, resourcesMutex, m_pendingUploads, m_pendingUploadsMutex)
+{
+}
+
+ModuleResourceManager::~ModuleResourceManager() = default;
 
 bool ModuleResourceManager::Awake()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	mImporterManager->Init(this);
+
+	// Always ensure directories exist — idempotent, safe to call in any mode.
+	m_importPipeline.EnsureLibraryDirectories();
 
 	return true;
+}
+
+void ModuleResourceManager::ScanAndImportAssets()
+{
+	m_importPipeline.ScanAndImportAssets();
+}
+
+void ModuleResourceManager::RegenerateLibrary()
+{
+	m_importPipeline.ClearLibraryFiles();
+	// This runs on a job-system worker. Sub-jobs can only run in parallel if other
+	// workers are free — with only 1 worker the queue would starve waiting on the latch.
+	const bool canParallelize = JobSystem && JobSystem->GetWorkerCount() > 1;
+	m_importPipeline.ScanAndImportAssets(canParallelize);
+}
+
+bool ModuleResourceManager::ImportDirectory(const std::string& directory)
+{
+	return m_importPipeline.ImportDirectory(directory);
 }
 
 bool ModuleResourceManager::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
-	// -----------------------
-	// Default Texture
-	// -----------------------
-	NOUS_INFO("Creating default checkerboard texture...");
-
-	const uint32 texDimension = 256;
-	const uint32 channels = 4;
-	const uint32 pixelCount = texDimension * texDimension;
-	const uint32 squareSize = 16;
-
-	std::vector<uint8_t> pixels(pixelCount * channels, 255);
-	for (uint32_t row = 0; row < texDimension; ++row)
+	NOUS_INFO("Queuing built-in textures and default material for GPU upload...");
 	{
-		for (uint32_t col = 0; col < texDimension; ++col)
-		{
-			uint32_t index = (row * texDimension) + col;
-			uint32_t indexBpp = index * channels;
-
-			bool isWhite = ((row / squareSize) % 2 == (col / squareSize) % 2);
-
-			if (isWhite) {
-				pixels[indexBpp + 0] = 255;
-				pixels[indexBpp + 1] = 255;
-				pixels[indexBpp + 2] = 255;
-			} else {
-				pixels[indexBpp + 0] = 0;
-				pixels[indexBpp + 1] = 0;
-				pixels[indexBpp + 2] = 255;
-			}
-			pixels[indexBpp + 3] = 255;
-		}
+		auto uploads = m_builtinResources.Create();
+		std::scoped_lock lock(m_pendingUploadsMutex);
+		m_pendingUploads.insert(m_pendingUploads.end(), uploads.begin(), uploads.end());
 	}
 
-	mDefaultTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
-	mDefaultTexture->SetName("DefaultTexture");
-	mDefaultTexture->width = texDimension;
-	mDefaultTexture->height = texDimension;
-	mDefaultTexture->channelCount = channels;
-
-	if (!App->renderer->GetRendererFrontend()->CreateTexture(pixels.data(), mDefaultTexture))
+	if (m_isEditorMode)
 	{
-		NOUS_FATAL("Failed to create default texture.");
-		return false;
-	}
-
-	// -----------------------
-	// Default Material
-	// -----------------------
-	mDefaultMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
-	mDefaultMaterial->SetName("DefaultMaterial");
-	mDefaultMaterial->diffuseColor = glm::vec4(1.0f);
-	mDefaultMaterial->diffuseMap.type = TextureMapType::DIFFUSE;
-	mDefaultMaterial->diffuseMap.texture = mDefaultTexture;
-
-	if (!App->renderer->GetRendererFrontend()->CreateMaterial(mDefaultMaterial))
-	{
-		NOUS_FATAL("Failed to create default material.");
-		return false;
+		m_sourceAssetsDir = FindSourceAssetsDir();
+		ScanAndRegisterWatchedAssets();
 	}
 
 	return true;
 }
 
+
+void ModuleResourceManager::ScanAndRegisterWatchedAssets()
+{
+	namespace fs = std::filesystem;
+	std::error_code ec;
+	int watchCount = 0;
+
+	const std::string watchBase = m_sourceAssetsDir.empty() ? "Assets" : m_sourceAssetsDir;
+	const fs::path sourceRoot = m_sourceAssetsDir.empty()
+	    ? fs::path{}
+	    : fs::path(m_sourceAssetsDir).parent_path();
+
+	for (auto& entry : fs::recursive_directory_iterator(watchBase, ec))
+	{
+		if (!entry.is_regular_file()) continue;
+		const auto ext = entry.path().extension();
+		if (ext == ".meta" || ext == ".nous") continue;
+		if (ext == ".glsl") continue;
+		if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb" || ext == ".dae") continue;
+
+		const std::string watchPath = NormalizeAssetPath(entry.path().generic_string());
+
+		std::string relKey;
+		if (!m_sourceAssetsDir.empty())
+			relKey = NormalizeAssetPath(fs::relative(entry.path(), sourceRoot, ec).generic_string());
+		else
+			relKey = watchPath;
+
+		// WatchIfNew (not Watch) so a periodic rescan does not reset the baseline
+		// mtime of a file that already has a pending modification.
+		m_assetWatcher.WatchIfNew(watchPath, [this, relKey](const std::string&)
+		{
+			NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload] FileWatcher fired for: %s", relKey.c_str());
+			DispatchReimportJob(relKey);
+		});
+		++watchCount;
+	}
+
+	if (ec)
+		NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] Could not scan for asset watching: %s", ec.message().c_str());
+}
+
+void ModuleResourceManager::RegisterAssetForHotReload(const std::string& assetsPath)
+{
+	if (!m_isEditorMode || m_sourceAssetsDir.empty() || assetsPath.empty())
+		return;
+
+	// Filter to types we hot-reload and skip sidecars.
+	const auto extPos = assetsPath.find_last_of('.');
+	if (extPos == std::string::npos) return;
+	const std::string ext = assetsPath.substr(extPos);
+	if (ext == ".meta" || ext == ".nous" || ext == ".glsl") return;
+	if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb" || ext == ".dae") return;
+
+	const std::string relKey = NormalizeAssetPath(assetsPath);
+
+	// Map "Assets/foo/bar.png" → "<sourceAssetsDir>/foo/bar.png".
+	// m_sourceAssetsDir already ends in "/Assets" (no trailing slash).
+	std::string watchPath;
+	if (relKey.size() > 7 && relKey.substr(0, 7) == "Assets/")
+		watchPath = m_sourceAssetsDir + "/" + relKey.substr(7);
+	else
+		watchPath = relKey;
+
+	m_assetWatcher.WatchIfNew(watchPath, [this, relKey](const std::string&)
+	{
+		NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload] FileWatcher fired for: %s", relKey.c_str());
+		DispatchReimportJob(relKey);
+	});
+}
+
 UpdateStatus ModuleResourceManager::PreUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	if (m_isEditorMode)
+	{
+		// Drain any pending watch registrations queued from worker threads
+		// (e.g. scene preload) or from CreateResource on the main thread.
+		std::vector<std::string> pending;
+		{
+			std::scoped_lock lock(m_watchRegistrationMutex);
+			std::swap(pending, m_pendingWatchRegistrations);
+		}
+		for (const auto& assetsPath : pending)
+			RegisterAssetForHotReload(assetsPath);
+
+		++m_assetWatchFrameCounter;
+		if (m_assetWatchFrameCounter % 30 == 0)
+			m_assetWatcher.Poll();
+	}
 
 	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleResourceManager::Update(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleResourceManager::PostUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	return UpdateStatus::CONTINUE;
 }
 
 bool ModuleResourceManager::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
+	// Wait for any in-flight reimport jobs to finish before tearing down.
+	// Worker lambdas capture `this` and write into m_readyUploads — letting them
+	// run after CleanUp returns would be a use-after-free.
+	while (m_inFlightJobCount.load(std::memory_order_acquire) > 0)
+		std::this_thread::yield();
 
 	return true;
 }
 
 void ModuleResourceManager::OnEvent(const Event& event)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
-	switch (event.type)
-	{
-		case EventType::DROP_FILE:
-		{
-			ImportFile(event.ctx.c);
-
-			break;
-		}
-		default:
-		{
-			break;
-		}
-	}
 }
 
 bool ModuleResourceManager::ImportFile(const std::string& path)
 {
-	NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Importing file: %s", __FUNCTION__, path.c_str());
-
-	if (!NOUS_FileManager::Exists(path))
-	{
-		NOUS_ERROR("Import File ERROR: General --> Couldn't find file: %s", path.c_str());
-		return false;
-	}
-
-	std::string relativePath = NOUS_FileManager::GetRelativePath(path);
-	std::string fileDirectory = NOUS_FileManager::GetDirectory(path);
-	std::string fileName = NOUS_FileManager::GetFilename(path);
-	std::string extension = NOUS_FileManager::GetExtension(path);
-
-	ResourceType resourceType = Resource::GetTypeFromExtension(extension);
-
-	if (resourceType == ResourceType::UNKNOWN) 
-	{
-		// NOUS_ERROR("Import File ERROR: General --> Unsupported file extension: %s", extension.c_str());
-		return false;
-	}
-
-	if (fileDirectory.rfind("Assets\\", 0) == 0)
-	{
-		// CASE 1,2,3: The file is in "Assets\\"
-
-		std::string metaFilePath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension + ".meta";
-
-		if (!NOUS_FileManager::Exists(metaFilePath))
-		{
-			// DONE
-			// CASE 1: The file is in "Assets\\" and DOES NOT HAVE Meta File
-			// New Resource, Create Meta File
-
-			UID resourceUID = static_cast<uint32>(Random::Generate());
-			std::string libraryExtension = Resource::GetLibraryExtensionFromType(resourceType);
-			std::string libraryPath = Resource::GetLibraryDirectoryFromType(resourceType) +
-									  std::to_string(resourceUID) + "." + libraryExtension;
-
-			MetaFileData metaFileData;
-
-			metaFileData.name = fileName;
-			metaFileData.uid = resourceUID;
-			metaFileData.resourceType = resourceType;
-			metaFileData.assetsPath = relativePath;
-			metaFileData.libraryPath = libraryPath;
-
-			if (!CreateMetaFile(metaFilePath, metaFileData)) 
-			{
-				NOUS_ERROR("Import File ERROR: CASE 1 --> Error creating meta file: %s", metaFilePath.c_str());
-				return false;
-			}
-
-			// Manage inside: Import Resource and Save into Library
-			ImporterManager::Import(metaFileData.resourceType, metaFileData);
-
-			// Here we finish importing the file, and we start creating the resource.
-
-			//CreateResource(metaFileData.assetsPath);
-
-			//Resource* resource = InstantiateResource(resourceType);
-
-			//if (resource != nullptr)
-			//{
-			//	resource->SetName(fileName);
-			//	resource->SetUID(resourceUID);
-			//	resource->SetType(resourceType);
-			//	resource->SetAssetsPath(relativePath);
-			//	resource->SetLibraryPath(libraryPath);
-			//}
-			//else
-			//{
-			//	NOUS_ERROR("Import File ERROR: CASE 1 --> Failed to Instantiate Resource. Returned nullptr.");
-			//	return false;
-			//}
-
-			//// Manage inside: Loading in memory & increase reference count. 
-			//// Manage inside: Retrieve resource name and assetspath from libraryfile.
-			//ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource);
-
-			//AddResource(metaFileData.uid, resource);
-
-			//// Push to render packet
-			////External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
-		}
-		else 
-		{
-			// CASE 2,3: The file is in "Assets\\" and HAS Meta File
-			// Retrieve data from Meta File
-
-			MetaFileData metaFileData;
-
-			if (!ReadMetaFile(metaFilePath, metaFileData))
-			{
-				NOUS_ERROR("Import File ERROR: CASE 2,3 --> Error reading meta file: %s", metaFilePath.c_str());
-				return false;
-			}
-
-			if (!NOUS_FileManager::Exists(metaFileData.libraryPath))
-			{
-				// DONE
-				// CASE 2: The file is in "Assets\\" and HAS Meta File but NO Library File
-				// Reimport to create library file with the same UID and data from meta file
-
-				// Manage inside: Import Resource and Save into Library
-				ImporterManager::Import(metaFileData.resourceType, metaFileData);
-
-				// Here we finish importing the file, and we start creating the resource.
-
-				//CreateResource(metaFileData.assetsPath);
-
-				//if (!ResourceExists(metaFileData.uid))
-				//{
-				//	// Create New Resource Into Scene
-				//	Resource* resource = InstantiateResource(resourceType);
-
-				//	if (resource != nullptr)
-				//	{
-				//		resource->SetName(metaFileData.name);
-				//		resource->SetUID(metaFileData.uid);
-				//		resource->SetType(metaFileData.resourceType);
-				//		resource->SetAssetsPath(metaFileData.assetsPath);
-				//		resource->SetLibraryPath(metaFileData.libraryPath);
-				//	}
-				//	else
-				//	{
-				//		NOUS_ERROR("Import File ERROR: CASE 2 --> Failed to Instantiate Resource. Returned nullptr.");
-				//		return false;
-				//	}
-
-				//	// Manage inside: Loading in memory & increase reference count. 
-				//	// Manage inside: Retrieve resource name and assetspath from libraryfile.
-				//	ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource);
-
-				//	AddResource(metaFileData.uid, resource);
-
-				//	// Push to render packet
-				//	//External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
-				//}
-				//else 
-				//{
-				//	// TODO
-				//	// Get Loaded Resource and Increase Reference Count
-				//	resources[metaFileData.uid]->IncreaseReferenceCount();
-				//}
-			}
-			else
-			{
-				// DONE
-				// CASE 3: The file is in "Assets\\" and HAS Meta File AND Library File
-				// Load the Library File
-
-				// Here we finish importing the file, and we start creating the resource.
-
-				//CreateResource(metaFileData.assetsPath);
-
-				//if (!ResourceExists(metaFileData.uid))
-				//{
-				//	// Create New Resource Into Scene
-				//	Resource* resource = InstantiateResource(resourceType);
-
-				//	if (resource != nullptr)
-				//	{
-				//		resource->SetName(metaFileData.name);
-				//		resource->SetUID(metaFileData.uid);
-				//		resource->SetType(metaFileData.resourceType);
-				//		resource->SetAssetsPath(metaFileData.assetsPath);
-				//		resource->SetLibraryPath(metaFileData.libraryPath);
-				//	}
-				//	else
-				//	{
-				//		NOUS_ERROR("Import File ERROR: CASE 3 --> Failed to Instantiate Resource. Returned nullptr.");
-				//		return false;
-				//	}
-
-				//	// Manage inside: Loading in memory & increase reference count. 
-				//	// Manage inside: Retrieve resource name and assetspath from libraryfile.
-				//	ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource);
-
-				//	AddResource(metaFileData.uid, resource);
-
-				//	// Push to render packet
-				//	//External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
-				//}
-				//else
-				//{
-				//	// TODO
-				//	// Get Loaded Resource and Increase Reference Count
-				//	resources[metaFileData.uid]->IncreaseReferenceCount();
-				//}
-			}
-		}
-	}
-	else if (fileDirectory.rfind("Library\\", 0) == 0)
-	{
-		// DONE
-		// CASE 4: The file is in "Library\\"
-		// Load the Library File
-
-		// Here we finish importing the file, and we start creating the resource.
-
-		//UID resourceUID = static_cast<UID>(std::stoul(fileName));
-
-		//if (!ResourceExists(resourceUID))
-		//{
-		//	// Create New Resource Into Scene
-		//	Resource* resource = InstantiateResource(resourceType);
-
-		//	if (resource != nullptr)
-		//	{
-		//		//resource->SetName(metaFileData.name);
-		//		resource->SetUID(resourceUID);
-		//		resource->SetType(resourceType);
-		//		//resource->SetAssetsPath(metaFileData.assetsPath);
-		//		resource->SetLibraryPath(path);
-		//	}
-		//	else
-		//	{
-		//		NOUS_ERROR("Import File ERROR: CASE 4 --> Failed to Instantiate Resource. Returned nullptr.");
-		//		return false;
-		//	}
-
-		//	// Manage inside: Loading in memory & increase reference count. 
-		//	// Manage inside: Retrieve resource name and assetspath from libraryfile.
-		//	ImporterManager::Load(resource->GetType(), resource->GetLibraryPath(), resource);
-
-		//	AddResource(resource->GetUID(), resource);
-
-		//	// Push to render packet
-		//	//External->renderer->geometries.push_back(static_cast<ResourceMesh*>(resource));
-		//}
-		//else
-		//{
-		//	// TODO
-		//	// Get Loaded Resource and Increase Reference Count
-		//	resources[resourceUID]->IncreaseReferenceCount();
-		//}
-	}
-	else 
-	{
-		// DONE
-		// CASE 0: The file is not in "Assets\\" nor "Library\\"
-		// Copy to "Assets\\"
-
-		if (resourceType != ResourceType::UNKNOWN)
-		{
-			std::string newPath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension;
-
-			if (NOUS_FileManager::CopyFile(path, newPath))
-			{
-				ImportFile(newPath);
-			}
-			else
-			{
-				NOUS_ERROR("Import File ERROR: CASE 0 --> Error while copying the file to Assets\\ directory.");
-				return false;
-			}
-		}
-		else 
-		{
-			NOUS_ERROR("Import File ERROR: CASE 0 --> Unsupported file extension: %s", extension.c_str());
-			return false;
-		}
-	}
-
-	return true;
+	return m_importPipeline.ImportFile(path);
 }
 
-const std::unordered_map<UID, Resource*>& ModuleResourceManager::GetResourcesMap() const
+std::unordered_map<uint32, Resource*> ModuleResourceManager::GetResourcesMap() const
 {
+	std::scoped_lock lock(resourcesMutex);
 	return resources;
 }
 
-bool ModuleResourceManager::CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData)
-{
-	JsonFile metaFile;
-
-	metaFile.AppendValue("Name", inFileData.name);
-	metaFile.AppendValue("UID", static_cast<double>(inFileData.uid));
-	metaFile.AppendValue("Resource Type", static_cast<int>(inFileData.resourceType));
-	metaFile.AppendValue("Assets Path", inFileData.assetsPath);
-	metaFile.AppendValue("Library Path", inFileData.libraryPath);
-
-	return metaFile.SaveToFile(metaFilePath.c_str());
-}
-
-bool ModuleResourceManager::ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData)
-{
-	JsonFile metaFile;
-
-	// Load the JSON file
-	if (!metaFile.LoadFromFile(metaFilePath.c_str()))
-	{
-		return false;
-	}
-
-	// Variables to hold the intermediate values
-	std::string r_fileName, r_assetsPath, r_libraryPath;
-	int r_resourceType;
-	double r_resourceUID;
-
-	// Retrieve values using GetValue
-	if (!metaFile.GetValue("Name", r_fileName) ||
-		!metaFile.GetValue("UID", r_resourceUID) ||
-		!metaFile.GetValue("Resource Type", r_resourceType) ||
-		!metaFile.GetValue("Assets Path", r_assetsPath) ||
-		!metaFile.GetValue("Library Path", r_libraryPath))
-	{
-		return false; // Return false if any required field is missing or invalid
-	}
-
-	// Assign values to outFileData, casting where necessary
-	outFileData.name = r_fileName;
-	outFileData.uid = static_cast<UID>(r_resourceUID); // Casting double to UID
-	outFileData.resourceType = static_cast<ResourceType>(r_resourceType); // Casting int to ResourceType
-	outFileData.assetsPath = r_assetsPath;
-	outFileData.libraryPath = r_libraryPath;
-
-	return true;
-}
-
-Resource* ModuleResourceManager::InstantiateResource(const ResourceType& type)
-{
-	Resource* resource = nullptr;
-
-	switch (type)
-	{
-		case ResourceType::MESH:
-		{
-			resource = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
-			break;
-		}
-		case ResourceType::MATERIAL:
-		{
-			resource = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
-			break;
-		}
-		case ResourceType::TEXTURE:
-		{
-			resource = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
-			break;
-		}
-	}
-
-	return resource;
-}
 
 void ModuleResourceManager::DeleteResource(Resource*& resource)
 {
-	UID uid = resource->GetUID();
-
-	switch (resource->GetType())
+	// Remove any sub-resource index entry that maps to this UID.
+	// SubMeshCache::EraseUID requires resourcesMutex to be held by the caller.
 	{
-		case ResourceType::MESH:
-		{
-			NOUS_DELETE(resource, MemoryTag::RESOURCE_MESH);
-			break;
-		}
-		case ResourceType::MATERIAL:
-		{
-			NOUS_DELETE(resource, MemoryTag::RESOURCE_MATERIAL);
-			break;
-		}
-		case ResourceType::TEXTURE:
-		{
-			NOUS_DELETE(resource, MemoryTag::RESOURCE_TEXTURE);
-			break;
-		}
+		const uint32 uid = resource->GetUID();
+		std::scoped_lock lock(resourcesMutex);
+		m_subMeshCache.EraseUID(uid);
 	}
 
-	resources.erase(uid);
+	if (const auto it = k_ResourceFactories.find(resource->GetType());
+		it != k_ResourceFactories.end())
+		it->second.destroy(resource);
+
+	// NOTE: resources.erase(uid) is intentionally NOT here.
+	// EvictResource removes the entry under resourcesMutex before calling DeleteResource,
+	// so the map is clean before we reach this point.
 }
 
-bool ModuleResourceManager::ResourceExists(const UID& uid)
+bool ModuleResourceManager::ResourceExists(const uint32 uid) const
 {
-	return !(resources.find(uid) == resources.end());
+	std::scoped_lock lock(resourcesMutex);
+	return resources.contains(uid);
 }
 
-Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
+void ModuleResourceManager::UpdateResourcePath(const uint32 uid, const std::string& newAssetsPath)
 {
-	NOUS_INFO("[%s] Creating Resource", __FUNCTION__);
-	NOUS_INFO("Assets path: %s", assetsPath.c_str());
-
-	std::string metaFilePath = assetsPath + ".meta";
-	NOUS_INFO("Looking for meta file: %s", metaFilePath.c_str());
-
-	MetaFileData metaFileData;
-	if (!ReadMetaFile(metaFilePath, metaFileData))
-	{
-		NOUS_ERROR("CreateResource ERROR: Failed to read meta file: %s", metaFilePath.c_str());
-		return nullptr;
-	}
-
-	NOUS_INFO("Meta file read successfully:");
-	NOUS_INFO(" - Name: %s", metaFileData.name.c_str());
-	NOUS_INFO(" - UID: %u", metaFileData.uid);
-	NOUS_INFO(" - Type: %s", Resource::GetLibraryExtensionFromType(metaFileData.resourceType).c_str());
-	NOUS_INFO(" - Assets path: %s", metaFileData.assetsPath.c_str());
-	NOUS_INFO(" - Library path: %s", metaFileData.libraryPath.c_str());
-
-	if (!ResourceExists(metaFileData.uid))
-	{
-		NOUS_INFO("Resource with UID %u does not exist. Creating new instance...", metaFileData.uid);
-
-		Resource* resource = InstantiateResource(metaFileData.resourceType);
-		if (resource == nullptr)
-		{
-			NOUS_ERROR("CreateResource ERROR: Failed to instantiate resource of type %s.",
-					   Resource::GetLibraryExtensionFromType(metaFileData.resourceType).c_str());
-			return nullptr;
-		}
-
-		resource->SetName(metaFileData.name);
-		resource->SetUID(metaFileData.uid);
-		resource->SetType(metaFileData.resourceType);
-		resource->SetAssetsPath(metaFileData.assetsPath);
-		resource->SetLibraryPath(metaFileData.libraryPath);
-
-		NOUS_INFO("Resource instantiated successfully (UID: %u, Name: %s). Loading from library...",
-				  metaFileData.uid, metaFileData.name.c_str());
-
-		if (!ImporterManager::Load(metaFileData.resourceType, metaFileData.libraryPath, resource))
-		{
-			NOUS_ERROR("CreateResource ERROR: Failed to load resource from library: %s",
-					   metaFileData.libraryPath.c_str());
-			return nullptr;
-		}
-
-		AddResource(metaFileData.uid, resource);
-
-		resource->IncreaseReferenceCount();
-		resource->Validate();
-
-		NOUS_INFO("Resource successfully created and loaded into memory.");
-		NOUS_INFO("Reference count: %u", resource->GetReferenceCount());
-		NOUS_INFO("========================================");
-
-		return resource;
-	}
-	else
-	{
-		NOUS_INFO("Resource with UID %u already exists. Requesting existing instance...", metaFileData.uid);
-		Resource* existingResource = RequestResource(metaFileData.uid);
-		if (existingResource)
-		{
-			NOUS_INFO("Existing resource retrieved successfully (Name: %s, RefCount: %u).",
-					  existingResource->GetName().c_str(), existingResource->GetReferenceCount());
-
-			existingResource->Validate();
-		}
-		else
-		{
-			NOUS_ERROR("CreateResource ERROR: Failed to retrieve existing resource with UID %u.", metaFileData.uid);
-		}
-		NOUS_INFO("========================================");
-
-		return existingResource;
-	}
+	std::lock_guard lock(resourcesMutex);
+	auto it = resources.find(uid);
+	if (it != resources.end())
+		it->second->SetAssetsPath(newAssetsPath);
 }
 
-bool ModuleResourceManager::UnloadResource(const UID& UID)
+bool ModuleResourceManager::ClaimSlot(const uint32 uid)
 {
-	if (!ResourceExists(UID))
-	{
-		return false;
-	}
-
-	Resource* tmpResource = resources[UID];
-
-	ImporterManager::Unload(tmpResource->GetType(), tmpResource);
-
-	tmpResource->DecreaseReferenceCount();
-
-	if (tmpResource->GetReferenceCount() == 0)
-	{
-		DeleteResource(tmpResource);
-	}
-	
+	std::scoped_lock lock(resourcesMutex);
+	if (resources.contains(uid)) return false;
+	resources[uid] = nullptr; // placeholder: marks slot as "in progress"
 	return true;
 }
 
-Resource* ModuleResourceManager::RequestResource(const UID& uid)
+Resource* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
 {
-	Resource* resource = resources[uid];
-
-	ImporterManager::Load(resource->GetType(), resource->GetLibraryPath(), resource);
-
-	resource->IncreaseReferenceCount();
-
-	return resource;
-}
-
-void ModuleResourceManager::AddResource(const UID& uid, Resource*& resource)
-{
-	std::lock_guard<std::mutex> lock(resourcesMutex);  // Multi-threading
-	resources[uid] = resource;
-}
-
-void ModuleResourceManager::ClearResources()
-{
-	for (auto& [UID, Resource] : resources)
+	Resource* resource = nullptr;
+	while (true)
 	{
-		ImporterManager::Unload(Resource->GetType(), Resource);
-
-		switch (Resource->GetType())
 		{
-			case ResourceType::MESH:
+			std::scoped_lock lock(resourcesMutex);
+			const auto it = resources.find(uid);
+			if (it == resources.end())
+				return nullptr; // evicted before it resolved; caller should retry
+			resource = it->second;
+			if (resource != nullptr)
 			{
-				NOUS_DELETE(Resource, MemoryTag::RESOURCE_MESH);
-				break;
-			}
-			case ResourceType::MATERIAL:
-			{
-				NOUS_DELETE(Resource, MemoryTag::RESOURCE_MATERIAL);
-				break;
-			}
-			case ResourceType::TEXTURE:
-			{
-				NOUS_DELETE(Resource, MemoryTag::RESOURCE_TEXTURE);
+				resource->IncreaseReferenceCount(); // under lock — closes the eviction race
 				break;
 			}
 		}
+		nous::engine::multithreading::NOUS_Thread::SleepMS(1);
+	}
+	resource->Validate();
+	return resource;
+}
+
+Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, ResourceType type,
+    const std::string& name, const std::string& assetsPath, const std::string& libraryPath)
+{
+	Resource* resource = InstantiateResource(type);
+	if (!resource)
+	{
+		std::scoped_lock lock(resourcesMutex);
+		resources.erase(uid);
+		return nullptr;
 	}
 
-	resources.clear();
+	resource->SetName(name);
+	resource->SetUID(uid);
+	resource->SetType(type);
+	resource->SetAssetsPath(assetsPath);
+	resource->SetLibraryPath(libraryPath);
 
-    if (mDefaultTexture)
+	if (!mImporterManager->Deserialize(type, libraryPath, resource))
+	{
+		NOUS_ERROR("LoadResourceIntoSlot: failed to deserialize '%s' from '%s'", name.c_str(), libraryPath.c_str());
+		DeleteResource(resource);
+		std::scoped_lock lock(resourcesMutex);
+		resources.erase(uid);
+		return nullptr;
+	}
+
+	resource->SetState(ResourceState::CPU_READY);
+	bool registerForHotReload = false;
+	{
+		std::scoped_lock lock(resourcesMutex);
+		resources[uid] = resource;
+		if ((type == ResourceType::TEXTURE || type == ResourceType::MATERIAL)
+		    && !assetsPath.empty())
+		{
+			m_pathToUID[NormalizeAssetPath(assetsPath)] = uid;
+			registerForHotReload = true;
+		}
+	}
+	// FileWatcher is single-threaded; LoadResourceIntoSlot may run on a worker
+	// (scene preload). Queue the assetsPath; PreUpdate drains it on the main thread.
+	if (registerForHotReload && m_isEditorMode)
+	{
+		std::scoped_lock lock(m_watchRegistrationMutex);
+		m_pendingWatchRegistrations.push_back(assetsPath);
+	}
+	{ std::scoped_lock lock(m_pendingUploadsMutex); m_pendingUploads.emplace_back(type, resource); }
+	resource->IncreaseReferenceCount();
+	resource->Validate();
+	return resource;
+}
+
+
+Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
+{
+	MetaFileData metaFileData;
+	if (!ResourceImportPipeline::GetAssetMetaData(assetsPath, metaFileData))
+	{
+		NOUS_ERROR("CreateResource: failed to read meta for '%s'", assetsPath.c_str());
+		return nullptr;
+	}
+
+	if (ClaimSlot(metaFileData.uid))
+		return LoadResourceIntoSlot(metaFileData.uid, metaFileData.resourceType,
+		    metaFileData.name, metaFileData.assetsPath, metaFileData.libraryPath);
+
+	return SpinWaitForSlot(metaFileData.uid);
+}
+
+Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, const ResourceType type,
+                                                            const std::string& name,
+                                                            const std::string& assetsPath,
+                                                            const std::string& libraryPath)
+{
+	if (ClaimSlot(uid))
+		return LoadResourceIntoSlot(uid, type, name, assetsPath, libraryPath);
+
+	return SpinWaitForSlot(uid);
+}
+
+ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
+    const std::string& libraryPath, const int32_t submeshIndex,
+    const std::string& assetsPath, const uint32 hintUID)
+{
+	return m_subMeshCache.RequestOrCreateFromLibrary(libraryPath, submeshIndex, assetsPath, hintUID);
+}
+
+
+bool ModuleResourceManager::UnloadResource(const uint32 uid)
+{
+	Resource* resource = nullptr;
+	{
+		std::lock_guard lock(resourcesMutex);
+		const auto it = resources.find(uid);
+		if (it == resources.end() || !it->second) return false; // not found or still loading (placeholder)
+		resource = it->second;
+		resource->DecreaseReferenceCount();
+	}
+
+	// Defer GPU Release + CPU Evict to the Renderer's PreUpdate so we never
+	// destroy GPU resources mid-frame (between command recording and vkQueueSubmit).
+	if (resource->GetReferenceCount() == 0)
+	{
+		std::lock_guard lock(m_pendingReleasesMutex);
+		m_pendingReleases.emplace_back(resource->GetType(), resource);
+	}
+
+	return true;
+}
+
+
+void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
+{
+    // Common pattern for types that don't need special pre-destruction work:
+    // filter by type → GPU destroy (if ready) → CPU Evict → DELETE.
+    // Defined as a lambda so its body is a separate complexity unit.
+    auto destroyByType = [&](const ResourceType type, const MemoryTag tag, auto gpuDestroy)
     {
-        App->renderer->GetRendererFrontend()->DestroyTexture(mDefaultTexture);
-        NOUS_DELETE(mDefaultTexture, MemoryTag::RESOURCE_TEXTURE);
-        mDefaultTexture = nullptr;
+        for (auto& res : resources | std::views::values)
+        {
+            if (!res || res->GetType() != type) continue;
+            if (res->GetState() == ResourceState::GPU_READY)
+                gpuDestroy(res);
+            mImporterManager->Evict(type, res);
+            NOUS_DELETE(res, tag);
+        }
+    };
+
+    // Shaders first — descriptor sets reference texture image views;
+    // freeing textures first would leave dangling view references in the sets.
+    // VUID-vkDestroyImageView-01026
+    destroyByType(ResourceType::SHADER, MemoryTag::RESOURCE_SHADER,
+        [&gpu](Resource* r) { gpu->DestroyShader(down_cast<ResourceShader*>(r)); });
+
+    // Materials next — destroy GPU handle, then clear texture pointers directly
+    // (do NOT call UnloadResource; textures are destroyed in the next pass).
+    for (auto& res : resources | std::views::values)
+    {
+        if (!res || res->GetType() != ResourceType::MATERIAL) continue;
+        auto* mat = down_cast<ResourceMaterial*>(res);
+        if (mat->GetState() == ResourceState::GPU_READY)
+            gpu->DestroyMaterial(mat);
+        for (auto& map : mat->textureMaps | std::views::values)
+            map.texture = nullptr;
+        NOUS_DELETE(res, MemoryTag::RESOURCE_MATERIAL);
     }
 
-    if (mDefaultMaterial)
+    destroyByType(ResourceType::TEXTURE, MemoryTag::RESOURCE_TEXTURE,
+        [&gpu](Resource* r) { gpu->DestroyTexture(down_cast<ResourceTexture*>(r)); });
+
+    destroyByType(ResourceType::MESH, MemoryTag::RESOURCE_MESH,
+        [&gpu](Resource* r) { gpu->DestroyGeometry(down_cast<ResourceMesh*>(r)); });
+
+    resources.clear();
+    m_subMeshCache.Clear();
+
+    m_builtinResources.Destroy(gpu);
+
+    // Discard any stale queue entries — all resources are destroyed above.
+    { std::lock_guard lock(m_pendingUploadsMutex);  m_pendingUploads.clear(); }
+    { std::lock_guard lock(m_pendingReleasesMutex); m_pendingReleases.clear(); }
+}
+
+std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingUploads()
+{
+    std::vector<std::pair<ResourceType, Resource*>> result;
+    std::scoped_lock lock(m_pendingUploadsMutex);
+    std::swap(result, m_pendingUploads);
+    return result;
+}
+
+std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingReleases()
+{
+    std::vector<std::pair<ResourceType, Resource*>> result;
+    std::scoped_lock lock(m_pendingReleasesMutex);
+    std::swap(result, m_pendingReleases);
+    return result;
+}
+
+bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
+{
+    // Final refcount check + map erasure under the same lock so that a concurrent
+    // CreateResource thread cannot bump the refcount between our check and the delete.
     {
-        App->renderer->GetRendererFrontend()->DestroyMaterial(mDefaultMaterial);
-        NOUS_DELETE(mDefaultMaterial, MemoryTag::RESOURCE_MATERIAL);
-        mDefaultMaterial = nullptr;
+        std::lock_guard lock(resourcesMutex);
+        if (resource->GetReferenceCount() > 0)
+        {
+            // Re-acquired since TakePendingReleases. ImporterManager::Release already
+            // freed the GPU resources, so re-queue for upload to restore GPU state.
+            std::lock_guard uploadLock(m_pendingUploadsMutex);
+            m_pendingUploads.emplace_back(type, resource);
+            return false;
+        }
+        resources.erase(resource->GetUID());
+        m_pathToUID.erase(NormalizeAssetPath(resource->GetAssetsPath()));
     }
+
+    mImporterManager->Evict(type, resource);
+    DeleteResource(resource);
+    return true;
 }
 
-ResourceTexture *ModuleResourceManager::GetDefaultTexture() const
+void ModuleResourceManager::SetGameMode() noexcept
 {
-    return mDefaultTexture;
+    m_isEditorMode = false;
 }
 
-ResourceMaterial *ModuleResourceManager::GetDefaultMaterial() const
+std::vector<ModuleResourceManager::PendingAssetUpload> ModuleResourceManager::TakeReadyAssetUploads()
 {
-    return mDefaultMaterial;
+    std::vector<PendingAssetUpload> result;
+    std::lock_guard lock(m_uploadQueueMutex);
+    std::swap(result, m_readyUploads);
+    return result;
 }
 
-//std::string ModuleResourceManager::GetLibraryPath(const std::string& assetsPath)
-//{
-//	JsonFile metaFile;
-//
-//	// Load the JSON file
-//	if (!metaFile.LoadFromFile((assetsPath + ".meta").c_str()))
-//	{
-//		return "";
-//	}
-//
-//	std::string libraryPath;
-//
-//	// Retrieve the value
-//	if (!metaFile.GetValue("Library Path", libraryPath))
-//	{
-//		return "";
-//	}
-//
-//	return libraryPath;
-//}
+void ModuleResourceManager::DispatchReimportJob(const std::string& normalizedPath)
+{
+    NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload] DispatchReimportJob called for: %s", normalizedPath.c_str());
+
+    // Resolve path → resource under resourcesMutex so the lookup and pointer capture are atomic.
+    uint32       uid = 0;
+    ResourceType type        = ResourceType::UNKNOWN;
+    std::string  assetsPath;
+    {
+        std::lock_guard lock(resourcesMutex);
+        const auto pathIt = m_pathToUID.find(normalizedPath);
+        if (pathIt == m_pathToUID.end())
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] '%s' not in m_pathToUID (%zu entries tracked).",
+                        normalizedPath.c_str(), m_pathToUID.size());
+            return;
+        }
+        uid = pathIt->second;
+        const auto resIt = resources.find(uid);
+        if (resIt == resources.end() || !resIt->second) return;   // evicted between watcher fire and dispatch
+        type        = resIt->second->GetType();
+        assetsPath  = resIt->second->GetAssetsPath();
+    }
+
+    // Dedup: at most one in-flight job per asset UID at a time.
+    {
+        std::lock_guard lock(m_reimportMutex);
+        if (!m_inFlightUIDs.insert(uid).second) return;
+    }
+    ++m_inFlightJobCount;
+
+    if (!JobSystem)
+    {
+        { std::lock_guard lock(m_reimportMutex); m_inFlightUIDs.erase(uid); }
+        --m_inFlightJobCount;
+        return;
+    }
+
+    // Capture source dir so the job lambda can redirect Import to the source file.
+    const std::string sourceAssetsDir = m_sourceAssetsDir;
+
+    // Only uid, type, assetsPath, sourceAssetsDir are safe to use on the worker:
+    // raw Resource* pointers must not be captured — EvictResource() can free them
+    // on the main thread while the job is running.
+    JobSystem->SubmitJob([this, uid, type, assetsPath, sourceAssetsDir]
+    {
+        auto cleanup = [this, uid]
+        {
+            { std::lock_guard lock(m_reimportMutex); m_inFlightUIDs.erase(uid); }
+            --m_inFlightJobCount;
+        };
+
+        // 1. Read .meta sidecar to get confirmed library path / type.
+        MetaFileData metaData;
+        if (!ResourceImportPipeline::GetAssetMetaData(assetsPath, metaData))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] No .meta found for '%s' — skipping reimport.", assetsPath.c_str());
+            cleanup(); return;
+        }
+
+        // Redirect Import to the source file so it reads what the user actually edited,
+        // not the stale configure-time binary copy (e.g. Build/bin/Assets/...).
+        // assetsPath is like "Assets/foo/bar.nmat"; sourceAssetsDir ends with "/Assets".
+        if (!sourceAssetsDir.empty() && assetsPath.size() > 7
+            && assetsPath.substr(0, 7) == "Assets/")
+        {
+            metaData.assetsPath = sourceAssetsDir + "/" + assetsPath.substr(7);
+        }
+
+        // 2. Reimport source → Library binary (CPU only, no Vulkan).
+        if (!mImporterManager->Import(type, metaData))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] Import failed for '%s' — old asset kept.", assetsPath.c_str());
+            cleanup(); return;
+        }
+
+        // 3. Hand off to the main thread for Deserialize + GPU Release + Upload.
+        // Deserialize must NOT run here: it mutates live resource fields (e.g. poolOwnerShader via
+        // SetShader) that the main thread reads concurrently in DrawGeometryBatched, causing a crash.
+        { std::lock_guard lock(m_uploadQueueMutex); m_readyUploads.push_back({uid, type}); }
+        NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload] Queued GPU upload for '%s'.", assetsPath.c_str());
+
+        cleanup();
+    }, "ReimportAsset");
+}
+
+ResourceTexture*  ModuleResourceManager::GetDefaultTexture()    const { return m_builtinResources.GetDefaultTexture();    }
+ResourceTexture*  ModuleResourceManager::GetWhiteTexture()      const { return m_builtinResources.GetWhiteTexture();      }
+ResourceTexture*  ModuleResourceManager::GetBlackTexture()      const { return m_builtinResources.GetBlackTexture();      }
+ResourceTexture*  ModuleResourceManager::GetFlatNormalTexture() const { return m_builtinResources.GetFlatNormalTexture(); }
+ResourceMaterial* ModuleResourceManager::GetDefaultMaterial()   const { return m_builtinResources.GetDefaultMaterial();  }
+
+Resource* ModuleResourceManager::GetLoadedResource(const uint32 uid)
+{
+    std::lock_guard lock(resourcesMutex);
+    const auto it = resources.find(uid);
+    if (it == resources.end() || it->second == nullptr)
+        return nullptr;
+    return it->second;
+}
+
+IImporterManager* ModuleResourceManager::GetImporterManager() const
+{
+    return mImporterManager;
+}
+
+
+ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResource(const std::string& assetsPath,
+                                                                      const int32_t submeshIndex)
+{
+    return m_subMeshCache.RequestOrCreate(assetsPath, submeshIndex);
+}
+
+std::vector<std::future<void>> ModuleResourceManager::PreloadSceneResourcesAsync(
+    nous::engine::multithreading::NOUS_JobSystem* jobSystem,
+    const std::string& sceneFilePath)
+{
+    return m_scenePreloader.PreloadSceneResourcesAsync(jobSystem, sceneFilePath);
+}

@@ -28,7 +28,7 @@ namespace NOUS_VulkanSwapChain
 
     VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-    VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    VkExtent2D ChooseSwapExtent(VulkanContext* vkContext, const VkSurfaceCapabilitiesKHR& capabilities);
 
     void CreateColorResources(VulkanContext* vkContext, VulkanSwapChain* swapchain);
 

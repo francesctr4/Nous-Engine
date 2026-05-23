@@ -1,0 +1,120 @@
+{
+    "name": "Shader-Viewer",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 1148801608,
+            "name": "Rectangle.obj",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "uid": 2791546574,
+            "name": "defaultobject",
+            "parent": 1148801608,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        474.5718994140625,
+                        489.9945068359375,
+                        191.88449096679688
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Shader Viewer\/Rectangle.obj",
+                    "libraryPath": "Library\/Meshes\/449846624.nmesh",
+                    "resourceUID": 3418053541,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Shader Viewer\/defaultobject_material.nmat",
+                    "libraryPath": "Library\/Materials\/2018243388.nmat",
+                    "resourceUID": 2018243388
+                }
+            ]
+        },
+        {
+            "uid": 1572004502,
+            "name": "Main Camera",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        403.29299926757812
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CCamera",
+                    "fov": 60,
+                    "nearPlane": 0.10000000149011612,
+                    "farPlane": 10000,
+                    "aspectRatio": 1.8879055976867676,
+                    "isMainCamera": true
+                }
+            ]
+        }
+    ]
+}

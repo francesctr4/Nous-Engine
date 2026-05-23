@@ -1,15 +1,15 @@
-#ifndef NOUS_ENGINE_HIERARCHYWINDOW_H
-#define NOUS_ENGINE_HIERARCHYWINDOW_H
+#pragma once
 
-#include "Editor/UI/IEditorWindow.inl"
-#include "Engine/Utils/DataStructures/NOUS_Vector.h"
+#include "Editor/UI/IEditorWindow.h"
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+
+#include <vector>
 
 class Scene;
-class GameObject;
 
 struct ReparentRequest {
-    GameObject* child;
-    GameObject* newParent;
+    GameObject child;
+    GameObject newParent;
 };
 
 class HierarchyWindow : public IEditorWindow
@@ -19,19 +19,87 @@ public:
     explicit HierarchyWindow(const char* title, EditorContext* context, bool start_open = true);
 
     void Init() override;
-    void Draw() override;
-
-    void SetScene(Scene* scene) { m_Scene = scene; }
-    GameObject* GetSelected() const { return m_Selected; }
+    void DrawContent() override;
+    void FinishUpdate() override;
 
 private:
-    void DrawGameObjectNode(GameObject* obj);
+
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+
+    void SetScene(Scene* scene);
+
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+
+    bool DrawSceneRootNode() const;
+
+    void HandleHierarchyDragDropPayloads();
+
+    void HandleSceneContextMenu();
+
+    void HandleEmptyClickSelection() const;
+
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+
+    void DrawRootGameObjects();
+
+    void DrawGameObjectNode(GameObject obj, bool insidePrefab = false);
+
+    ImGuiTreeNodeFlags BuildNodeFlags(GameObject obj) const;
+
+    bool ShouldApplyPrefabTint(GameObject obj, bool insidePrefab) const;
+
+    void PushPrefabStyle(bool applyTint) const;
+
+    bool DrawNode(GameObject obj, ImGuiTreeNodeFlags flags) const;
+
+    void PopPrefabStyle(bool applyTint) const;
+
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+
+    void HandleGameObjectSelection(GameObject obj) const;
+
+    void HandleGameObjectNodeContextMenu(GameObject obj);
+
+    void CreateGameObjectNodeDragDropSource(GameObject obj) const;
+
+    void HandleGameObjectNodeDragDropPayloads(GameObject obj);
+
+    static bool IsChildOf(GameObject parent, GameObject child);
+
+    void DrawChildrenNodes(GameObject obj, bool applyTint);
+
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+
+    void ProcessPendingGameObjectDeletion();
+
+    void ProcessReparentingRequests();
+
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+
+    void DrawSaveAsPrefabPopup();
+
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------
 
     Scene* m_Scene = nullptr;
-    GameObject* m_Selected = nullptr;
-    NOUS_Vector<GameObject*> m_ToDelete; // objects pending deletion
-    NOUS_Vector<ReparentRequest> m_ToReparent;
-    bool IsChildOf(GameObject *parent, GameObject *child);
-};
+    std::vector<GameObject> m_ToDelete;
+    std::vector<ReparentRequest> m_ToReparent;
 
-#endif
+    // Save-as-prefab popup state
+    bool        m_showSaveAsPrefabPopup = false;
+    char        m_prefabNameBuffer[128] = {};
+    GameObject  m_prefabSaveTarget;
+};

@@ -1,7 +1,5 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
-#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include <algorithm>
 
@@ -13,26 +11,27 @@
 #include "glm/gtc/quaternion.hpp"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-ModuleCamera3D::ModuleCamera3D(Application* app) : Module(app)
+#ifdef _PROFILING
+#include <tracy/Tracy.hpp>
+#endif
+
+ModuleCamera3D::ModuleCamera3D(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem, IInputReader* moduleInput)
+    : Module(eventSystem, jobSystem), mModuleInput(moduleInput)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	sceneViewportHovered = false;
 
 	camera = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 
-    App->eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
+    eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
 ModuleCamera3D::~ModuleCamera3D()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	NOUS_DELETE(camera, MemoryTag::CAMERA);
 }
 
 bool ModuleCamera3D::Awake()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	camera->SetPos(-100, 100, 300);
 
 	return true;
@@ -40,48 +39,47 @@ bool ModuleCamera3D::Awake()
 
 bool ModuleCamera3D::Start()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
 }
 
 UpdateStatus ModuleCamera3D::PreUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	return UpdateStatus::CONTINUE;
 }
 
 UpdateStatus ModuleCamera3D::Update(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
-	if (sceneViewportHovered) 
+#ifdef _PROFILING
+	ZoneScopedN("ModuleCamera3D::Update");
+#endif
+	if (sceneViewportHovered)
 	{
 		glm::vec3 newPos(0, 0, 0);
 		float speed = 20.0f * dt;
-		float rotSensitivity = 0.3f;
-		float panSensitivity = 3.6f;
+		float rotSensitivity = 0.003f;
+		float panSensitivity = 0.05f;
 
-		if (App->input->GetKey(SDL_SCANCODE_LSHIFT) == KeyState::REPEAT) speed *= 6;
+		if (mModuleInput->GetKey(SDL_SCANCODE_LSHIFT) == KeyState::REPEAT) speed *= 6;
 
-		if (App->input->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::REPEAT && App->input->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::IDLE)
+		if (mModuleInput->GetMouseButton(SDL_BUTTON_RIGHT) == KeyState::REPEAT && mModuleInput->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::IDLE)
 		{
 			// WASD Camera Movement Handling
 			HandleCameraMovement(newPos, speed);
 
 			// Camera Rotation Handling
-			HandleCameraRotation(rotSensitivity, dt);
+			HandleCameraRotation(rotSensitivity);
 
-			if (App->input->GetKey(SDL_SCANCODE_LALT) == KeyState::REPEAT)
+			if (mModuleInput->GetKey(SDL_SCANCODE_LALT) == KeyState::REPEAT)
 			{
-				HandleCameraOrbit(rotSensitivity, dt, glm::vec3(0.0f));
+				const glm::vec3 pivot = m_hasOrbitTarget ? m_orbitTarget : glm::vec3(0.0f);
+				HandleCameraOrbit(rotSensitivity, pivot);
 			}
 		}
 
-		if (App->input->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::REPEAT)
+		if (mModuleInput->GetMouseButton(SDL_BUTTON_MIDDLE) == KeyState::REPEAT)
 		{
 			// Mouse wheel pressed while dragging movement handling
-			HandleCameraPan(newPos, speed, panSensitivity, dt);
+			HandleCameraPan(newPos, panSensitivity);
 		}
 
 		HandleCameraZoom(newPos, speed);
@@ -94,14 +92,11 @@ UpdateStatus ModuleCamera3D::Update(float dt)
 
 UpdateStatus ModuleCamera3D::PostUpdate(float dt)
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
-
 	return UpdateStatus::CONTINUE;
 }
 
 bool ModuleCamera3D::CleanUp()
 {
-	NOUS_TRACE("%s()", __FUNCTION__);
 	return true;
 }
 
@@ -111,13 +106,14 @@ void ModuleCamera3D::OnEvent(const Event& event)
 	{
 		case EventType::WINDOW_RESIZED:
 		{
-			NOUS_DEBUG("%s() --> WINDOW RESIZED EVENT", __FUNCTION__);
+			NOUS_DEBUG("WINDOW RESIZED EVENT");
 			NOUS_DEBUG("Received context: %d, %d", event.ctx.i32[0], event.ctx.i32[1]);
 
 			camera->SetAspectRatio((float)event.ctx.i32[0] / (float)event.ctx.i32[1]);
 
 			break;
 		}
+		default: break;
     }
 }
 
@@ -128,26 +124,24 @@ Camera* ModuleCamera3D::GetCamera()
 
 void ModuleCamera3D::HandleCameraMovement(glm::vec3& newPos, const float& speed)
 {
-    if (App->input->GetKey(SDL_SCANCODE_W) == KeyState::REPEAT) newPos += camera->GetFront() * speed;
-    if (App->input->GetKey(SDL_SCANCODE_S) == KeyState::REPEAT) newPos -= camera->GetFront() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_W) == KeyState::REPEAT) newPos += camera->GetFront() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_S) == KeyState::REPEAT) newPos -= camera->GetFront() * speed;
 
-    if (App->input->GetKey(SDL_SCANCODE_A) == KeyState::REPEAT) newPos -= camera->GetRight() * speed;
-    if (App->input->GetKey(SDL_SCANCODE_D) == KeyState::REPEAT) newPos += camera->GetRight() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_A) == KeyState::REPEAT) newPos -= camera->GetRight() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_D) == KeyState::REPEAT) newPos += camera->GetRight() * speed;
 
-    if (App->input->GetKey(SDL_SCANCODE_E) == KeyState::REPEAT) newPos += camera->GetUp() * speed;
-    if (App->input->GetKey(SDL_SCANCODE_Q) == KeyState::REPEAT) newPos -= camera->GetUp() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_E) == KeyState::REPEAT) newPos += camera->GetUp() * speed;
+    if (mModuleInput->GetKey(SDL_SCANCODE_Q) == KeyState::REPEAT) newPos -= camera->GetUp() * speed;
 }
 
-void ModuleCamera3D::HandleCameraRotation(const float& sensitivity, const float& dt)
+void ModuleCamera3D::HandleCameraRotation(const float& sensitivity)
 {
-    int dx = -App->input->GetMouseXMotion();
-    int dy = -App->input->GetMouseYMotion();
-
-    float s = sensitivity * dt;
+    int dx = -mModuleInput->GetMouseXMotion();
+    int dy = -mModuleInput->GetMouseYMotion();
 
     if (dx != 0)
     {
-        float deltaX = static_cast<float>(dx) * s;
+        float deltaX = static_cast<float>(dx) * sensitivity;
         glm::vec3 rotationAxis(0.0f, 1.0f, 0.0f);
 
         // GLM quaternion rotation
@@ -159,7 +153,7 @@ void ModuleCamera3D::HandleCameraRotation(const float& sensitivity, const float&
 
     if (dy != 0)
     {
-        float deltaY = static_cast<float>(dy) * s;
+        float deltaY = static_cast<float>(dy) * sensitivity;
         glm::quat rotationQuat = glm::angleAxis(deltaY, camera->GetRight());
 
         camera->SetUp(glm::normalize(rotationQuat * camera->GetUp()));
@@ -181,27 +175,28 @@ void ModuleCamera3D::HandleCameraRotation(const float& sensitivity, const float&
 
 void ModuleCamera3D::HandleCameraZoom(glm::vec3& newPos, const float& speed)
 {
-    int mouseZ = App->input->GetMouseZ();
+    int mouseZ = mModuleInput->GetMouseZ();
     if (mouseZ > 0) newPos += camera->GetFront() * speed;
     if (mouseZ < 0) newPos -= camera->GetFront() * speed;
 }
 
-void ModuleCamera3D::HandleCameraPan(glm::vec3& newPos, const float& speed, const float& sensitivity, const float& dt)
+void ModuleCamera3D::HandleCameraPan(glm::vec3& newPos, const float& sensitivity)
 {
-    int dx = -App->input->GetMouseXMotion();
-    int dy = -App->input->GetMouseYMotion();
+    int dx = -mModuleInput->GetMouseXMotion();
+    int dy = -mModuleInput->GetMouseYMotion();
 
-    float s = sensitivity * dt;
-    float deltaX = static_cast<float>(dx) * s;
-    float deltaY = static_cast<float>(dy) * s;
-
-    newPos -= camera->GetUp() * speed * deltaY;
-    newPos += camera->GetRight() * speed * deltaX;
+    newPos -= camera->GetUp()    * static_cast<float>(dy) * sensitivity;
+    newPos += camera->GetRight() * static_cast<float>(dx) * sensitivity;
 }
 
-void ModuleCamera3D::HandleCameraOrbit(const float& sensitivity, const float& dt, const glm::vec3& lookAt)
+void ModuleCamera3D::FrameTarget(const glm::vec3& target, float distance)
+{
+    camera->SetPos(target - camera->GetFront() * distance);
+}
+
+void ModuleCamera3D::HandleCameraOrbit(const float& sensitivity, const glm::vec3& lookAt)
 {
     float distToRef = glm::length(lookAt - camera->GetPos());
-    HandleCameraRotation(sensitivity, dt);
+    HandleCameraRotation(sensitivity);
     camera->SetPos(lookAt + camera->GetFront() * (-distToRef));
 }

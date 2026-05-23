@@ -11,7 +11,7 @@ Camera::Camera()
     front = glm::vec3(0.0f, 0.0f, -1.0f);
     up = glm::vec3(0.0f, 1.0f, 0.0f);
     nearPlane = 0.1f;
-    farPlane = 1000.0f;
+    farPlane = 10000.0f;
     verticalFov = 60.0f * NOUS_MathUtils::DEGTORAD;
     aspectRatio = static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT);
 }

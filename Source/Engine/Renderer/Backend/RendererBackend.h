@@ -6,6 +6,7 @@
 class ResourceMesh;
 class ResourceMaterial;
 class ResourceTexture;
+class ResourceShader;
 
 /**
  * @brief Bridge layer between RendererFrontend and the active renderer implementation.
@@ -20,12 +21,22 @@ public:
 	RendererBackend();
 	virtual ~RendererBackend();
 
+	// ─────────────────────────────── Dependency Injection ────────────────────
+	void InjectDependencies(
+		EventSystem* eventSystem,
+		nous::engine::multithreading::NOUS_JobSystem* jobSystem,
+		ModuleWindow* window,
+		ModuleResourceManager* resourceManager);
+
 	// ─────────────────────────────── Lifecycle ───────────────────────────────
 	[[nodiscard]] bool Create(RendererBackendType type);
 	void Destroy();
 
 	[[nodiscard]] bool Initialize();
 	void Shutdown();
+	void SetRenderMode(RenderMode mode) noexcept;
+	void ReleaseFrameResources() noexcept;
+	void WaitForGPUIdle() noexcept;
 
 	void Resized(uint16_t width, uint16_t height);
 
@@ -39,14 +50,18 @@ public:
 
 	// ─────────────────────────────── Global State ────────────────────────────
 	[[nodiscard]] bool UpdateGlobalWorldState(RenderpassType renderpassID,
-											  const glm::mat4& projection, const glm::mat4& view,
-											  const glm::vec3& viewPosition, const glm::vec4& ambientColor, int32_t mode);
-
-	[[nodiscard]] bool UpdateGlobalUIState(RenderpassType renderpassID,
-										   const glm::mat4& projection, const glm::mat4& view, int32_t mode);
+											  const GlobalUBO& globalUBO);
 
 	// ─────────────────────────────── Drawing ─────────────────────────────────
 	[[nodiscard]] bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData);
+
+    void UploadInstanceMatrices(uint32_t frameIndex,
+                                const glm::mat4* matrices,
+                                uint32_t count,
+                                uint32_t instanceOffset);
+
+    [[nodiscard]] bool DrawGeometryBatched(RenderpassType renderpassID,
+                                           const InstancedBatch& batch);
 
 	// ─────────────────────────────── Resources ───────────────────────────────
 	[[nodiscard]] bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture);
@@ -59,6 +74,63 @@ public:
 									  uint32_t indexCount, const uint32_t* indices,
 									  ResourceMesh* outGeometry);
 	void DestroyGeometry(ResourceMesh* geometry);
+
+	[[nodiscard]] bool CreateShader(ResourceShader* shader);
+	void DestroyShader(ResourceShader* shader);
+	bool ReloadShader(ResourceShader* shader) noexcept;
+	bool ApplyCompiledShader(ResourceShader* shader) noexcept;
+
+	// ─────────────────────────────── Picking ────────────────────────────────
+	uint32_t PickObjectAt(int32_t pixelX, int32_t pixelY,
+						  const glm::mat4& projection, const glm::mat4& view,
+						  const std::vector<GeometryRenderData>& geometries);
+
+	// ─────────────────────────────── Outlining ───────────────────────────────
+	bool DrawOutlinedGeometries(RenderpassType renderpassID,
+								const glm::mat4& projection, const glm::mat4& view,
+								const std::vector<GeometryRenderData>& outlinedGeometries,
+								const OutlineSettings& settings);
+
+	// ─────────────────────────────── Editor Grid ─────────────────────────────
+	bool DrawGrid(RenderpassType renderpassID,
+	              const glm::mat4& projection, const glm::mat4& view);
+
+	// ─────────────────────────────── Background ──────────────────────────────
+	bool DrawBackground(RenderpassType renderpassID,
+							   const glm::mat4& projection, const glm::mat4& view);
+
+	// ─────────────────────────────── Bounding Boxes ──────────────────────────
+	bool DrawBoundingBoxes(RenderpassType renderpassID,
+	                       const glm::mat4& projection, const glm::mat4& view,
+	                       const std::vector<BoundingBoxData>& boxes);
+
+	// ─────────────────────────────── Camera Frustums ─────────────────────────
+	bool DrawCameraFrustums(RenderpassType renderpassID,
+	                        const glm::mat4& projection,
+	                        const glm::mat4& view,
+	                        const std::vector<CameraFrustumData>& frustums,
+	                        bool globalAlreadySet = false);
+
+	// ─────────────────────────────── Point Light Debugs ──────────────────────
+	bool DrawPointLightDebugs(RenderpassType renderpassID,
+	                          const glm::mat4& projection,
+	                          const glm::mat4& view,
+	                          const std::vector<BoundingBoxData>& lightDebugs,
+	                          bool globalAlreadySet = false);
+
+	// ─────────────────────────────── Directional Light Debugs ────────────────
+	bool DrawDirectionalLightDebugs(RenderpassType renderpassID,
+	                                const glm::mat4& projection,
+	                                const glm::mat4& view,
+	                                const std::vector<DirectionalLightDebugData>& lightDebugs,
+	                                bool globalAlreadySet = false);
+
+	// ─────────────────────────────── Spot Light Debugs ───────────────────────
+	bool DrawSpotLightDebugs(RenderpassType renderpassID,
+	                         const glm::mat4& projection,
+	                         const glm::mat4& view,
+	                         const std::vector<SpotLightDebugData>& lightDebugs,
+	                         bool globalAlreadySet = false);
 
 public:
 

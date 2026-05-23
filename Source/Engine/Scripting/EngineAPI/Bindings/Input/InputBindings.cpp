@@ -1,46 +1,62 @@
 #include <Engine/Scripting/EngineAPI/Bindings/Input/InputBindings.h>
 
-#include <Engine/Core/Application.h>
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 
-void SetupInputBindings(InputAPI &input)
+static ModuleInput* s_input = nullptr;
+
+void SetupInputBindings(InputAPI& input, ModuleInput* moduleInput)
 {
+    s_input = moduleInput;
+
+    // All script-facing input is gated by ModuleInput::IsScriptInputEnabled() so the
+    // editor can pause script input while the GameViewport isn't the focused panel
+    // (otherwise camera scripts keep running while you click around the rest of the UI).
+    // Capture state is intentionally NOT gated — scripts may legitimately query/release
+    // capture during the gated frame, and ModuleInput already drops/restores capture
+    // around the gate transitions.
+
     // Key state checking
-    input.GetKey = [](int scancode) -> int {
-        if (!External || !External->input) {
-            return 0; // Return IDLE if input system not available
-        }
-        // Cast the engine's KeyState to int for scripting
-        return static_cast<int>(External->input->GetKey(scancode));
+    input.GetKey = [](NOUS_SCANCODE scancode) -> int {
+        if (!s_input || !s_input->IsScriptInputEnabled()) return 0;
+        return static_cast<int>(s_input->GetKey(static_cast<int>(scancode)));
     };
 
     // Mouse button checking
     input.GetMouseButton = [](int button) -> int {
-        if (!External || !External->input) {
-            return 0;
-        }
-        return static_cast<int>(External->input->GetMouseButton(button));
+        if (!s_input || !s_input->IsScriptInputEnabled()) return 0;
+        return static_cast<int>(s_input->GetMouseButton(button));
     };
 
     // Mouse position
     input.GetMousePosition = [](int* x, int* y) {
-        if (!External || !External->input) {
+        if (!s_input || !s_input->IsScriptInputEnabled()) {
             if (x) *x = 0;
             if (y) *y = 0;
             return;
         }
-        if (x) *x = External->input->GetMouseX();
-        if (y) *y = External->input->GetMouseY();
+        if (x) *x = s_input->GetMouseX();
+        if (y) *y = s_input->GetMouseY();
     };
 
     // Mouse motion
     input.GetMouseMotion = [](int* x, int* y) {
-        if (!External || !External->input) {
+        if (!s_input || !s_input->IsScriptInputEnabled()) {
             if (x) *x = 0;
             if (y) *y = 0;
             return;
         }
-        if (x) *x = External->input->GetMouseXMotion();
-        if (y) *y = External->input->GetMouseYMotion();
+        if (x) *x = s_input->GetMouseXMotion();
+        if (y) *y = s_input->GetMouseYMotion();
+    };
+
+    // Mouse capture (relative mouse mode)
+    input.SetMouseCaptured = [](bool captured) {
+        if (!s_input) return;
+        s_input->SetMouseCaptured(captured);
+    };
+
+    input.IsMouseCaptured = []() -> bool {
+        if (!s_input) return false;
+        return s_input->IsMouseCaptured();
     };
 }

@@ -3,6 +3,7 @@
 
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include <vector>
 
 class ResourceTexture : public Resource
 {
@@ -10,13 +11,18 @@ public:
 
 	// Constructor & Destructor
 
-	ResourceTexture(UID uid = 0);
-	~ResourceTexture() override;
+	NOUS_ENGINE_API ResourceTexture(uint32 uid = 0);
+	NOUS_ENGINE_API ~ResourceTexture() override;
 
 public:
 
-    uint32 ID;
+    // Incremented each time the texture is (re)uploaded to the GPU.
+    // Used by WriteInstanceSampler to skip redundant vkUpdateDescriptorSets calls:
+    // if generation and resource ID haven't changed since the last write, the update is skipped.
     uint32 generation;
+
+    // Owning pointer to the backend's GPU image (e.g. VulkanImage*).
+    // Allocated and freed exclusively by the renderer backend.
     void* internalData;
 
     uint32 width;
@@ -24,6 +30,10 @@ public:
 
     uint8 channelCount;
     bool hasTransparency;
+
+    // Temporary CPU pixel buffer — populated by ImporterTexture::Deserialize,
+    // consumed and cleared by ImporterTexture::Upload/Evict.
+    std::vector<uint8_t> pixelData;
 };
 
 #endif // RESOURCETEXTURE_H

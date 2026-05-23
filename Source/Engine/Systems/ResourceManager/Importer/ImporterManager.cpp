@@ -6,33 +6,66 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterMaterial/include/ImporterMaterial.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterTexture/include/ImporterTexture.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterShader/include/ImporterShader.h"
 
-#include <array>
+#include <unordered_map>
 
-// Make sure to match the array index with the resource type enum index
-const std::array<std::unique_ptr<Importer>, c_NUM_IMPORTERS> ImporterManager::importers =
+static std::unordered_map<ResourceType, std::unique_ptr<Importer>> MakeImporters()
 {
-    std::make_unique<ImporterMesh>(),
-    std::make_unique<ImporterMaterial>(),
-    std::make_unique<ImporterTexture>()
-};
-
-bool ImporterManager::Import(const ResourceType& type, const MetaFileData& metaFileData)
-{
-    return importers[Resource::GetIndexFromType(type)]->Import(metaFileData);
+    std::unordered_map<ResourceType, std::unique_ptr<Importer>> map;
+    map.emplace(ResourceType::MESH,     std::make_unique<ImporterMesh>());
+    map.emplace(ResourceType::MATERIAL, std::make_unique<ImporterMaterial>());
+    map.emplace(ResourceType::TEXTURE,  std::make_unique<ImporterTexture>());
+    map.emplace(ResourceType::SHADER,   std::make_unique<ImporterShader>());
+    return map;
 }
 
-bool ImporterManager::Save(const ResourceType& type, const MetaFileData& metaFileData, Resource*& inResource)
+const std::unordered_map<ResourceType, std::unique_ptr<Importer>> ImporterManager::importers = MakeImporters();
+
+void ImporterManager::Init(ModuleResourceManager* resourceManager)
 {
-    return importers[Resource::GetIndexFromType(type)]->Save(metaFileData, inResource);
+    for (auto& [type, importer] : importers)
+        importer->mResourceManager = resourceManager;
 }
 
-bool ImporterManager::Load(const ResourceType& type, const std::string& libraryPath, Resource* outResource)
+bool ImporterManager::Import(ResourceType type, const MetaFileData& metaFileData)
 {
-    return importers[Resource::GetIndexFromType(type)]->Load(libraryPath, outResource);
+    const auto it = importers.find(type);
+    if (it == importers.end()) return false;
+    return it->second->Import(metaFileData);
 }
 
-bool ImporterManager::Unload(const ResourceType& type, Resource* inResource)
+bool ImporterManager::Save(ResourceType type, const MetaFileData& metaFileData, Resource*& inResource)
 {
-    return importers[Resource::GetIndexFromType(type)]->Unload(inResource);
+    const auto it = importers.find(type);
+    if (it == importers.end()) return false;
+    return it->second->Save(metaFileData, inResource);
+}
+
+bool ImporterManager::Deserialize(ResourceType type, const std::string& libraryPath, Resource* resource)
+{
+    const auto it = importers.find(type);
+    if (it == importers.end()) return false;
+    return it->second->Deserialize(libraryPath, resource);
+}
+
+void ImporterManager::Evict(ResourceType type, Resource* resource)
+{
+    const auto it = importers.find(type);
+    if (it == importers.end()) return;
+    it->second->Evict(resource);
+}
+
+bool ImporterManager::Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu)
+{
+    const auto it = importers.find(type);
+    if (it == importers.end()) return false;
+    return it->second->Upload(resource, gpu);
+}
+
+void ImporterManager::Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu)
+{
+    const auto it = importers.find(type);
+    if (it == importers.end()) return;
+    it->second->Release(resource, gpu);
 }

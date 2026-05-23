@@ -5,7 +5,6 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
 
-#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 
 bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
@@ -107,7 +106,7 @@ void NOUS_VulkanInstance::DestroyInstance(VulkanContext* vkContext)
 
 bool NOUS_VulkanInstance::CreateSurface(VulkanContext* vkContext)
 {
-    return SDL_Vulkan_CreateSurface(External->window->GetSDL_Window(), vkContext->instance, vkContext->allocator, &vkContext->surface);
+    return SDL_Vulkan_CreateSurface(vkContext->window->GetSDL_Window(), vkContext->instance, vkContext->allocator, &vkContext->surface);
 }
 
 void NOUS_VulkanInstance::DestroySurface(VulkanContext* vkContext)
@@ -201,8 +200,12 @@ std::vector<const char*> NOUS_VulkanInstance::GetRequiredExtensions()
         extensions.push_back(sdlExtensions[i]);
     }
 
-    // Optional: Portability enumeration extension (commented out)
-    //extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#ifdef __APPLE__
+    // MoltenVK requires portability enumeration so physical devices are visible.
+    // The flag VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR is set automatically
+    // in CreateInstance() when this extension is detected in the list.
+    extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif
 
     // Add debug utils extension if validation is enabled
     if (enableValidationLayers)

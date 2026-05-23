@@ -11,7 +11,7 @@ void CleanupFreelist(VulkanBuffer* buffer)
 {
     // ----- FREE LIST ----- //
     buffer->bufferFreelist->~Freelist();
-    MemoryManager::Free(buffer->freelistBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
+    nous::engine::memory::Free(buffer->freelistBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
 
     buffer->freelistMemoryRequirement = 0;
     buffer->freelistBlock = nullptr;
@@ -61,16 +61,23 @@ void NOUS_VulkanBuffer::DestroyBuffers(VulkanContext* vkContext)
 bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64 size, VkBufferUsageFlagBits usage, 
 	uint32 memoryPropertyFlags, bool bindOnCreate, VulkanBuffer* outBuffer)
 {
-    MemoryManager::ZeroMemory(outBuffer, sizeof(VulkanBuffer));
+    nous::engine::memory::ZeroMemory(outBuffer, sizeof(VulkanBuffer));
 
     outBuffer->totalSize = size;
     outBuffer->usage = usage;
     outBuffer->memoryPropertyFlags = memoryPropertyFlags;
 
     // ----- FREE LIST ----- //
-    outBuffer->freelistMemoryRequirement = Freelist::GetMemoryRequirement(size);
-    outBuffer->freelistBlock = MemoryManager::Allocate(outBuffer->freelistMemoryRequirement, MemoryTag::RENDERER);
-    outBuffer->bufferFreelist = new (&outBuffer->freelistBlock) Freelist(size, outBuffer->freelistBlock);
+    // Only create a FreeList for buffers large enough to benefit from sub-allocation.
+    // Small buffers (e.g. staging readback buffers) are used as a single whole-buffer
+    // allocation and don't need a FreeList.  DestroyBuffer already handles nullptr safely.
+    constexpr uint64 kFreelistMinSize = sizeof(void*) * sizeof(Freelist::Node); // 192 bytes
+    if (size >= kFreelistMinSize)
+    {
+        outBuffer->freelistMemoryRequirement = Freelist::GetMemoryRequirement(size);
+        outBuffer->freelistBlock = nous::engine::memory::Allocate(outBuffer->freelistMemoryRequirement, MemoryTag::RENDERER);
+        outBuffer->bufferFreelist = new (&outBuffer->freelistBlock) Freelist(size, outBuffer->freelistBlock);
+    }
 
     VkBufferCreateInfo bufferCreateInfo{};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -170,19 +177,19 @@ bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64 newSize,
     }
 
     // Allocate new memory block
-    void* newBlock = MemoryManager::Allocate(newMemoryRequirement, MemoryTag::RENDERER);
+    void* newBlock = nous::engine::memory::Allocate(newMemoryRequirement, MemoryTag::RENDERER);
     void* oldBlock = nullptr;
 
     // Second call: Perform actual resize
     if (!buffer->bufferFreelist->Resize(newSize, &newMemoryRequirement, newBlock, &oldBlock)) 
     {
         NOUS_ERROR("NOUS_VulkanBuffer::ResizeBuffer(): Failed to resize freelist.");
-        MemoryManager::Free(newBlock, newMemoryRequirement, MemoryTag::RENDERER);
+        nous::engine::memory::Free(newBlock, newMemoryRequirement, MemoryTag::RENDERER);
         return false;
     }
 
     // Cleanup old memory and update buffer properties
-    MemoryManager::Free(oldBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
+    nous::engine::memory::Free(oldBlock, buffer->freelistMemoryRequirement, MemoryTag::RENDERER);
 
     buffer->freelistMemoryRequirement = newMemoryRequirement;
     buffer->freelistBlock = newBlock;
@@ -253,10 +260,14 @@ bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64 newSize,
     return true;
 }
 
-void NOUS_VulkanBuffer::CopyBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue, 
+void NOUS_VulkanBuffer::CopyBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue,
 	VkBuffer source, uint64 sourceOffset, VkBuffer dest, uint64 destOffset, uint64 size)
 {
-    vkQueueWaitIdle(queue);
+    // NOTE: do NOT call vkQueueWaitIdle here directly — this function may be called
+    // from a worker thread, and calling vkQueueWaitIdle on the queue from a non-main
+    // thread violates Vulkan's external-synchronization requirement on VkQueue.
+    // CommandBufferEndAndFreeSingleTime submits via CreateQueueSubmitTask (which routes
+    // the submit through the main thread) and waits for idle there instead.
 
     // Create a one-time-use command buffer.
     VulkanCommandBuffer tempCommandBuffer;
@@ -279,7 +290,7 @@ void NOUS_VulkanBuffer::LoadData(VulkanContext* vkContext, VulkanBuffer* buffer,
 {
     void* dataPtr;
     VK_CHECK(vkMapMemory(vkContext->device.logicalDevice, buffer->memory, offset, size, flags, &dataPtr));
-    MemoryManager::CopyMemory(dataPtr, data, size);
+    nous::engine::memory::CopyMemory(dataPtr, data, size);
     vkUnmapMemory(vkContext->device.logicalDevice, buffer->memory);
 }
 
@@ -303,9 +314,16 @@ void NOUS_VulkanBuffer::UnlockMemory(VulkanContext* vkContext, VulkanBuffer* buf
 bool NOUS_VulkanBuffer::Allocate(VulkanBuffer* buffer, uint64 size, uint64* outOffset)
 {
     // ----- FREE LIST ----- //
-    if (!buffer || !size || !outOffset) 
+    if (!buffer || !size || !outOffset)
     {
         NOUS_ERROR("NOUS_VulkanBuffer::Allocate() requires valid buffer, a nonzero size and valid pointer to hold offset.");
+        return false;
+    }
+
+    if (!buffer->bufferFreelist)
+    {
+        NOUS_ERROR("NOUS_VulkanBuffer::Allocate() called on a buffer with no FreeList (buffer size %llu is below the sub-allocation threshold).",
+                   buffer->totalSize);
         return false;
     }
 
@@ -315,9 +333,16 @@ bool NOUS_VulkanBuffer::Allocate(VulkanBuffer* buffer, uint64 size, uint64* outO
 bool NOUS_VulkanBuffer::Free(VulkanBuffer* buffer, uint64 size, uint64 offset)
 {
     // ----- FREE LIST ----- //
-    if (!buffer || !size) 
+    if (!buffer || !size)
     {
         NOUS_ERROR("NOUS_VulkanBuffer::Free() requires valid buffer and a nonzero size.");
+        return false;
+    }
+
+    if (!buffer->bufferFreelist)
+    {
+        NOUS_ERROR("NOUS_VulkanBuffer::Free() called on a buffer with no FreeList (buffer size %llu is below the sub-allocation threshold).",
+                   buffer->totalSize);
         return false;
     }
 

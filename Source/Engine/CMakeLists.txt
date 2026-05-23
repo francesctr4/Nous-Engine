@@ -9,6 +9,8 @@ find_package(Tracy CONFIG REQUIRED)
 find_package(glm REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(unofficial-shaderc CONFIG REQUIRED)
+find_package(unofficial-spirv-reflect CONFIG REQUIRED)
+find_package(EnTT CONFIG REQUIRED)
 
 # ==============================
 # Engine Modules
@@ -36,6 +38,11 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # Link engine modules + dependencies
+target_link_libraries(${PROJECT_NAME} PUBLIC
+        # glm appears in public headers (RendererTypes.h, etc.) so must be PUBLIC
+        glm::glm
+)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
         # --- Third-Party ---
         SDL3::SDL3
@@ -43,27 +50,50 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         assimp::assimp
         parson::parson
         Tracy::TracyClient
-        glm::glm
-
-        # --- Engine Modules ---
-        Core
-        Modules
-        NOUS_Multithreading
-        Renderer
-        Scripting
-        Systems
-        Utils
 )
 
-target_link_options(${PROJECT_NAME} PRIVATE
-        "/WHOLEARCHIVE:$<TARGET_FILE:Core>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Modules>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:NOUS_Multithreading>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Renderer>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Scripting>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Systems>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:Utils>"
+# Force all symbols from static engine modules into the shared library.
+# Without this, only symbols directly referenced by MainEngine.cpp are exported,
+# causing undefined reference errors at link time for downstream targets.
+#
+# We use target_link_options with $<TARGET_FILE:...> for the whole-archive flags
+# on all platforms. This avoids CMake's library deduplication, which would otherwise
+# move sub-libraries out of the whole-archive range into the normal link section.
+# target_link_libraries is still used for CMake dependency tracking.
+
+set(NOUS_ENGINE_STATIC_LIBS
+    # Top-level aggregates
+    Core Modules NOUS_Multithreading Renderer Scripting Systems Utils
+    # Core sub-libraries
+    MemoryManager EventSystem FileSystem FileWatcher Logger TimeManager
+    # Modules sub-libraries
+    ModuleCamera3D ModuleInput ModuleRenderer3D ModuleResourceManager ModuleScene ModuleWindow
+    # Renderer sub-libraries
+    RendererFrontend RendererBackend VulkanBackend
+    # Systems sub-libraries
+    Camera ECS ResourceManager ShaderSystem
 )
+
+if (WIN32)
+  foreach(lib IN LISTS NOUS_ENGINE_STATIC_LIBS)
+    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:${lib}>")
+  endforeach()
+elseif(APPLE)
+  foreach(lib IN LISTS NOUS_ENGINE_STATIC_LIBS)
+    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:-force_load,$<TARGET_FILE:${lib}>")
+  endforeach()
+else()
+  # Linux (GNU ld): per-library --whole-archive via LINKER: prefix.
+  # "LINKER:--whole-archive,path,--no-whole-archive" expands to:
+  #   -Wl,--whole-archive,/abs/path/to/lib.a,--no-whole-archive
+  # which passes three separate args to ld, scoping --whole-archive to just that archive.
+  foreach(lib IN LISTS NOUS_ENGINE_STATIC_LIBS)
+    target_link_options(${PROJECT_NAME} PRIVATE
+      "LINKER:--whole-archive,$<TARGET_FILE:${lib}>,--no-whole-archive")
+  endforeach()
+endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${NOUS_ENGINE_STATIC_LIBS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

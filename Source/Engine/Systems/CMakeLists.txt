@@ -4,6 +4,7 @@
 
 add_subdirectory(CameraSystem)
 add_subdirectory(ECS)
+add_subdirectory(PrefabManager)
 add_subdirectory(ResourceManager)
 add_subdirectory(ShaderSystem)
 
@@ -29,6 +30,7 @@ target_compile_definitions(Systems PRIVATE
 target_link_libraries(Systems PUBLIC
         Camera
         ECS
+        PrefabManager
         ResourceManager
         ShaderSystem
 )

@@ -1,5 +1,4 @@
-#ifndef NOUS_THREAD_H
-#define NOUS_THREAD_H
+#pragma once
 
 #include "Engine/EngineExport.h"
 
@@ -8,7 +7,7 @@
 #include <string>
 #include <chrono>
 
-namespace NOUS_Multithreading
+namespace nous::engine::multithreading
 {
     // Forward declarations
 	class NOUS_Job;
@@ -16,7 +15,7 @@ namespace NOUS_Multithreading
 	///////////////////////////////////////////////////////////////////////////
 	/// @brief Available thread states during its lifecycle.
 	///////////////////////////////////////////////////////////////////////////
-	enum class ThreadState
+	enum class ThreadState : uint8_t
 	{
 		READY = 0,		// Idle and waiting for a job.
 		RUNNING = 1		// Actively executing a job.
@@ -58,7 +57,7 @@ namespace NOUS_Multithreading
 		NOUS_ENGINE_API void SetCurrentJob(NOUS_Job* job);
 		NOUS_ENGINE_API NOUS_Job* GetCurrentJob() const;
 		NOUS_ENGINE_API bool IsRunning() const;
-		NOUS_ENGINE_API uint32_t GetID() const;
+		NOUS_ENGINE_API std::thread::id GetID() const;
 
 		/// @brief Job execution time tracking.
 		NOUS_ENGINE_API void StartExecutionTimer();
@@ -69,9 +68,9 @@ namespace NOUS_Multithreading
 		/// @note Used mainly for registering main thread.
 		NOUS_ENGINE_API void SetThreadID(std::thread::id id);
 
-		/// @brief Converts a std::thread::id to a numeric uint32.
-		/// @note Relies on string conversion; platform-dependent.
-		NOUS_ENGINE_API static uint32_t GetThreadID(std::thread::id id);
+		/// @brief Returns a uint32_t derived from the thread ID hash, for display and logging only.
+		/// @note Not suitable as a unique key — use std::thread::id directly for identity checks.
+		NOUS_ENGINE_API static uint32_t GetDisplayID(std::thread::id id);
 
 		/// @return std::string representation of the passed thread state.
 		NOUS_ENGINE_API static std::string GetStringFromState(const ThreadState& state);
@@ -83,17 +82,15 @@ namespace NOUS_Multithreading
 
 		std::string					mThreadName;
 		std::thread					mThreadHandle;
-		uint32_t					mThreadID;
+		std::thread::id				mThreadID;
 		std::atomic<ThreadState>	mThreadState;
 
 		std::atomic<bool>			mIsRunning;
-		NOUS_Job*					mCurrentJob;
+		std::atomic<NOUS_Job*>		mCurrentJob;
 
         std::chrono::time_point<std::chrono::steady_clock>	mStartTime;
         std::chrono::time_point<std::chrono::steady_clock>	mEndTime;
-        bool												mTimerRunning;
+        std::atomic<bool>									mTimerRunning;
 
 	};
 }
-
-#endif // NOUS_THREAD_H

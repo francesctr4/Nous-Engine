@@ -26,20 +26,25 @@ struct MemoryStats
 	uint64 taggedAllocations[static_cast<uint64>(MemoryTag::MAX)];
 };
 
-struct MemorySystemConfig 
+struct MemorySystemConfig
 {
 	MemoryStats stats;
 
 	uint64 totalAllocationSize;
 	uint64 allocatorRequirement;
 
+	// Separate storage for the DynamicAllocator object so it doesn't alias
+	// allocatorBlock. Placing new(&allocatorBlock) DA(...) would overwrite
+	// the pointer with the object's bytes — works only by coincidence while
+	// DA is exactly sizeof(void*). This buffer is the right fix.
+	alignas(DynamicAllocator) char allocatorStorage[sizeof(DynamicAllocator)];
 	DynamicAllocator* allocator;
 	void* allocatorBlock;
 };
 
 static struct MemorySystemConfig config;
 
-void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
+void nous::engine::memory::InitializeMemory(uint64 preAllocatedMemorySize)
 {
 	ZeroMemory(&config, sizeof(config));
 
@@ -53,29 +58,28 @@ void MemoryManager::InitializeMemory(uint64 preAllocatedMemorySize)
 
 	if (!config.allocatorBlock) 
 	{
-		NOUS_FATAL_C(CURRENT_CHANNEL, "[%s] Memory system allocation failed", __FUNCTION__);
+		NOUS_FATAL_C(CURRENT_CHANNEL, "Memory system allocation failed");
 		return;
 	}
 
-	// 3. Construct allocator using placement new
-	config.allocator = new (&config.allocatorBlock) DynamicAllocator(
+	// 3. Construct allocator object in its own storage (separate from the pool block)
+	config.allocator = new (config.allocatorStorage) DynamicAllocator(
 			config.totalAllocationSize,
 			config.allocatorBlock
 	);
 
-	NOUS_DEBUG_C(CURRENT_CHANNEL, "[%s] Memory system initialized with %llu bytes",
-			   __FUNCTION__, config.totalAllocationSize);
+	NOUS_DEBUG_C(CURRENT_CHANNEL, "Memory system initialized with %llu bytes", config.totalAllocationSize);
 }
 
-void MemoryManager::ShutdownMemory()
+void nous::engine::memory::ShutdownMemory()
 {
-	if (config.allocator->GetFreeSpace() != config.totalAllocationSize)
+	if (config.allocator)
 	{
-		NOUS_WARN_C(CURRENT_CHANNEL, "Possible leaks detected: not all memory returned to allocator!");
-	}
+		if (config.allocator->GetFreeSpace() != config.totalAllocationSize)
+		{
+			NOUS_WARN_C(CURRENT_CHANNEL, "Possible leaks detected: not all memory returned to allocator!");
+		}
 
-	if (config.allocator) 
-	{
 		// Explicit destructor call
 		config.allocator->~DynamicAllocator();
 		free(config.allocatorBlock);
@@ -86,15 +90,9 @@ void MemoryManager::ShutdownMemory()
 
 	// ----------------------------------------------------------------------- //
 
-	MemoryTag tag = MemoryTag::UNKNOWN;
-	float amount = 0.0f;
-
-	for (uint32 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
+	for (uint32 i = 0; i < static_cast<uint32>(MemoryTag::MAX); ++i)
 	{
-		tag = static_cast<MemoryTag>(i);
-		amount = static_cast<float>(config.stats.taggedAllocations[i]);
-		
-		NOUS_ASSERT_MSG(amount == 0.0f, "Memory Leaks Detected!");
+		NOUS_ASSERT_MSG(config.stats.taggedAllocations[i] == 0, "Memory Leaks Detected!");
 	}
 
 	NOUS_ASSERT(config.stats.totalAllocations == 0);
@@ -103,21 +101,31 @@ void MemoryManager::ShutdownMemory()
 	// ----------------------------------------------------------------------- //
 }
 
-void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
+void* nous::engine::memory::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 
 	if (tag == MemoryTag::UNKNOWN) 
 	{
-		NOUS_WARN_C(CURRENT_CHANNEL, "[%s] Memory Allocation called using MEMORY_TAG_UNKNOWN.", __FUNCTION__);
+		NOUS_WARN_C(CURRENT_CHANNEL, "Memory Allocation called using MEMORY_TAG_UNKNOWN.");
 	}
 
+	void* block = config.allocator->Allocate(size); // allocator aligns internally
+	if (!block)
+	{
+		NOUS_FATAL_C(CURRENT_CHANNEL,
+			"Allocation of %llu bytes (tag=%d) failed! "
+			"Pool exhausted? Free space: %llu bytes.",
+			size, static_cast<int>(tag), config.allocator->GetFreeSpace());
+		return nullptr;
+	}
+
+	// Update stats only after a confirmed successful allocation.
 	config.stats.totalAllocated += size;
 	config.stats.totalAllocations++;
 	config.stats.taggedAllocations[static_cast<uint64>(tag)] += size;
 
-	void* block = config.allocator->Allocate(size); // allocator aligns internally
-	ZeroMemory(block, size);                         // zero raw bytes (fine)
+	ZeroMemory(block, size);
 
 #ifdef _PROFILING
 	TracyAlloc(block, size);
@@ -126,7 +134,7 @@ void* MemoryManager::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 	return block;
 }
 
-void MemoryManager::Free(void* block, MemoryTag tag)
+void nous::engine::memory::Free(void* block, MemoryTag tag)
 {
 	if (!block) return;
 	std::lock_guard<std::mutex> lock(memoryMutex);
@@ -156,49 +164,67 @@ void MemoryManager::Free(void* block, MemoryTag tag)
 	if (!ok)
 	{
 		NOUS_WARN_C(CURRENT_CHANNEL,
-					"MemoryManager::Free(void*, tag=%d): allocator failed to free %p",
+					"nous::engine::memory::Free(void*, tag=%d): allocator failed to free %p",
 					static_cast<int>(tag), block);
 	}
 }
 
-void MemoryManager::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
+void nous::engine::memory::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
-	std::lock_guard<std::mutex> lock(memoryMutex);
+	if (!block) return;
+	std::scoped_lock lock(memoryMutex);
 
 	if (tag == MemoryTag::UNKNOWN)
 	{
-		NOUS_WARN("Memory Free called using MEMORY_TAG_UNKNOWN.");
+		NOUS_WARN_C(CURRENT_CHANNEL, "Memory Free called using MEMORY_TAG_UNKNOWN.");
 	}
 
-	config.stats.totalAllocated -= size;
-	config.stats.totalAllocations--;
-	config.stats.taggedAllocations[static_cast<uint64>(tag)] -= size;
+	const uint64 raw = config.allocator->GetRecordedSize(block);
+	if (raw == 0)
+	{
+		// Not tracked by allocator: skip stats to avoid underflow
+		NOUS_WARN_C(CURRENT_CHANNEL,
+					"Free(size=%llu, tag=%d): block %p not recorded — skipping stats",
+					size, static_cast<int>(tag), block);
+		(void)config.allocator->Free(block, size);
+		return;
+	}
 
 #ifdef _PROFILING
 	TracyFree(block);
 #endif // _PROFILING
 
-	// Allocator aligns internally
-	config.allocator->Free(block, size);
+	config.stats.totalAllocated -= raw;
+	config.stats.totalAllocations--;
+	config.stats.taggedAllocations[static_cast<uint64>(tag)] -= raw;
+
+	const bool ok = config.allocator->Free(block);
+	if (!ok)
+	{
+		NOUS_WARN_C(CURRENT_CHANNEL,
+					"Free(size=%llu, tag=%d): allocator failed to free %p",
+					size, static_cast<int>(tag), block);
+	}
 }
 
-void* MemoryManager::ZeroMemory(void* block, uint64 size)
+void* nous::engine::memory::ZeroMemory(void* block, uint64 size)
 {
 	return std::memset(block, 0, size);
 }
 
-void* MemoryManager::CopyMemory(void* destination, const void* source, uint64 size)
+void* nous::engine::memory::CopyMemory(void* destination, const void* source, uint64 size)
 {
 	return std::memcpy(destination, source, size);
 }
 
-void* MemoryManager::SetMemory(void* destination, int32 value, uint64 size)
+void* nous::engine::memory::SetMemory(void* destination, int32 value, uint64 size)
 {
 	return std::memset(destination, value, size);
 }
 
-std::string MemoryManager::GetMemoryUsageStats()
+std::string nous::engine::memory::GetMemoryUsageStats()
 {
+	std::lock_guard<std::mutex> lock(memoryMutex);
 	std::ostringstream out;
 	bool anyUsed = false;
 
@@ -258,12 +284,13 @@ std::string MemoryManager::GetMemoryUsageStats()
 	return out.str();
 }
 
-uint64 MemoryManager::GetMemoryAllocationCount()
+uint64 nous::engine::memory::GetMemoryAllocationCount()
 {
+	std::lock_guard<std::mutex> lock(memoryMutex);
 	return config.stats.totalAllocations;
 }
 
-MemoryManager::MemoryStatsSnapshot MemoryManager::GetMemoryStats()
+nous::engine::memory::MemoryStatsSnapshot nous::engine::memory::GetMemoryStats()
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 	MemoryStatsSnapshot snapshot{};
@@ -276,16 +303,22 @@ MemoryManager::MemoryStatsSnapshot MemoryManager::GetMemoryStats()
 	return snapshot;
 }
 
-const char** MemoryManager::GetMemoryTagNames()
+const char* const* nous::engine::memory::GetMemoryTagNames()
 {
-	static std::vector<const char*> names;
-	names.clear();
-	for (auto name : magic_enum::enum_names<MemoryTag>())
-		names.push_back(name.data());
+	// Enum names are compile-time constants — populate once.
+	// string_view::data() points into static string literals so the pointers
+	// remain valid for the lifetime of the program.
+	static const std::vector<const char*> names = []()
+	{
+		std::vector<const char*> v;
+		for (auto name : magic_enum::enum_names<MemoryTag>())
+			v.push_back(name.data());
+		return v;
+	}();
 	return names.data();
 }
 
-MemoryManager::MemoryConfigSnapshot MemoryManager::GetMemoryConfig()
+nous::engine::memory::MemoryConfigSnapshot nous::engine::memory::GetMemoryConfig()
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 	MemoryConfigSnapshot snapshot{};

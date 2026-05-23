@@ -9,6 +9,7 @@
 set(EDITOR_NAME "Nous-Editor")
 
 add_subdirectory(ModuleEditor)
+add_subdirectory(GameExporter)
 add_subdirectory(UI)
 
 add_library(${EDITOR_NAME} SHARED EditorExport.h EditorContext.h)
@@ -16,14 +17,28 @@ add_library(NousEngine::Editor ALIAS ${EDITOR_NAME})
 
 target_link_libraries(${EDITOR_NAME} PUBLIC
         NousEngine::Engine
-        ModuleEditor
         EditorUI
+        ModuleEditor
 )
 
-target_link_options(${EDITOR_NAME} PRIVATE
-        "/WHOLEARCHIVE:$<TARGET_FILE:ModuleEditor>"
-        "/WHOLEARCHIVE:$<TARGET_FILE:EditorUI>"
-)
+if (WIN32)
+  target_link_options(${EDITOR_NAME} PRIVATE
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:ModuleEditor>"
+    "LINKER:/WHOLEARCHIVE:$<TARGET_FILE:EditorUI>"
+  )
+elseif (APPLE)
+  # macOS ld64 equivalent: -force_load per archive (--whole-archive is GNU ld only)
+  target_link_options(${EDITOR_NAME} PRIVATE
+    "-Wl,-force_load,$<TARGET_FILE:ModuleEditor>"
+    "-Wl,-force_load,$<TARGET_FILE:EditorUI>"
+  )
+elseif (UNIX)
+  # Linux: bake all static-lib symbols into the .so so consumers never hit
+  # circular-dependency ordering failures with the raw archives.
+  target_link_options(${EDITOR_NAME} PRIVATE
+    "-Wl,--whole-archive,$<TARGET_FILE:ModuleEditor>,$<TARGET_FILE:EditorUI>,--no-whole-archive"
+  )
+endif()
 
 set_target_properties(${EDITOR_NAME} PROPERTIES
         CXX_STANDARD 23

@@ -7,10 +7,24 @@
 uint64 DynamicAllocator::GetMemoryRequirement(uint64 totalSize)
 {
     const uint64 freelistReq = Freelist::GetMemoryRequirement(totalSize);
-    return sizeof(InternalState) + freelistReq + totalSize;
+    // Align the start of user memory to 16 bytes so every allocation is 16-byte aligned.
+    const uint64 headerSize  = Align16(sizeof(InternalState) + freelistReq);
+    return headerSize + totalSize;
 }
 
-DynamicAllocator::DynamicAllocator(uint64 totalSize, void* memory) {
+DynamicAllocator::DynamicAllocator(uint64 totalSize, void* memory)
+{
+    if (!memory)
+    {
+        NOUS_FATAL("DynamicAllocator() called with null memory pointer!");
+        return;
+    }
+    if (totalSize == 0)
+    {
+        NOUS_FATAL("DynamicAllocator() called with totalSize == 0!");
+        return;
+    }
+
     state_ = static_cast<InternalState*>(memory);
     new (state_) InternalState();
 
@@ -21,9 +35,12 @@ DynamicAllocator::DynamicAllocator(uint64 totalSize, void* memory) {
     // Calculate freelist requirement
     const uint64 freelistReq = Freelist::GetMemoryRequirement(totalSize);
 
-    // Memory layout correction
+    // Align the header (InternalState + freelist) to 16 bytes so userMemory is
+    // 16-byte aligned and every allocation inherits that alignment.
+    const uint64 headerSize  = Align16(sizeof(InternalState) + freelistReq);
+
     state_->freelistMemory = memPtr + sizeof(InternalState);
-    state_->userMemory     = memPtr + sizeof(InternalState) + freelistReq;
+    state_->userMemory     = memPtr + headerSize;
 
     // Initialize freelist in pre-allocated space
     state_->freelist = new (&state_->freelistMemory) Freelist(
@@ -36,9 +53,22 @@ DynamicAllocator::~DynamicAllocator()
 {
     if (state_)
     {
+        // Leak detection: report any allocations that were never freed.
+        {
+            std::scoped_lock g(state_->mapMutex);
+            if (!state_->allocMap.empty())
+            {
+                NOUS_WARN("DynamicAllocator::~DynamicAllocator() — %zu allocation(s) never freed (leak):",
+                          state_->allocMap.size());
+                for (const auto& [ptr, info] : state_->allocMap)
+                {
+                    NOUS_WARN("  leaked block %p: %llu bytes (aligned: %llu)", ptr, info.rawSize, info.alignedSize);
+                }
+            }
+        }
+
         state_->freelist->~Freelist();
-        // Optionally: detect leaks here by checking state_->allocMap not empty.
-        MemoryManager::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
+        nous::engine::memory::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
     }
 }
 
@@ -63,25 +93,32 @@ void* DynamicAllocator::Allocate(uint64 size)
     return nullptr;
 }
 
-// Existing sized path (kept for fast-path callers that know size)
+// Sized path — caller provides the size (fast path, no map lookup needed).
 bool DynamicAllocator::Free(void* block, uint64 size)
 {
     if (!state_ || !block || size == 0) return false;
 
     char* base = static_cast<char*>(state_->userMemory);
     char* p    = static_cast<char*>(block);
-    if (p < base || p >= base + state_->totalSize) {
-        NOUS_ERROR("DynamicAllocator::Free(size): out of range");
+    if (p < base || p >= base + state_->totalSize)
+    {
+        NOUS_ERROR("DynamicAllocator::Free(size): block %p is out of managed range.", block);
         return false;
+    }
+
+    {
+        std::scoped_lock g(state_->mapMutex);
+        auto it = state_->allocMap.find(block);
+        if (it == state_->allocMap.end())
+        {
+            NOUS_ERROR("DynamicAllocator::Free(size): block %p not in allocMap — possible double-free.", block);
+            return false;
+        }
+        state_->allocMap.erase(it);
     }
 
     const uint64 aligned = Align16(size);
     const uint64 offset  = static_cast<uint64>(p - base);
-
-    {   std::scoped_lock g(state_->mapMutex);
-        auto it = state_->allocMap.find(block);
-        if (it != state_->allocMap.end()) state_->allocMap.erase(it);
-    }
     return state_->freelist->Free(aligned, offset);
 }
 

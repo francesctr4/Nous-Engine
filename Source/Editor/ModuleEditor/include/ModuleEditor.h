@@ -7,6 +7,7 @@
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Editor/EditorContext.h"
+#include "Editor/GameExporter/include/GameExporter.h"
 
 #include "Engine/Utils/DataStructures/NOUS_Vector.h"
 
@@ -15,20 +16,34 @@
 
 union SDL_Event;
 struct VulkanContext;
-enum class RendererBackendType;
+enum class RendererBackendType : int8_t;
 struct ImGuiIO;
 struct ImFont;
 class IEditorWindow;
+
+// Dependency Injection
+class ModuleWindow;
+class ModuleInput;
+class ModuleCamera3D;
+class ModuleResourceManager;
+class ModuleScene;
+class ModuleRenderer3D;
 
 class ModuleEditor : public Module, public IEditorOverlay, public IEventListener, public EditorContext
 {
 public:
 
 	// Constructor
-	NOUS_EDITOR_API ModuleEditor(Application* app);
+	NOUS_EDITOR_API ModuleEditor(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
+		ModuleWindow* moduleWindow,
+		ModuleInput* moduleInput,
+		ModuleCamera3D* moduleCamera3D,
+		ModuleResourceManager* moduleResourceManager,
+		ModuleScene* moduleScene,
+		ModuleRenderer3D* moduleRenderer3D);
 
 	// Destructor
-	NOUS_EDITOR_API virtual ~ModuleEditor();
+	NOUS_EDITOR_API ~ModuleEditor() override;
 
 	NOUS_EDITOR_API bool Awake() override;
     NOUS_EDITOR_API bool Start() override;
@@ -36,24 +51,45 @@ public:
 	NOUS_EDITOR_API void DrawEditor() override;
 	NOUS_EDITOR_API void OnEvent(const Event& event) override;
 
-    ImFont* GetFont(size_t index) const override;
+    // EditorContext implementation
+    ImFont*                GetFont(size_t index)        const override;
+    ModuleScene*           GetScene()                   const override { return mModuleScene; }
+    ModuleCamera3D*        GetCamera()                  const override { return mModuleCamera3D; }
+    ModuleInput*           GetInput()                   const override { return mModuleInput; }
+    ModuleResourceManager* GetResourceManager()         const override { return mModuleResourceManager; }
+    RendererFrontend*      GetRendererFrontend()        const override;
+    nous::engine::multithreading::NOUS_JobSystem* GetJobSystem() const override { return JobSystem; }
+    GameExporter* GetGameExporter() const override { return m_gameExporter; }
+    std::string GetAssetsBrowserDirectory() const override;
+    void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath) override;
+    void WatchShaderFile(const std::string& path) override;
 
 private:
 
-	void InitFrame(RendererBackendType backendType);
+	static void InitFrame(RendererBackendType backendType);
 	void InternalDrawEditor();
-	void EndFrame(RendererBackendType backendType);
+	static void EndFrame(RendererBackendType backendType);
 
-    IEditorWindow* GetEditorWindowByName(std::string name);
+    IEditorWindow* GetEditorWindowByName(const std::string& name);
 
     void AddEditorWindow(IEditorWindow* editorWindow);
 
     // Vulkan Specific
     static VulkanContext* GetVulkanContext();
 
-private:
+	// --------------------------------------------------------------
+
+	// Dependency Injection
+	ModuleWindow*          mModuleWindow;
+	ModuleInput*           mModuleInput;
+	ModuleCamera3D*        mModuleCamera3D;
+	ModuleResourceManager* mModuleResourceManager;
+	ModuleScene*           mModuleScene;
+	ModuleRenderer3D*      mModuleRenderer3D;
 
 	RendererBackendType currentBackendType;
+
+    GameExporter* m_gameExporter = nullptr;
 
 	// Custom allocator vector for editor windows
 	NOUS_Vector<IEditorWindow*> editorWindows;

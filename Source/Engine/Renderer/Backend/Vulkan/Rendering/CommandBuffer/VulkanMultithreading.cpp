@@ -1,6 +1,5 @@
 #include "VulkanMultithreading.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
-#include "Engine/Core/Application.h"
 #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
@@ -8,24 +7,25 @@
 
 bool NOUS_VulkanMultithreading::CreateWorkerCommandPools(VulkanContext* vkContext)
 {
-    if (!vkContext || !vkContext->device.logicalDevice) 
+    if (!vkContext || !vkContext->device.logicalDevice)
     {
         NOUS_ERROR("Invalid Vulkan context or device");
         return false;
     }
 
-    const auto& threadPool = External->jobSystem->GetThreadPool();
+    const auto& threadPool = vkContext->jobSystem->GetThreadPool();
     const auto& threads = threadPool.GetThreads();
 
     VkCommandPoolCreateInfo commandPoolCreateInfo{};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-
     commandPoolCreateInfo.queueFamilyIndex = vkContext->device.transferQueueIndex;
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
+    std::lock_guard<std::mutex> lock(vkContext->device.workerCommandPoolsMutex);
+
     for (const auto& thread : threads)
     {
-        uint32 threadID = thread->GetID();
+        std::thread::id threadID = thread->GetID();
 
         VkCommandPool pool = VK_NULL_HANDLE;
 
@@ -44,7 +44,7 @@ bool NOUS_VulkanMultithreading::CreateWorkerCommandPools(VulkanContext* vkContex
 
 bool NOUS_VulkanMultithreading::RecreateWorkerCommandPools(VulkanContext* vkContext)
 {
-    if (!DestroyWorkerCommandPools(vkContext)) 
+    if (!DestroyWorkerCommandPools(vkContext))
     {
         NOUS_ERROR("Failed to destroy old command pools during recreation");
         return false;
@@ -63,6 +63,8 @@ bool NOUS_VulkanMultithreading::DestroyWorkerCommandPools(VulkanContext* vkConte
 
     bool allDestroyed = true;
 
+    std::lock_guard<std::mutex> lock(vkContext->device.workerCommandPoolsMutex);
+
     for (auto& [threadID, pool] : vkContext->device.workerCommandPools)
     {
         if (pool != VK_NULL_HANDLE)
@@ -77,7 +79,7 @@ bool NOUS_VulkanMultithreading::DestroyWorkerCommandPools(VulkanContext* vkConte
         }
         else
         {
-            NOUS_WARN("Null command pool found for thread %u", threadID);
+            NOUS_WARN("Null command pool found for thread %u", nous::engine::multithreading::NOUS_Thread::GetDisplayID(threadID));
             allDestroyed = false;
         }
     }
@@ -87,72 +89,39 @@ bool NOUS_VulkanMultithreading::DestroyWorkerCommandPools(VulkanContext* vkConte
     return allDestroyed;
 }
 
-VkCommandPool NOUS_VulkanMultithreading::GetThreadCommandPool(VulkanContext* vkContext, uint32 threadID)
+VkCommandPool NOUS_VulkanMultithreading::GetThreadCommandPool(VulkanContext* vkContext, std::thread::id threadID)
 {
-    try 
-    {
-        return vkContext->device.workerCommandPools.at(threadID);
-    }
-    catch (const std::out_of_range&) 
-    {
-        // Fallback to main command pool
-        NOUS_INFO("Worker command pool not found for this worker thread. Falling back to main graphics command pool.");
-        return vkContext->device.mainGraphicsCommandPool;
-    }
-    catch (...) 
-    {
-        // Catch any other unexpected errors
-        NOUS_WARN("Unexpected error accessing worker command pools. Falling back to main graphics pool.");
-        return vkContext->device.mainGraphicsCommandPool;
-    }
-}
+    // The main (render) thread uses the main transfer command pool for uploads.
+    if (nous::engine::multithreading::GetMainThread()->GetID() == threadID)
+        return vkContext->device.mainTransferCommandPool;
 
-bool NOUS_VulkanMultithreading::QueueSubmitThreadSafe(VulkanContext* vkContext, VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence, bool waitIdle)
-{
-    // If we're on the main thread, submit immediately
-    if (NOUS_Multithreading::GetMainThread()->GetID() == NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id())) 
-    {
-        std::lock_guard<std::mutex> lock(vkContext->device.graphicsQueueMutex);
-        VkResult result = vkQueueSubmit(queue, submitCount, pSubmits, fence);
-        if (result != VK_SUCCESS) return false;
-        if (waitIdle) return vkQueueWaitIdle(queue) == VK_SUCCESS;
-        return true;
-    }
+    std::lock_guard<std::mutex> lock(vkContext->device.workerCommandPoolsMutex);
 
-    // Otherwise, enqueue the task for the main thread
-    VulkanSubmitTask task;
-    task.queue = queue;
-    task.submitCount = submitCount;
-    task.pSubmits = pSubmits;
-    task.fence = fence;
-    task.waitIdle = waitIdle;
+    auto it = vkContext->device.workerCommandPools.find(threadID);
+    if (it != vkContext->device.workerCommandPools.end())
+        return it->second;
 
-    std::promise<bool> resultPromise;
-    auto resultFuture = resultPromise.get_future();
-    task.resultPromise = std::move(resultPromise);
-
-    {
-        std::lock_guard<std::mutex> lock(vkContext->submitQueueMutex);
-        vkContext->submitQueue.push_back(std::move(task));
-    }
-    vkContext->submitQueueCV.notify_one();
-
-    return resultFuture.get(); // Block until the main thread processes it
+    NOUS_WARN("Worker command pool not found for thread %u. Falling back to main transfer command pool.", nous::engine::multithreading::NOUS_Thread::GetDisplayID(threadID));
+    return vkContext->device.mainTransferCommandPool;
 }
 
 bool NOUS_VulkanMultithreading::CreateQueueSubmitTask(VulkanContext* vkContext, VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence, bool waitIdle)
 {
-    // If we're on the main thread, submit immediately
-    if (NOUS_Multithreading::GetMainThread()->GetID() == NOUS_Multithreading::NOUS_Thread::GetThreadID(std::this_thread::get_id()))
+    // If we're on the main thread, submit immediately using the appropriate queue mutex.
+    if (nous::engine::multithreading::GetMainThread()->GetID() == std::this_thread::get_id())
     {
-        std::lock_guard<std::mutex> lock(vkContext->device.graphicsQueueMutex);
+        std::mutex& queueMutex = (queue == vkContext->device.transferQueue)
+            ? vkContext->device.transferQueueMutex
+            : vkContext->device.graphicsQueueMutex;
+
+        std::lock_guard<std::mutex> lock(queueMutex);
         VkResult result = vkQueueSubmit(queue, submitCount, pSubmits, fence);
         if (result != VK_SUCCESS) return false;
         if (waitIdle) return vkQueueWaitIdle(queue) == VK_SUCCESS;
         return true;
     }
 
-    // Otherwise, enqueue the task for the main thread
+    // Otherwise, enqueue the task for the main thread.
     VulkanSubmitTask task;
     task.queue = queue;
     task.submitCount = submitCount;
@@ -168,7 +137,6 @@ bool NOUS_VulkanMultithreading::CreateQueueSubmitTask(VulkanContext* vkContext, 
         std::lock_guard<std::mutex> lock(vkContext->submitQueueMutex);
         vkContext->submitQueue.push_back(std::move(task));
     }
-    vkContext->submitQueueCV.notify_one();
 
     return resultFuture.get(); // Block until the main thread processes it
 }

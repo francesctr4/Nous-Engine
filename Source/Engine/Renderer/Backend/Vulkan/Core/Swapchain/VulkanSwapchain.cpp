@@ -4,7 +4,6 @@
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
 
 #include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/Application.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include <algorithm>  // Required for std::clamp
 
@@ -17,7 +16,7 @@ bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 widt
 
     vkContext->device.swapChainSupport = NOUS_VulkanDevice::QuerySwapChainSupport(vkContext->device.physicalDevice, vkContext);
 
-    VkExtent2D extent = ChooseSwapExtent(vkContext->device.swapChainSupport.capabilities);
+    VkExtent2D extent = ChooseSwapExtent(vkContext, vkContext->device.swapChainSupport.capabilities);
 
     uint32_t imageCount = vkContext->device.swapChainSupport.capabilities.minImageCount + 1;
 
@@ -125,16 +124,12 @@ VkResult NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(VulkanContext* vkC
     VkResult result = vkAcquireNextImageKHR(vkContext->device.logicalDevice, swapchain->handle, timeout_ns,
         imageAvailableSemaphore, fence, outImageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) 
-    {
-        // Trigger swapchain recreation, then boot out of the render loop.
-        RecreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, swapchain);
-        return result;
-    }
-    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) 
+    // OUT_OF_DATE and SUBOPTIMAL are returned to the caller (VulkanBackend::BeginFrame)
+    // which handles recreation lazily via RecreateResources().  Recreating eagerly here
+    // would cause a double recreation — once now and once in RecreateResources().
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR)
     {
         NOUS_FATAL("Failed to acquire swapchain image!");
-        return result;
     }
 
     return result;
@@ -158,12 +153,9 @@ VkResult NOUS_VulkanSwapChain::SwapChainPresent(VulkanContext* vkContext, Vulkan
 
     VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
-    {
-        // Swapchain is out of date, suboptimal or a framebuffer resize has occurred. Trigger swapchain recreation.
-        RecreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, swapchain);
-    }
-    else if (result != VK_SUCCESS) 
+    // OUT_OF_DATE and SUBOPTIMAL are returned to the caller (VulkanBackend::EndFrame)
+    // which schedules lazy recreation via RecreateResources().
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR)
     {
         NOUS_FATAL("Failed to present swap chain image!");
     }
@@ -205,16 +197,16 @@ VkPresentModeKHR NOUS_VulkanSwapChain::ChooseSwapPresentMode(const std::vector<V
     return VK_PRESENT_MODE_FIFO_KHR; // Vertical Sync
 }
 
-VkExtent2D NOUS_VulkanSwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+VkExtent2D NOUS_VulkanSwapChain::ChooseSwapExtent(VulkanContext* vkContext, const VkSurfaceCapabilitiesKHR& capabilities)
 {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) 
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
     {
         return capabilities.currentExtent;
     }
-    else 
+    else
     {
         int32 width, height;
-        External->window->GetFramebufferSize(&width, &height);
+        vkContext->window->GetFramebufferSize(&width, &height);
 
         VkExtent2D actualExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
 

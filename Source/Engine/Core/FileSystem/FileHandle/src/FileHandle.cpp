@@ -215,7 +215,7 @@ bool FileHandle::ReadLine(std::string& outLine)
     return false;
 }
 
-bool FileHandle::WriteLine(std::string line)
+bool FileHandle::WriteLine(const std::string& line)
 {
     // Check if the file is open and valid
     if (!IsOpen())
