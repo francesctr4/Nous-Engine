@@ -281,7 +281,9 @@ UpdateStatus Application::Update()
                 ret = listModules[i]->Update(dt);
         }
 
-        if (ret == UpdateStatus::CONTINUE)
+        // Editor-only authoring shortcuts (spawn debug meshes, clear scene,
+        // hot-reload scripts, ...). Disabled in standalone GAME builds.
+        if (ret == UpdateStatus::CONTINUE && !m_isGameMode)
             HandleDebugKeys(input, scene, jobSystem);
     }
 
