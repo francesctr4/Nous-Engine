@@ -45,6 +45,14 @@ public:
 	// Set once at Application construction. Read by SetMouseCaptured to gate capture in editor.
 	NOUS_ENGINE_API void SetGameMode(bool gameMode) { m_gameMode = gameMode; }
 
+	// Gates the input that script bindings see. In GameApp this stays true forever; in the
+	// editor the GameViewport pushes ImGui::IsWindowFocused() every frame so scripts only
+	// react while the game panel is the focused window. When transitioning to disabled the
+	// logical mouse capture is dropped (and remembered) so the cursor reappears in the rest
+	// of the editor; it is restored on the next enabled transition.
+	NOUS_ENGINE_API void SetScriptInputEnabled(bool enabled);
+	NOUS_ENGINE_API bool IsScriptInputEnabled() const { return m_scriptInputEnabled; }
+
 private:
 
 	KeyState* keyboard;
@@ -64,6 +72,9 @@ private:
 
 	bool m_mouseCaptured = false;
 	bool m_gameMode      = false;  // true in GameApp.exe; gates SetMouseCaptured(true)
+
+	bool m_scriptInputEnabled       = true;  // gates the input that script bindings observe
+	bool m_captureSuspendedByGate   = false; // true if SetScriptInputEnabled(false) dropped a live capture
 
 };
 

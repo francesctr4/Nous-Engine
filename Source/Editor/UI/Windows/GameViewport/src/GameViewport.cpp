@@ -8,6 +8,7 @@
 #include "imgui_impl_vulkan.h"
 
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 
 GameViewport::GameViewport(const char* title, EditorContext* context, const bool start_open)
     : IEditorWindow(title, context, nullptr, start_open) {}
@@ -26,6 +27,24 @@ void GameViewport::OnLayoutUpdated(const ImVec2& panelSize)
 {
     if (ModuleScene* scene = editorContext->GetScene())
         scene->gameViewportAspect = panelSize.x / panelSize.y;
+}
+
+bool GameViewport::Begin(bool& outVisible)
+{
+    const bool ok = IEditorWindow::Begin(outVisible);
+
+    // ModuleEditor resets the gate to disabled each frame; we flip it on only when
+    // the GameViewport (or one of its child windows) actually has keyboard focus.
+    // Querying after ImGui::Begin works whether the window is visible or collapsed
+    // because the window is still on ImGui's stack until End() is called.
+    if (ModuleInput* moduleInput = editorContext->GetInput())
+    {
+        const bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+        if (focused)
+            moduleInput->SetScriptInputEnabled(true);
+    }
+
+    return ok;
 }
 
 void GameViewport::DrawContent()

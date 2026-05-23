@@ -15,6 +15,14 @@ public:
     NOUS_EDITOR_API void OnLayoutUpdated(const ImVec2& panelSize) override;
     NOUS_EDITOR_API void DrawContent() override;
 
+protected:
+
+    // Gates script input on this window's focus state. Called from inside ImGui's
+    // window scope (after ImGui::Begin) because IsWindowFocused() only works there.
+    NOUS_EDITOR_API bool Begin(bool& outVisible) override;
+
+public:
+
     static void CreateGameViewportDescriptorSets();
     static void DestroyGameViewportDescriptorSets();
 };

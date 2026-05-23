@@ -301,6 +301,13 @@ void ModuleEditor::InternalDrawEditor()
 
 	ImGui::ShowDemoWindow();
 
+	// Default the script-input gate to disabled each frame; GameViewport::Begin() will
+	// flip it back on when (and only when) its window has focus this frame. Doing the
+	// reset here covers the closed-window case too: if GameViewport isn't being drawn,
+	// nothing re-enables the gate and scripts stay paused.
+	if (mModuleInput)
+		mModuleInput->SetScriptInputEnabled(false);
+
 	for (const auto& win : editorWindows)
 	{
 		win->Draw();

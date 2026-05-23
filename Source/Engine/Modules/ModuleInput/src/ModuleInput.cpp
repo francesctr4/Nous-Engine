@@ -242,6 +242,38 @@ void ModuleInput::SetMouseCaptured(bool captured)
 	m_mouseCaptured = captured;
 }
 
+void ModuleInput::SetScriptInputEnabled(bool enabled)
+{
+	if (enabled == m_scriptInputEnabled)
+		return;
+
+	if (!enabled)
+	{
+		// Falling edge — drop a live capture so the cursor reappears in the rest of the
+		// editor. Remember whether we did so we can restore on the rising edge.
+		if (m_mouseCaptured)
+		{
+			SetMouseCaptured(false);
+			m_captureSuspendedByGate = true;
+		}
+	}
+	else
+	{
+		// Rising edge — clamp leftover deltas accumulated while scripts were paused so
+		// the camera doesn't snap by the full off-panel mouse travel on the first frame.
+		mouseXMotion = 0;
+		mouseYMotion = 0;
+
+		if (m_captureSuspendedByGate)
+		{
+			SetMouseCaptured(true);
+			m_captureSuspendedByGate = false;
+		}
+	}
+
+	m_scriptInputEnabled = enabled;
+}
+
 
 int32 ModuleInput::GetMouseX() const
 {
