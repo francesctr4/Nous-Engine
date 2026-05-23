@@ -12,6 +12,12 @@ struct InputAPI
     void (*GetMousePosition)(int* x, int* y) = nullptr;
     void (*GetMouseMotion)(int* x, int* y)   = nullptr;
 
+    // Relative mouse mode: when captured, the OS hides the cursor and stops
+    // clamping it to the screen, so GetMouseMotion keeps producing deltas
+    // even at screen edges. Required for FPS-style mouse-look.
+    void (*SetMouseCaptured)(bool captured) = nullptr;
+    bool (*IsMouseCaptured)()               = nullptr;
+
     // Key state constants
     typedef enum KeyState : std::uint8_t
     {

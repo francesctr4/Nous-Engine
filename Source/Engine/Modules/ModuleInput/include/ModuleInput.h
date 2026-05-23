@@ -35,6 +35,16 @@ public:
 	int32 GetMouseXMotion() const override;
 	int32 GetMouseYMotion() const override;
 
+	// Relative mouse mode: hides the cursor and reports unbounded motion deltas
+	// (the OS no longer clamps the cursor to the screen). Use for FPS-style camera input.
+	// In editor mode the OS cursor stays visible (ImGui needs it), but the logical capture
+	// state is still tracked so script code sees identical behavior in editor and game.
+	NOUS_ENGINE_API void SetMouseCaptured(bool captured);
+	NOUS_ENGINE_API bool IsMouseCaptured() const { return m_mouseCaptured; }
+
+	// Set once at Application construction. Read by SetMouseCaptured to gate capture in editor.
+	NOUS_ENGINE_API void SetGameMode(bool gameMode) { m_gameMode = gameMode; }
+
 private:
 
 	KeyState* keyboard;
@@ -51,6 +61,9 @@ private:
 	int32 m_lastWindowHeight = 0;
 
 	bool m_imguiCaptureKeyboard = false;
+
+	bool m_mouseCaptured = false;
+	bool m_gameMode      = false;  // true in GameApp.exe; gates SetMouseCaptured(true)
 
 };
 

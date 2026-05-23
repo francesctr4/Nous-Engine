@@ -41,4 +41,15 @@ void SetupInputBindings(InputAPI& input, ModuleInput* moduleInput)
         if (x) *x = s_input->GetMouseXMotion();
         if (y) *y = s_input->GetMouseYMotion();
     };
+
+    // Mouse capture (relative mouse mode)
+    input.SetMouseCaptured = [](bool captured) {
+        if (!s_input) return;
+        s_input->SetMouseCaptured(captured);
+    };
+
+    input.IsMouseCaptured = []() -> bool {
+        if (!s_input) return false;
+        return s_input->IsMouseCaptured();
+    };
 }

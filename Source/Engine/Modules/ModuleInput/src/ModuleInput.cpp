@@ -205,6 +205,43 @@ void ModuleInput::SetImGuiCaptureKeyboard(bool captured)
 	m_imguiCaptureKeyboard = captured;
 }
 
+void ModuleInput::SetMouseCaptured(bool captured)
+{
+	// In editor mode keep the OS cursor visible (ImGui panels need it) but still record the
+	// logical capture state so script logic — IsMouseCaptured() checks, Escape toggles,
+	// mouse-look-gated-on-capture branches — behaves identically to game mode.
+	if (!m_gameMode)
+	{
+		m_mouseCaptured = captured;
+		return;
+	}
+
+	// SDL3 made relative-mouse-mode per-window. We can't rely on SDL_GetMouseFocus()
+	// because at the moment a script's Start() runs (e.g. right after launching a
+	// standalone game), the cursor may not yet be over the new window — focus is
+	// nullptr and capture would silently no-op. Targeting the first open window
+	// via SDL_GetWindows() works regardless of focus state.
+	int windowCount = 0;
+	SDL_Window** windows = SDL_GetWindows(&windowCount);
+	if (!windows || windowCount == 0)
+	{
+		NOUS_WARN("SetMouseCaptured: no SDL window open — ignoring");
+		if (windows) SDL_free(windows);
+		return;
+	}
+
+	const bool ok = SDL_SetWindowRelativeMouseMode(windows[0], captured);
+	SDL_free(windows);
+
+	if (!ok)
+	{
+		NOUS_ERROR("SDL_SetWindowRelativeMouseMode failed: %s", SDL_GetError());
+		return;
+	}
+
+	m_mouseCaptured = captured;
+}
+
 
 int32 ModuleInput::GetMouseX() const
 {

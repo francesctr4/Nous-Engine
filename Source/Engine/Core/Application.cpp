@@ -91,6 +91,7 @@ Application::Application(const bool isGameMode)
     {
         renderer->SetRenderMode(RenderMode::GAME);
         resourceManager->SetGameMode();
+        input->SetGameMode(true);
     }
 
     // 7. EDITOR — depends on all modules above.

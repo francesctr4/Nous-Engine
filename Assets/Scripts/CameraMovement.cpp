@@ -41,24 +41,67 @@ public:
     void Start() override
     {
         /*coding_start::CameraMovement::Start*/
+        // Seed accumulated yaw/pitch from the current transform so we don't snap on first frame.
+        float rx, ry, rz;
+        Nous_Engine->GameObject->GetRotation(m_ownerID, &rx, &ry, &rz);
+        m_pitch = rx;
+        m_yaw   = ry;
+
+        // Capture the mouse — hides the cursor and lets motion deltas flow without
+        // bumping against the screen edge. Press Escape at runtime to release.
+        Nous_Engine->Input->SetMouseCaptured(true);
         /*coding_end::CameraMovement::Start*/
     }
 
     void Update(float deltaTime) override
     {
         /*coding_start::CameraMovement::Update*/
+        // ----- Escape toggles mouse capture (edge-triggered on key down) -----
+        if (Nous_Engine->Input->GetKey(NOUS_SCANCODE::Escape) == InputAPI::KeyState::DOWN)
+        {
+            Nous_Engine->Input->SetMouseCaptured(!Nous_Engine->Input->IsMouseCaptured());
+        }
+
+        // ----- Mouse-look (only while captured, to avoid hijacking the cursor) -----
+        if (!Nous_Engine->Input->IsMouseCaptured())
+            return;
+
+        int mdx = 0, mdy = 0;
+        Nous_Engine->Input->GetMouseMotion(&mdx, &mdy);
+
+        if (mdx != 0 || mdy != 0)
+        {
+            // Sign convention: mouse-right -> look right, mouse-down -> look down.
+            // SetRotation builds orient = q_Y(yaw) * q_X(pitch), so yaw>0 looks -X (left)
+            // and pitch>0 looks +Y (up); we subtract motion to invert that into FPS-style.
+            m_yaw   -= static_cast<float>(mdx) * m_rotSensitivity;
+            m_pitch -= static_cast<float>(mdy) * m_rotSensitivity;
+
+            // Clamp pitch to avoid gimbal flip at the poles.
+            if (m_pitch >  89.0f) m_pitch =  89.0f;
+            if (m_pitch < -89.0f) m_pitch = -89.0f;
+
+            Nous_Engine->GameObject->SetRotation(m_ownerID, m_pitch, m_yaw, 0.0f);
+        }
+
+        // ----- WASD/QE movement (uses orientation-derived basis vectors) -----
+        float speed = m_speed * deltaTime;
+        if (IsHeld(NOUS_SCANCODE::LShift)) speed *= 6.0f;
+
         float fx, fy, fz;
         float rx, ry, rz;
+        float ux, uy, uz;
         Nous_Engine->GameObject->GetForward(m_ownerID, &fx, &fy, &fz);
         Nous_Engine->GameObject->GetRight  (m_ownerID, &rx, &ry, &rz);
+        Nous_Engine->GameObject->GetUp     (m_ownerID, &ux, &uy, &uz);
 
         float dx = 0.0f, dy = 0.0f, dz = 0.0f;
-        const float dist = m_speed * deltaTime;
-
-        if (IsHeld(NOUS_SCANCODE::W)) { dx += fx * dist; dy += fy * dist; dz += fz * dist; }
-        if (IsHeld(NOUS_SCANCODE::S)) { dx -= fx * dist; dy -= fy * dist; dz -= fz * dist; }
-        if (IsHeld(NOUS_SCANCODE::D)) { dx += rx * dist; dy += ry * dist; dz += rz * dist; }
-        if (IsHeld(NOUS_SCANCODE::A)) { dx -= rx * dist; dy -= ry * dist; dz -= rz * dist; }
+        if (IsHeld(NOUS_SCANCODE::W)) { dx += fx * speed; dy += fy * speed; dz += fz * speed; }
+        if (IsHeld(NOUS_SCANCODE::S)) { dx -= fx * speed; dy -= fy * speed; dz -= fz * speed; }
+        if (IsHeld(NOUS_SCANCODE::D)) { dx += rx * speed; dy += ry * speed; dz += rz * speed; }
+        if (IsHeld(NOUS_SCANCODE::A)) { dx -= rx * speed; dy -= ry * speed; dz -= rz * speed; }
+        if (IsHeld(NOUS_SCANCODE::E)) { dx += ux * speed; dy += uy * speed; dz += uz * speed; }
+        if (IsHeld(NOUS_SCANCODE::Q)) { dx -= ux * speed; dy -= uy * speed; dz -= uz * speed; }
 
         if (dx != 0.0f || dy != 0.0f || dz != 0.0f)
             Nous_Engine->GameObject->Translate(m_ownerID, dx, dy, dz);
@@ -92,6 +135,9 @@ public:
     void OnDestroy() override
     {
         /*coding_start::CameraMovement::OnDestroy*/
+        // Always restore a visible, unconstrained cursor — otherwise stopping play
+        // in the editor leaves the OS cursor trapped.
+        Nous_Engine->Input->SetMouseCaptured(false);
         /*coding_end::CameraMovement::OnDestroy*/
     }
 
@@ -108,7 +154,11 @@ private:
 
     // ----- ATTRIBUTES ----- //
     /*coding_start::CameraMovement*/
-    SCRIPT_FIELD(float, m_speed, 5.0f)
+    SCRIPT_FIELD(float, m_speed,          20.0f)
+    SCRIPT_FIELD(float, m_rotSensitivity, 0.15f)  // degrees per pixel of mouse motion
+
+    float m_yaw   = 0.0f;
+    float m_pitch = 0.0f;
     /*coding_end::CameraMovement*/
 
 };
