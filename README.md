@@ -179,6 +179,19 @@ The v0.5 release introduces major architectural improvements, new Scripting Syst
 > vcpkg install vulkan sdl3[vulkan] assimp imgui[docking-experimental,sdl3-binding,sdl3-renderer-binding,vulkan-binding] stb parson tracy glm gtest magic-enum
 > ```
 
+> [!WARNING]  
+> To use the **script hot-reload** feature, you must have Visual Studio 2022 installed with the **Desktop development with C++** workload (includes the MSVC compiler, Windows SDK, and `vcvarsall.bat`).
+>
+> The engine invokes `vcvarsall.bat x64` at runtime to configure the MSVC build environment and compile user scripts (`Assets/Scripts/*.cpp`) into `Scripts.dll` for hot-reload. Without it, script compilation will fail.
+>
+> **Minimum requirements**
+> - Visual Studio 2022 (Community edition is sufficient) — v17.x
+> - Workload: **Desktop development with C++**
+> - Windows 10 SDK (installed with the workload by default)
+>
+> **Note:**  
+> Visual Studio Build Tools 2022 also works without the full IDE, as long as `vcvarsall.bat` is available in the standard installation path.
+
 ---
 
 ## Nous Engine v0.3
