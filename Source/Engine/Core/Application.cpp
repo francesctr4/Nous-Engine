@@ -6,6 +6,7 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
+#include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
 
 #include <Engine/Core/MemoryManager/MemoryManager.h>
 
@@ -87,6 +88,10 @@ Application::Application(const bool isGameMode)
     listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, window, camera, resourceManager, scene));
 
+    // 7. AUDIO - no dependencies, processed after renderer.
+    listModules.push_back(audio = NOUS_NEW<ModuleAudio>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem));
+
     if (m_isGameMode)
     {
         renderer->SetRenderMode(RenderMode::GAME);
@@ -94,7 +99,7 @@ Application::Application(const bool isGameMode)
         input->SetGameMode(true);
     }
 
-    // 7. EDITOR — depends on all modules above.
+    // 8. EDITOR — depends on all modules above.
     //    Constructed externally in MainEditor.cpp after this constructor returns.
 }
 
@@ -434,6 +439,7 @@ ModuleCamera3D*        Application::GetCamera()          const { return camera; 
 ModuleResourceManager* Application::GetResourceManager() const { return resourceManager; }
 ModuleScene*           Application::GetScene()           const { return scene; }
 ModuleRenderer3D*      Application::GetRenderer()        const { return renderer; }
+ModuleAudio*           Application::GetAudio()           const { return audio; }
 
 nous::engine::multithreading::NOUS_JobSystem* Application::GetJobSystem() const { return jobSystem; }
 

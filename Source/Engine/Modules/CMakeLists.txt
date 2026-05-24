@@ -8,6 +8,7 @@ add_subdirectory(ModuleRenderer3D)
 add_subdirectory(ModuleResourceManager)
 add_subdirectory(ModuleScene)
 add_subdirectory(ModuleWindow)
+add_subdirectory(ModuleAudio)
 
 add_library(Modules STATIC
         Module.h
@@ -37,4 +38,5 @@ target_link_libraries(Modules PUBLIC
         ModuleResourceManager
         ModuleScene
         ModuleWindow
+        ModuleAudio
 )

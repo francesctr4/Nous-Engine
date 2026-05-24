@@ -1,6 +1,6 @@
 {
   "name" : "nous-engine",
-  "version-string" : "0.4",
+  "version-string" : "0.7",
   "builtin-baseline" : "b28d7e55666d6819ec408e392b8e0cdcfc2df6bd",
   "dependencies" : 
   [ 
@@ -47,6 +47,9 @@
     },
     {
       "name" : "entt"
+    },
+    {
+      "name" : "miniaudio"
     }
   ]
 }

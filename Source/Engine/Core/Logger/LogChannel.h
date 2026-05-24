@@ -29,7 +29,8 @@
     /* ============================ CORE ============================ */   \
     X(NOUS_ENGINE_MAIN, "MainEngine.cpp") \
     X(NOUS_ENGINE_CORE_APPLICATION, "NOUS_ENGINE_CORE_APPLICATION") \
-    X(NOUS_ENGINE_MODULE_RENDERER3D, "ModuleRenderer3D.cpp") \
+    X(NOUS_ENGINE_MODULE_RENDERER3D, "MODULE_RENDERER3D") \
+    X(NOUS_ENGINE_MODULE_AUDIO, "MODULE_AUDIO") \
     X(NOUS_ENGINE_CORE_MODULE_CAMERA3D, "ModuleCamera3D.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_WINDOW, "ModuleWindow.cpp") \
     X(NOUS_ENGINE_CORE_MODULE_SCENE, "ModuleScene.cpp") \
