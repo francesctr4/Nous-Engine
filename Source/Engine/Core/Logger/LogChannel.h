@@ -80,6 +80,7 @@
     X(NOUS_ENGINE_SYSTEM_FILESYSTEM, "FileManager.cpp") \
     X(NOUS_ENGINE_SYSTEM_RESOURCEMANAGER, "ResourceManager.cpp") \
     X(NOUS_ENGINE_SYSTEM_SHADERSYSTEM, "SHADER_SYSTEM") \
+    X(NOUS_ENGINE_SYSTEM_AUDIOSYSTEM, "AUDIO_SYSTEM") \
     \
     /* ============================ UTILS ============================ */ \
     X(NOUS_ENGINE_UTILS_LOGGER, "Logger.cpp") \

@@ -3,54 +3,39 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/EventSystem/Event/include/Event.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 
-// miniaudio Library Documentation
-// https://miniaud.io/docs/manual/index.html
-//
-// Vorbis (.ogg) support: miniaudio has no built-in Vorbis decoder. It auto-detects
-// stb_vorbis when stb_vorbis.c is included in the same TU as MA_IMPLEMENTATION,
-// using this header-only / implementation sandwich.
-#define STB_VORBIS_HEADER_ONLY
-#include <stb_vorbis.c>
-
-#define MA_IMPLEMENTATION
-#include <miniaudio.h>
-
-#undef STB_VORBIS_HEADER_ONLY
-#include <stb_vorbis.c>
-
-ma_engine m_audioEngine;
+#include "Engine/Systems/AudioSystem/AudioSystem.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_AUDIO;
 
 ModuleAudio::ModuleAudio(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem)
-    : Module(eventSystem, jobSystem) {}
+    : Module(eventSystem, jobSystem), m_audioSystem(nullptr)
+{
+
+}
 
 ModuleAudio::~ModuleAudio() = default;
 
 bool ModuleAudio::Awake()
 {
-    const ma_result result = ma_engine_init(nullptr, &m_audioEngine);
+    NOUS_INFO_C(CURRENT_CHANNEL, "Initializing Audio System ...");
 
-    if (result != MA_SUCCESS)
-        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to initialize audio engine.");
+    m_audioSystem = NOUS_NEW<AudioSystem>(MemoryTag::AUDIO);
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "Audio engine initialized successfully.");
+    if (!m_audioSystem->Initialize(AudioEngineBackend::MINIAUDIO))
+        NOUS_WARN_C(CURRENT_CHANNEL, "Audio system initialization failed — running without audio.");
 
     return true;
 }
 
 bool ModuleAudio::Start()
 {
-    ma_engine_play_sound(&m_audioEngine, "Assets/Audio/SFX/test.wav", nullptr);
+    ResourceAudio sfx = {"FAAAH", AudioFileType::WAV, "Assets/Audio/SFX/test.wav"};
+    m_audioSystem->PlayAudio(&sfx);
 
-    const ma_result result =
-    ma_engine_play_sound(&m_audioEngine, "Assets/Audio/Music/music.ogg", nullptr);
-
-    if (result != MA_SUCCESS)
-    {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to play music. Error code: {}", result);
-    }
+    ResourceAudio song = {"Re:ZERO - Recollect", AudioFileType::OGG, "Assets/Audio/Music/music.ogg"};
+    m_audioSystem->PlayAudio(&song);
 
     return true;
 }
@@ -72,9 +57,11 @@ UpdateStatus ModuleAudio::PostUpdate(float dt)
 
 bool ModuleAudio::CleanUp()
 {
-    ma_engine_uninit(&m_audioEngine);
+    NOUS_INFO_C(CURRENT_CHANNEL, "Shutdown Audio System ...");
 
-    NOUS_INFO_C(CURRENT_CHANNEL, "Audio engine shutdown successfully.");
+    m_audioSystem->Shutdown();
+    NOUS_DELETE<AudioSystem>(m_audioSystem, MemoryTag::AUDIO);
+
 	return true;
 }
 

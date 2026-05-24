@@ -5,6 +5,8 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
 
+class AudioSystem;
+
 class ModuleAudio : public Module, public IEventListener
 {
 public:
@@ -27,5 +29,7 @@ public:
     // ----------------------------------------
 
 private:
+
+    AudioSystem* m_audioSystem;
 
 };
