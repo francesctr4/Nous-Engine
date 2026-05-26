@@ -8,6 +8,7 @@ add_subdirectory(Importer)
 add_subdirectory(Resource)
 add_subdirectory(BuiltinResources)
 add_subdirectory(ResourceImportPipeline)
+add_subdirectory(ResourceTypeRegistry)
 add_subdirectory(SubMeshCache)
 add_subdirectory(SceneResourcePreloader)
 

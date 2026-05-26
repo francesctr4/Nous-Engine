@@ -4,6 +4,7 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
+#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
@@ -37,6 +38,13 @@ Application::Application(const bool isGameMode)
     dt = 0.0f;
 
     eventSystem       = NOUS_NEW<EventSystem>(MemoryTag::APPLICATION);
+
+    // Resource type registry — must exist before any module is constructed,
+    // since modules and importers will pull descriptors from it.
+    resourceTypeRegistry = NOUS_NEW<ResourceTypeRegistry>(MemoryTag::APPLICATION);
+    SetResourceTypeRegistry(resourceTypeRegistry);
+    RegisterBuiltinResourceTypes(*resourceTypeRegistry);
+
     importerManager   = NOUS_NEW<ImporterManager>(MemoryTag::APPLICATION);
 
     msTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
@@ -120,6 +128,10 @@ Application::~Application()
     NOUS_DELETE(jobSystem, MemoryTag::THREAD);
     NOUS_DELETE(eventSystem, MemoryTag::APPLICATION);
     NOUS_DELETE(importerManager, MemoryTag::APPLICATION);
+    // Registry is destroyed last among engine-owned singletons because importers
+    // (still referenced from importerManager above) may transitively touch it.
+    SetResourceTypeRegistry(nullptr);
+    NOUS_DELETE(resourceTypeRegistry, MemoryTag::APPLICATION);
     NOUS_DELETE(msTimer, MemoryTag::APPLICATION);
     NOUS_DELETE(updateTitleTimer, MemoryTag::APPLICATION);
 }

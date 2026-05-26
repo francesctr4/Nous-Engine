@@ -2,6 +2,7 @@
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
 #include <unordered_map>
@@ -100,39 +101,13 @@ void Resources::AlignHeadersToCenter() const
 
 void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor) const
 {
-    switch (type)
+    if (const ResourceTypeDescriptor* d = GetResourceTypeRegistry().Get(type))
     {
-    case ResourceType::MESH:
-        {
-            textColor = ImVec4(0.0f, 0.8f, 0.5f, 1.0f);
-            break;
-        }
-    case ResourceType::TEXTURE:
-        {
-            textColor = ImVec4(0.5f, 0.8f, 0.0f, 1.0f);
-            break;
-        }
-    case ResourceType::MATERIAL:
-        {
-            textColor = ImVec4(0.8f, 0.5f, 0.0f, 1.0f);
-            break;
-        }
-    case ResourceType::SHADER:
-        {
-            textColor = ImVec4(0.7f, 0.2f, 1.0f, 1.0f);
-            break;
-        }
-    case ResourceType::AUDIO:
-        {
-            textColor = ImVec4(0.93f, 0.28f, 0.60f, 1.0f);
-            break;
-        }
-    default:
-        {
-            textColor = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
-            break;
-        }
+        const auto& c = d->display.color;
+        textColor = ImVec4(c[0], c[1], c[2], c[3]);
+        return;
     }
+    textColor = ImVec4(0.8f, 0.8f, 0.8f, 1.0f); // fallback for unknown / unregistered
 }
 
 void Resources::DisplayResource(const Resource* resource, const ImVec4& textColor) const

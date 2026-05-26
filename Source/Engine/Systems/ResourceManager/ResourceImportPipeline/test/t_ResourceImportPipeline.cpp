@@ -3,6 +3,7 @@
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 
@@ -38,12 +39,21 @@ protected:
 
     MockImporterManager     mockImporter;
     ResourceImportPipeline* pipeline   = nullptr;
+    ResourceTypeRegistry*   registry   = nullptr;
     std::filesystem::path   tempDir;
     std::filesystem::path   savedCwd;
 
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(kMemoryPoolSize);
+
+        // ResourceImportPipeline reads descriptors (libraryFolder, libExtPolicy)
+        // from the global registry. Application sets this up in production; the
+        // test harness must do it manually.
+        registry = new ResourceTypeRegistry();
+        RegisterBuiltinResourceTypes(*registry);
+        SetResourceTypeRegistry(registry);
+
         pipeline = new ResourceImportPipeline(&mockImporter);
 
         // Give each test an isolated sandbox. ResourceImportPipeline works entirely
@@ -64,6 +74,11 @@ protected:
 
         delete pipeline;
         pipeline = nullptr;
+
+        SetResourceTypeRegistry(nullptr);
+        delete registry;
+        registry = nullptr;
+
         nous::engine::memory::ShutdownMemory();
     }
 

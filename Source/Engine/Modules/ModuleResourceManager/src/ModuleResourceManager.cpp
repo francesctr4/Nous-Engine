@@ -15,6 +15,8 @@
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Importer/Importer.inl"
+#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
@@ -25,41 +27,15 @@
 #include <unordered_map>
 
 // ---------------------------------------------------------------------------
-// Resource factory table — one entry per ResourceType.
-// Adding a new type: add one entry here; no other edits required.
+// Resource lifecycle is routed through the ResourceTypeRegistry — adding a
+// new type is now a single descriptor block in RegisterBuiltinResourceTypes.
 // ---------------------------------------------------------------------------
 namespace
 {
-    struct ResourceFactory
-    {
-        Resource* (*create)();
-        void      (*destroy)(Resource*);
-    };
-
-    const std::unordered_map<ResourceType, ResourceFactory> k_ResourceFactories =
-    {
-        { ResourceType::MESH,
-          { []() -> Resource* { return NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH); },
-            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_MESH); } }},
-        { ResourceType::MATERIAL,
-          { []() -> Resource* { return NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL); },
-            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_MATERIAL); } }},
-        { ResourceType::TEXTURE,
-          { []() -> Resource* { return NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE); },
-            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_TEXTURE); } }},
-        { ResourceType::SHADER,
-          { []() -> Resource* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER); },
-            [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_SHADER); } }},
-		{ ResourceType::AUDIO,
-		  { []() -> Resource* { return NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO); },
-			[](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); } }},
-    };
-
     Resource* InstantiateResource(const ResourceType type)
     {
-        const auto it = k_ResourceFactories.find(type);
-        if (it == k_ResourceFactories.end()) return nullptr;
-        return it->second.create();
+        const ResourceTypeDescriptor* d = GetResourceTypeRegistry().Get(type);
+        return (d && d->createFn) ? d->createFn(0) : nullptr;
     }
 }
 
@@ -289,9 +265,9 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 		m_subMeshCache.EraseUID(uid);
 	}
 
-	if (const auto it = k_ResourceFactories.find(resource->GetType());
-		it != k_ResourceFactories.end())
-		it->second.destroy(resource);
+	if (const ResourceTypeDescriptor* d = GetResourceTypeRegistry().Get(resource->GetType());
+		d && d->destroyFn)
+		d->destroyFn(resource);
 
 	// NOTE: resources.erase(uid) is intentionally NOT here.
 	// EvictResource removes the entry under resourcesMutex before calling DeleteResource,
@@ -455,49 +431,38 @@ bool ModuleResourceManager::UnloadResource(const uint32 uid)
 
 void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
 {
-    // Common pattern for types that don't need special pre-destruction work:
-    // filter by type → GPU destroy (if ready) → CPU Evict → DELETE.
-    // Defined as a lambda so its body is a separate complexity unit.
-    auto destroyByType = [&](const ResourceType type, const MemoryTag tag, auto gpuDestroy)
+    // Tear down in registry-defined cleanup priority order. Shaders go first
+    // (descriptor sets reference texture image views; freeing textures first
+    // would leave dangling references — VUID-vkDestroyImageView-01026), then
+    // materials, then leaf resources.
+    for (const ResourceTypeDescriptor* d : GetResourceTypeRegistry().SortedByCleanupPriority())
     {
         for (auto& res : resources | std::views::values)
         {
-            if (!res || res->GetType() != type) continue;
-            if (res->GetState() == ResourceState::GPU_READY)
-                gpuDestroy(res);
-            mImporterManager->Evict(type, res);
-            NOUS_DELETE(res, tag);
+            if (!res || res->GetType() != d->type) continue;
+
+            // GPU teardown (importer guards its own internal IDs).
+            if (res->GetState() == ResourceState::GPU_READY && d->importer)
+                d->importer->Release(res, gpu);
+
+            // MATERIAL is special at shutdown: textures are still alive (lower
+            // priority — destroyed in a later pass). Null the pointers inline;
+            // do NOT route through Evict, which would call UnloadResource and
+            // recurse into a half-torn-down manager.
+            if (d->type == ResourceType::MATERIAL)
+            {
+                auto* mat = down_cast<ResourceMaterial*>(res);
+                for (auto& map : mat->textureMaps | std::views::values)
+                    map.texture = nullptr;
+            }
+            else if (d->importer)
+            {
+                d->importer->Evict(res);
+            }
+
+            if (d->destroyFn) d->destroyFn(res);
         }
-    };
-
-    // Shaders first — descriptor sets reference texture image views;
-    // freeing textures first would leave dangling view references in the sets.
-    // VUID-vkDestroyImageView-01026
-    destroyByType(ResourceType::SHADER, MemoryTag::RESOURCE_SHADER,
-        [&gpu](Resource* r) { gpu->DestroyShader(down_cast<ResourceShader*>(r)); });
-
-    // Materials next — destroy GPU handle, then clear texture pointers directly
-    // (do NOT call UnloadResource; textures are destroyed in the next pass).
-    for (auto& res : resources | std::views::values)
-    {
-        if (!res || res->GetType() != ResourceType::MATERIAL) continue;
-        auto* mat = down_cast<ResourceMaterial*>(res);
-        if (mat->GetState() == ResourceState::GPU_READY)
-            gpu->DestroyMaterial(mat);
-        for (auto& map : mat->textureMaps | std::views::values)
-            map.texture = nullptr;
-        NOUS_DELETE(res, MemoryTag::RESOURCE_MATERIAL);
     }
-
-    destroyByType(ResourceType::TEXTURE, MemoryTag::RESOURCE_TEXTURE,
-        [&gpu](Resource* r) { gpu->DestroyTexture(down_cast<ResourceTexture*>(r)); });
-
-    destroyByType(ResourceType::MESH, MemoryTag::RESOURCE_MESH,
-        [&gpu](Resource* r) { gpu->DestroyGeometry(down_cast<ResourceMesh*>(r)); });
-
-    // Audio has no GPU handles in MVP — Evict + delete the CPU object.
-    destroyByType(ResourceType::AUDIO, MemoryTag::RESOURCE_AUDIO,
-        [](Resource*) {});
 
     resources.clear();
     m_subMeshCache.Clear();

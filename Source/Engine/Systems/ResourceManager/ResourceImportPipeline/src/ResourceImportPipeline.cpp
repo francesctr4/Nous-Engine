@@ -4,6 +4,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
@@ -15,6 +16,31 @@
 #include <vector>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
+
+// Builds the library output path for a freshly assigned UID, honoring each
+// type's LibraryExtPolicy. The source extension argument is only consulted
+// when the policy is PRESERVE_SOURCE (e.g. AUDIO keeps .wav/.ogg) and may
+// include a leading dot.
+static std::string BuildLibraryFilename(const ResourceTypeDescriptor& d,
+                                        uint32 uid,
+                                        const std::string& sourceExtensionWithDot)
+{
+    std::string out = std::format("{}{}", d.libraryFolder, uid);
+    switch (d.libExtPolicy)
+    {
+        case LibraryExtPolicy::FIXED:
+            if (!d.libraryFixedExtension.empty())
+                out += "." + d.libraryFixedExtension;
+            break;
+        case LibraryExtPolicy::PRESERVE_SOURCE:
+            out += sourceExtensionWithDot; // already includes the leading dot
+            break;
+        case LibraryExtPolicy::DIRECTORY_OF_STAGES:
+            // No extension: the library "path" is a directory.
+            break;
+    }
+    return out;
+}
 
 // Returns the effective modification time of a library output path.
 // Shader library "paths" are directories containing .spv files — Windows does
@@ -43,18 +69,28 @@ ResourceImportPipeline::ResourceImportPipeline(IImporterManager* importerManager
 {
 }
 
+// Descriptors store libraryFolder with a trailing slash for path concatenation
+// ({folder}{uid}). Filesystem ops want the canonical dir name without it.
+static std::string StripTrailingSlash(std::string path)
+{
+    while (!path.empty() && (path.back() == '/' || path.back() == '\\'))
+        path.pop_back();
+    return path;
+}
+
 void ResourceImportPipeline::ClearLibraryFiles()
 {
     namespace fs = std::filesystem;
-    static constexpr std::string_view c_libraryDirs[] = {
-        "Library/Meshes", "Library/Textures", "Library/Materials",
-        "Library/Shaders", "Library/Scenes", "Library/Audio"
-    };
 
-    for (const auto dir : c_libraryDirs)
+    for (const ResourceTypeDescriptor* d : GetResourceTypeRegistry().All())
     {
         std::error_code ec;
-        fs::remove_all(dir, ec);
+        fs::remove_all(StripTrailingSlash(d->libraryFolder), ec);
+    }
+    // Scenes are not a registered ResourceType (mirrored separately by ScanAndImportAssets).
+    {
+        std::error_code ec;
+        fs::remove_all("Library/Scenes", ec);
     }
 
     EnsureLibraryDirectories();
@@ -62,13 +98,16 @@ void ResourceImportPipeline::ClearLibraryFiles()
 
 bool ResourceImportPipeline::EnsureLibraryDirectories()
 {
-    return nous::engine::filesystem::CreateDirectory("Library") &&
-           nous::engine::filesystem::CreateDirectory("Library/Shaders") &&
-           nous::engine::filesystem::CreateDirectory("Library/Meshes") &&
-           nous::engine::filesystem::CreateDirectory("Library/Materials") &&
-           nous::engine::filesystem::CreateDirectory("Library/Textures") &&
-           nous::engine::filesystem::CreateDirectory("Library/Scenes") &&
-           nous::engine::filesystem::CreateDirectory("Library/Audio");
+    if (!nous::engine::filesystem::CreateDirectory("Library"))
+        return false;
+
+    for (const ResourceTypeDescriptor* d : GetResourceTypeRegistry().All())
+    {
+        if (!nous::engine::filesystem::CreateDirectory(StripTrailingSlash(d->libraryFolder)))
+            return false;
+    }
+    // Scenes — not a registered ResourceType, but uses the Library tree.
+    return nous::engine::filesystem::CreateDirectory("Library/Scenes");
 }
 
 void ResourceImportPipeline::ScanAndImportAssets(const bool parallelImports)
@@ -219,14 +258,14 @@ void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
         if (!nous::engine::filesystem::Exists(metaFilePath))
         {
             // Case 1: new asset — create meta file now (sequential), schedule import.
-            const auto resourceUID         = static_cast<uint32>(Random::Generate());
-            const std::string libExtension = Resource::GetLibraryExtensionFromType(resourceType);
-            std::string libraryPath        = std::format("{}{}",
-                Resource::GetLibraryDirectoryFromType(resourceType), resourceUID);
-            if (!libExtension.empty())
-                libraryPath += "." + libExtension;
-            else if (resourceType == ResourceType::AUDIO)
-                libraryPath += extension; // preserve source ext (extension already includes leading dot, e.g. ".wav")
+            const auto resourceUID = static_cast<uint32>(Random::Generate());
+            const ResourceTypeDescriptor* desc = GetResourceTypeRegistry().Get(resourceType);
+            if (!desc)
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "Import File ERROR: no registry descriptor for resource type of '%s'", path.c_str());
+                continue;
+            }
+            const std::string libraryPath = BuildLibraryFilename(*desc, resourceUID, extension);
 
             MetaFileData meta;
             meta.name         = fileName;
@@ -347,13 +386,15 @@ bool ResourceImportPipeline::ImportFileFromAssets(const std::string& relativePat
 bool ResourceImportPipeline::ImportCase1_NewAsset(const std::string_view relativePath, const std::string& metaFilePath,
                                                    const ResourceType resourceType, const std::string_view fileName) const
 {
-    const auto resourceUID         = static_cast<uint32>(Random::Generate());
-    const std::string libExtension = Resource::GetLibraryExtensionFromType(resourceType);
-    std::string libraryPath        = std::format("{}{}", Resource::GetLibraryDirectoryFromType(resourceType), resourceUID);
-    if (!libExtension.empty())
-        libraryPath += "." + libExtension;
-    else if (resourceType == ResourceType::AUDIO)
-        libraryPath += nous::engine::filesystem::GetExtension(std::string(relativePath)); // preserve source ext (.wav/.ogg)
+    const auto resourceUID = static_cast<uint32>(Random::Generate());
+    const ResourceTypeDescriptor* desc = GetResourceTypeRegistry().Get(resourceType);
+    if (!desc)
+    {
+        NOUS_ERROR("Import File ERROR: CASE 1 --> no registry descriptor for type");
+        return false;
+    }
+    const std::string libraryPath = BuildLibraryFilename(*desc, resourceUID,
+        nous::engine::filesystem::GetExtension(std::string(relativePath)));
 
     MetaFileData metaFileData;
     metaFileData.name         = fileName;

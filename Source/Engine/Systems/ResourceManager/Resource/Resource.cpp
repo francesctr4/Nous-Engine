@@ -1,53 +1,9 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 
 #include "Engine/Core/Logger/Asserts.h"
+#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 
-#include <unordered_map>
 #include <utility>
-
-#pragma region UTILITY MAPS
-
-static const std::unordered_map<ResourceType, std::string> resourceTypeToLibraryExtension
-{
-	{ResourceType::MESH, "nmesh"},
-	{ResourceType::MATERIAL, "nmat"},
-	{ResourceType::TEXTURE, "png"},
-	{ResourceType::SHADER, ""},    // Shaders are stored as a directory of .spv stage files
-	{ResourceType::AUDIO,  ""}     // Audio preserves source extension (wav/ogg); ImporterAudio builds the path
-};
-
-static const std::unordered_map<std::string_view, ResourceType> extensionToResourceType
-{
-	{"fbx",  ResourceType::MESH},
-	{"obj",  ResourceType::MESH},
-	{"glb",  ResourceType::MESH},
-	{"gltf", ResourceType::MESH},
-	{"nmesh", ResourceType::MESH},
-
-	{"nmat", ResourceType::MATERIAL},
-
-	{"png",  ResourceType::TEXTURE},
-	{"jpg",  ResourceType::TEXTURE},
-	{"jpeg", ResourceType::TEXTURE},
-	{"tga",  ResourceType::TEXTURE},
-
-	{"glsl", ResourceType::SHADER},
-	{"spv",  ResourceType::SHADER},
-
-	{"wav",  ResourceType::AUDIO},
-	{"ogg",  ResourceType::AUDIO},
-};
-
-static const std::unordered_map<ResourceType, std::string> resourceTypeToLibraryFolder
-{
-	{ResourceType::MESH, "Library/Meshes/"},
-	{ResourceType::MATERIAL, "Library/Materials/"},
-	{ResourceType::TEXTURE, "Library/Textures/"},
-	{ResourceType::SHADER, "Library/Shaders/"},
-	{ResourceType::AUDIO, "Library/Audio/"},
-};
-
-#pragma endregion
 
 Resource::Resource()
 {
@@ -173,19 +129,19 @@ std::string Resource::GetLibraryPath() const
 
 std::string Resource::GetLibraryExtensionFromType(const ResourceType type)
 {
-	return resourceTypeToLibraryExtension.at(type);
+	const ResourceTypeDescriptor* d = GetResourceTypeRegistry().Get(type);
+	NOUS_ASSERT_MSG(d != nullptr, "GetLibraryExtensionFromType: type not in registry");
+	return d->libraryFixedExtension;
 }
 
 ResourceType Resource::GetTypeFromExtension(const std::string& extension)
 {
-	const std::string_view normalizedExtension = extension[0] == '.' ? std::string_view(extension).substr(1) : extension;
-
-	const auto it = extensionToResourceType.find(normalizedExtension);
-
-	return it != extensionToResourceType.end() ? it->second : ResourceType::UNKNOWN;
+	return GetResourceTypeRegistry().TypeFromExtension(extension);
 }
 
 std::string Resource::GetLibraryDirectoryFromType(const ResourceType type)
 {
-	return resourceTypeToLibraryFolder.at(type);
+	const ResourceTypeDescriptor* d = GetResourceTypeRegistry().Get(type);
+	NOUS_ASSERT_MSG(d != nullptr, "GetLibraryDirectoryFromType: type not in registry");
+	return d->libraryFolder;
 }

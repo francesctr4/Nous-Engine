@@ -2,15 +2,12 @@
 #define IMPORTERMANAGER_H
 
 #include <Engine/Core/Globals.h>
-#include <memory>
-#include <unordered_map>
 
 #include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
 
 class Resource;
 enum class ResourceType : int8_t;
 
-struct Importer;
 struct MetaFileData;
 class IGPUResourceFactory;
 class ModuleResourceManager;
@@ -29,11 +26,6 @@ public:
 
     // Asset pipeline (non-virtual)
     static bool Save(ResourceType type, const MetaFileData& metaFileData, Resource*& inResource);
-
-private:
-
-    static const std::unordered_map<ResourceType, std::unique_ptr<Importer>> importers;
-
 };
 
 #endif // IMPORTERMANAGER_H

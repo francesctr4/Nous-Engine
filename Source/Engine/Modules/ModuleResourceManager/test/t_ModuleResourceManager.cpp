@@ -7,6 +7,7 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 
 // =====================================================
 // Mock
@@ -40,10 +41,19 @@ protected:
     nous::engine::multithreading::NOUS_JobSystem* jobSystem = nullptr; // single-threaded: jobs run inline
     MockImporterManager   mockImporter;
     ModuleResourceManager* rm = nullptr;
+    ResourceTypeRegistry*  registry = nullptr;
 
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(kMemoryPoolSize);
+
+        // ModuleResourceManager dispatches create/destroy/cleanup through the
+        // global registry; Application sets it up in production, the test
+        // harness must do it manually.
+        registry = new ResourceTypeRegistry();
+        RegisterBuiltinResourceTypes(*registry);
+        SetResourceTypeRegistry(registry);
+
         eventSystem = new EventSystem();
         jobSystem   = new nous::engine::multithreading::NOUS_JobSystem(0);
         rm = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
@@ -58,6 +68,11 @@ protected:
         jobSystem = nullptr;
         delete eventSystem;
         eventSystem = nullptr;
+
+        SetResourceTypeRegistry(nullptr);
+        delete registry;
+        registry = nullptr;
+
         nous::engine::memory::ShutdownMemory();
     }
 
@@ -323,10 +338,19 @@ protected:
     nous::engine::multithreading::NOUS_JobSystem* jobSystem = nullptr;
     HotReloadMockImporter  mockImporter;
     ModuleResourceManager* rm = nullptr;
+    ResourceTypeRegistry*  registry = nullptr;
 
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(kMemoryPoolSize);
+
+        // ModuleResourceManager::Awake() touches the registry (EnsureLibraryDirectories,
+        // ClearResources, InstantiateResource). Application sets it up in production —
+        // the test harness has to do it manually.
+        registry = new ResourceTypeRegistry();
+        RegisterBuiltinResourceTypes(*registry);
+        SetResourceTypeRegistry(registry);
+
         eventSystem = new EventSystem();
         jobSystem   = new nous::engine::multithreading::NOUS_JobSystem(0);
         rm = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
@@ -339,6 +363,11 @@ protected:
         delete rm;          rm = nullptr;
         delete jobSystem;   jobSystem = nullptr;
         delete eventSystem; eventSystem = nullptr;
+
+        SetResourceTypeRegistry(nullptr);
+        delete registry;
+        registry = nullptr;
+
         nous::engine::memory::ShutdownMemory();
     }
 
