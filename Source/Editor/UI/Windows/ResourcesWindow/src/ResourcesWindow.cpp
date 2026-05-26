@@ -121,6 +121,11 @@ void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor) con
             textColor = ImVec4(0.7f, 0.2f, 1.0f, 1.0f);
             break;
         }
+    case ResourceType::AUDIO:
+        {
+            textColor = ImVec4(0.93f, 0.28f, 0.60f, 1.0f);
+            break;
+        }
     default:
         {
             textColor = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);

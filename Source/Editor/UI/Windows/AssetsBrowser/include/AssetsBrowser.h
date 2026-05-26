@@ -80,6 +80,8 @@ enum class FileType : int8_t
     FONT,
     SCENE,
     PREFAB,
+    MUSIC,
+    SFX,
 
     ALL_TYPES
 };

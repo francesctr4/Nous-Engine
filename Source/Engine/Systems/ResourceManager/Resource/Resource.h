@@ -20,6 +20,7 @@ enum class ResourceType : int8_t
 	MATERIAL,
 	TEXTURE,
 	SHADER,
+	AUDIO,
 
 	ALL_TYPES
 };
