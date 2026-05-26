@@ -16,10 +16,18 @@ enum class AudioFileType : std::int8_t
     OGG = 1
 };
 
+enum class StreamingMode : std::int8_t
+{
+    UNKNOWN = -1,
+    DECODED = 0,
+    STREAMED = 1
+};
+
 // Temporary to not depend on Resource Manager yet.
 struct ResourceAudio
 {
     std::string name;
     AudioFileType type;
+    StreamingMode mode;
     std::string assetsPath;
 };

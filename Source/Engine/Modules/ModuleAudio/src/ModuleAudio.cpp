@@ -31,10 +31,10 @@ bool ModuleAudio::Awake()
 
 bool ModuleAudio::Start()
 {
-    ResourceAudio sfx = {"FAAAH", AudioFileType::WAV, "Assets/Audio/SFX/test.wav"};
+    ResourceAudio sfx = {"FAAAH", AudioFileType::WAV, StreamingMode::DECODED, "Assets/Audio/SFX/test.wav"};
     m_audioSystem->PlayAudio(&sfx);
 
-    ResourceAudio song = {"Re:ZERO - Recollect", AudioFileType::OGG, "Assets/Audio/Music/music.ogg"};
+    ResourceAudio song = {"Re:ZERO - Recollect", AudioFileType::OGG, StreamingMode::STREAMED,"Assets/Audio/Music/music.ogg"};
     m_audioSystem->PlayAudio(&song);
 
     return true;
