@@ -50,6 +50,9 @@
     },
     {
       "name" : "miniaudio"
+    },
+    {
+      "name" : "imgui-node-editor"
     }
   ]
 }
