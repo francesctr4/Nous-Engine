@@ -7,6 +7,7 @@
 #include "Engine/Systems/ResourceManager/Importer/ImporterTexture/include/ImporterTexture.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
 #include "Engine/Systems/ResourceManager/Importer/ImporterShader/include/ImporterShader.h"
+#include "Engine/Systems/ResourceManager/Importer/ImporterAudio/include/ImporterAudio.h"
 
 #include <unordered_map>
 
@@ -17,6 +18,7 @@ static std::unordered_map<ResourceType, std::unique_ptr<Importer>> MakeImporters
     map.emplace(ResourceType::MATERIAL, std::make_unique<ImporterMaterial>());
     map.emplace(ResourceType::TEXTURE,  std::make_unique<ImporterTexture>());
     map.emplace(ResourceType::SHADER,   std::make_unique<ImporterShader>());
+    map.emplace(ResourceType::AUDIO,   std::make_unique<ImporterAudio>());
     return map;
 }
 

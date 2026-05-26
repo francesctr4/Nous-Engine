@@ -3,7 +3,6 @@ set(CLASS_NAME "AudioSystem")
 add_library(${CLASS_NAME} STATIC
         ${CLASS_NAME}.h
         ${CLASS_NAME}.cpp
-        ${CLASS_NAME}Types.inl
 )
 
 set_target_properties(${CLASS_NAME} PROPERTIES

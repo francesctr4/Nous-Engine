@@ -6,6 +6,7 @@
 #include "Engine/EngineExport.h"
 
 class AudioSystem;
+class ResourceAudio;
 
 class ModuleAudio : public Module, public IEventListener
 {
@@ -25,6 +26,8 @@ public:
     bool CleanUp() override;
 
     void OnEvent(const Event& event) override;
+
+    NOUS_ENGINE_API void PlayAudio(ResourceAudio* rAudio) const;
 
     // ----------------------------------------
 

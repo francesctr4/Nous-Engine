@@ -7,6 +7,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceAudio/include/ResourceAudio.h"
 
 #include <Engine/Core/MemoryManager/MemoryManager.h>
 
@@ -186,7 +187,8 @@ UpdateStatus Application::PrepareUpdate()
 // ---------------------------------------------------------------------------
 // DEBUG — temporary development shortcuts. Remove when editor UI covers these.
 // ---------------------------------------------------------------------------
-static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::engine::multithreading::NOUS_JobSystem* jobSystem)
+static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
+    ModuleResourceManager* resourceManager, ModuleAudio* audio)
 {
     if (input->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
         scene->SaveScene(scene->GetCurrentScenePath());
@@ -247,6 +249,77 @@ static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::
         NOUS_INFO("Initiating script hot-reload...");
         jobSystem->SubmitJob([scene] { scene->RecompileScripts(); }, "Scripts Hot-Reload");
     }
+
+    // F10 — load Assets/Audio/SFX/test.wav through the ResourceManager, log its
+    // probed metadata, and play it via ModuleAudio. Validates the full import →
+    // deserialize → probe → play path.
+    if (input->GetKey(SDL_SCANCODE_F10) == KeyState::DOWN && resourceManager && audio)
+    {
+        constexpr const char* c_testAudio = "Assets/Audio/SFX/test.wav";
+        Resource* res = resourceManager->CreateResource(c_testAudio);
+        if (!res || res->GetType() != ResourceType::AUDIO)
+        {
+            NOUS_WARN("[AudioDebug] Failed to load '%s' through ResourceManager.", c_testAudio);
+        }
+        else
+        {
+            auto* rAudio = static_cast<ResourceAudio*>(res);
+            NOUS_INFO("[AudioDebug] '%s' UID=%u  fileType=%d  streaming=%d  %.2fs  %uHz  %uch",
+                rAudio->GetName().c_str(),
+                rAudio->GetUID(),
+                static_cast<int>(rAudio->GetFileType()),
+                static_cast<int>(rAudio->GetStreamingMode()),
+                rAudio->GetDurationSec(),
+                rAudio->GetSampleRate(),
+                static_cast<uint32>(rAudio->GetChannelCount()));
+            audio->PlayAudio(rAudio);
+        }
+
+        constexpr const char* c_testMusic = "Assets/Audio/Music/music.ogg";
+        Resource* res2 = resourceManager->CreateResource(c_testMusic);
+        if (!res2 || res2->GetType() != ResourceType::AUDIO)
+        {
+            NOUS_WARN("[AudioDebug] Failed to load '%s' through ResourceManager.", c_testMusic);
+        }
+        else
+        {
+            auto* rAudio = static_cast<ResourceAudio*>(res2);
+            NOUS_INFO("[AudioDebug] '%s' UID=%u  fileType=%d  streaming=%d  %.2fs  %uHz  %uch",
+                rAudio->GetName().c_str(),
+                rAudio->GetUID(),
+                static_cast<int>(rAudio->GetFileType()),
+                static_cast<int>(rAudio->GetStreamingMode()),
+                rAudio->GetDurationSec(),
+                rAudio->GetSampleRate(),
+                static_cast<uint32>(rAudio->GetChannelCount()));
+            audio->PlayAudio(rAudio);
+        }
+    }
+
+    // F11 — list every loaded ResourceAudio in the registry with its probe data.
+    if (input->GetKey(SDL_SCANCODE_F11) == KeyState::DOWN && resourceManager)
+    {
+        const auto map = resourceManager->GetResourcesMap();
+        NOUS_INFO("[AudioDebug] Loaded audio resources:");
+        uint32 audioCount = 0;
+        for (const auto& [uid, res] : map)
+        {
+            if (!res || res->GetType() != ResourceType::AUDIO) continue;
+            const auto* rAudio = static_cast<const ResourceAudio*>(res);
+            NOUS_INFO("  UID=%u  name='%s'  asset='%s'  lib='%s'  %.2fs  %uHz  %uch  refs=%u  state=%d",
+                rAudio->GetUID(),
+                rAudio->GetName().c_str(),
+                rAudio->GetAssetsPath().c_str(),
+                rAudio->GetLibraryPath().c_str(),
+                rAudio->GetDurationSec(),
+                rAudio->GetSampleRate(),
+                static_cast<uint32>(rAudio->GetChannelCount()),
+                rAudio->GetReferenceCount(),
+                static_cast<int>(rAudio->GetState()));
+            ++audioCount;
+        }
+        NOUS_INFO("[AudioDebug] Total: %u audio resource(s).", audioCount);
+    }
 }
 
 UpdateStatus Application::Update()
@@ -289,7 +362,7 @@ UpdateStatus Application::Update()
         // Editor-only authoring shortcuts (spawn debug meshes, clear scene,
         // hot-reload scripts, ...). Disabled in standalone GAME builds.
         if (ret == UpdateStatus::CONTINUE && !m_isGameMode)
-            HandleDebugKeys(input, scene, jobSystem);
+            HandleDebugKeys(input, scene, jobSystem, resourceManager, audio);
     }
 
     // -------------- PostUpdate --------------

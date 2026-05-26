@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Engine/Systems/AudioSystem/AudioSystemTypes.inl"
 #include "Engine/Systems/AudioSystem/AudioEngine/IAudioEngineBackend.h"
 
 #include <miniaudio.h>
+
+class ResourceAudio;
 
 class MiniaudioBackend : public IAudioEngineBackend
 {

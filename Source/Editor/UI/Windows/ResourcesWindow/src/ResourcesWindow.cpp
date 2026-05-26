@@ -2,6 +2,7 @@
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Core/FileSystem/FileSystem.h"
 
 #include <unordered_map>
 
@@ -148,9 +149,24 @@ void Resources::DisplayResource(const Resource* resource, const ImVec4& textColo
 
     ImGui::TableSetColumnIndex(2);
     ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-    ImGui::Text("%s", resource->GetType() == ResourceType::SHADER
-                          ? "spv"
-                          : Resource::GetLibraryExtensionFromType(resource->GetType()).c_str());
+    {
+        std::string extLabel;
+        switch (resource->GetType())
+        {
+            case ResourceType::SHADER:
+            {
+                extLabel = "spv";
+                break;
+            }
+            default:
+            {
+                const std::string ext = nous::engine::filesystem::GetExtension(resource->GetLibraryPath());
+                extLabel = ext.empty() ? std::string{} : ext.substr(1);
+                break;
+            }
+        }
+        ImGui::Text("%s", extLabel.c_str());
+    }
     ImGui::PopStyleColor();
 
     ImGui::TableSetColumnIndex(3);

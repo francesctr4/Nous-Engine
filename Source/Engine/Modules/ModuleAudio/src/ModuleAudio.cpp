@@ -6,6 +6,7 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include "Engine/Systems/AudioSystem/AudioSystem.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceAudio/include/ResourceAudio.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_AUDIO;
 
@@ -21,7 +22,7 @@ bool ModuleAudio::Awake()
 {
     NOUS_INFO_C(CURRENT_CHANNEL, "Initializing Audio System ...");
 
-    m_audioSystem = NOUS_NEW<AudioSystem>(MemoryTag::AUDIO);
+    m_audioSystem = NOUS_NEW<AudioSystem>(MemoryTag::AUDIO_SYSTEM);
 
     if (!m_audioSystem->Initialize(AudioEngineBackend::MINIAUDIO))
         NOUS_WARN_C(CURRENT_CHANNEL, "Audio system initialization failed — running without audio.");
@@ -31,12 +32,6 @@ bool ModuleAudio::Awake()
 
 bool ModuleAudio::Start()
 {
-    ResourceAudio sfx = {"FAAAH", AudioFileType::WAV, StreamingMode::DECODED, "Assets/Audio/SFX/test.wav"};
-    m_audioSystem->PlayAudio(&sfx);
-
-    ResourceAudio song = {"Re:ZERO - Recollect", AudioFileType::OGG, StreamingMode::STREAMED,"Assets/Audio/Music/music.ogg"};
-    m_audioSystem->PlayAudio(&song);
-
     return true;
 }
 
@@ -60,9 +55,15 @@ bool ModuleAudio::CleanUp()
     NOUS_INFO_C(CURRENT_CHANNEL, "Shutdown Audio System ...");
 
     m_audioSystem->Shutdown();
-    NOUS_DELETE<AudioSystem>(m_audioSystem, MemoryTag::AUDIO);
+    NOUS_DELETE<AudioSystem>(m_audioSystem, MemoryTag::AUDIO_SYSTEM);
 
 	return true;
+}
+
+void ModuleAudio::PlayAudio(ResourceAudio* rAudio) const
+{
+    if (m_audioSystem && rAudio)
+        m_audioSystem->PlayAudio(rAudio);
 }
 
 void ModuleAudio::OnEvent(const Event &event)

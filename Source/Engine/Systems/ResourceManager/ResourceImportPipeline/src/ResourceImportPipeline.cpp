@@ -48,7 +48,7 @@ void ResourceImportPipeline::ClearLibraryFiles()
     namespace fs = std::filesystem;
     static constexpr std::string_view c_libraryDirs[] = {
         "Library/Meshes", "Library/Textures", "Library/Materials",
-        "Library/Shaders", "Library/Scenes"
+        "Library/Shaders", "Library/Scenes", "Library/Audio"
     };
 
     for (const auto dir : c_libraryDirs)
@@ -67,7 +67,8 @@ bool ResourceImportPipeline::EnsureLibraryDirectories()
            nous::engine::filesystem::CreateDirectory("Library/Meshes") &&
            nous::engine::filesystem::CreateDirectory("Library/Materials") &&
            nous::engine::filesystem::CreateDirectory("Library/Textures") &&
-           nous::engine::filesystem::CreateDirectory("Library/Scenes");
+           nous::engine::filesystem::CreateDirectory("Library/Scenes") &&
+           nous::engine::filesystem::CreateDirectory("Library/Audio");
 }
 
 void ResourceImportPipeline::ScanAndImportAssets(const bool parallelImports)
@@ -224,6 +225,8 @@ void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
                 Resource::GetLibraryDirectoryFromType(resourceType), resourceUID);
             if (!libExtension.empty())
                 libraryPath += "." + libExtension;
+            else if (resourceType == ResourceType::AUDIO)
+                libraryPath += extension; // preserve source ext (extension already includes leading dot, e.g. ".wav")
 
             MetaFileData meta;
             meta.name         = fileName;
@@ -310,7 +313,7 @@ bool ResourceImportPipeline::ImportFile(const std::string& path)
 bool ResourceImportPipeline::ImportFileFromExternal(const std::string& path, const ResourceType resourceType,
                                                     const std::string& fileName, const std::string& extension)
 {
-    const std::string newPath = Resource::GetAssetsDirectoryFromType(resourceType) + fileName + extension;
+    const std::string newPath = "Assets/" + fileName + extension;
     if (!nous::engine::filesystem::CopyFile(path, newPath))
     {
         NOUS_ERROR("Import File ERROR: CASE 0 --> Error while copying the file to Assets\\ directory.");
@@ -349,6 +352,8 @@ bool ResourceImportPipeline::ImportCase1_NewAsset(const std::string_view relativ
     std::string libraryPath        = std::format("{}{}", Resource::GetLibraryDirectoryFromType(resourceType), resourceUID);
     if (!libExtension.empty())
         libraryPath += "." + libExtension;
+    else if (resourceType == ResourceType::AUDIO)
+        libraryPath += nous::engine::filesystem::GetExtension(std::string(relativePath)); // preserve source ext (.wav/.ogg)
 
     MetaFileData metaFileData;
     metaFileData.name         = fileName;

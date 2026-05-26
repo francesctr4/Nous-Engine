@@ -60,7 +60,6 @@ public:
 
 	[[nodiscard]] NOUS_ENGINE_API static std::string GetLibraryExtensionFromType(ResourceType type);
 	[[nodiscard]] NOUS_ENGINE_API static ResourceType GetTypeFromExtension(const std::string& extension);
-	[[nodiscard]] NOUS_ENGINE_API static std::string GetAssetsDirectoryFromType(ResourceType type);
 	[[nodiscard]] NOUS_ENGINE_API static std::string GetLibraryDirectoryFromType(ResourceType type);
 
 private:

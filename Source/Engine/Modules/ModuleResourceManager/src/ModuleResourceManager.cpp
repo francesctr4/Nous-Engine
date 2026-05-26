@@ -4,6 +4,8 @@
 #include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Resource/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Resource/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include <filesystem>
@@ -20,9 +22,6 @@
 #include <ranges>
 #include <thread>
 #include <utility>
-
-#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
-
 #include <unordered_map>
 
 // ---------------------------------------------------------------------------
@@ -51,6 +50,9 @@ namespace
         { ResourceType::SHADER,
           { []() -> Resource* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER); },
             [](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_SHADER); } }},
+		{ ResourceType::AUDIO,
+		  { []() -> Resource* { return NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO); },
+			[](Resource* r)   { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); } }},
     };
 
     Resource* InstantiateResource(const ResourceType type)
@@ -492,6 +494,10 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
 
     destroyByType(ResourceType::MESH, MemoryTag::RESOURCE_MESH,
         [&gpu](Resource* r) { gpu->DestroyGeometry(down_cast<ResourceMesh*>(r)); });
+
+    // Audio has no GPU handles in MVP — Evict + delete the CPU object.
+    destroyByType(ResourceType::AUDIO, MemoryTag::RESOURCE_AUDIO,
+        [](Resource*) {});
 
     resources.clear();
     m_subMeshCache.Clear();

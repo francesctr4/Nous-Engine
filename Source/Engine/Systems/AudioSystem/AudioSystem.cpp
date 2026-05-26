@@ -2,7 +2,6 @@
 
 #include "AudioEngine/Backends/miniaudio/MiniaudioBackend.h"
 #include "AudioEngine/IAudioEngineBackend.h"
-#include "AudioSystemTypes.inl"
 #include "Engine/Core/Logger/Asserts.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
@@ -22,7 +21,7 @@ bool AudioSystem::Initialize(AudioEngineBackend backend)
     {
         case AudioEngineBackend::MINIAUDIO:
             NOUS_INFO_C(CURRENT_CHANNEL, "Using audio backend: MINIAUDIO");
-            m_audioEngine = NOUS_NEW<MiniaudioBackend>(MemoryTag::AUDIO);
+            m_audioEngine = NOUS_NEW<MiniaudioBackend>(MemoryTag::AUDIO_SYSTEM);
             break;
         case AudioEngineBackend::UNKNOWN:
         default:
@@ -32,7 +31,7 @@ bool AudioSystem::Initialize(AudioEngineBackend backend)
 
     if (!m_audioEngine->Initialize())
     {
-        NOUS_DELETE(m_audioEngine, MemoryTag::AUDIO);
+        NOUS_DELETE(m_audioEngine, MemoryTag::AUDIO_SYSTEM);
         return false;
     }
 
@@ -50,5 +49,5 @@ void AudioSystem::Shutdown()
     if (m_audioEngine)
         m_audioEngine->Shutdown();
 
-    NOUS_DELETE(m_audioEngine, MemoryTag::AUDIO);
+    NOUS_DELETE(m_audioEngine, MemoryTag::AUDIO_SYSTEM);
 }

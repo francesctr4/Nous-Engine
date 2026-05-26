@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Systems/AudioSystem/AudioSystemTypes.inl"
+class ResourceAudio;
 
 class IAudioEngineBackend
 {

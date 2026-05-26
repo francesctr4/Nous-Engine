@@ -12,7 +12,8 @@ static const std::unordered_map<ResourceType, std::string> resourceTypeToLibrary
 	{ResourceType::MESH, "nmesh"},
 	{ResourceType::MATERIAL, "nmat"},
 	{ResourceType::TEXTURE, "png"},
-	{ResourceType::SHADER, ""}     // Shaders are stored as a directory of .spv stage files
+	{ResourceType::SHADER, ""},    // Shaders are stored as a directory of .spv stage files
+	{ResourceType::AUDIO,  ""}     // Audio preserves source extension (wav/ogg); ImporterAudio builds the path
 };
 
 static const std::unordered_map<std::string_view, ResourceType> extensionToResourceType
@@ -32,14 +33,9 @@ static const std::unordered_map<std::string_view, ResourceType> extensionToResou
 
 	{"glsl", ResourceType::SHADER},
 	{"spv",  ResourceType::SHADER},
-};
 
-static const std::unordered_map<ResourceType, std::string> resourceTypeToAssetsFolder
-{
-	{ResourceType::MESH, "Assets/Meshes/"},
-	{ResourceType::MATERIAL, "Assets/Materials/"},
-	{ResourceType::TEXTURE, "Assets/Textures/"},
-	{ResourceType::SHADER, "Assets/Shaders/"},
+	{"wav",  ResourceType::AUDIO},
+	{"ogg",  ResourceType::AUDIO},
 };
 
 static const std::unordered_map<ResourceType, std::string> resourceTypeToLibraryFolder
@@ -48,6 +44,7 @@ static const std::unordered_map<ResourceType, std::string> resourceTypeToLibrary
 	{ResourceType::MATERIAL, "Library/Materials/"},
 	{ResourceType::TEXTURE, "Library/Textures/"},
 	{ResourceType::SHADER, "Library/Shaders/"},
+	{ResourceType::AUDIO, "Library/Audio/"},
 };
 
 #pragma endregion
@@ -186,11 +183,6 @@ ResourceType Resource::GetTypeFromExtension(const std::string& extension)
 	const auto it = extensionToResourceType.find(normalizedExtension);
 
 	return it != extensionToResourceType.end() ? it->second : ResourceType::UNKNOWN;
-}
-
-std::string Resource::GetAssetsDirectoryFromType(const ResourceType type)
-{
-	return resourceTypeToAssetsFolder.at(type);
 }
 
 std::string Resource::GetLibraryDirectoryFromType(const ResourceType type)
