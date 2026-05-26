@@ -111,6 +111,7 @@ bool AudioGraphEditor::Begin(bool& outVisible)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     const bool result = IEditorWindow::Begin(outVisible);
     ImGui::PopStyleVar();
+
     return result;
 }
 
@@ -448,12 +449,19 @@ void AudioGraphEditor::DrawCanvas()
     }
     ed::End();
 
-    if (m_firstFrame)
+    // Zoom-to-fit on first open. Deferred until frame 2 because on frame 0
+    // nodes are only SetNodePosition'd; their measured size (driven by ImGui
+    // layout) is finalized one frame later. Calling NavigateToContent before
+    // node bounds exist produces a wrong fit.
+    if (!m_initialFitDone && !m_nodes.empty() && m_framesSinceOpen >= 1)
+    {
         ed::NavigateToContent(0.0f);
+        m_initialFitDone = true;
+    }
 
     ed::SetCurrentEditor(nullptr);
 
-    m_firstFrame = false;
+    ++m_framesSinceOpen;
 }
 
 // ---------------------------------------------------------------------------

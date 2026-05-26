@@ -98,8 +98,9 @@ private:
     std::vector<AudioNode>      m_nodes;
     std::vector<AudioGraphLink> m_links;
 
-    std::uintptr_t m_nextID     = 1;
-    bool           m_firstFrame = true;
+    std::uintptr_t m_nextID          = 1;
+    int            m_framesSinceOpen = 0;
+    bool           m_initialFitDone  = false;
 
     // Canvas-local position where the next spawned node will be placed.
     // Refreshed each frame from the canvas view center; menu spawns offset
