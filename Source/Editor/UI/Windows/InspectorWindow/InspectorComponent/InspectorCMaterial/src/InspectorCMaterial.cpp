@@ -241,7 +241,7 @@ ResourceShader* GetEffectiveShader(CMaterial& mat, ModuleResourceManager* rm)
         if (s_builtInMatShaderUID == 0)
         {
             MetaFileData meta;
-            if (ResourceImportPipeline::GetAssetMetaData(
+            if (ImportPipeline::GetAssetMetaData(
                 "Assets/Shaders/BuiltIn.MaterialShader.glsl", meta))
                 s_builtInMatShaderUID = meta.uid;
         }

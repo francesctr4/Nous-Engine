@@ -374,7 +374,7 @@ Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, Resource
 Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 {
 	MetaFileData metaFileData;
-	if (!ResourceImportPipeline::GetAssetMetaData(assetsPath, metaFileData))
+	if (!ImportPipeline::GetAssetMetaData(assetsPath, metaFileData))
 	{
 		NOUS_ERROR("CreateResource: failed to read meta for '%s'", assetsPath.c_str());
 		return nullptr;
@@ -580,7 +580,7 @@ void ModuleResourceManager::DispatchReimportJob(const std::string& normalizedPat
 
         // 1. Read .meta sidecar to get confirmed library path / type.
         MetaFileData metaData;
-        if (!ResourceImportPipeline::GetAssetMetaData(assetsPath, metaData))
+        if (!ImportPipeline::GetAssetMetaData(assetsPath, metaData))
         {
             NOUS_WARN_C(CURRENT_CHANNEL, "[AssetHotReload] No .meta found for '%s' — skipping reimport.", assetsPath.c_str());
             cleanup(); return;

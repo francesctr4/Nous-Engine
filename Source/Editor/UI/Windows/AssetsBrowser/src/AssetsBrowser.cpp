@@ -10,7 +10,7 @@
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
+#include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
@@ -277,7 +277,7 @@ void AssetsBrowser::MoveAsset(const std::string& srcPath, const std::string& des
 
         // Keep in-memory ResourceManager path in sync for the current session.
         MetaFileData meta;
-        if (ResourceImportPipeline::GetAssetMetaData(destPath, meta))
+        if (ImportPipeline::GetAssetMetaData(destPath, meta))
         {
             editorContext->GetResourceManager()->UpdateResourcePath(meta.uid, destPath);
 
@@ -300,7 +300,7 @@ void AssetsBrowser::DeleteAsset(const std::string& assetPath)
     }
 
     MetaFileData meta;
-    const bool hasMeta = ResourceImportPipeline::GetAssetMetaData(assetPath, meta);
+    const bool hasMeta = ImportPipeline::GetAssetMetaData(assetPath, meta);
 
     nous::engine::filesystem::DeleteFile(assetPath);
 

@@ -1,4 +1,4 @@
-set(TEST_NAME "t_ResourceImportPipeline")
+set(TEST_NAME "t_ImportPipeline")
 
 add_executable(${TEST_NAME}
         ${TEST_NAME}.cpp

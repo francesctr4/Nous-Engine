@@ -1,7 +1,7 @@
 #include "Engine/Systems/ResourceManager/SubMeshCache/include/SubMeshCache.h"
 
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
+#include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ImporterMesh.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
@@ -25,7 +25,7 @@ SubMeshCache::SubMeshCache(
 ResourceMesh* SubMeshCache::RequestOrCreate(const std::string& assetsPath, int32_t submeshIndex)
 {
     MetaFileData metaData;
-    if (!ResourceImportPipeline::GetAssetMetaData(assetsPath, metaData))
+    if (!ImportPipeline::GetAssetMetaData(assetsPath, metaData))
     {
         NOUS_ERROR("SubMeshCache::RequestOrCreate: missing meta for '%s'", assetsPath.c_str());
         return nullptr;

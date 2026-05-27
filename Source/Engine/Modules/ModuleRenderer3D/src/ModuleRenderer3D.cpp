@@ -114,7 +114,7 @@ bool ModuleRenderer3D::Start()
 	else
 	{
 		// EDITOR mode: load via asset path (reads .meta to resolve UID).
-		// The shader manifest is written by ResourceImportPipeline at the end of
+		// The shader manifest is written by ImportPipeline at the end of
 		// ScanAndImportAssets, so no manifest write is needed here.
 		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
 		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");

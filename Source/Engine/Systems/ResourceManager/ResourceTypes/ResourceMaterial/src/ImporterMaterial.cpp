@@ -78,7 +78,7 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
                 {
                     const std::string texPath = nous::engine::filesystem::NormalizePath(rawPath);
                     MetaFileData texMeta;
-                    if (ResourceImportPipeline::GetAssetMetaData(texPath, texMeta))
+                    if (ImportPipeline::GetAssetMetaData(texPath, texMeta))
                     {
                         entry.Set("uid",          static_cast<double>(texMeta.uid));
                         entry.Set("library_path", nous::engine::filesystem::NormalizePath(texMeta.libraryPath));
@@ -97,7 +97,7 @@ bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResou
         {
             const std::string shaderPath = nous::engine::filesystem::NormalizePath(rawShaderPath);
             MetaFileData shaderMeta;
-            if (ResourceImportPipeline::GetAssetMetaData(shaderPath, shaderMeta))
+            if (ImportPipeline::GetAssetMetaData(shaderPath, shaderMeta))
             {
                 root.Set("shader_uid",          static_cast<double>(shaderMeta.uid));
                 root.Set("shader_library_path", nous::engine::filesystem::NormalizePath(shaderMeta.libraryPath));

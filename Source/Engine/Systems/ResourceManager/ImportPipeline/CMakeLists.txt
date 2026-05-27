@@ -1,4 +1,4 @@
-set(CLASS_NAME "ResourceImportPipeline")
+set(CLASS_NAME "ImportPipeline")
 
 target_sources(ResourceManager PRIVATE
         include/${CLASS_NAME}.h

@@ -10,10 +10,10 @@ class IImporterManager;
 struct MetaFileData;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
-class ResourceImportPipeline
+class ImportPipeline
 {
 public:
-    NOUS_ENGINE_API ResourceImportPipeline(IImporterManager* importerManager,
+    NOUS_ENGINE_API ImportPipeline(IImporterManager* importerManager,
                                            nous::engine::multithreading::NOUS_JobSystem* jobSystem = nullptr);
 
     // Public import entry points — called by ModuleResourceManager delegators

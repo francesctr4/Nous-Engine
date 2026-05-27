@@ -100,7 +100,7 @@ private:
 
 	// Reads Library/shader_manifest.json and loads built-in shaders via
 	// CreateResourceFromLibrary — no .meta files required. The manifest itself is
-	// written by ResourceImportPipeline at the end of ScanAndImportAssets.
+	// written by ImportPipeline at the end of ScanAndImportAssets.
 	void LoadShadersFromManifest();
 
 private:

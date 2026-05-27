@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
+#include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
@@ -32,13 +32,13 @@ public:
 // Fixture
 // =====================================================
 
-class t_ResourceImportPipeline : public ::testing::Test
+class t_ImportPipeline : public ::testing::Test
 {
 protected:
     static constexpr uint64 kMemoryPoolSize = MiB(32);
 
     MockImporterManager     mockImporter;
-    ResourceImportPipeline* pipeline   = nullptr;
+    ImportPipeline* pipeline   = nullptr;
     ResourceTypeRegistry*   registry   = nullptr;
     std::filesystem::path   tempDir;
     std::filesystem::path   savedCwd;
@@ -47,16 +47,16 @@ protected:
     {
         nous::engine::memory::InitializeMemory(kMemoryPoolSize);
 
-        // ResourceImportPipeline reads descriptors (libraryFolder, libExtPolicy)
+        // ImportPipeline reads descriptors (libraryFolder, libExtPolicy)
         // from the global registry. Application sets this up in production; the
         // test harness must do it manually.
         registry = new ResourceTypeRegistry();
         RegisterResourceTypes(*registry);
         SetResourceTypeRegistry(registry);
 
-        pipeline = new ResourceImportPipeline(&mockImporter);
+        pipeline = new ImportPipeline(&mockImporter);
 
-        // Give each test an isolated sandbox. ResourceImportPipeline works entirely
+        // Give each test an isolated sandbox. ImportPipeline works entirely
         // with relative paths from the process working directory, so we chdir into
         // a fresh temp directory that is cleaned up in TearDown.
         const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -94,7 +94,7 @@ protected:
 // EnsureLibraryDirectories
 // =====================================================
 
-TEST_F(t_ResourceImportPipeline, EnsureLibraryDirectoriesCreatesAllSubdirs)
+TEST_F(t_ImportPipeline, EnsureLibraryDirectoriesCreatesAllSubdirs)
 {
     EXPECT_TRUE(pipeline->EnsureLibraryDirectories());
 
@@ -106,7 +106,7 @@ TEST_F(t_ResourceImportPipeline, EnsureLibraryDirectoriesCreatesAllSubdirs)
     EXPECT_TRUE(std::filesystem::is_directory("Library/Scenes"));
 }
 
-TEST_F(t_ResourceImportPipeline, EnsureLibraryDirectoriesIsIdempotent)
+TEST_F(t_ImportPipeline, EnsureLibraryDirectoriesIsIdempotent)
 {
     EXPECT_TRUE(pipeline->EnsureLibraryDirectories());
     EXPECT_TRUE(pipeline->EnsureLibraryDirectories()); // second call must not fail
@@ -116,13 +116,13 @@ TEST_F(t_ResourceImportPipeline, EnsureLibraryDirectoriesIsIdempotent)
 // ImportFile — basic guards
 // =====================================================
 
-TEST_F(t_ResourceImportPipeline, ImportFileReturnsFalseForMissingFile)
+TEST_F(t_ImportPipeline, ImportFileReturnsFalseForMissingFile)
 {
     EXPECT_FALSE(pipeline->ImportFile("Assets/Textures/nonexistent.png"));
     EXPECT_EQ(mockImporter.importCallCount, 0);
 }
 
-TEST_F(t_ResourceImportPipeline, ImportFileReturnsFalseForUnknownExtension)
+TEST_F(t_ImportPipeline, ImportFileReturnsFalseForUnknownExtension)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/Textures/file.xyz");
@@ -136,7 +136,7 @@ TEST_F(t_ResourceImportPipeline, ImportFileReturnsFalseForUnknownExtension)
 // ImportFile — Case 1: new asset (no .meta yet)
 // =====================================================
 
-TEST_F(t_ResourceImportPipeline, ImportFileCase1CreatesMeta)
+TEST_F(t_ImportPipeline, ImportFileCase1CreatesMeta)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/Textures/test.png");
@@ -145,7 +145,7 @@ TEST_F(t_ResourceImportPipeline, ImportFileCase1CreatesMeta)
     EXPECT_TRUE(std::filesystem::exists("Assets/Textures/test.png.meta"));
 }
 
-TEST_F(t_ResourceImportPipeline, ImportFileCase1CallsImportOnce)
+TEST_F(t_ImportPipeline, ImportFileCase1CallsImportOnce)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/Textures/test.png");
@@ -155,14 +155,14 @@ TEST_F(t_ResourceImportPipeline, ImportFileCase1CallsImportOnce)
     EXPECT_EQ(mockImporter.importCallCount, 1);
 }
 
-TEST_F(t_ResourceImportPipeline, ImportFileCase1MetaRoundTrip)
+TEST_F(t_ImportPipeline, ImportFileCase1MetaRoundTrip)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/Textures/test.png");
     pipeline->ImportFile("Assets/Textures/test.png");
 
     MetaFileData meta;
-    EXPECT_TRUE(ResourceImportPipeline::GetAssetMetaData("Assets/Textures/test.png", meta));
+    EXPECT_TRUE(ImportPipeline::GetAssetMetaData("Assets/Textures/test.png", meta));
     EXPECT_EQ(meta.resourceType, ResourceType::TEXTURE);
     EXPECT_EQ(meta.name, "test");
     EXPECT_NE(meta.uid, 0u);
@@ -173,7 +173,7 @@ TEST_F(t_ResourceImportPipeline, ImportFileCase1MetaRoundTrip)
 // ImportFile — Case 2: .meta exists, library file missing
 // =====================================================
 
-TEST_F(t_ResourceImportPipeline, ImportFileCase2MissingLibraryTriggersReImport)
+TEST_F(t_ImportPipeline, ImportFileCase2MissingLibraryTriggersReImport)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/Textures/test.png");
@@ -192,14 +192,14 @@ TEST_F(t_ResourceImportPipeline, ImportFileCase2MissingLibraryTriggersReImport)
 // ImportFile — Case 3: timestamp check
 // =====================================================
 
-TEST_F(t_ResourceImportPipeline, ImportFileCase3UpToDateLibrarySkipsImport)
+TEST_F(t_ImportPipeline, ImportFileCase3UpToDateLibrarySkipsImport)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/Textures/test.png");
     pipeline->ImportFile("Assets/Textures/test.png"); // Case 1: creates .meta
 
     MetaFileData meta;
-    ResourceImportPipeline::GetAssetMetaData("Assets/Textures/test.png", meta);
+    ImportPipeline::GetAssetMetaData("Assets/Textures/test.png", meta);
 
     // Create library file and stamp it with a future mtime so it looks newer than the asset.
     CreateDummyFile(meta.libraryPath);
@@ -211,14 +211,14 @@ TEST_F(t_ResourceImportPipeline, ImportFileCase3UpToDateLibrarySkipsImport)
     EXPECT_EQ(mockImporter.importCallCount, 0);
 }
 
-TEST_F(t_ResourceImportPipeline, ImportFileCase3StaleLibraryTriggersReImport)
+TEST_F(t_ImportPipeline, ImportFileCase3StaleLibraryTriggersReImport)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/Textures/test.png");
     pipeline->ImportFile("Assets/Textures/test.png"); // Case 1: creates .meta
 
     MetaFileData meta;
-    ResourceImportPipeline::GetAssetMetaData("Assets/Textures/test.png", meta);
+    ImportPipeline::GetAssetMetaData("Assets/Textures/test.png", meta);
 
     // Create library file and stamp it with a past mtime so it looks older than the asset.
     CreateDummyFile(meta.libraryPath);
@@ -234,22 +234,22 @@ TEST_F(t_ResourceImportPipeline, ImportFileCase3StaleLibraryTriggersReImport)
 // GetAssetMetaData
 // =====================================================
 
-TEST_F(t_ResourceImportPipeline, GetAssetMetaDataReturnsFalseForMissingMeta)
+TEST_F(t_ImportPipeline, GetAssetMetaDataReturnsFalseForMissingMeta)
 {
     MetaFileData out;
-    EXPECT_FALSE(ResourceImportPipeline::GetAssetMetaData("Assets/Textures/ghost.png", out));
+    EXPECT_FALSE(ImportPipeline::GetAssetMetaData("Assets/Textures/ghost.png", out));
 }
 
 // =====================================================
 // ImportDirectory
 // =====================================================
 
-TEST_F(t_ResourceImportPipeline, ImportDirectoryReturnsFalseForMissingDirectory)
+TEST_F(t_ImportPipeline, ImportDirectoryReturnsFalseForMissingDirectory)
 {
     EXPECT_FALSE(pipeline->ImportDirectory("Assets/DoesNotExist"));
 }
 
-TEST_F(t_ResourceImportPipeline, ImportDirectoryCallsImportForEachKnownFile)
+TEST_F(t_ImportPipeline, ImportDirectoryCallsImportForEachKnownFile)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/Textures/a.png");
@@ -264,7 +264,7 @@ TEST_F(t_ResourceImportPipeline, ImportDirectoryCallsImportForEachKnownFile)
 // Meta path — adjacent to asset (not type-specific folder)
 // =====================================================
 
-TEST_F(t_ResourceImportPipeline, ImportFileCreatesMetaAdjacentToAsset)
+TEST_F(t_ImportPipeline, ImportFileCreatesMetaAdjacentToAsset)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/CustomFolder/SubFolder/test.png");
@@ -274,7 +274,7 @@ TEST_F(t_ResourceImportPipeline, ImportFileCreatesMetaAdjacentToAsset)
     EXPECT_FALSE(std::filesystem::exists("Assets/Textures/test.png.meta"));
 }
 
-TEST_F(t_ResourceImportPipeline, ScanCreatesMetaAdjacentToAsset)
+TEST_F(t_ImportPipeline, ScanCreatesMetaAdjacentToAsset)
 {
     pipeline->EnsureLibraryDirectories();
     CreateDummyFile("Assets/CustomFolder/SubFolder/model.fbx");

@@ -1,4 +1,4 @@
-#include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
+#include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -62,7 +62,7 @@ static std::filesystem::file_time_type GetLibraryTime(const std::filesystem::pat
     return fs::last_write_time(libraryPath);
 }
 
-ResourceImportPipeline::ResourceImportPipeline(IImporterManager* importerManager,
+ImportPipeline::ImportPipeline(IImporterManager* importerManager,
                                                nous::engine::multithreading::NOUS_JobSystem* jobSystem)
     : m_importerManager(importerManager)
     , m_jobSystem(jobSystem)
@@ -78,7 +78,7 @@ static std::string StripTrailingSlash(std::string path)
     return path;
 }
 
-void ResourceImportPipeline::ClearLibraryFiles()
+void ImportPipeline::ClearLibraryFiles()
 {
     namespace fs = std::filesystem;
 
@@ -96,7 +96,7 @@ void ResourceImportPipeline::ClearLibraryFiles()
     EnsureLibraryDirectories();
 }
 
-bool ResourceImportPipeline::EnsureLibraryDirectories()
+bool ImportPipeline::EnsureLibraryDirectories()
 {
     if (!nous::engine::filesystem::CreateDirectory("Library"))
         return false;
@@ -110,7 +110,7 @@ bool ResourceImportPipeline::EnsureLibraryDirectories()
     return nous::engine::filesystem::CreateDirectory("Library/Scenes");
 }
 
-void ResourceImportPipeline::ScanAndImportAssets(const bool parallelImports)
+void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
 {
     // Phase 1 (sequential): walk Assets/, write any missing .meta files, collect
     // MetaFileData for every file that actually needs import work.
@@ -192,7 +192,7 @@ void ResourceImportPipeline::ScanAndImportAssets(const bool parallelImports)
     WriteShaderManifest();
 }
 
-void ResourceImportPipeline::WriteShaderManifest()
+void ImportPipeline::WriteShaderManifest()
 {
     // Built-in shaders that GAME mode loads via the manifest (no .meta read at runtime).
     // Asset paths mirror the CreateResource calls in ModuleRenderer3D::Start.
@@ -225,7 +225,7 @@ void ResourceImportPipeline::WriteShaderManifest()
         NOUS_INFO_C(CURRENT_CHANNEL, "Shader manifest written to Library/Shaders/shader_manifest.json.");
 }
 
-void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
+void ImportPipeline::CollectPendingImports(const std::string& directory,
                                                     std::vector<MetaFileData>& outPending) const
 {
     if (!nous::engine::filesystem::Exists(directory))
@@ -305,7 +305,7 @@ void ResourceImportPipeline::CollectPendingImports(const std::string& directory,
     }
 }
 
-bool ResourceImportPipeline::ImportDirectory(const std::string& directory)
+bool ImportPipeline::ImportDirectory(const std::string& directory)
 {
     if (!nous::engine::filesystem::Exists(directory))
     {
@@ -324,7 +324,7 @@ bool ResourceImportPipeline::ImportDirectory(const std::string& directory)
     return true;
 }
 
-bool ResourceImportPipeline::ImportFile(const std::string& path)
+bool ImportPipeline::ImportFile(const std::string& path)
 {
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Importing file: %s", path.c_str());
 
@@ -349,7 +349,7 @@ bool ResourceImportPipeline::ImportFile(const std::string& path)
     return ImportFileFromExternal(path, resourceType, fileName, extension);
 }
 
-bool ResourceImportPipeline::ImportFileFromExternal(const std::string& path, const ResourceType resourceType,
+bool ImportPipeline::ImportFileFromExternal(const std::string& path, const ResourceType resourceType,
                                                     const std::string& fileName, const std::string& extension)
 {
     const std::string newPath = "Assets/" + fileName + extension;
@@ -361,7 +361,7 @@ bool ResourceImportPipeline::ImportFileFromExternal(const std::string& path, con
     return ImportFile(newPath);
 }
 
-bool ResourceImportPipeline::ImportFileFromAssets(const std::string& relativePath, const ResourceType resourceType,
+bool ImportPipeline::ImportFileFromAssets(const std::string& relativePath, const ResourceType resourceType,
                                                    const std::string& fileName, const std::string& extension) const
 {
     const std::string fileDirectory = nous::engine::filesystem::GetDirectory(relativePath);
@@ -383,7 +383,7 @@ bool ResourceImportPipeline::ImportFileFromAssets(const std::string& relativePat
     return ImportCase3_TimestampCheck(metaFileData);
 }
 
-bool ResourceImportPipeline::ImportCase1_NewAsset(const std::string_view relativePath, const std::string& metaFilePath,
+bool ImportPipeline::ImportCase1_NewAsset(const std::string_view relativePath, const std::string& metaFilePath,
                                                    const ResourceType resourceType, const std::string_view fileName) const
 {
     const auto resourceUID = static_cast<uint32>(Random::Generate());
@@ -413,13 +413,13 @@ bool ResourceImportPipeline::ImportCase1_NewAsset(const std::string_view relativ
     return true;
 }
 
-bool ResourceImportPipeline::ImportCase2_MissingLibrary(const MetaFileData& metaFileData) const
+bool ImportPipeline::ImportCase2_MissingLibrary(const MetaFileData& metaFileData) const
 {
     m_importerManager->Import(metaFileData.resourceType, metaFileData);
     return true;
 }
 
-bool ResourceImportPipeline::ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const
+bool ImportPipeline::ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const
 {
     if (std::filesystem::last_write_time(metaFileData.assetsPath)
         >
@@ -435,7 +435,7 @@ bool ResourceImportPipeline::ImportCase3_TimestampCheck(const MetaFileData& meta
     return true;
 }
 
-bool ResourceImportPipeline::CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData)
+bool ImportPipeline::CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData)
 {
     JsonObject metaObj;
     metaObj.Set("Name",          inFileData.name);
@@ -446,7 +446,7 @@ bool ResourceImportPipeline::CreateMetaFile(const std::string& metaFilePath, con
     return JsonFile::SaveToFile(metaObj, metaFilePath);
 }
 
-bool ResourceImportPipeline::ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData)
+bool ImportPipeline::ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData)
 {
     JsonObject metaObj = JsonFile::LoadFromFile(metaFilePath);
     if (metaObj.IsEmpty())
@@ -470,7 +470,7 @@ bool ResourceImportPipeline::ReadMetaFile(const std::string& metaFilePath, MetaF
     return true;
 }
 
-bool ResourceImportPipeline::GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData)
+bool ImportPipeline::GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData)
 {
     return ReadMetaFile(assetsPath + ".meta", outData);
 }
