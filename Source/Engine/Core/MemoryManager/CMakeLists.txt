@@ -3,6 +3,7 @@ set(CLASS_NAME "MemoryManager")
 add_library(${CLASS_NAME} STATIC
         ${CLASS_NAME}.h
         ${CLASS_NAME}.cpp
+        MemoryTag.h
 )
 
 add_subdirectory(CustomAllocators)

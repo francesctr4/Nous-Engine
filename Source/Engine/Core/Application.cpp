@@ -3,12 +3,12 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/Importer/ImporterManager.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/ImporterManager.h"
 #include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
-#include "Engine/Systems/ResourceManager/Resource/ResourceAudio/include/ResourceAudio.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceAudio/include/ResourceAudio.h"
 
 #include <Engine/Core/MemoryManager/MemoryManager.h>
 

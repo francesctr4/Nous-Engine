@@ -3,8 +3,8 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/EngineExport.h"
-#include "Engine/Systems/ResourceManager/Importer/Importer.inl"
-#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/Importer.inl"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/Resource.h"
 
 #include <array>
 #include <functional>

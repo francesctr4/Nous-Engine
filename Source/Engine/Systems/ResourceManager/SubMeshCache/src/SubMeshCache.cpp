@@ -1,9 +1,9 @@
 #include "Engine/Systems/ResourceManager/SubMeshCache/include/SubMeshCache.h"
 
-#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
-#include "Engine/Systems/ResourceManager/Importer/ImporterMesh/include/ImporterMesh.h"
-#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/ImporterMesh/include/ImporterMesh.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/MetaFileData.inl"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Core/Logger/Logger.h"

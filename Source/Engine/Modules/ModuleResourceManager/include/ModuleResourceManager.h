@@ -3,7 +3,7 @@
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
-#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/Resource.h"
 #include "Engine/Systems/ResourceManager/BuiltinResources/include/BuiltinResources.h"
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
 #include "Engine/Systems/ResourceManager/SceneResourcePreloader/include/SceneResourcePreloader.h"

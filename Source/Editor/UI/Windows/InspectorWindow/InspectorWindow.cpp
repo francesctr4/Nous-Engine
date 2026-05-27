@@ -9,13 +9,13 @@
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
-#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/Resource/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Scripting/Internal/IScript.inl"
 
-#include "Engine/Systems/ResourceManager/Resource/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/Importer/ImporterMaterial/include/ImporterMaterial.h"
-#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/ImporterMaterial/include/ImporterMaterial.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/MetaFileData.inl"
 
 #include "imgui.h"
 #include <glm/glm.hpp>

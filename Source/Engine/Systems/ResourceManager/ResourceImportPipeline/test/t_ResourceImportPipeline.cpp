@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
-#include "Engine/Systems/ResourceManager/Importer/IImporterManager.h"
-#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/MetaFileData.inl"
 #include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"

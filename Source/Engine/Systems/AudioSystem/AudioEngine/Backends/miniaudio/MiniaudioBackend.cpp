@@ -1,7 +1,7 @@
 #include "MiniaudioBackend.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Systems/AudioSystem/AudioSystem.h"
-#include "Engine/Systems/ResourceManager/Resource/ResourceAudio/include/ResourceAudio.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceAudio/include/ResourceAudio.h"
 
 // miniaudio Library Documentation
 // https://miniaud.io/docs/manual/index.html

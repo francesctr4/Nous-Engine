@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/ResourceManager/SubMeshCache/include/SubMeshCache.h"
-#include "Engine/Systems/ResourceManager/Resource/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Utils/Math/Vertex.inl"
