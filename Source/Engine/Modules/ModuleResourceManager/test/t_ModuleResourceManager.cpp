@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 
 // =====================================================
@@ -51,7 +51,7 @@ protected:
         // global registry; Application sets it up in production, the test
         // harness must do it manually.
         registry = new ResourceTypeRegistry();
-        RegisterBuiltinResourceTypes(*registry);
+        RegisterResourceTypes(*registry);
         SetResourceTypeRegistry(registry);
 
         eventSystem = new EventSystem();
@@ -348,7 +348,7 @@ protected:
         // ClearResources, InstantiateResource). Application sets it up in production —
         // the test harness has to do it manually.
         registry = new ResourceTypeRegistry();
-        RegisterBuiltinResourceTypes(*registry);
+        RegisterResourceTypes(*registry);
         SetResourceTypeRegistry(registry);
 
         eventSystem = new EventSystem();

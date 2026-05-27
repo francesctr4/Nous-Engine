@@ -6,7 +6,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
 
 #include <algorithm>
 

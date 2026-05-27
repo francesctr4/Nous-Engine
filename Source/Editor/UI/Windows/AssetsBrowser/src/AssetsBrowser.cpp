@@ -11,7 +11,7 @@
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Scripting/ScriptManager.h"

@@ -1,21 +1,21 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceAudio/include/ResourceAudio.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include <filesystem>
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 
-#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/IImporterManager.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/Importer.inl"
+#include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
 #include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
@@ -28,7 +28,7 @@
 
 // ---------------------------------------------------------------------------
 // Resource lifecycle is routed through the ResourceTypeRegistry — adding a
-// new type is now a single descriptor block in RegisterBuiltinResourceTypes.
+// new type is now a single descriptor block in RegisterResourceTypes.
 // ---------------------------------------------------------------------------
 namespace
 {

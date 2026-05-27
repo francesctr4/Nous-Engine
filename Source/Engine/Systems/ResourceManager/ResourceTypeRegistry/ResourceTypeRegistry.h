@@ -3,8 +3,8 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/EngineExport.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/Importer.inl"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
 
 #include <array>
 #include <functional>
@@ -79,8 +79,8 @@ private:
     std::array<std::unique_ptr<ResourceTypeDescriptor>, k_SlotCount> m_descriptors{};
 };
 
-// Implemented in RegisterBuiltinResourceTypes.cpp (Phase 2).
-NOUS_ENGINE_API void RegisterBuiltinResourceTypes(ResourceTypeRegistry& registry);
+// Implemented in RegisterResourceTypes.cpp (Phase 2).
+NOUS_ENGINE_API void RegisterResourceTypes(ResourceTypeRegistry& registry);
 
 // Singleton accessor — owned by Application; created before any module.
 NOUS_ENGINE_API ResourceTypeRegistry& GetResourceTypeRegistry();

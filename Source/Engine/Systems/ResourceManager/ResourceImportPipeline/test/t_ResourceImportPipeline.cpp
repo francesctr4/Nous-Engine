@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/ResourceManager/ResourceImportPipeline/include/ResourceImportPipeline.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/IImporterManager.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
@@ -51,7 +51,7 @@ protected:
         // from the global registry. Application sets this up in production; the
         // test harness must do it manually.
         registry = new ResourceTypeRegistry();
-        RegisterBuiltinResourceTypes(*registry);
+        RegisterResourceTypes(*registry);
         SetResourceTypeRegistry(registry);
 
         pipeline = new ResourceImportPipeline(&mockImporter);

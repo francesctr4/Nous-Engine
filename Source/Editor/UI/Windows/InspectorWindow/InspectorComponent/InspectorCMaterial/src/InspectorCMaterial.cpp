@@ -5,11 +5,11 @@
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Importer/ImporterMaterial/include/ImporterMaterial.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/MetaFileData.inl"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ImporterMaterial.h"
+#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 
 #include <filesystem>

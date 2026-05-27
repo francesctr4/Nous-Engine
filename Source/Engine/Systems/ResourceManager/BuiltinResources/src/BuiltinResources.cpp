@@ -1,8 +1,8 @@
 #include "Engine/Systems/ResourceManager/BuiltinResources/include/BuiltinResources.h"
 
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/Resource.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"

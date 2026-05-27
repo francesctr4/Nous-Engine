@@ -1,7 +1,10 @@
 target_sources(ResourceManager PRIVATE
         ResourceType.h
-        RegisterBuiltinResourceTypes.cpp
+        RegisterResourceTypes.cpp
 )
 
-add_subdirectory(Importer)
-add_subdirectory(Resource)
+add_subdirectory(ResourceAudio)
+add_subdirectory(ResourceMaterial)
+add_subdirectory(ResourceMesh)
+add_subdirectory(ResourceShader)
+add_subdirectory(ResourceTexture)

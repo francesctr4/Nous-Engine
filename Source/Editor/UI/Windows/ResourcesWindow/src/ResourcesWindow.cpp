@@ -1,7 +1,7 @@
 #include "Editor/UI/Windows/ResourcesWindow/include/ResourcesWindow.h"
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 

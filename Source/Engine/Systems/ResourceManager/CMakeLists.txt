@@ -5,11 +5,13 @@
 add_library(ResourceManager STATIC)
 
 add_subdirectory(BuiltinResources)
+add_subdirectory(ImporterManager)
+add_subdirectory(Resource)
 add_subdirectory(ResourceImportPipeline)
 add_subdirectory(ResourceTypeRegistry)
 add_subdirectory(ResourceTypes)
-add_subdirectory(SubMeshCache)
 add_subdirectory(SceneResourcePreloader)
+add_subdirectory(SubMeshCache)
 
 set_target_properties(ResourceManager PROPERTIES
         CXX_STANDARD 23
