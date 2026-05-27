@@ -3,7 +3,7 @@
 #include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
-#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
+#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 
@@ -39,7 +39,7 @@ protected:
 
     MockImporterManager     mockImporter;
     ImportPipeline* pipeline   = nullptr;
-    ResourceTypeRegistry*   registry   = nullptr;
+    TypeRegistry*   registry   = nullptr;
     std::filesystem::path   tempDir;
     std::filesystem::path   savedCwd;
 
@@ -50,9 +50,9 @@ protected:
         // ImportPipeline reads descriptors (libraryFolder, libExtPolicy)
         // from the global registry. Application sets this up in production; the
         // test harness must do it manually.
-        registry = new ResourceTypeRegistry();
+        registry = new TypeRegistry();
         RegisterResourceTypes(*registry);
-        SetResourceTypeRegistry(registry);
+        SetTypeRegistry(registry);
 
         pipeline = new ImportPipeline(&mockImporter);
 
@@ -75,7 +75,7 @@ protected:
         delete pipeline;
         pipeline = nullptr;
 
-        SetResourceTypeRegistry(nullptr);
+        SetTypeRegistry(nullptr);
         delete registry;
         registry = nullptr;
 

@@ -2,20 +2,20 @@
 
 #include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
-#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
+#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
 
 namespace
 {
     Importer* ImporterFor(ResourceType type)
     {
-        const ResourceTypeDescriptor* d = GetResourceTypeRegistry().Get(type);
+        const TypeDescriptor* d = GetTypeRegistry().Get(type);
         return d ? d->importer.get() : nullptr;
     }
 }
 
 void ImporterManager::Init(ModuleResourceManager* resourceManager)
 {
-    for (const ResourceTypeDescriptor* d : GetResourceTypeRegistry().All())
+    for (const TypeDescriptor* d : GetTypeRegistry().All())
     {
         if (d && d->importer)
             d->importer->mResourceManager = resourceManager;

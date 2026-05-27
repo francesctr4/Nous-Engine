@@ -29,7 +29,7 @@ struct DisplayMetadata
     const char* icon = nullptr;
 };
 
-struct ResourceTypeDescriptor
+struct TypeDescriptor
 {
     ResourceType type = ResourceType::UNKNOWN;
     const char* name = "Unknown";
@@ -51,37 +51,37 @@ struct ResourceTypeDescriptor
     DisplayMetadata display;
 };
 
-class NOUS_ENGINE_API ResourceTypeRegistry
+class NOUS_ENGINE_API TypeRegistry
 {
 public:
-    ResourceTypeRegistry() = default;
-    ~ResourceTypeRegistry();
+    TypeRegistry() = default;
+    ~TypeRegistry();
 
-    ResourceTypeRegistry(const ResourceTypeRegistry&) = delete;
-    ResourceTypeRegistry& operator=(const ResourceTypeRegistry&) = delete;
+    TypeRegistry(const TypeRegistry&) = delete;
+    TypeRegistry& operator=(const TypeRegistry&) = delete;
 
     // Takes ownership of the descriptor.
-    void Register(ResourceTypeDescriptor descriptor);
+    void Register(TypeDescriptor descriptor);
 
-    [[nodiscard]] const ResourceTypeDescriptor* Get(ResourceType type) const;
-    [[nodiscard]] ResourceTypeDescriptor* Get(ResourceType type);
+    [[nodiscard]] const TypeDescriptor* Get(ResourceType type) const;
+    [[nodiscard]] TypeDescriptor* Get(ResourceType type);
 
     // Iteration helpers — both return non-owning pointers, valid until the
     // registry is destroyed.
-    [[nodiscard]] std::vector<const ResourceTypeDescriptor*> All() const;
-    [[nodiscard]] std::vector<const ResourceTypeDescriptor*> SortedByCleanupPriority() const;
+    [[nodiscard]] std::vector<const TypeDescriptor*> All() const;
+    [[nodiscard]] std::vector<const TypeDescriptor*> SortedByCleanupPriority() const;
 
     // Convenience lookups built on top of the descriptors.
     [[nodiscard]] ResourceType TypeFromExtension(const std::string& extension) const;
 
 private:
     static constexpr size_t k_SlotCount = static_cast<size_t>(ResourceType::ALL_TYPES);
-    std::array<std::unique_ptr<ResourceTypeDescriptor>, k_SlotCount> m_descriptors{};
+    std::array<std::unique_ptr<TypeDescriptor>, k_SlotCount> m_descriptors{};
 };
 
 // Implemented in RegisterResourceTypes.cpp (Phase 2).
-NOUS_ENGINE_API void RegisterResourceTypes(ResourceTypeRegistry& registry);
+NOUS_ENGINE_API void RegisterResourceTypes(TypeRegistry& registry);
 
 // Singleton accessor — owned by Application; created before any module.
-NOUS_ENGINE_API ResourceTypeRegistry& GetResourceTypeRegistry();
-NOUS_ENGINE_API void                  SetResourceTypeRegistry(ResourceTypeRegistry* registry);
+NOUS_ENGINE_API TypeRegistry& GetTypeRegistry();
+NOUS_ENGINE_API void                  SetTypeRegistry(TypeRegistry* registry);

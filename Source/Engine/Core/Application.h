@@ -21,7 +21,7 @@ class ModuleScene;
 class ModuleRenderer3D;
 class ModuleAudio;
 class IImporterManager;
-class ResourceTypeRegistry;
+class TypeRegistry;
 
 class Application
 {
@@ -80,7 +80,7 @@ private:
 	EventSystem*                         eventSystem;
 	nous::engine::multithreading::NOUS_JobSystem* jobSystem;
 	IImporterManager*                    importerManager;
-	ResourceTypeRegistry*                resourceTypeRegistry;
+	TypeRegistry*                typeRegistry;
 
 	std::vector<Module*> listModules;
 

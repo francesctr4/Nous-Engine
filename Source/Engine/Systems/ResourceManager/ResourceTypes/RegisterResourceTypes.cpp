@@ -1,4 +1,4 @@
-#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
+#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
@@ -29,11 +29,11 @@ namespace
     constexpr int k_PrioAudio    = 4;
 }
 
-void RegisterResourceTypes(ResourceTypeRegistry& registry)
+void RegisterResourceTypes(TypeRegistry& registry)
 {
     // ---------- SHADER ----------
     {
-        ResourceTypeDescriptor d;
+        TypeDescriptor d;
         d.type = ResourceType::SHADER;
         d.name = "Shader";
         d.libraryFolder = "Library/Shaders/";
@@ -51,7 +51,7 @@ void RegisterResourceTypes(ResourceTypeRegistry& registry)
 
     // ---------- MATERIAL ----------
     {
-        ResourceTypeDescriptor d;
+        TypeDescriptor d;
         d.type = ResourceType::MATERIAL;
         d.name = "Material";
         d.libraryFolder = "Library/Materials/";
@@ -69,7 +69,7 @@ void RegisterResourceTypes(ResourceTypeRegistry& registry)
 
     // ---------- TEXTURE ----------
     {
-        ResourceTypeDescriptor d;
+        TypeDescriptor d;
         d.type = ResourceType::TEXTURE;
         d.name = "Texture";
         d.libraryFolder = "Library/Textures/";
@@ -87,7 +87,7 @@ void RegisterResourceTypes(ResourceTypeRegistry& registry)
 
     // ---------- MESH ----------
     {
-        ResourceTypeDescriptor d;
+        TypeDescriptor d;
         d.type = ResourceType::MESH;
         d.name = "Mesh";
         d.libraryFolder = "Library/Meshes/";
@@ -105,7 +105,7 @@ void RegisterResourceTypes(ResourceTypeRegistry& registry)
 
     // ---------- AUDIO ----------
     {
-        ResourceTypeDescriptor d;
+        TypeDescriptor d;
         d.type = ResourceType::AUDIO;
         d.name = "Audio";
         d.libraryFolder = "Library/Audio/";

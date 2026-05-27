@@ -4,7 +4,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
-#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
+#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
@@ -21,7 +21,7 @@ constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMAN
 // type's LibraryExtPolicy. The source extension argument is only consulted
 // when the policy is PRESERVE_SOURCE (e.g. AUDIO keeps .wav/.ogg) and may
 // include a leading dot.
-static std::string BuildLibraryFilename(const ResourceTypeDescriptor& d,
+static std::string BuildLibraryFilename(const TypeDescriptor& d,
                                         uint32 uid,
                                         const std::string& sourceExtensionWithDot)
 {
@@ -82,7 +82,7 @@ void ImportPipeline::ClearLibraryFiles()
 {
     namespace fs = std::filesystem;
 
-    for (const ResourceTypeDescriptor* d : GetResourceTypeRegistry().All())
+    for (const TypeDescriptor* d : GetTypeRegistry().All())
     {
         std::error_code ec;
         fs::remove_all(StripTrailingSlash(d->libraryFolder), ec);
@@ -101,7 +101,7 @@ bool ImportPipeline::EnsureLibraryDirectories()
     if (!nous::engine::filesystem::CreateDirectory("Library"))
         return false;
 
-    for (const ResourceTypeDescriptor* d : GetResourceTypeRegistry().All())
+    for (const TypeDescriptor* d : GetTypeRegistry().All())
     {
         if (!nous::engine::filesystem::CreateDirectory(StripTrailingSlash(d->libraryFolder)))
             return false;
@@ -259,7 +259,7 @@ void ImportPipeline::CollectPendingImports(const std::string& directory,
         {
             // Case 1: new asset — create meta file now (sequential), schedule import.
             const auto resourceUID = static_cast<uint32>(Random::Generate());
-            const ResourceTypeDescriptor* desc = GetResourceTypeRegistry().Get(resourceType);
+            const TypeDescriptor* desc = GetTypeRegistry().Get(resourceType);
             if (!desc)
             {
                 NOUS_ERROR_C(CURRENT_CHANNEL, "Import File ERROR: no registry descriptor for resource type of '%s'", path.c_str());
@@ -387,7 +387,7 @@ bool ImportPipeline::ImportCase1_NewAsset(const std::string_view relativePath, c
                                                    const ResourceType resourceType, const std::string_view fileName) const
 {
     const auto resourceUID = static_cast<uint32>(Random::Generate());
-    const ResourceTypeDescriptor* desc = GetResourceTypeRegistry().Get(resourceType);
+    const TypeDescriptor* desc = GetTypeRegistry().Get(resourceType);
     if (!desc)
     {
         NOUS_ERROR("Import File ERROR: CASE 1 --> no registry descriptor for type");

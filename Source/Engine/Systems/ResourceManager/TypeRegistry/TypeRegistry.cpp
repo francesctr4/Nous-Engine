@@ -1,4 +1,4 @@
-#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
+#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
 
 #include "Engine/Core/Logger/Asserts.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -7,7 +7,7 @@
 
 namespace
 {
-    ResourceTypeRegistry* g_resourceTypeRegistry = nullptr;
+    TypeRegistry* g_TypeRegistry = nullptr;
 
     constexpr size_t SlotOf(ResourceType type)
     {
@@ -15,13 +15,13 @@ namespace
     }
 }
 
-ResourceTypeRegistry::~ResourceTypeRegistry()
+TypeRegistry::~TypeRegistry()
 {
     for (auto& slot : m_descriptors)
         slot.reset();
 }
 
-void ResourceTypeRegistry::Register(ResourceTypeDescriptor descriptor)
+void TypeRegistry::Register(TypeDescriptor descriptor)
 {
     NOUS_ASSERT_MSG(descriptor.type != ResourceType::UNKNOWN &&
                     descriptor.type != ResourceType::ALL_TYPES,
@@ -32,14 +32,14 @@ void ResourceTypeRegistry::Register(ResourceTypeDescriptor descriptor)
 
     if (m_descriptors[slot])
     {
-        NOUS_WARN("ResourceTypeRegistry: overwriting descriptor for type %s",
+        NOUS_WARN("TypeRegistry: overwriting descriptor for type %s",
                   descriptor.name ? descriptor.name : "<null>");
     }
 
-    m_descriptors[slot] = std::make_unique<ResourceTypeDescriptor>(std::move(descriptor));
+    m_descriptors[slot] = std::make_unique<TypeDescriptor>(std::move(descriptor));
 }
 
-const ResourceTypeDescriptor* ResourceTypeRegistry::Get(ResourceType type) const
+const TypeDescriptor* TypeRegistry::Get(ResourceType type) const
 {
     if (type == ResourceType::UNKNOWN || type == ResourceType::ALL_TYPES)
         return nullptr;
@@ -51,15 +51,15 @@ const ResourceTypeDescriptor* ResourceTypeRegistry::Get(ResourceType type) const
     return m_descriptors[slot].get();
 }
 
-ResourceTypeDescriptor* ResourceTypeRegistry::Get(ResourceType type)
+TypeDescriptor* TypeRegistry::Get(ResourceType type)
 {
-    return const_cast<ResourceTypeDescriptor*>(
-        static_cast<const ResourceTypeRegistry*>(this)->Get(type));
+    return const_cast<TypeDescriptor*>(
+        static_cast<const TypeRegistry*>(this)->Get(type));
 }
 
-std::vector<const ResourceTypeDescriptor*> ResourceTypeRegistry::All() const
+std::vector<const TypeDescriptor*> TypeRegistry::All() const
 {
-    std::vector<const ResourceTypeDescriptor*> out;
+    std::vector<const TypeDescriptor*> out;
     out.reserve(m_descriptors.size());
     for (const auto& slot : m_descriptors)
     {
@@ -69,17 +69,17 @@ std::vector<const ResourceTypeDescriptor*> ResourceTypeRegistry::All() const
     return out;
 }
 
-std::vector<const ResourceTypeDescriptor*> ResourceTypeRegistry::SortedByCleanupPriority() const
+std::vector<const TypeDescriptor*> TypeRegistry::SortedByCleanupPriority() const
 {
     auto out = All();
     std::stable_sort(out.begin(), out.end(),
-        [](const ResourceTypeDescriptor* a, const ResourceTypeDescriptor* b) {
+        [](const TypeDescriptor* a, const TypeDescriptor* b) {
             return a->cleanupPriority < b->cleanupPriority;
         });
     return out;
 }
 
-ResourceType ResourceTypeRegistry::TypeFromExtension(const std::string& extension) const
+ResourceType TypeRegistry::TypeFromExtension(const std::string& extension) const
 {
     if (extension.empty())
         return ResourceType::UNKNOWN;
@@ -100,14 +100,14 @@ ResourceType ResourceTypeRegistry::TypeFromExtension(const std::string& extensio
     return ResourceType::UNKNOWN;
 }
 
-ResourceTypeRegistry& GetResourceTypeRegistry()
+TypeRegistry& GetTypeRegistry()
 {
-    NOUS_ASSERT_MSG(g_resourceTypeRegistry != nullptr,
-                    "ResourceTypeRegistry accessed before initialization");
-    return *g_resourceTypeRegistry;
+    NOUS_ASSERT_MSG(g_TypeRegistry != nullptr,
+                    "TypeRegistry accessed before initialization");
+    return *g_TypeRegistry;
 }
 
-void SetResourceTypeRegistry(ResourceTypeRegistry* registry)
+void SetTypeRegistry(TypeRegistry* registry)
 {
-    g_resourceTypeRegistry = registry;
+    g_TypeRegistry = registry;
 }

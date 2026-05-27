@@ -16,7 +16,7 @@
 
 #include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
-#include "Engine/Systems/ResourceManager/ResourceTypeRegistry/ResourceTypeRegistry.h"
+#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
@@ -27,14 +27,14 @@
 #include <unordered_map>
 
 // ---------------------------------------------------------------------------
-// Resource lifecycle is routed through the ResourceTypeRegistry — adding a
+// Resource lifecycle is routed through the TypeRegistry — adding a
 // new type is now a single descriptor block in RegisterResourceTypes.
 // ---------------------------------------------------------------------------
 namespace
 {
     Resource* InstantiateResource(const ResourceType type)
     {
-        const ResourceTypeDescriptor* d = GetResourceTypeRegistry().Get(type);
+        const TypeDescriptor* d = GetTypeRegistry().Get(type);
         return (d && d->createFn) ? d->createFn(0) : nullptr;
     }
 }
@@ -265,7 +265,7 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 		m_subMeshCache.EraseUID(uid);
 	}
 
-	if (const ResourceTypeDescriptor* d = GetResourceTypeRegistry().Get(resource->GetType());
+	if (const TypeDescriptor* d = GetTypeRegistry().Get(resource->GetType());
 		d && d->destroyFn)
 		d->destroyFn(resource);
 
@@ -435,7 +435,7 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
     // (descriptor sets reference texture image views; freeing textures first
     // would leave dangling references — VUID-vkDestroyImageView-01026), then
     // materials, then leaf resources.
-    for (const ResourceTypeDescriptor* d : GetResourceTypeRegistry().SortedByCleanupPriority())
+    for (const TypeDescriptor* d : GetTypeRegistry().SortedByCleanupPriority())
     {
         for (auto& res : resources | std::views::values)
         {
