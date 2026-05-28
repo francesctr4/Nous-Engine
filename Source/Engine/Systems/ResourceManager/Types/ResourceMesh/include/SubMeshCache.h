@@ -6,7 +6,9 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 class Resource;
 class ResourceMesh;
@@ -55,7 +57,18 @@ private:
         const std::string& assetsPath,
         uint32 hintUID = 0);
 
-    std::map<CacheKey, uint32> m_index;
+    // Removes the m_index entry at `mapIt` and the matching key from the
+    // corresponding m_reverseIndex bucket. Caller MUST hold the
+    // ResourceTable's lock (same contract as EraseUID).
+    void EraseIndexEntry(std::map<CacheKey, uint32>::iterator mapIt);
+
+    // Primary index: (baseUID, submeshIndex) -> resource UID.
+    std::map<CacheKey, uint32>                             m_index;
+
+    // Reverse index: resource UID -> the CacheKeys that point at it. Keeps
+    // EraseUID O(k) instead of O(n) — k = number of submeshes sharing a UID,
+    // typically 1, bounded by the submesh count of the source mesh.
+    std::unordered_map<uint32, std::vector<CacheKey>>      m_reverseIndex;
 
     ResourceTable&             m_table;
     ResourceQueue&             m_uploads;

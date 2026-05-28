@@ -1,3 +1,4 @@
+add_subdirectory(AssetPaths)
 add_subdirectory(ImporterManager)
 add_subdirectory(Resource)
 add_subdirectory(ResourceQueue)

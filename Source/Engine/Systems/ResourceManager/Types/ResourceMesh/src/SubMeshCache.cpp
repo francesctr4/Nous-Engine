@@ -41,7 +41,7 @@ ResourceMesh* SubMeshCache::RequestOrCreate(const std::string& assetsPath, int32
                 return down_cast<ResourceMesh*>(resIt->second);
             }
             // Stale entry — resource was destroyed; remove and recreate below.
-            m_index.erase(mapIt);
+            EraseIndexEntry(mapIt);
         }
     }
 
@@ -72,7 +72,7 @@ ResourceMesh* SubMeshCache::RequestOrCreateFromLibrary(
                 resIt->second->IncreaseReferenceCount();
                 return down_cast<ResourceMesh*>(resIt->second);
             }
-            m_index.erase(mapIt);
+            EraseIndexEntry(mapIt);
         }
     }
 
@@ -82,18 +82,29 @@ ResourceMesh* SubMeshCache::RequestOrCreateFromLibrary(
 void SubMeshCache::EraseUID(uint32 uid)
 {
     // Caller MUST hold the ResourceTable's lock — see locking contract in SubMeshCache.h.
-    for (auto it = m_index.begin(); it != m_index.end(); )
-    {
-        if (it->second == uid)
-            it = m_index.erase(it);
-        else
-            ++it;
-    }
+    const auto rev = m_reverseIndex.find(uid);
+    if (rev == m_reverseIndex.end()) return;
+    for (const CacheKey& key : rev->second)
+        m_index.erase(key);
+    m_reverseIndex.erase(rev);
 }
 
 void SubMeshCache::Clear()
 {
     m_index.clear();
+    m_reverseIndex.clear();
+}
+
+void SubMeshCache::EraseIndexEntry(std::map<CacheKey, uint32>::iterator mapIt)
+{
+    const uint32   uid = mapIt->second;
+    const CacheKey key = mapIt->first;
+    m_index.erase(mapIt);
+
+    const auto rev = m_reverseIndex.find(uid);
+    if (rev == m_reverseIndex.end()) return;
+    std::erase(rev->second, key);
+    if (rev->second.empty()) m_reverseIndex.erase(rev);
 }
 
 ResourceMesh* SubMeshCache::BuildAndRegister(
@@ -152,6 +163,7 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
         }
         resources[uid] = mesh;
         m_index[key]   = uid;
+        m_reverseIndex[uid].push_back(key);
     }
     m_uploads.Push(ResourceType::MESH, mesh);
 

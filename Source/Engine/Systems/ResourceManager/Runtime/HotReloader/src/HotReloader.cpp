@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
@@ -36,10 +37,11 @@ namespace
     fs::path dir = fs::current_path(ec);
     if (ec) return {};
 
+    namespace ap = nous::engine::asset_paths;
     for (int depth = 0; depth < 8; ++depth)
     {
-        if (fs::exists(dir / "Assets", ec) && fs::exists(dir / "Source", ec))
-            return NormalizeAssetPath((dir / "Assets").generic_string());
+        if (fs::exists(dir / ap::k_AssetsDir, ec) && fs::exists(dir / "Source", ec))
+            return NormalizeAssetPath((dir / ap::k_AssetsDir).generic_string());
         fs::path parent = dir.parent_path();
         if (parent == dir) break;
         dir = std::move(parent);
@@ -147,11 +149,12 @@ void HotReloader::RegisterWatchForAsset(const std::string& assetsPath)
 
     const std::string relKey = NormalizeAssetPath(assetsPath);
 
+    namespace ap = nous::engine::asset_paths;
     // Map "Assets/foo/bar.png" -> "<sourceAssetsDir>/foo/bar.png".
     // m_sourceAssetsDir already ends in "/Assets" (no trailing slash).
     std::string watchPath;
-    if (relKey.size() > 7 && relKey.substr(0, 7) == "Assets/")
-        watchPath = m_sourceAssetsDir + "/" + relKey.substr(7);
+    if (ap::IsAssetsRelative(relKey))
+        watchPath = m_sourceAssetsDir + "/" + std::string(ap::StripAssetsPrefix(relKey));
     else
         watchPath = relKey;
 
@@ -168,7 +171,9 @@ void HotReloader::ScanAndRegisterWatchedAssets()
     std::error_code ec;
     int watchCount = 0;
 
-    const std::string watchBase = m_sourceAssetsDir.empty() ? "Assets" : m_sourceAssetsDir;
+    const std::string watchBase = m_sourceAssetsDir.empty()
+        ? std::string(nous::engine::asset_paths::k_AssetsDir)
+        : m_sourceAssetsDir;
     const fs::path sourceRoot = m_sourceAssetsDir.empty()
         ? fs::path{}
         : fs::path(m_sourceAssetsDir).parent_path();
@@ -258,11 +263,9 @@ void HotReloader::DispatchReimportJob(const std::string& normalizedPath)
         // Redirect Import to the source file so it reads what the user actually
         // edited, not the stale configure-time binary copy (e.g. Build/bin/Assets/...).
         // assetsPath is like "Assets/foo/bar.nmat"; sourceAssetsDir ends with "/Assets".
-        if (!sourceAssetsDir.empty() && assetsPath.size() > 7
-            && assetsPath.substr(0, 7) == "Assets/")
-        {
-            metaData.assetsPath = sourceAssetsDir + "/" + assetsPath.substr(7);
-        }
+        namespace ap = nous::engine::asset_paths;
+        if (!sourceAssetsDir.empty() && ap::IsAssetsRelative(assetsPath))
+            metaData.assetsPath = sourceAssetsDir + "/" + std::string(ap::StripAssetsPrefix(assetsPath));
 
         // 2. Reimport source -> Library binary (CPU only, no Vulkan).
         if (!m_importerManager->Import(type, metaData))

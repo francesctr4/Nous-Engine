@@ -2,6 +2,7 @@
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
@@ -90,7 +91,7 @@ void ImportPipeline::ClearLibraryFiles()
     // Scenes are not a registered ResourceType (mirrored separately by ScanAndImportAssets).
     {
         std::error_code ec;
-        fs::remove_all("Library/Scenes", ec);
+        fs::remove_all(nous::engine::asset_paths::k_ScenesDir, ec);
     }
 
     EnsureLibraryDirectories();
@@ -98,7 +99,8 @@ void ImportPipeline::ClearLibraryFiles()
 
 bool ImportPipeline::EnsureLibraryDirectories()
 {
-    if (!nous::engine::filesystem::CreateDirectory("Library"))
+    namespace ap = nous::engine::asset_paths;
+    if (!nous::engine::filesystem::CreateDirectory(std::string(ap::k_LibraryDir)))
         return false;
 
     for (const TypeDescriptor* d : GetTypeRegistry().All())
@@ -107,7 +109,7 @@ bool ImportPipeline::EnsureLibraryDirectories()
             return false;
     }
     // Scenes — not a registered ResourceType, but uses the Library tree.
-    return nous::engine::filesystem::CreateDirectory("Library/Scenes");
+    return nous::engine::filesystem::CreateDirectory(std::string(ap::k_ScenesDir));
 }
 
 void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
@@ -115,7 +117,7 @@ void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
     // Phase 1 (sequential): walk Assets/, write any missing .meta files, collect
     // MetaFileData for every file that actually needs import work.
     std::vector<MetaFileData> pendingWork;
-    CollectPendingImports("Assets", pendingWork);
+    CollectPendingImports(std::string(nous::engine::asset_paths::k_AssetsDir), pendingWork);
 
     // Phase 2: import in parallel when a job system is available, otherwise sequential.
     // parallelImports is false when called from a job-system worker with no other free
@@ -177,14 +179,15 @@ void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
     // Library paths use the filename only; if two scenes share a name in different
     // subdirectories the last one written wins — users should use unique scene names.
     {
+        namespace ap = nous::engine::asset_paths;
         std::error_code ec;
-        for (const auto& entry : std::filesystem::recursive_directory_iterator("Assets", ec))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(ap::k_AssetsDir, ec))
         {
             if (!entry.is_regular_file()) continue;
-            if (entry.path().extension() != ".nous") continue;
+            if (entry.path().extension() != ap::k_SceneExtension) continue;
 
             const std::string src  = entry.path().generic_string();
-            const std::string dest = "Library/Scenes/" + entry.path().filename().string();
+            const std::string dest = std::string(ap::k_ScenesDir) + "/" + entry.path().filename().string();
             nous::engine::filesystem::CopyFile(src, dest);
         }
     }
@@ -248,12 +251,12 @@ void ImportPipeline::CollectPendingImports(const std::string& directory,
 
         if (resourceType == ResourceType::UNKNOWN)
             continue;
-        if (fileDirectory.rfind("Assets/", 0) != 0)
+        if (!nous::engine::asset_paths::IsAssetsRelative(fileDirectory))
             continue;
 
         NOUS_DEBUG_C(CURRENT_CHANNEL, "Importing file: %s", path.c_str());
 
-        const std::string metaFilePath = fileDirectory + fileName + extension + ".meta";
+        const std::string metaFilePath = nous::engine::asset_paths::MakeMetaFilePath(fileDirectory + fileName + extension);
 
         if (!nous::engine::filesystem::Exists(metaFilePath))
         {
@@ -343,7 +346,7 @@ bool ImportPipeline::ImportFile(const std::string& path)
     if (resourceType == ResourceType::UNKNOWN)
         return false;
 
-    if (fileDirectory.rfind("Assets/", 0) == 0)
+    if (nous::engine::asset_paths::IsAssetsRelative(fileDirectory))
         return ImportFileFromAssets(relativePath, resourceType, fileName, extension);
 
     return ImportFileFromExternal(path, resourceType, fileName, extension);
@@ -352,7 +355,7 @@ bool ImportPipeline::ImportFile(const std::string& path)
 bool ImportPipeline::ImportFileFromExternal(const std::string& path, const ResourceType resourceType,
                                                     const std::string& fileName, const std::string& extension)
 {
-    const std::string newPath = "Assets/" + fileName + extension;
+    const std::string newPath = std::string(nous::engine::asset_paths::k_AssetsPrefix) + fileName + extension;
     if (!nous::engine::filesystem::CopyFile(path, newPath))
     {
         NOUS_ERROR("Import File ERROR: CASE 0 --> Error while copying the file to Assets\\ directory.");
@@ -365,7 +368,7 @@ bool ImportPipeline::ImportFileFromAssets(const std::string& relativePath, const
                                                    const std::string& fileName, const std::string& extension) const
 {
     const std::string fileDirectory = nous::engine::filesystem::GetDirectory(relativePath);
-    const std::string metaFilePath  = fileDirectory + fileName + extension + ".meta";
+    const std::string metaFilePath  = nous::engine::asset_paths::MakeMetaFilePath(fileDirectory + fileName + extension);
 
     if (!nous::engine::filesystem::Exists(metaFilePath))
         return ImportCase1_NewAsset(relativePath, metaFilePath, resourceType, fileName);
@@ -472,5 +475,5 @@ bool ImportPipeline::ReadMetaFile(const std::string& metaFilePath, MetaFileData&
 
 bool ImportPipeline::GetAssetMetaData(const std::string& assetsPath, MetaFileData& outData)
 {
-    return ReadMetaFile(assetsPath + ".meta", outData);
+    return ReadMetaFile(nous::engine::asset_paths::MakeMetaFilePath(assetsPath), outData);
 }

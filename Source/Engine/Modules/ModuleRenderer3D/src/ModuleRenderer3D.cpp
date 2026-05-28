@@ -23,6 +23,7 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/LogChannel.h"
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
@@ -176,7 +177,7 @@ bool ModuleRenderer3D::Start()
 		std::error_code ec;
 		int watchCount = 0;
 
-		for (const auto& entry : fs::recursive_directory_iterator("Assets", ec))
+		for (const auto& entry : fs::recursive_directory_iterator(nous::engine::asset_paths::k_AssetsDir, ec))
 		{
 			if (!entry.is_regular_file()) continue;
 			if (entry.path().extension() != ".glsl") continue;
