@@ -1,4 +1,4 @@
-#include "Engine/Systems/ResourceManager/BuiltinResources/include/BuiltinResources.h"
+#include "Engine/Systems/ResourceManager/Builtins/include/BuiltinResources.h"
 
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"

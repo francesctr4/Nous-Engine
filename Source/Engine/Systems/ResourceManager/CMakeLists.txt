@@ -4,7 +4,7 @@
 
 add_library(ResourceManager STATIC)
 
-add_subdirectory(BuiltinResources)
+add_subdirectory(Builtins)
 add_subdirectory(ImporterManager)
 add_subdirectory(Resource)
 add_subdirectory(ImportPipeline)
