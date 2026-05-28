@@ -11,7 +11,6 @@ add_subdirectory(ImportPipeline)
 add_subdirectory(TypeRegistry)
 add_subdirectory(ResourceTypes)
 add_subdirectory(ScenePreloader)
-add_subdirectory(SubMeshCache)
 
 set_target_properties(ResourceManager PROPERTIES
         CXX_STANDARD 23

@@ -7,6 +7,7 @@ set(TEST_NAME "t_ResourceMesh")
 add_executable(${TEST_NAME}
         t_ImporterMesh.cpp
         t_ResourceMesh.cpp
+        t_SubMeshCache.cpp
 )
 
 target_include_directories(${TEST_NAME}

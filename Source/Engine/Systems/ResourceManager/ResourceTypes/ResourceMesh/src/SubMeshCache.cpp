@@ -1,4 +1,4 @@
-#include "Engine/Systems/ResourceManager/SubMeshCache/include/SubMeshCache.h"
+#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/SubMeshCache.h"
 
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
