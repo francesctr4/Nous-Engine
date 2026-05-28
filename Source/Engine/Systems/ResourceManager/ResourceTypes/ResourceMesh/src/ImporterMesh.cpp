@@ -4,7 +4,7 @@
 #include <map>
 
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
@@ -590,7 +590,7 @@ bool ImporterMesh::Import(const MetaFileData& metaFileData)
 
     std::vector<std::string> materialPaths;
     if (ext == ".gltf" || ext == ".glb")
-        materialPaths = ExtractTexturesAndMaterials(scene, metaFileData.assetsPath, mResourceManager);
+        materialPaths = ExtractTexturesAndMaterials(scene, metaFileData.assetsPath, m_resourceManager);
 
     std::vector<SubMeshData> submeshes;
     CollectSubMeshData(scene->mRootNode, scene, glm::mat4(1.0f), materialPaths, submeshes);

@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Runtime/Builtins/include/BuiltinResources.h"
 
-#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"

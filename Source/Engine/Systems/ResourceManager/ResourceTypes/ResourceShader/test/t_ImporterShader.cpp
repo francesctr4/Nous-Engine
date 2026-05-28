@@ -2,7 +2,7 @@
 
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ImporterShader.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 

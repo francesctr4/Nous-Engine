@@ -1,10 +1,10 @@
 #ifndef IMPORTERTEXTURE_H
 #define IMPORTERTEXTURE_H
 
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
 #include "Engine/EngineExport.h"
 
-struct NOUS_ENGINE_API ImporterTexture : Importer
+struct NOUS_ENGINE_API ImporterTexture : IImporter
 {
     bool Import(const MetaFileData& metaFileData) override;
     bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;

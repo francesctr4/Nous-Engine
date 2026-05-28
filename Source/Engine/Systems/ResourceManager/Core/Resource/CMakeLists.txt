@@ -1,5 +1,6 @@
 target_sources(ResourceManager PRIVATE
-        MetaFileData.inl
-        Resource.h
-        Resource.cpp
+        include/IResourceLoader.h
+        include/MetaFileData.h
+        include/Resource.h
+        src/Resource.cpp
 )

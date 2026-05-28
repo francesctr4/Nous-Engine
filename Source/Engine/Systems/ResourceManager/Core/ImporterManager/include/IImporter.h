@@ -1,7 +1,5 @@
-#ifndef IMPORTER_INL
-#define IMPORTER_INL
+#pragma once
 
-#include <Engine/Core/Globals.h>
 #include <string>
 
 class Resource;
@@ -9,9 +7,9 @@ struct MetaFileData;
 class IGPUResourceFactory;
 class ModuleResourceManager;
 
-struct Importer
+struct IImporter
 {
-    virtual ~Importer() = default;
+    virtual ~IImporter() = default;
 
     // Asset pipeline — file I/O only, no GPU involvement.
     virtual bool Import(const MetaFileData& metaFileData) = 0;
@@ -29,7 +27,5 @@ struct Importer
     virtual bool Upload(Resource* resource, IGPUResourceFactory* gpu) = 0;
     virtual void Release(Resource* resource, IGPUResourceFactory* gpu) = 0;
 
-    ModuleResourceManager* mResourceManager = nullptr;
+    ModuleResourceManager* m_resourceManager = nullptr;
 };
-
-#endif // IMPORTER_INL

@@ -2,7 +2,7 @@
 #define RESOURCETEXTURE_H
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 #include <vector>
 
 class ResourceTexture : public Resource

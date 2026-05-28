@@ -3,12 +3,12 @@
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 #include "Engine/Systems/ResourceManager/Runtime/Builtins/include/BuiltinResources.h"
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/SubMeshCache.h"
-#include "Engine/Systems/ResourceManager/Core/IResourceLoader.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/IResourceLoader.h"
 
 #include "Engine/Core/FileWatcher/FileWatcher.h"
 

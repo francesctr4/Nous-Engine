@@ -3,8 +3,8 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/EngineExport.h"
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
-#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 
 #include <array>
 #include <functional>
@@ -43,7 +43,7 @@ struct TypeDescriptor
     // Resource lifecycle
     MemoryTag memoryTag = MemoryTag::UNKNOWN;
     int  cleanupPriority = 0; // lower = destroyed first
-    std::unique_ptr<Importer> importer;
+    std::unique_ptr<IImporter> importer;
     std::function<Resource* (uint32 uid)> createFn;
     std::function<void(Resource*)>        destroyFn;
 

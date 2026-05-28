@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
 #include "Engine/EngineExport.h"
 
-struct NOUS_ENGINE_API ImporterAudio : Importer
+struct NOUS_ENGINE_API ImporterAudio : IImporter
 {
     bool Import(const MetaFileData& metaFileData) override;
     bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;

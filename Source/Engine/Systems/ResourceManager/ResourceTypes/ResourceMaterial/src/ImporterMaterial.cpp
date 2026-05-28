@@ -10,7 +10,7 @@
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include <algorithm>
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
@@ -236,8 +236,8 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
     }
 
     DeserializeUniforms(root, material);
-    DeserializeTextureMaps(root, material, mResourceManager);
-    DeserializeShader(root, material, mResourceManager);
+    DeserializeTextureMaps(root, material, m_resourceManager);
+    DeserializeShader(root, material, m_resourceManager);
 
     return true;
 }
@@ -264,13 +264,13 @@ void ImporterMaterial::Evict(Resource* inResource)
     {
         if (map.texture)
         {
-            mResourceManager->UnloadResource(map.texture->GetUID());
+            m_resourceManager->UnloadResource(map.texture->GetUID());
             map.texture = nullptr;
         }
     }
     if (material->shader)
     {
-        mResourceManager->UnloadResource(material->shader->GetUID());
+        m_resourceManager->UnloadResource(material->shader->GetUID());
         material->SetShader(nullptr);
     }
 }

@@ -23,9 +23,9 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/LogChannel.h"
 #include "Engine/Core/Logger/Logger.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
 #include <filesystem>

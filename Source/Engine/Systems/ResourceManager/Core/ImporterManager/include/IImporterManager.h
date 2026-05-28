@@ -1,5 +1,4 @@
-#ifndef IIMPORTERMANAGER_H
-#define IIMPORTERMANAGER_H
+#pragma once
 
 #include <string>
 
@@ -23,5 +22,3 @@ public:
     virtual bool Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu) = 0;
     virtual void Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu) = 0;
 };
-
-#endif // IIMPORTERMANAGER_H

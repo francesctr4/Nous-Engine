@@ -1,7 +1,7 @@
 #ifndef IMPORTERMESH_H
 #define IMPORTERMESH_H
 
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Utils/Math/Vertex.inl"
 
@@ -24,7 +24,7 @@ struct SubMeshData
     std::string         materialAssetPath;
 };
 
-struct ImporterMesh : Importer
+struct ImporterMesh : IImporter
 {
     NOUS_ENGINE_API bool Import(const MetaFileData& metaFileData) override;
     NOUS_ENGINE_API bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;

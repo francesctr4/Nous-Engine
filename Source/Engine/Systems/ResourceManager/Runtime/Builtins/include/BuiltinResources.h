@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 
 #include <utility>
 #include <vector>

@@ -2,7 +2,7 @@
 #define NOUS_ENGINE_RESOURCE_SHADER_H
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 

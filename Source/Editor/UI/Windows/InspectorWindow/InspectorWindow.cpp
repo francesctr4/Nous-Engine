@@ -15,7 +15,7 @@
 
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ImporterMaterial.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 
 #include "imgui.h"
 #include <glm/glm.hpp>

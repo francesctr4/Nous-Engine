@@ -59,7 +59,7 @@ TEST_F(t_ImporterMaterial, CreateNewMaterialFileDeserializeRoundTrip)
 
     ResourceMaterial mat;
     ImporterMaterial importer;
-    // mResourceManager is null: safe because the file has no texture_maps entries
+    // m_resourceManager is null: safe because the file has no texture_maps entries
     // with valid UIDs and no shader_asset_path, so those code paths are not reached.
     ASSERT_TRUE(importer.Deserialize(m_testFilePath, &mat));
 

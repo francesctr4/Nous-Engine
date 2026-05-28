@@ -1,9 +1,9 @@
 #include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
 
-#include "Engine/Systems/ResourceManager/Core/IResourceLoader.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/IResourceLoader.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 

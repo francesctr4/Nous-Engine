@@ -3,7 +3,7 @@
 #include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
-#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"

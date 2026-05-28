@@ -1,14 +1,14 @@
 #ifndef IMPORTERMATERIAL_H
 #define IMPORTERMATERIAL_H
 
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
 #include "Engine/EngineExport.h"
 
 #include <string>
 
 class ResourceMaterial;
 
-struct ImporterMaterial : Importer
+struct ImporterMaterial : IImporter
 {
     NOUS_ENGINE_API bool Import(const MetaFileData& metaFileData) override;
     NOUS_ENGINE_API bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;

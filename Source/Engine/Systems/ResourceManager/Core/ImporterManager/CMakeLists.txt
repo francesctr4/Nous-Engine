@@ -1,6 +1,6 @@
 target_sources(ResourceManager PRIVATE
-        Importer.inl
-        IImporterManager.h
-        ImporterManager.h
-        ImporterManager.cpp
+        include/IImporter.h
+        include/IImporterManager.h
+        include/ImporterManager.h
+        src/ImporterManager.cpp
 )
