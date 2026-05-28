@@ -90,21 +90,6 @@ TEST(t_ResourceShader, SetLibraryPath_GetLibraryPath_Roundtrip)
     EXPECT_EQ(s.GetLibraryPath(), "Library/Shaders/42");
 }
 
-TEST(t_ResourceShader, Validate_IsValid_ReturnsTrue)
-{
-    ResourceShader s(1);
-    s.Validate();
-    EXPECT_TRUE(s.IsValid());
-}
-
-TEST(t_ResourceShader, Invalidate_IsValid_ReturnsFalse)
-{
-    ResourceShader s(1);
-    s.Validate();
-    s.Invalidate();
-    EXPECT_FALSE(s.IsValid());
-}
-
 // =============================================================================
 // stagesData mutation
 // =============================================================================

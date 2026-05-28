@@ -181,7 +181,6 @@ Resource* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
 		}
 		nous::engine::multithreading::NOUS_Thread::SleepMS(1);
 	}
-	resource->Validate();
 	return resource;
 }
 
@@ -217,7 +216,6 @@ Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, Resource
 	m_hotReloader.TrackAsset(assetsPath, uid, type);
 	m_pendingUploads.Push(type, resource);
 	resource->IncreaseReferenceCount();
-	resource->Validate();
 	return resource;
 }
 
@@ -298,20 +296,14 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
             if (res->GetState() == ResourceState::GPU_READY && d->importer)
                 d->importer->Release(res, gpu);
 
-            // MATERIAL is special at shutdown: textures are still alive (lower
-            // priority — destroyed in a later pass). Null the pointers inline;
-            // do NOT route through Evict, which would call UnloadResource and
-            // recurse into a half-torn-down manager.
-            if (d->type == ResourceType::MATERIAL)
-            {
-                auto* mat = down_cast<ResourceMaterial*>(res);
-                for (auto& map : mat->textureMaps | std::views::values)
-                    map.texture = nullptr;
-            }
+            // Per-type teardown: descriptors that hold peer-resource pointers
+            // (e.g. Material -> Texture) supply an inline cleanup callback to
+            // avoid recursing through UnloadResource into the half-torn-down
+            // manager. Everything else takes the normal Evict path.
+            if (d->evictAtShutdown)
+                d->evictAtShutdown(res);
             else if (d->importer)
-            {
                 d->importer->Evict(res);
-            }
 
             if (d->destroyFn) d->destroyFn(res);
         }

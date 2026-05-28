@@ -94,7 +94,9 @@ private:
     static std::string FindSourceAssetsDir();
 
     // Filter shared by the initial scan and per-asset registration. True when
-    // the extension corresponds to a hot-reloadable asset type.
+    // `extWithDot` matches any source extension of a TypeDescriptor whose
+    // hotReloadable flag is set. Drives off the registry — adding a new
+    // hot-reloadable type requires no edit here.
     static bool IsHotReloadableExtension(const std::string& extWithDot);
 
     void ScanAndRegisterWatchedAssets();

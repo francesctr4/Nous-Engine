@@ -66,7 +66,7 @@ void CMaterial::OnDestroy()
 {
     auto go = GetGameObject();
     Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    if (material && material->IsValid() && scene)
+    if (material && material->IsLoaded() && scene)
     {
         scene->GetResourceManager()->UnloadResource(material->GetUID());
     }

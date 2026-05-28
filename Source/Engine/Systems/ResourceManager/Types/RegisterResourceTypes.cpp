@@ -3,6 +3,8 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
 
+#include <ranges>
+
 // Importers
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ImporterMesh.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ImporterMaterial.h"
@@ -63,6 +65,15 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.importer = std::make_unique<ImporterMaterial>();
         d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL, uid); };
         d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_MATERIAL); };
+        d.hotReloadable = true;
+        // Texture refs are still alive at this point (lower priority); null them
+        // inline rather than routing through Evict, which would recurse via
+        // UnloadResource into the half-torn-down resource manager.
+        d.evictAtShutdown = [](Resource* r)
+        {
+            for (auto& map : down_cast<ResourceMaterial*>(r)->textureMaps | std::views::values)
+                map.texture = nullptr;
+        };
         d.display.color[0] = 0.8f; d.display.color[1] = 0.5f; d.display.color[2] = 0.0f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }
@@ -81,6 +92,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.importer = std::make_unique<ImporterTexture>();
         d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE, uid); };
         d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_TEXTURE); };
+        d.hotReloadable = true;
         d.display.color[0] = 0.5f; d.display.color[1] = 0.8f; d.display.color[2] = 0.0f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }

@@ -83,7 +83,7 @@ void CMesh::Deserialize(const JsonObject& obj) {
 void CMesh::OnDestroy() {
     auto go = GetGameObject();
     Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    if (mesh && mesh->IsValid() && scene)
+    if (mesh && mesh->IsLoaded() && scene)
     {
         scene->GetResourceManager()->UnloadResource(mesh->GetUID());
     }

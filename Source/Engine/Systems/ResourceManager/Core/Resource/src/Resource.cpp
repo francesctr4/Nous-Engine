@@ -5,36 +5,15 @@
 
 #include <utility>
 
-Resource::Resource()
-{
-	this->m_type = ResourceType::UNKNOWN;
-	this->m_uID = 0;
-	this->m_referenceCount = 0;
-	this->m_state = ResourceState::UNLOADED;
-	this->m_valid = false;
-}
+Resource::Resource() = default;
 
 Resource::Resource(const uint32 uID, const ResourceType type)
+    : m_uID(uID)
+    , m_type(type)
 {
-	this->m_type = type;
-	this->m_uID = uID;
-	this->m_referenceCount = 0;
-	this->m_state = ResourceState::UNLOADED;
-	this->m_valid = false;
 }
 
-Resource::~Resource()
-{
-	this->m_name.clear();
-	this->m_uID = 0;
-	this->m_type = ResourceType::UNKNOWN;
-	this->m_referenceCount = 0;
-
-	this->m_assetsFilePath.clear();
-	this->m_libraryFilePath.clear();
-
-	this->m_valid = false;
-}
+Resource::~Resource() = default;
 
 void Resource::SetName(const std::string_view name)
 {
@@ -92,19 +71,9 @@ void Resource::DecreaseReferenceCount()
 	m_referenceCount--;
 }
 
-bool Resource::IsValid() const
+bool Resource::IsLoaded() const
 {
-	return m_valid;
-}
-
-void Resource::Validate()
-{
-	m_valid = true;
-}
-
-void Resource::Invalidate()
-{
-	m_valid = false;
+	return m_state != ResourceState::UNLOADED;
 }
 
 ResourceState Resource::GetState() const

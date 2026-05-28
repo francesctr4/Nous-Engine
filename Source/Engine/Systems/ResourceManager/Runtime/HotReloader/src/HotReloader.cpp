@@ -4,6 +4,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 
 #include <algorithm>
@@ -48,15 +49,16 @@ namespace
 
 /*static*/ bool HotReloader::IsHotReloadableExtension(const std::string& extWithDot)
 {
-    // Sidecars and scenes are not hot-reloadable assets.
-    if (extWithDot == ".meta" || extWithDot == ".nous") return false;
-    // Shaders go through their own dedicated watcher in ModuleRenderer3D.
-    if (extWithDot == ".glsl") return false;
-    // Source meshes import through assimp and are too expensive to hot reload
-    // through the generic pipeline.
-    if (extWithDot == ".obj" || extWithDot == ".fbx" || extWithDot == ".gltf"
-        || extWithDot == ".glb" || extWithDot == ".dae") return false;
-    return true;
+    if (extWithDot.size() < 2 || extWithDot[0] != '.') return false;
+    const std::string_view ext(extWithDot.data() + 1, extWithDot.size() - 1);
+
+    for (const TypeDescriptor* d : GetTypeRegistry().All())
+    {
+        if (!d || !d->hotReloadable) continue;
+        for (const auto& src : d->sourceExtensions)
+            if (src == ext) return true;
+    }
+    return false;
 }
 
 HotReloader::HotReloader(IImporterManager* importerManager,
@@ -112,9 +114,10 @@ void HotReloader::WaitForInFlight()
 void HotReloader::TrackAsset(const std::string& assetsPath, uint32 uid, ResourceType type)
 {
     if (!m_enabled || assetsPath.empty()) return;
-    // Only types currently routed through the reimport pipeline. Shaders have
-    // their own path; meshes/audio aren't supported for hot reload yet.
-    if (type != ResourceType::TEXTURE && type != ResourceType::MATERIAL) return;
+    // Hot-reload eligibility is owned by the TypeDescriptor — adding a new
+    // hot-reloadable type is a one-line flag flip in RegisterResourceTypes.
+    const TypeDescriptor* d = GetTypeRegistry().Get(type);
+    if (!d || !d->hotReloadable) return;
 
     const std::string key = NormalizeAssetPath(assetsPath);
     {

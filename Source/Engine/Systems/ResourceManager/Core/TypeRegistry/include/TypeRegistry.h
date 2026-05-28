@@ -47,6 +47,20 @@ struct TypeDescriptor
     std::function<Resource* (uint32 uid)> createFn;
     std::function<void(Resource*)>        destroyFn;
 
+    // True when changes to the source asset should trigger an async reimport.
+    // Currently set for TEXTURE and MATERIAL; shaders run their own watcher,
+    // mesh/audio imports are too expensive for live editing.
+    bool hotReloadable = false;
+
+    // Optional teardown-time replacement for `importer->Evict(res)`. Set this
+    // for types that hold pointers to peer resources of lower cleanupPriority
+    // (i.e. resources that get destroyed later in the same ClearResources
+    // pass): the default Evict path would route through UnloadResource and
+    // recurse into the half-torn-down ModuleResourceManager. The callback
+    // should null the cross-resource pointers inline; destroyFn still runs
+    // afterwards to release the type's own memory.
+    std::function<void(Resource*)> evictAtShutdown;
+
     // Editor-facing metadata (kept neutral; editor adapts to ImGui types)
     DisplayMetadata display;
 };

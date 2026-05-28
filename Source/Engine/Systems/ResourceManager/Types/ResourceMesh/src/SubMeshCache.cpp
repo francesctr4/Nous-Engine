@@ -157,6 +157,5 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
 
     mesh->SetUID(uid);
     mesh->IncreaseReferenceCount();
-    mesh->Validate();
     return mesh;
 }

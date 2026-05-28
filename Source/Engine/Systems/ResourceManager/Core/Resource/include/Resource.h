@@ -39,9 +39,9 @@ public:
 	NOUS_ENGINE_API void IncreaseReferenceCount();
 	NOUS_ENGINE_API void DecreaseReferenceCount();
 
-	[[nodiscard]] NOUS_ENGINE_API bool IsValid() const;
-	NOUS_ENGINE_API void Validate();
-	NOUS_ENGINE_API void Invalidate();
+	// True once the resource has finished its CPU-side load and is safe for
+	// dependent systems to reference. Equivalent to GetState() != UNLOADED.
+	[[nodiscard]] NOUS_ENGINE_API bool IsLoaded() const;
 
 	[[nodiscard]] NOUS_ENGINE_API ResourceState GetState() const;
 	NOUS_ENGINE_API void SetState(ResourceState newState);
@@ -52,13 +52,12 @@ public:
 
 private:
 
-	bool m_valid;
-	ResourceState m_state;
+	ResourceState m_state          = ResourceState::UNLOADED;
 
 	std::string m_name;
-	uint32 m_uID;
-	ResourceType m_type;
-	uint32 m_referenceCount;
+	uint32      m_uID              = 0;
+	ResourceType m_type             = ResourceType::UNKNOWN;
+	uint32      m_referenceCount   = 0;
 
 	std::string m_assetsFilePath;
 	std::string m_libraryFilePath;
