@@ -24,15 +24,15 @@
 #include "Engine/Core/Logger/LogChannel.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
 #include <filesystem>
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Utils/Math/FrustumCulling.h"
 
 

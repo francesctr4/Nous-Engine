@@ -8,7 +8,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceAudio/include/ResourceAudio.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
 #include <Engine/Core/MemoryManager/MemoryManager.h>
 

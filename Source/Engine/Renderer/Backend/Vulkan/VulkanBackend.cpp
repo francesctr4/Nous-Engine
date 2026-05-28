@@ -25,10 +25,10 @@
 #include <Engine/Core/MemoryManager/MemoryManager.h>
 #include "Engine/Core/Logger/Logger.h"
 
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"

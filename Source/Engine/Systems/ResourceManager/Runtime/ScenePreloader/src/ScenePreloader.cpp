@@ -4,7 +4,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"

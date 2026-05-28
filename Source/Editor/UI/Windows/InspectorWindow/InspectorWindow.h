@@ -4,8 +4,8 @@
 #include "Engine/Scripting/Internal/IScript.inl"
 #include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceTexture/include/ResourceTexture.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include <cstdint>
 #include <string>
 

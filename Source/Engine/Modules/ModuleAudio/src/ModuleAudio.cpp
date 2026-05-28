@@ -6,7 +6,7 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include "Engine/Systems/AudioSystem/AudioSystem.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceAudio/include/ResourceAudio.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_AUDIO;
 

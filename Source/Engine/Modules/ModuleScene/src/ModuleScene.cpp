@@ -6,8 +6,8 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/Logger.h"
 
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
@@ -40,7 +40,7 @@
 #include <algorithm>
 
 #include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ImporterMesh.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ImporterMesh.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"

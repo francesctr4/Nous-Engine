@@ -2,7 +2,7 @@
 
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceType.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceType.h"
 
 #include <string>
 

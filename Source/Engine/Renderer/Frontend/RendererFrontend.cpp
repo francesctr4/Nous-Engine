@@ -2,8 +2,8 @@
 #include "Engine/Renderer/Backend/RendererBackend.h"
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"

@@ -5,8 +5,8 @@
 add_library(ResourceManager STATIC)
 
 add_subdirectory(Core)
-add_subdirectory(ResourceTypes)
 add_subdirectory(Runtime)
+add_subdirectory(Types)
 
 set_target_properties(ResourceManager PROPERTIES
         CXX_STANDARD 23

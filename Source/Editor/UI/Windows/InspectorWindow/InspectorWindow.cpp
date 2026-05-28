@@ -9,12 +9,12 @@
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Scripting/Internal/IScript.inl"
 
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ImporterMaterial.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ImporterMaterial.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 
 #include "imgui.h"

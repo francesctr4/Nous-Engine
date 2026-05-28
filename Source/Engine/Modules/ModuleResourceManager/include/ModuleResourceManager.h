@@ -7,7 +7,7 @@
 #include "Engine/Systems/ResourceManager/Runtime/Builtins/include/BuiltinResources.h"
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
-#include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/SubMeshCache.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/SubMeshCache.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/IResourceLoader.h"
 
 #include "Engine/Core/FileWatcher/FileWatcher.h"
