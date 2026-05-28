@@ -10,7 +10,7 @@ add_subdirectory(Resource)
 add_subdirectory(ImportPipeline)
 add_subdirectory(TypeRegistry)
 add_subdirectory(ResourceTypes)
-add_subdirectory(SceneResourcePreloader)
+add_subdirectory(ScenePreloader)
 add_subdirectory(SubMeshCache)
 
 set_target_properties(ResourceManager PROPERTIES

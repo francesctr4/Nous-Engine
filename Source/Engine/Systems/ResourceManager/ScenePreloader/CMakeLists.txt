@@ -1,4 +1,4 @@
-set(CLASS_NAME "SceneResourcePreloader")
+set(CLASS_NAME "ScenePreloader")
 
 target_sources(ResourceManager PRIVATE
         include/${CLASS_NAME}.h

@@ -1,4 +1,4 @@
-#include "Engine/Systems/ResourceManager/SceneResourcePreloader/include/SceneResourcePreloader.h"
+#include "Engine/Systems/ResourceManager/ScenePreloader/include/ScenePreloader.h"
 
 #include "Engine/Systems/ResourceManager/IResourceLoader.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -84,12 +84,12 @@ namespace
     }
 } // namespace
 
-SceneResourcePreloader::SceneResourcePreloader(IResourceLoader* resourceLoader)
+ScenePreloader::ScenePreloader(IResourceLoader* resourceLoader)
     : m_resourceLoader(resourceLoader)
 {
 }
 
-std::vector<std::future<void>> SceneResourcePreloader::PreloadSceneResourcesAsync(
+std::vector<std::future<void>> ScenePreloader::PreloadSceneResourcesAsync(
     nous::engine::multithreading::NOUS_JobSystem* jobSystem,
     const std::string& sceneFilePath)
 {

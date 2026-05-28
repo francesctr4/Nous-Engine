@@ -6,7 +6,7 @@
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
 #include "Engine/Systems/ResourceManager/BuiltinResources/include/BuiltinResources.h"
 #include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
-#include "Engine/Systems/ResourceManager/SceneResourcePreloader/include/SceneResourcePreloader.h"
+#include "Engine/Systems/ResourceManager/ScenePreloader/include/ScenePreloader.h"
 #include "Engine/Systems/ResourceManager/SubMeshCache/include/SubMeshCache.h"
 #include "Engine/Systems/ResourceManager/IResourceLoader.h"
 
@@ -189,7 +189,7 @@ private:
 	IImporterManager*       mImporterManager = nullptr;
 	BuiltinResources        m_builtinResources;
 	ImportPipeline  m_importPipeline;
-	SceneResourcePreloader  m_scenePreloader;
+	ScenePreloader  m_scenePreloader;
 
 	// --- Asset hot reload (EDITOR only) ---
 	FileWatcher                               m_assetWatcher;
