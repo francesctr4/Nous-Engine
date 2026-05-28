@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
+#include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"

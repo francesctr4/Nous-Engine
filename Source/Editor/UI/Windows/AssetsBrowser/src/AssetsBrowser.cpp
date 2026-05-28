@@ -10,7 +10,7 @@
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
+#include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"

@@ -4,9 +4,9 @@
 #include "Engine/EngineExport.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Systems/ResourceManager/Resource/Resource.h"
-#include "Engine/Systems/ResourceManager/Builtins/include/BuiltinResources.h"
-#include "Engine/Systems/ResourceManager/ImportPipeline/include/ImportPipeline.h"
-#include "Engine/Systems/ResourceManager/ScenePreloader/include/ScenePreloader.h"
+#include "Engine/Systems/ResourceManager/Runtime/Builtins/include/BuiltinResources.h"
+#include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
+#include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/SubMeshCache.h"
 #include "Engine/Systems/ResourceManager/IResourceLoader.h"
 

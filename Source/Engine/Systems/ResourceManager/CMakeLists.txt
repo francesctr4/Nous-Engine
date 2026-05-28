@@ -4,13 +4,11 @@
 
 add_library(ResourceManager STATIC)
 
-add_subdirectory(Builtins)
 add_subdirectory(ImporterManager)
 add_subdirectory(Resource)
-add_subdirectory(ImportPipeline)
+add_subdirectory(Runtime)
 add_subdirectory(TypeRegistry)
 add_subdirectory(ResourceTypes)
-add_subdirectory(ScenePreloader)
 
 set_target_properties(ResourceManager PROPERTIES
         CXX_STANDARD 23

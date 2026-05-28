@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Systems/ResourceManager/ScenePreloader/include/ScenePreloader.h"
+#include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
