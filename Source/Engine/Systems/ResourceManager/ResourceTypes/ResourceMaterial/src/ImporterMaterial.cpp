@@ -10,7 +10,7 @@
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
-#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
 #include <algorithm>
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"

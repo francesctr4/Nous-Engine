@@ -1,4 +1,4 @@
-#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/TypeRegistry.h"
 
 #include "Engine/Core/Logger/Asserts.h"
 #include "Engine/Core/Logger/Logger.h"

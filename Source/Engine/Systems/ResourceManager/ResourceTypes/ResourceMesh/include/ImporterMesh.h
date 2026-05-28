@@ -1,7 +1,7 @@
 #ifndef IMPORTERMESH_H
 #define IMPORTERMESH_H
 
-#include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
 #include "Engine/EngineExport.h"
 #include "Engine/Utils/Math/Vertex.inl"
 

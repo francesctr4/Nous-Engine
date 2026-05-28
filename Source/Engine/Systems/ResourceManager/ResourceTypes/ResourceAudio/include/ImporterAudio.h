@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
 #include "Engine/EngineExport.h"
 
 struct NOUS_ENGINE_API ImporterAudio : Importer

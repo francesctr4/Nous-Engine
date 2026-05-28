@@ -2,7 +2,7 @@
 #define RESOURCEMATERIAL_H
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
 #include "Engine/Renderer/RendererTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 

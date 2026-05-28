@@ -1,8 +1,8 @@
-#include "Engine/Systems/ResourceManager/ImporterManager/ImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/ImporterManager.h"
 
-#include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
-#include "Engine/Systems/ResourceManager/Resource/Resource.h"
-#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/TypeRegistry.h"
 
 namespace
 {

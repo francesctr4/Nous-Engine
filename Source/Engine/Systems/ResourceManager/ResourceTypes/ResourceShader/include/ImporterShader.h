@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_IMPORTER_SHADER_H
 #define NOUS_ENGINE_IMPORTER_SHADER_H
 
-#include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
 #include "Engine/EngineExport.h"
 
 struct NOUS_ENGINE_API ImporterShader : Importer

@@ -1,7 +1,7 @@
-#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
 
 #include "Engine/Core/Logger/Asserts.h"
-#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/TypeRegistry.h"
 
 #include <utility>
 

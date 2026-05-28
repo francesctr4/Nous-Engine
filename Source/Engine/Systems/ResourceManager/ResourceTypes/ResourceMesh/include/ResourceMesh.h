@@ -2,7 +2,7 @@
 #define RESOURCEMESH_H
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
 #include "Engine/Utils/Math/Vertex.inl"
 
 #include <vector>

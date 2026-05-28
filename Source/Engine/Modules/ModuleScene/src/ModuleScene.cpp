@@ -41,7 +41,7 @@
 
 #include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ImporterMesh.h"
-#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
 

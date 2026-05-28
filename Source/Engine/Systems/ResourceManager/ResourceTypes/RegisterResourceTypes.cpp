@@ -1,7 +1,7 @@
-#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/TypeRegistry.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
 
 // Importers
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ImporterMesh.h"

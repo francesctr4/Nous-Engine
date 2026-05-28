@@ -1,7 +1,7 @@
 #ifndef IMPORTERMATERIAL_H
 #define IMPORTERMATERIAL_H
 
-#include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
 #include "Engine/EngineExport.h"
 
 #include <string>

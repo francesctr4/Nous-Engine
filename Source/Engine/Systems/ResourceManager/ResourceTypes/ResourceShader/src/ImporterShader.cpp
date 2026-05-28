@@ -6,7 +6,7 @@
 #include "Engine/Core/FileSystem/FileSystem.h"
 
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
 
 #include "Engine/Renderer/IGPUResourceFactory.h"
 

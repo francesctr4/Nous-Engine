@@ -4,7 +4,7 @@
 #include <map>
 
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 

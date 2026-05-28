@@ -1,5 +1,5 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/ResourceTypes/ResourceMaterial/include/ResourceMaterial.h"
@@ -12,11 +12,11 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
 
-#include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
-#include "Engine/Systems/ResourceManager/ImporterManager/Importer.inl"
-#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/Importer.inl"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/TypeRegistry.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 

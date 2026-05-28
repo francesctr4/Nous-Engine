@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/IImporterManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Resource/Resource.h"
-#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/TypeRegistry.h"
 
 // =====================================================
 // Mock

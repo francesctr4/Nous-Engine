@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Resource/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/Resource.h"
 
 enum class AudioStreamingMode : uint8_t
 {

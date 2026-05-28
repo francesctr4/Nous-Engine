@@ -2,9 +2,9 @@
 
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Core/Logger/Logger.h"
-#include "Engine/Systems/ResourceManager/Resource/MetaFileData.inl"
-#include "Engine/Systems/ResourceManager/ImporterManager/IImporterManager.h"
-#include "Engine/Systems/ResourceManager/TypeRegistry/TypeRegistry.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/MetaFileData.inl"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/TypeRegistry.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
