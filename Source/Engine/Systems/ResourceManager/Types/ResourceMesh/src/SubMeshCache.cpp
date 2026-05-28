@@ -1,24 +1,20 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/SubMeshCache.h"
 
-#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Core/Logger/Logger.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceQueue/include/ResourceQueue.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceTable/include/ResourceTable.h"
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ImporterMesh.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
-#include "Engine/Core/Logger/Logger.h"
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
-SubMeshCache::SubMeshCache(
-    std::unordered_map<uint32, Resource*>& resources,
-    std::mutex& resourcesMutex,
-    std::vector<std::pair<ResourceType, Resource*>>& pendingUploads,
-    std::mutex& pendingUploadsMutex)
-    : m_resources(resources)
-    , m_resourcesMutex(resourcesMutex)
-    , m_pendingUploads(pendingUploads)
-    , m_pendingUploadsMutex(pendingUploadsMutex)
+SubMeshCache::SubMeshCache(ResourceTable& table, ResourceQueue& uploads)
+    : m_table(table)
+    , m_uploads(uploads)
 {
 }
 
@@ -34,11 +30,12 @@ ResourceMesh* SubMeshCache::RequestOrCreate(const std::string& assetsPath, int32
     const CacheKey key = { metaData.uid, submeshIndex };
 
     {
-        std::lock_guard lock(m_resourcesMutex);
+        ResourceTable::ScopedLock lock(m_table);
+        auto& resources = lock.Map();
         if (const auto mapIt = m_index.find(key); mapIt != m_index.end())
         {
-            if (const auto resIt = m_resources.find(mapIt->second);
-                resIt != m_resources.end() && resIt->second)
+            if (const auto resIt = resources.find(mapIt->second);
+                resIt != resources.end() && resIt->second)
             {
                 resIt->second->IncreaseReferenceCount();
                 return down_cast<ResourceMesh*>(resIt->second);
@@ -61,11 +58,12 @@ ResourceMesh* SubMeshCache::RequestOrCreateFromLibrary(
     const CacheKey key  = { baseUID, submeshIndex };
 
     {
-        std::lock_guard lock(m_resourcesMutex);
+        ResourceTable::ScopedLock lock(m_table);
+        auto& resources = lock.Map();
         if (const auto mapIt = m_index.find(key); mapIt != m_index.end())
         {
-            if (const auto resIt = m_resources.find(mapIt->second);
-                resIt != m_resources.end() && resIt->second)
+            if (const auto resIt = resources.find(mapIt->second);
+                resIt != resources.end() && resIt->second)
             {
                 // Back-fill assetsPath if an earlier GAME-mode caller didn't have it
                 // but this EDITOR-mode caller does (needed for scene serialization).
@@ -83,7 +81,7 @@ ResourceMesh* SubMeshCache::RequestOrCreateFromLibrary(
 
 void SubMeshCache::EraseUID(uint32 uid)
 {
-    // Caller MUST hold m_resourcesMutex — see locking contract in SubMeshCache.h.
+    // Caller MUST hold the ResourceTable's lock — see locking contract in SubMeshCache.h.
     for (auto it = m_index.begin(); it != m_index.end(); )
     {
         if (it->second == uid)
@@ -140,24 +138,22 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
 
     uint32 uid;
     {
-        std::lock_guard lock(m_resourcesMutex);
+        ResourceTable::ScopedLock lock(m_table);
+        auto& resources = lock.Map();
         // Prefer the caller's hint UID (e.g. from a scene file's "resourceUID" field)
         // so the UID stays stable across sessions. Fall back to random only if the
         // hint is 0 or already occupied by a different resource.
-        if (hintUID != 0 && !m_resources.contains(hintUID))
+        if (hintUID != 0 && !resources.contains(hintUID))
             uid = hintUID;
         else
         {
             do { uid = static_cast<uint32>(Random::Generate()); }
-            while (uid == 0 || m_resources.contains(uid));
+            while (uid == 0 || resources.contains(uid));
         }
-        m_resources[uid]  = mesh;
-        m_index[key]      = uid;
+        resources[uid] = mesh;
+        m_index[key]   = uid;
     }
-    {
-        std::lock_guard lock(m_pendingUploadsMutex);
-        m_pendingUploads.emplace_back(ResourceType::MESH, mesh);
-    }
+    m_uploads.Push(ResourceType::MESH, mesh);
 
     mesh->SetUID(uid);
     mesh->IncreaseReferenceCount();

@@ -46,7 +46,7 @@ ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, nous::eng
     , m_importPipeline(importerManager, jobSystem)
     , m_scenePreloader(this)
     , m_hotReloader(importerManager, jobSystem)
-    , m_subMeshCache(resources, resourcesMutex, m_pendingUploads, m_pendingUploadsMutex)
+    , m_subMeshCache(m_table, m_pendingUploads)
 {
 }
 
@@ -84,11 +84,7 @@ bool ModuleResourceManager::ImportDirectory(const std::string& directory)
 bool ModuleResourceManager::Start()
 {
 	NOUS_INFO("Queuing built-in textures and default material for GPU upload...");
-	{
-		auto uploads = m_builtinResources.Create();
-		std::scoped_lock lock(m_pendingUploadsMutex);
-		m_pendingUploads.insert(m_pendingUploads.end(), uploads.begin(), uploads.end());
-	}
+	m_pendingUploads.PushBatch(m_builtinResources.Create());
 
 	m_hotReloader.Start();
 
@@ -130,50 +126,39 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 
 std::unordered_map<uint32, Resource*> ModuleResourceManager::GetResourcesMap() const
 {
-	std::scoped_lock lock(resourcesMutex);
-	return resources;
+	return m_table.Snapshot();
 }
 
 
 void ModuleResourceManager::DeleteResource(Resource*& resource)
 {
-	// Remove any sub-resource index entry that maps to this UID.
-	// SubMeshCache::EraseUID requires resourcesMutex to be held by the caller.
+	// SubMeshCache::EraseUID requires the table's lock to be held by the caller.
 	{
-		const uint32 uid = resource->GetUID();
-		std::scoped_lock lock(resourcesMutex);
-		m_subMeshCache.EraseUID(uid);
+		ResourceTable::ScopedLock lock(m_table);
+		m_subMeshCache.EraseUID(resource->GetUID());
 	}
 
 	if (const TypeDescriptor* d = GetTypeRegistry().Get(resource->GetType());
 		d && d->destroyFn)
 		d->destroyFn(resource);
 
-	// NOTE: resources.erase(uid) is intentionally NOT here.
-	// EvictResource removes the entry under resourcesMutex before calling DeleteResource,
+	// NOTE: m_table erasure is intentionally NOT here.
+	// EvictResource removes the entry under the table lock before calling DeleteResource,
 	// so the map is clean before we reach this point.
 }
 
 bool ModuleResourceManager::ResourceExists(const uint32 uid) const
 {
-	std::scoped_lock lock(resourcesMutex);
-	return resources.contains(uid);
+	return m_table.Contains(uid);
 }
 
 void ModuleResourceManager::UpdateResourcePath(const uint32 uid, const std::string& newAssetsPath)
 {
-	std::lock_guard lock(resourcesMutex);
+	ResourceTable::ScopedLock lock(m_table);
+	auto& resources = lock.Map();
 	auto it = resources.find(uid);
 	if (it != resources.end())
 		it->second->SetAssetsPath(newAssetsPath);
-}
-
-bool ModuleResourceManager::ClaimSlot(const uint32 uid)
-{
-	std::scoped_lock lock(resourcesMutex);
-	if (resources.contains(uid)) return false;
-	resources[uid] = nullptr; // placeholder: marks slot as "in progress"
-	return true;
 }
 
 Resource* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
@@ -182,7 +167,8 @@ Resource* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
 	while (true)
 	{
 		{
-			std::scoped_lock lock(resourcesMutex);
+			ResourceTable::ScopedLock lock(m_table);
+			auto& resources = lock.Map();
 			const auto it = resources.find(uid);
 			if (it == resources.end())
 				return nullptr; // evicted before it resolved; caller should retry
@@ -205,8 +191,7 @@ Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, Resource
 	Resource* resource = InstantiateResource(type);
 	if (!resource)
 	{
-		std::scoped_lock lock(resourcesMutex);
-		resources.erase(uid);
+		m_table.Erase(uid);
 		return nullptr;
 	}
 
@@ -220,20 +205,17 @@ Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, Resource
 	{
 		NOUS_ERROR("LoadResourceIntoSlot: failed to deserialize '%s' from '%s'", name.c_str(), libraryPath.c_str());
 		DeleteResource(resource);
-		std::scoped_lock lock(resourcesMutex);
-		resources.erase(uid);
+		m_table.Erase(uid);
 		return nullptr;
 	}
 
 	resource->SetState(ResourceState::CPU_READY);
-	{
-		std::scoped_lock lock(resourcesMutex);
-		resources[uid] = resource;
-	}
+	m_table.Set(uid, resource);
+
 	// HotReloader filters by type/enabled/empty-path internally — safe to call
 	// for every load; it no-ops when not applicable.
 	m_hotReloader.TrackAsset(assetsPath, uid, type);
-	{ std::scoped_lock lock(m_pendingUploadsMutex); m_pendingUploads.emplace_back(type, resource); }
+	m_pendingUploads.Push(type, resource);
 	resource->IncreaseReferenceCount();
 	resource->Validate();
 	return resource;
@@ -249,7 +231,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 		return nullptr;
 	}
 
-	if (ClaimSlot(metaFileData.uid))
+	if (m_table.TryInsert(metaFileData.uid, nullptr))
 		return LoadResourceIntoSlot(metaFileData.uid, metaFileData.resourceType,
 		    metaFileData.name, metaFileData.assetsPath, metaFileData.libraryPath);
 
@@ -261,7 +243,7 @@ Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, con
                                                             const std::string& assetsPath,
                                                             const std::string& libraryPath)
 {
-	if (ClaimSlot(uid))
+	if (m_table.TryInsert(uid, nullptr))
 		return LoadResourceIntoSlot(uid, type, name, assetsPath, libraryPath);
 
 	return SpinWaitForSlot(uid);
@@ -279,7 +261,8 @@ bool ModuleResourceManager::UnloadResource(const uint32 uid)
 {
 	Resource* resource = nullptr;
 	{
-		std::lock_guard lock(resourcesMutex);
+		ResourceTable::ScopedLock lock(m_table);
+		auto& resources = lock.Map();
 		const auto it = resources.find(uid);
 		if (it == resources.end() || !it->second) return false; // not found or still loading (placeholder)
 		resource = it->second;
@@ -289,10 +272,7 @@ bool ModuleResourceManager::UnloadResource(const uint32 uid)
 	// Defer GPU Release + CPU Evict to the Renderer's PreUpdate so we never
 	// destroy GPU resources mid-frame (between command recording and vkQueueSubmit).
 	if (resource->GetReferenceCount() == 0)
-	{
-		std::lock_guard lock(m_pendingReleasesMutex);
-		m_pendingReleases.emplace_back(resource->GetType(), resource);
-	}
+		m_pendingReleases.Push(resource->GetType(), resource);
 
 	return true;
 }
@@ -300,6 +280,10 @@ bool ModuleResourceManager::UnloadResource(const uint32 uid)
 
 void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
 {
+    // Single-threaded shutdown by contract; access the raw map directly.
+    ResourceTable::ScopedLock lock(m_table);
+    auto& resources = lock.Map();
+
     // Tear down in registry-defined cleanup priority order. Shaders go first
     // (descriptor sets reference texture image views; freeing textures first
     // would leave dangling references — VUID-vkDestroyImageView-01026), then
@@ -339,24 +323,18 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
     m_builtinResources.Destroy(gpu);
 
     // Discard any stale queue entries — all resources are destroyed above.
-    { std::lock_guard lock(m_pendingUploadsMutex);  m_pendingUploads.clear(); }
-    { std::lock_guard lock(m_pendingReleasesMutex); m_pendingReleases.clear(); }
+    m_pendingUploads.Clear();
+    m_pendingReleases.Clear();
 }
 
 std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingUploads()
 {
-    std::vector<std::pair<ResourceType, Resource*>> result;
-    std::scoped_lock lock(m_pendingUploadsMutex);
-    std::swap(result, m_pendingUploads);
-    return result;
+    return m_pendingUploads.TakeAll();
 }
 
 std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingReleases()
 {
-    std::vector<std::pair<ResourceType, Resource*>> result;
-    std::scoped_lock lock(m_pendingReleasesMutex);
-    std::swap(result, m_pendingReleases);
-    return result;
+    return m_pendingReleases.TakeAll();
 }
 
 bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
@@ -365,17 +343,18 @@ bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
     // CreateResource thread cannot bump the refcount between our check and the delete.
     std::string evictedAssetsPath;
     {
-        std::lock_guard lock(resourcesMutex);
+        ResourceTable::ScopedLock lock(m_table);
         if (resource->GetReferenceCount() > 0)
         {
             // Re-acquired since TakePendingReleases. ImporterManager::Release already
             // freed the GPU resources, so re-queue for upload to restore GPU state.
-            std::lock_guard uploadLock(m_pendingUploadsMutex);
-            m_pendingUploads.emplace_back(type, resource);
+            // ResourceQueue locks internally — safe to call with table lock held;
+            // the nesting order (table → uploads) is the only one used in this module.
+            m_pendingUploads.Push(type, resource);
             return false;
         }
         evictedAssetsPath = resource->GetAssetsPath();
-        resources.erase(resource->GetUID());
+        lock.Map().erase(resource->GetUID());
     }
 
     m_hotReloader.UntrackAsset(evictedAssetsPath);
@@ -407,11 +386,7 @@ ResourceMaterial* ModuleResourceManager::GetDefaultMaterial()   const { return m
 
 Resource* ModuleResourceManager::GetLoadedResource(const uint32 uid)
 {
-    std::lock_guard lock(resourcesMutex);
-    const auto it = resources.find(uid);
-    if (it == resources.end() || it->second == nullptr)
-        return nullptr;
-    return it->second;
+    return m_table.TryGet(uid);
 }
 
 IImporterManager* ModuleResourceManager::GetImporterManager() const

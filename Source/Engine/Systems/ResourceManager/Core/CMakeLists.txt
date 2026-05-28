@@ -1,3 +1,5 @@
 add_subdirectory(ImporterManager)
 add_subdirectory(Resource)
+add_subdirectory(ResourceQueue)
+add_subdirectory(ResourceTable)
 add_subdirectory(TypeRegistry)

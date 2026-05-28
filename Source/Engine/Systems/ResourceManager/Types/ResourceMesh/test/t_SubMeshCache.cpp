@@ -2,6 +2,8 @@
 
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/SubMeshCache.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceQueue/include/ResourceQueue.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceTable/include/ResourceTable.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Utils/Math/Vertex.inl"
@@ -9,7 +11,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
-#include <mutex>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -90,10 +91,8 @@ protected:
     static constexpr uint64 kMemoryPoolSize = MiB(32);
 
     // SubMeshCache owns references to these; they must outlive the cache object.
-    std::unordered_map<uint32, Resource*>           resources;
-    std::mutex                                       resourcesMutex;
-    std::vector<std::pair<ResourceType, Resource*>> pendingUploads;
-    std::mutex                                       pendingUploadsMutex;
+    ResourceTable         table;
+    ResourceQueue         pendingUploads;
 
     SubMeshCache*         cache    = nullptr;
     std::filesystem::path tempDir;
@@ -102,7 +101,7 @@ protected:
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(kMemoryPoolSize);
-        cache = new SubMeshCache(resources, resourcesMutex, pendingUploads, pendingUploadsMutex);
+        cache = new SubMeshCache(table, pendingUploads);
 
         const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
         tempDir = std::filesystem::temp_directory_path()
@@ -122,9 +121,9 @@ protected:
         cache = nullptr;
 
         // SubMeshCache only allocates ResourceMesh objects. Delete them all.
-        for (auto& [uid, res] : resources)
+        for (auto& [uid, res] : table.Snapshot())
             if (res) NOUS_DELETE(res, MemoryTag::RESOURCE_MESH);
-        resources.clear();
+        table.Clear();
 
         nous::engine::memory::ShutdownMemory();
     }
@@ -158,7 +157,7 @@ TEST_F(t_SubMeshCache, FromLibrary_FirstCallRegistersInResourcesMap)
     ResourceMesh* mesh = cache->RequestOrCreateFromLibrary("Library/Meshes/test.nmesh", 0);
 
     ASSERT_NE(mesh, nullptr);
-    EXPECT_TRUE(resources.contains(mesh->GetUID()));
+    EXPECT_TRUE(table.Contains(mesh->GetUID()));
 }
 
 TEST_F(t_SubMeshCache, FromLibrary_FirstCallSetsRefCountToOne)
@@ -177,7 +176,7 @@ TEST_F(t_SubMeshCache, FromLibrary_FirstCallQueuesPendingUpload)
 
     cache->RequestOrCreateFromLibrary("Library/Meshes/test.nmesh", 0);
 
-    EXPECT_EQ(pendingUploads.size(), 1u);
+    EXPECT_EQ(pendingUploads.Size(), 1u);
 }
 
 TEST_F(t_SubMeshCache, FromLibrary_FirstCallSetsStateToGpuReady)
@@ -223,7 +222,7 @@ TEST_F(t_SubMeshCache, FromLibrary_CacheHitDoesNotQueueSecondUpload)
     cache->RequestOrCreateFromLibrary("Library/Meshes/test.nmesh", 0);
     cache->RequestOrCreateFromLibrary("Library/Meshes/test.nmesh", 0); // cache hit
 
-    EXPECT_EQ(pendingUploads.size(), 1u);
+    EXPECT_EQ(pendingUploads.Size(), 1u);
 }
 
 // =====================================================
@@ -257,17 +256,14 @@ TEST_F(t_SubMeshCache, FromLibrary_StaleEntryIsRebuiltIntoNewResource)
 
     // Simulate eviction: remove from the primary resources map and free the object.
     // The index entry in SubMeshCache still exists (stale).
-    {
-        std::lock_guard lock(resourcesMutex);
-        resources.erase(first->GetUID());
-    }
+    table.Erase(first->GetUID());
     NOUS_DELETE(first, MemoryTag::RESOURCE_MESH);
 
     // Second call: cache detects the stale entry and rebuilds.
     ResourceMesh* second = cache->RequestOrCreateFromLibrary("Library/Meshes/test.nmesh", 0);
 
     ASSERT_NE(second, nullptr);
-    EXPECT_TRUE(resources.contains(second->GetUID()));
+    EXPECT_TRUE(table.Contains(second->GetUID()));
 }
 
 // =====================================================
@@ -284,8 +280,8 @@ TEST_F(t_SubMeshCache, FromLibrary_DifferentIndicesProduceSeparateCacheEntries)
     ASSERT_NE(sub0, nullptr);
     ASSERT_NE(sub1, nullptr);
     EXPECT_NE(sub0, sub1);
-    EXPECT_EQ(resources.size(), 2u);
-    EXPECT_EQ(pendingUploads.size(), 2u);
+    EXPECT_EQ(table.Snapshot().size(), 2u);
+    EXPECT_EQ(pendingUploads.Size(), 2u);
 }
 
 // =====================================================
@@ -306,7 +302,7 @@ TEST_F(t_SubMeshCache, EditorPath_WithMetaAndLibraryBuildsAndRegisters)
     ResourceMesh* mesh = cache->RequestOrCreate("Assets/Meshes/test.fbx", 0);
 
     ASSERT_NE(mesh, nullptr);
-    EXPECT_TRUE(resources.contains(mesh->GetUID()));
+    EXPECT_TRUE(table.Contains(mesh->GetUID()));
     EXPECT_EQ(mesh->GetAssetsPath(), "Assets/Meshes/test.fbx");
 }
 
@@ -335,8 +331,8 @@ TEST_F(t_SubMeshCache, EraseUID_ForcesRebuildOnNextRequest)
     ASSERT_NE(first, nullptr);
     const uint32 firstUID = first->GetUID();
 
-    // Erase the index entry under the required lock.
-    { std::lock_guard lock(resourcesMutex); cache->EraseUID(firstUID); }
+    // Erase the index entry under the required lock (the table's mutex).
+    { ResourceTable::ScopedLock lock(table); cache->EraseUID(firstUID); }
 
     // Next call has no cache entry — must rebuild a new resource.
     ResourceMesh* second = cache->RequestOrCreateFromLibrary("Library/Meshes/test.nmesh", 0);

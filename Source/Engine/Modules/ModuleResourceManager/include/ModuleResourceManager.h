@@ -4,6 +4,8 @@
 #include "Engine/EngineExport.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceQueue/include/ResourceQueue.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceTable/include/ResourceTable.h"
 #include "Engine/Systems/ResourceManager/Runtime/Builtins/include/BuiltinResources.h"
 #include "Engine/Systems/ResourceManager/Runtime/HotReloader/include/HotReloader.h"
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
@@ -12,7 +14,6 @@
 #include "Engine/Systems/ResourceManager/Core/Resource/include/IResourceLoader.h"
 
 #include <future>
-#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -156,33 +157,21 @@ private:
 
 	void DeleteResource(Resource*& resource);
 
-	// Atomically claims the UID slot with a nullptr placeholder.
-	// Returns true if this thread won the race and must load; false if another thread already owns it.
-	bool ClaimSlot(uint32 uid);
-
 	// Spins until the slot's loading thread writes a real pointer, then bumps the refcount and returns it.
 	// Returns nullptr if the entry was evicted from the map before it resolved.
 	Resource* SpinWaitForSlot(uint32 uid);
 
 	// Instantiates, populates, deserializes, and registers a resource into an already-claimed slot.
-	// Caller must have won ClaimSlot() before calling this.
+	// Caller must have won m_table.TryInsert(uid, nullptr) before calling this.
 	Resource* LoadResourceIntoSlot(uint32 uid, ResourceType type,
 	    const std::string& name,
 	    const std::string& assetsPath,
 	    const std::string& libraryPath);
 
-	mutable std::mutex resourcesMutex;  // mutable: const methods (e.g. GetResourcesMap) can lock it
-	std::unordered_map<uint32, Resource*> resources;
-
-	// Resources waiting for GPU upload — populated by CreateResource/Deserialize paths.
-	// Drained by Renderer::PreUpdate (and Start for the initial set).
-	std::mutex m_pendingUploadsMutex;
-	std::vector<std::pair<ResourceType, Resource*>> m_pendingUploads;
-
-	// Resources whose refcount hit 0 — waiting for GPU Release then CPU Evict.
-	// Drained by Renderer::PreUpdate each frame.
-	std::mutex m_pendingReleasesMutex;
-	std::vector<std::pair<ResourceType, Resource*>> m_pendingReleases;
+	// Canonical resource registry + the two cross-thread handoff queues.
+	ResourceTable           m_table;
+	ResourceQueue           m_pendingUploads;
+	ResourceQueue           m_pendingReleases;
 
 	// Injected dependencies
 	IImporterManager*       mImporterManager = nullptr;
@@ -191,7 +180,6 @@ private:
 	ScenePreloader          m_scenePreloader;
 	HotReloader             m_hotReloader;
 
-	// Declared after the resource map so the cache's referenced state is
-	// initialized first (SubMeshCache stores references to it).
+	// Composes on top of m_table + m_pendingUploads; must be declared after both.
 	SubMeshCache            m_subMeshCache;
 };
