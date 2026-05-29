@@ -30,9 +30,14 @@ namespace nous::engine::asset_paths
     inline constexpr std::string_view k_SceneExtension = ".nous";
 
     // True when `path` begins with the engine-relative "Assets/" prefix.
+    // Note the >= : a path equal to exactly "Assets/" (e.g. the directory of an
+    // asset saved at the Assets root, like a scene saved via "Save As") still
+    // begins with the prefix and must count as assets-relative. A strict > here
+    // misclassifies such paths as external, which makes ImportFile try to copy
+    // the file onto itself.
     [[nodiscard]] inline bool IsAssetsRelative(std::string_view path) noexcept
     {
-        return path.size() > k_AssetsPrefix.size()
+        return path.size() >= k_AssetsPrefix.size()
             && path.compare(0, k_AssetsPrefix.size(), k_AssetsPrefix) == 0;
     }
 

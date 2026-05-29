@@ -3,7 +3,6 @@
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/Logger/Logger.h"
 
@@ -380,14 +379,40 @@ void ModuleScene::SaveScene(const std::string& path)
     std::filesystem::create_directories(std::filesystem::path(path).parent_path());
     activeScene->Serialize(path);
 
-    // Mirror the saved scene to Library/Scenes/ so GameApp can load it
-    // from Library without needing Assets/.
-    namespace ap = nous::engine::asset_paths;
-    const std::string libraryPath = std::string(ap::k_ScenesDir) + "/" + std::filesystem::path(path).filename().string();
-    std::filesystem::create_directories(ap::k_ScenesDir);
-    nous::engine::filesystem::CopyFile(path, libraryPath);
+    // Route the freshly-written scene through the import pipeline: it creates the
+    // .meta (with a stable UID) if absent and mirrors the source into its UID-keyed
+    // Library/Scenes/<uid>.nous, exactly like every other asset. Then refresh the
+    // scene manifest so GAME mode resolves this scene immediately, without waiting
+    // for a full asset rescan.
+    mModuleResourceManager->ImportFile(path);
+    mModuleResourceManager->RefreshSceneManifest();
 
     m_currentScenePath = path;
+}
+
+namespace
+{
+	// Resolves a scene reference to a concrete, loadable file path.
+	// - If the reference already points to an existing file, use it directly:
+	//   covers EDITOR Assets/ paths, the simulation snapshot, and already
+	//   UID-keyed library paths.
+	// - Otherwise treat the filename stem as a scene name and resolve it through
+	//   scene_manifest.json to Library/Scenes/<uid>.nous. This is the GAME-mode
+	//   path: game_config startScene is "Library/Scenes/<name>.nous", which no
+	//   longer exists as a file now that scenes are stored UID-keyed.
+	// Returns "" when the reference can be resolved neither way.
+	std::string ResolveScenePath(const std::string& reference)
+	{
+		if (nous::engine::filesystem::Exists(reference))
+			return reference;
+
+		const std::string sceneName = nous::engine::filesystem::GetFilename(reference); // stem, no ext
+		const std::string resolved  = ImportPipeline::ResolveSceneLibraryPath(sceneName);
+		if (resolved.empty())
+			NOUS_ERROR("[ModuleScene] Cannot resolve scene '%s': not a file on disk and no manifest entry for '%s'.",
+				reference.c_str(), sceneName.c_str());
+		return resolved;
+	}
 }
 
 void ModuleScene::LoadScene(const std::string& path)
@@ -397,15 +422,22 @@ void ModuleScene::LoadScene(const std::string& path)
 	// clear could still call RegisterGameObject afterward on a cleared scene.
 	JobSystem->WaitForPendingJobs();
 
+	// Resolve before clearing so an unresolvable reference doesn't nuke the
+	// current scene. Keep the original `path` for snapshot comparison and the
+	// user-facing m_currentScenePath; only the load uses the resolved path.
+	const std::string loadPath = ResolveScenePath(path);
+	if (loadPath.empty())
+		return;
+
 	ClearScene();
 
 	// Pre-load all mesh resources in parallel before building the scene graph.
 	// CMesh::Deserialize() will hit the resource cache (no disk I/O) instead of
 	// blocking serially on each binary file read.
-	for (auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, path); auto& f : futures)
+	for (auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, loadPath); auto& f : futures)
 		f.get();
 
-	activeScene->Deserialize(path);
+	activeScene->Deserialize(loadPath);
 	// Snapshot already captures the complete pre-play state of every entity,
 	// including prefab instances. Refreshing from disk would destroy and recreate
 	// prefab children from their .nprefab source files, resetting them to their
@@ -432,6 +464,15 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 	// clear could still call RegisterGameObject afterward on a cleared scene.
 	JobSystem->WaitForPendingJobs();
 
+	// Resolve on the main thread (cheap file I/O) so the worker only deserializes.
+	// Release the in-flight guard we just took if the reference can't be resolved.
+	const std::string loadPath = ResolveScenePath(path);
+	if (loadPath.empty())
+	{
+		m_isLoadingScene = false;
+		return;
+	}
+
 	ClearScene();
 
 	// Track the scene path up-front — the worker thread only does deserialization,
@@ -439,7 +480,7 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 	if (path != m_snapshotPath)
 		m_currentScenePath = path;
 
-	JobSystem->SubmitJob([this, path]
+	JobSystem->SubmitJob([this, loadPath]
 		{
 			// Pre-load all mesh resources in parallel only when there are at least 2 worker
 			// threads. This job occupies 1 thread while it blocks on future.get() — with only
@@ -448,13 +489,13 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 			// so futures complete immediately and are also safe (but parallel gains nothing).
 			if (JobSystem->GetThreadPool().GetThreads().size() >= 2)
 			{
-				for (auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, path); auto& f : futures)
+				for (auto futures = mModuleResourceManager->PreloadSceneResourcesAsync(JobSystem, loadPath); auto& f : futures)
 					f.get();
 			}
 
 			// Scene graph construction — resource lookups hit the cache if preload ran,
 			// or load serially here if the pool was too small to parallelise.
-			activeScene->Deserialize(path);
+			activeScene->Deserialize(loadPath);
 			// RefreshPrefabInstances() must NOT run on the job thread — it calls
 			// DestroyGameObject → CMesh::OnDestroy → vkDeviceWaitIdle, which deadlocks
 			// when the main thread is rendering. Defer to PreUpdate() instead.

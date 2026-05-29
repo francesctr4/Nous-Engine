@@ -35,6 +35,25 @@ public:
     // sidecars in Assets/. Call before ScanAndImportAssets() to force a full reimport.
     NOUS_ENGINE_API void ClearLibraryFiles();
 
+    // Rebuilds Library/Scenes/scene_manifest.json from the current set of scene
+    // .meta files. Called at the tail of ScanAndImportAssets, and also after a
+    // single-scene save (ModuleScene::SaveScene) so GAME mode immediately sees a
+    // freshly-saved scene without a full rescan. A scene with a missing/malformed
+    // .meta is skipped with a warning rather than aborting the whole manifest.
+    NOUS_ENGINE_API static void WriteSceneManifest();
+
+    // Resolves a scene name to its UID-keyed Library/Scenes/<uid>.nous path via
+    // scene_manifest.json. Returns "" if the manifest or the named entry is absent.
+    // The runtime counterpart to WriteSceneManifest: GAME mode loads scenes by
+    // name through this, since it ships only the manifest + UID-keyed binaries
+    // (no Assets/ or .meta sidecars).
+    NOUS_ENGINE_API static std::string ResolveSceneLibraryPath(const std::string& sceneName);
+
+    // Returns the names of all scenes recorded in scene_manifest.json (the manifest
+    // keys), or empty if the manifest is absent. Used by the editor's build UI to
+    // present a name-keyed startup-scene picker instead of UID-keyed filenames.
+    NOUS_ENGINE_API static std::vector<std::string> GetSceneNames();
+
 private:
     static bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
     static bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);

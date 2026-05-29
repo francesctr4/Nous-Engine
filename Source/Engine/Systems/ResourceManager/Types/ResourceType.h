@@ -11,6 +11,9 @@ enum class ResourceType : int8_t
     TEXTURE,
     SHADER,
     AUDIO,
+    // Append-only: new values go before ALL_TYPES so existing .meta files
+    // (which store the integer enum value) keep resolving.
+    SCENE,
 
     ALL_TYPES
 };

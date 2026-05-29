@@ -124,6 +124,11 @@ bool ModuleResourceManager::ImportFile(const std::string& path)
 	return m_importPipeline.ImportFile(path);
 }
 
+void ModuleResourceManager::RefreshSceneManifest()
+{
+	ImportPipeline::WriteSceneManifest();
+}
+
 std::unordered_map<uint32, Resource*> ModuleResourceManager::GetResourcesMap() const
 {
 	return m_table.Snapshot();

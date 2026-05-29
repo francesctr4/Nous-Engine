@@ -5,6 +5,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
+#include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 
 #include <SDL3/SDL.h>
 
@@ -540,29 +541,25 @@ void MainMenuBar::DrawBuildSettingsPopup()
     if (ImGui::BeginPopup(kBuildSettingsPopup))
     {
         static char s_pathBuf[512] = {};
-        static std::vector<std::string> s_sceneFiles;
+        static std::vector<std::string> s_sceneNames;
         static int s_selectedScene = -1;
 
         if (m_openBuildSettings)
         {
             std::snprintf(s_pathBuf, sizeof(s_pathBuf), "%s", m_buildOutputPath.c_str());
 
-            // Refresh scene list from Library/Scenes/
-            s_sceneFiles.clear();
-            std::error_code ec;
-            for (const auto& entry : std::filesystem::directory_iterator("Library/Scenes", ec))
-            {
-                if (entry.is_regular_file() && entry.path().extension() == ".nous")
-                    s_sceneFiles.push_back(entry.path().filename().string());
-            }
-            std::sort(s_sceneFiles.begin(), s_sceneFiles.end());
+            // Scene list comes from the manifest (readable names) rather than the
+            // Library/Scenes/ directory, which now holds UID-keyed <uid>.nous files.
+            s_sceneNames = ImportPipeline::GetSceneNames();
+            std::sort(s_sceneNames.begin(), s_sceneNames.end());
 
-            // Default selection: match the current startup scene
+            // Default selection: match the current startup scene by name. The stored
+            // path is "Library/Scenes/<name>.nous", so compare against its stem.
             s_selectedScene = -1;
-            const std::string currentFile = std::filesystem::path(m_buildStartupScene).filename().string();
-            for (int i = 0; i < static_cast<int>(s_sceneFiles.size()); ++i)
+            const std::string currentName = std::filesystem::path(m_buildStartupScene).stem().string();
+            for (int i = 0; i < static_cast<int>(s_sceneNames.size()); ++i)
             {
-                if (s_sceneFiles[i] == currentFile) { s_selectedScene = i; break; }
+                if (s_sceneNames[i] == currentName) { s_selectedScene = i; break; }
             }
         }
 
@@ -595,15 +592,15 @@ void MainMenuBar::DrawBuildSettingsPopup()
         // ── Startup scene ────────────────────────────────────────────────
         ImGui::TextUnformatted("Startup scene:");
         ImGui::SetNextItemWidth(460.0f);
-        const char* previewLabel = (s_selectedScene >= 0 && s_selectedScene < static_cast<int>(s_sceneFiles.size()))
-            ? s_sceneFiles[s_selectedScene].c_str()
+        const char* previewLabel = (s_selectedScene >= 0 && s_selectedScene < static_cast<int>(s_sceneNames.size()))
+            ? s_sceneNames[s_selectedScene].c_str()
             : "(select a scene)";
         if (ImGui::BeginCombo("##startupScene", previewLabel))
         {
-            for (int i = 0; i < static_cast<int>(s_sceneFiles.size()); ++i)
+            for (int i = 0; i < static_cast<int>(s_sceneNames.size()); ++i)
             {
                 const bool selected = (s_selectedScene == i);
-                if (ImGui::Selectable(s_sceneFiles[i].c_str(), selected))
+                if (ImGui::Selectable(s_sceneNames[i].c_str(), selected))
                     s_selectedScene = i;
                 if (selected) ImGui::SetItemDefaultFocus();
             }
@@ -625,7 +622,7 @@ void MainMenuBar::DrawBuildSettingsPopup()
                 scene->SaveScene(scene->GetCurrentScenePath());
 
             m_buildOutputPath   = s_pathBuf;
-            m_buildStartupScene = "Library/Scenes/" + s_sceneFiles[s_selectedScene];
+            m_buildStartupScene = "Library/Scenes/" + s_sceneNames[s_selectedScene] + ".nous";
             m_buildLaunchAfter  = false;
             m_openBuild         = true;
             editorContext->GetGameExporter()->StartExport({ m_buildOutputPath, m_buildStartupScene, false });

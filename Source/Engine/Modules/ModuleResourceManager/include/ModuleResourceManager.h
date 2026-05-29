@@ -54,6 +54,10 @@ public:
 	NOUS_ENGINE_API bool ImportFile(const std::string& path);
 	NOUS_ENGINE_API bool ImportDirectory(const std::string& directory);
 
+	// Rebuilds Library/Scenes/scene_manifest.json from current scene .meta files.
+	// Called after a single-scene save so GAME mode sees it without a full rescan.
+	NOUS_ENGINE_API void RefreshSceneManifest();
+
 	// Editor-only: scans Assets/, imports everything, and mirrors scene files to Library/.
 	// Called by Application::Awake() when not in game mode.
 	NOUS_ENGINE_API void ScanAndImportAssets();

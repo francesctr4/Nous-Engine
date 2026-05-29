@@ -76,6 +76,6 @@
         }
     ],
     "shader_uid": 4126860508,
-    "shader_asset_path": "Assets\\Shaders\\ForwardBlinnPhong.glsl",
+    "shader_asset_path": "Assets\/Shaders\/ForwardBlinnPhong.glsl",
     "shader_library_path": "Library\/Shaders\/4126860508"
 }

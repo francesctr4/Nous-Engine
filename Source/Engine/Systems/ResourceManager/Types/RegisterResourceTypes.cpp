@@ -11,6 +11,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ImporterTexture.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ImporterShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ImporterAudio.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceScene/include/ImporterScene.h"
 
 // Resources
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
@@ -29,6 +30,9 @@ namespace
     constexpr int k_PrioTexture  = 2;
     constexpr int k_PrioMesh     = 3;
     constexpr int k_PrioAudio    = 4;
+    // Scenes own no runtime resource object and no peer-resource pointers, so
+    // their cleanup priority is inert; kept last for readability.
+    constexpr int k_PrioScene    = 5;
 }
 
 void RegisterResourceTypes(TypeRegistry& registry)
@@ -130,6 +134,27 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO, uid); };
         d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); };
         d.display.color[0] = 0.93f; d.display.color[1] = 0.28f; d.display.color[2] = 0.60f; d.display.color[3] = 1.0f;
+        registry.Register(std::move(d));
+    }
+
+    // ---------- SCENE ----------
+    {
+        TypeDescriptor d;
+        d.type = ResourceType::SCENE;
+        d.name = "Scene";
+        d.libraryFolder = "Library/Scenes/";
+        d.libraryFixedExtension = "nous";
+        d.sourceExtensions = { "nous" };
+        d.libExtPolicy = LibraryExtPolicy::FIXED;
+        d.memoryTag = MemoryTag::SCENE;
+        d.cleanupPriority = k_PrioScene;
+        d.importer = std::make_unique<ImporterScene>();
+        // No createFn/destroyFn: scenes have no runtime resource object. The
+        // import step only mirrors the source .nous into Library/Scenes/ under
+        // its UID; scene loading goes through ModuleScene, not the generic
+        // Resource lifecycle. Null guards in the resource manager already cover
+        // the absent create/destroy callbacks.
+        d.display.color[0] = 0.25f; d.display.color[1] = 0.55f; d.display.color[2] = 0.95f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }
 }

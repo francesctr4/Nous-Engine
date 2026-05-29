@@ -88,11 +88,6 @@ void ImportPipeline::ClearLibraryFiles()
         std::error_code ec;
         fs::remove_all(StripTrailingSlash(d->libraryFolder), ec);
     }
-    // Scenes are not a registered ResourceType (mirrored separately by ScanAndImportAssets).
-    {
-        std::error_code ec;
-        fs::remove_all(nous::engine::asset_paths::k_ScenesDir, ec);
-    }
 
     EnsureLibraryDirectories();
 }
@@ -108,8 +103,7 @@ bool ImportPipeline::EnsureLibraryDirectories()
         if (!nous::engine::filesystem::CreateDirectory(StripTrailingSlash(d->libraryFolder)))
             return false;
     }
-    // Scenes — not a registered ResourceType, but uses the Library tree.
-    return nous::engine::filesystem::CreateDirectory(std::string(ap::k_ScenesDir));
+    return true;
 }
 
 void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
@@ -175,24 +169,12 @@ void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
             m_importerManager->Import(item.resourceType, item);
     }
 
-    // Mirror ALL .nous scene files found anywhere inside Assets/ → Library/Scenes/.
-    // Library paths use the filename only; if two scenes share a name in different
-    // subdirectories the last one written wins — users should use unique scene names.
-    {
-        namespace ap = nous::engine::asset_paths;
-        std::error_code ec;
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(ap::k_AssetsDir, ec))
-        {
-            if (!entry.is_regular_file()) continue;
-            if (entry.path().extension() != ap::k_SceneExtension) continue;
-
-            const std::string src  = entry.path().generic_string();
-            const std::string dest = std::string(ap::k_ScenesDir) + "/" + entry.path().filename().string();
-            nous::engine::filesystem::CopyFile(src, dest);
-        }
-    }
+    // Scenes are now imported generically by the per-type pipeline above:
+    // CollectPendingImports picks up .nous as ResourceType::SCENE, writes its
+    // .meta, and ImporterScene mirrors the source into Library/Scenes/<uid>.nous.
 
     WriteShaderManifest();
+    WriteSceneManifest();
 }
 
 void ImportPipeline::WriteShaderManifest()
@@ -226,6 +208,71 @@ void ImportPipeline::WriteShaderManifest()
         NOUS_WARN_C(CURRENT_CHANNEL, "Failed to write Library/Shaders/shader_manifest.json.");
     else
         NOUS_INFO_C(CURRENT_CHANNEL, "Shader manifest written to Library/Shaders/shader_manifest.json.");
+}
+
+void ImportPipeline::WriteSceneManifest()
+{
+    namespace fs = std::filesystem;
+    namespace ap = nous::engine::asset_paths;
+
+    JsonObject root;
+    std::error_code ec;
+    for (const auto& entry : fs::recursive_directory_iterator(ap::k_AssetsDir, ec))
+    {
+        if (!entry.is_regular_file()) continue;
+        if (entry.path().extension() != ap::k_SceneExtension) continue;
+
+        // The .meta sits next to the source asset; GetAssetMetaData appends
+        // ".meta" to the asset path, matching how CollectPendingImports wrote it.
+        const std::string assetsPath = entry.path().string();
+
+        MetaFileData meta;
+        if (!GetAssetMetaData(assetsPath, meta))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL,
+                "scene_manifest.json: missing/invalid .meta for scene '%s' — skipped.",
+                assetsPath.c_str());
+            continue;
+        }
+
+        // Keyed by scene name (filename without extension). Two scenes sharing a
+        // name in different subdirectories collide — last one written wins, same
+        // caveat the old filename-keyed mirror had. Use unique scene names.
+        JsonObject sceneEntry;
+        sceneEntry.Set("uid",         static_cast<double>(meta.uid));
+        sceneEntry.Set("libraryPath", meta.libraryPath);
+        root.Set(meta.name, std::move(sceneEntry));
+    }
+
+    const std::string manifestPath = std::string(ap::k_ScenesDir) + "/scene_manifest.json";
+    if (!JsonFile::SaveToFile(root, manifestPath))
+        NOUS_WARN_C(CURRENT_CHANNEL, "Failed to write %s.", manifestPath.c_str());
+    else
+        NOUS_INFO_C(CURRENT_CHANNEL, "Scene manifest written to %s.", manifestPath.c_str());
+}
+
+std::string ImportPipeline::ResolveSceneLibraryPath(const std::string& sceneName)
+{
+    namespace ap = nous::engine::asset_paths;
+
+    const std::string manifestPath = std::string(ap::k_ScenesDir) + "/scene_manifest.json";
+    JsonObject root = JsonFile::LoadFromFile(manifestPath);
+    if (root.IsEmpty() || !root.HasKey(sceneName))
+        return {};
+
+    return root.GetObject(sceneName).GetString("libraryPath");
+}
+
+std::vector<std::string> ImportPipeline::GetSceneNames()
+{
+    namespace ap = nous::engine::asset_paths;
+
+    const std::string manifestPath = std::string(ap::k_ScenesDir) + "/scene_manifest.json";
+    JsonObject root = JsonFile::LoadFromFile(manifestPath);
+    if (root.IsEmpty())
+        return {};
+
+    return root.GetKeys();
 }
 
 void ImportPipeline::CollectPendingImports(const std::string& directory,
