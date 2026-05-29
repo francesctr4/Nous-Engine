@@ -1,5 +1,4 @@
-#ifndef METAFILEDATA_INL
-#define METAFILEDATA_INL
+#pragma once
 
 #include "Engine/Core/Globals.h"
 #include "Resource.h"
@@ -14,5 +13,3 @@ struct MetaFileData
     std::string assetsPath;
     std::string libraryPath;
 };
-
-#endif // METAFILEDATA_INL

@@ -30,6 +30,17 @@ void TypeRegistry::Register(TypeDescriptor descriptor)
     const size_t slot = SlotOf(descriptor.type);
     NOUS_ASSERT_MSG(slot < m_descriptors.size(), "ResourceType slot out of range");
 
+    // Runtime-object invariant: a type either has a full runtime lifecycle
+    // (createFn + destroyFn + an IResourceImporter) or none of it (pipeline-only,
+    // e.g. SCENE). These three must agree — set together via SetImporter<T>() +
+    // createFn/destroyFn, or all left null. Catching a half-wired type here at
+    // startup beats a silent no-op or a null deref deep in the load path.
+    NOUS_ASSERT_MSG((descriptor.createFn != nullptr) == (descriptor.resourceImporter != nullptr),
+                    "TypeDescriptor: a type must have both createFn and a resourceImporter "
+                    "(runtime resource type) or neither (pipeline-only type like SCENE)");
+    NOUS_ASSERT_MSG((descriptor.createFn != nullptr) == (descriptor.destroyFn != nullptr),
+                    "TypeDescriptor: createFn and destroyFn must be set together");
+
     if (m_descriptors[slot])
     {
         NOUS_WARN("TypeRegistry: overwriting descriptor for type %s",
