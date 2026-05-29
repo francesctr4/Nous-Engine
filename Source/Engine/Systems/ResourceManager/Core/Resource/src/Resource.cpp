@@ -1,7 +1,6 @@
 #include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 
 #include "Engine/Core/Logger/Asserts.h"
-#include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 
 #include <utility>
 
@@ -94,23 +93,4 @@ std::string Resource::GetAssetsPath() const
 std::string Resource::GetLibraryPath() const
 {
 	return m_libraryFilePath;
-}
-
-std::string Resource::GetLibraryExtensionFromType(const ResourceType type)
-{
-	const TypeDescriptor* d = GetTypeRegistry().Get(type);
-	NOUS_ASSERT_MSG(d != nullptr, "GetLibraryExtensionFromType: type not in registry");
-	return d->libraryFixedExtension;
-}
-
-ResourceType Resource::GetTypeFromExtension(const std::string& extension)
-{
-	return GetTypeRegistry().TypeFromExtension(extension);
-}
-
-std::string Resource::GetLibraryDirectoryFromType(const ResourceType type)
-{
-	const TypeDescriptor* d = GetTypeRegistry().Get(type);
-	NOUS_ASSERT_MSG(d != nullptr, "GetLibraryDirectoryFromType: type not in registry");
-	return d->libraryFolder;
 }

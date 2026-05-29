@@ -4,7 +4,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
@@ -63,7 +63,7 @@ static std::filesystem::file_time_type GetLibraryTime(const std::filesystem::pat
     return fs::last_write_time(libraryPath);
 }
 
-ImportPipeline::ImportPipeline(IImporterManager* importerManager,
+ImportPipeline::ImportPipeline(IImporterDispatcher* importerManager,
                                                nous::engine::multithreading::NOUS_JobSystem* jobSystem)
     : m_importerManager(importerManager)
     , m_jobSystem(jobSystem)
@@ -294,7 +294,7 @@ void ImportPipeline::CollectPendingImports(const std::string& directory,
         const std::string fileDirectory = nous::engine::filesystem::GetDirectory(path);
         const std::string fileName      = nous::engine::filesystem::GetFilename(path);
         const std::string extension     = nous::engine::filesystem::GetExtension(path);
-        const ResourceType resourceType = Resource::GetTypeFromExtension(extension);
+        const ResourceType resourceType = GetTypeRegistry().TypeFromExtension(extension);
 
         if (resourceType == ResourceType::UNKNOWN)
             continue;
@@ -388,7 +388,7 @@ bool ImportPipeline::ImportFile(const std::string& path)
     const std::string fileDirectory = nous::engine::filesystem::GetDirectory(path);
     const std::string fileName      = nous::engine::filesystem::GetFilename(path);
     const std::string extension     = nous::engine::filesystem::GetExtension(path);
-    const ResourceType resourceType = Resource::GetTypeFromExtension(extension);
+    const ResourceType resourceType = GetTypeRegistry().TypeFromExtension(extension);
 
     if (resourceType == ResourceType::UNKNOWN)
         return false;

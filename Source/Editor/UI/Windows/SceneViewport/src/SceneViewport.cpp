@@ -4,6 +4,7 @@
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
@@ -194,7 +195,7 @@ void SceneViewport::HandleDragAndDropTarget() const
         // Prefab assets → instantiate prefab into scene.
         // All other assets → just load the resource.
         const std::string ext = nous::engine::filesystem::GetExtension(path);
-        if (Resource::GetTypeFromExtension(ext) == ResourceType::MESH)
+        if (GetTypeRegistry().TypeFromExtension(ext) == ResourceType::MESH)
         {
             editorContext->GetJobSystem()->SubmitJob([path, this]()
             {

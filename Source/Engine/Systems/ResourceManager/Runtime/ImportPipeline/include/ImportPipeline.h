@@ -6,14 +6,14 @@
 #include <string_view>
 #include <vector>
 
-class IImporterManager;
+class IImporterDispatcher;
 struct MetaFileData;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 class ImportPipeline
 {
 public:
-    NOUS_ENGINE_API ImportPipeline(IImporterManager* importerManager,
+    NOUS_ENGINE_API ImportPipeline(IImporterDispatcher* importerManager,
                                            nous::engine::multithreading::NOUS_JobSystem* jobSystem = nullptr);
 
     // Public import entry points — called by ModuleResourceManager delegators
@@ -74,7 +74,7 @@ private:
     bool ImportCase2_MissingLibrary(const MetaFileData& metaFileData) const;
     bool ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const;
 
-    IImporterManager* m_importerManager = nullptr;
+    IImporterDispatcher* m_importerManager = nullptr;
     nous::engine::multithreading::NOUS_JobSystem* m_jobSystem = nullptr;
 
     // Phase-1 scan: walks directory, handles meta file creation, and collects

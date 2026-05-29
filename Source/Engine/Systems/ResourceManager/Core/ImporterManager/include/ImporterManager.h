@@ -1,5 +1,4 @@
-#ifndef IMPORTERMANAGER_H
-#define IMPORTERMANAGER_H
+#pragma once
 
 #include "IImporterManager.h"
 
@@ -25,5 +24,3 @@ public:
     // Asset pipeline (non-virtual)
     static bool Save(ResourceType type, const MetaFileData& metaFileData, Resource*& inResource);
 };
-
-#endif // IMPORTERMANAGER_H

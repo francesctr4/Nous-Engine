@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <vector>
 
-class IImporterManager;
+class IImporterDispatcher;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 // Owns the asset hot-reload pipeline previously embedded in ModuleResourceManager:
@@ -35,7 +35,7 @@ public:
         ResourceType type = ResourceType::UNKNOWN;
     };
 
-    NOUS_ENGINE_API HotReloader(IImporterManager* importerManager,
+    NOUS_ENGINE_API HotReloader(IImporterDispatcher* importerManager,
                                 nous::engine::multithreading::NOUS_JobSystem* jobSystem);
 
     // Disable hot reload (game/standalone mode). Must be called before Start();
@@ -102,7 +102,7 @@ private:
     void ScanAndRegisterWatchedAssets();
     void RegisterWatchForAsset(const std::string& assetsPath);
 
-    IImporterManager*                              m_importerManager = nullptr;
+    IImporterDispatcher*                           m_importerManager = nullptr;
     nous::engine::multithreading::NOUS_JobSystem*  m_jobSystem        = nullptr;
 
     bool                                           m_enabled            = true;

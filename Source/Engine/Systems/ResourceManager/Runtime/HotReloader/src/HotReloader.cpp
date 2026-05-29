@@ -3,7 +3,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
@@ -63,7 +63,7 @@ namespace
     return false;
 }
 
-HotReloader::HotReloader(IImporterManager* importerManager,
+HotReloader::HotReloader(IImporterDispatcher* importerManager,
                          nous::engine::multithreading::NOUS_JobSystem* jobSystem)
     : m_importerManager(importerManager)
     , m_jobSystem(jobSystem)

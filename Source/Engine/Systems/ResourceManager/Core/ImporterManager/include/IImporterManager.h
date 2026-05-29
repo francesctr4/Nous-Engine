@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IImporterDispatcher.h"
+
 #include <string>
 
 class Resource;
@@ -8,13 +10,15 @@ struct MetaFileData;
 class IGPUResourceFactory;
 class ModuleResourceManager;
 
-class IImporterManager
+// Full importer-manager surface: the import dispatch (inherited from
+// IImporterDispatcher) plus the runtime resource lifecycle. The owner
+// (ModuleResourceManager) and the render thread (ModuleRenderer3D) need the
+// lifecycle half; the asset pipeline (ImportPipeline / HotReloader) only needs
+// the inherited Import and so depends on IImporterDispatcher directly.
+class IImporterManager : public IImporterDispatcher
 {
 public:
-    virtual ~IImporterManager() = default;
-
     virtual void Init(ModuleResourceManager* resourceManager) = 0;
-    virtual bool Import(ResourceType type, const MetaFileData& metaFileData) = 0;
     virtual bool Deserialize(ResourceType type, const std::string& libraryPath, Resource* resource) = 0;
     virtual void Evict(ResourceType type, Resource* resource) = 0;
 

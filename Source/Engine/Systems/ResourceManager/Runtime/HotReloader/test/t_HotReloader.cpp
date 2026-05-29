@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/ResourceManager/Runtime/HotReloader/include/HotReloader.h"
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
@@ -17,7 +17,9 @@
 // Mock
 // =====================================================
 
-class MockImporterManager : public IImporterManager
+// HotReloader depends only on the import dispatch seam, so the mock stubs the
+// single Import method rather than the full IImporterManager lifecycle.
+class MockImporterManager : public IImporterDispatcher
 {
 public:
     int                       importCallCount = 0;
@@ -25,7 +27,6 @@ public:
     ResourceType              lastImportedType = ResourceType::UNKNOWN;
     bool                      importShouldSucceed = true;
 
-    void Init(ModuleResourceManager*) override {}
     bool Import(ResourceType type, const MetaFileData& meta) override
     {
         ++importCallCount;
@@ -33,10 +34,6 @@ public:
         lastImportedType = type;
         return importShouldSucceed;
     }
-    bool Deserialize(ResourceType, const std::string&, Resource*) override { return true; }
-    void Evict(ResourceType, Resource*) override                            {}
-    bool Upload(ResourceType, Resource*, IGPUResourceFactory*) override     { return true; }
-    void Release(ResourceType, Resource*, IGPUResourceFactory*) override    {}
 };
 
 // =====================================================

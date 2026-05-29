@@ -46,10 +46,6 @@ public:
 	[[nodiscard]] NOUS_ENGINE_API ResourceState GetState() const;
 	NOUS_ENGINE_API void SetState(ResourceState newState);
 
-	[[nodiscard]] NOUS_ENGINE_API static std::string GetLibraryExtensionFromType(ResourceType type);
-	[[nodiscard]] NOUS_ENGINE_API static ResourceType GetTypeFromExtension(const std::string& extension);
-	[[nodiscard]] NOUS_ENGINE_API static std::string GetLibraryDirectoryFromType(ResourceType type);
-
 private:
 
 	ResourceState m_state          = ResourceState::UNLOADED;

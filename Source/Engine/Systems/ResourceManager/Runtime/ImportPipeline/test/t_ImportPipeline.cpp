@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
@@ -15,17 +15,14 @@
 // Mock
 // =====================================================
 
-class MockImporterManager : public IImporterManager
+// ImportPipeline depends only on the import dispatch seam, so the mock stubs
+// the single Import method rather than the full IImporterManager lifecycle.
+class MockImporterManager : public IImporterDispatcher
 {
 public:
     int importCallCount = 0;
 
-    void Init(ModuleResourceManager*) override                                     {}
-    bool Import(ResourceType, const MetaFileData&) override                        { ++importCallCount; return true; }
-    bool Deserialize(ResourceType, const std::string&, Resource*) override         { return true; }
-    void Evict(ResourceType, Resource*) override                                   {}
-    bool Upload(ResourceType, Resource*, IGPUResourceFactory*) override            { return true; }
-    void Release(ResourceType, Resource*, IGPUResourceFactory*) override           {}
+    bool Import(ResourceType, const MetaFileData&) override { ++importCallCount; return true; }
 };
 
 // =====================================================
