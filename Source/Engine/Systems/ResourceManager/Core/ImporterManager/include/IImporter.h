@@ -7,12 +7,26 @@ struct MetaFileData;
 class IGPUResourceFactory;
 class ModuleResourceManager;
 
-struct IImporter
+// Asset-pipeline importer — file I/O only, no runtime resource object and no GPU
+// residency. This is all a "pipeline-only" type (e.g. SCENE) needs to implement:
+// the import step mirrors the source asset into its Library/ destination.
+struct IAssetImporter
 {
-    virtual ~IImporter() = default;
+    virtual ~IAssetImporter() = default;
 
     // Asset pipeline — file I/O only, no GPU involvement.
     virtual bool Import(const MetaFileData& metaFileData) = 0;
+
+    ModuleResourceManager* m_resourceManager = nullptr;
+};
+
+// Resource importer — a type that owns a runtime `Resource` object with a CPU/GPU
+// lifecycle. Adds Save plus the load/evict/upload/release contract on top of the
+// asset pipeline. Implement this (not IAssetImporter) for any type that has a
+// createFn/destroyFn in its TypeDescriptor.
+struct IResourceImporter : IAssetImporter
+{
+    // Asset pipeline — writes a runtime resource back to its source/library form.
     virtual bool Save(const MetaFileData& metaFileData, Resource*& inResource) = 0;
 
     // CPU only — safe to call from a job thread.
@@ -26,6 +40,4 @@ struct IImporter
     // Release frees GPU handles; call Evict afterward to drop the CPU copy.
     virtual bool Upload(Resource* resource, IGPUResourceFactory* gpu) = 0;
     virtual void Release(Resource* resource, IGPUResourceFactory* gpu) = 0;
-
-    ModuleResourceManager* m_resourceManager = nullptr;
 };

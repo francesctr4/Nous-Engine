@@ -16,9 +16,3 @@ bool ImporterScene::Import(const MetaFileData& metaFileData)
     }
     return true;
 }
-
-bool ImporterScene::Save(const MetaFileData&, Resource*&)            { return true; }
-bool ImporterScene::Deserialize(const std::string&, Resource*)       { return true; }
-void ImporterScene::Evict(Resource*)                                 {}
-bool ImporterScene::Upload(Resource*, IGPUResourceFactory*)          { return true; }
-void ImporterScene::Release(Resource*, IGPUResourceFactory*)         {}

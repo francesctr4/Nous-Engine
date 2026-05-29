@@ -297,9 +297,10 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
         {
             if (!res || res->GetType() != d->type) continue;
 
-            // GPU teardown (importer guards its own internal IDs).
-            if (res->GetState() == ResourceState::GPU_READY && d->importer)
-                d->importer->Release(res, gpu);
+            // GPU teardown (importer guards its own internal IDs). Pipeline-only
+            // types have no resourceImporter — nothing to release.
+            if (res->GetState() == ResourceState::GPU_READY && d->resourceImporter)
+                d->resourceImporter->Release(res, gpu);
 
             // Per-type teardown: descriptors that hold peer-resource pointers
             // (e.g. Material -> Texture) supply an inline cleanup callback to
@@ -307,8 +308,8 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
             // manager. Everything else takes the normal Evict path.
             if (d->evictAtShutdown)
                 d->evictAtShutdown(res);
-            else if (d->importer)
-                d->importer->Evict(res);
+            else if (d->resourceImporter)
+                d->resourceImporter->Evict(res);
 
             if (d->destroyFn) d->destroyFn(res);
         }

@@ -6,10 +6,18 @@
 
 namespace
 {
-    IImporter* ImporterFor(ResourceType type)
+    IAssetImporter* AssetImporterFor(ResourceType type)
     {
         const TypeDescriptor* d = GetTypeRegistry().Get(type);
         return d ? d->importer.get() : nullptr;
+    }
+
+    // Null for pipeline-only types (e.g. SCENE) — the lifecycle dispatchers below
+    // treat that as a no-op rather than relying on stub implementations.
+    IResourceImporter* ResourceImporterFor(ResourceType type)
+    {
+        const TypeDescriptor* d = GetTypeRegistry().Get(type);
+        return d ? d->resourceImporter : nullptr;
     }
 }
 
@@ -24,36 +32,36 @@ void ImporterManager::Init(ModuleResourceManager* resourceManager)
 
 bool ImporterManager::Import(ResourceType type, const MetaFileData& metaFileData)
 {
-    IImporter* imp = ImporterFor(type);
+    IAssetImporter* imp = AssetImporterFor(type);
     return imp ? imp->Import(metaFileData) : false;
 }
 
 bool ImporterManager::Save(ResourceType type, const MetaFileData& metaFileData, Resource*& inResource)
 {
-    IImporter* imp = ImporterFor(type);
+    IResourceImporter* imp = ResourceImporterFor(type);
     return imp ? imp->Save(metaFileData, inResource) : false;
 }
 
 bool ImporterManager::Deserialize(ResourceType type, const std::string& libraryPath, Resource* resource)
 {
-    IImporter* imp = ImporterFor(type);
+    IResourceImporter* imp = ResourceImporterFor(type);
     return imp ? imp->Deserialize(libraryPath, resource) : false;
 }
 
 void ImporterManager::Evict(ResourceType type, Resource* resource)
 {
-    if (IImporter* imp = ImporterFor(type))
+    if (IResourceImporter* imp = ResourceImporterFor(type))
         imp->Evict(resource);
 }
 
 bool ImporterManager::Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu)
 {
-    IImporter* imp = ImporterFor(type);
+    IResourceImporter* imp = ResourceImporterFor(type);
     return imp ? imp->Upload(resource, gpu) : false;
 }
 
 void ImporterManager::Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu)
 {
-    if (IImporter* imp = ImporterFor(type))
+    if (IResourceImporter* imp = ResourceImporterFor(type))
         imp->Release(resource, gpu);
 }

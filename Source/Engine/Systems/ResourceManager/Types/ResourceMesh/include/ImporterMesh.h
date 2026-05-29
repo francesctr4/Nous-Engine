@@ -24,7 +24,7 @@ struct SubMeshData
     std::string         materialAssetPath;
 };
 
-struct ImporterMesh : IImporter
+struct ImporterMesh : IResourceImporter
 {
     NOUS_ENGINE_API bool Import(const MetaFileData& metaFileData) override;
     NOUS_ENGINE_API bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;

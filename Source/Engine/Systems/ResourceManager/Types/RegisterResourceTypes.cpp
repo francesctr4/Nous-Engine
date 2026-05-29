@@ -48,7 +48,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.libExtPolicy = LibraryExtPolicy::DIRECTORY_OF_STAGES;
         d.memoryTag = MemoryTag::RESOURCE_SHADER;
         d.cleanupPriority = k_PrioShader;
-        d.importer = std::make_unique<ImporterShader>();
+        d.SetImporter<ImporterShader>();
         d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER, uid); };
         d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_SHADER); };
         d.display.color[0] = 0.7f; d.display.color[1] = 0.2f; d.display.color[2] = 1.0f; d.display.color[3] = 1.0f;
@@ -66,7 +66,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.libExtPolicy = LibraryExtPolicy::FIXED;
         d.memoryTag = MemoryTag::RESOURCE_MATERIAL;
         d.cleanupPriority = k_PrioMaterial;
-        d.importer = std::make_unique<ImporterMaterial>();
+        d.SetImporter<ImporterMaterial>();
         d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL, uid); };
         d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_MATERIAL); };
         d.hotReloadable = true;
@@ -93,7 +93,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.libExtPolicy = LibraryExtPolicy::FIXED;
         d.memoryTag = MemoryTag::RESOURCE_TEXTURE;
         d.cleanupPriority = k_PrioTexture;
-        d.importer = std::make_unique<ImporterTexture>();
+        d.SetImporter<ImporterTexture>();
         d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE, uid); };
         d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_TEXTURE); };
         d.hotReloadable = true;
@@ -112,7 +112,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.libExtPolicy = LibraryExtPolicy::FIXED;
         d.memoryTag = MemoryTag::RESOURCE_MESH;
         d.cleanupPriority = k_PrioMesh;
-        d.importer = std::make_unique<ImporterMesh>();
+        d.SetImporter<ImporterMesh>();
         d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH, uid); };
         d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_MESH); };
         d.display.color[0] = 0.0f; d.display.color[1] = 0.8f; d.display.color[2] = 0.5f; d.display.color[3] = 1.0f;
@@ -130,7 +130,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.libExtPolicy = LibraryExtPolicy::PRESERVE_SOURCE;
         d.memoryTag = MemoryTag::RESOURCE_AUDIO;
         d.cleanupPriority = k_PrioAudio;
-        d.importer = std::make_unique<ImporterAudio>();
+        d.SetImporter<ImporterAudio>();
         d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO, uid); };
         d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); };
         d.display.color[0] = 0.93f; d.display.color[1] = 0.28f; d.display.color[2] = 0.60f; d.display.color[3] = 1.0f;
@@ -148,7 +148,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.libExtPolicy = LibraryExtPolicy::FIXED;
         d.memoryTag = MemoryTag::SCENE;
         d.cleanupPriority = k_PrioScene;
-        d.importer = std::make_unique<ImporterScene>();
+        d.SetImporter<ImporterScene>();
         // No createFn/destroyFn: scenes have no runtime resource object. The
         // import step only mirrors the source .nous into Library/Scenes/ under
         // its UID; scene loading goes through ModuleScene, not the generic

@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 class IGPUResourceFactory;
@@ -43,9 +44,30 @@ struct TypeDescriptor
     // Resource lifecycle
     MemoryTag memoryTag = MemoryTag::UNKNOWN;
     int  cleanupPriority = 0; // lower = destroyed first
-    std::unique_ptr<IImporter> importer;
+
+    // Owning handle to the importer. Always set (every type imports). For types
+    // with a runtime resource object, the concrete importer also derives
+    // IResourceImporter and `resourceImporter` below points at the same object;
+    // for pipeline-only types (SCENE) `resourceImporter` stays null — the same
+    // "no runtime object" signal as a null createFn/destroyFn.
+    std::unique_ptr<IAssetImporter> importer;
+    IResourceImporter* resourceImporter = nullptr; // non-owning alias into `importer`
+
     std::function<Resource* (uint32 uid)> createFn;
     std::function<void(Resource*)>        destroyFn;
+
+    // Constructs the importer and wires both handles. `resourceImporter` is set
+    // only when T derives IResourceImporter (compile-time trait, no RTTI), so the
+    // two handles can never disagree. Prefer this over assigning `importer`
+    // directly.
+    template <typename T>
+    void SetImporter()
+    {
+        auto owned = std::make_unique<T>();
+        if constexpr (std::is_base_of_v<IResourceImporter, T>)
+            resourceImporter = owned.get();
+        importer = std::move(owned);
+    }
 
     // True when changes to the source asset should trigger an async reimport.
     // Currently set for TEXTURE and MATERIAL; shaders run their own watcher,

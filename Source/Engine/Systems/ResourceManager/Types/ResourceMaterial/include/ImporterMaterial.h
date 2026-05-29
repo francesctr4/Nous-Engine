@@ -8,7 +8,7 @@
 
 class ResourceMaterial;
 
-struct ImporterMaterial : IImporter
+struct ImporterMaterial : IResourceImporter
 {
     NOUS_ENGINE_API bool Import(const MetaFileData& metaFileData) override;
     NOUS_ENGINE_API bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;
