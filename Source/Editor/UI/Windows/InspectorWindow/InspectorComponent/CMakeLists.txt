@@ -1,2 +1,3 @@
+add_subdirectory(ComponentInspectorRegistry)
 add_subdirectory(InspectorCMaterial)
 add_subdirectory(InspectorCScript)

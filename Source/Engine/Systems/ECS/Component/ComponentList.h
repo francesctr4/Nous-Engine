@@ -34,6 +34,13 @@ struct ComponentList
         (f.template operator()<Ts>(), ...);
     }
 
+    // True if `name` matches one of the listed component types' TypeName.
+    // Pure name check — constructs nothing, runs no OnStart.
+    static bool IsKnownName(std::string_view name)
+    {
+        return ((name == Ts::TypeName) || ...);
+    }
+
     // Attach the component whose TypeName == `name` to `go` and return it
     // (caller may then Deserialize). Returns nullptr if no type matches.
     static Component* AddByName(GameObject& go, std::string_view name)

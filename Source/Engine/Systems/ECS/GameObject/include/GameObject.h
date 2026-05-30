@@ -39,7 +39,7 @@ public:
     template<typename T> void  RemoveComponent();
 
     // Returns all user-facing components attached to this entity.
-    NOUS_Vector<Component*> GetAllComponents() const;
+    NOUS_ENGINE_API NOUS_Vector<Component*> GetAllComponents() const;
 
     // ── Identity ──────────────────────────────────────────────────────────────
 

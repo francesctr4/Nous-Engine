@@ -31,14 +31,6 @@ private:
 
     void DrawGameObjectHeader(GameObject* go);
 
-    void DrawTransformComponent(CTransform* ctransform) const;
-    void DrawMeshComponent(const CMesh* cmesh) const;
-    void DrawCameraComponent(CCamera* ccamera) const;
-    void DrawLightComponent(CLight* clight) const;
-    void DrawMaterialComponent(const GameObject* go, CMaterial* cmaterial,
-        ModuleResourceManager* rm, RendererFrontend* rendererFrontend) const;
-    void DrawScriptComponent(Scene* scene, const ScriptManager* scriptManager, CScript* cscript) const;
-
     void DrawAddComponentSection(GameObject* go) const;
 
     std::string m_nameBuffer;
