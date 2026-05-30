@@ -35,7 +35,7 @@ TEST_F(t_ComponentList, ForEachPresent_VisitsAttachedTypesInListOrder)
 
     std::vector<std::string> seen;
     ComponentTypes::ForEachPresent(scene->GetRegistry(), go.GetEntity(),
-        [&](Component* c) { seen.push_back(c->GetType()); });
+        [&](Component* c) { seen.emplace_back(c->GetType()); });
 
     // CTransform precedes CLight in the ComponentTypes declaration order.
     ASSERT_EQ(seen.size(), 2u);

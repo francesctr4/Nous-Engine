@@ -10,7 +10,8 @@
 #include <cstdint>
 #include <vector>
 
-class GameObject;
+#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+
 class ModuleScene;
 class ModuleResourceManager;
 
@@ -22,11 +23,11 @@ public:
     NOUS_ENGINE_API ~Scene();
 
     // Registry access.
-    NOUS_ENGINE_API       entt::registry& GetRegistry()       { return m_Registry; }
-    NOUS_ENGINE_API const entt::registry& GetRegistry() const { return m_Registry; }
+    NOUS_ENGINE_API       entt::registry& GetRegistry()       { return m_registry; }
+    NOUS_ENGINE_API const entt::registry& GetRegistry() const { return m_registry; }
 
-    ModuleScene*           GetModuleScene()     const { return m_ModuleScene; }
-    ModuleResourceManager* GetResourceManager() const { return m_ResourceManager; }
+    ModuleScene*           GetModuleScene()     const { return m_moduleScene; }
+    ModuleResourceManager* GetResourceManager() const { return m_resourceManager; }
 
     // GameObject creation / destruction
     NOUS_ENGINE_API GameObject CreateGameObject(const std::string& name = "GameObject",
@@ -48,15 +49,17 @@ public:
 
     // Lookup
     NOUS_ENGINE_API GameObject FindGameObjectByID(uint32_t id);
-    NOUS_ENGINE_API GameObject GetGameObjectByID(uint32_t id);
+    // Alias for FindGameObjectByID — kept for script-binding call-site readability ("get by id").
+    GameObject GetGameObjectByID(uint32_t id) { return FindGameObjectByID(id); }
     NOUS_ENGINE_API GameObject FindGameObjectByName(const std::string& name);
 
     // Returns all GameObjects as a vector of handles.
     // For render hot paths, prefer GetRegistry().view<>() directly.
     NOUS_ENGINE_API std::vector<GameObject> GetGameObjects() const;
 
-    // Thread-safe snapshot (for editor iteration while scene loads in background)
-    NOUS_ENGINE_API std::vector<GameObject> GetGameObjectsSnapshot() const;
+    // Alias for GetGameObjects — the name documents intent: the returned vector is a
+    // locked copy, safe to iterate on the main thread while a scene loads on a worker thread.
+    std::vector<GameObject> GetGameObjectsSnapshot() const { return GetGameObjects(); }
 
     NOUS_ENGINE_API const std::string& GetName() const;
     void SetName(const std::string& name);
@@ -71,11 +74,11 @@ private:
     entt::entity FindEntityByID_NoLock(uint32_t id) const;
     uint32_t     GenerateUniqueID();
 
-    entt::registry                             m_Registry;
-    std::unordered_map<uint32_t, entt::entity> m_IDToEntity;
-    std::vector<entt::entity>                  m_OrderedEntities;
-    std::string                                m_Name;
-    mutable std::mutex                         m_Mutex;
-    ModuleScene*                               m_ModuleScene     = nullptr;
-    ModuleResourceManager*                     m_ResourceManager = nullptr;
+    entt::registry                             m_registry;
+    std::unordered_map<uint32_t, entt::entity> m_idToEntity;
+    std::vector<entt::entity>                  m_orderedEntities;
+    std::string                                m_name;
+    mutable std::mutex                         m_mutex;
+    ModuleScene*                               m_moduleScene     = nullptr;
+    ModuleResourceManager*                     m_resourceManager = nullptr;
 };

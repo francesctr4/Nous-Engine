@@ -27,9 +27,9 @@
 // ── Constructor / Destructor ──────────────────────────────────────────────────
 
 Scene::Scene(const std::string& name, ModuleScene* moduleScene, ModuleResourceManager* resourceManager)
-    : m_Name(name), m_ModuleScene(moduleScene), m_ResourceManager(resourceManager)
+    : m_name(name), m_moduleScene(moduleScene), m_resourceManager(resourceManager)
 {
-    m_Registry.ctx().emplace<Scene*>(this);
+    m_registry.ctx().emplace<Scene*>(this);
 }
 
 Scene::~Scene() {
@@ -39,23 +39,23 @@ Scene::~Scene() {
 // ── GameObject Creation ───────────────────────────────────────────────────────
 
 GameObject Scene::CreateGameObject(const std::string& name, GameObject* parent) {
-    std::lock_guard lock(m_Mutex);
+    std::lock_guard lock(m_mutex);
 
     const uint32_t     id     = GenerateUniqueID();
-    const entt::entity entity = m_Registry.create();
+    const entt::entity entity = m_registry.create();
 
-    m_Registry.emplace<CEntityInfo>(entity, id, name);
-    m_Registry.emplace<CHierarchy>(entity);
-    m_IDToEntity[id] = entity;
-    m_OrderedEntities.push_back(entity);
+    m_registry.emplace<CEntityInfo>(entity, id, name);
+    m_registry.emplace<CHierarchy>(entity);
+    m_idToEntity[id] = entity;
+    m_orderedEntities.push_back(entity);
 
-    GameObject go(entity, &m_Registry);
+    GameObject go(entity, &m_registry);
     go.AddComponent<CTransform>();
 
     if (parent && parent->IsValid()) {
-        CHierarchy& parentH = m_Registry.get<CHierarchy>(parent->GetEntity());
+        CHierarchy& parentH = m_registry.get<CHierarchy>(parent->GetEntity());
         parentH.children.push_back(entity);
-        m_Registry.get<CHierarchy>(entity).parent = parent->GetEntity();
+        m_registry.get<CHierarchy>(entity).parent = parent->GetEntity();
     }
 
     return go;
@@ -64,29 +64,29 @@ GameObject Scene::CreateGameObject(const std::string& name, GameObject* parent) 
 GameObject Scene::CreateGameObjectDetached(const std::string& name, GameObject* parent, uint32_t preferredUID) {
     uint32_t id;
     {
-        std::lock_guard lock(m_Mutex);
-        if (preferredUID != 0 && !m_IDToEntity.count(preferredUID))
+        std::lock_guard lock(m_mutex);
+        if (preferredUID != 0 && !m_idToEntity.count(preferredUID))
             id = preferredUID;
         else
             id = GenerateUniqueID();
     }
 
-    const entt::entity entity = m_Registry.create();
-    m_Registry.emplace<CEntityInfo>(entity, id, name);
-    m_Registry.emplace<CHierarchy>(entity);
+    const entt::entity entity = m_registry.create();
+    m_registry.emplace<CEntityInfo>(entity, id, name);
+    m_registry.emplace<CHierarchy>(entity);
 
     {
-        std::lock_guard lock(m_Mutex);
-        m_IDToEntity[id] = entity;
+        std::lock_guard lock(m_mutex);
+        m_idToEntity[id] = entity;
     }
 
-    GameObject go(entity, &m_Registry);
+    GameObject go(entity, &m_registry);
     go.AddComponent<CTransform>();
 
     if (parent && parent->IsValid()) {
-        CHierarchy& parentH = m_Registry.get<CHierarchy>(parent->GetEntity());
+        CHierarchy& parentH = m_registry.get<CHierarchy>(parent->GetEntity());
         parentH.children.push_back(entity);
-        m_Registry.get<CHierarchy>(entity).parent = parent->GetEntity();
+        m_registry.get<CHierarchy>(entity).parent = parent->GetEntity();
     }
 
     return go;
@@ -94,10 +94,10 @@ GameObject Scene::CreateGameObjectDetached(const std::string& name, GameObject* 
 
 void Scene::RegisterGameObject(GameObject go) {
     if (!go.IsValid()) return;
-    std::lock_guard lock(m_Mutex);
-    const uint32_t id = m_Registry.get<CEntityInfo>(go.GetEntity()).id;
-    m_IDToEntity[id]  = go.GetEntity();
-    m_OrderedEntities.push_back(go.GetEntity());
+    std::lock_guard lock(m_mutex);
+    const uint32_t id = m_registry.get<CEntityInfo>(go.GetEntity()).id;
+    m_idToEntity[id]  = go.GetEntity();
+    m_orderedEntities.push_back(go.GetEntity());
 }
 
 // ── Destruction ───────────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@ void Scene::DestroyGameObject(GameObject go) {
     std::vector<entt::entity> toDestroy;
     CollectEntityTree(go.GetEntity(), toDestroy);
 
-    std::lock_guard lock(m_Mutex);
+    std::lock_guard lock(m_mutex);
     for (auto it = toDestroy.rbegin(); it != toDestroy.rend(); ++it)
         DestroyEntity(*it);
 }
@@ -119,24 +119,16 @@ void Scene::Update(float deltaTime) {
 #ifdef _PROFILING
     ZoneScopedN("Scene::Update");
 #endif
-    {
+    // Tick every component type that does real per-frame work. The set lives in
+    // UpdatableComponentTypes (ComponentTypes.h) — adding a per-frame component is a
+    // one-line edit there, and we never walk the no-op views (CTransform, CMesh, ...).
+    UpdatableComponentTypes::ForEachType([this, deltaTime]<typename T>() {
 #ifdef _PROFILING
-        ZoneScopedN("CScript::OnUpdate");
+        ZoneScoped;
+        ZoneName(T::TypeName.data(), T::TypeName.size());
 #endif
-        m_Registry.view<CScript>().each([deltaTime](CScript& s) { s.OnUpdate(deltaTime); });
-    }
-    {
-#ifdef _PROFILING
-        ZoneScopedN("CCamera::OnUpdate");
-#endif
-        m_Registry.view<CCamera>().each([deltaTime](CCamera& c) { c.OnUpdate(deltaTime); });
-    }
-    {
-#ifdef _PROFILING
-        ZoneScopedN("CLight::OnUpdate");
-#endif
-        m_Registry.view<CLight>().each([deltaTime](CLight& l) { l.OnUpdate(deltaTime); });
-    }
+        m_registry.view<T>().each([deltaTime](T& c) { c.OnUpdate(deltaTime); });
+    });
 }
 
 // ── World Matrix Update ───────────────────────────────────────────────────────
@@ -165,82 +157,74 @@ void Scene::UpdateWorldMatrices(bool force) {
     // every descendant, guaranteeing each transform's UpdateMatrix() runs even if
     // m_localDirty was already cleared by a racing pass (e.g. main thread ran this
     // mid-Deserialize on the worker thread, before parent wiring was complete).
-    for (auto [entity, hierarchy] : m_Registry.view<CHierarchy>().each()) {
+    for (auto [entity, hierarchy] : m_registry.view<CHierarchy>().each()) {
         if (hierarchy.parent == entt::null)
-            UpdateWorldMatrixRecursive(entity, m_Registry, force);
+            UpdateWorldMatrixRecursive(entity, m_registry, force);
     }
 }
 
 // ── Lookup ────────────────────────────────────────────────────────────────────
 
 GameObject Scene::FindGameObjectByID(uint32_t id) {
-    std::lock_guard lock(m_Mutex);
+    std::lock_guard lock(m_mutex);
     const entt::entity e = FindEntityByID_NoLock(id);
     if (e == entt::null) return {};
-    return GameObject(e, &m_Registry);
-}
-
-GameObject Scene::GetGameObjectByID(uint32_t id) {
-    return FindGameObjectByID(id);
+    return GameObject(e, &m_registry);
 }
 
 GameObject Scene::FindGameObjectByName(const std::string& name) {
-    std::lock_guard lock(m_Mutex);
-    for (auto [entity, info] : m_Registry.view<CEntityInfo>().each()) {
+    std::lock_guard lock(m_mutex);
+    for (auto [entity, info] : m_registry.view<CEntityInfo>().each()) {
         if (info.name == name)
-            return GameObject(entity, &m_Registry);
+            return GameObject(entity, &m_registry);
     }
     return {};
 }
 
 std::vector<GameObject> Scene::GetGameObjects() const {
-    std::lock_guard lock(m_Mutex);
+    std::lock_guard lock(m_mutex);
     std::vector<GameObject> result;
-    result.reserve(m_OrderedEntities.size());
-    for (auto entity : m_OrderedEntities)
-        result.emplace_back(entity, const_cast<entt::registry*>(&m_Registry));
+    result.reserve(m_orderedEntities.size());
+    for (auto entity : m_orderedEntities)
+        result.emplace_back(entity, const_cast<entt::registry*>(&m_registry));
     return result;
-}
-
-std::vector<GameObject> Scene::GetGameObjectsSnapshot() const {
-    return GetGameObjects();
 }
 
 // ── Name ─────────────────────────────────────────────────────────────────────
 
-const std::string& Scene::GetName() const { return m_Name; }
-void Scene::SetName(const std::string& name) { m_Name = name; }
+const std::string& Scene::GetName() const { return m_name; }
+void Scene::SetName(const std::string& name) { m_name = name; }
 
 // ── Serialization ─────────────────────────────────────────────────────────────
 
 void Scene::Serialize(const std::string& filepath) const {
-    // DFS from roots in m_OrderedEntities order, following CHierarchy::children
+    // DFS from roots in m_orderedEntities order, following CHierarchy::children
     // at each node. This preserves sibling order across save/load round-trips.
     // Using view<CEntityInfo>() here would serialize in EnTT's internal packed-array
     // order, which differs from CHierarchy::children order and causes siblings to
     // swap on every snapshot restore.
     JsonArray goArr;
     std::function<void(entt::entity)> writeDFS = [&](entt::entity entity) {
-        GameObject go(entity, const_cast<entt::registry*>(&m_Registry));
+        GameObject go(entity, const_cast<entt::registry*>(&m_registry));
         goArr.Append(go.Serialize());
-        if (const auto* h = m_Registry.try_get<CHierarchy>(entity))
+        if (const auto* h = m_registry.try_get<CHierarchy>(entity))
             for (auto child : h->children)
                 writeDFS(child);
     };
-    for (auto entity : m_OrderedEntities) {
-        const auto* h = m_Registry.try_get<CHierarchy>(entity);
+    for (auto entity : m_orderedEntities) {
+        const auto* h = m_registry.try_get<CHierarchy>(entity);
         if (h && h->parent == entt::null)
             writeDFS(entity);
     }
 
     JsonObject root;
-    root.Set("name",        m_Name);
+    root.Set("name",        m_name);
     root.Set("version",     0.1);
     root.Set("GameObjects", std::move(goArr));
 
     JsonFile::SaveToFile(root, filepath);
 
-    m_Registry.view<CMaterial>().each([](const CMaterial& c) {
+    m_registry.view<CMaterial>().each([](const CMaterial& c) {
         if (c.material && !c.material->GetAssetsPath().empty())
             ImporterMaterial::SaveMaterialToAssets(c.material);
     });
@@ -256,7 +240,7 @@ void Scene::Deserialize(const std::string& filepath) {
     }
 
     const std::string sceneName = root.GetString("name");
-    if (!sceneName.empty()) m_Name = sceneName;
+    if (!sceneName.empty()) m_name = sceneName;
 
     JsonArray arr = root.GetArray("GameObjects");
     if (arr.IsEmpty()) {
@@ -278,16 +262,21 @@ void Scene::Deserialize(const std::string& filepath) {
         // go.GetParentID() afterward would always return 0.
         const auto parentID = static_cast<uint32_t>(obj.GetDouble("parent", 0.0));
         GameObject go = GameObject::Deserialize(obj, this);
-        if (go.IsValid()) {
-            m_IDToEntity[go.GetID()] = go.GetEntity();
+        if (go.IsValid())
             created.push_back({ go, parentID });
-        }
     }
 
     {
-        std::lock_guard lock(m_Mutex);
-        for (auto& [go, parentID] : created)
-            m_OrderedEntities.push_back(go.GetEntity());
+        std::lock_guard lock(m_mutex);
+        // Publish the ID map and ordered list under the lock — consistent with
+        // CreateGameObjectDetached / RegisterGameObject. A concurrent main-thread
+        // FindGameObjectByID (which locks m_mutex) must never read a half-written
+        // m_idToEntity. Populate it before the parent-wiring loop below, which
+        // resolves parents via FindEntityByID_NoLock.
+        for (auto& [go, parentID] : created) {
+            m_idToEntity[go.GetID()] = go.GetEntity();
+            m_orderedEntities.push_back(go.GetEntity());
+        }
 
         for (auto& [go, parentID] : created) {
             if (parentID == 0) continue;
@@ -296,8 +285,8 @@ void Scene::Deserialize(const std::string& filepath) {
                 NOUS_WARN("Parent ID %u not found for %s", parentID, go.GetName().c_str());
                 continue;
             }
-            m_Registry.get<CHierarchy>(go.GetEntity()).parent = parentEntity;
-            m_Registry.get<CHierarchy>(parentEntity).children.push_back(go.GetEntity());
+            m_registry.get<CHierarchy>(go.GetEntity()).parent = parentEntity;
+            m_registry.get<CHierarchy>(parentEntity).children.push_back(go.GetEntity());
         }
     }
 
@@ -336,12 +325,12 @@ void Scene::Deserialize(const std::string& filepath) {
 void Scene::Clear() {
     // Fire OnDestroy for every component of every registered type, in list order.
     ComponentTypes::ForEachType([this]<typename T>() {
-        m_Registry.view<T>().each([](T& c) { c.OnDestroy(); });
+        m_registry.view<T>().each([](T& c) { c.OnDestroy(); });
     });
 
-    m_Registry.clear();
-    m_IDToEntity.clear();
-    m_OrderedEntities.clear();
+    m_registry.clear();
+    m_idToEntity.clear();
+    m_orderedEntities.clear();
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────────
@@ -352,34 +341,34 @@ void Scene::CollectEntityTree(entt::entity root, std::vector<entt::entity>& out)
     while (!q.empty()) {
         entt::entity e = q.front(); q.pop();
         out.push_back(e);
-        if (const auto* h = m_Registry.try_get<CHierarchy>(e))
+        if (const auto* h = m_registry.try_get<CHierarchy>(e))
             for (auto child : h->children)
                 q.push(child);
     }
 }
 
 void Scene::DestroyEntity(entt::entity entity) {
-    if (!m_Registry.valid(entity)) return;
+    if (!m_registry.valid(entity)) return;
 
-    if (m_ModuleScene) {
-        GameObject go(entity, &m_Registry);
-        m_ModuleScene->RemoveFromSelection(go);
+    if (m_moduleScene) {
+        GameObject go(entity, &m_registry);
+        m_moduleScene->RemoveFromSelection(go);
     }
 
-    if (const auto* h = m_Registry.try_get<CHierarchy>(entity)) {
+    if (const auto* h = m_registry.try_get<CHierarchy>(entity)) {
         if (h->parent != entt::null) {
-            auto& parentH = m_Registry.get<CHierarchy>(h->parent);
+            auto& parentH = m_registry.get<CHierarchy>(h->parent);
             parentH.children.erase(
                 std::remove(parentH.children.begin(), parentH.children.end(), entity),
                 parentH.children.end());
         }
     }
 
-    if (const auto* info = m_Registry.try_get<CEntityInfo>(entity)) {
-        m_IDToEntity.erase(info->id);
-        auto it = std::find(m_OrderedEntities.begin(), m_OrderedEntities.end(), entity);
-        if (it != m_OrderedEntities.end())
-            m_OrderedEntities.erase(it);
+    if (const auto* info = m_registry.try_get<CEntityInfo>(entity)) {
+        m_idToEntity.erase(info->id);
+        auto it = std::find(m_orderedEntities.begin(), m_orderedEntities.end(), entity);
+        if (it != m_orderedEntities.end())
+            m_orderedEntities.erase(it);
     }
 
     // Match Clear() behavior: fire OnDestroy for every component type before
@@ -389,21 +378,21 @@ void Scene::DestroyEntity(entt::entity entity) {
     // never run.
     // Fire OnDestroy for every attached component before the entity is destroyed,
     // in ComponentTypes list order (same order as Clear() — the two paths now agree).
-    ComponentTypes::ForEachPresent(m_Registry, entity,
+    ComponentTypes::ForEachPresent(m_registry, entity,
         [](Component* c) { c->OnDestroy(); });
 
-    m_Registry.destroy(entity);
+    m_registry.destroy(entity);
 }
 
 entt::entity Scene::FindEntityByID_NoLock(uint32_t id) const {
-    const auto it = m_IDToEntity.find(id);
-    return it != m_IDToEntity.end() ? it->second : entt::null;
+    const auto it = m_idToEntity.find(id);
+    return it != m_idToEntity.end() ? it->second : entt::null;
 }
 
 uint32_t Scene::GenerateUniqueID() {
     uint32_t id;
     do {
         id = static_cast<uint32_t>(Random::Generate());
-    } while (id == 0 || m_IDToEntity.count(id));
+    } while (id == 0 || m_idToEntity.count(id));
     return id;
 }

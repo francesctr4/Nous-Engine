@@ -297,7 +297,7 @@ void PrefabManager::ReloadPrefabInstance(GameObject instanceRoot, Scene* scene)
         std::vector<std::string> toRemove;
         for (auto* comp : instanceRoot.GetAllComponents())
         {
-            const std::string t = comp->GetType();
+            const std::string t(comp->GetType());
             if (t == "CTransform" || t == "CPrefab" || t == "CScript") continue;
             if (prefabRootTypes.find(t) == prefabRootTypes.end())
                 toRemove.push_back(t);

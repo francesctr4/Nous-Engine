@@ -2,7 +2,8 @@
 
 #include <string>
 #include <string_view>
-#include <entt/entt.hpp>
+#include <entt/entity/fwd.hpp>     // entt::entity + entt::registry forward decls (full <entt/entt.hpp> not needed here)
+#include <entt/entity/entity.hpp>  // entt::null
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 class GameObject;
@@ -15,7 +16,7 @@ public:
     // Valid as long as the entity exists in the registry.
     GameObject GetGameObject() const;
 
-    virtual std::string GetType() const = 0;
+    virtual std::string_view GetType() const = 0;
 
     virtual void OnStart() {}
     virtual void OnUpdate(float deltaTime) {}
@@ -26,10 +27,10 @@ public:
 
 protected:
     friend class GameObject;
-    entt::entity    m_Entity   = entt::null;
-    entt::registry* m_Registry = nullptr;
+    entt::entity    m_entity   = entt::null;
+    entt::registry* m_registry = nullptr;
 };
 
 #define COMPONENT_TYPE(type) \
     static constexpr std::string_view TypeName = #type; \
-    std::string GetType() const override { return std::string(TypeName); }
+    std::string_view GetType() const override { return TypeName; }

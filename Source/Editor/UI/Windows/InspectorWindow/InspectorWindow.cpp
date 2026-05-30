@@ -105,7 +105,7 @@ void InspectorWindow::DrawAddComponentSection(GameObject* go) const
     // Names of components already attached — skip them in the menu.
     std::unordered_set<std::string> present;
     for (Component* c : go->GetAllComponents())
-        present.insert(c->GetType());
+        present.insert(std::string(c->GetType()));
 
     if (ImGui::Button("Add Component"))
         ImGui::OpenPopup("##AddComponentPopup");

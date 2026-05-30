@@ -2,5 +2,5 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 
 GameObject Component::GetGameObject() const {
-    return GameObject(m_Entity, m_Registry);
+    return GameObject(m_entity, m_registry);
 }

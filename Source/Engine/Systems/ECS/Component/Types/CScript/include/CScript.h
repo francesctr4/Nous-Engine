@@ -1,5 +1,4 @@
-#ifndef NOUS_ENGINE_CSCRIPT_H
-#define NOUS_ENGINE_CSCRIPT_H
+#pragma once
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include <atomic>
@@ -103,5 +102,3 @@ private:
     // preventing a use-after-free when hot-reload runs during play mode.
     std::atomic<bool>         m_reloading{false};
 };
-
-#endif // NOUS_ENGINE_CSCRIPT_H

@@ -1,5 +1,4 @@
-#ifndef NOUS_ENGINE_CTRANSFORM_H
-#define NOUS_ENGINE_CTRANSFORM_H
+#pragma once
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include <glm/glm.hpp>
@@ -58,5 +57,3 @@ public:
 
     NOUS_ENGINE_API void Deserialize(const JsonObject& obj) override;
 };
-
-#endif //NOUS_ENGINE_CTRANSFORM_H

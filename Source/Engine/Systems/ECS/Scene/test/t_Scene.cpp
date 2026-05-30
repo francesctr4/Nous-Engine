@@ -123,7 +123,7 @@ TEST_F(t_Scene, IDMapSyncsOnDestroyCreate)
     const uint32_t id = go.GetID();
     scene->DestroyGameObject(go);
 
-    // The ID must not resolve after destruction — m_IDToEntity must be cleaned.
+    // The ID must not resolve after destruction — m_idToEntity must be cleaned.
     EXPECT_FALSE(scene->FindGameObjectByID(id).IsValid());
 }
 

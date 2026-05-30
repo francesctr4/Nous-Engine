@@ -1,5 +1,4 @@
-#ifndef NOUS_ENGINE_CMESH_H
-#define NOUS_ENGINE_CMESH_H
+#pragma once
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/EngineExport.h"
@@ -26,5 +25,3 @@ public:
 
     NOUS_ENGINE_API void OnDestroy() override;
 };
-
-#endif // NOUS_ENGINE_CMESH_H

@@ -3,7 +3,6 @@
 #include "Engine/Systems/ECS/ECSInternalComponents.h"
 
 #include "Engine/Systems/ECS/Component/Types/ComponentTypes.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Logger/Logger.h"
 
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
@@ -13,68 +12,68 @@
 // ── Identity ──────────────────────────────────────────────────────────────────
 
 uint32_t GameObject::GetID() const {
-    if (!m_Registry) return 0;
-    if (const auto* info = m_Registry->try_get<CEntityInfo>(m_Entity))
+    if (!m_registry) return 0;
+    if (const auto* info = m_registry->try_get<CEntityInfo>(m_entity))
         return info->id;
     return 0;
 }
 
 const std::string& GameObject::GetName() const {
     static const std::string c_empty;
-    if (!m_Registry) return c_empty;
-    if (const auto* info = m_Registry->try_get<CEntityInfo>(m_Entity))
+    if (!m_registry) return c_empty;
+    if (const auto* info = m_registry->try_get<CEntityInfo>(m_entity))
         return info->name;
     return c_empty;
 }
 
 void GameObject::SetName(const std::string_view name) {
-    if (!m_Registry) return;
-    if (auto* info = m_Registry->try_get<CEntityInfo>(m_Entity))
+    if (!m_registry) return;
+    if (auto* info = m_registry->try_get<CEntityInfo>(m_entity))
         info->name = name;
 }
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
 
 Scene* GameObject::GetScene() const {
-    if (!m_Registry) return nullptr;
-    return m_Registry->ctx().get<Scene*>();
+    if (!m_registry) return nullptr;
+    return m_registry->ctx().get<Scene*>();
 }
 
 // ── Hierarchy ─────────────────────────────────────────────────────────────────
 
 GameObject GameObject::GetParent() const {
-    if (!m_Registry) return {};
-    const auto* h = m_Registry->try_get<CHierarchy>(m_Entity);
+    if (!m_registry) return {};
+    const auto* h = m_registry->try_get<CHierarchy>(m_entity);
     if (!h || h->parent == entt::null) return {};
-    return GameObject(h->parent, m_Registry);
+    return GameObject(h->parent, m_registry);
 }
 
 std::vector<GameObject> GameObject::GetChildren() const {
-    if (!m_Registry) return {};
-    const auto* h = m_Registry->try_get<CHierarchy>(m_Entity);
+    if (!m_registry) return {};
+    const auto* h = m_registry->try_get<CHierarchy>(m_entity);
     if (!h) return {};
     std::vector<GameObject> result;
     result.reserve(h->children.size());
     for (auto child : h->children)
-        result.emplace_back(child, m_Registry);
+        result.emplace_back(child, m_registry);
     return result;
 }
 
 void GameObject::SetParent(GameObject parent) {
-    if (!m_Registry) return;
-    auto* myH = m_Registry->try_get<CHierarchy>(m_Entity);
+    if (!m_registry) return;
+    auto* myH = m_registry->try_get<CHierarchy>(m_entity);
     if (!myH) return;
 
     if (myH->parent != entt::null) {
-        auto& oldParentH = m_Registry->get<CHierarchy>(myH->parent);
+        auto& oldParentH = m_registry->get<CHierarchy>(myH->parent);
         oldParentH.children.erase(
-            std::remove(oldParentH.children.begin(), oldParentH.children.end(), m_Entity),
+            std::remove(oldParentH.children.begin(), oldParentH.children.end(), m_entity),
             oldParentH.children.end());
     }
 
     if (parent.IsValid()) {
         myH->parent = parent.GetEntity();
-        m_Registry->get<CHierarchy>(parent.GetEntity()).children.push_back(m_Entity);
+        m_registry->get<CHierarchy>(parent.GetEntity()).children.push_back(m_entity);
     } else {
         myH->parent = entt::null;
     }
@@ -86,10 +85,10 @@ void GameObject::AddChild(GameObject child) {
 }
 
 void GameObject::RemoveChild(GameObject child) {
-    if (!child.IsValid() || !m_Registry) return;
-    auto* childH = m_Registry->try_get<CHierarchy>(child.GetEntity());
-    if (childH && childH->parent == m_Entity) {
-        auto* myH = m_Registry->try_get<CHierarchy>(m_Entity);
+    if (!child.IsValid() || !m_registry) return;
+    auto* childH = m_registry->try_get<CHierarchy>(child.GetEntity());
+    if (childH && childH->parent == m_entity) {
+        auto* myH = m_registry->try_get<CHierarchy>(m_entity);
         if (myH) {
             myH->children.erase(
                 std::remove(myH->children.begin(), myH->children.end(), child.GetEntity()),
@@ -100,20 +99,20 @@ void GameObject::RemoveChild(GameObject child) {
 }
 
 void GameObject::ClearChildren() {
-    if (!m_Registry) return;
-    auto* myH = m_Registry->try_get<CHierarchy>(m_Entity);
+    if (!m_registry) return;
+    auto* myH = m_registry->try_get<CHierarchy>(m_entity);
     if (!myH) return;
     auto childrenCopy = myH->children;
     for (auto child : childrenCopy)
-        RemoveChild(GameObject(child, m_Registry));
+        RemoveChild(GameObject(child, m_registry));
 }
 
 GameObject GameObject::FindChildByName(const std::string& name, const bool recursive) const {
-    if (!m_Registry) return {};
-    const auto* h = m_Registry->try_get<CHierarchy>(m_Entity);
+    if (!m_registry) return {};
+    const auto* h = m_registry->try_get<CHierarchy>(m_entity);
     if (!h) return {};
     for (auto child : h->children) {
-        GameObject go(child, m_Registry);
+        GameObject go(child, m_registry);
         if (go.GetName() == name) return go;
         if (recursive) {
             if (auto found = go.FindChildByName(name, true); found.IsValid())
@@ -125,10 +124,10 @@ GameObject GameObject::FindChildByName(const std::string& name, const bool recur
 
 // ── All Components (known-type list) ─────────────────────────────────────────
 
-NOUS_Vector<Component*> GameObject::GetAllComponents() const {
-    NOUS_Vector<Component*> result(MemoryTag::COMPONENT);
-    if (!m_Registry) return result;
-    ComponentTypes::ForEachPresent(*m_Registry, m_Entity,
+std::vector<Component*> GameObject::GetAllComponents() const {
+    std::vector<Component*> result;
+    if (!m_registry) return result;
+    ComponentTypes::ForEachPresent(*m_registry, m_entity,
         [&](Component* c) { result.push_back(c); });
     return result;
 }
@@ -136,10 +135,10 @@ NOUS_Vector<Component*> GameObject::GetAllComponents() const {
 // ── Parent ID (deserialization helper) ────────────────────────────────────────
 
 uint32_t GameObject::GetParentID() const {
-    if (!m_Registry) return 0;
-    const auto* h = m_Registry->try_get<CHierarchy>(m_Entity);
+    if (!m_registry) return 0;
+    const auto* h = m_registry->try_get<CHierarchy>(m_entity);
     if (!h || h->parent == entt::null) return 0;
-    const auto* info = m_Registry->try_get<CEntityInfo>(h->parent);
+    const auto* info = m_registry->try_get<CEntityInfo>(h->parent);
     return info ? info->id : 0;
 }
 
@@ -169,7 +168,7 @@ GameObject GameObject::Deserialize(const JsonObject& obj, Scene* scene) {
     const std::string name     = obj.GetString("name");
     const auto        parentID = static_cast<uint32_t>(obj.GetDouble("parent", 0.0));
 
-    entt::registry& reg = const_cast<entt::registry&>(scene->GetRegistry());
+    entt::registry& reg = scene->GetRegistry();
     const entt::entity entity = reg.create();
     reg.emplace<CEntityInfo>(entity, uid, name);
     reg.emplace<CHierarchy>(entity);

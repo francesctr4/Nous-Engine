@@ -24,3 +24,13 @@ using ComponentTypes = ComponentList<
     CScript,
     CPrefab
 >;
+
+// Subset of ComponentTypes whose OnUpdate does real per-frame work. Scene::Update
+// ticks exactly these — driving the full ComponentTypes there would needlessly walk
+// the CTransform/CMesh/CMaterial/CPrefab views every frame to call no-op OnUpdates.
+// Keep in sync when a component gains (or loses) a meaningful OnUpdate override.
+using UpdatableComponentTypes = ComponentList<
+    CScript,
+    CCamera,
+    CLight
+>;

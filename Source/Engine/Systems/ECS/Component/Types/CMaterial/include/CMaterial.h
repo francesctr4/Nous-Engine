@@ -1,5 +1,4 @@
-#ifndef NOUS_ENGINE_CMATERIAL_H
-#define NOUS_ENGINE_CMATERIAL_H
+#pragma once
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/EngineExport.h"
@@ -10,9 +9,6 @@ class CMaterial : public Component {
 public:
     COMPONENT_TYPE(CMaterial)
 
-    CMaterial() = default;
-    ~CMaterial() override = default;
-
     // ---------- JSON Serialization ----------
     NOUS_ENGINE_API JsonObject Serialize() const override;
     NOUS_ENGINE_API void Deserialize(const JsonObject& obj) override;
@@ -21,5 +17,3 @@ public:
 
     ResourceMaterial* material = nullptr;
 };
-
-#endif // NOUS_ENGINE_CMATERIAL_H

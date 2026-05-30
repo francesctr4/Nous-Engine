@@ -1,5 +1,4 @@
-#ifndef NOUS_ENGINE_CPREFAB_H
-#define NOUS_ENGINE_CPREFAB_H
+#pragma once
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/EngineExport.h"
@@ -19,5 +18,3 @@ public:
     NOUS_ENGINE_API JsonObject Serialize() const override;
     NOUS_ENGINE_API void Deserialize(const JsonObject& obj) override;
 };
-
-#endif // NOUS_ENGINE_CPREFAB_H
