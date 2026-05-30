@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <entt/entt.hpp>
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
@@ -23,8 +24,6 @@ public:
     virtual JsonObject Serialize()                    const = 0;
     virtual void       Deserialize(const JsonObject& obj)  = 0;
 
-    static Component* CreateComponent(const std::string& type);
-
 protected:
     friend class GameObject;
     entt::entity    m_Entity   = entt::null;
@@ -32,4 +31,5 @@ protected:
 };
 
 #define COMPONENT_TYPE(type) \
-    std::string GetType() const override { return #type; }
+    static constexpr std::string_view TypeName = #type; \
+    std::string GetType() const override { return std::string(TypeName); }

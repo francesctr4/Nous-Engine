@@ -12,6 +12,7 @@
 #include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
+#include "Engine/Systems/ECS/Component/ComponentTypes.h"
 #include "Engine/Core/Logger/Logger.h"
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
@@ -25,28 +26,21 @@
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_SCENE;
 
 // Adds a component of the given type to go and deserializes it from compObj.
-// Matches the type dispatch in GameObject::Deserialize.
+// Delegates the type dispatch to ComponentTypes (shared with GameObject::Deserialize).
 static void DeserializeComponentInto(GameObject& go, std::string_view typeName, const JsonObject& compObj)
 {
-    if      (typeName == "CTransform") go.AddComponent<CTransform>().Deserialize(compObj);
-    else if (typeName == "CMesh")      go.AddComponent<CMesh>()     .Deserialize(compObj);
-    else if (typeName == "CMaterial")  go.AddComponent<CMaterial>() .Deserialize(compObj);
-    else if (typeName == "CCamera")    go.AddComponent<CCamera>()   .Deserialize(compObj);
-    else if (typeName == "CLight")     go.AddComponent<CLight>()    .Deserialize(compObj);
-    else if (typeName == "CScript")    go.AddComponent<CScript>()   .Deserialize(compObj);
-    else if (typeName == "CPrefab")    go.AddComponent<CPrefab>()   .Deserialize(compObj);
-    else NOUS_WARN_C(CURRENT_CHANNEL, "[PrefabManager] Unknown component type: %.*s",
-                     static_cast<int>(typeName.size()), typeName.data());
+    if (Component* c = ComponentTypes::AddByName(go, typeName))
+        c->Deserialize(compObj);
+    else
+        NOUS_WARN_C(CURRENT_CHANNEL, "[PrefabManager] Unknown component type: %.*s",
+                    static_cast<int>(typeName.size()), typeName.data());
 }
 
-// Removes a component by type name. Only user-facing non-structural types.
+// Removes a component by type name. The set of removable types is restricted at
+// the call site (CTransform/CPrefab/CScript are filtered out before calling here).
 static void RemoveComponentByName(GameObject& go, const std::string& typeName)
 {
-    if      (typeName == "CMesh")     go.RemoveComponent<CMesh>();
-    else if (typeName == "CMaterial") go.RemoveComponent<CMaterial>();
-    else if (typeName == "CCamera")   go.RemoveComponent<CCamera>();
-    else if (typeName == "CLight")    go.RemoveComponent<CLight>();
-    // CTransform, CPrefab, CScript excluded at call site
+    ComponentTypes::RemoveByName(go, typeName);
 }
 
 // -----------------------------------------------------------------------------

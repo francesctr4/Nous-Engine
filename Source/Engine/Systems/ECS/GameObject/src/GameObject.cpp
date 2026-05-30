@@ -2,13 +2,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/ECSInternalComponents.h"
 
-#include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
-#include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
-#include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
-#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
-#include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
-#include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
-#include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
+#include "Engine/Systems/ECS/Component/ComponentTypes.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Logger/Logger.h"
 
@@ -134,13 +128,8 @@ GameObject GameObject::FindChildByName(const std::string& name, const bool recur
 NOUS_Vector<Component*> GameObject::GetAllComponents() const {
     NOUS_Vector<Component*> result(MemoryTag::COMPONENT);
     if (!m_Registry) return result;
-    if (auto* c = m_Registry->try_get<CTransform>(m_Entity)) result.push_back(c);
-    if (auto* c = m_Registry->try_get<CMesh>     (m_Entity)) result.push_back(c);
-    if (auto* c = m_Registry->try_get<CMaterial> (m_Entity)) result.push_back(c);
-    if (auto* c = m_Registry->try_get<CCamera>   (m_Entity)) result.push_back(c);
-    if (auto* c = m_Registry->try_get<CLight>    (m_Entity)) result.push_back(c);
-    if (auto* c = m_Registry->try_get<CScript>   (m_Entity)) result.push_back(c);
-    if (auto* c = m_Registry->try_get<CPrefab>   (m_Entity)) result.push_back(c);
+    ComponentTypes::ForEachPresent(*m_Registry, m_Entity,
+        [&](Component* c) { result.push_back(c); });
     return result;
 }
 
@@ -197,14 +186,10 @@ GameObject GameObject::Deserialize(const JsonObject& obj, Scene* scene) {
             const std::string type = compObj.GetString("type");
             if (type.empty()) continue;
 
-            if      (type == "CTransform") { go.AddComponent<CTransform>().Deserialize(compObj); }
-            else if (type == "CMesh")      { go.AddComponent<CMesh>()     .Deserialize(compObj); }
-            else if (type == "CMaterial")  { go.AddComponent<CMaterial>() .Deserialize(compObj); }
-            else if (type == "CCamera")    { go.AddComponent<CCamera>()   .Deserialize(compObj); }
-            else if (type == "CLight")     { go.AddComponent<CLight>()    .Deserialize(compObj); }
-            else if (type == "CScript")    { go.AddComponent<CScript>()   .Deserialize(compObj); }
-            else if (type == "CPrefab")    { go.AddComponent<CPrefab>()   .Deserialize(compObj); }
-            else { NOUS_WARN("Unknown component type during deserialization: %s", type.c_str()); }
+            if (Component* c = ComponentTypes::AddByName(go, type))
+                c->Deserialize(compObj);
+            else
+                NOUS_WARN("Unknown component type during deserialization: %s", type.c_str());
         }
     }
 

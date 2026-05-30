@@ -13,6 +13,7 @@
 #include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
 #include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
+#include "Engine/Systems/ECS/Component/ComponentTypes.h"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
@@ -333,13 +334,10 @@ void Scene::Deserialize(const std::string& filepath) {
 // ── Clear ─────────────────────────────────────────────────────────────────────
 
 void Scene::Clear() {
-    m_Registry.view<CTransform>().each([](CTransform& c) { c.OnDestroy(); });
-    m_Registry.view<CMesh>().each     ([](CMesh&      c) { c.OnDestroy(); });
-    m_Registry.view<CMaterial>().each ([](CMaterial&  c) { c.OnDestroy(); });
-    m_Registry.view<CCamera>().each   ([](CCamera&    c) { c.OnDestroy(); });
-    m_Registry.view<CLight>().each    ([](CLight&     c) { c.OnDestroy(); });
-    m_Registry.view<CScript>().each   ([](CScript&    c) { c.OnDestroy(); });
-    m_Registry.view<CPrefab>().each   ([](CPrefab&    c) { c.OnDestroy(); });
+    // Fire OnDestroy for every component of every registered type, in list order.
+    ComponentTypes::ForEachType([this]<typename T>() {
+        m_Registry.view<T>().each([](T& c) { c.OnDestroy(); });
+    });
 
     m_Registry.clear();
     m_IDToEntity.clear();
@@ -389,13 +387,10 @@ void Scene::DestroyEntity(entt::entity entity) {
     // holding stale CScript* pointers and leaks GPU resources for CMesh /
     // CMaterial because their OnDestroy() calls (vkDeviceWaitIdle, etc.)
     // never run.
-    if (auto* c = m_Registry.try_get<CScript>   (entity)) c->OnDestroy();
-    if (auto* c = m_Registry.try_get<CMaterial> (entity)) c->OnDestroy();
-    if (auto* c = m_Registry.try_get<CMesh>     (entity)) c->OnDestroy();
-    if (auto* c = m_Registry.try_get<CCamera>   (entity)) c->OnDestroy();
-    if (auto* c = m_Registry.try_get<CLight>    (entity)) c->OnDestroy();
-    if (auto* c = m_Registry.try_get<CTransform>(entity)) c->OnDestroy();
-    if (auto* c = m_Registry.try_get<CPrefab>   (entity)) c->OnDestroy();
+    // Fire OnDestroy for every attached component before the entity is destroyed,
+    // in ComponentTypes list order (same order as Clear() — the two paths now agree).
+    ComponentTypes::ForEachPresent(m_Registry, entity,
+        [](Component* c) { c->OnDestroy(); });
 
     m_Registry.destroy(entity);
 }
