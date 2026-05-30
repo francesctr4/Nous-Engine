@@ -3,10 +3,10 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
-#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
-#include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
-#include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
+#include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
+#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
+#include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
 #include "Engine/Core/Logger/Logger.h"
 
 static ModuleScene* s_scene = nullptr;

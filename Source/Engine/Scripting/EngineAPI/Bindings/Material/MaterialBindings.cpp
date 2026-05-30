@@ -3,7 +3,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
+#include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Core/Logger/Logger.h"
 

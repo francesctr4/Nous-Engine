@@ -12,11 +12,11 @@
 
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
-#include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
-#include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
-#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
-#include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
+#include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
+#include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
+#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/ECSInternalComponents.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"

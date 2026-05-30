@@ -2,7 +2,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/ECSInternalComponents.h"
 
-#include "Engine/Systems/ECS/Component/ComponentTypes.h"
+#include "Engine/Systems/ECS/Component/Types/ComponentTypes.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Logger/Logger.h"
 

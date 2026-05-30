@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Editor/UI/Windows/InspectorWindow/InspectorComponent/ComponentInspectorRegistry/include/ComponentInspectorRegistry.h"
-#include "Engine/Systems/ECS/Component/ComponentTypes.h"
+#include "Engine/Systems/ECS/Component/Types/ComponentTypes.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"

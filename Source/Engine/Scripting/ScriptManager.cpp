@@ -6,7 +6,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>
 #include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
-#include "Engine/Systems/ECS/Component/CScript/include/CScript.h"
+#include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
 
 #include <fstream>
 #include <sstream>

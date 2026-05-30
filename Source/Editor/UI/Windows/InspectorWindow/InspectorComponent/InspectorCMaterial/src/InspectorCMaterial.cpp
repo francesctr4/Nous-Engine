@@ -3,7 +3,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Systems/ECS/Component/CMaterial/include/CMaterial.h"
+#include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ImporterMaterial.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"

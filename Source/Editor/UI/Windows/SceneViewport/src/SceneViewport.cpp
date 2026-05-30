@@ -12,8 +12,8 @@
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
 #include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
 
-#include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
-#include "Engine/Systems/ECS/Component/CMesh/include/CMesh.h"
+#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"

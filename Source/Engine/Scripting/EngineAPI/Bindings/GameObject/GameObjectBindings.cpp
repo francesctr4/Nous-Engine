@@ -3,7 +3,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Core/Logger/Logger.h"
 
 static ModuleScene* s_scene = nullptr;

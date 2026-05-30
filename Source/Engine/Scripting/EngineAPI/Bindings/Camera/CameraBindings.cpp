@@ -3,7 +3,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
 #include "Engine/Core/Logger/Logger.h"
 
 static ModuleScene* s_scene = nullptr;

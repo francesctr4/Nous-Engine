@@ -2,9 +2,9 @@
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/CCamera/include/CCamera.h"
-#include "Engine/Systems/ECS/Component/CLight/include/CLight.h"
-#include "Engine/Systems/ECS/Component/CPrefab/include/CPrefab.h"
+#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
+#include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
+#include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
