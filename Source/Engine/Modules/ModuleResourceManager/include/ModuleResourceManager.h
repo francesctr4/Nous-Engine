@@ -21,6 +21,7 @@
 
 class IGPUResourceFactory;
 class IImporterManager;
+class TypeRegistry;
 
 class ResourceMesh;
 
@@ -33,7 +34,7 @@ public:
 
 	// Constructor
 	NOUS_ENGINE_API ModuleResourceManager(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-	                                      IImporterManager* importerManager);
+	                                      IImporterManager* importerManager, const TypeRegistry& typeRegistry);
 
 	// Destructor
 	~ModuleResourceManager() override;
@@ -142,6 +143,10 @@ public:
     // Upload/Release through the IImporterManager interface.
     NOUS_ENGINE_API IImporterManager* GetImporterManager() const;
 
+    // Read-only access to the resource type registry (injected at construction).
+    // Used by editor UI windows that hold this module via the editor context.
+    NOUS_ENGINE_API const TypeRegistry& GetTypeRegistry() const;
+
     // Returns the ResourceMesh for a specific submesh within a source asset.
     // If already loaded this session, bumps the ref count and returns it.
     // Otherwise loads the submesh from the library binary, uploads it to the GPU,
@@ -179,6 +184,7 @@ private:
 
 	// Injected dependencies
 	IImporterManager*       mImporterManager = nullptr;
+	const TypeRegistry*     mTypeRegistry    = nullptr;
 	BuiltinResources        m_builtinResources;
 	ImportPipeline          m_importPipeline;
 	ScenePreloader          m_scenePreloader;

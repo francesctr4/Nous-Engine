@@ -195,7 +195,7 @@ void SceneViewport::HandleDragAndDropTarget() const
         // Prefab assets → instantiate prefab into scene.
         // All other assets → just load the resource.
         const std::string ext = nous::engine::filesystem::GetExtension(path);
-        if (GetTypeRegistry().TypeFromExtension(ext) == ResourceType::MESH)
+        if (editorContext->GetResourceManager()->GetTypeRegistry().TypeFromExtension(ext) == ResourceType::MESH)
         {
             editorContext->GetJobSystem()->SubmitJob([path, this]()
             {

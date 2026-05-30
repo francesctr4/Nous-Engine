@@ -42,10 +42,9 @@ Application::Application(const bool isGameMode)
     // Resource type registry — must exist before any module is constructed,
     // since modules and importers will pull descriptors from it.
     typeRegistry = NOUS_NEW<TypeRegistry>(MemoryTag::APPLICATION);
-    SetTypeRegistry(typeRegistry);
     RegisterResourceTypes(*typeRegistry);
 
-    importerManager   = NOUS_NEW<ImporterManager>(MemoryTag::APPLICATION);
+    importerManager   = NOUS_NEW<ImporterManager>(MemoryTag::APPLICATION, *typeRegistry);
 
     msTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
     updateTitleTimer = NOUS_NEW<Timer>(MemoryTag::APPLICATION);
@@ -86,7 +85,7 @@ Application::Application(const bool isGameMode)
     // 4. RESOURCE MANAGER — no module dependencies at construction.
     //    Must be constructed before SCENE and RENDERER so they can reference it.
     listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, importerManager));
+        eventSystem, jobSystem, importerManager, *typeRegistry));
 
     // 5. SCENE — depends on INPUT (simulation controls) and RESOURCE MANAGER (asset loading).
     listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION,
@@ -130,7 +129,6 @@ Application::~Application()
     NOUS_DELETE(importerManager, MemoryTag::APPLICATION);
     // Registry is destroyed last among engine-owned singletons because importers
     // (still referenced from importerManager above) may transitively touch it.
-    SetTypeRegistry(nullptr);
     NOUS_DELETE(typeRegistry, MemoryTag::APPLICATION);
     NOUS_DELETE(msTimer, MemoryTag::APPLICATION);
     NOUS_DELETE(updateTitleTimer, MemoryTag::APPLICATION);

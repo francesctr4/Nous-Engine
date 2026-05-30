@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IImporterManager.h"
+#include "Engine/EngineExport.h"
 
 class Resource;
 enum class ResourceType : int8_t;
@@ -8,10 +9,13 @@ enum class ResourceType : int8_t;
 struct MetaFileData;
 class IGPUResourceFactory;
 class ModuleResourceManager;
+class TypeRegistry;
 
 class ImporterManager : public IImporterManager
 {
 public:
+
+    NOUS_ENGINE_API explicit ImporterManager(const TypeRegistry& typeRegistry);
 
     // IImporterManager overrides
     void Init(ModuleResourceManager* resourceManager) override;
@@ -21,6 +25,6 @@ public:
     bool Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu) override;
     void Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu) override;
 
-    // Asset pipeline (non-virtual)
-    static bool Save(ResourceType type, const MetaFileData& metaFileData, Resource*& inResource);
+private:
+    const TypeRegistry* m_typeRegistry = nullptr;
 };

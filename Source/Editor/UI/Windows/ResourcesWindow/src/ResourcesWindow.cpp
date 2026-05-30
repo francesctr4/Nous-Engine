@@ -101,7 +101,7 @@ void Resources::AlignHeadersToCenter() const
 
 void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor) const
 {
-    if (const TypeDescriptor* d = GetTypeRegistry().Get(type))
+    if (const TypeDescriptor* d = editorContext->GetResourceManager()->GetTypeRegistry().Get(type))
     {
         const auto& c = d->display.color;
         textColor = ImVec4(c[0], c[1], c[2], c[3]);

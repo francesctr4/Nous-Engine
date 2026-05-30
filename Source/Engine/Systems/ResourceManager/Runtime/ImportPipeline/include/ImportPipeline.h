@@ -7,6 +7,7 @@
 #include <vector>
 
 class IImporterDispatcher;
+class TypeRegistry;
 struct MetaFileData;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
@@ -14,6 +15,7 @@ class ImportPipeline
 {
 public:
     NOUS_ENGINE_API ImportPipeline(IImporterDispatcher* importerManager,
+                                           const TypeRegistry& typeRegistry,
                                            nous::engine::multithreading::NOUS_JobSystem* jobSystem = nullptr);
 
     // Public import entry points — called by ModuleResourceManager delegators
@@ -75,6 +77,7 @@ private:
     bool ImportCase3_TimestampCheck(const MetaFileData& metaFileData) const;
 
     IImporterDispatcher* m_importerManager = nullptr;
+    const TypeRegistry* m_typeRegistry = nullptr;
     nous::engine::multithreading::NOUS_JobSystem* m_jobSystem = nullptr;
 
     // Phase-1 scan: walks directory, handles meta file creation, and collects

@@ -30,9 +30,9 @@
 // ---------------------------------------------------------------------------
 namespace
 {
-    Resource* InstantiateResource(const ResourceType type)
+    Resource* InstantiateResource(const TypeRegistry& reg, const ResourceType type)
     {
-        const TypeDescriptor* d = GetTypeRegistry().Get(type);
+        const TypeDescriptor* d = reg.Get(type);
         return (d && d->createFn) ? d->createFn(0) : nullptr;
     }
 }
@@ -40,12 +40,13 @@ namespace
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
 ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-                                             IImporterManager* importerManager)
+                                             IImporterManager* importerManager, const TypeRegistry& typeRegistry)
     : Module(eventSystem, jobSystem)
     , mImporterManager(importerManager)
-    , m_importPipeline(importerManager, jobSystem)
+    , mTypeRegistry(&typeRegistry)
+    , m_importPipeline(importerManager, typeRegistry, jobSystem)
     , m_scenePreloader(this)
-    , m_hotReloader(importerManager, jobSystem)
+    , m_hotReloader(importerManager, typeRegistry, jobSystem)
     , m_subMeshCache(m_table, m_pendingUploads)
 {
 }
@@ -143,7 +144,7 @@ void ModuleResourceManager::DeleteResource(Resource*& resource)
 		m_subMeshCache.EraseUID(resource->GetUID());
 	}
 
-	if (const TypeDescriptor* d = GetTypeRegistry().Get(resource->GetType());
+	if (const TypeDescriptor* d = mTypeRegistry->Get(resource->GetType());
 		d && d->destroyFn)
 		d->destroyFn(resource);
 
@@ -192,7 +193,7 @@ Resource* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
 Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, ResourceType type,
     const std::string& name, const std::string& assetsPath, const std::string& libraryPath)
 {
-	Resource* resource = InstantiateResource(type);
+	Resource* resource = InstantiateResource(*mTypeRegistry, type);
 	if (!resource)
 	{
 		m_table.Erase(uid);
@@ -291,7 +292,7 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
     // (descriptor sets reference texture image views; freeing textures first
     // would leave dangling references — VUID-vkDestroyImageView-01026), then
     // materials, then leaf resources.
-    for (const TypeDescriptor* d : GetTypeRegistry().SortedByCleanupPriority())
+    for (const TypeDescriptor* d : mTypeRegistry->SortedByCleanupPriority())
     {
         for (auto& res : resources | std::views::values)
         {
@@ -390,6 +391,11 @@ Resource* ModuleResourceManager::GetLoadedResource(const uint32 uid)
 IImporterManager* ModuleResourceManager::GetImporterManager() const
 {
     return mImporterManager;
+}
+
+const TypeRegistry& ModuleResourceManager::GetTypeRegistry() const
+{
+    return *mTypeRegistry;
 }
 
 

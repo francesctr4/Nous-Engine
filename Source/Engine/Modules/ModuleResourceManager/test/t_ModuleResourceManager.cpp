@@ -48,15 +48,13 @@ protected:
         nous::engine::memory::InitializeMemory(kMemoryPoolSize);
 
         // ModuleResourceManager dispatches create/destroy/cleanup through the
-        // global registry; Application sets it up in production, the test
-        // harness must do it manually.
+        // registry, which is injected at construction (below).
         registry = new TypeRegistry();
         RegisterResourceTypes(*registry);
-        SetTypeRegistry(registry);
 
         eventSystem = new EventSystem();
         jobSystem   = new nous::engine::multithreading::NOUS_JobSystem(0);
-        rm = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
+        rm = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter, *registry);
     }
 
     void TearDown() override
@@ -69,7 +67,6 @@ protected:
         delete eventSystem;
         eventSystem = nullptr;
 
-        SetTypeRegistry(nullptr);
         delete registry;
         registry = nullptr;
 
@@ -345,15 +342,13 @@ protected:
         nous::engine::memory::InitializeMemory(kMemoryPoolSize);
 
         // ModuleResourceManager::Awake() touches the registry (EnsureLibraryDirectories,
-        // ClearResources, InstantiateResource). Application sets it up in production —
-        // the test harness has to do it manually.
+        // ClearResources, InstantiateResource). It is injected at construction (below).
         registry = new TypeRegistry();
         RegisterResourceTypes(*registry);
-        SetTypeRegistry(registry);
 
         eventSystem = new EventSystem();
         jobSystem   = new nous::engine::multithreading::NOUS_JobSystem(0);
-        rm = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
+        rm = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter, *registry);
         rm->Awake();
     }
 
@@ -364,7 +359,6 @@ protected:
         delete jobSystem;   jobSystem = nullptr;
         delete eventSystem; eventSystem = nullptr;
 
-        SetTypeRegistry(nullptr);
         delete registry;
         registry = nullptr;
 

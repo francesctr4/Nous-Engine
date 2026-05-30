@@ -7,8 +7,6 @@
 
 namespace
 {
-    TypeRegistry* g_TypeRegistry = nullptr;
-
     constexpr size_t SlotOf(ResourceType type)
     {
         return static_cast<size_t>(type);
@@ -109,16 +107,4 @@ ResourceType TypeRegistry::TypeFromExtension(const std::string& extension) const
         }
     }
     return ResourceType::UNKNOWN;
-}
-
-TypeRegistry& GetTypeRegistry()
-{
-    NOUS_ASSERT_MSG(g_TypeRegistry != nullptr,
-                    "TypeRegistry accessed before initialization");
-    return *g_TypeRegistry;
-}
-
-void SetTypeRegistry(TypeRegistry* registry)
-{
-    g_TypeRegistry = registry;
 }

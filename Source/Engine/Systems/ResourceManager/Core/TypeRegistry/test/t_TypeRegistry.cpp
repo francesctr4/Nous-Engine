@@ -8,9 +8,10 @@
 #include <string>
 #include <vector>
 
-// TypeRegistry is directly constructible (the global GetTypeRegistry() singleton
-// is a separate, opt-in concern) so these tests operate on a local instance with
-// no MemoryManager / JobSystem / EventSystem setup. Descriptors own their
+// TypeRegistry is directly constructible and injected into its consumers via
+// constructor (Application owns the one production instance), so these tests
+// operate on a local instance with no MemoryManager / JobSystem / EventSystem
+// setup. Descriptors own their
 // importers via unique_ptr<IAssetImporter>, freed with the registry — nothing
 // here goes through NOUS_NEW, so there is no leak-abort surface.
 //

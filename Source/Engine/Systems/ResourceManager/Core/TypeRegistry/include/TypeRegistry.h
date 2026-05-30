@@ -117,7 +117,3 @@ private:
 
 // Implemented in RegisterResourceTypes.cpp (Phase 2).
 NOUS_ENGINE_API void RegisterResourceTypes(TypeRegistry& registry);
-
-// Singleton accessor — owned by Application; created before any module.
-NOUS_ENGINE_API TypeRegistry& GetTypeRegistry();
-NOUS_ENGINE_API void                  SetTypeRegistry(TypeRegistry* registry);

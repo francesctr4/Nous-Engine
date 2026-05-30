@@ -82,14 +82,13 @@ protected:
         // and not on MESH/AUDIO/SHADER — this is exactly the policy under test.
         registry = new TypeRegistry();
         RegisterResourceTypes(*registry);
-        SetTypeRegistry(registry);
 
         // Worker count 0 -> jobs run inline on SubmitJob, so DispatchReimportJob
         // completes synchronously before returning. Lets us assert post-conditions
         // without sleeping or polling.
         jobSystem = new nous::engine::multithreading::NOUS_JobSystem(0);
 
-        hr = new HotReloader(&mockImporter, jobSystem);
+        hr = new HotReloader(&mockImporter, *registry, jobSystem);
 
         // Each test gets a fresh tempDir and chdir into it. The worker reads
         // .meta paths relative to cwd, so this isolates filesystem state.
@@ -107,7 +106,6 @@ protected:
         delete hr; hr = nullptr;
         delete jobSystem; jobSystem = nullptr;
 
-        SetTypeRegistry(nullptr);
         delete registry; registry = nullptr;
 
         std::filesystem::current_path(savedCwd);

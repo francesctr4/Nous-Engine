@@ -3,6 +3,7 @@
 #include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
@@ -89,6 +90,7 @@ protected:
     EventSystem*                         eventSystem = nullptr;
     nous::engine::multithreading::NOUS_JobSystem* jobSystem   = nullptr;
     SpMockImporterManager                mockImporter;
+    TypeRegistry*                        registry    = nullptr;
     ModuleResourceManager*               rm          = nullptr;
     ScenePreloader*                      preloader   = nullptr;
 
@@ -100,7 +102,9 @@ protected:
         nous::engine::memory::InitializeMemory(kMemoryPoolSize);
         eventSystem = new EventSystem();
         jobSystem   = new nous::engine::multithreading::NOUS_JobSystem(0); // inline execution
-        rm          = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter);
+        registry    = new TypeRegistry();
+        RegisterResourceTypes(*registry);
+        rm          = new ModuleResourceManager(eventSystem, jobSystem, &mockImporter, *registry);
         preloader   = new ScenePreloader(rm);
 
         const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -122,6 +126,8 @@ protected:
         CleanupAllResources();
         delete rm;
         rm = nullptr;
+        delete registry;
+        registry = nullptr;
         delete jobSystem;
         jobSystem = nullptr;
         delete eventSystem;

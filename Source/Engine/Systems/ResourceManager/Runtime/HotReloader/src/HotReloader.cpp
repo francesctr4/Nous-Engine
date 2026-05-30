@@ -4,6 +4,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
@@ -49,12 +50,12 @@ namespace
     return {};
 }
 
-/*static*/ bool HotReloader::IsHotReloadableExtension(const std::string& extWithDot)
+bool HotReloader::IsHotReloadableExtension(const std::string& extWithDot) const
 {
     if (extWithDot.size() < 2 || extWithDot[0] != '.') return false;
     const std::string_view ext(extWithDot.data() + 1, extWithDot.size() - 1);
 
-    for (const TypeDescriptor* d : GetTypeRegistry().All())
+    for (const TypeDescriptor* d : m_typeRegistry->All())
     {
         if (!d || !d->hotReloadable) continue;
         for (const auto& src : d->sourceExtensions)
@@ -64,8 +65,10 @@ namespace
 }
 
 HotReloader::HotReloader(IImporterDispatcher* importerManager,
+                         const TypeRegistry& typeRegistry,
                          nous::engine::multithreading::NOUS_JobSystem* jobSystem)
     : m_importerManager(importerManager)
+    , m_typeRegistry(&typeRegistry)
     , m_jobSystem(jobSystem)
 {
 }
@@ -118,7 +121,7 @@ void HotReloader::TrackAsset(const std::string& assetsPath, uint32 uid, Resource
     if (!m_enabled || assetsPath.empty()) return;
     // Hot-reload eligibility is owned by the TypeDescriptor — adding a new
     // hot-reloadable type is a one-line flag flip in RegisterResourceTypes.
-    const TypeDescriptor* d = GetTypeRegistry().Get(type);
+    const TypeDescriptor* d = m_typeRegistry->Get(type);
     if (!d || !d->hotReloadable) return;
 
     const std::string key = NormalizeAssetPath(assetsPath);

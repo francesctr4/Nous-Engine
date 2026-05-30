@@ -13,6 +13,7 @@
 #include <vector>
 
 class IImporterDispatcher;
+class TypeRegistry;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 // Owns the asset hot-reload pipeline previously embedded in ModuleResourceManager:
@@ -36,6 +37,7 @@ public:
     };
 
     NOUS_ENGINE_API HotReloader(IImporterDispatcher* importerManager,
+                                const TypeRegistry& typeRegistry,
                                 nous::engine::multithreading::NOUS_JobSystem* jobSystem);
 
     // Disable hot reload (game/standalone mode). Must be called before Start();
@@ -97,12 +99,13 @@ private:
     // `extWithDot` matches any source extension of a TypeDescriptor whose
     // hotReloadable flag is set. Drives off the registry — adding a new
     // hot-reloadable type requires no edit here.
-    static bool IsHotReloadableExtension(const std::string& extWithDot);
+    bool IsHotReloadableExtension(const std::string& extWithDot) const;
 
     void ScanAndRegisterWatchedAssets();
     void RegisterWatchForAsset(const std::string& assetsPath);
 
     IImporterDispatcher*                           m_importerManager = nullptr;
+    const TypeRegistry*                            m_typeRegistry     = nullptr;
     nous::engine::multithreading::NOUS_JobSystem*  m_jobSystem        = nullptr;
 
     bool                                           m_enabled            = true;

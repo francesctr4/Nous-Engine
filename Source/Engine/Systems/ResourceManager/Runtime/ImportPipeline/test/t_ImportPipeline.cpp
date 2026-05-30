@@ -44,14 +44,12 @@ protected:
     {
         nous::engine::memory::InitializeMemory(kMemoryPoolSize);
 
-        // ImportPipeline reads descriptors (libraryFolder, libExtPolicy)
-        // from the global registry. Application sets this up in production; the
-        // test harness must do it manually.
+        // ImportPipeline reads descriptors (libraryFolder, libExtPolicy) from the
+        // registry, which is injected at construction (below).
         registry = new TypeRegistry();
         RegisterResourceTypes(*registry);
-        SetTypeRegistry(registry);
 
-        pipeline = new ImportPipeline(&mockImporter);
+        pipeline = new ImportPipeline(&mockImporter, *registry);
 
         // Give each test an isolated sandbox. ImportPipeline works entirely
         // with relative paths from the process working directory, so we chdir into
@@ -72,7 +70,6 @@ protected:
         delete pipeline;
         pipeline = nullptr;
 
-        SetTypeRegistry(nullptr);
         delete registry;
         registry = nullptr;
 

@@ -6,24 +6,29 @@
 
 namespace
 {
-    IAssetImporter* AssetImporterFor(ResourceType type)
+    IAssetImporter* AssetImporterFor(const TypeRegistry& reg, ResourceType type)
     {
-        const TypeDescriptor* d = GetTypeRegistry().Get(type);
+        const TypeDescriptor* d = reg.Get(type);
         return d ? d->importer.get() : nullptr;
     }
 
     // Null for pipeline-only types (e.g. SCENE) — the lifecycle dispatchers below
     // treat that as a no-op rather than relying on stub implementations.
-    IResourceImporter* ResourceImporterFor(ResourceType type)
+    IResourceImporter* ResourceImporterFor(const TypeRegistry& reg, ResourceType type)
     {
-        const TypeDescriptor* d = GetTypeRegistry().Get(type);
+        const TypeDescriptor* d = reg.Get(type);
         return d ? d->resourceImporter : nullptr;
     }
 }
 
+ImporterManager::ImporterManager(const TypeRegistry& typeRegistry)
+    : m_typeRegistry(&typeRegistry)
+{
+}
+
 void ImporterManager::Init(ModuleResourceManager* resourceManager)
 {
-    for (const TypeDescriptor* d : GetTypeRegistry().All())
+    for (const TypeDescriptor* d : m_typeRegistry->All())
     {
         if (d && d->importer)
             d->importer->m_resourceManager = resourceManager;
@@ -32,36 +37,30 @@ void ImporterManager::Init(ModuleResourceManager* resourceManager)
 
 bool ImporterManager::Import(ResourceType type, const MetaFileData& metaFileData)
 {
-    IAssetImporter* imp = AssetImporterFor(type);
+    IAssetImporter* imp = AssetImporterFor(*m_typeRegistry, type);
     return imp ? imp->Import(metaFileData) : false;
-}
-
-bool ImporterManager::Save(ResourceType type, const MetaFileData& metaFileData, Resource*& inResource)
-{
-    IResourceImporter* imp = ResourceImporterFor(type);
-    return imp ? imp->Save(metaFileData, inResource) : false;
 }
 
 bool ImporterManager::Deserialize(ResourceType type, const std::string& libraryPath, Resource* resource)
 {
-    IResourceImporter* imp = ResourceImporterFor(type);
+    IResourceImporter* imp = ResourceImporterFor(*m_typeRegistry, type);
     return imp ? imp->Deserialize(libraryPath, resource) : false;
 }
 
 void ImporterManager::Evict(ResourceType type, Resource* resource)
 {
-    if (IResourceImporter* imp = ResourceImporterFor(type))
+    if (IResourceImporter* imp = ResourceImporterFor(*m_typeRegistry, type))
         imp->Evict(resource);
 }
 
 bool ImporterManager::Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu)
 {
-    IResourceImporter* imp = ResourceImporterFor(type);
+    IResourceImporter* imp = ResourceImporterFor(*m_typeRegistry, type);
     return imp ? imp->Upload(resource, gpu) : false;
 }
 
 void ImporterManager::Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu)
 {
-    if (IResourceImporter* imp = ResourceImporterFor(type))
+    if (IResourceImporter* imp = ResourceImporterFor(*m_typeRegistry, type))
         imp->Release(resource, gpu);
 }

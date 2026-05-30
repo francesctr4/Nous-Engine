@@ -6,6 +6,7 @@
 #include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
+#include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
@@ -64,8 +65,10 @@ static std::filesystem::file_time_type GetLibraryTime(const std::filesystem::pat
 }
 
 ImportPipeline::ImportPipeline(IImporterDispatcher* importerManager,
+                                               const TypeRegistry& typeRegistry,
                                                nous::engine::multithreading::NOUS_JobSystem* jobSystem)
     : m_importerManager(importerManager)
+    , m_typeRegistry(&typeRegistry)
     , m_jobSystem(jobSystem)
 {
 }
@@ -83,7 +86,7 @@ void ImportPipeline::ClearLibraryFiles()
 {
     namespace fs = std::filesystem;
 
-    for (const TypeDescriptor* d : GetTypeRegistry().All())
+    for (const TypeDescriptor* d : m_typeRegistry->All())
     {
         std::error_code ec;
         fs::remove_all(StripTrailingSlash(d->libraryFolder), ec);
@@ -98,7 +101,7 @@ bool ImportPipeline::EnsureLibraryDirectories()
     if (!nous::engine::filesystem::CreateDirectory(std::string(ap::k_LibraryDir)))
         return false;
 
-    for (const TypeDescriptor* d : GetTypeRegistry().All())
+    for (const TypeDescriptor* d : m_typeRegistry->All())
     {
         if (!nous::engine::filesystem::CreateDirectory(StripTrailingSlash(d->libraryFolder)))
             return false;
@@ -294,7 +297,7 @@ void ImportPipeline::CollectPendingImports(const std::string& directory,
         const std::string fileDirectory = nous::engine::filesystem::GetDirectory(path);
         const std::string fileName      = nous::engine::filesystem::GetFilename(path);
         const std::string extension     = nous::engine::filesystem::GetExtension(path);
-        const ResourceType resourceType = GetTypeRegistry().TypeFromExtension(extension);
+        const ResourceType resourceType = m_typeRegistry->TypeFromExtension(extension);
 
         if (resourceType == ResourceType::UNKNOWN)
             continue;
@@ -309,7 +312,7 @@ void ImportPipeline::CollectPendingImports(const std::string& directory,
         {
             // Case 1: new asset — create meta file now (sequential), schedule import.
             const auto resourceUID = static_cast<uint32>(Random::Generate());
-            const TypeDescriptor* desc = GetTypeRegistry().Get(resourceType);
+            const TypeDescriptor* desc = m_typeRegistry->Get(resourceType);
             if (!desc)
             {
                 NOUS_ERROR_C(CURRENT_CHANNEL, "Import File ERROR: no registry descriptor for resource type of '%s'", path.c_str());
@@ -388,7 +391,7 @@ bool ImportPipeline::ImportFile(const std::string& path)
     const std::string fileDirectory = nous::engine::filesystem::GetDirectory(path);
     const std::string fileName      = nous::engine::filesystem::GetFilename(path);
     const std::string extension     = nous::engine::filesystem::GetExtension(path);
-    const ResourceType resourceType = GetTypeRegistry().TypeFromExtension(extension);
+    const ResourceType resourceType = m_typeRegistry->TypeFromExtension(extension);
 
     if (resourceType == ResourceType::UNKNOWN)
         return false;
@@ -437,7 +440,7 @@ bool ImportPipeline::ImportCase1_NewAsset(const std::string_view relativePath, c
                                                    const ResourceType resourceType, const std::string_view fileName) const
 {
     const auto resourceUID = static_cast<uint32>(Random::Generate());
-    const TypeDescriptor* desc = GetTypeRegistry().Get(resourceType);
+    const TypeDescriptor* desc = m_typeRegistry->Get(resourceType);
     if (!desc)
     {
         NOUS_ERROR("Import File ERROR: CASE 1 --> no registry descriptor for type");
