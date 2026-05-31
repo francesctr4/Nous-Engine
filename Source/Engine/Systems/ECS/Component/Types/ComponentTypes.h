@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include "Engine/Systems/ECS/Component/ComponentList.h"
 
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
@@ -9,6 +10,7 @@
 #include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
 #include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
+#include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE single edit site for registering an ECS component type.
@@ -22,7 +24,8 @@ using ComponentTypes = ComponentList<
     CCamera,
     CLight,
     CScript,
-    CPrefab
+    CPrefab,
+    CAudioSource
 >;
 
 // Subset of ComponentTypes whose OnUpdate does real per-frame work. Scene::Update
@@ -32,5 +35,6 @@ using ComponentTypes = ComponentList<
 using UpdatableComponentTypes = ComponentList<
     CScript,
     CCamera,
-    CLight
+    CLight,
+    CAudioSource
 >;

@@ -26,6 +26,8 @@
 #include <string>
 #include <utility>
 
+#include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Drawers — one per inspectable component type. Uniform signature so they can be
 // stored in the registry table. Each casts the Component* to its concrete type
@@ -238,6 +240,20 @@ static void DrawScript(const InspectorCtx& ctx, Component* c)
     ImGui::Unindent();
 }
 
+static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
+{
+    auto* cAudioSource = static_cast<CAudioSource*>(c);
+
+    if (!ImGui::CollapsingHeader("Audio Source", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ImGui::Indent();
+
+    ImGui::Text("Volume: %f", 50.0f);
+
+    ImGui::Unindent();
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // THE editor edit-site: register a component type's inspector UI here.
 // `typeName` must equal Component::GetType() (guarded by t_ComponentInspectorRegistry).
@@ -250,6 +266,7 @@ static const ComponentUI k_ui[] = {
     {"CLight",     "Light",     true,  &DrawLight},
     {"CMaterial",  "Material",  true,  &DrawMaterial},
     {"CScript",    "Script",    true,  &DrawScript},
+    {"CAudioSource",    "Audio Source",    true,  &DrawAudioSource},
 };
 
 const ComponentUI* FindComponentUI(std::string_view typeName)
