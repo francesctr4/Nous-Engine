@@ -7,6 +7,16 @@
 // miniaudio Library Documentation
 // https://miniaud.io/docs/manual/index.html
 //
+// COM apartment (Windows): SDL's file drag-and-drop uses OLE (RegisterDragDrop),
+// which requires the process's main thread to be a single-threaded apartment (STA).
+// By default miniaudio initializes COM as COINIT_MULTITHREADED (MA_COINIT_VALUE == 0)
+// on the thread that calls ma_engine_init — which is our main thread — clobbering
+// SDL's apartment and silently disabling drag-and-drop onto the window. Forcing
+// apartment-threaded (COINIT_APARTMENTTHREADED == 0x2) keeps miniaudio in lockstep
+// with SDL so both can coexist. WASAPI runs fine under STA (its device worker
+// creates/uses its own COM objects on its own thread).
+#define MA_COINIT_VALUE 2  /* COINIT_APARTMENTTHREADED */
+
 // Vorbis (.ogg) support: miniaudio has no built-in Vorbis decoder. It auto-detects
 // stb_vorbis when stb_vorbis.c is included in the same TU as MA_IMPLEMENTATION,
 // using this header-only / implementation sandwich.
