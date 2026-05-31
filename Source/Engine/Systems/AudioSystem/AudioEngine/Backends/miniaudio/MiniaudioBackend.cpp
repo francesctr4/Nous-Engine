@@ -1,5 +1,6 @@
 #include "MiniaudioBackend.h"
 #include "Engine/Core/Logger/Logger.h"
+#include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Systems/AudioSystem/AudioSystem.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
@@ -54,6 +55,93 @@ void MiniaudioBackend::PlayAudio(ResourceAudio* rAudio)
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Successfully playing audio: '%s' from '%s'",
         rAudio->GetName().c_str(), rAudio->GetAssetsPath().c_str());
+}
+
+// ---------------------------------------------------------------------------
+// Per-voice sound lifecycle
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    // SoundHandle is an opaque void* over a heap-allocated ma_sound.
+    ma_sound* AsSound(SoundHandle sound)
+    {
+        return static_cast<ma_sound*>(sound);
+    }
+}
+
+SoundHandle MiniaudioBackend::CreateSound(ResourceAudio* rAudio)
+{
+    if (!rAudio)
+        return nullptr;
+
+    // 2D source: skip spatialization entirely so volume/pitch behave predictably
+    // regardless of listener position. STREAMED clips read from disk on demand;
+    // DECODED clips are fully decoded into memory up front (short SFX).
+    ma_uint32 flags = MA_SOUND_FLAG_NO_SPATIALIZATION;
+    flags |= (rAudio->GetStreamingMode() == AudioStreamingMode::STREAMED)
+        ? MA_SOUND_FLAG_STREAM
+        : MA_SOUND_FLAG_DECODE;
+
+    ma_sound* sound = NOUS_NEW<ma_sound>(MemoryTag::AUDIO_SYSTEM);
+
+    const ma_result result = ma_sound_init_from_file(
+        &m_audioEngine, rAudio->GetAssetsPath().c_str(), flags, nullptr, nullptr, sound);
+
+    if (result != MA_SUCCESS)
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create sound from '{}'. Error code: {}",
+            rAudio->GetAssetsPath().c_str(), static_cast<int>(result));
+        NOUS_DELETE(sound, MemoryTag::AUDIO_SYSTEM);
+        return nullptr;
+    }
+
+    return sound;
+}
+
+void MiniaudioBackend::DestroySound(SoundHandle sound) noexcept
+{
+    if (!sound)
+        return;
+
+    ma_sound* s = AsSound(sound);
+    ma_sound_uninit(s);
+    NOUS_DELETE(s, MemoryTag::AUDIO_SYSTEM);
+}
+
+void MiniaudioBackend::StartSound(SoundHandle sound)
+{
+    if (sound)
+        ma_sound_start(AsSound(sound));
+}
+
+void MiniaudioBackend::StopSound(SoundHandle sound)
+{
+    if (sound)
+        ma_sound_stop(AsSound(sound));
+}
+
+void MiniaudioBackend::SetSoundVolume(SoundHandle sound, float volume)
+{
+    if (sound)
+        ma_sound_set_volume(AsSound(sound), volume);
+}
+
+void MiniaudioBackend::SetSoundPitch(SoundHandle sound, float pitch)
+{
+    if (sound)
+        ma_sound_set_pitch(AsSound(sound), pitch);
+}
+
+void MiniaudioBackend::SetSoundLooping(SoundHandle sound, bool looping)
+{
+    if (sound)
+        ma_sound_set_looping(AsSound(sound), looping ? MA_TRUE : MA_FALSE);
+}
+
+bool MiniaudioBackend::IsSoundPlaying(SoundHandle sound) const
+{
+    return sound && ma_sound_is_playing(AsSound(sound)) == MA_TRUE;
 }
 
 bool ProbeAudioFile(const std::string& libraryPath, AudioProbeInfo& outInfo)

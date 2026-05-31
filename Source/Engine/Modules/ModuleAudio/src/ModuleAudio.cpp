@@ -66,6 +66,56 @@ void ModuleAudio::PlayAudio(ResourceAudio* rAudio) const
         m_audioSystem->PlayAudio(rAudio);
 }
 
+// ---------------------------------------------------------------------------
+// Per-voice sound lifecycle (forwarded to AudioSystem)
+// ---------------------------------------------------------------------------
+
+SoundHandle ModuleAudio::CreateSound(ResourceAudio* rAudio) const
+{
+    return m_audioSystem ? m_audioSystem->CreateSound(rAudio) : nullptr;
+}
+
+void ModuleAudio::DestroySound(SoundHandle sound) const noexcept
+{
+    if (m_audioSystem)
+        m_audioSystem->DestroySound(sound);
+}
+
+void ModuleAudio::StartSound(SoundHandle sound) const
+{
+    if (m_audioSystem)
+        m_audioSystem->StartSound(sound);
+}
+
+void ModuleAudio::StopSound(SoundHandle sound) const
+{
+    if (m_audioSystem)
+        m_audioSystem->StopSound(sound);
+}
+
+void ModuleAudio::SetSoundVolume(SoundHandle sound, float volume) const
+{
+    if (m_audioSystem)
+        m_audioSystem->SetSoundVolume(sound, volume);
+}
+
+void ModuleAudio::SetSoundPitch(SoundHandle sound, float pitch) const
+{
+    if (m_audioSystem)
+        m_audioSystem->SetSoundPitch(sound, pitch);
+}
+
+void ModuleAudio::SetSoundLooping(SoundHandle sound, bool looping) const
+{
+    if (m_audioSystem)
+        m_audioSystem->SetSoundLooping(sound, looping);
+}
+
+bool ModuleAudio::IsSoundPlaying(SoundHandle sound) const
+{
+    return m_audioSystem && m_audioSystem->IsSoundPlaying(sound);
+}
+
 void ModuleAudio::OnEvent(const Event &event)
 {
     switch (event.type)

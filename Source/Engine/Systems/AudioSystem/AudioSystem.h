@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
+#include "Engine/Systems/AudioSystem/SoundHandle.h"
 
 #include <cstdint>
 #include <string>
@@ -24,6 +25,20 @@ public:
     bool Initialize(AudioEngineBackend backend);
     void PlayAudio(ResourceAudio* rAudio) const;
     void Shutdown();
+
+    // Per-voice sound lifecycle — forwarded to the active backend. All calls
+    // safely no-op (or return null/false) when no backend is initialized.
+    SoundHandle CreateSound(ResourceAudio* rAudio) const;
+    void        DestroySound(SoundHandle sound) const noexcept;
+
+    void        StartSound(SoundHandle sound) const;
+    void        StopSound(SoundHandle sound) const;
+
+    void        SetSoundVolume(SoundHandle sound, float volume) const;
+    void        SetSoundPitch(SoundHandle sound, float pitch) const;
+    void        SetSoundLooping(SoundHandle sound, bool looping) const;
+
+    bool        IsSoundPlaying(SoundHandle sound) const;
 
 private:
     IAudioEngineBackend* m_audioEngine;

@@ -87,18 +87,23 @@ Application::Application(const bool isGameMode)
     listModules.push_back(resourceManager = NOUS_NEW<ModuleResourceManager>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, importerManager, *typeRegistry));
 
-    // 5. SCENE — depends on INPUT (simulation controls) and RESOURCE MANAGER (asset loading).
-    listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, input, resourceManager));
+    // 5. AUDIO — no module dependencies. Constructed BEFORE SCENE so it is torn
+    //    down AFTER it (modules clean up in reverse): CAudioSource::OnDestroy
+    //    releases its voice back into the audio backend during scene teardown,
+    //    exactly as CMesh::OnDestroy relies on RESOURCE MANAGER still being alive.
+    listModules.push_back(audio           = NOUS_NEW<ModuleAudio>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem));
 
-    // 6. RENDERER — depends on WINDOW (surface), CAMERA (view/proj), RESOURCE MANAGER (GPU resources), SCENE (render data).
+    // 6. SCENE — depends on INPUT (simulation controls), RESOURCE MANAGER (asset
+    //    loading), and AUDIO (broker through which CAudioSource reaches the backend,
+    //    mirroring how CScript reaches scriptManager).
+    listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem, input, resourceManager, audio));
+
+    // 7. RENDERER — depends on WINDOW (surface), CAMERA (view/proj), RESOURCE MANAGER (GPU resources), SCENE (render data).
     //    Must be last because RESOURCE MANAGER and SCENE must already exist.
     listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, window, camera, resourceManager, scene));
-
-    // 7. AUDIO - no dependencies, processed after renderer.
-    listModules.push_back(audio = NOUS_NEW<ModuleAudio>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem));
 
     if (m_isGameMode)
     {

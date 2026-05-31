@@ -16,6 +16,7 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ImporterMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 
@@ -243,13 +244,82 @@ static void DrawScript(const InspectorCtx& ctx, Component* c)
 static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
 {
     auto* cAudioSource = static_cast<CAudioSource*>(c);
+    ModuleResourceManager* rm = ctx.rm;
 
     if (!ImGui::CollapsingHeader("Audio Source", ImGuiTreeNodeFlags_DefaultOpen))
         return;
 
     ImGui::Indent();
 
-    ImGui::Text("Volume: %f", 50.0f);
+    // Clip slot — assignable by dragging a .wav/.ogg from the Assets Browser.
+    ImGui::Text("Clip:");
+    ImGui::SameLine();
+    ImGui::Button(cAudioSource->clip ? cAudioSource->clip->GetName().c_str() : "None",
+                  ImVec2(200.0f, 0.0f));
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+        {
+            const auto* data = static_cast<const char*>(payload->Data);
+            const char* end = data + payload->DataSize;
+            while (data < end)
+            {
+                std::string path(data);
+                data += path.size() + 1;
+                const std::string ext = std::filesystem::path(path).extension().string();
+                if (ext == ".wav" || ext == ".ogg")
+                {
+                    if (Resource* r = rm->CreateResource(path))
+                    {
+                        if (cAudioSource->clip)
+                            rm->UnloadResource(cAudioSource->clip->GetUID());
+                        cAudioSource->clip = down_cast<ResourceAudio*>(r);
+                    }
+                    break;
+                }
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
+
+    if (cAudioSource->clip)
+    {
+        ImGui::Text("UID: %u", cAudioSource->clip->GetUID());
+        ImGui::Text("Duration: %.2f s", cAudioSource->clip->GetDurationSec());
+    }
+    else
+    {
+        ImGui::TextDisabled("No clip assigned.");
+    }
+
+    ImGui::DragFloat("Volume", &cAudioSource->volume, 0.01f, 0.0f, 2.0f, "%.2f");
+    cAudioSource->volume = glm::max(cAudioSource->volume, 0.0f);
+
+    ImGui::DragFloat("Pitch", &cAudioSource->pitch, 0.01f, 0.1f, 4.0f, "%.2f");
+    cAudioSource->pitch = glm::clamp(cAudioSource->pitch, 0.1f, 4.0f);
+
+    ImGui::Checkbox("Loop", &cAudioSource->loop);
+    ImGui::Checkbox("Play On Awake", &cAudioSource->playOnAwake);
+
+    // Edit-mode preview — audition the clip without entering play mode.
+    ImGui::Spacing();
+    const bool hasClip = cAudioSource->clip != nullptr;
+    if (!hasClip)
+        ImGui::BeginDisabled();
+
+    if (cAudioSource->IsPreviewPlaying())
+    {
+        if (ImGui::Button("Stop Preview", ImVec2(120.0f, 0.0f)))
+            cAudioSource->PreviewStop();
+    }
+    else
+    {
+        if (ImGui::Button("Preview", ImVec2(120.0f, 0.0f)))
+            cAudioSource->PreviewPlay();
+    }
+
+    if (!hasClip)
+        ImGui::EndDisabled();
 
     ImGui::Unindent();
 }

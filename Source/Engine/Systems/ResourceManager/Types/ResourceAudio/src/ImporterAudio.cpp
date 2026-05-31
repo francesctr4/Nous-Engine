@@ -17,6 +17,21 @@ namespace
         if (ext == ".ogg" || ext == ".OGG") return AudioFileType::OGG;
         return AudioFileType::UNKNOWN;
     }
+
+    // Streaming policy, decided purely by file type at import time:
+    //   WAV → DECODED  (typically short SFX: decode fully into memory)
+    //   OGG → STREAMED (typically music / long ambient: stream from disk)
+    // UNKNOWN falls back to DECODED — the safe default for an unrecognized clip.
+    AudioStreamingMode StreamingModeFromFileType(AudioFileType fileType)
+    {
+        switch (fileType)
+        {
+            case AudioFileType::OGG: return AudioStreamingMode::STREAMED;
+            case AudioFileType::WAV: return AudioStreamingMode::DECODED;
+            case AudioFileType::UNKNOWN:
+            default:                 return AudioStreamingMode::DECODED;
+        }
+    }
 }
 
 bool ImporterAudio::Import(const MetaFileData& metaFileData)
@@ -42,7 +57,9 @@ bool ImporterAudio::Deserialize(const std::string& libraryPath, Resource* outRes
 {
     ResourceAudio* audio = down_cast<ResourceAudio*>(outResource);
 
-    audio->SetFileType(FileTypeFromExtension(libraryPath));
+    const AudioFileType fileType = FileTypeFromExtension(libraryPath);
+    audio->SetFileType(fileType);
+    audio->SetStreamingMode(StreamingModeFromFileType(fileType));
 
     AudioProbeInfo info;
     if (!ProbeAudioFile(libraryPath, info))

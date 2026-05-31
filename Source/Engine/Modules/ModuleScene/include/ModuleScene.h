@@ -17,6 +17,7 @@ class ScriptManager;
 // Dependency Injection
 class ModuleInput;
 class ModuleResourceManager;
+class ModuleAudio;
 
 enum class SimulationState : uint8_t { STOPPED, PLAYING, PAUSED };
 
@@ -26,7 +27,8 @@ public:
 
 	// Constructor
 	ModuleScene(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-		ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager);
+		ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager,
+		ModuleAudio* moduleAudio);
 
 	// Destructor
 	~ModuleScene() override;
@@ -96,6 +98,10 @@ public:
 	// Returns the aspect ratio of the current window, kept up-to-date by WINDOW_RESIZED events.
 	NOUS_ENGINE_API float GetWindowAspect() const { return m_windowAspect; }
 
+	// Broker accessor: components (CAudioSource) reach the audio module through the
+	// scene, mirroring how CScript reaches scriptManager. May be null in tests.
+	NOUS_ENGINE_API ModuleAudio* GetAudio() const { return mModuleAudio; }
+
 	NOUS_ENGINE_API bool IsSelected(GameObject go) const;
 	NOUS_ENGINE_API void AddToSelection(GameObject go);      // no-op if already in set; updates primarySelection
 	NOUS_ENGINE_API void RemoveFromSelection(GameObject go); // primarySelection = back() or {} after remove
@@ -123,6 +129,7 @@ private:
 	// Dependency Injection
 	ModuleInput* mModuleInput;
 	ModuleResourceManager* mModuleResourceManager;
+	ModuleAudio* mModuleAudio;
 
 	bool m_snapshotEnabled = false;
 

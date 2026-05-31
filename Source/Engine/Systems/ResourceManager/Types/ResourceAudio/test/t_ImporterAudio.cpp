@@ -164,6 +164,40 @@ TEST_F(t_ImporterAudio, Deserialize_UnknownExtension_SetsFileTypeUnknown)
     // miniaudio sniffs the body, not the extension, so it still decodes.
     ASSERT_TRUE(importer.Deserialize(oddPath, &audio));
     EXPECT_EQ(audio.GetFileType(), AudioFileType::UNKNOWN);
+    // Unknown extension falls back to the safe default.
+    EXPECT_EQ(audio.GetStreamingMode(), AudioStreamingMode::DECODED);
+}
+
+// =============================================================================
+// Streaming-mode policy — decided by extension at import time
+// (.wav → DECODED, .ogg → STREAMED). The probe sniffs the file body, so a WAV
+// body at a .ogg path still probes fine and lets us assert the mapping without
+// an OGG encoder.
+// =============================================================================
+
+TEST_F(t_ImporterAudio, Deserialize_Wav_IsDecoded)
+{
+    WritePcmWav(m_libraryPath, /*ch*/1, /*sr*/8000, /*bps*/16, /*sec*/0.2f);  // m_libraryPath ends in .wav
+
+    ResourceAudio audio(12345);
+    ImporterAudio importer;
+    ASSERT_TRUE(importer.Deserialize(m_libraryPath, &audio));
+
+    EXPECT_EQ(audio.GetFileType(),      AudioFileType::WAV);
+    EXPECT_EQ(audio.GetStreamingMode(), AudioStreamingMode::DECODED);
+}
+
+TEST_F(t_ImporterAudio, Deserialize_Ogg_IsStreamed)
+{
+    const std::string oggPath = (fs::path(kTempDir) / "music.ogg").string();
+    WritePcmWav(oggPath, /*ch*/2, /*sr*/16000, /*bps*/16, /*sec*/0.2f);
+
+    ResourceAudio audio(2);
+    ImporterAudio importer;
+    ASSERT_TRUE(importer.Deserialize(oggPath, &audio));
+
+    EXPECT_EQ(audio.GetFileType(),      AudioFileType::OGG);
+    EXPECT_EQ(audio.GetStreamingMode(), AudioStreamingMode::STREAMED);
 }
 
 // =============================================================================
