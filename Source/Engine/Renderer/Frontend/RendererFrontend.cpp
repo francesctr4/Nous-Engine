@@ -1,5 +1,5 @@
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Renderer/Backend/RendererBackend.h"
+#include "Engine/Renderer/Backend/RendererBackendFactory.h"
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
@@ -27,7 +27,7 @@ constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_FRONTEND;
 RendererFrontend::RendererFrontend()
 {
 	mBackendType = RendererBackendType::UNKNOWN;
-	mBackend = NOUS_NEW<RendererBackend>(MemoryTag::RENDERER);
+	mBackend = nullptr;  // Created in Initialize() once the backend type is known.
 
     mEditorOverlay = nullptr;
 }
@@ -55,7 +55,8 @@ bool RendererFrontend::Initialize(const RendererBackendType backendType)
 {
 	mBackendType = backendType;
 
-	if(!mBackend->Create(backendType))
+	mBackend = CreateRendererBackend(backendType);
+	if(!mBackend)
 	{
 		NOUS_ERROR_C(CURRENT_CHANNEL, "Renderer backend failed to create. Aborting application...");
 		return false;
@@ -79,7 +80,7 @@ bool RendererFrontend::Initialize(const RendererBackendType backendType)
 	return true;
 }
 
-void RendererFrontend::Shutdown() const
+void RendererFrontend::Shutdown()
 {
 	if (!mBackend) return;
 
@@ -88,7 +89,7 @@ void RendererFrontend::Shutdown() const
 	while (m_inFlightJobCount.load(std::memory_order_acquire) > 0) { /* spin */ }
 
 	mBackend->Shutdown();
-	mBackend->Destroy();
+	NOUS_DELETE(mBackend, MemoryTag::RENDERER);
 }
 
 void RendererFrontend::ReleaseFrameResources() const noexcept
@@ -119,7 +120,7 @@ FrameResult RendererFrontend::EndFrame(const float dt) const
 
 	if (result == FrameResult::SUCCESS)
 	{
-		mBackend->mFrameNumber++;
+		mFrameNumber++;
 	}
 
 	return result;
@@ -224,7 +225,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 				if (!grouped.matrices.empty())
 				{
 					mBackend->UploadInstanceMatrices(
-						static_cast<uint32_t>(mBackend->mFrameNumber % 3),
+						static_cast<uint32_t>(mFrameNumber % 3),
 						grouped.matrices.data(),
 						static_cast<uint32_t>(grouped.matrices.size()),
 						0);
@@ -324,7 +325,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 				if (!groupedGame.matrices.empty())
 				{
 					mBackend->UploadInstanceMatrices(
-						static_cast<uint32_t>(mBackend->mFrameNumber % 3),
+						static_cast<uint32_t>(mFrameNumber % 3),
 						groupedGame.matrices.data(),
 						static_cast<uint32_t>(groupedGame.matrices.size()),
 						c_maxInstances);

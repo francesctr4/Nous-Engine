@@ -5,8 +5,8 @@
 add_subdirectory(Vulkan)
 
 add_library(RendererBackend STATIC
-        RendererBackend.h
-        RendererBackend.cpp
+        RendererBackendFactory.h
+        RendererBackendFactory.cpp
 )
 
 set_target_properties(RendererBackend PROPERTIES

@@ -1,7 +1,7 @@
 #ifndef VULKANBACKEND_H
 #define VULKANBACKEND_H
 
-#include <Engine/Renderer/Backend/RendererBackend.h>
+#include <Engine/Renderer/RendererTypes.h>
 #include "Engine/EngineExport.h"
 #include "Engine/Core/Globals.h"
 

@@ -15,7 +15,6 @@
 #include <vector>
 
 // Forward declarations
-class RendererBackend;
 class ResourceMesh;
 class ResourceMaterial;
 class ResourceTexture;
@@ -50,7 +49,7 @@ public:
 	// Lifecycle
 	// ---------------------------------------------------------------------
 	[[nodiscard]] NOUS_ENGINE_API bool Initialize(RendererBackendType backendType);
-	NOUS_ENGINE_API void Shutdown() const;
+	NOUS_ENGINE_API void Shutdown();
 	NOUS_ENGINE_API void ReleaseFrameResources() const noexcept;
 	NOUS_ENGINE_API void WaitForGPUIdle() const noexcept;
 	NOUS_ENGINE_API void OnResized(uint16_t width, uint16_t height) const;
@@ -208,9 +207,14 @@ private:
 
 private:
 
-	RendererBackend* mBackend;
+	IRendererBackend* mBackend;
 	RendererBackendType mBackendType;
 	RenderMode mRenderMode = RenderMode::EDITOR;
+
+	// GPU frame counter — advanced after each successful EndFrame, used as the
+	// triple-buffering frame index (mFrameNumber % 3). Previously lived on the
+	// deleted RendererBackend wrapper. mutable so it can tick from const EndFrame().
+	mutable uint64_t mFrameNumber = 0;
 
 	// Cached dependencies — applied to the backend after Create() inside Initialize()
 	ModuleWindow*                        m_window          = nullptr;
