@@ -5,6 +5,7 @@
 add_subdirectory(Vulkan)
 
 add_library(RendererBackend STATIC
+        iRendererBackend.h
         RendererBackendFactory.h
         RendererBackendFactory.cpp
 )

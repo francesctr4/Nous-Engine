@@ -23,6 +23,7 @@ struct IEditorOverlay;
 class ModuleWindow;
 class ModuleResourceManager;
 class EventSystem;
+struct IRendererBackend;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 /**

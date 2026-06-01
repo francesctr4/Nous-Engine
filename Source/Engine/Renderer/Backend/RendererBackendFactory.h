@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Renderer/RendererTypes.h"
+#include "Engine/Renderer/Backend/iRendererBackend.h"
 
 /**
  * @brief Instantiates the concrete renderer backend for the given API.

@@ -160,7 +160,9 @@ namespace nous::math { ... }
 | Source | `PascalCase.cpp` | `ModuleResourceManager.cpp` |
 | Inline / template impl | `PascalCase.inl` | `ScriptRegistry.inl` |
 | Test file | `t_PascalCase.cpp` | `t_ShaderCompiler.cpp` |
-| Interface header | `IPascalCase.h` | `IImporterManager.h` |
+| Interface header | `iPascalCase.h` | `iRendererBackend.h` |
+
+> **Interface naming:** the *type* keeps the capital-`I` prefix (`struct IRendererBackend`), but the *filename* uses a lowercase `i` (`iRendererBackend.h`) — stacked capitals like `IImporter.h` read poorly. Existing headers still use a capital `I`; migrate them to lowercase only when you touch them, don't mass-rename.
 
 ### Include guards
 
