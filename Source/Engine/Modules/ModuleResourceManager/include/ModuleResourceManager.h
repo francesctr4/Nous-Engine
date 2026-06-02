@@ -3,7 +3,7 @@
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceQueue/include/ResourceQueue.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceTable/include/ResourceTable.h"
 #include "Engine/Systems/ResourceManager/Runtime/Builtins/include/BuiltinResources.h"
@@ -11,7 +11,7 @@
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/SubMeshCache.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/IResourceLoader.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 
 #include <future>
 #include <string>
@@ -68,10 +68,10 @@ public:
 	NOUS_ENGINE_API void RegenerateLibrary();
 
 	NOUS_ENGINE_API bool ResourceExists(uint32 uid) const;
-	NOUS_ENGINE_API Resource* CreateResource(const std::string& assetsPath) override;
+	NOUS_ENGINE_API ResourceBase* CreateResource(const std::string& assetsPath) override;
 
 	// GAME mode variant: load directly from a known library path without reading a .meta file.
-	NOUS_ENGINE_API Resource* CreateResourceFromLibrary(uint32 uid, ResourceType type,
+	NOUS_ENGINE_API ResourceBase* CreateResourceFromLibrary(uint32 uid, ResourceType type,
 	                                                    const std::string& name,
 	                                                    const std::string& assetsPath,
 	                                                    const std::string& libraryPath) override;
@@ -93,19 +93,19 @@ public:
 
 	// Returns a thread-safe snapshot copy of the resources map.
 	// Safe to call from any thread (e.g. editor UI) concurrently with resource loading.
-	NOUS_ENGINE_API std::unordered_map<uint32, Resource*> GetResourcesMap() const;
+	NOUS_ENGINE_API std::unordered_map<uint32, ResourceBase*> GetResourcesMap() const;
 
 	// Takes and clears the pending upload queue — called by Renderer::PreUpdate/Start.
 	// Each entry is a resource that has been Deserialized and needs GPU Upload.
-	NOUS_ENGINE_API std::vector<std::pair<ResourceType, Resource*>> TakePendingUploads();
+	NOUS_ENGINE_API std::vector<std::pair<ResourceType, ResourceBase*>> TakePendingUploads();
 
 	// Takes and clears the pending release queue — called by Renderer::PreUpdate.
 	// Each entry is a resource whose ref count hit 0 and needs GPU Release + CPU Evict.
-	NOUS_ENGINE_API std::vector<std::pair<ResourceType, Resource*>> TakePendingReleases();
+	NOUS_ENGINE_API std::vector<std::pair<ResourceType, ResourceBase*>> TakePendingReleases();
 
 	// Called by Renderer after GPU Release: evicts CPU data and deletes the resource object.
 	// Returns true if the resource was evicted, false if it was re-acquired (and re-queued for upload).
-	NOUS_ENGINE_API bool EvictResource(ResourceType type, Resource* resource);
+	NOUS_ENGINE_API bool EvictResource(ResourceType type, ResourceBase* resource);
 
 	// Wire-compatible with HotReloader::ReadyUpload — kept as a using-alias so
 	// ModuleRenderer3D and tests that destructure `[uid, type]` need no change.
@@ -137,7 +137,7 @@ public:
     // Use for read-only access (e.g. Inspector UI) where the caller does not own the resource.
     // Do NOT call UnloadResource on the returned pointer.
     // Returns nullptr if the resource is not currently loaded.
-    NOUS_ENGINE_API Resource* GetLoadedResource(uint32 uid);
+    NOUS_ENGINE_API ResourceBase* GetLoadedResource(uint32 uid);
 
     // Returns the injected importer manager — used by ModuleRenderer3D to call
     // Upload/Release through the IImporterManager interface.
@@ -164,15 +164,15 @@ public:
 
 private:
 
-	void DeleteResource(Resource*& resource);
+	void DeleteResource(ResourceBase*& resource);
 
 	// Spins until the slot's loading thread writes a real pointer, then bumps the refcount and returns it.
 	// Returns nullptr if the entry was evicted from the map before it resolved.
-	Resource* SpinWaitForSlot(uint32 uid);
+	ResourceBase* SpinWaitForSlot(uint32 uid);
 
 	// Instantiates, populates, deserializes, and registers a resource into an already-claimed slot.
 	// Caller must have won m_table.TryInsert(uid, nullptr) before calling this.
-	Resource* LoadResourceIntoSlot(uint32 uid, ResourceType type,
+	ResourceBase* LoadResourceIntoSlot(uint32 uid, ResourceType type,
 	    const std::string& name,
 	    const std::string& assetsPath,
 	    const std::string& libraryPath);

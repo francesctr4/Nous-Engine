@@ -185,7 +185,7 @@ static void DrawMaterial(const InspectorCtx& ctx, Component* c)
                 data += path.size() + 1;
                 if (std::filesystem::path(path).extension() == ".nmat")
                 {
-                    Resource* r = rm->CreateResource(path);
+                    ResourceBase* r = rm->CreateResource(path);
                     if (r)
                     {
                         if (cmaterial->material && cmaterial->material != rm->GetDefaultMaterial())
@@ -269,7 +269,7 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
                 const std::string ext = std::filesystem::path(path).extension().string();
                 if (ext == ".wav" || ext == ".ogg")
                 {
-                    if (Resource* r = rm->CreateResource(path))
+                    if (ResourceBase* r = rm->CreateResource(path))
                     {
                         if (cAudioSource->clip)
                             rm->UnloadResource(cAudioSource->clip->GetUID());

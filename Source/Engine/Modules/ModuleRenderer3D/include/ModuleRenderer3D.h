@@ -30,7 +30,7 @@
 struct RenderPacket;
 struct SceneRenderData;
 class RendererFrontend;
-class Resource;
+class ResourceBase;
 class IGPUResourceFactory;
 
 // Dependency Injection

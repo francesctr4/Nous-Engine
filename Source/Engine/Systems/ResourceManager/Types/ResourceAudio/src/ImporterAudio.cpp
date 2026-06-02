@@ -5,7 +5,7 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include "Engine/Systems/AudioSystem/AudioSystem.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
 namespace
@@ -36,11 +36,11 @@ namespace
 
 bool ImporterAudio::Import(const MetaFileData& metaFileData)
 {
-    Resource* tempAudio = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO);
+    ResourceBase* tempAudio = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO);
     return Save(metaFileData, tempAudio);
 }
 
-bool ImporterAudio::Save(const MetaFileData& metaFileData, Resource*& inResource)
+bool ImporterAudio::Save(const MetaFileData& metaFileData, ResourceBase*& inResource)
 {
     NOUS_DELETE(inResource, MemoryTag::RESOURCE_AUDIO);
 
@@ -53,7 +53,7 @@ bool ImporterAudio::Save(const MetaFileData& metaFileData, Resource*& inResource
     return ret;
 }
 
-bool ImporterAudio::Deserialize(const std::string& libraryPath, Resource* outResource)
+bool ImporterAudio::Deserialize(const std::string& libraryPath, ResourceBase* outResource)
 {
     ResourceAudio* audio = down_cast<ResourceAudio*>(outResource);
 
@@ -74,18 +74,18 @@ bool ImporterAudio::Deserialize(const std::string& libraryPath, Resource* outRes
     return true;
 }
 
-void ImporterAudio::Evict(Resource* /*inResource*/)
+void ImporterAudio::Evict(ResourceBase* /*inResource*/)
 {
     // MVP holds no CPU-side PCM buffer; nothing to release.
 }
 
-bool ImporterAudio::Upload(Resource* /*outResource*/, IGPUResourceFactory* /*gpu*/)
+bool ImporterAudio::Upload(ResourceBase* /*outResource*/, IGPUResourceFactory* /*gpu*/)
 {
     // miniaudio resolves by libraryPath at ma_sound creation; no GPU/backend pre-warm in MVP.
     return true;
 }
 
-void ImporterAudio::Release(Resource* /*inResource*/, IGPUResourceFactory* /*gpu*/)
+void ImporterAudio::Release(ResourceBase* /*inResource*/, IGPUResourceFactory* /*gpu*/)
 {
     // No GPU/backend handles held; nothing to release.
 }

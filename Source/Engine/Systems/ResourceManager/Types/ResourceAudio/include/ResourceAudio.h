@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 
 enum class AudioStreamingMode : uint8_t
 {
@@ -16,7 +16,7 @@ enum class AudioFileType : uint8_t
     OGG
 };
 
-class ResourceAudio : public Resource
+class ResourceAudio : public ResourceBase
 {
 public:
     NOUS_ENGINE_API explicit ResourceAudio(uint32 uid = 0);

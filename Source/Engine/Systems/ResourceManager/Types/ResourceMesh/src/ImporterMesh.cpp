@@ -4,7 +4,7 @@
 #include <map>
 
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
@@ -605,7 +605,7 @@ bool ImporterMesh::Import(const MetaFileData& metaFileData)
     return SaveSubmeshes(metaFileData, submeshes);
 }
 
-bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
+bool ImporterMesh::Save(const MetaFileData& metaFileData, ResourceBase*& inResource)
 {
     // Legacy path: convert a ResourceMesh into a single-submesh V2 binary.
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
@@ -622,7 +622,7 @@ bool ImporterMesh::Save(const MetaFileData& metaFileData, Resource*& inResource)
     return ret;
 }
 
-bool ImporterMesh::Deserialize(const std::string& libraryPath, Resource* outResource)
+bool ImporterMesh::Deserialize(const std::string& libraryPath, ResourceBase* outResource)
 {
     // Merge all submeshes from the binary into a single ResourceMesh (CPU only).
     const auto submeshes = ParseMeshBinary(libraryPath);
@@ -658,7 +658,7 @@ bool ImporterMesh::Deserialize(const std::string& libraryPath, Resource* outReso
     return true;
 }
 
-bool ImporterMesh::Upload(Resource* outResource, IGPUResourceFactory* gpu)
+bool ImporterMesh::Upload(ResourceBase* outResource, IGPUResourceFactory* gpu)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(outResource);
     return gpu->CreateGeometry(
@@ -666,7 +666,7 @@ bool ImporterMesh::Upload(Resource* outResource, IGPUResourceFactory* gpu)
         mesh->indices.size(), mesh->indices.data(), mesh);
 }
 
-void ImporterMesh::Release(Resource* inResource, IGPUResourceFactory* gpu)
+void ImporterMesh::Release(ResourceBase* inResource, IGPUResourceFactory* gpu)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
     if (mesh->internalID != INVALID_ID)
@@ -676,7 +676,7 @@ void ImporterMesh::Release(Resource* inResource, IGPUResourceFactory* gpu)
     }
 }
 
-void ImporterMesh::Evict(Resource* inResource)
+void ImporterMesh::Evict(ResourceBase* inResource)
 {
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
     mesh->vertices.clear();

@@ -6,7 +6,7 @@
 #include "Engine/Core/FileSystem/FileSystem.h"
 
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 
 #include "Engine/Renderer/IGPUResourceFactory.h"
 
@@ -183,11 +183,11 @@ static void ReflectAndSerialize(const std::vector<ShaderSource>& compiledSources
 
 bool ImporterShader::Import(const MetaFileData& metaFileData)
 {
-    Resource* tempShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+    ResourceBase* tempShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
     return Save(metaFileData, tempShader);
 }
 
-bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResource)
+bool ImporterShader::Save(const MetaFileData& metaFileData, ResourceBase*& inResource)
 {
     NOUS_DELETE(inResource, MemoryTag::RESOURCE_SHADER);
 
@@ -218,7 +218,7 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, Resource*& inResourc
     return true;
 }
 
-bool ImporterShader::Deserialize(const std::string& libraryPath, Resource* outResource)
+bool ImporterShader::Deserialize(const std::string& libraryPath, ResourceBase* outResource)
 {
     ResourceShader* shader = down_cast<ResourceShader*>(outResource);
 
@@ -305,7 +305,7 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, Resource* outRe
     return true;
 }
 
-bool ImporterShader::Upload(Resource* outResource, IGPUResourceFactory* gpu)
+bool ImporterShader::Upload(ResourceBase* outResource, IGPUResourceFactory* gpu)
 {
     ResourceShader* shader = down_cast<ResourceShader*>(outResource);
     if (!gpu->CreateShader(shader))
@@ -317,13 +317,13 @@ bool ImporterShader::Upload(Resource* outResource, IGPUResourceFactory* gpu)
     return true;
 }
 
-void ImporterShader::Release(Resource* inResource, IGPUResourceFactory* gpu)
+void ImporterShader::Release(ResourceBase* inResource, IGPUResourceFactory* gpu)
 {
     ResourceShader* shader = down_cast<ResourceShader*>(inResource);
     gpu->DestroyShader(shader);
 }
 
-void ImporterShader::Evict(Resource* inResource)
+void ImporterShader::Evict(ResourceBase* inResource)
 {
     ResourceShader* shader = down_cast<ResourceShader*>(inResource);
     shader->stagesData.clear();

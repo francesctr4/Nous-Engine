@@ -263,7 +263,7 @@ Within each group, sort alphabetically. Separate groups with a blank line.
 
 // 2. Engine headers
 #include "Engine/Core/Logger/Logger.h"
-#include "Engine/Systems/ResourceManager/Resource.h"
+#include "Engine/Systems/ResourceManager/ResourceBase.h"
 
 // 3. Third-party headers
 #include <assimp/Importer.hpp>

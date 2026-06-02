@@ -2,7 +2,7 @@
 
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceType.h"
 
 #include <string>
@@ -31,11 +31,11 @@ namespace
     struct TestResourceImporter final : IResourceImporter
     {
         bool Import(const MetaFileData&) override                    { return true; }
-        bool Save(const MetaFileData&, Resource*&) override          { return true; }
-        bool Deserialize(const std::string&, Resource*) override     { return true; }
-        void Evict(Resource*) override                               {}
-        bool Upload(Resource*, IGPUResourceFactory*) override        { return true; }
-        void Release(Resource*, IGPUResourceFactory*) override       {}
+        bool Save(const MetaFileData&, ResourceBase*&) override          { return true; }
+        bool Deserialize(const std::string&, ResourceBase*) override     { return true; }
+        void Evict(ResourceBase*) override                               {}
+        bool Upload(ResourceBase*, IGPUResourceFactory*) override        { return true; }
+        void Release(ResourceBase*, IGPUResourceFactory*) override       {}
     };
 
     // A resource type: createFn + destroyFn + an IResourceImporter, all set.
@@ -48,8 +48,8 @@ namespace
         d.sourceExtensions = std::move(exts);
         d.cleanupPriority  = cleanupPriority;
         d.SetImporter<TestResourceImporter>();
-        d.createFn  = [](uint32) -> Resource* { return nullptr; };
-        d.destroyFn = [](Resource*) {};
+        d.createFn  = [](uint32) -> ResourceBase* { return nullptr; };
+        d.destroyFn = [](ResourceBase*) {};
         return d;
     }
 

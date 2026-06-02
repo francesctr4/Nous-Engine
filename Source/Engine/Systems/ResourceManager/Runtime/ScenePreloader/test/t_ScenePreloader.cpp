@@ -8,8 +8,8 @@
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 
 #include <filesystem>
 #include <fstream>
@@ -26,10 +26,10 @@ class SpMockImporterManager : public IImporterManager
 public:
     void Init(ModuleResourceManager*) override                                    {}
     bool Import(ResourceType, const MetaFileData&) override                       { return true; }
-    bool Deserialize(ResourceType, const std::string&, Resource*) override        { return true; }
-    void Evict(ResourceType, Resource*) override                                  {}
-    bool Upload(ResourceType, Resource*, IGPUResourceFactory*) override           { return true; }
-    void Release(ResourceType, Resource*, IGPUResourceFactory*) override          {}
+    bool Deserialize(ResourceType, const std::string&, ResourceBase*) override        { return true; }
+    void Evict(ResourceType, ResourceBase*) override                                  {}
+    bool Upload(ResourceType, ResourceBase*, IGPUResourceFactory*) override           { return true; }
+    void Release(ResourceType, ResourceBase*, IGPUResourceFactory*) override          {}
 };
 
 // =====================================================

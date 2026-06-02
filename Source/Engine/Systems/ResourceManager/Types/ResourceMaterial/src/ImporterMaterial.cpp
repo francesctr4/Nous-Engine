@@ -10,7 +10,7 @@
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include <algorithm>
 
 #include "Engine/Core/MemoryManager/MemoryManager.h"
@@ -49,11 +49,11 @@ static UniformValueType StringToUniformValueType(std::string_view str)
 
 bool ImporterMaterial::Import(const MetaFileData& metaFileData)
 {
-    Resource* tempMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
+    ResourceBase* tempMaterial = NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL);
     return Save(metaFileData, tempMaterial);
 }
 
-bool ImporterMaterial::Save(const MetaFileData& metaFileData, Resource*& inResource)
+bool ImporterMaterial::Save(const MetaFileData& metaFileData, ResourceBase*& inResource)
 {
     NOUS_DELETE(inResource, MemoryTag::RESOURCE_MATERIAL);
 
@@ -207,7 +207,7 @@ static void DeserializeShader(const JsonObject& root, ResourceMaterial* material
     }
 
     const std::string shaderName = nous::engine::filesystem::GetFilename(shaderAssetRaw);
-    Resource* r = rm->CreateResourceFromLibrary(
+    ResourceBase* r = rm->CreateResourceFromLibrary(
         static_cast<uint32>(shaderUID), ResourceType::SHADER, shaderName,
         shaderAssetRaw, shaderLibRaw);
 
@@ -224,7 +224,7 @@ static void DeserializeShader(const JsonObject& root, ResourceMaterial* material
 
 // ---------------------------------------------------------------------------
 
-bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* outResource)
+bool ImporterMaterial::Deserialize(const std::string& libraryPath, ResourceBase* outResource)
 {
     ResourceMaterial* material = down_cast<ResourceMaterial*>(outResource);
 
@@ -242,13 +242,13 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, Resource* out
     return true;
 }
 
-bool ImporterMaterial::Upload(Resource* outResource, IGPUResourceFactory* gpu)
+bool ImporterMaterial::Upload(ResourceBase* outResource, IGPUResourceFactory* gpu)
 {
     ResourceMaterial* material = down_cast<ResourceMaterial*>(outResource);
     return gpu->CreateMaterial(material);
 }
 
-void ImporterMaterial::Release(Resource* inResource, IGPUResourceFactory* gpu)
+void ImporterMaterial::Release(ResourceBase* inResource, IGPUResourceFactory* gpu)
 {
     ResourceMaterial* material = down_cast<ResourceMaterial*>(inResource);
     // Guard: the resource may never have been GPU-uploaded (e.g. scene cleared
@@ -257,7 +257,7 @@ void ImporterMaterial::Release(Resource* inResource, IGPUResourceFactory* gpu)
         gpu->DestroyMaterial(material);
 }
 
-void ImporterMaterial::Evict(Resource* inResource)
+void ImporterMaterial::Evict(ResourceBase* inResource)
 {
     ResourceMaterial* material = down_cast<ResourceMaterial*>(inResource);
     for (auto& [name, map] : material->textureMaps)

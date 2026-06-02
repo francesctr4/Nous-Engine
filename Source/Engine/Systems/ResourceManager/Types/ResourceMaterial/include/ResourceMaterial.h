@@ -2,7 +2,7 @@
 #define RESOURCEMATERIAL_H
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Renderer/RendererTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 
@@ -86,7 +86,7 @@ struct UniformValue
     }
 };
 
-class ResourceMaterial : public Resource
+class ResourceMaterial : public ResourceBase
 {
 public:
 

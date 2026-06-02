@@ -1,20 +1,20 @@
 #include "Engine/Systems/ResourceManager/Runtime/Builtins/include/BuiltinResources.h"
 
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 
-std::vector<std::pair<ResourceType, Resource*>> BuiltinResources::Create()
+std::vector<std::pair<ResourceType, ResourceBase*>> BuiltinResources::Create()
 {
     // -----------------------------------------------------------------------
     // Textures
     // Reserved UIDs sit at the top of the uint32 range so they cannot collide
     // with randomly-generated asset UIDs in .meta files.
     // These UIDs are what the descriptor lazy-write dedup (WriteInstanceSampler)
-    // keys off via Resource::GetUID(), so each fallback must be unique.
+    // keys off via ResourceBase::GetUID(), so each fallback must be unique.
     // -----------------------------------------------------------------------
 
     // Default Texture — 256×256 checkerboard

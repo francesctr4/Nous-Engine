@@ -2,7 +2,7 @@
 
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ImporterShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 
@@ -105,7 +105,7 @@ TEST_F(t_ImporterShader, Deserialize_EmptyDirectory_ReturnsFalse)
 TEST_F(t_ImporterShader, Save_ReturnsTrue_ForValidGlsl)
 {
     MetaFileData meta = MakeMeta();
-    Resource* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+    ResourceBase* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
     ImporterShader importer;
     EXPECT_TRUE(importer.Save(meta, res));
     // Save deletes and nulls res internally
@@ -114,7 +114,7 @@ TEST_F(t_ImporterShader, Save_ReturnsTrue_ForValidGlsl)
 TEST_F(t_ImporterShader, SaveThenDeserialize_PopulatesStagesData)
 {
     MetaFileData meta = MakeMeta();
-    Resource* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+    ResourceBase* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
     ImporterShader importer;
     ASSERT_TRUE(importer.Save(meta, res));
 
@@ -126,7 +126,7 @@ TEST_F(t_ImporterShader, SaveThenDeserialize_PopulatesStagesData)
 TEST_F(t_ImporterShader, SaveThenDeserialize_EachStageHasSpirV)
 {
     MetaFileData meta = MakeMeta();
-    Resource* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+    ResourceBase* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
     ImporterShader importer;
     ASSERT_TRUE(importer.Save(meta, res));
 
@@ -139,7 +139,7 @@ TEST_F(t_ImporterShader, SaveThenDeserialize_EachStageHasSpirV)
 TEST_F(t_ImporterShader, SaveThenDeserialize_ReflectionIsPopulated)
 {
     MetaFileData meta = MakeMeta();
-    Resource* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+    ResourceBase* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
     ImporterShader importer;
     ASSERT_TRUE(importer.Save(meta, res));
 
@@ -156,7 +156,7 @@ TEST_F(t_ImporterShader, SaveThenDeserialize_ReflectionIsPopulated)
 TEST_F(t_ImporterShader, Evict_ClearsStagesDataAndReflection)
 {
     MetaFileData meta = MakeMeta();
-    Resource* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
+    ResourceBase* res = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
     ImporterShader importer;
     ASSERT_TRUE(importer.Save(meta, res));
 

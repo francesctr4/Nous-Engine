@@ -1,7 +1,7 @@
 #include "Editor/UI/Windows/ResourcesWindow/include/ResourcesWindow.h"
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
@@ -16,7 +16,7 @@ Resources::Resources(const char* title, EditorContext* context, bool start_open)
 
 void Resources::DrawContent()
 {
-    std::unordered_map<uint32, Resource*> resourcesMap = editorContext->GetResourceManager()->GetResourcesMap();
+    std::unordered_map<uint32, ResourceBase*> resourcesMap = editorContext->GetResourceManager()->GetResourcesMap();
     auto currentResourceCount = static_cast<uint32>(resourcesMap.size());
 
     ImGui::TextColored(
@@ -49,16 +49,16 @@ void Resources::DrawContent()
 
         AlignHeadersToCenter();
 
-        for (const auto& [UID, Resource] : resourcesMap)
+        for (const auto& [uid, resource] : resourcesMap)
         {
-            if (!Resource) continue; // skip in-progress loads (nullptr placeholder)
+            if (!resource) continue; // skip in-progress loads (nullptr placeholder)
 
             ImVec4 textColor;
-            ChooseTextColor(Resource->GetType(), textColor);
+            ChooseTextColor(resource->GetType(), textColor);
 
             ImGui::TableNextRow();
 
-            DisplayResource(Resource, textColor);
+            DisplayResource(resource, textColor);
         }
 
         // Scroll to the bottom if a new resource is added (now affects the table's scroll)
@@ -110,7 +110,7 @@ void Resources::ChooseTextColor(const ResourceType& type, ImVec4& textColor) con
     textColor = ImVec4(0.8f, 0.8f, 0.8f, 1.0f); // fallback for unknown / unregistered
 }
 
-void Resources::DisplayResource(const Resource* resource, const ImVec4& textColor) const
+void Resources::DisplayResource(const ResourceBase* resource, const ImVec4& textColor) const
 {
     ImGui::TableSetColumnIndex(0);
     ImGui::PushStyleColor(ImGuiCol_Text, textColor);

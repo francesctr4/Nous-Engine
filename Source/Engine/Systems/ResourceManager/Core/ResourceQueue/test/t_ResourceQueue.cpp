@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/ResourceManager/Core/ResourceQueue/include/ResourceQueue.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceType.h"
 
 #include <vector>
@@ -11,8 +11,8 @@
 // is preserved, TakeAll swaps-and-clears, PushBatch appends (and no-ops on an
 // empty batch). They do NOT prove thread-safety — a single-threaded test can't.
 //
-// The queue only stores Resource pointers; it never dereferences them, so real
-// stack-allocated Resource instances serve as distinct non-null markers.
+// The queue only stores ResourceBase pointers; it never dereferences them, so real
+// stack-allocated ResourceBase instances serve as distinct non-null markers.
 
 TEST(ResourceQueue, NewQueueIsEmpty)
 {
@@ -24,7 +24,7 @@ TEST(ResourceQueue, NewQueueIsEmpty)
 TEST(ResourceQueue, PushIncrementsSize)
 {
     ResourceQueue queue;
-    Resource a;
+    ResourceBase a;
     queue.Push(ResourceType::MESH, &a);
     EXPECT_EQ(queue.Size(), 1u);
 }
@@ -32,8 +32,8 @@ TEST(ResourceQueue, PushIncrementsSize)
 TEST(ResourceQueue, TakeAllReturnsEntriesInPushOrderAndClears)
 {
     ResourceQueue queue;
-    Resource a;
-    Resource b;
+    ResourceBase a;
+    ResourceBase b;
     queue.Push(ResourceType::MESH,    &a);
     queue.Push(ResourceType::TEXTURE, &b);
 
@@ -56,8 +56,8 @@ TEST(ResourceQueue, TakeAllOnEmptyQueueReturnsEmptyVector)
 TEST(ResourceQueue, PushBatchAppendsAllEntries)
 {
     ResourceQueue queue;
-    Resource a;
-    Resource b;
+    ResourceBase a;
+    ResourceBase b;
     queue.Push(ResourceType::MESH, &a); // pre-existing entry
 
     std::vector<ResourceQueue::Entry> batch;
@@ -82,7 +82,7 @@ TEST(ResourceQueue, PushBatchWithEmptyVectorIsNoOp)
 TEST(ResourceQueue, ClearDiscardsEntriesWithoutReturningThem)
 {
     ResourceQueue queue;
-    Resource a;
+    ResourceBase a;
     queue.Push(ResourceType::MESH, &a);
 
     queue.Clear();

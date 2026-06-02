@@ -4,7 +4,7 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 
 #include <array>
 #include <functional>
@@ -53,8 +53,8 @@ struct TypeDescriptor
     std::unique_ptr<IAssetImporter> importer;
     IResourceImporter* resourceImporter = nullptr; // non-owning alias into `importer`
 
-    std::function<Resource* (uint32 uid)> createFn;
-    std::function<void(Resource*)>        destroyFn;
+    std::function<ResourceBase* (uint32 uid)> createFn;
+    std::function<void(ResourceBase*)>        destroyFn;
 
     // Constructs the importer and wires both handles. `resourceImporter` is set
     // only when T derives IResourceImporter (compile-time trait, no RTTI), so the
@@ -81,7 +81,7 @@ struct TypeDescriptor
     // recurse into the half-torn-down ModuleResourceManager. The callback
     // should null the cross-resource pointers inline; destroyFn still runs
     // afterwards to release the type's own memory.
-    std::function<void(Resource*)> evictAtShutdown;
+    std::function<void(ResourceBase*)> evictAtShutdown;
 
     // Editor-facing metadata (kept neutral; editor adapts to ImGui types)
     DisplayMetadata display;

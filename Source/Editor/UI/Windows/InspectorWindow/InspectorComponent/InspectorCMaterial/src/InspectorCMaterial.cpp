@@ -6,7 +6,7 @@
 #include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ImporterMaterial.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
@@ -72,7 +72,7 @@ void CMaterialDrawDefaultMaterial(const GameObject* go, CMaterial& mat,
         }
         else
         {
-            Resource* r = rm->CreateResource(assetPath);
+            ResourceBase* r = rm->CreateResource(assetPath);
             if (r)
                 mat.material = down_cast<ResourceMaterial*>(r);
             else
@@ -146,7 +146,7 @@ void LoadAndDisplayShaderOptions(RendererFrontend* rendererFrontend, CMaterial& 
 
         if (ImGui::Selectable(fileName.c_str(), isSelected))
         {
-            Resource* resource = rm->CreateResource(fullPath);
+            ResourceBase* resource = rm->CreateResource(fullPath);
             if (!resource)
             {
                 NOUS_ERROR("InspectorWindow — failed to load shader '%s'.", fullPath.c_str());
@@ -493,7 +493,7 @@ void ApplyDroppedTexture(
     const ResourceTexture* currentTex,
     const std::string& path)
 {
-    Resource* r = rm->CreateResource(path);
+    ResourceBase* r = rm->CreateResource(path);
     if (!r)
     {
         NOUS_ERROR("InspectorWindow — failed to load texture '%s'.", path.c_str());

@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Core/ResourceTable/include/ResourceTable.h"
 
-Resource* ResourceTable::TryGet(uint32 uid) const
+ResourceBase* ResourceTable::TryGet(uint32 uid) const
 {
     std::scoped_lock lock(m_mutex);
     const auto it = m_resources.find(uid);
@@ -14,7 +14,7 @@ bool ResourceTable::Contains(uint32 uid) const
     return m_resources.contains(uid);
 }
 
-bool ResourceTable::TryInsert(uint32 uid, Resource* resource)
+bool ResourceTable::TryInsert(uint32 uid, ResourceBase* resource)
 {
     std::scoped_lock lock(m_mutex);
     if (m_resources.contains(uid)) return false;
@@ -22,7 +22,7 @@ bool ResourceTable::TryInsert(uint32 uid, Resource* resource)
     return true;
 }
 
-void ResourceTable::Set(uint32 uid, Resource* resource)
+void ResourceTable::Set(uint32 uid, ResourceBase* resource)
 {
     std::scoped_lock lock(m_mutex);
     m_resources[uid] = resource;
@@ -34,7 +34,7 @@ bool ResourceTable::Erase(uint32 uid)
     return m_resources.erase(uid) > 0;
 }
 
-std::unordered_map<uint32, Resource*> ResourceTable::Snapshot() const
+std::unordered_map<uint32, ResourceBase*> ResourceTable::Snapshot() const
 {
     std::scoped_lock lock(m_mutex);
     return m_resources;

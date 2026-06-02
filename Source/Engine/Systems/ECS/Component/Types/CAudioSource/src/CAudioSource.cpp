@@ -7,7 +7,7 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceType.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
@@ -228,7 +228,7 @@ void CAudioSource::Deserialize(const JsonObject& obj)
     // GAME path: load straight from Library without reading a .meta file.
     if (!libraryPath.empty() && resourceUID != 0)
     {
-        if (Resource* r = rm->CreateResourceFromLibrary(
+        if (ResourceBase* r = rm->CreateResourceFromLibrary(
                 resourceUID, ResourceType::AUDIO,
                 nous::engine::filesystem::GetFilename(assetPath), assetPath, libraryPath))
             clip = down_cast<ResourceAudio*>(r);
@@ -237,7 +237,7 @@ void CAudioSource::Deserialize(const JsonObject& obj)
     // EDITOR path / fallback: resolve via the asset path.
     if (!clip && !assetPath.empty())
     {
-        if (Resource* r = rm->CreateResource(assetPath))
+        if (ResourceBase* r = rm->CreateResource(assetPath))
             clip = down_cast<ResourceAudio*>(r);
     }
 }

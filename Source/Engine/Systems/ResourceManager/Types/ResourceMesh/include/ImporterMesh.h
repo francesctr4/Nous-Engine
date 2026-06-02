@@ -27,11 +27,11 @@ struct SubMeshData
 struct ImporterMesh : IResourceImporter
 {
     NOUS_ENGINE_API bool Import(const MetaFileData& metaFileData) override;
-    NOUS_ENGINE_API bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;
-    NOUS_ENGINE_API bool Deserialize(const std::string& libraryPath, Resource* resource) override;
-    NOUS_ENGINE_API void Evict(Resource* resource) override;
-    NOUS_ENGINE_API bool Upload(Resource* resource, IGPUResourceFactory* gpu) override;
-    NOUS_ENGINE_API void Release(Resource* resource, IGPUResourceFactory* gpu) override;
+    NOUS_ENGINE_API bool Save(const MetaFileData& metaFileData, ResourceBase*& inResource) override;
+    NOUS_ENGINE_API bool Deserialize(const std::string& libraryPath, ResourceBase* resource) override;
+    NOUS_ENGINE_API void Evict(ResourceBase* resource) override;
+    NOUS_ENGINE_API bool Upload(ResourceBase* resource, IGPUResourceFactory* gpu) override;
+    NOUS_ENGINE_API void Release(ResourceBase* resource, IGPUResourceFactory* gpu) override;
 
     // Loads all submeshes from a library binary written by this importer.
     // Returns one SubMeshData per logical submesh; empty on failure.

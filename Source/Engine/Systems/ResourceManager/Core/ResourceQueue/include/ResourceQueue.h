@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-class Resource;
+class ResourceBase;
 
 // Thread-safe FIFO of (type, resource) entries used for the two cross-thread
 // handoffs in ModuleResourceManager: pending GPU uploads and pending GPU
@@ -16,7 +16,7 @@ class Resource;
 class ResourceQueue
 {
 public:
-    using Entry = std::pair<ResourceType, Resource*>;
+    using Entry = std::pair<ResourceType, ResourceBase*>;
 
     NOUS_ENGINE_API ResourceQueue() = default;
     NOUS_ENGINE_API ~ResourceQueue() = default;
@@ -24,7 +24,7 @@ public:
     ResourceQueue(const ResourceQueue&)            = delete;
     ResourceQueue& operator=(const ResourceQueue&) = delete;
 
-    NOUS_ENGINE_API void Push(ResourceType type, Resource* resource);
+    NOUS_ENGINE_API void Push(ResourceType type, ResourceBase* resource);
 
     // Bulk producer — used for the initial built-in resource priming pass.
     NOUS_ENGINE_API void PushBatch(std::vector<Entry> entries);

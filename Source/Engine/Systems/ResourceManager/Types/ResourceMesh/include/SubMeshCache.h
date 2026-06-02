@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-class Resource;
+class ResourceBase;
 class ResourceMesh;
 class ResourceTable;
 class ResourceQueue;

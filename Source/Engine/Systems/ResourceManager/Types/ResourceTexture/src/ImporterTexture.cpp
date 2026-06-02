@@ -3,7 +3,7 @@
 #include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
@@ -18,11 +18,11 @@
 
 bool ImporterTexture::Import(const MetaFileData& metaFileData)
 {
-    Resource* tempTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
+    ResourceBase* tempTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
     return Save(metaFileData, tempTexture);
 }
 
-bool ImporterTexture::Save(const MetaFileData& metaFileData, Resource*& inResource)
+bool ImporterTexture::Save(const MetaFileData& metaFileData, ResourceBase*& inResource)
 {
     NOUS_DELETE(inResource, MemoryTag::RESOURCE_TEXTURE);
 
@@ -31,7 +31,7 @@ bool ImporterTexture::Save(const MetaFileData& metaFileData, Resource*& inResour
     return ret;
 }
 
-bool ImporterTexture::Deserialize(const std::string& libraryPath, Resource* outResource)
+bool ImporterTexture::Deserialize(const std::string& libraryPath, ResourceBase* outResource)
 {
     ResourceTexture* texture = down_cast<ResourceTexture*>(outResource);
 
@@ -95,7 +95,7 @@ bool ImporterTexture::Deserialize(const std::string& libraryPath, Resource* outR
     return true;
 }
 
-bool ImporterTexture::Upload(Resource* outResource, IGPUResourceFactory* gpu)
+bool ImporterTexture::Upload(ResourceBase* outResource, IGPUResourceFactory* gpu)
 {
     ResourceTexture* texture = down_cast<ResourceTexture*>(outResource);
     if (!gpu->CreateTexture(texture->pixelData.data(), texture))
@@ -106,13 +106,13 @@ bool ImporterTexture::Upload(Resource* outResource, IGPUResourceFactory* gpu)
     return true;
 }
 
-void ImporterTexture::Release(Resource* inResource, IGPUResourceFactory* gpu)
+void ImporterTexture::Release(ResourceBase* inResource, IGPUResourceFactory* gpu)
 {
     ResourceTexture* texture = down_cast<ResourceTexture*>(inResource);
     gpu->DestroyTexture(texture);
 }
 
-void ImporterTexture::Evict(Resource* inResource)
+void ImporterTexture::Evict(ResourceBase* inResource)
 {
     ResourceTexture* texture = down_cast<ResourceTexture*>(inResource);
     texture->pixelData.clear();

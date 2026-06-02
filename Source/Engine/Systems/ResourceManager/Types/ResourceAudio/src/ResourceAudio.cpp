@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
-ResourceAudio::ResourceAudio(const uint32 uid) : Resource(uid, ResourceType::AUDIO)
+ResourceAudio::ResourceAudio(const uint32 uid) : ResourceBase(uid, ResourceType::AUDIO)
 {
     streamingMode = AudioStreamingMode::DECODED;
     fileType = AudioFileType::UNKNOWN;

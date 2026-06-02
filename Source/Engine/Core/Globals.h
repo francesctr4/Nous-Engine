@@ -100,7 +100,7 @@ auto safe_cast(Source value)
 }
 
 // Safe downcasting utility for polymorphic types (pointers only)
-// e.g., Converting from Resource* to ResourceMesh*.
+// e.g., Converting from ResourceBase* to ResourceMesh*.
 template <typename Target, typename Source>
 auto down_cast(Source ptr)
 {

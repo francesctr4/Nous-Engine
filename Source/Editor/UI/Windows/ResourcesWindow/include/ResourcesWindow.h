@@ -5,7 +5,7 @@
 #include <cstdint>
 
 enum class ResourceType : int8_t;
-class Resource;
+class ResourceBase;
 struct ImVec4;
 
 class Resources : public IEditorWindow
@@ -20,7 +20,7 @@ private:
 
     void AlignHeadersToCenter() const;
     void ChooseTextColor(const ResourceType& type, ImVec4& color) const;
-    void DisplayResource(const Resource* resource, const ImVec4& textColor) const;
+    void DisplayResource(const ResourceBase* resource, const ImVec4& textColor) const;
 
     uint32_t previousResourceCount = 0;
 };

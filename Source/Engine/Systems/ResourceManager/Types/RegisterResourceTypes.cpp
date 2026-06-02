@@ -49,8 +49,8 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_SHADER;
         d.cleanupPriority = k_PrioShader;
         d.SetImporter<ImporterShader>();
-        d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER, uid); };
-        d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_SHADER); };
+        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_SHADER); };
         d.display.color[0] = 0.7f; d.display.color[1] = 0.2f; d.display.color[2] = 1.0f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }
@@ -67,13 +67,13 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_MATERIAL;
         d.cleanupPriority = k_PrioMaterial;
         d.SetImporter<ImporterMaterial>();
-        d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL, uid); };
-        d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_MATERIAL); };
+        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_MATERIAL); };
         d.hotReloadable = true;
         // Texture refs are still alive at this point (lower priority); null them
         // inline rather than routing through Evict, which would recurse via
         // UnloadResource into the half-torn-down resource manager.
-        d.evictAtShutdown = [](Resource* r)
+        d.evictAtShutdown = [](ResourceBase* r)
         {
             for (auto& map : down_cast<ResourceMaterial*>(r)->textureMaps | std::views::values)
                 map.texture = nullptr;
@@ -94,8 +94,8 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_TEXTURE;
         d.cleanupPriority = k_PrioTexture;
         d.SetImporter<ImporterTexture>();
-        d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE, uid); };
-        d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_TEXTURE); };
+        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_TEXTURE); };
         d.hotReloadable = true;
         d.display.color[0] = 0.5f; d.display.color[1] = 0.8f; d.display.color[2] = 0.0f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
@@ -113,8 +113,8 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_MESH;
         d.cleanupPriority = k_PrioMesh;
         d.SetImporter<ImporterMesh>();
-        d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH, uid); };
-        d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_MESH); };
+        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_MESH); };
         d.display.color[0] = 0.0f; d.display.color[1] = 0.8f; d.display.color[2] = 0.5f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }
@@ -131,8 +131,8 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_AUDIO;
         d.cleanupPriority = k_PrioAudio;
         d.SetImporter<ImporterAudio>();
-        d.createFn = [](uint32 uid) -> Resource* { return NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO, uid); };
-        d.destroyFn = [](Resource* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); };
+        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); };
         d.display.color[0] = 0.93f; d.display.color[1] = 0.28f; d.display.color[2] = 0.60f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }

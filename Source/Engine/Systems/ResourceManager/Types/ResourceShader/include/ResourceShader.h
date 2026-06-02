@@ -2,7 +2,7 @@
 #define NOUS_ENGINE_RESOURCE_SHADER_H
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
 
@@ -10,7 +10,7 @@
 // ResourceManager layer decoupled from any backend implementation.
 struct IBackendShader;
 
-class ResourceShader : public Resource
+class ResourceShader : public ResourceBase
 {
 public:
 

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <string>
 
-class Resource;
+class ResourceBase;
 class ResourceMesh;
 enum class ResourceType : int8_t;
 
@@ -17,9 +17,9 @@ class IResourceLoader
 public:
     virtual ~IResourceLoader() = default;
 
-    virtual Resource* CreateResource(const std::string& assetsPath) = 0;
+    virtual ResourceBase* CreateResource(const std::string& assetsPath) = 0;
 
-    virtual Resource* CreateResourceFromLibrary(uint32 uid, ResourceType type,
+    virtual ResourceBase* CreateResourceFromLibrary(uint32 uid, ResourceType type,
                                                 const std::string& name,
                                                 const std::string& assetsPath,
                                                 const std::string& libraryPath) = 0;

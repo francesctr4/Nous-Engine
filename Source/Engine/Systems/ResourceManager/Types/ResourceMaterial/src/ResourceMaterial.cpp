@@ -2,7 +2,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 
-ResourceMaterial::ResourceMaterial(const uint32 uid) : Resource(uid, ResourceType::MATERIAL)
+ResourceMaterial::ResourceMaterial(const uint32 uid) : ResourceBase(uid, ResourceType::MATERIAL)
 {
 	internalID = INVALID_ID;
 	shaderUID  = INVALID_ID;

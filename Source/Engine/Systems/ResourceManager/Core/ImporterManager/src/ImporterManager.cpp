@@ -1,7 +1,7 @@
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/ImporterManager.h"
 
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 
 namespace
@@ -41,25 +41,25 @@ bool ImporterManager::Import(ResourceType type, const MetaFileData& metaFileData
     return imp ? imp->Import(metaFileData) : false;
 }
 
-bool ImporterManager::Deserialize(ResourceType type, const std::string& libraryPath, Resource* resource)
+bool ImporterManager::Deserialize(ResourceType type, const std::string& libraryPath, ResourceBase* resource)
 {
     IResourceImporter* imp = ResourceImporterFor(*m_typeRegistry, type);
     return imp ? imp->Deserialize(libraryPath, resource) : false;
 }
 
-void ImporterManager::Evict(ResourceType type, Resource* resource)
+void ImporterManager::Evict(ResourceType type, ResourceBase* resource)
 {
     if (IResourceImporter* imp = ResourceImporterFor(*m_typeRegistry, type))
         imp->Evict(resource);
 }
 
-bool ImporterManager::Upload(ResourceType type, Resource* resource, IGPUResourceFactory* gpu)
+bool ImporterManager::Upload(ResourceType type, ResourceBase* resource, IGPUResourceFactory* gpu)
 {
     IResourceImporter* imp = ResourceImporterFor(*m_typeRegistry, type);
     return imp ? imp->Upload(resource, gpu) : false;
 }
 
-void ImporterManager::Release(ResourceType type, Resource* resource, IGPUResourceFactory* gpu)
+void ImporterManager::Release(ResourceType type, ResourceBase* resource, IGPUResourceFactory* gpu)
 {
     if (IResourceImporter* imp = ResourceImporterFor(*m_typeRegistry, type))
         imp->Release(resource, gpu);

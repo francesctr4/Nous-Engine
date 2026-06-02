@@ -13,13 +13,13 @@ enum class ResourceState : uint8_t
     GPU_READY   // Fully resident on GPU; safe to render
 };
 
-class Resource 
+class ResourceBase
 {
 public:
 
-	NOUS_ENGINE_API Resource();
-	NOUS_ENGINE_API Resource(uint32 uID, ResourceType type);
-	NOUS_ENGINE_API virtual ~Resource();
+	NOUS_ENGINE_API ResourceBase();
+	NOUS_ENGINE_API ResourceBase(uint32 uID, ResourceType type);
+	NOUS_ENGINE_API virtual ~ResourceBase();
 
 	NOUS_ENGINE_API void SetName(std::string_view name);
 	NOUS_ENGINE_API void SetUID(uint32 uid);

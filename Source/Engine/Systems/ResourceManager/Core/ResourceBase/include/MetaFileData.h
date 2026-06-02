@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Globals.h"
-#include "Resource.h"
+#include "ResourceBase.h"
 
 struct MetaFileData
 {

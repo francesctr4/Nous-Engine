@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 
 #include <utility>
 #include <vector>
@@ -21,7 +21,7 @@ class IGPUResourceFactory;
 class BuiltinResources
 {
 public:
-    std::vector<std::pair<ResourceType, Resource*>> Create();
+    std::vector<std::pair<ResourceType, ResourceBase*>> Create();
     void Destroy(IGPUResourceFactory* gpu);
 
     [[nodiscard]] ResourceTexture*  GetDefaultTexture()    const;

@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Core/ResourceQueue/include/ResourceQueue.h"
 
-void ResourceQueue::Push(ResourceType type, Resource* resource)
+void ResourceQueue::Push(ResourceType type, ResourceBase* resource)
 {
     std::scoped_lock lock(m_mutex);
     m_entries.emplace_back(type, resource);

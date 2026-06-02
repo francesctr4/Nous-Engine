@@ -11,11 +11,11 @@ class ResourceMaterial;
 struct ImporterMaterial : IResourceImporter
 {
     NOUS_ENGINE_API bool Import(const MetaFileData& metaFileData) override;
-    NOUS_ENGINE_API bool Save(const MetaFileData& metaFileData, Resource*& inResource) override;
-    NOUS_ENGINE_API bool Deserialize(const std::string& libraryPath, Resource* resource) override;
-    NOUS_ENGINE_API void Evict(Resource* resource) override;
-    NOUS_ENGINE_API bool Upload(Resource* resource, IGPUResourceFactory* gpu) override;
-    NOUS_ENGINE_API void Release(Resource* resource, IGPUResourceFactory* gpu) override;
+    NOUS_ENGINE_API bool Save(const MetaFileData& metaFileData, ResourceBase*& inResource) override;
+    NOUS_ENGINE_API bool Deserialize(const std::string& libraryPath, ResourceBase* resource) override;
+    NOUS_ENGINE_API void Evict(ResourceBase* resource) override;
+    NOUS_ENGINE_API bool Upload(ResourceBase* resource, IGPUResourceFactory* gpu) override;
+    NOUS_ENGINE_API void Release(ResourceBase* resource, IGPUResourceFactory* gpu) override;
 
     static NOUS_ENGINE_API bool SaveMaterialToAssets(ResourceMaterial* material);
 

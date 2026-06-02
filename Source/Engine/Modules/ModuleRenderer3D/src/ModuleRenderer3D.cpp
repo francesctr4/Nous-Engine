@@ -24,7 +24,7 @@
 #include "Engine/Core/Logger/LogChannel.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
@@ -132,7 +132,7 @@ bool ModuleRenderer3D::Start()
 	// Materials depend on shader instance pools, but shaders are queued AFTER the
 	// default material. Collect failed materials and retry after the full drain.
 	IImporterManager* importer = mModuleResourceManager->GetImporterManager();
-	std::vector<std::pair<ResourceType, Resource*>> deferredUploads;
+	std::vector<std::pair<ResourceType, ResourceBase*>> deferredUploads;
 	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
 	{
 		if (!importer->Upload(type, resource, mRendererFrontend))
@@ -214,7 +214,7 @@ void ModuleRenderer3D::FlushPendingAssetUploads()
 	IImporterManager* importer = mModuleResourceManager->GetImporterManager();
 	for (auto& [uid, type] : uploads)
 	{
-		Resource* resource = mModuleResourceManager->GetLoadedResource(uid);
+		ResourceBase* resource = mModuleResourceManager->GetLoadedResource(uid);
 		if (!resource) continue;
 
 		// Save the generation BEFORE Deserialize — it resets texture generation to 0,

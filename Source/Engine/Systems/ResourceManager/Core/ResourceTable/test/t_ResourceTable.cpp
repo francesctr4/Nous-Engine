@@ -1,17 +1,17 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/ResourceManager/Core/ResourceTable/include/ResourceTable.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 
 #include <unordered_map>
 
-// ResourceTable is a thin mutex + UID->Resource* map. These are contract /
+// ResourceTable is a thin mutex + UID->ResourceBase* map. These are contract /
 // regression tests: they pin the observable API behaviour (placeholder vs
 // resolved slots, atomic-claim semantics of TryInsert, Snapshot being a copy).
 // They do NOT attempt to prove thread-safety — a single-threaded test cannot.
 //
-// The table only stores and returns Resource pointers; it never dereferences
-// them, so real stack-allocated Resource instances serve as distinct non-null
+// The table only stores and returns ResourceBase pointers; it never dereferences
+// them, so real stack-allocated ResourceBase instances serve as distinct non-null
 // markers and a literal nullptr serves as the "still loading" placeholder.
 
 // ---- TryInsert (atomic claim) ----------------------------------------------
@@ -19,7 +19,7 @@
 TEST(ResourceTable, TryInsertNewSlotReturnsTrue)
 {
     ResourceTable table;
-    Resource res;
+    ResourceBase res;
     EXPECT_TRUE(table.TryInsert(1, &res));
     EXPECT_EQ(table.TryGet(1), &res);
 }
@@ -27,8 +27,8 @@ TEST(ResourceTable, TryInsertNewSlotReturnsTrue)
 TEST(ResourceTable, TryInsertExistingSlotReturnsFalseAndDoesNotOverwrite)
 {
     ResourceTable table;
-    Resource first;
-    Resource second;
+    ResourceBase first;
+    ResourceBase second;
     ASSERT_TRUE(table.TryInsert(1, &first));
 
     EXPECT_FALSE(table.TryInsert(1, &second));
@@ -38,7 +38,7 @@ TEST(ResourceTable, TryInsertExistingSlotReturnsFalseAndDoesNotOverwrite)
 TEST(ResourceTable, TryInsertNullPlaceholderStillClaimsSlot)
 {
     ResourceTable table;
-    Resource res;
+    ResourceBase res;
     ASSERT_TRUE(table.TryInsert(1, nullptr)); // claim with placeholder
     EXPECT_FALSE(table.TryInsert(1, &res));   // slot is taken, even though null
 }
@@ -65,7 +65,7 @@ TEST(ResourceTable, PlaceholderSlotContainsTrueButTryGetReturnsNull)
 TEST(ResourceTable, SetResolvesPreviouslyClaimedPlaceholder)
 {
     ResourceTable table;
-    Resource res;
+    ResourceBase res;
     ASSERT_TRUE(table.TryInsert(1, nullptr)); // claim
     table.Set(1, &res);                       // resolve
     EXPECT_EQ(table.TryGet(1), &res);
@@ -74,7 +74,7 @@ TEST(ResourceTable, SetResolvesPreviouslyClaimedPlaceholder)
 TEST(ResourceTable, SetInsertsWhenSlotAbsent)
 {
     ResourceTable table;
-    Resource res;
+    ResourceBase res;
     table.Set(7, &res);
     EXPECT_EQ(table.TryGet(7), &res);
 }
@@ -82,8 +82,8 @@ TEST(ResourceTable, SetInsertsWhenSlotAbsent)
 TEST(ResourceTable, SetOverwritesExistingResource)
 {
     ResourceTable table;
-    Resource first;
-    Resource second;
+    ResourceBase first;
+    ResourceBase second;
     table.Set(1, &first);
     table.Set(1, &second);
     EXPECT_EQ(table.TryGet(1), &second);
@@ -94,7 +94,7 @@ TEST(ResourceTable, SetOverwritesExistingResource)
 TEST(ResourceTable, EraseReturnsTrueWhenPresentFalseWhenAbsent)
 {
     ResourceTable table;
-    Resource res;
+    ResourceBase res;
     table.Set(1, &res);
 
     EXPECT_TRUE(table.Erase(1));
@@ -107,12 +107,12 @@ TEST(ResourceTable, EraseReturnsTrueWhenPresentFalseWhenAbsent)
 TEST(ResourceTable, SnapshotReflectsCurrentContents)
 {
     ResourceTable table;
-    Resource a;
-    Resource b;
+    ResourceBase a;
+    ResourceBase b;
     table.Set(1, &a);
     table.Set(2, &b);
 
-    const std::unordered_map<uint32, Resource*> snap = table.Snapshot();
+    const std::unordered_map<uint32, ResourceBase*> snap = table.Snapshot();
     ASSERT_EQ(snap.size(), 2u);
     EXPECT_EQ(snap.at(1), &a);
     EXPECT_EQ(snap.at(2), &b);
@@ -121,10 +121,10 @@ TEST(ResourceTable, SnapshotReflectsCurrentContents)
 TEST(ResourceTable, SnapshotIsACopyAndDoesNotTrackLaterMutations)
 {
     ResourceTable table;
-    Resource a;
+    ResourceBase a;
     table.Set(1, &a);
 
-    const std::unordered_map<uint32, Resource*> snap = table.Snapshot();
+    const std::unordered_map<uint32, ResourceBase*> snap = table.Snapshot();
     table.Erase(1); // mutate after snapshotting
 
     EXPECT_EQ(snap.size(), 1u);     // snapshot unchanged
@@ -136,7 +136,7 @@ TEST(ResourceTable, SnapshotIsACopyAndDoesNotTrackLaterMutations)
 TEST(ResourceTable, ScopedLockExposesSameUnderlyingMap)
 {
     ResourceTable table;
-    Resource a;
+    ResourceBase a;
     {
         ResourceTable::ScopedLock lock(table);
         lock.Map()[1] = &a; // direct compound mutation under the lock
@@ -149,8 +149,8 @@ TEST(ResourceTable, ScopedLockExposesSameUnderlyingMap)
 TEST(ResourceTable, ClearEmptiesTheTable)
 {
     ResourceTable table;
-    Resource a;
-    Resource b;
+    ResourceBase a;
+    ResourceBase b;
     table.Set(1, &a);
     table.Set(2, &b);
 

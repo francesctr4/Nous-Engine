@@ -1,9 +1,9 @@
 #include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
 
-#include "Engine/Systems/ResourceManager/Core/Resource/include/IResourceLoader.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
 
@@ -27,9 +27,9 @@ namespace
     };
 
     // Dispatches the correct IResourceLoader load call based on the request fields.
-    // Returns the loaded Resource* (refcount already bumped) or nullptr on failure.
+    // Returns the loaded ResourceBase* (refcount already bumped) or nullptr on failure.
     // Caller must call DecreaseReferenceCount() when done.
-    Resource* LoadMeshRequest(IResourceLoader* loader, const MeshRequest& req)
+    ResourceBase* LoadMeshRequest(IResourceLoader* loader, const MeshRequest& req)
     {
         if (req.submeshIndex >= 0)
         {
@@ -121,7 +121,7 @@ std::vector<std::future<void>> ScenePreloader::PreloadSceneResourcesAsync(
             // Release the preload's reference. The resource stays in the map so
             // CMesh::Deserialize() hits the fast path, but the preload does not
             // hold an extra ref that would prevent eviction.
-            if (Resource* res = LoadMeshRequest(m_resourceLoader, req))
+            if (ResourceBase* res = LoadMeshRequest(m_resourceLoader, req))
                 res->DecreaseReferenceCount();
             prom->set_value();
         }, "Preload: " + req.assetPath);

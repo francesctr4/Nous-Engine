@@ -2,7 +2,7 @@
 #define RESOURCEMESH_H
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Utils/Math/Vertex.inl"
 
 #include <vector>
@@ -10,7 +10,7 @@
 
 class ResourceMaterial;
 
-class ResourceMesh : public Resource
+class ResourceMesh : public ResourceBase
 {
 public:
 

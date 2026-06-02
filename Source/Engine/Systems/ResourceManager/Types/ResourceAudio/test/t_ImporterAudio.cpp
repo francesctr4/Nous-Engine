@@ -2,7 +2,7 @@
 
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ImporterAudio.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 
@@ -107,7 +107,7 @@ TEST_F(t_ImporterAudio, Save_CopiesSourceToLibraryPath)
     WritePcmWav(m_assetsPath, /*ch*/1, /*sr*/8000, /*bps*/16, /*sec*/1.0f);
 
     MetaFileData meta = MakeMeta();
-    Resource* res = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO);
+    ResourceBase* res = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO);
     ImporterAudio importer;
 
     EXPECT_TRUE(importer.Save(meta, res));
@@ -119,7 +119,7 @@ TEST_F(t_ImporterAudio, Save_MissingSource_ReturnsFalse)
 {
     // Don't write a source file — Save's CopyFile should fail.
     MetaFileData meta = MakeMeta();
-    Resource* res = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO);
+    ResourceBase* res = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO);
     ImporterAudio importer;
 
     EXPECT_FALSE(importer.Save(meta, res));
@@ -212,7 +212,7 @@ TEST_F(t_ImporterAudio, SaveThenDeserialize_ProducesProbedResource)
     WritePcmWav(m_assetsPath, kChannels, kSampleRate, 16, kDuration);
 
     MetaFileData meta = MakeMeta();
-    Resource* res = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO);
+    ResourceBase* res = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO);
     ImporterAudio importer;
     ASSERT_TRUE(importer.Save(meta, res));
 

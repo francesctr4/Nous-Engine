@@ -41,7 +41,7 @@
 
 #include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ImporterMesh.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
 
@@ -302,7 +302,7 @@ void ModuleScene::PressPlay()
 	// Wait for any in-flight jobs (e.g. the async Deserialize from a previous PressStop).
 	// Without this, a rapid Stop → Play sequence would serialize a partially-constructed
 	// scene (CMesh/CMaterial resources not yet assigned), corrupting the snapshot and
-	// causing null Resource* dereferences the next time the snapshot is loaded.
+	// causing null ResourceBase* dereferences the next time the snapshot is loaded.
 	JobSystem->WaitForPendingJobs();
 
 	// Save a snapshot so PressStop can restore the scene to its pre-play state.

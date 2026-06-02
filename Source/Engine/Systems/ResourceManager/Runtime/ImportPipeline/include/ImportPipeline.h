@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/EngineExport.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include <string>
 #include <string_view>
 #include <vector>

@@ -2,7 +2,7 @@
 
 #include <string>
 
-class Resource;
+class ResourceBase;
 struct MetaFileData;
 class IGPUResourceFactory;
 class ModuleResourceManager;
@@ -27,17 +27,17 @@ struct IAssetImporter
 struct IResourceImporter : IAssetImporter
 {
     // Asset pipeline — writes a runtime resource back to its source/library form.
-    virtual bool Save(const MetaFileData& metaFileData, Resource*& inResource) = 0;
+    virtual bool Save(const MetaFileData& metaFileData, ResourceBase*& inResource) = 0;
 
     // CPU only — safe to call from a job thread.
     // Deserialize reads the library binary and populates CPU-side resource fields.
     // Evict releases CPU data (vectors, buffers) after the GPU copy is done.
-    virtual bool Deserialize(const std::string& libraryPath, Resource* resource) = 0;
-    virtual void Evict(Resource* resource) = 0;
+    virtual bool Deserialize(const std::string& libraryPath, ResourceBase* resource) = 0;
+    virtual void Evict(ResourceBase* resource) = 0;
 
     // GPU only — must be called from the render thread.
     // Upload transfers CPU data to the GPU and sets GPU handles on the resource.
     // Release frees GPU handles; call Evict afterward to drop the CPU copy.
-    virtual bool Upload(Resource* resource, IGPUResourceFactory* gpu) = 0;
-    virtual void Release(Resource* resource, IGPUResourceFactory* gpu) = 0;
+    virtual bool Upload(ResourceBase* resource, IGPUResourceFactory* gpu) = 0;
+    virtual void Release(ResourceBase* resource, IGPUResourceFactory* gpu) = 0;
 };

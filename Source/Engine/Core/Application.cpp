@@ -271,7 +271,7 @@ static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::
     if (input->GetKey(SDL_SCANCODE_F10) == KeyState::DOWN && resourceManager && audio)
     {
         constexpr const char* c_testAudio = "Assets/Audio/SFX/test.wav";
-        Resource* res = resourceManager->CreateResource(c_testAudio);
+        ResourceBase* res = resourceManager->CreateResource(c_testAudio);
         if (!res || res->GetType() != ResourceType::AUDIO)
         {
             NOUS_WARN("[AudioDebug] Failed to load '%s' through ResourceManager.", c_testAudio);
@@ -291,7 +291,7 @@ static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::
         }
 
         constexpr const char* c_testMusic = "Assets/Audio/Music/music.ogg";
-        Resource* res2 = resourceManager->CreateResource(c_testMusic);
+        ResourceBase* res2 = resourceManager->CreateResource(c_testMusic);
         if (!res2 || res2->GetType() != ResourceType::AUDIO)
         {
             NOUS_WARN("[AudioDebug] Failed to load '%s' through ResourceManager.", c_testMusic);

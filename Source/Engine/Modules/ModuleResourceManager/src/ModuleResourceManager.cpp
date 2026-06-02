@@ -1,5 +1,5 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/Core/Resource/include/Resource.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
@@ -11,7 +11,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Systems/ResourceManager/Core/Resource/include/MetaFileData.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
@@ -30,7 +30,7 @@
 // ---------------------------------------------------------------------------
 namespace
 {
-    Resource* InstantiateResource(const TypeRegistry& reg, const ResourceType type)
+    ResourceBase* InstantiateResource(const TypeRegistry& reg, const ResourceType type)
     {
         const TypeDescriptor* d = reg.Get(type);
         return (d && d->createFn) ? d->createFn(0) : nullptr;
@@ -130,13 +130,13 @@ void ModuleResourceManager::RefreshSceneManifest()
 	ImportPipeline::WriteSceneManifest();
 }
 
-std::unordered_map<uint32, Resource*> ModuleResourceManager::GetResourcesMap() const
+std::unordered_map<uint32, ResourceBase*> ModuleResourceManager::GetResourcesMap() const
 {
 	return m_table.Snapshot();
 }
 
 
-void ModuleResourceManager::DeleteResource(Resource*& resource)
+void ModuleResourceManager::DeleteResource(ResourceBase*& resource)
 {
 	// SubMeshCache::EraseUID requires the table's lock to be held by the caller.
 	{
@@ -167,9 +167,9 @@ void ModuleResourceManager::UpdateResourcePath(const uint32 uid, const std::stri
 		it->second->SetAssetsPath(newAssetsPath);
 }
 
-Resource* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
+ResourceBase* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
 {
-	Resource* resource = nullptr;
+	ResourceBase* resource = nullptr;
 	while (true)
 	{
 		{
@@ -190,10 +190,10 @@ Resource* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
 	return resource;
 }
 
-Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, ResourceType type,
+ResourceBase* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, ResourceType type,
     const std::string& name, const std::string& assetsPath, const std::string& libraryPath)
 {
-	Resource* resource = InstantiateResource(*mTypeRegistry, type);
+	ResourceBase* resource = InstantiateResource(*mTypeRegistry, type);
 	if (!resource)
 	{
 		m_table.Erase(uid);
@@ -226,7 +226,7 @@ Resource* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, Resource
 }
 
 
-Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
+ResourceBase* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 {
 	MetaFileData metaFileData;
 	if (!ImportPipeline::GetAssetMetaData(assetsPath, metaFileData))
@@ -242,7 +242,7 @@ Resource* ModuleResourceManager::CreateResource(const std::string& assetsPath)
 	return SpinWaitForSlot(metaFileData.uid);
 }
 
-Resource* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, const ResourceType type,
+ResourceBase* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, const ResourceType type,
                                                             const std::string& name,
                                                             const std::string& assetsPath,
                                                             const std::string& libraryPath)
@@ -263,7 +263,7 @@ ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
 
 bool ModuleResourceManager::UnloadResource(const uint32 uid)
 {
-	Resource* resource = nullptr;
+	ResourceBase* resource = nullptr;
 	{
 		ResourceTable::ScopedLock lock(m_table);
 		auto& resources = lock.Map();
@@ -326,17 +326,17 @@ void ModuleResourceManager::ClearResources(IGPUResourceFactory* gpu)
     m_pendingReleases.Clear();
 }
 
-std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingUploads()
+std::vector<std::pair<ResourceType, ResourceBase*>> ModuleResourceManager::TakePendingUploads()
 {
     return m_pendingUploads.TakeAll();
 }
 
-std::vector<std::pair<ResourceType, Resource*>> ModuleResourceManager::TakePendingReleases()
+std::vector<std::pair<ResourceType, ResourceBase*>> ModuleResourceManager::TakePendingReleases()
 {
     return m_pendingReleases.TakeAll();
 }
 
-bool ModuleResourceManager::EvictResource(ResourceType type, Resource* resource)
+bool ModuleResourceManager::EvictResource(ResourceType type, ResourceBase* resource)
 {
     // Final refcount check + map erasure under the same lock so that a concurrent
     // CreateResource thread cannot bump the refcount between our check and the delete.
@@ -383,7 +383,7 @@ ResourceTexture*  ModuleResourceManager::GetBlackTexture()      const { return m
 ResourceTexture*  ModuleResourceManager::GetFlatNormalTexture() const { return m_builtinResources.GetFlatNormalTexture(); }
 ResourceMaterial* ModuleResourceManager::GetDefaultMaterial()   const { return m_builtinResources.GetDefaultMaterial();  }
 
-Resource* ModuleResourceManager::GetLoadedResource(const uint32 uid)
+ResourceBase* ModuleResourceManager::GetLoadedResource(const uint32 uid)
 {
     return m_table.TryGet(uid);
 }
