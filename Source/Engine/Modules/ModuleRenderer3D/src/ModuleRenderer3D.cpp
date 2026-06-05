@@ -14,6 +14,7 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
+#include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
@@ -368,6 +369,24 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetSpotLightDebugs({});
 	}
 
+	// Video surfaces: upload each playing CVideoPlayer's latest frame into a renderer-owned
+	// dynamic texture and bind it into the sibling material's targetSlot. Reconcile drops
+	// surfaces whose player stopped / was removed. Skipped while a scene loads (registry race).
+	if (!isLoadingScene && sceneData.registry)
+	{
+		ResourceMaterial* defaultMat = mModuleResourceManager->GetDefaultMaterial();
+		auto videoView = sceneData.registry->view<CVideoPlayer>();
+		for (auto [entity, player] : videoView.each())
+		{
+			const auto* info   = sceneData.registry->try_get<CEntityInfo>(entity);
+			const uint32 goUID = info ? info->id : 0u;
+			const auto* matC   = sceneData.registry->try_get<CMaterial>(entity);
+			ResourceMaterial* material = matC ? matC->material : nullptr;
+			m_videoSurfaces.Submit(mRendererFrontend, goUID, player, material, defaultMat);
+		}
+		m_videoSurfaces.Reconcile(mRendererFrontend);
+	}
+
 	m_totalTime += dt;
 
 	RenderPacket packet{};
@@ -675,6 +694,9 @@ bool ModuleRenderer3D::CleanUp()
     // Release frame-scoped Vulkan objects (waits for GPU, frees command buffers
     // and framebuffers).  If the Editor already called this, it is a no-op.
     mRendererFrontend->ReleaseFrameResources();
+
+    // Destroy renderer-owned video textures (GPU is idle after ReleaseFrameResources).
+    m_videoSurfaces.DestroyAll(mRendererFrontend);
 
     // Destroy all GameObjects BEFORE freeing GPU resources.  Component
     // OnDestroy callbacks (CMesh, CMaterial) need the ResourceManager and
