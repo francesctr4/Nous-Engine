@@ -100,6 +100,6 @@ TEST_F(t_ComponentList, ForEachType_VisitsEveryDeclaredType)
     int typeCount = 0;
     ComponentTypes::ForEachType([&]<typename T>() { ++typeCount; });
 
-    // CTransform, CMesh, CMaterial, CCamera, CLight, CScript, CPrefab, CAudioSource.
-    EXPECT_EQ(typeCount, 8);
+    // CTransform, CMesh, CMaterial, CCamera, CLight, CScript, CPrefab, CAudioSource, CVideoPlayer.
+    EXPECT_EQ(typeCount, 9);
 }

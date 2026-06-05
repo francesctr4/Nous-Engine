@@ -11,6 +11,7 @@
 #include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
 #include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
+#include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE single edit site for registering an ECS component type.
@@ -25,7 +26,8 @@ using ComponentTypes = ComponentList<
     CLight,
     CScript,
     CPrefab,
-    CAudioSource
+    CAudioSource,
+    CVideoPlayer
 >;
 
 // Subset of ComponentTypes whose OnUpdate does real per-frame work. Scene::Update
@@ -36,5 +38,6 @@ using UpdatableComponentTypes = ComponentList<
     CScript,
     CCamera,
     CLight,
-    CAudioSource
+    CAudioSource,
+    CVideoPlayer
 >;
