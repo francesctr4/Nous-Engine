@@ -82,6 +82,8 @@ enum class FileType : int8_t
     PREFAB,
     MUSIC,
     SFX,
+    VIDEO,
+    GIF,
 
     ALL_TYPES
 };
