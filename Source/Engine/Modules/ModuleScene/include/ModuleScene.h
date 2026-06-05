@@ -18,6 +18,7 @@ class ScriptManager;
 class ModuleInput;
 class ModuleResourceManager;
 class ModuleAudio;
+class ModuleVideo;
 
 enum class SimulationState : uint8_t { STOPPED, PLAYING, PAUSED };
 
@@ -28,7 +29,7 @@ public:
 	// Constructor
 	ModuleScene(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 		ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager,
-		ModuleAudio* moduleAudio);
+		ModuleAudio* moduleAudio, ModuleVideo* moduleVideo);
 
 	// Destructor
 	~ModuleScene() override;
@@ -101,6 +102,7 @@ public:
 	// Broker accessor: components (CAudioSource) reach the audio module through the
 	// scene, mirroring how CScript reaches scriptManager. May be null in tests.
 	NOUS_ENGINE_API ModuleAudio* GetAudio() const { return mModuleAudio; }
+	NOUS_ENGINE_API ModuleVideo* GetVideo() const { return mModuleVideo; }
 
 	NOUS_ENGINE_API bool IsSelected(GameObject go) const;
 	NOUS_ENGINE_API void AddToSelection(GameObject go);      // no-op if already in set; updates primarySelection
@@ -130,6 +132,7 @@ private:
 	ModuleInput* mModuleInput;
 	ModuleResourceManager* mModuleResourceManager;
 	ModuleAudio* mModuleAudio;
+	ModuleVideo* mModuleVideo;
 
 	bool m_snapshotEnabled = false;
 

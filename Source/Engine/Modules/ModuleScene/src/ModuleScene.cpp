@@ -46,9 +46,10 @@
 #include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
 
 ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-    ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager, ModuleAudio* moduleAudio)
+    ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager, ModuleAudio* moduleAudio,
+    ModuleVideo* moduleVideo)
     : Module(eventSystem, jobSystem), mModuleInput(moduleInput), mModuleResourceManager(moduleResourceManager),
-      mModuleAudio(moduleAudio)
+      mModuleAudio(moduleAudio), mModuleVideo(moduleVideo)
 {
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM, mModuleInput, this);
 	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager);

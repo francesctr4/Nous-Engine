@@ -106,7 +106,7 @@ Application::Application(const bool isGameMode)
     //    loading), and AUDIO (broker through which CAudioSource reaches the backend,
     //    mirroring how CScript reaches scriptManager).
     listModules.push_back(scene           = NOUS_NEW<ModuleScene>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, input, resourceManager, audio));
+        eventSystem, jobSystem, input, resourceManager, audio, video));
 
     // 7. RENDERER — depends on WINDOW (surface), CAMERA (view/proj), RESOURCE MANAGER (GPU resources), SCENE (render data).
     //    Must be last because RESOURCE MANAGER and SCENE must already exist.
