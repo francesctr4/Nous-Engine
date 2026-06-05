@@ -24,6 +24,7 @@ enum class MemoryTag : uint8_t
     RESOURCE_MATERIAL,
     RESOURCE_SHADER,
     RESOURCE_AUDIO,
+    RESOURCE_VIDEO,
     EDITOR,
     AUDIO_SYSTEM,
 

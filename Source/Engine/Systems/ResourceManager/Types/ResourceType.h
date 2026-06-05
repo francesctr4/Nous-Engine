@@ -14,6 +14,7 @@ enum class ResourceType : int8_t
     // Append-only: new values go before ALL_TYPES so existing .meta files
     // (which store the integer enum value) keep resolving.
     SCENE,
+    VIDEO,
 
     ALL_TYPES
 };
