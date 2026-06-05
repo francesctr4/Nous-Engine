@@ -24,6 +24,18 @@ add_custom_target(InstallGame
         VERBATIM
 )
 
+# Linux packaging: the installed binaries sit next to their bundled .so files
+# (ffmpeg's libavcodec/libavformat/libswscale/libavutil, SDL3, etc., copied in by
+# GET_RUNTIME_DEPENDENCIES below). Without an $ORIGIN rpath the loader would only
+# search system paths and fail to find them on a clean machine. $ORIGIN resolves
+# relative to the binary's own directory. No-op on Windows (DLL search uses the exe
+# dir already) and macOS (uses @loader_path/install_name instead).
+if(UNIX AND NOT APPLE)
+    set_target_properties(GameApp Nous-Engine PROPERTIES
+            INSTALL_RPATH "$ORIGIN"
+    )
+endif()
+
 # GameApp.exe
 install(TARGETS GameApp
         RUNTIME DESTINATION .
