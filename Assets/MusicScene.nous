@@ -1,0 +1,47 @@
+{
+    "name": "MusicScene",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 3774779059,
+            "name": "GameObject",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAudioSource",
+                    "assetPath": "Assets\\Audio\\Music\\music.ogg",
+                    "libraryPath": "Library\/Audio\/1789822755.ogg",
+                    "resourceUID": 1789822755,
+                    "volume": 1,
+                    "pitch": 1,
+                    "loop": true,
+                    "playOnAwake": true
+                }
+            ]
+        }
+    ]
+}
