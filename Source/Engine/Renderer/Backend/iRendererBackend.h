@@ -79,6 +79,11 @@ struct IRendererBackend
     [[nodiscard]] virtual bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture) = 0;
     virtual void DestroyTexture(ResourceTexture* texture) noexcept = 0;
 
+    // Re-upload RGBA8 pixels into an already-created texture's existing GPU image
+    // (same VkImage/view/sampler => no descriptor rewrite). For per-frame dynamic
+    // textures (video). pixels must be width*height*4 bytes for texture's dimensions.
+    [[nodiscard]] virtual bool UpdateDynamicTexture(const uint8_t* pixels, ResourceTexture* texture) = 0;
+
     [[nodiscard]] virtual bool CreateMaterial(ResourceMaterial* material) = 0;
     virtual void DestroyMaterial(ResourceMaterial* material) noexcept = 0;
 

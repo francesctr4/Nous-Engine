@@ -63,6 +63,8 @@ public:
 	bool CreateTexture(const uint8* pixels, ResourceTexture* outTexture) override;
 	void DestroyTexture(ResourceTexture* texture) noexcept override;
 
+	bool UpdateDynamicTexture(const uint8* pixels, ResourceTexture* texture) override;
+
 	bool CreateMaterial(ResourceMaterial* material) override;
     void DestroyMaterial(ResourceMaterial* material) noexcept override;
 

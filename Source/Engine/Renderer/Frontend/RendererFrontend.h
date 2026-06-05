@@ -66,6 +66,9 @@ public:
 	[[nodiscard]] NOUS_ENGINE_API bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture) override;
 	NOUS_ENGINE_API void DestroyTexture(ResourceTexture* texture) override;
 
+	// Passthrough to the backend; re-uploads pixels into an existing dynamic texture.
+	NOUS_ENGINE_API bool UpdateDynamicTexture(const uint8_t* pixels, ResourceTexture* texture);
+
 	[[nodiscard]] NOUS_ENGINE_API bool CreateMaterial(ResourceMaterial* material) override;
 	NOUS_ENGINE_API void DestroyMaterial(ResourceMaterial* material) override;
 

@@ -419,6 +419,11 @@ void RendererFrontend::DestroyTexture(ResourceTexture* texture)
 	mBackend->DestroyTexture(texture);
 }
 
+bool RendererFrontend::UpdateDynamicTexture(const uint8_t* pixels, ResourceTexture* texture)
+{
+	return mBackend && mBackend->UpdateDynamicTexture(pixels, texture);
+}
+
 bool RendererFrontend::CreateMaterial(ResourceMaterial* material)
 {
 	return mBackend->CreateMaterial(material);

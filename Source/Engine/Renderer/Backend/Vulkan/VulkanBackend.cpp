@@ -1942,6 +1942,46 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     return true;
 }
 
+bool VulkanBackend::UpdateDynamicTexture(const uint8* pixels, ResourceTexture* texture)
+{
+    if (!texture || !texture->internalData || !pixels)
+        return false;
+
+    auto* textureData = static_cast<VulkanTextureData*>(texture->internalData);
+    const VkDeviceSize imageSize = static_cast<VkDeviceSize>(texture->width) * texture->height * texture->channelCount;
+    constexpr VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+
+    // Staging buffer with the new frame's pixels.
+    constexpr VkBufferUsageFlagBits usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    constexpr VkMemoryPropertyFlags memoryPropertyFlags =
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    VulkanBuffer stagingBuffer{};
+    NOUS_VulkanBuffer::CreateBuffer(vkContext, imageSize, usage, memoryPropertyFlags, true, &stagingBuffer);
+    NOUS_VulkanBuffer::LoadData(vkContext, &stagingBuffer, 0, imageSize, 0, pixels);
+
+    VulkanCommandBuffer tempCommandBuffer{};
+    VkCommandPool pool  = NOUS_VulkanMultithreading::GetThreadCommandPool(vkContext, std::this_thread::get_id());
+    VkQueue       queue = vkContext->device.transferQueue;
+
+    NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(vkContext, pool, &tempCommandBuffer);
+
+    // Existing image is in SHADER_READ_ONLY_OPTIMAL -> receive data -> back to shader-read.
+    NOUS_VulkanImage::TransitionVulkanImageLayout(vkContext, &tempCommandBuffer, &textureData->image, imageFormat,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    NOUS_VulkanImage::CopyBufferToVulkanImage(vkContext, &textureData->image, stagingBuffer.handle, &tempCommandBuffer);
+
+    NOUS_VulkanImage::TransitionVulkanImageLayout(vkContext, &tempCommandBuffer, &textureData->image, imageFormat,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(vkContext, pool, &tempCommandBuffer, queue);
+    NOUS_VulkanBuffer::DestroyBuffer(vkContext, &stagingBuffer);
+
+    texture->generation++;   // keep monotonic (harmless; sampler binding is unchanged)
+    return true;
+}
+
 void VulkanBackend::DestroyTexture(ResourceTexture* texture) noexcept
 {
     auto* textureData = static_cast<VulkanTextureData*>(texture->internalData);
