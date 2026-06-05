@@ -28,6 +28,8 @@
 #include <utility>
 
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
+#include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Drawers — one per inspectable component type. Uniform signature so they can be
@@ -329,6 +331,90 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
 // `typeName` must equal Component::GetType() (guarded by t_ComponentInspectorRegistry).
 // ─────────────────────────────────────────────────────────────────────────────
 
+static void DrawVideoPlayer(const InspectorCtx& ctx, Component* c)
+{
+    auto* cVideo = static_cast<CVideoPlayer*>(c);
+    ModuleResourceManager* rm = ctx.rm;
+    GameObject* go = ctx.go;
+
+    if (!ImGui::CollapsingHeader("Video Player", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ImGui::Indent();
+
+    // Clip slot — assignable by dragging a .mp4/.gif from the Assets Browser.
+    ImGui::Text("Clip:");
+    ImGui::SameLine();
+    ImGui::Button(cVideo->clip ? cVideo->clip->GetName().c_str() : "None", ImVec2(200.0f, 0.0f));
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+        {
+            const auto* data = static_cast<const char*>(payload->Data);
+            const char* end = data + payload->DataSize;
+            while (data < end)
+            {
+                std::string path(data);
+                data += path.size() + 1;
+                const std::string ext = std::filesystem::path(path).extension().string();
+                if (ext == ".mp4" || ext == ".gif")
+                {
+                    if (ResourceBase* r = rm->CreateResource(path))
+                    {
+                        if (cVideo->clip)
+                            rm->UnloadResource(cVideo->clip->GetUID());
+                        cVideo->clip = down_cast<ResourceVideo*>(r);
+                    }
+                    break;
+                }
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
+
+    if (cVideo->clip)
+    {
+        ImGui::Text("UID: %u", cVideo->clip->GetUID());
+        ImGui::Text("%ux%u  %.2fs  %.2f fps", cVideo->clip->GetWidth(), cVideo->clip->GetHeight(),
+                    cVideo->clip->GetDurationSec(), cVideo->clip->GetFrameRate());
+    }
+    else
+    {
+        ImGui::TextDisabled("No clip assigned.");
+    }
+
+    ImGui::Checkbox("Loop", &cVideo->loop);
+    ImGui::Checkbox("Play On Awake", &cVideo->playOnAwake);
+
+    // Target texture slot — choose which of the sibling material's texture maps the video
+    // drives (default "diffuseSampler"). Options come from that material's textureMaps keys.
+    const CMaterial* matC = (go && go->IsValid()) ? go->TryGetComponent<CMaterial>() : nullptr;
+    const ResourceMaterial* material = matC ? matC->material : nullptr;
+
+    if (ImGui::BeginCombo("Target Slot", cVideo->targetSlot.c_str()))
+    {
+        if (material)
+        {
+            for (const auto& [name, map] : material->textureMaps)
+            {
+                const bool selected = (name == cVideo->targetSlot);
+                if (ImGui::Selectable(name.c_str(), selected))
+                    cVideo->targetSlot = name;
+                if (selected) ImGui::SetItemDefaultFocus();
+            }
+        }
+        else
+        {
+            ImGui::TextDisabled("Add a CMaterial to list slots");
+        }
+        ImGui::EndCombo();
+    }
+    if (!material)
+        ImGui::TextDisabled("No CMaterial on this object — video will not display.");
+
+    ImGui::Unindent();
+}
+
 static const ComponentUI k_ui[] = {
     {"CTransform", "Transform", false, &DrawTransform},
     {"CMesh",      "Mesh",      true,  &DrawMesh},
@@ -337,6 +423,7 @@ static const ComponentUI k_ui[] = {
     {"CMaterial",  "Material",  true,  &DrawMaterial},
     {"CScript",    "Script",    true,  &DrawScript},
     {"CAudioSource",    "Audio Source",    true,  &DrawAudioSource},
+    {"CVideoPlayer",    "Video Player",    true,  &DrawVideoPlayer},
 };
 
 const ComponentUI* FindComponentUI(std::string_view typeName)
