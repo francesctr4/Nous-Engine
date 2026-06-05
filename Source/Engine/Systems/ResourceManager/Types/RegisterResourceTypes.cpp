@@ -11,6 +11,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ImporterTexture.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ImporterShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ImporterAudio.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ImporterVideo.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceScene/include/ImporterScene.h"
 
 // Resources
@@ -19,6 +20,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
 
 namespace
 {
@@ -30,9 +32,10 @@ namespace
     constexpr int k_PrioTexture  = 2;
     constexpr int k_PrioMesh     = 3;
     constexpr int k_PrioAudio    = 4;
+    constexpr int k_PrioVideo    = 5;
     // Scenes own no runtime resource object and no peer-resource pointers, so
     // their cleanup priority is inert; kept last for readability.
-    constexpr int k_PrioScene    = 5;
+    constexpr int k_PrioScene    = 6;
 }
 
 void RegisterResourceTypes(TypeRegistry& registry)
@@ -134,6 +137,24 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); };
         d.display.color[0] = 0.93f; d.display.color[1] = 0.28f; d.display.color[2] = 0.60f; d.display.color[3] = 1.0f;
+        registry.Register(std::move(d));
+    }
+
+    // ---------- VIDEO ----------
+    {
+        TypeDescriptor d;
+        d.type = ResourceType::VIDEO;
+        d.name = "Video";
+        d.libraryFolder = "Library/Video/";
+        d.libraryFixedExtension.clear();
+        d.sourceExtensions = { "mp4", "gif" };
+        d.libExtPolicy = LibraryExtPolicy::PRESERVE_SOURCE;
+        d.memoryTag = MemoryTag::RESOURCE_VIDEO;
+        d.cleanupPriority = k_PrioVideo;
+        d.SetImporter<ImporterVideo>();
+        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceVideo>(MemoryTag::RESOURCE_VIDEO, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_VIDEO); };
+        d.display.color[0] = 0.60f; d.display.color[1] = 0.30f; d.display.color[2] = 0.93f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }
 

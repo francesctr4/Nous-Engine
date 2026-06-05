@@ -8,6 +8,7 @@ add_subdirectory(PrefabManager)
 add_subdirectory(ResourceManager)
 add_subdirectory(ShaderSystem)
 add_subdirectory(AudioSystem)
+add_subdirectory(VideoSystem)
 
 add_library(Systems STATIC
         SystemManager.cpp
@@ -35,4 +36,5 @@ target_link_libraries(Systems PUBLIC
         ResourceManager
         ShaderSystem
         AudioSystem
+        VideoSystem
 )
