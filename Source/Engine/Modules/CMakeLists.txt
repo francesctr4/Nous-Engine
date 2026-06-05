@@ -9,6 +9,7 @@ add_subdirectory(ModuleResourceManager)
 add_subdirectory(ModuleScene)
 add_subdirectory(ModuleWindow)
 add_subdirectory(ModuleAudio)
+add_subdirectory(ModuleVideo)
 
 add_library(Modules STATIC
         Module.h
@@ -39,4 +40,5 @@ target_link_libraries(Modules PUBLIC
         ModuleScene
         ModuleWindow
         ModuleAudio
+        ModuleVideo
 )

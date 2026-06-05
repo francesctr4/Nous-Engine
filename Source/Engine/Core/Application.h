@@ -20,6 +20,7 @@ class ModuleResourceManager;
 class ModuleScene;
 class ModuleRenderer3D;
 class ModuleAudio;
+class ModuleVideo;
 class IImporterManager;
 class TypeRegistry;
 
@@ -57,6 +58,7 @@ public:
     NOUS_ENGINE_API ModuleScene*                          GetScene()           const;
     NOUS_ENGINE_API ModuleRenderer3D*                     GetRenderer()        const;
 	NOUS_ENGINE_API ModuleAudio*                          GetAudio()           const;
+	NOUS_ENGINE_API ModuleVideo*                          GetVideo()           const;
 
 	// ------------- MULTITHREADING ------------- //
     NOUS_ENGINE_API nous::engine::multithreading::NOUS_JobSystem*  GetJobSystem()       const;
@@ -74,6 +76,7 @@ private:
 	ModuleScene*           scene;
 	ModuleRenderer3D*      renderer;
 	ModuleAudio*           audio;
+	ModuleVideo*           video;
 
 	bool m_isGameMode;
 

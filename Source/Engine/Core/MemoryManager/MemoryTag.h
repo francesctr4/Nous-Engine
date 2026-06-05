@@ -27,6 +27,7 @@ enum class MemoryTag : uint8_t
     RESOURCE_VIDEO,
     EDITOR,
     AUDIO_SYSTEM,
+    VIDEO_SYSTEM,
 
     MAX
 };

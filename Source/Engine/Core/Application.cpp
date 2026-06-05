@@ -8,6 +8,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
+#include "Engine/Modules/ModuleVideo/include/ModuleVideo.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
 #include <Engine/Core/MemoryManager/MemoryManager.h>
@@ -92,6 +93,13 @@ Application::Application(const bool isGameMode)
     //    releases its voice back into the audio backend during scene teardown,
     //    exactly as CMesh::OnDestroy relies on RESOURCE MANAGER still being alive.
     listModules.push_back(audio           = NOUS_NEW<ModuleAudio>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem));
+
+    // VIDEO — like AUDIO, no module dependencies and constructed BEFORE SCENE so it tears
+    // down AFTER it (modules clean up in reverse). The Phase-3 CVideoPlayer::OnDestroy
+    // releases its decoder handle through ModuleVideo during scene teardown, exactly as
+    // CAudioSource relies on ModuleAudio still being alive.
+    listModules.push_back(video           = NOUS_NEW<ModuleVideo>(MemoryTag::APPLICATION,
         eventSystem, jobSystem));
 
     // 6. SCENE — depends on INPUT (simulation controls), RESOURCE MANAGER (asset
@@ -528,6 +536,7 @@ ModuleResourceManager* Application::GetResourceManager() const { return resource
 ModuleScene*           Application::GetScene()           const { return scene; }
 ModuleRenderer3D*      Application::GetRenderer()        const { return renderer; }
 ModuleAudio*           Application::GetAudio()           const { return audio; }
+ModuleVideo*           Application::GetVideo()           const { return video; }
 
 nous::engine::multithreading::NOUS_JobSystem* Application::GetJobSystem() const { return jobSystem; }
 

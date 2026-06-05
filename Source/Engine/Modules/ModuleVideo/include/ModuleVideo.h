@@ -1,0 +1,48 @@
+#pragma once
+
+#include "Engine/Modules/Module.h"
+#include "Engine/Core/EventSystem/IEventListener.h"
+#include "Engine/Core/Globals.h"
+#include "Engine/EngineExport.h"
+#include "Engine/Systems/VideoSystem/VideoFrame.h"
+#include "Engine/Systems/VideoSystem/VideoHandle.h"
+
+class VideoSystem;
+class ResourceVideo;
+
+class ModuleVideo : public Module, public IEventListener
+{
+public:
+
+    ModuleVideo(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem);
+    ~ModuleVideo() override;
+
+    bool Awake() override;
+    bool Start() override;
+    UpdateStatus PreUpdate(float dt) override;
+    UpdateStatus Update(float dt) override;
+    UpdateStatus PostUpdate(float dt) override;
+    bool CleanUp() override;
+
+    void OnEvent(const Event& event) override;
+
+    // Decoder lifecycle surface — what CVideoPlayer (Phase 3) and the F12 debug key drive.
+    // Components hold the opaque handle and never include FFmpeg.
+    NOUS_ENGINE_API VideoHandle CreateVideo(ResourceVideo* rVideo) const;
+    NOUS_ENGINE_API void        DestroyVideo(VideoHandle handle) const noexcept;
+
+    NOUS_ENGINE_API void        Start(VideoHandle handle) const;
+    NOUS_ENGINE_API void        Stop(VideoHandle handle) const;
+    NOUS_ENGINE_API void        SetLooping(VideoHandle handle, bool looping) const;
+
+    NOUS_ENGINE_API bool        TryGetFrame(VideoHandle handle, double playheadSec, VideoFrame& out) const;
+
+    NOUS_ENGINE_API void        GetDimensions(VideoHandle handle, uint32& width, uint32& height) const;
+    NOUS_ENGINE_API float       GetFrameRate(VideoHandle handle) const;
+    NOUS_ENGINE_API float       GetDuration(VideoHandle handle) const;
+    NOUS_ENGINE_API bool        IsFinished(VideoHandle handle) const;
+
+private:
+
+    VideoSystem* m_videoSystem;
+};
