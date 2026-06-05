@@ -30,8 +30,13 @@ void VideoSurfaceCache::Submit(RendererFrontend* frontend, uint32 goUID, CVideoP
 
     if (!material)                   { warnOnce("no CMaterial on the video object - nothing to bind"); return; }
     if (material == defaultMaterial) { warnOnce("bound to the shared default material - assign a unique material"); return; }
-    if (material->textureMaps.find(player.targetSlot) == material->textureMaps.end())
-                                     { warnOnce("material has no texture slot matching targetSlot"); return; }
+
+    // NOTE: we do NOT require textureMaps to already contain targetSlot. The renderer
+    // enumerates samplers from SHADER REFLECTION and looks each up in textureMaps, and the
+    // importer only creates a textureMaps entry when a texture is *assigned*. An unbound
+    // slot (e.g. diffuseSampler showing "none") simply has no key yet — so we create it
+    // below via operator[]. If targetSlot is not a real reflected sampler the renderer
+    // never looks it up, so the (unused) entry is harmless.
 
     Surface& s = m_surfaces[goUID];
 

@@ -70,9 +70,17 @@ namespace
 
     void ScaleToRGBA(const FFmpegVideo* v, const AVFrame* frame, std::vector<uint8_t>& dst)
     {
-        dst.resize(static_cast<size_t>(v->width) * v->height * 4);
-        uint8_t* dstData[4]    = { dst.data(), nullptr, nullptr, nullptr };
-        int      dstLinesize[4] = { static_cast<int>(v->width) * 4, 0, 0, 0 };
+        const int rowBytes = static_cast<int>(v->width) * 4;
+        dst.resize(static_cast<size_t>(rowBytes) * v->height);
+
+        // Flip vertically to match the engine's texture convention: ImporterTexture loads
+        // images with stbi_set_flip_vertically_on_load_thread(true), so every other texture
+        // is stored bottom-row-first. swscale emits top-row-first, which would render video
+        // upside down. Point dst at the LAST row with a negative stride so swscale writes
+        // bottom-to-top, producing the same row order as imported textures.
+        uint8_t* dstData[4]     = { dst.data() + static_cast<size_t>(rowBytes) * (v->height - 1),
+                                    nullptr, nullptr, nullptr };
+        int      dstLinesize[4] = { -rowBytes, 0, 0, 0 };
         sws_scale(v->sws, frame->data, frame->linesize, 0, v->codec->height, dstData, dstLinesize);
     }
 

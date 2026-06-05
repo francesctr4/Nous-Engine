@@ -30,6 +30,7 @@
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
 #include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Drawers — one per inspectable component type. Uniform signature so they can be
@@ -386,30 +387,37 @@ static void DrawVideoPlayer(const InspectorCtx& ctx, Component* c)
     ImGui::Checkbox("Loop", &cVideo->loop);
     ImGui::Checkbox("Play On Awake", &cVideo->playOnAwake);
 
-    // Target texture slot — choose which of the sibling material's texture maps the video
-    // drives (default "diffuseSampler"). Options come from that material's textureMaps keys.
-    const CMaterial* matC = (go && go->IsValid()) ? go->TryGetComponent<CMaterial>() : nullptr;
-    const ResourceMaterial* material = matC ? matC->material : nullptr;
+    // Target texture slot — choose which of the shader's texture samplers the video drives
+    // (default "diffuseSampler"). Options come from SHADER REFLECTION (the material's
+    // textureMaps only holds slots that already have an assigned texture, so we can't list
+    // from there) — mirrors how the Material panel enumerates its texture maps.
+    CMaterial* matC = (go && go->IsValid()) ? go->TryGetComponent<CMaterial>() : nullptr;
+    ResourceShader* effectiveShader = (matC && matC->material) ? GetEffectiveShader(*matC, rm) : nullptr;
 
     if (ImGui::BeginCombo("Target Slot", cVideo->targetSlot.c_str()))
     {
-        if (material)
+        bool anySlots = false;
+        if (effectiveShader)
         {
-            for (const auto& [name, map] : material->textureMaps)
+            if (const auto setIt = effectiveShader->reflection.descriptorSets.find(1);
+                setIt != effectiveShader->reflection.descriptorSets.end())
             {
-                const bool selected = (name == cVideo->targetSlot);
-                if (ImGui::Selectable(name.c_str(), selected))
-                    cVideo->targetSlot = name;
-                if (selected) ImGui::SetItemDefaultFocus();
+                for (const auto& rb : setIt->second)
+                {
+                    if (rb.type != DescriptorType::CombinedImageSampler) continue;
+                    anySlots = true;
+                    const bool selected = (rb.name == cVideo->targetSlot);
+                    if (ImGui::Selectable(rb.name.c_str(), selected))
+                        cVideo->targetSlot = rb.name;
+                    if (selected) ImGui::SetItemDefaultFocus();
+                }
             }
         }
-        else
-        {
-            ImGui::TextDisabled("Add a CMaterial to list slots");
-        }
+        if (!anySlots)
+            ImGui::TextDisabled("No texture slots (add a CMaterial with a sampler shader)");
         ImGui::EndCombo();
     }
-    if (!material)
+    if (!matC || !matC->material)
         ImGui::TextDisabled("No CMaterial on this object — video will not display.");
 
     ImGui::Unindent();

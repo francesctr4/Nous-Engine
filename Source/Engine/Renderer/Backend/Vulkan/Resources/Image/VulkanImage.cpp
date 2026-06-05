@@ -115,8 +115,8 @@ void NOUS_VulkanImage::TransitionVulkanImageLayout(VulkanContext* vkContext, Vul
         // Used for copying
         destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     }
-    else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && 
-             newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) 
+    else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
+             newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
     {
         // Transitioning from a transfer destination layout to a shader-readonly layout.
         imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -127,7 +127,20 @@ void NOUS_VulkanImage::TransitionVulkanImageLayout(VulkanContext* vkContext, Vul
         // The fragment stage.
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
-    else 
+    else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL &&
+             newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    {
+        // Re-uploading into an already-sampled image (dynamic textures, e.g. video):
+        // wait for shader reads to finish, then receive a transfer write.
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        // From the fragment stage that sampled it...
+        sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        // ...to the copying stage.
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else
     {
         NOUS_FATAL("Unsupported Layout Transition!");
         return;
