@@ -28,24 +28,26 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    # Store compiled vcpkg packages in the GitHub Actions cache.
-    # First run populates it; later runs restore prebuilt binaries instead of
-    # recompiling ffmpeg/assimp/shaderc/etc. The cache is invalidated automatically
-    # when vcpkg.json or the builtin-baseline changes.
-    env:
-      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Expose the Actions cache endpoint + token to vcpkg's x-gha binary cache provider.
-      - name: Export GitHub Actions cache environment
-        uses: actions/github-script@v7
+      # Persist vcpkg's default file-based binary cache across runs. vcpkg writes each
+      # compiled port (ffmpeg/assimp/shaderc/...) into these dirs by default; restoring
+      # them lets later runs skip recompiling unchanged ports. Keyed on vcpkg.json (which
+      # contains the builtin-baseline), so dependency/version bumps invalidate the cache.
+      # The run_id suffix makes every run write a fresh immutable entry while restore-keys
+      # falls back to the most recent matching prefix — so the cache keeps refreshing.
+      - name: Cache vcpkg binary archives
+        uses: actions/cache@v4
         with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+          path: |
+            ~/.cache/vcpkg/archives
+            ~/AppData/Local/vcpkg/archives
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-
+            vcpkg-${{ runner.os }}-
 
       # Clone vcpkg as a sibling of the repo — matches the toolchainFile path in CMakePresets.json
       - name: Setup vcpkg
