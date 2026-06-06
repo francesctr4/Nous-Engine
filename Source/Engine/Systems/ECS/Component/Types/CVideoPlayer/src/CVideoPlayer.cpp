@@ -82,14 +82,16 @@ void CVideoPlayer::OnUpdate(float deltaTime)
     if (!handle)
         return;
 
-    // Slave the playhead to a sibling CAudioSource's audio clock when one is
-    // actively playing this clip's extracted track (audio is the master clock).
-    // No sibling / no active voice → fall back to the local dt clock so silent
-    // videos behave exactly as before. A paused sibling reports its held cursor,
-    // which naturally freezes the video too.
+    // Slave the playhead to a sibling CAudioSource's audio clock for A/V sync,
+    // gated three ways: (1) the user opted in (syncToAudio) and this clip actually
+    // has an audio track — GIFs carry no sound, so they never sync; (2) a sibling
+    // CAudioSource exists; (3) its voice is actually playing. If any fails, the
+    // video runs on its own dt clock and loops per its own flag. Scene-pause is
+    // handled by the early return above.
     auto go = GetGameObject();
     CAudioSource* audioSibling = go.IsValid() ? go.TryGetComponent<CAudioSource>() : nullptr;
-    const bool   audioClockActive = audioSibling && audioSibling->HasActiveVoice();
+    const bool   wantsAudioSync   = syncToAudio && clip && clip->GetHasAudioTrack();
+    const bool   audioClockActive = wantsAudioSync && audioSibling && audioSibling->IsVoicePlaying();
     const double audioSeconds      = audioClockActive ? audioSibling->GetPlaybackSeconds() : 0.0;
 
     playhead = ResolveVideoPlayhead(playhead, static_cast<double>(deltaTime),
@@ -138,6 +140,7 @@ JsonObject CVideoPlayer::Serialize() const
 
     root.Set("loop",        loop);
     root.Set("playOnAwake", playOnAwake);
+    root.Set("syncToAudio", syncToAudio);
     root.Set("targetSlot",  targetSlot);
     return root;
 }
@@ -146,6 +149,7 @@ void CVideoPlayer::Deserialize(const JsonObject& obj)
 {
     loop        = obj.GetBool  ("loop",        loop);
     playOnAwake = obj.GetBool  ("playOnAwake", playOnAwake);
+    syncToAudio = obj.GetBool  ("syncToAudio", syncToAudio);
     targetSlot  = obj.GetString("targetSlot", targetSlot.c_str());
 
     const std::string assetPath   = obj.GetString("assetPath");

@@ -47,9 +47,16 @@ void InspectorWindow::DrawContent()
     ctx.renderer      = editorContext->GetRendererFrontend();
     ctx.scriptManager = mScene->scriptManager;
 
+    // Push a per-component ImGui ID scope so identically-labelled widgets in
+    // different components (e.g. "Loop" / "Play On Awake" on both CVideoPlayer
+    // and an auto-paired CAudioSource) don't collide into one shared ID.
     for (Component* c : go.GetAllComponents())
         if (const ComponentUI* e = FindComponentUI(c->GetType()))
+        {
+            ImGui::PushID(c);
             e->draw(ctx, c);
+            ImGui::PopID();
+        }
 
     ImGui::Spacing();
     ImGui::Separator();

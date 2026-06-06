@@ -48,10 +48,11 @@ public:
     NOUS_ENGINE_API bool IsPreviewPlaying() const;
 
     // Sibling-sync surface (read by a CVideoPlayer on the same GameObject):
-    // HasActiveVoice() is true once the play-driven voice exists for the current
-    // play session; GetPlaybackSeconds() returns that voice's cursor in seconds.
-    // The cursor is retained across pause, so the value holds while PAUSED.
-    [[nodiscard]] NOUS_ENGINE_API bool   HasActiveVoice() const;
+    // IsVoicePlaying() is true only while the play-driven voice is actively
+    // playing — it goes false once the clip finishes or is stopped, so a sibling
+    // video stops slaving to a finished/idle voice and resumes its own loop clock.
+    // GetPlaybackSeconds() returns that voice's cursor in seconds.
+    [[nodiscard]] NOUS_ENGINE_API bool   IsVoicePlaying() const;
     [[nodiscard]] NOUS_ENGINE_API double GetPlaybackSeconds() const;
 
 private:

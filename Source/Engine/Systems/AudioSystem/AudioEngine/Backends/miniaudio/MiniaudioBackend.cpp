@@ -56,17 +56,17 @@ bool MiniaudioBackend::Initialize()
 void MiniaudioBackend::PlayAudio(ResourceAudio* rAudio)
 {
     const ma_result result =
-        ma_engine_play_sound(&m_audioEngine, rAudio->GetAssetsPath().c_str(), nullptr);
+        ma_engine_play_sound(&m_audioEngine, rAudio->GetLibraryPath().c_str(), nullptr);
 
     if (result != MA_SUCCESS)
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to play audio '%s'. Error code: %d",
-            rAudio->GetAssetsPath().c_str(), static_cast<int>(result));
+            rAudio->GetLibraryPath().c_str(), static_cast<int>(result));
         return;
     }
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Successfully playing audio: '%s' from '%s'",
-        rAudio->GetName().c_str(), rAudio->GetAssetsPath().c_str());
+        rAudio->GetName().c_str(), rAudio->GetLibraryPath().c_str());
 }
 
 // ---------------------------------------------------------------------------
@@ -98,12 +98,12 @@ SoundHandle MiniaudioBackend::CreateSound(ResourceAudio* rAudio)
     ma_sound* sound = NOUS_NEW<ma_sound>(MemoryTag::AUDIO_SYSTEM);
 
     const ma_result result = ma_sound_init_from_file(
-        &m_audioEngine, rAudio->GetAssetsPath().c_str(), flags, nullptr, nullptr, sound);
+        &m_audioEngine, rAudio->GetLibraryPath().c_str(), flags, nullptr, nullptr, sound);
 
     if (result != MA_SUCCESS)
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create sound from '%s'. Error code: %d",
-            rAudio->GetAssetsPath().c_str(), static_cast<int>(result));
+            rAudio->GetLibraryPath().c_str(), static_cast<int>(result));
         NOUS_DELETE(sound, MemoryTag::AUDIO_SYSTEM);
         return nullptr;
     }

@@ -6,7 +6,10 @@
 
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
+#include "Engine/Systems/VideoSystem/AudioExtract/include/AudioExtract.h"
 #include "Engine/Systems/VideoSystem/VideoProbe/include/VideoProbe.h"
+
+#include <filesystem>
 
 bool ImporterVideo::Import(const MetaFileData& metaFileData)
 {
@@ -23,7 +26,29 @@ bool ImporterVideo::Save(const MetaFileData& metaFileData, ResourceBase*& inReso
     {
         NOUS_WARN("ImporterVideo::Save() failed to copy '%s' -> '%s'",
             metaFileData.assetsPath.c_str(), metaFileData.libraryPath.c_str());
+        return ret;
     }
+
+    // Extract the audio track to a companion .ogg next to the source video in
+    // Assets/, regenerating only when missing or older than the video (mirrors
+    // the ImportPipeline Case-3 timestamp rule). No audio track / failure is
+    // non-fatal — the video simply has no companion and plays silently.
+    const std::string oggAssetsPath = MakeCompanionOggPath(metaFileData.assetsPath);
+
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const bool      oggExists  = fs::exists(oggAssetsPath, ec);
+    const long long oggMtime   = oggExists ? fs::last_write_time(oggAssetsPath, ec).time_since_epoch().count() : 0;
+    const long long videoMtime = fs::last_write_time(metaFileData.assetsPath, ec).time_since_epoch().count();
+
+    if (ShouldRegenerateCompanion(oggExists, oggMtime, videoMtime))
+    {
+        if (ExtractVideoAudioTrack(metaFileData.libraryPath, oggAssetsPath))
+            NOUS_INFO("ImporterVideo::Save() extracted audio -> '%s'", oggAssetsPath.c_str());
+        else
+            NOUS_INFO("ImporterVideo::Save() no audio extracted for '%s'", metaFileData.assetsPath.c_str());
+    }
+
     return ret;
 }
 

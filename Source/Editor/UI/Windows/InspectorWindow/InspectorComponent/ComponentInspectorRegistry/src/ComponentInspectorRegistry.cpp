@@ -31,6 +31,7 @@
 #include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
+#include "Engine/Systems/VideoSystem/AudioExtract/include/AudioExtract.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Drawers — one per inspectable component type. Uniform signature so they can be
@@ -365,6 +366,23 @@ static void DrawVideoPlayer(const InspectorCtx& ctx, Component* c)
                         if (cVideo->clip)
                             rm->UnloadResource(cVideo->clip->GetUID());
                         cVideo->clip = down_cast<ResourceVideo*>(r);
+
+                        // Auto-pair audio: if the video carries an audio track, add a
+                        // sibling CAudioSource wired to the extracted companion .ogg so
+                        // the clip plays with sound out of the box. Skipped if the object
+                        // already has a CAudioSource (don't clobber an authored one).
+                        if (go && go->IsValid() && cVideo->clip->GetHasAudioTrack()
+                            && !go->HasComponent<CAudioSource>())
+                        {
+                            const std::string oggPath = MakeCompanionOggPath(path);
+                            if (ResourceBase* ar = rm->CreateResource(oggPath))
+                            {
+                                CAudioSource& audio = go->AddComponent<CAudioSource>();
+                                audio.clip        = down_cast<ResourceAudio*>(ar);
+                                audio.loop        = cVideo->loop;
+                                audio.playOnAwake = true;
+                            }
+                        }
                     }
                     break;
                 }
@@ -384,8 +402,28 @@ static void DrawVideoPlayer(const InspectorCtx& ctx, Component* c)
         ImGui::TextDisabled("No clip assigned.");
     }
 
-    ImGui::Checkbox("Loop", &cVideo->loop);
+    if (ImGui::Checkbox("Loop", &cVideo->loop))
+    {
+        // Keep an auto-paired Audio Source's loop in lockstep — the video drives the
+        // audio, so toggling the video's loop also updates a sibling CAudioSource.
+        // (Pairing only matched them once; without this a later toggle would desync,
+        // leaving the video looping silently after the first pass.)
+        if (go && go->IsValid())
+            if (CAudioSource* a = go->TryGetComponent<CAudioSource>())
+                a->loop = cVideo->loop;
+    }
     ImGui::Checkbox("Play On Awake", &cVideo->playOnAwake);
+
+    // Only meaningful when the clip has an audio track (GIFs never sync).
+    const bool clipHasAudio = cVideo->clip && cVideo->clip->GetHasAudioTrack();
+    if (!clipHasAudio)
+        ImGui::BeginDisabled();
+    ImGui::Checkbox("Sync To Audio", &cVideo->syncToAudio);
+    if (ImGui::IsItemHovered() && clipHasAudio)
+        ImGui::SetTooltip("Slave the video playhead to a sibling Audio Source for A/V sync.\n"
+                          "Uncheck to play video and audio independently.");
+    if (!clipHasAudio)
+        ImGui::EndDisabled();
 
     // Target texture slot — choose which of the shader's texture samplers the video drives
     // (default "diffuseSampler"). Options come from SHADER REFLECTION (the material's

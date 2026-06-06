@@ -33,6 +33,10 @@ public:
     ResourceVideo* clip        = nullptr;          // resolved on Deserialize / Inspector drop
     bool           loop        = false;
     bool           playOnAwake = true;
+    bool           syncToAudio = true;             // slave the playhead to a sibling CAudioSource's
+                                                   // clock for A/V sync — only when this clip has an
+                                                   // audio track (never for GIFs). Uncheck to run the
+                                                   // video on its own clock, independent of the audio.
     std::string    targetSlot  = "diffuseSampler"; // material textureMaps key the video drives
 
     // ---- Runtime state (not serialized; read by ModuleRenderer3D) ----

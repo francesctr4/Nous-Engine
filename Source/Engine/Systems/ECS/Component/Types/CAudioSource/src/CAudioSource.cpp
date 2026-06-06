@@ -12,6 +12,8 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceType.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
+#include <cmath>
+
 // ---------------------------------------------------------------------------
 // Broker access
 // ---------------------------------------------------------------------------
@@ -176,9 +178,10 @@ bool CAudioSource::IsPreviewPlaying() const
     return audio && m_previewSound && audio->IsSoundPlaying(m_previewSound.Get());
 }
 
-bool CAudioSource::HasActiveVoice() const
+bool CAudioSource::IsVoicePlaying() const
 {
-    return static_cast<bool>(m_sound);
+    ModuleAudio* audio = GetAudioModule();
+    return audio && m_sound && audio->IsSoundPlaying(m_sound.Get());
 }
 
 double CAudioSource::GetPlaybackSeconds() const
@@ -186,7 +189,20 @@ double CAudioSource::GetPlaybackSeconds() const
     ModuleAudio* audio = GetAudioModule();
     if (!audio || !m_sound)
         return 0.0;
-    return audio->GetCursorSeconds(m_sound.Get());
+
+    const double cursor = audio->GetCursorSeconds(m_sound.Get());
+
+    // miniaudio's cursor grows monotonically across loop iterations — it does NOT
+    // reset to 0 when a looping sound wraps. Fold it into the clip's duration so we
+    // report a loop-relative position (the master clock a synced video tracks).
+    // Without this, once the cursor exceeds a sibling video's duration every frame
+    // satisfies pts <= cursor and the video races at decode speed. No-op on the
+    // first pass / non-looping clips (cursor < duration).
+    const double duration = clip ? static_cast<double>(clip->GetDurationSec()) : 0.0;
+    if (duration > 0.0 && cursor >= duration)
+        return std::fmod(cursor, duration);
+
+    return cursor;
 }
 
 // ---------------------------------------------------------------------------

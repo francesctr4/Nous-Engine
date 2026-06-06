@@ -7,6 +7,7 @@
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
+#include "Engine/Systems/VideoSystem/AudioExtract/include/AudioExtract.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
@@ -175,6 +176,19 @@ void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
     // Scenes are now imported generically by the per-type pipeline above:
     // CollectPendingImports picks up .nous as ResourceType::SCENE, writes its
     // .meta, and ImporterScene mirrors the source into Library/Scenes/<uid>.nous.
+
+    // Import companion .ogg files produced by video extraction this pass. A video's
+    // audio is extracted into Assets/<name>.ogg during its Phase-2 Import, so it was
+    // not present during the Phase-1 scan above — import it now so its ResourceAudio
+    // exists in the same session (the auto-paired CAudioSource resolves it).
+    for (const auto& item : pendingWork)
+    {
+        if (item.resourceType != ResourceType::VIDEO)
+            continue;
+        const std::string oggPath = MakeCompanionOggPath(item.assetsPath);
+        if (nous::engine::filesystem::Exists(oggPath))
+            ImportFile(oggPath);
+    }
 
     WriteShaderManifest();
     WriteSceneManifest();
@@ -396,10 +410,23 @@ bool ImportPipeline::ImportFile(const std::string& path)
     if (resourceType == ResourceType::UNKNOWN)
         return false;
 
+    bool ok;
     if (nous::engine::asset_paths::IsAssetsRelative(fileDirectory))
-        return ImportFileFromAssets(relativePath, resourceType, fileName, extension);
+        ok = ImportFileFromAssets(relativePath, resourceType, fileName, extension);
+    else
+        ok = ImportFileFromExternal(path, resourceType, fileName, extension);
 
-    return ImportFileFromExternal(path, resourceType, fileName, extension);
+    // After a video import, import its extracted companion .ogg so the audio
+    // ResourceAudio is available immediately (e.g. a video dropped via the editor).
+    // The .ogg import runs ImporterAudio, which never writes back into Assets/, so
+    // this cannot re-enter the video import.
+    if (ok && resourceType == ResourceType::VIDEO)
+    {
+        const std::string oggPath = MakeCompanionOggPath(relativePath);
+        if (nous::engine::filesystem::Exists(oggPath))
+            ImportFile(oggPath);
+    }
+    return ok;
 }
 
 bool ImportPipeline::ImportFileFromExternal(const std::string& path, const ResourceType resourceType,
