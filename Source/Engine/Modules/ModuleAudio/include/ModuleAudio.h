@@ -5,6 +5,7 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Systems/AudioSystem/SoundHandle.h"
+#include "Engine/Systems/AudioSystem/AudioTypes.h"
 
 class IAudioEngineBackend;
 class ResourceAudio;
@@ -52,6 +53,21 @@ public:
     // Playback position of the voice in seconds (0 when no backend / null handle).
     NOUS_ENGINE_API double      GetCursorSeconds(SoundHandle sound) const;
 
+    // ----------------------------------------
+    // 3D spatialization (forwarded to the active backend). The main CAudioListener
+    // writes the listener each frame; CAudioSource writes its voice's position +
+    // attenuation. All no-op when there is no backend.
+    // ----------------------------------------
+    NOUS_ENGINE_API void SetListenerPosition (float x, float y, float z);
+    NOUS_ENGINE_API void SetListenerDirection(float x, float y, float z) const;
+    NOUS_ENGINE_API void SetListenerWorldUp  (float x, float y, float z) const;
+
+    NOUS_ENGINE_API void SetSoundSpatializationEnabled(SoundHandle sound, bool enabled) const;
+    NOUS_ENGINE_API void SetSoundPosition        (SoundHandle sound, float x, float y, float z) const;
+    NOUS_ENGINE_API void SetSoundMinDistance     (SoundHandle sound, float distance) const;
+    NOUS_ENGINE_API void SetSoundMaxDistance     (SoundHandle sound, float distance) const;
+    NOUS_ENGINE_API void SetSoundAttenuationModel(SoundHandle sound, AttenuationModel model) const;
+
 private:
 
     // Owned audio backend, created via CreateAudioBackend() in Awake — same shape as
@@ -59,5 +75,10 @@ private:
     // directly (the old AudioSystem passthrough facade was deleted). Null if creation/init
     // failed; every forwarder below no-ops (or returns null/false/0) in that case.
     IAudioEngineBackend* m_backend;
+
+    // Per-frame count of main-listener pushes (incremented by SetListenerPosition,
+    // evaluated + reset in PostUpdate). Warns once if >1 listener is active.
+    int  m_mainListenerPushes      = 0;
+    bool m_warnedMultipleListeners = false;
 
 };

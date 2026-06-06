@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Systems/AudioSystem/SoundHandle.h"
+#include "Engine/Systems/AudioSystem/AudioTypes.h"
 
 class ResourceAudio;
 
@@ -36,4 +37,19 @@ public:
     // The cursor is retained across StopSound (pause), so a paused voice reports
     // its held position — used by CVideoPlayer to slave its playhead to audio.
     virtual double      GetCursorSeconds(SoundHandle sound) const = 0;
+
+    // ----------------------------------------------------------------------
+    // 3D spatialization. The listener is engine-global (index 0); only the
+    // active main listener writes it each frame. Per-voice setters configure
+    // a voice's position and distance attenuation. All no-op on a null handle.
+    // ----------------------------------------------------------------------
+    virtual void SetListenerPosition (float x, float y, float z) = 0;
+    virtual void SetListenerDirection(float x, float y, float z) = 0;   // forward
+    virtual void SetListenerWorldUp  (float x, float y, float z) = 0;
+
+    virtual void SetSoundSpatializationEnabled(SoundHandle sound, bool enabled) = 0;
+    virtual void SetSoundPosition        (SoundHandle sound, float x, float y, float z) = 0;
+    virtual void SetSoundMinDistance     (SoundHandle sound, float distance) = 0;
+    virtual void SetSoundMaxDistance     (SoundHandle sound, float distance) = 0;
+    virtual void SetSoundAttenuationModel(SoundHandle sound, AttenuationModel model) = 0;
 };

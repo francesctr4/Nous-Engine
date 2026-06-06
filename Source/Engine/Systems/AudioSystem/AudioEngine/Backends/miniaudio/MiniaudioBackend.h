@@ -32,6 +32,16 @@ public:
 
     double      GetCursorSeconds(SoundHandle sound) const override;
 
+    void SetListenerPosition (float x, float y, float z) override;
+    void SetListenerDirection(float x, float y, float z) override;
+    void SetListenerWorldUp  (float x, float y, float z) override;
+
+    void SetSoundSpatializationEnabled(SoundHandle sound, bool enabled) override;
+    void SetSoundPosition        (SoundHandle sound, float x, float y, float z) override;
+    void SetSoundMinDistance     (SoundHandle sound, float distance) override;
+    void SetSoundMaxDistance     (SoundHandle sound, float distance) override;
+    void SetSoundAttenuationModel(SoundHandle sound, AttenuationModel model) override;
+
 private:
 
     ma_engine m_audioEngine;

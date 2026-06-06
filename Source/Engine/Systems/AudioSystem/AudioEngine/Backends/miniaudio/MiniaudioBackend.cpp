@@ -1,6 +1,7 @@
 #include "MiniaudioBackend.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
+#include "Engine/Systems/AudioSystem/AudioTypes.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
 // miniaudio Library Documentation
@@ -87,11 +88,12 @@ SoundHandle MiniaudioBackend::CreateSound(ResourceAudio* rAudio)
     if (!rAudio)
         return nullptr;
 
-    // 2D source: skip spatialization entirely so volume/pitch behave predictably
-    // regardless of listener position. STREAMED clips read from disk on demand;
-    // DECODED clips are fully decoded into memory up front (short SFX).
-    ma_uint32 flags = MA_SOUND_FLAG_NO_SPATIALIZATION;
-    flags |= (rAudio->GetStreamingMode() == AudioStreamingMode::STREAMED)
+    // Spatialization-capable voice: do NOT bake MA_SOUND_FLAG_NO_SPATIALIZATION.
+    // We disable spatialization right after init so the default is still 2D
+    // (identical to the old behavior), but CAudioSource can toggle it at runtime.
+    // STREAMED clips read from disk on demand; DECODED clips are fully decoded
+    // into memory up front (short SFX).
+    ma_uint32 flags = (rAudio->GetStreamingMode() == AudioStreamingMode::STREAMED)
         ? MA_SOUND_FLAG_STREAM
         : MA_SOUND_FLAG_DECODE;
 
@@ -107,6 +109,9 @@ SoundHandle MiniaudioBackend::CreateSound(ResourceAudio* rAudio)
         NOUS_DELETE(sound, MemoryTag::AUDIO_SYSTEM);
         return nullptr;
     }
+
+    // Default to 2D; CAudioSource enables spatialization on spatial sources.
+    ma_sound_set_spatialization_enabled(sound, MA_FALSE);
 
     return sound;
 }
@@ -164,6 +169,70 @@ double MiniaudioBackend::GetCursorSeconds(SoundHandle sound) const
     float cursor = 0.0f;
     ma_sound_get_cursor_in_seconds(AsSound(sound), &cursor);
     return static_cast<double>(cursor);
+}
+
+// ---------------------------------------------------------------------------
+// 3D spatialization
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    ma_attenuation_model ToMaAttenuation(AttenuationModel model)
+    {
+        switch (model)
+        {
+            case AttenuationModel::None:        return ma_attenuation_model_none;
+            case AttenuationModel::Linear:      return ma_attenuation_model_linear;
+            case AttenuationModel::Exponential: return ma_attenuation_model_exponential;
+            case AttenuationModel::Inverse:     // fallthrough — default
+            default:                            return ma_attenuation_model_inverse;
+        }
+    }
+}
+
+void MiniaudioBackend::SetListenerPosition(float x, float y, float z)
+{
+    ma_engine_listener_set_position(&m_audioEngine, 0, x, y, z);
+}
+
+void MiniaudioBackend::SetListenerDirection(float x, float y, float z)
+{
+    ma_engine_listener_set_direction(&m_audioEngine, 0, x, y, z);
+}
+
+void MiniaudioBackend::SetListenerWorldUp(float x, float y, float z)
+{
+    ma_engine_listener_set_world_up(&m_audioEngine, 0, x, y, z);
+}
+
+void MiniaudioBackend::SetSoundSpatializationEnabled(SoundHandle sound, bool enabled)
+{
+    if (sound)
+        ma_sound_set_spatialization_enabled(AsSound(sound), enabled ? MA_TRUE : MA_FALSE);
+}
+
+void MiniaudioBackend::SetSoundPosition(SoundHandle sound, float x, float y, float z)
+{
+    if (sound)
+        ma_sound_set_position(AsSound(sound), x, y, z);
+}
+
+void MiniaudioBackend::SetSoundMinDistance(SoundHandle sound, float distance)
+{
+    if (sound)
+        ma_sound_set_min_distance(AsSound(sound), distance);
+}
+
+void MiniaudioBackend::SetSoundMaxDistance(SoundHandle sound, float distance)
+{
+    if (sound)
+        ma_sound_set_max_distance(AsSound(sound), distance);
+}
+
+void MiniaudioBackend::SetSoundAttenuationModel(SoundHandle sound, AttenuationModel model)
+{
+    if (sound)
+        ma_sound_set_attenuation_model(AsSound(sound), ToMaAttenuation(model));
 }
 
 void MiniaudioBackend::Shutdown() noexcept
