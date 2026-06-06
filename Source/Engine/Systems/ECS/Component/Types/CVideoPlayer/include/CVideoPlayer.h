@@ -9,6 +9,8 @@
 
 class ResourceVideo;
 class ModuleVideo;
+class ModuleScene;
+class Scene;
 
 /**
  * @brief In-world video surface component.
@@ -48,8 +50,18 @@ public:
     NOUS_ENGINE_API void       Deserialize(const JsonObject& obj) override;
 
 private:
-    // Resolves the video module through the scene broker (null in headless/test scenes).
-    ModuleVideo* GetVideoModule() const;
+    // The scene-broker chain this component talks to, resolved in one walk. Any field may be
+    // null in a headless / test scene (no scene, or no ModuleVideo wired). `video` non-null
+    // implies `scene` and `moduleScene` are non-null too (each is derived from the previous).
+    struct SceneBroker
+    {
+        Scene*       scene       = nullptr;
+        ModuleScene* moduleScene = nullptr;
+        ModuleVideo* video       = nullptr;
+    };
+    // Walks GameObject -> Scene -> ModuleScene -> ModuleVideo once. Used by OnUpdate/OnDestroy
+    // instead of re-deriving the chain inline (single source of truth for the broker path).
+    [[nodiscard]] SceneBroker ResolveBroker() const;
 
     bool m_started = false;   // play session has begun (gate one-time CreateVideo/Start)
 };

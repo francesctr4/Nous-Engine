@@ -17,12 +17,17 @@
 // Broker access
 // ---------------------------------------------------------------------------
 
-ModuleVideo* CVideoPlayer::GetVideoModule() const
+CVideoPlayer::SceneBroker CVideoPlayer::ResolveBroker() const
 {
+    SceneBroker broker;
     auto go = GetGameObject();
-    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    ModuleScene* moduleScene = scene ? scene->GetModuleScene() : nullptr;
-    return moduleScene ? moduleScene->GetVideo() : nullptr;
+    if (!go.IsValid())
+        return broker;
+
+    broker.scene       = go.GetScene();
+    broker.moduleScene = broker.scene ? broker.scene->GetModuleScene() : nullptr;
+    broker.video       = broker.moduleScene ? broker.moduleScene->GetVideo() : nullptr;
+    return broker;
 }
 
 // ---------------------------------------------------------------------------
@@ -31,15 +36,12 @@ ModuleVideo* CVideoPlayer::GetVideoModule() const
 
 void CVideoPlayer::OnUpdate(float deltaTime)
 {
-    auto go = GetGameObject();
-    if (!go.IsValid())
-        return;
-
-    Scene* scene = go.GetScene();
-    ModuleScene* moduleScene = scene ? scene->GetModuleScene() : nullptr;
-    ModuleVideo* video = moduleScene ? moduleScene->GetVideo() : nullptr;
+    const SceneBroker broker = ResolveBroker();
+    ModuleScene* moduleScene = broker.moduleScene;
+    ModuleVideo* video       = broker.video;
     if (!video)
-        return;  // headless / test scene — no video broker wired
+        return;  // headless / test scene, or invalid GameObject — no video broker wired
+    // video != null guarantees moduleScene != null (derived from it).
 
     // STOPPED — tear the decoder down so the next play session starts cleanly.
     if (moduleScene->IsStopped())
@@ -88,24 +90,21 @@ void CVideoPlayer::OnUpdate(float deltaTime)
 
 void CVideoPlayer::OnDestroy()
 {
-    auto go = GetGameObject();
-    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    ModuleScene* moduleScene = scene ? scene->GetModuleScene() : nullptr;
-    ModuleVideo* video = moduleScene ? moduleScene->GetVideo() : nullptr;
+    const SceneBroker broker = ResolveBroker();
 
     // Release the decoder handle. ModuleVideo is constructed before the scene, so it is
     // guaranteed alive during scene teardown (Application module order: VIDEO before SCENE).
     // No GPU work here — the dynamic texture is owned by the renderer (DynamicTextureCache).
-    if (video && handle)
-        video->DestroyVideo(handle);
+    if (broker.video && handle)
+        broker.video->DestroyVideo(handle);
     handle      = nullptr;
     frameDirty  = false;
     latestFrame = VideoFrame{};
     m_started   = false;
 
     // Drop our reference to the clip resource (mirrors CMesh / CAudioSource::OnDestroy).
-    if (clip && scene && scene->GetResourceManager())
-        scene->GetResourceManager()->UnloadResource(clip->GetUID());
+    if (clip && broker.scene && broker.scene->GetResourceManager())
+        broker.scene->GetResourceManager()->UnloadResource(clip->GetUID());
     clip = nullptr;
 }
 

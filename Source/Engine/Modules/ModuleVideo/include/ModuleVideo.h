@@ -7,7 +7,7 @@
 #include "Engine/Systems/VideoSystem/VideoFrame.h"
 #include "Engine/Systems/VideoSystem/VideoHandle.h"
 
-class VideoSystem;
+class IVideoDecoderBackend;
 class ResourceVideo;
 
 class ModuleVideo : public Module, public IEventListener
@@ -44,5 +44,8 @@ public:
 
 private:
 
-    VideoSystem* m_videoSystem;
+    // Owned decode backend, created via CreateVideoDecoderBackend() in Awake — same shape as
+    // RendererFrontend owning IRendererBackend* directly (the old VideoSystem passthrough facade
+    // was deleted). Null if creation/init failed; every forwarder above no-ops in that case.
+    IVideoDecoderBackend* m_backend;
 };
