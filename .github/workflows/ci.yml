@@ -32,18 +32,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Persist vcpkg's default file-based binary cache across runs. vcpkg writes each
-      # compiled port (ffmpeg/assimp/shaderc/...) into these dirs by default; restoring
-      # them lets later runs skip recompiling unchanged ports. Keyed on vcpkg.json (which
-      # contains the builtin-baseline), so dependency/version bumps invalidate the cache.
-      # The run_id suffix makes every run write a fresh immutable entry while restore-keys
+      # Persist vcpkg's file-based binary cache across runs so later runs skip
+      # recompiling unchanged ports (ffmpeg/assimp/shaderc/...). Keyed on vcpkg.json
+      # (which contains the builtin-baseline), so dependency/version bumps invalidate it.
+      # The run_id suffix writes a fresh immutable entry every run while restore-keys
       # falls back to the most recent matching prefix — so the cache keeps refreshing.
+      # NOTE: the compiled binaries only land here because the "Use vcpkg files binary
+      # cache" step below overrides run-vcpkg's default (removed) x-gha backend.
       - name: Cache vcpkg binary archives
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/vcpkg/archives
-            ~/AppData/Local/vcpkg/archives
+          path: ${{ github.workspace }}/vcpkg_binary_cache
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
           restore-keys: |
             vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-
@@ -55,6 +54,16 @@ jobs:
         with:
           vcpkgDirectory: ${{ github.workspace }}/../vcpkg
           vcpkgJsonGlob: vcpkg.json
+
+      # lukka/run-vcpkg auto-sets VCPKG_BINARY_SOURCES to 'clear;x-gha,readwrite', but the
+      # x-gha backend has been REMOVED from vcpkg (no-op + warning). Override it to the
+      # file-based provider pointed at the cached dir above. Must run AFTER Setup vcpkg so
+      # this is the last writer to VCPKG_BINARY_SOURCES before Configure.
+      - name: Use vcpkg files binary cache
+        shell: bash
+        run: |
+          mkdir -p "${{ github.workspace }}/vcpkg_binary_cache"
+          echo "VCPKG_BINARY_SOURCES=clear;files,${{ github.workspace }}/vcpkg_binary_cache,readwrite" >> "$GITHUB_ENV"
 
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
