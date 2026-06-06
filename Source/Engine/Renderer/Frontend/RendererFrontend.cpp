@@ -424,6 +424,24 @@ bool RendererFrontend::UpdateDynamicTexture(const uint8_t* pixels, ResourceTextu
 	return mBackend && mBackend->UpdateDynamicTexture(pixels, texture);
 }
 
+bool RendererFrontend::SubmitDynamicSurface(uint32_t objectUID,
+                                            const uint8_t* pixels, uint32_t width, uint32_t height,
+                                            const std::string& targetSlot,
+                                            ResourceMaterial* material, const ResourceMaterial* defaultMaterial)
+{
+	return m_dynamicSurfaces.Submit(this, objectUID, pixels, width, height, targetSlot, material, defaultMaterial);
+}
+
+void RendererFrontend::ReconcileDynamicSurfaces()
+{
+	m_dynamicSurfaces.Reconcile(this);
+}
+
+void RendererFrontend::DestroyDynamicSurfaces()
+{
+	m_dynamicSurfaces.DestroyAll(this);
+}
+
 bool RendererFrontend::CreateMaterial(ResourceMaterial* material)
 {
 	return mBackend->CreateMaterial(material);

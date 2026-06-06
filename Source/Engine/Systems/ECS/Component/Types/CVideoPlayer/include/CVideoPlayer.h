@@ -16,8 +16,9 @@ class ModuleVideo;
  * Decodes a ResourceVideo through ModuleVideo and exposes the latest RGBA frame.
  * It owns exactly one backend decoder handle (VideoHandle), created lazily when the
  * scene starts simulating, and never touches FFmpeg or the GPU directly. The renderer
- * (ModuleRenderer3D + VideoSurfaceCache) reads `latestFrame` each frame, uploads it to a
- * renderer-owned dynamic texture, and binds it into the sibling CMaterial's `targetSlot`.
+ * (ModuleRenderer3D's drain → RendererFrontend's DynamicTextureCache) reads `latestFrame` each
+ * frame, uploads it to a renderer-owned dynamic texture, and binds it into the sibling
+ * CMaterial's `targetSlot`.
  *
  * Playback is driven from OnUpdate (NOT OnStart), watching ModuleScene's simulation state
  * exactly like CAudioSource.

@@ -95,7 +95,7 @@ void CVideoPlayer::OnDestroy()
 
     // Release the decoder handle. ModuleVideo is constructed before the scene, so it is
     // guaranteed alive during scene teardown (Application module order: VIDEO before SCENE).
-    // No GPU work here — the dynamic texture is owned by the renderer (VideoSurfaceCache).
+    // No GPU work here — the dynamic texture is owned by the renderer (DynamicTextureCache).
     if (video && handle)
         video->DestroyVideo(handle);
     handle      = nullptr;

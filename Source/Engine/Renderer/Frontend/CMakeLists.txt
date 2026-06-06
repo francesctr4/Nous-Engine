@@ -6,6 +6,8 @@ add_library(RendererFrontend STATIC
         IEditorOverlay.h
         GroupGeometries.h
         GroupGeometries.cpp
+        DynamicTextureCache.h
+        DynamicTextureCache.cpp
         RendererFrontend.h
         RendererFrontend.cpp
 )

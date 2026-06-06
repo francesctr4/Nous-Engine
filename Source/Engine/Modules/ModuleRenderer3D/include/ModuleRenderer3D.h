@@ -20,7 +20,6 @@
 #include "Engine/Core/FileWatcher/FileWatcher.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Renderer/RendererTypes.h"
-#include "Engine/Modules/ModuleRenderer3D/include/VideoSurfaceCache.h"
 
 #include <unordered_map>
 #include <utility>
@@ -124,9 +123,6 @@ private:
 	// World-space AABBs computed each frame in the bounding-box loop.
 	// Keyed by GameObject ID; consumed by BuildRenderPacket for frustum culling.
 	std::unordered_map<uint32_t, std::pair<glm::vec3, glm::vec3>> mMeshAABBCache;
-
-	// Renderer-owned dynamic textures for CVideoPlayer surfaces (one per GameObject UID).
-	VideoSurfaceCache m_videoSurfaces;
 
 	// Watches Assets/Shaders/*.glsl for changes and triggers hot reload.
 	// Populated in Start() (EDITOR mode only); Poll() called in PreUpdate().

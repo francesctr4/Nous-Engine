@@ -3,6 +3,7 @@
 
 #include "Engine/Renderer/RendererTypes.h"
 #include "Engine/Renderer/Frontend/GroupGeometries.h"
+#include "Engine/Renderer/Frontend/DynamicTextureCache.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
 #include "Engine/EngineExport.h"
@@ -68,6 +69,26 @@ public:
 
 	// Passthrough to the backend; re-uploads pixels into an existing dynamic texture.
 	NOUS_ENGINE_API bool UpdateDynamicTexture(const uint8_t* pixels, ResourceTexture* texture);
+
+	// ---------------------------------------------------------------------
+	// Dynamic Surfaces (renderer-owned per-object textures, e.g. video)
+	// ---------------------------------------------------------------------
+	// Mark objectUID live this frame; when pixels != null, upload them into a renderer-owned
+	// dynamic texture bound into material[targetSlot]. Returns true if the pixels were consumed
+	// (created or updated) so the caller can clear its own dirty flag. ECS-agnostic by design —
+	// the owning component (e.g. CVideoPlayer) never touches the GPU texture. See DynamicTextureCache.
+	NOUS_ENGINE_API bool SubmitDynamicSurface(uint32_t objectUID,
+	                                          const uint8_t* pixels, uint32_t width, uint32_t height,
+	                                          const std::string& targetSlot,
+	                                          ResourceMaterial* material, const ResourceMaterial* defaultMaterial);
+
+	// Drop dynamic surfaces whose UID was not submitted this frame (player stopped / object
+	// removed). Call once after the per-object SubmitDynamicSurface() loop.
+	NOUS_ENGINE_API void ReconcileDynamicSurfaces();
+
+	// Destroy every dynamic surface. Call after ReleaseFrameResources() and BEFORE the owning
+	// materials / scene are torn down (restores each surface's original slot texture first).
+	NOUS_ENGINE_API void DestroyDynamicSurfaces();
 
 	[[nodiscard]] NOUS_ENGINE_API bool CreateMaterial(ResourceMaterial* material) override;
 	NOUS_ENGINE_API void DestroyMaterial(ResourceMaterial* material) override;
@@ -214,6 +235,10 @@ private:
 	IRendererBackend* mBackend;
 	RendererBackendType mBackendType;
 	RenderMode mRenderMode = RenderMode::EDITOR;
+
+	// Renderer-owned dynamic textures (e.g. video surfaces), keyed by object UID. Lives here so
+	// its GPU images are freed within the renderer's lifetime, before the scene is torn down.
+	DynamicTextureCache m_dynamicSurfaces;
 
 	// GPU frame counter — advanced after each successful EndFrame, used as the
 	// triple-buffering frame index (mFrameNumber % 3). Previously lived on the

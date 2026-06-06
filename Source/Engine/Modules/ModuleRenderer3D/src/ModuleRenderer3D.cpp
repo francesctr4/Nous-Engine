@@ -369,9 +369,11 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetSpotLightDebugs({});
 	}
 
-	// Video surfaces: upload each playing CVideoPlayer's latest frame into a renderer-owned
-	// dynamic texture and bind it into the sibling material's targetSlot. Reconcile drops
-	// surfaces whose player stopped / was removed. Skipped while a scene loads (registry race).
+	// Video surfaces: hand each playing CVideoPlayer's latest frame to the renderer, which owns
+	// the dynamic texture and binds it into the sibling material's targetSlot. This loop is the
+	// one place renderer↔video coupling lives — everything below SubmitDynamicSurface is ECS-free.
+	// ReconcileDynamicSurfaces drops surfaces whose player stopped / was removed. Skipped while a
+	// scene loads (registry race).
 	if (!isLoadingScene && sceneData.registry)
 	{
 		ResourceMaterial* defaultMat = mModuleResourceManager->GetDefaultMaterial();
@@ -382,9 +384,18 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			const uint32 goUID = info ? info->id : 0u;
 			const auto* matC   = sceneData.registry->try_get<CMaterial>(entity);
 			ResourceMaterial* material = matC ? matC->material : nullptr;
-			m_videoSurfaces.Submit(mRendererFrontend, goUID, player, material, defaultMat);
+
+			// Only hand over pixels when a fresh frame is waiting; otherwise pass null to keep the
+			// surface alive without re-uploading. We own frameDirty, so we clear it on consumption.
+			const uint8_t* pixels = (player.frameDirty && player.latestFrame.pixels)
+			                      ? player.latestFrame.pixels : nullptr;
+			const bool consumed = mRendererFrontend->SubmitDynamicSurface(
+				goUID, pixels, player.latestFrame.width, player.latestFrame.height,
+				player.targetSlot, material, defaultMat);
+			if (consumed)
+				player.frameDirty = false;
 		}
-		m_videoSurfaces.Reconcile(mRendererFrontend);
+		mRendererFrontend->ReconcileDynamicSurfaces();
 	}
 
 	m_totalTime += dt;
@@ -695,8 +706,9 @@ bool ModuleRenderer3D::CleanUp()
     // and framebuffers).  If the Editor already called this, it is a no-op.
     mRendererFrontend->ReleaseFrameResources();
 
-    // Destroy renderer-owned video textures (GPU is idle after ReleaseFrameResources).
-    m_videoSurfaces.DestroyAll(mRendererFrontend);
+    // Destroy renderer-owned dynamic surfaces (GPU is idle after ReleaseFrameResources, and the
+    // owning materials are still alive — DestroyDynamicSurfaces restores their original slot tex).
+    mRendererFrontend->DestroyDynamicSurfaces();
 
     // Destroy all GameObjects BEFORE freeing GPU resources.  Component
     // OnDestroy callbacks (CMesh, CMaterial) need the ResourceManager and
