@@ -33,19 +33,21 @@ jobs:
         uses: actions/checkout@v4
 
       # Persist vcpkg's file-based binary cache across runs so later runs skip
-      # recompiling unchanged ports (ffmpeg/assimp/shaderc/...). Keyed on vcpkg.json
-      # (which contains the builtin-baseline), so dependency/version bumps invalidate it.
-      # The run_id suffix writes a fresh immutable entry every run while restore-keys
-      # falls back to the most recent matching prefix — so the cache keeps refreshing.
+      # recompiling unchanged ports (ffmpeg/assimp/shaderc/...). Keyed purely on
+      # vcpkg.json (which contains the builtin-baseline): an exact key hit reuses the
+      # cache WITHOUT re-saving (one entry per OS, stable until deps change). When
+      # vcpkg.json changes the exact key misses, the restore-keys prefix restores the
+      # previous cache for partial reuse, and a new entry is saved under the new hash.
+      # vcpkg's port set is deterministic per vcpkg.json, so there's no incomplete-cache
+      # risk that would need a run-id-suffixed key.
       # NOTE: the compiled binaries only land here because the "Use vcpkg files binary
       # cache" step below overrides run-vcpkg's default (removed) x-gha backend.
       - name: Cache vcpkg binary archives
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/vcpkg_binary_cache
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-
             vcpkg-${{ runner.os }}-
 
       # Clone vcpkg as a sibling of the repo — matches the toolchainFile path in CMakePresets.json
