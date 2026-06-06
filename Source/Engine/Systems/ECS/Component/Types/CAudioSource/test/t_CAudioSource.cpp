@@ -3,6 +3,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
+#include "Engine/Systems/AudioSystem/AudioTypes.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
@@ -156,4 +157,64 @@ TEST_F(t_CAudioSource, MultipleGameObjects_IndependentState)
     b.GetComponent<CAudioSource>().volume = 0.1f;
     EXPECT_FLOAT_EQ(a.GetComponent<CAudioSource>().volume, 1.0f);
     EXPECT_FLOAT_EQ(b.GetComponent<CAudioSource>().volume, 0.1f);
+}
+
+// =============================================================================
+// Spatialization fields (Step 4)
+// =============================================================================
+
+TEST_F(t_CAudioSource, DefaultSpatialize_IsFalse)
+{
+    GameObject go = scene->CreateGameObject("Audio");
+    go.AddComponent<CAudioSource>();
+    EXPECT_FALSE(go.GetComponent<CAudioSource>().spatialize);
+}
+
+TEST_F(t_CAudioSource, DefaultDistances_AreOneAndFifty)
+{
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    EXPECT_FLOAT_EQ(a.minDistance, 1.0f);
+    EXPECT_FLOAT_EQ(a.maxDistance, 50.0f);
+}
+
+TEST_F(t_CAudioSource, DefaultAttenuation_IsInverse)
+{
+    GameObject go = scene->CreateGameObject("Audio");
+    go.AddComponent<CAudioSource>();
+    EXPECT_EQ(go.GetComponent<CAudioSource>().attenuation, AttenuationModel::Inverse);
+}
+
+TEST_F(t_CAudioSource, SerializeRoundTrip_PreservesSpatialFields)
+{
+    GameObject src = scene->CreateGameObject("Src");
+    auto& a = src.AddComponent<CAudioSource>();
+    a.spatialize  = true;
+    a.minDistance = 2.5f;
+    a.maxDistance = 80.0f;
+    a.attenuation = AttenuationModel::Exponential;
+
+    const JsonObject json = a.Serialize();
+
+    GameObject dst = scene->CreateGameObject("Dst");
+    auto& b = dst.AddComponent<CAudioSource>();
+    b.Deserialize(json);
+
+    EXPECT_TRUE(b.spatialize);
+    EXPECT_FLOAT_EQ(b.minDistance, 2.5f);
+    EXPECT_FLOAT_EQ(b.maxDistance, 80.0f);
+    EXPECT_EQ(b.attenuation, AttenuationModel::Exponential);
+}
+
+TEST_F(t_CAudioSource, Deserialize_MissingSpatialKeys_KeepsDefaults)
+{
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    JsonObject json;
+    json.Set("volume", 0.5f);  // no spatial keys
+    a.Deserialize(json);
+    EXPECT_FALSE(a.spatialize);
+    EXPECT_FLOAT_EQ(a.minDistance, 1.0f);
+    EXPECT_FLOAT_EQ(a.maxDistance, 50.0f);
+    EXPECT_EQ(a.attenuation, AttenuationModel::Inverse);
 }

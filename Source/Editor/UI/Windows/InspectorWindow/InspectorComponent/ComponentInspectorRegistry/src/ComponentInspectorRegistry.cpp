@@ -28,6 +28,7 @@
 #include <utility>
 
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
+#include "Engine/Systems/ECS/Component/Types/CAudioListener/include/CAudioListener.h"
 #include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
@@ -305,6 +306,28 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
     ImGui::Checkbox("Loop", &cAudioSource->loop);
     ImGui::Checkbox("Play On Awake", &cAudioSource->playOnAwake);
 
+    // 3D spatialization. The distance/attenuation controls only matter when on,
+    // so they're hidden behind the checkbox to keep the 2D case clean.
+    ImGui::Spacing();
+    ImGui::Checkbox("Spatialize (3D)", &cAudioSource->spatialize);
+    if (cAudioSource->spatialize)
+    {
+        ImGui::DragFloat("Min Distance", &cAudioSource->minDistance, 0.1f, 0.0f, 10000.0f, "%.2f");
+        cAudioSource->minDistance = glm::max(cAudioSource->minDistance, 0.0f);
+
+        ImGui::DragFloat("Max Distance", &cAudioSource->maxDistance, 0.5f, 0.0f, 100000.0f, "%.2f");
+        cAudioSource->maxDistance = glm::max(cAudioSource->maxDistance, cAudioSource->minDistance);
+
+        static constexpr std::array<const char*, 4> attenuationNames = {
+            "None", "Inverse", "Linear", "Exponential"
+        };
+        if (int current = static_cast<int>(cAudioSource->attenuation);
+            ImGui::Combo("Attenuation", &current, attenuationNames.data(), attenuationNames.size()))
+        {
+            cAudioSource->attenuation = static_cast<AttenuationModel>(current);
+        }
+    }
+
     // Edit-mode preview — audition the clip without entering play mode.
     ImGui::Spacing();
     const bool hasClip = cAudioSource->clip != nullptr;
@@ -325,6 +348,21 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
     if (!hasClip)
         ImGui::EndDisabled();
 
+    ImGui::Unindent();
+}
+
+static void DrawAudioListener(const InspectorCtx&, Component* c)
+{
+    auto* cListener = static_cast<CAudioListener*>(c);
+
+    if (!ImGui::CollapsingHeader("Audio Listener", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ImGui::Indent();
+    ImGui::Checkbox("Main Listener", &cListener->isMainListener);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Only one Audio Listener should be the main listener\n"
+                          "(typically on the main camera).");
     ImGui::Unindent();
 }
 
@@ -469,6 +507,7 @@ static const ComponentUI k_ui[] = {
     {"CMaterial",  "Material",  true,  &DrawMaterial},
     {"CScript",    "Script",    true,  &DrawScript},
     {"CAudioSource",    "Audio Source",    true,  &DrawAudioSource},
+    {"CAudioListener",  "Audio Listener",  true,  &DrawAudioListener},
     {"CVideoPlayer",    "Video Player",    true,  &DrawVideoPlayer},
 };
 

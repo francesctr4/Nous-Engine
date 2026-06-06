@@ -7,12 +7,36 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceType.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 #include <cmath>
+
+namespace
+{
+    const char* AttenuationToString(AttenuationModel m)
+    {
+        switch (m)
+        {
+            case AttenuationModel::None:        return "None";
+            case AttenuationModel::Linear:      return "Linear";
+            case AttenuationModel::Exponential: return "Exponential";
+            case AttenuationModel::Inverse:     // fallthrough
+            default:                            return "Inverse";
+        }
+    }
+
+    AttenuationModel AttenuationFromString(const std::string& s)
+    {
+        if (s == "None")        return AttenuationModel::None;
+        if (s == "Linear")      return AttenuationModel::Linear;
+        if (s == "Exponential") return AttenuationModel::Exponential;
+        return AttenuationModel::Inverse;
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Broker access
@@ -119,6 +143,21 @@ void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& au
     {
         audio.SetSoundVolume(m_sound.Get(), volume);
         audio.SetSoundPitch(m_sound.Get(), pitch);
+
+        // Spatialization is a live toggle (like volume/pitch). When on, push the
+        // GO's position + distance attenuation; the main CAudioListener supplies
+        // the listener pose. Default-off voices stay 2D (set in CreateSound).
+        audio.SetSoundSpatializationEnabled(m_sound.Get(), spatialize);
+        if (spatialize)
+        {
+            auto go = GetGameObject();
+            if (auto* t = go.IsValid() ? go.TryGetComponent<CTransform>() : nullptr)
+                audio.SetSoundPosition(m_sound.Get(), t->position.x, t->position.y, t->position.z);
+
+            audio.SetSoundMinDistance(m_sound.Get(), minDistance);
+            audio.SetSoundMaxDistance(m_sound.Get(), maxDistance);
+            audio.SetSoundAttenuationModel(m_sound.Get(), attenuation);
+        }
     }
 }
 
@@ -160,6 +199,7 @@ void CAudioSource::PreviewPlay()
         // even if the Inspector is closed mid-playback. Volume/pitch follow the
         // current authored values and stay live via OnUpdate.
         audio->SetSoundLooping(m_previewSound.Get(), false);
+        audio->SetSoundSpatializationEnabled(m_previewSound.Get(), false);  // preview is 2D
         audio->SetSoundVolume(m_previewSound.Get(), volume);
         audio->SetSoundPitch(m_previewSound.Get(), pitch);
         audio->StartSound(m_previewSound.Get());
@@ -227,6 +267,11 @@ JsonObject CAudioSource::Serialize() const
     root.Set("pitch",       pitch);
     root.Set("loop",        loop);
     root.Set("playOnAwake", playOnAwake);
+
+    root.Set("spatialize",  spatialize);
+    root.Set("minDistance", minDistance);
+    root.Set("maxDistance", maxDistance);
+    root.Set("attenuation", AttenuationToString(attenuation));
     return root;
 }
 
@@ -236,6 +281,11 @@ void CAudioSource::Deserialize(const JsonObject& obj)
     pitch       = obj.GetFloat("pitch",       pitch);
     loop        = obj.GetBool ("loop",        loop);
     playOnAwake = obj.GetBool ("playOnAwake", playOnAwake);
+
+    spatialize  = obj.GetBool ("spatialize",  spatialize);
+    minDistance = obj.GetFloat("minDistance", minDistance);
+    maxDistance = obj.GetFloat("maxDistance", maxDistance);
+    attenuation = AttenuationFromString(obj.GetString("attenuation", AttenuationToString(attenuation)));
 
     const std::string assetPath   = obj.GetString("assetPath");
     const std::string libraryPath = obj.GetString("libraryPath");

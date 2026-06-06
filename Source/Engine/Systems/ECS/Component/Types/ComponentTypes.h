@@ -11,6 +11,7 @@
 #include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
 #include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
+#include "Engine/Systems/ECS/Component/Types/CAudioListener/include/CAudioListener.h"
 #include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ using ComponentTypes = ComponentList<
     CScript,
     CPrefab,
     CAudioSource,
+    CAudioListener,
     CVideoPlayer
 >;
 
@@ -39,5 +41,6 @@ using UpdatableComponentTypes = ComponentList<
     CCamera,
     CLight,
     CAudioSource,
+    CAudioListener,
     CVideoPlayer
 >;

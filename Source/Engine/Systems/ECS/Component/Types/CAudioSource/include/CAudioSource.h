@@ -2,6 +2,7 @@
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/AudioVoice.h"
+#include "Engine/Systems/AudioSystem/AudioTypes.h"
 #include "Engine/EngineExport.h"
 
 class ResourceAudio;
@@ -31,6 +32,12 @@ public:
     float          pitch       = 1.0f;      // playback-rate multiplier (1.0 = unchanged)
     bool           loop        = false;
     bool           playOnAwake = true;
+
+    // ---- 3D spatialization (Step 4) ----
+    bool             spatialize  = false;   // 2D by default — preserves existing SFX + video-sync companion
+    float            minDistance = 1.0f;
+    float            maxDistance = 50.0f;
+    AttenuationModel attenuation = AttenuationModel::Inverse;
 
     // Lifecycle
     NOUS_ENGINE_API void OnUpdate(float deltaTime) override;
