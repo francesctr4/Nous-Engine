@@ -1,14 +1,10 @@
 set(CLASS_NAME "VideoSystem")
 
 add_library(${CLASS_NAME} STATIC
-        VideoProbe.h
-        VideoProbe.cpp
         VideoHandle.h
         VideoFrame.h
-        VideoFrameQueue.h
-        VideoFrameQueue.cpp
-        VideoSystem.h
-        VideoSystem.cpp
+        ${CLASS_NAME}.h
+        ${CLASS_NAME}.cpp
 )
 
 set_target_properties(${CLASS_NAME} PROPERTIES
@@ -26,14 +22,12 @@ target_compile_definitions(${CLASS_NAME} PRIVATE
 )
 
 # FFmpeg (vcpkg provides the FFMPEG find module) — PRIVATE so libav* headers
-# stay confined to VideoProbe.cpp (compile firewall).
+# stay confined to the VideoSystem target (VideoProbe.cpp + FFmpegBackend.cpp).
 find_package(FFMPEG REQUIRED)
 target_include_directories(${CLASS_NAME} PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(${CLASS_NAME} PRIVATE ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(${CLASS_NAME} PRIVATE ${FFMPEG_LIBRARIES})
 
 add_subdirectory(VideoDecoder)
-
-if (NOUS_BUILD_TESTS)
-    add_subdirectory(test)
-endif()
+add_subdirectory(VideoFrameQueue)
+add_subdirectory(VideoProbe)

@@ -6,7 +6,7 @@
 
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
-#include "Engine/Systems/VideoSystem/VideoProbe.h"
+#include "Engine/Systems/VideoSystem/VideoProbe/include/VideoProbe.h"
 
 bool ImporterVideo::Import(const MetaFileData& metaFileData)
 {

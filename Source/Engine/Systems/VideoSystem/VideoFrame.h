@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Engine/Core/Globals.h"
-
 #include <cstdint>
 
 // A single decoded video frame handed across the decode seam. The `pixels` buffer is

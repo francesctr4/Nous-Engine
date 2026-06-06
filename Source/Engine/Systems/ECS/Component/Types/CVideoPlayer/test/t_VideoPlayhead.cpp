@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Systems/ECS/Component/Types/CVideoPlayer/VideoPlayhead.h"
+#include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/VideoPlayhead.h"
 
 TEST(t_VideoPlayhead, AdvancesByDt)
 {

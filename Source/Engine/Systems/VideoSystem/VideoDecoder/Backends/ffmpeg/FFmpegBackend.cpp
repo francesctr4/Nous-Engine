@@ -3,7 +3,7 @@
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
-#include "Engine/Systems/VideoSystem/VideoFrameQueue.h"
+#include "Engine/Systems/VideoSystem/VideoFrameQueue/include/VideoFrameQueue.h"
 
 #include <atomic>
 #include <chrono>

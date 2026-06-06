@@ -1,4 +1,4 @@
-#include "Engine/Systems/VideoSystem/VideoProbe.h"
+#include "Engine/Systems/VideoSystem/VideoProbe/include/VideoProbe.h"
 
 #include "Engine/Core/Logger/Logger.h"
 
