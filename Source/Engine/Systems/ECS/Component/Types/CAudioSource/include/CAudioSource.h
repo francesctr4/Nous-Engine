@@ -47,6 +47,13 @@ public:
     NOUS_ENGINE_API void PreviewStop();
     NOUS_ENGINE_API bool IsPreviewPlaying() const;
 
+    // Sibling-sync surface (read by a CVideoPlayer on the same GameObject):
+    // HasActiveVoice() is true once the play-driven voice exists for the current
+    // play session; GetPlaybackSeconds() returns that voice's cursor in seconds.
+    // The cursor is retained across pause, so the value holds while PAUSED.
+    [[nodiscard]] NOUS_ENGINE_API bool   HasActiveVoice() const;
+    [[nodiscard]] NOUS_ENGINE_API double GetPlaybackSeconds() const;
+
 private:
     // Scene/broker resolution (both null in headless/test scenes). GetAudioModule
     // is GetModuleScene().GetAudio(); kept as a helper for the edit-mode preview path.

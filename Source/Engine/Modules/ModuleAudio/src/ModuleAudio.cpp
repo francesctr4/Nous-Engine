@@ -128,6 +128,11 @@ bool ModuleAudio::IsSoundPlaying(SoundHandle sound) const
     return m_backend && m_backend->IsSoundPlaying(sound);
 }
 
+double ModuleAudio::GetCursorSeconds(SoundHandle sound) const
+{
+    return m_backend ? m_backend->GetCursorSeconds(sound) : 0.0;
+}
+
 void ModuleAudio::OnEvent(const Event &event)
 {
     switch (event.type)

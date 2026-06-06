@@ -30,6 +30,8 @@ public:
 
     bool        IsSoundPlaying(SoundHandle sound) const override;
 
+    double      GetCursorSeconds(SoundHandle sound) const override;
+
 private:
 
     ma_engine m_audioEngine;

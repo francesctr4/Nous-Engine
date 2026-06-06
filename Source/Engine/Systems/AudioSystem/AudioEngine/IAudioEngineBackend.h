@@ -31,4 +31,9 @@ public:
     virtual void        SetSoundLooping(SoundHandle sound, bool looping) = 0;
 
     virtual bool        IsSoundPlaying(SoundHandle sound) const = 0;
+
+    // Current playback position of the voice, in seconds (0 on a null handle).
+    // The cursor is retained across StopSound (pause), so a paused voice reports
+    // its held position — used by CVideoPlayer to slave its playhead to audio.
+    virtual double      GetCursorSeconds(SoundHandle sound) const = 0;
 };

@@ -7,6 +7,7 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
 #include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/VideoPlayhead.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
@@ -81,8 +82,19 @@ void CVideoPlayer::OnUpdate(float deltaTime)
     if (!handle)
         return;
 
-    playhead = AdvanceVideoPlayhead(playhead, static_cast<double>(deltaTime),
-                                    static_cast<double>(video->GetDuration(handle)), loop);
+    // Slave the playhead to a sibling CAudioSource's audio clock when one is
+    // actively playing this clip's extracted track (audio is the master clock).
+    // No sibling / no active voice → fall back to the local dt clock so silent
+    // videos behave exactly as before. A paused sibling reports its held cursor,
+    // which naturally freezes the video too.
+    auto go = GetGameObject();
+    CAudioSource* audioSibling = go.IsValid() ? go.TryGetComponent<CAudioSource>() : nullptr;
+    const bool   audioClockActive = audioSibling && audioSibling->HasActiveVoice();
+    const double audioSeconds      = audioClockActive ? audioSibling->GetPlaybackSeconds() : 0.0;
+
+    playhead = ResolveVideoPlayhead(playhead, static_cast<double>(deltaTime),
+                                    static_cast<double>(video->GetDuration(handle)), loop,
+                                    audioClockActive, audioSeconds);
 
     if (video->TryGetFrame(handle, playhead, latestFrame))
         frameDirty = true;

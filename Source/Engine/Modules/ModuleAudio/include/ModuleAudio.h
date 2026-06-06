@@ -49,6 +49,9 @@ public:
 
     NOUS_ENGINE_API bool        IsSoundPlaying(SoundHandle sound) const;
 
+    // Playback position of the voice in seconds (0 when no backend / null handle).
+    NOUS_ENGINE_API double      GetCursorSeconds(SoundHandle sound) const;
+
 private:
 
     // Owned audio backend, created via CreateAudioBackend() in Awake — same shape as

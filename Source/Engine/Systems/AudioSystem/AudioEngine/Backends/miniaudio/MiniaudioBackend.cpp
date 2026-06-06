@@ -156,6 +156,16 @@ bool MiniaudioBackend::IsSoundPlaying(SoundHandle sound) const
     return sound && ma_sound_is_playing(AsSound(sound)) == MA_TRUE;
 }
 
+double MiniaudioBackend::GetCursorSeconds(SoundHandle sound) const
+{
+    if (!sound)
+        return 0.0;
+
+    float cursor = 0.0f;
+    ma_sound_get_cursor_in_seconds(AsSound(sound), &cursor);
+    return static_cast<double>(cursor);
+}
+
 void MiniaudioBackend::Shutdown() noexcept
 {
     ma_engine_uninit(&m_audioEngine);

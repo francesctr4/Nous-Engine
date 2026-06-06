@@ -176,6 +176,19 @@ bool CAudioSource::IsPreviewPlaying() const
     return audio && m_previewSound && audio->IsSoundPlaying(m_previewSound.Get());
 }
 
+bool CAudioSource::HasActiveVoice() const
+{
+    return static_cast<bool>(m_sound);
+}
+
+double CAudioSource::GetPlaybackSeconds() const
+{
+    ModuleAudio* audio = GetAudioModule();
+    if (!audio || !m_sound)
+        return 0.0;
+    return audio->GetCursorSeconds(m_sound.Get());
+}
+
 // ---------------------------------------------------------------------------
 // Serialization
 // ---------------------------------------------------------------------------

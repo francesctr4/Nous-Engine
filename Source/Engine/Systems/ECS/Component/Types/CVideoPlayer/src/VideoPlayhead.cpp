@@ -19,3 +19,12 @@ double AdvanceVideoPlayhead(double current, double dt, double durationSec, bool 
 
     return (next > durationSec) ? durationSec : next;
 }
+
+double ResolveVideoPlayhead(double current, double dt, double durationSec, bool loop,
+                            bool audioClockActive, double audioSeconds)
+{
+    if (audioClockActive)
+        return (audioSeconds < 0.0) ? 0.0 : audioSeconds;
+
+    return AdvanceVideoPlayhead(current, dt, durationSec, loop);
+}
