@@ -1,0 +1,139 @@
+{
+    "name": "VideoScene",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 3939395571,
+            "name": "Main Camera",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        261.19113159179688
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CCamera",
+                    "fov": 60,
+                    "nearPlane": 0.10000000149011612,
+                    "farPlane": 1000,
+                    "aspectRatio": 1.8879055976867676,
+                    "isMainCamera": true
+                }
+            ]
+        },
+        {
+            "uid": 764625453,
+            "name": "RectangleVideo.obj",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "uid": 2549397276,
+            "name": "defaultobject",
+            "parent": 764625453,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        177.03929138183594,
+                        177.03929138183594,
+                        177.03929138183594
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/RectangleVideo.obj",
+                    "libraryPath": "Library\/Meshes\/18374827.nmesh",
+                    "resourceUID": 3610428212,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\\defaultobject_material.nmat",
+                    "libraryPath": "Library\/Materials\/1820310675.nmat",
+                    "resourceUID": 1820310675
+                },
+                {
+                    "type": "CAudioSource",
+                    "assetPath": "Assets\\Audio\\Music\\music.ogg",
+                    "libraryPath": "Library\/Audio\/1789822755.ogg",
+                    "resourceUID": 1789822755,
+                    "volume": 0.20000000298023224,
+                    "pitch": 1,
+                    "loop": true,
+                    "playOnAwake": true
+                },
+                {
+                    "type": "CVideoPlayer",
+                    "assetPath": "Assets\\rezero.mp4",
+                    "libraryPath": "Library\/Video\/594086996.mp4",
+                    "resourceUID": 594086996,
+                    "loop": true,
+                    "playOnAwake": true,
+                    "targetSlot": "diffuseSampler"
+                }
+            ]
+        }
+    ]
+}
