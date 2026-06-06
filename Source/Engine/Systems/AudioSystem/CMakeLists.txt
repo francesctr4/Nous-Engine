@@ -1,8 +1,7 @@
 set(CLASS_NAME "AudioSystem")
 
 add_library(${CLASS_NAME} STATIC
-        ${CLASS_NAME}.h
-        ${CLASS_NAME}.cpp
+        SoundHandle.h
 )
 
 set_target_properties(${CLASS_NAME} PROPERTIES
@@ -20,3 +19,4 @@ target_compile_definitions(${CLASS_NAME} PRIVATE
 )
 
 add_subdirectory(AudioEngine)
+add_subdirectory(AudioProbe)

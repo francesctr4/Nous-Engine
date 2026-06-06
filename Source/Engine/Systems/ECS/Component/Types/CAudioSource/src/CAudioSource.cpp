@@ -16,11 +16,16 @@
 // Broker access
 // ---------------------------------------------------------------------------
 
-ModuleAudio* CAudioSource::GetAudioModule() const
+ModuleScene* CAudioSource::GetModuleScene() const
 {
     auto go = GetGameObject();
     Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    ModuleScene* moduleScene = scene ? scene->GetModuleScene() : nullptr;
+    return scene ? scene->GetModuleScene() : nullptr;
+}
+
+ModuleAudio* CAudioSource::GetAudioModule() const
+{
+    ModuleScene* moduleScene = GetModuleScene();
     return moduleScene ? moduleScene->GetAudio() : nullptr;
 }
 
@@ -30,52 +35,52 @@ ModuleAudio* CAudioSource::GetAudioModule() const
 
 void CAudioSource::OnUpdate(float /*deltaTime*/)
 {
-    auto go = GetGameObject();
-    if (!go.IsValid())
-        return;
-
-    Scene* scene = go.GetScene();
-    ModuleScene* moduleScene = scene ? scene->GetModuleScene() : nullptr;
+    ModuleScene* moduleScene = GetModuleScene();
     ModuleAudio* audio = moduleScene ? moduleScene->GetAudio() : nullptr;
-    if (!audio)
+    if (!moduleScene || !audio)
         return;  // headless / test scene — no audio broker wired
 
-    // Editor preview voice maintenance: drop it once the sim starts (the real
-    // voice takes over) or when it finishes, otherwise keep it in sync with
-    // live Inspector tweaks.
-    if (m_previewSound)
-    {
-        if (!moduleScene->IsStopped() || !audio->IsSoundPlaying(m_previewSound))
-        {
-            audio->DestroySound(m_previewSound);
-            m_previewSound = nullptr;
-        }
-        else
-        {
-            audio->SetSoundVolume(m_previewSound, volume);
-            audio->SetSoundPitch(m_previewSound, pitch);
-        }
-    }
+    UpdatePreviewVoice(*moduleScene, *audio);
+    UpdatePlaybackState(*moduleScene, *audio);
+}
 
-    // STOPPED — tear the voice down so the next play session starts cleanly.
-    if (moduleScene->IsStopped())
+// Editor preview voice maintenance: drop it once the sim starts (the real voice
+// takes over) or when it finishes, otherwise keep it in sync with live Inspector tweaks.
+void CAudioSource::UpdatePreviewVoice(ModuleScene& moduleScene, ModuleAudio& audio)
+{
+    if (!m_previewSound)
+        return;
+
+    if (!moduleScene.IsStopped() || !audio.IsSoundPlaying(m_previewSound.Get()))
     {
-        if (m_sound)
-        {
-            audio->DestroySound(m_sound);
-            m_sound = nullptr;
-        }
+        m_previewSound.Reset();
+    }
+    else
+    {
+        audio.SetSoundVolume(m_previewSound.Get(), volume);
+        audio.SetSoundPitch(m_previewSound.Get(), pitch);
+    }
+}
+
+// Play-driven voice state machine: tracks the scene's STOPPED/PAUSED/PLAYING edges
+// and creates/starts/pauses/releases the backend voice accordingly.
+void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& audio)
+{
+    // STOPPED — tear the voice down so the next play session starts cleanly.
+    if (moduleScene.IsStopped())
+    {
+        m_sound.Reset();
         m_started = false;
         m_paused  = false;
         return;
     }
 
     // PAUSED — stop the voice but retain its cursor (resumed on PLAYING).
-    if (moduleScene->IsPaused())
+    if (moduleScene.IsPaused())
     {
         if (m_sound && !m_paused)
         {
-            audio->StopSound(m_sound);
+            audio.StopSound(m_sound.Get());
             m_paused = true;
         }
         return;
@@ -88,12 +93,12 @@ void CAudioSource::OnUpdate(float /*deltaTime*/)
         if (playOnAwake && clip)
         {
             if (!m_sound)
-                m_sound = audio->CreateSound(clip);
+                m_sound = AudioVoice(&audio, audio.CreateSound(clip));
 
             if (m_sound)
             {
-                audio->SetSoundLooping(m_sound, loop);
-                audio->StartSound(m_sound);
+                audio.SetSoundLooping(m_sound.Get(), loop);
+                audio.StartSound(m_sound.Get());
             }
         }
         // Mark started regardless so we don't retry voice creation every frame
@@ -103,15 +108,15 @@ void CAudioSource::OnUpdate(float /*deltaTime*/)
     else if (m_paused && m_sound)
     {
         // Resume from the retained cursor after a pause.
-        audio->StartSound(m_sound);
+        audio.StartSound(m_sound.Get());
         m_paused = false;
     }
 
     // Push live parameters every frame so Inspector tweaks take effect immediately.
     if (m_sound)
     {
-        audio->SetSoundVolume(m_sound, volume);
-        audio->SetSoundPitch(m_sound, pitch);
+        audio.SetSoundVolume(m_sound.Get(), volume);
+        audio.SetSoundPitch(m_sound.Get(), pitch);
     }
 }
 
@@ -119,20 +124,15 @@ void CAudioSource::OnDestroy()
 {
     auto go = GetGameObject();
     Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    ModuleScene* moduleScene = scene ? scene->GetModuleScene() : nullptr;
-    ModuleAudio* audio = moduleScene ? moduleScene->GetAudio() : nullptr;
 
-    // Release both voices. The audio module is constructed before the scene, so it
-    // is guaranteed alive during scene teardown (see Application module order).
-    if (audio)
-    {
-        if (m_sound)        audio->DestroySound(m_sound);
-        if (m_previewSound) audio->DestroySound(m_previewSound);
-    }
-    m_sound        = nullptr;
-    m_previewSound = nullptr;
-    m_started      = false;
-    m_paused       = false;
+    // Release both voices now (on logical destroy) rather than waiting for the member
+    // destructors — a component removed at runtime should stop playing immediately.
+    // Each AudioVoice releases through its captured broker; safe because ModuleAudio
+    // outlives the scene (see AudioVoice / Application module order).
+    m_sound.Reset();
+    m_previewSound.Reset();
+    m_started = false;
+    m_paused  = false;
 
     // Drop our reference to the clip resource (mirrors CMesh::OnDestroy).
     if (clip && scene && scene->GetResourceManager())
@@ -150,34 +150,30 @@ void CAudioSource::PreviewPlay()
     if (!audio || !clip)
         return;
 
-    // One preview at a time — replace any voice still in flight.
-    if (m_previewSound)
-        audio->DestroySound(m_previewSound);
-
-    m_previewSound = audio->CreateSound(clip);
+    // One preview at a time — the move-assign releases any voice still in flight.
+    m_previewSound = AudioVoice(audio, audio->CreateSound(clip));
     if (m_previewSound)
     {
         // Preview is a one-shot audition (never loops) so it cleans up on its own
         // even if the Inspector is closed mid-playback. Volume/pitch follow the
         // current authored values and stay live via OnUpdate.
-        audio->SetSoundLooping(m_previewSound, false);
-        audio->SetSoundVolume(m_previewSound, volume);
-        audio->SetSoundPitch(m_previewSound, pitch);
-        audio->StartSound(m_previewSound);
+        audio->SetSoundLooping(m_previewSound.Get(), false);
+        audio->SetSoundVolume(m_previewSound.Get(), volume);
+        audio->SetSoundPitch(m_previewSound.Get(), pitch);
+        audio->StartSound(m_previewSound.Get());
     }
 }
 
 void CAudioSource::PreviewStop()
 {
-    if (ModuleAudio* audio = GetAudioModule(); audio && m_previewSound)
-        audio->DestroySound(m_previewSound);
-    m_previewSound = nullptr;
+    // AudioVoice releases through its captured broker — no need to re-resolve it.
+    m_previewSound.Reset();
 }
 
 bool CAudioSource::IsPreviewPlaying() const
 {
     ModuleAudio* audio = GetAudioModule();
-    return audio && m_previewSound && audio->IsSoundPlaying(m_previewSound);
+    return audio && m_previewSound && audio->IsSoundPlaying(m_previewSound.Get());
 }
 
 // ---------------------------------------------------------------------------

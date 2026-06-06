@@ -1,19 +1,20 @@
 #pragma once
 
 #include "Engine/Systems/ECS/Component/Component.h"
-#include "Engine/Systems/AudioSystem/SoundHandle.h"
+#include "Engine/Systems/ECS/Component/Types/CAudioSource/include/AudioVoice.h"
 #include "Engine/EngineExport.h"
 
 class ResourceAudio;
 class ModuleAudio;
+class ModuleScene;
 
 /**
  * @brief 2D audio source component.
  *
  * Plays a single audio clip through the engine's audio backend. The component
- * owns exactly one backend voice (SoundHandle), created lazily the first time
- * the scene starts simulating. It never touches miniaudio directly — all calls
- * go through ModuleAudio (reached via the scene broker).
+ * owns exactly one backend voice (AudioVoice, a move-only RAII handle), created
+ * lazily the first time the scene starts simulating. It never touches miniaudio
+ * directly — all calls go through ModuleAudio (reached via the scene broker).
  *
  * Playback is driven from OnUpdate (NOT OnStart): in this engine OnStart fires
  * when the component is *added* in the editor, whereas "play on awake" means
@@ -47,13 +48,20 @@ public:
     NOUS_ENGINE_API bool IsPreviewPlaying() const;
 
 private:
-    // Resolves the audio module through the scene broker (null in headless/test scenes).
+    // Scene/broker resolution (both null in headless/test scenes). GetAudioModule
+    // is GetModuleScene().GetAudio(); kept as a helper for the edit-mode preview path.
+    ModuleScene* GetModuleScene() const;
     ModuleAudio* GetAudioModule() const;
 
-    // Backend voice, created lazily on first play. Opaque token — no miniaudio here.
-    SoundHandle m_sound        = nullptr;
+    // OnUpdate split: edit-mode preview-voice maintenance vs the play-driven voice
+    // state machine. Both run every frame once a scene + audio broker are resolved.
+    void UpdatePreviewVoice(ModuleScene& moduleScene, ModuleAudio& audio);
+    void UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& audio);
+
+    // Backend voice, created lazily on first play. RAII — releases itself on reset/destroy.
+    AudioVoice m_sound;
     // Separate voice for the editor preview button (edit-mode auditioning).
-    SoundHandle m_previewSound = nullptr;
+    AudioVoice m_previewSound;
     // True once playback has begun in the current play session; reset on STOP.
     bool        m_started      = false;
     // True while the voice is paused (cursor retained) so PLAYING can resume it.

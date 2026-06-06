@@ -1,7 +1,6 @@
 #include "MiniaudioBackend.h"
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Systems/AudioSystem/AudioSystem.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
 // miniaudio Library Documentation
@@ -45,7 +44,8 @@ bool MiniaudioBackend::Initialize()
 
     if (result != MA_SUCCESS)
     {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to initialize audio engine. Error code: {}", result);
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to initialize audio engine. Error code: %d",
+            static_cast<int>(result));
         return false;
     }
 
@@ -60,7 +60,9 @@ void MiniaudioBackend::PlayAudio(ResourceAudio* rAudio)
 
     if (result != MA_SUCCESS)
     {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to play music. Error code: %s", result);
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to play audio '%s'. Error code: %d",
+            rAudio->GetAssetsPath().c_str(), static_cast<int>(result));
+        return;
     }
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Successfully playing audio: '%s' from '%s'",
@@ -100,7 +102,7 @@ SoundHandle MiniaudioBackend::CreateSound(ResourceAudio* rAudio)
 
     if (result != MA_SUCCESS)
     {
-        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create sound from '{}'. Error code: {}",
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create sound from '%s'. Error code: %d",
             rAudio->GetAssetsPath().c_str(), static_cast<int>(result));
         NOUS_DELETE(sound, MemoryTag::AUDIO_SYSTEM);
         return nullptr;
@@ -152,30 +154,6 @@ void MiniaudioBackend::SetSoundLooping(SoundHandle sound, bool looping)
 bool MiniaudioBackend::IsSoundPlaying(SoundHandle sound) const
 {
     return sound && ma_sound_is_playing(AsSound(sound)) == MA_TRUE;
-}
-
-bool ProbeAudioFile(const std::string& libraryPath, AudioProbeInfo& outInfo)
-{
-    ma_decoder decoder;
-    const ma_result initResult = ma_decoder_init_file(libraryPath.c_str(), nullptr, &decoder);
-    if (initResult != MA_SUCCESS)
-    {
-        NOUS_WARN_C(CURRENT_CHANNEL, "ProbeAudioFile() failed to open '%s' (code %d)",
-            libraryPath.c_str(), initResult);
-        return false;
-    }
-
-    ma_uint64 frameCount = 0;
-    const ma_result lenResult = ma_decoder_get_length_in_pcm_frames(&decoder, &frameCount);
-
-    outInfo.sampleRate   = static_cast<uint32>(decoder.outputSampleRate);
-    outInfo.channelCount = static_cast<uint8>(decoder.outputChannels);
-    outInfo.durationSec  = (lenResult == MA_SUCCESS && outInfo.sampleRate > 0)
-        ? (static_cast<float>(frameCount) / static_cast<float>(outInfo.sampleRate))
-        : 0.0f;
-
-    ma_decoder_uninit(&decoder);
-    return true;
 }
 
 void MiniaudioBackend::Shutdown() noexcept

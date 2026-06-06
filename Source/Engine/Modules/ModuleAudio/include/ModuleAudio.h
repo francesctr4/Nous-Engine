@@ -6,7 +6,7 @@
 #include "Engine/EngineExport.h"
 #include "Engine/Systems/AudioSystem/SoundHandle.h"
 
-class AudioSystem;
+class IAudioEngineBackend;
 class ResourceAudio;
 
 class ModuleAudio : public Module, public IEventListener
@@ -28,6 +28,9 @@ public:
 
     void OnEvent(const Event& event) override;
 
+    // Fire-and-forget one-shot: the engine owns and self-cleans the voice, so the
+    // caller gets NO handle and NO control (stop/volume/pitch/loop). For anything
+    // beyond a debug ping (gameplay, music) use the CreateSound voice API below.
     NOUS_ENGINE_API void PlayAudio(ResourceAudio* rAudio) const;
 
     // ----------------------------------------
@@ -48,6 +51,10 @@ public:
 
 private:
 
-    AudioSystem* m_audioSystem;
+    // Owned audio backend, created via CreateAudioBackend() in Awake — same shape as
+    // RendererFrontend owning IRendererBackend* / ModuleVideo owning IVideoDecoderBackend*
+    // directly (the old AudioSystem passthrough facade was deleted). Null if creation/init
+    // failed; every forwarder below no-ops (or returns null/false/0) in that case.
+    IAudioEngineBackend* m_backend;
 
 };
