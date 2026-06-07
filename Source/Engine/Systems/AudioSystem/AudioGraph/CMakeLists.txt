@@ -6,6 +6,7 @@ set(CLASS_NAME "AudioGraph")
 target_sources(AudioSystem PRIVATE
         AudioEffectTypes.h
         AudioEffectRegistry.h
+        GainDsp.h
 )
 
 if (NOUS_BUILD_TESTS)

@@ -2,6 +2,7 @@
 
 #include "Engine/Systems/AudioSystem/AudioEngine/IAudioEngineBackend.h"
 #include "Engine/Systems/AudioSystem/AudioEngine/Backends/miniaudio/MiniaudioBusGraph.h"
+#include "Engine/Systems/AudioSystem/AudioEngine/Backends/miniaudio/MiniaudioEffectChain.h"
 
 #include <miniaudio.h>
 
@@ -49,6 +50,10 @@ public:
     float GetBusVolume(AudioBus bus) const override;
     bool  GetBusMute  (AudioBus bus) const override;
     bool  GetBusSolo  (AudioBus bus) const override;
+
+    EffectChainHandle CreateEffectChain(SoundHandle sound, const AudioGraphDesc& desc, AudioBus outputBus) override;
+    void              SetEffectParam(EffectChainHandle chain, int effectIndex, int paramIndex, float value) override;
+    void              DestroyEffectChain(EffectChainHandle chain) noexcept override;
 
 private:
 

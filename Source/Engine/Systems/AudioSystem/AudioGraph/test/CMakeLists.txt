@@ -26,3 +26,24 @@ set_target_properties(${TEST_NAME} PROPERTIES
 add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+set(GAIN_TEST_NAME "t_GainDsp")
+
+add_executable(${GAIN_TEST_NAME}
+        ${GAIN_TEST_NAME}.cpp
+)
+
+target_include_directories(${GAIN_TEST_NAME}
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/Source
+)
+
+target_link_libraries(${GAIN_TEST_NAME}
+        PRIVATE
+        GTest::gtest
+        GTest::gtest_main
+)
+
+add_test(NAME ${GAIN_TEST_NAME} COMMAND ${GAIN_TEST_NAME}
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)

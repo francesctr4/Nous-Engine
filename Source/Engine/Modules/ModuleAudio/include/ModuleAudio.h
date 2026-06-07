@@ -5,7 +5,9 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Systems/AudioSystem/SoundHandle.h"
+#include "Engine/Systems/AudioSystem/EffectChainHandle.h"
 #include "Engine/Systems/AudioSystem/AudioTypes.h"
+#include "Engine/Systems/AudioSystem/AudioGraph/AudioEffectTypes.h"
 
 class IAudioEngineBackend;
 class ResourceAudio;
@@ -78,6 +80,13 @@ public:
     NOUS_ENGINE_API float GetBusVolume(AudioBus bus) const;
     NOUS_ENGINE_API bool  GetBusMute  (AudioBus bus) const;
     NOUS_ENGINE_API bool  GetBusSolo  (AudioBus bus) const;
+
+    // ----------------------------------------
+    // Effect chain (forwarded to the active backend; guard-style no-ops).
+    // ----------------------------------------
+    NOUS_ENGINE_API EffectChainHandle CreateEffectChain(SoundHandle sound, const AudioGraphDesc& desc, AudioBus outputBus) const;
+    NOUS_ENGINE_API void              SetEffectParam(EffectChainHandle chain, int effectIndex, int paramIndex, float value) const;
+    NOUS_ENGINE_API void              DestroyEffectChain(EffectChainHandle chain) const noexcept;
 
 private:
 

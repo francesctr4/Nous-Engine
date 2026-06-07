@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Engine/Systems/AudioSystem/SoundHandle.h"
+#include "Engine/Systems/AudioSystem/EffectChainHandle.h"
 #include "Engine/Systems/AudioSystem/AudioTypes.h"
+#include "Engine/Systems/AudioSystem/AudioGraph/AudioEffectTypes.h"
 
 class ResourceAudio;
 
@@ -63,4 +65,15 @@ public:
     virtual float GetBusVolume(AudioBus bus) const = 0;
     virtual bool  GetBusMute  (AudioBus bus) const = 0;
     virtual bool  GetBusSolo  (AudioBus bus) const = 0;
+
+    // ----------------------------------------------------------------------
+    // Effect chain (Layer 2). A per-voice DSP chain spliced between a voice and
+    // its bus: sound → effect[0] → ... → effect[N-1] → bus. CreateEffectChain
+    // builds + wires the nodes and returns an owning handle (null on failure or
+    // empty desc). DestroyEffectChain reattaches the voice straight to its bus,
+    // then frees the nodes — so the SoundHandle MUST still be alive when called.
+    // ----------------------------------------------------------------------
+    virtual EffectChainHandle CreateEffectChain(SoundHandle sound, const AudioGraphDesc& desc, AudioBus outputBus) = 0;
+    virtual void              SetEffectParam(EffectChainHandle chain, int effectIndex, int paramIndex, float value) = 0;
+    virtual void              DestroyEffectChain(EffectChainHandle chain) noexcept = 0;
 };

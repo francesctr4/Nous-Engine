@@ -239,6 +239,27 @@ bool ModuleAudio::GetBusSolo(AudioBus bus) const
     return m_backend && m_backend->GetBusSolo(bus);
 }
 
+// ---------------------------------------------------------------------------
+// Effect chain (forwarded to the active backend; guard-style no-ops)
+// ---------------------------------------------------------------------------
+
+EffectChainHandle ModuleAudio::CreateEffectChain(SoundHandle sound, const AudioGraphDesc& desc, AudioBus outputBus) const
+{
+    return m_backend ? m_backend->CreateEffectChain(sound, desc, outputBus) : nullptr;
+}
+
+void ModuleAudio::SetEffectParam(EffectChainHandle chain, int effectIndex, int paramIndex, float value) const
+{
+    if (m_backend)
+        m_backend->SetEffectParam(chain, effectIndex, paramIndex, value);
+}
+
+void ModuleAudio::DestroyEffectChain(EffectChainHandle chain) const noexcept
+{
+    if (m_backend)
+        m_backend->DestroyEffectChain(chain);
+}
+
 void ModuleAudio::OnEvent(const Event &event)
 {
     switch (event.type)

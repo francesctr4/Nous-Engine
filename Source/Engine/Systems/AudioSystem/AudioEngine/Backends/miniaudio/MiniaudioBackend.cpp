@@ -255,6 +255,53 @@ float MiniaudioBackend::GetBusVolume(AudioBus bus) const         { return m_busG
 bool  MiniaudioBackend::GetBusMute  (AudioBus bus) const         { return m_busGraph.GetBusMute(bus); }
 bool  MiniaudioBackend::GetBusSolo  (AudioBus bus) const         { return m_busGraph.GetBusSolo(bus); }
 
+// ---------------------------------------------------------------------------
+// Effect chain
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    MiniaudioEffectChain* AsChain(EffectChainHandle chain)
+    {
+        return static_cast<MiniaudioEffectChain*>(chain);
+    }
+}
+
+EffectChainHandle MiniaudioBackend::CreateEffectChain(SoundHandle sound, const AudioGraphDesc& desc, AudioBus bus)
+{
+    if (!sound || desc.empty())
+        return nullptr;
+
+    // Chain output = the voice's bus group, or the engine endpoint for Master / before
+    // the groups exist. (The group still applies bus volume/mute/solo after the chain.)
+    ma_sound_group* group  = m_busGraph.GetGroup(bus);
+    ma_node*        output = group ? reinterpret_cast<ma_node*>(group)
+                                   : ma_engine_get_endpoint(&m_audioEngine);
+
+    auto* chain = NOUS_NEW<MiniaudioEffectChain>(MemoryTag::AUDIO_SYSTEM);
+    if (!chain->Build(&m_audioEngine, reinterpret_cast<ma_node*>(AsSound(sound)), desc, output))
+    {
+        NOUS_DELETE(chain, MemoryTag::AUDIO_SYSTEM);
+        return nullptr;
+    }
+    return chain;
+}
+
+void MiniaudioBackend::SetEffectParam(EffectChainHandle chain, int effectIndex, int paramIndex, float value)
+{
+    if (chain)
+        AsChain(chain)->SetParam(effectIndex, paramIndex, value);
+}
+
+void MiniaudioBackend::DestroyEffectChain(EffectChainHandle chain) noexcept
+{
+    if (!chain)
+        return;
+    MiniaudioEffectChain* c = AsChain(chain);
+    c->Destroy();
+    NOUS_DELETE(c, MemoryTag::AUDIO_SYSTEM);
+}
+
 void MiniaudioBackend::Shutdown() noexcept
 {
     m_busGraph.Shutdown();      // uninit groups before the engine they hang off
