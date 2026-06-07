@@ -101,9 +101,9 @@ void ModuleAudio::PlayAudio(ResourceAudio* rAudio) const
 // Per-voice sound lifecycle (forwarded to the active backend)
 // ---------------------------------------------------------------------------
 
-SoundHandle ModuleAudio::CreateSound(ResourceAudio* rAudio) const
+SoundHandle ModuleAudio::CreateSound(ResourceAudio* rAudio, AudioBus bus) const
 {
-    return m_backend ? m_backend->CreateSound(rAudio) : nullptr;
+    return m_backend ? m_backend->CreateSound(rAudio, bus) : nullptr;
 }
 
 void ModuleAudio::DestroySound(SoundHandle sound) const noexcept
@@ -203,6 +203,40 @@ void ModuleAudio::SetSoundAttenuationModel(SoundHandle sound, AttenuationModel m
 {
     if (m_backend)
         m_backend->SetSoundAttenuationModel(sound, model);
+}
+
+// ---------------------------------------------------------------------------
+// Bus mixer (forwarded to the active backend; guard-style no-ops / defaults)
+// ---------------------------------------------------------------------------
+
+void ModuleAudio::SetBusVolume(AudioBus bus, float volume) const
+{
+    if (m_backend) m_backend->SetBusVolume(bus, volume);
+}
+
+void ModuleAudio::SetBusMute(AudioBus bus, bool mute) const
+{
+    if (m_backend) m_backend->SetBusMute(bus, mute);
+}
+
+void ModuleAudio::SetBusSolo(AudioBus bus, bool solo) const
+{
+    if (m_backend) m_backend->SetBusSolo(bus, solo);
+}
+
+float ModuleAudio::GetBusVolume(AudioBus bus) const
+{
+    return m_backend ? m_backend->GetBusVolume(bus) : 1.0f;
+}
+
+bool ModuleAudio::GetBusMute(AudioBus bus) const
+{
+    return m_backend && m_backend->GetBusMute(bus);
+}
+
+bool ModuleAudio::GetBusSolo(AudioBus bus) const
+{
+    return m_backend && m_backend->GetBusSolo(bus);
 }
 
 void ModuleAudio::OnEvent(const Event &event)

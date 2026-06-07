@@ -10,3 +10,17 @@ enum class AttenuationModel
     Linear,       // linear falloff between min/max distance
     Exponential   // steep falloff
 };
+
+// Mixer bus a voice routes through. Dependency-free (like AttenuationModel) so
+// components, the module, the backend interface, and the editor name it without
+// pulling in miniaudio. Master is the engine endpoint itself (no ma_sound_group);
+// the other four are groups parented to it. Enum value is used as the state index
+// in MiniaudioBusGraph (Master=0 .. Ambient=4) — do not reorder without updating it.
+enum class AudioBus
+{
+    Master,
+    Music,
+    SFX,      // default for CAudioSource
+    UI,
+    Ambient
+};

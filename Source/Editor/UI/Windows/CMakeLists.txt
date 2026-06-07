@@ -1,5 +1,6 @@
 add_subdirectory(AssetsBrowser)
 add_subdirectory(AudioGraphEditor)
+add_subdirectory(AudioMixer)
 add_subdirectory(ConsoleWindow)
 add_subdirectory(GameViewport)
 add_subdirectory(HierarchyWindow)

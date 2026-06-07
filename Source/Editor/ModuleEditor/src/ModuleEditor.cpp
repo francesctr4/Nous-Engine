@@ -33,6 +33,7 @@
 #include "Editor/UI/Windows/MemoryWindow/include/MemoryWindow.h"
 #include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
 #include "Editor/UI/Windows/AudioGraphEditor/include/AudioGraphEditor.h"
+#include "Editor/UI/Windows/AudioMixer/include/AudioMixerWindow.h"
 
 #pragma endregion
 
@@ -158,6 +159,7 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(NOUS_NEW<MemoryWindow>(MemoryTag::EDITOR, "Memory Manager", this));
 	AddEditorWindow(NOUS_NEW<TextEditorWindow>(MemoryTag::EDITOR, "Text Editor", this));
 	AddEditorWindow(NOUS_NEW<AudioGraphEditor>(MemoryTag::EDITOR, "Audio Graph Editor", this));
+	AddEditorWindow(NOUS_NEW<AudioMixerWindow>(MemoryTag::EDITOR, "Audio Mixer", this));
 
 	return true;
 }

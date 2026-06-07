@@ -36,6 +36,28 @@ namespace
         if (s == "Exponential") return AttenuationModel::Exponential;
         return AttenuationModel::Inverse;
     }
+
+    const char* BusToString(AudioBus b)
+    {
+        switch (b)
+        {
+            case AudioBus::Master:  return "Master";
+            case AudioBus::Music:   return "Music";
+            case AudioBus::UI:      return "UI";
+            case AudioBus::Ambient: return "Ambient";
+            case AudioBus::SFX:     // fallthrough — default
+            default:                return "SFX";
+        }
+    }
+
+    AudioBus BusFromString(const std::string& s)
+    {
+        if (s == "Master")  return AudioBus::Master;
+        if (s == "Music")   return AudioBus::Music;
+        if (s == "UI")      return AudioBus::UI;
+        if (s == "Ambient") return AudioBus::Ambient;
+        return AudioBus::SFX;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +141,7 @@ void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& au
         if (playOnAwake && clip)
         {
             if (!m_sound)
-                m_sound = AudioVoice(&audio, audio.CreateSound(clip));
+                m_sound = AudioVoice(&audio, audio.CreateSound(clip, targetBus));
 
             if (m_sound)
             {
@@ -192,7 +214,7 @@ void CAudioSource::PreviewPlay()
         return;
 
     // One preview at a time — the move-assign releases any voice still in flight.
-    m_previewSound = AudioVoice(audio, audio->CreateSound(clip));
+    m_previewSound = AudioVoice(audio, audio->CreateSound(clip, targetBus));
     if (m_previewSound)
     {
         // Preview is a one-shot audition (never loops) so it cleans up on its own
@@ -272,6 +294,7 @@ JsonObject CAudioSource::Serialize() const
     root.Set("minDistance", minDistance);
     root.Set("maxDistance", maxDistance);
     root.Set("attenuation", AttenuationToString(attenuation));
+    root.Set("targetBus",   BusToString(targetBus));
     return root;
 }
 
@@ -286,6 +309,7 @@ void CAudioSource::Deserialize(const JsonObject& obj)
     minDistance = obj.GetFloat("minDistance", minDistance);
     maxDistance = obj.GetFloat("maxDistance", maxDistance);
     attenuation = AttenuationFromString(obj.GetString("attenuation", AttenuationToString(attenuation)));
+    targetBus   = BusFromString(obj.GetString("targetBus", BusToString(targetBus)));
 
     const std::string assetPath   = obj.GetString("assetPath");
     const std::string libraryPath = obj.GetString("libraryPath");

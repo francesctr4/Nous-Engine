@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Systems/AudioSystem/AudioEngine/IAudioEngineBackend.h"
+#include "Engine/Systems/AudioSystem/AudioEngine/Backends/miniaudio/MiniaudioBusGraph.h"
 
 #include <miniaudio.h>
 
@@ -18,7 +19,7 @@ public:
     void Shutdown() noexcept override;
 
     // Per-voice sound lifecycle. The handle is a heap-allocated ma_sound.
-    SoundHandle CreateSound(ResourceAudio* rAudio) override;
+    SoundHandle CreateSound(ResourceAudio* rAudio, AudioBus bus) override;
     void        DestroySound(SoundHandle sound) noexcept override;
 
     void        StartSound(SoundHandle sound) override;
@@ -42,8 +43,17 @@ public:
     void SetSoundMaxDistance     (SoundHandle sound, float distance) override;
     void SetSoundAttenuationModel(SoundHandle sound, AttenuationModel model) override;
 
+    void  SetBusVolume(AudioBus bus, float volume) override;
+    void  SetBusMute  (AudioBus bus, bool mute) override;
+    void  SetBusSolo  (AudioBus bus, bool solo) override;
+    float GetBusVolume(AudioBus bus) const override;
+    bool  GetBusMute  (AudioBus bus) const override;
+    bool  GetBusSolo  (AudioBus bus) const override;
+
 private:
 
     ma_engine m_audioEngine;
+
+    MiniaudioBusGraph m_busGraph;
 
 };

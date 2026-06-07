@@ -38,7 +38,7 @@ public:
     // Per-voice sound lifecycle — the surface CAudioSource drives. Components
     // hold the returned opaque handle and never touch miniaudio directly.
     // ----------------------------------------
-    NOUS_ENGINE_API SoundHandle CreateSound(ResourceAudio* rAudio) const;
+    NOUS_ENGINE_API SoundHandle CreateSound(ResourceAudio* rAudio, AudioBus bus) const;
     NOUS_ENGINE_API void        DestroySound(SoundHandle sound) const noexcept;
 
     NOUS_ENGINE_API void        StartSound(SoundHandle sound) const;
@@ -67,6 +67,17 @@ public:
     NOUS_ENGINE_API void SetSoundMinDistance     (SoundHandle sound, float distance) const;
     NOUS_ENGINE_API void SetSoundMaxDistance     (SoundHandle sound, float distance) const;
     NOUS_ENGINE_API void SetSoundAttenuationModel(SoundHandle sound, AttenuationModel model) const;
+
+    // ----------------------------------------
+    // Bus mixer (Step 6) — driven by the editor AudioMixerWindow. Getters return
+    // safe defaults (1.0 / false) when there is no backend.
+    // ----------------------------------------
+    NOUS_ENGINE_API void  SetBusVolume(AudioBus bus, float volume) const;
+    NOUS_ENGINE_API void  SetBusMute  (AudioBus bus, bool mute) const;
+    NOUS_ENGINE_API void  SetBusSolo  (AudioBus bus, bool solo) const;
+    NOUS_ENGINE_API float GetBusVolume(AudioBus bus) const;
+    NOUS_ENGINE_API bool  GetBusMute  (AudioBus bus) const;
+    NOUS_ENGINE_API bool  GetBusSolo  (AudioBus bus) const;
 
 private:
 

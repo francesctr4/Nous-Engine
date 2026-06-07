@@ -1,6 +1,8 @@
 target_sources(AudioSystem PRIVATE
         MiniaudioBackend.cpp
         MiniaudioBackend.h
+        MiniaudioBusGraph.cpp
+        MiniaudioBusGraph.h
 )
 
 # Include miniaudio

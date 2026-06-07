@@ -328,6 +328,18 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
         }
     }
 
+    // Bus routing (Step 6). Order MUST match the AudioBus enum
+    // (Master, Music, SFX, UI, Ambient).
+    ImGui::Spacing();
+    static constexpr std::array<const char*, 5> busNames = {
+        "Master", "Music", "SFX", "UI", "Ambient"
+    };
+    if (int currentBus = static_cast<int>(cAudioSource->targetBus);
+        ImGui::Combo("Output Bus", &currentBus, busNames.data(), busNames.size()))
+    {
+        cAudioSource->targetBus = static_cast<AudioBus>(currentBus);
+    }
+
     // Edit-mode preview — audition the clip without entering play mode.
     ImGui::Spacing();
     const bool hasClip = cAudioSource->clip != nullptr;

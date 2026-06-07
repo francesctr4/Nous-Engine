@@ -218,3 +218,39 @@ TEST_F(t_CAudioSource, Deserialize_MissingSpatialKeys_KeepsDefaults)
     EXPECT_FLOAT_EQ(a.maxDistance, 50.0f);
     EXPECT_EQ(a.attenuation, AttenuationModel::Inverse);
 }
+
+// =============================================================================
+// Bus routing (Step 6)
+// =============================================================================
+
+TEST_F(t_CAudioSource, DefaultTargetBus_IsSFX)
+{
+    GameObject go = scene->CreateGameObject("Audio");
+    go.AddComponent<CAudioSource>();
+    EXPECT_EQ(go.GetComponent<CAudioSource>().targetBus, AudioBus::SFX);
+}
+
+TEST_F(t_CAudioSource, SerializeRoundTrip_PreservesTargetBus)
+{
+    GameObject src = scene->CreateGameObject("Src");
+    auto& a = src.AddComponent<CAudioSource>();
+    a.targetBus = AudioBus::Music;
+
+    const JsonObject json = a.Serialize();
+
+    GameObject dst = scene->CreateGameObject("Dst");
+    auto& b = dst.AddComponent<CAudioSource>();
+    b.Deserialize(json);
+
+    EXPECT_EQ(b.targetBus, AudioBus::Music);
+}
+
+TEST_F(t_CAudioSource, Deserialize_MissingTargetBus_KeepsSFXDefault)
+{
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    JsonObject json;
+    json.Set("volume", 0.5f);  // no targetBus key
+    a.Deserialize(json);
+    EXPECT_EQ(a.targetBus, AudioBus::SFX);
+}

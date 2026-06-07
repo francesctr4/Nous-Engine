@@ -21,7 +21,7 @@ public:
     // The returned handle is owned by the caller and must be released with
     // DestroySound. All setters/queries no-op (or return false) on a null handle.
     // ----------------------------------------------------------------------
-    virtual SoundHandle CreateSound(ResourceAudio* rAudio) = 0;
+    virtual SoundHandle CreateSound(ResourceAudio* rAudio, AudioBus bus) = 0;
     virtual void        DestroySound(SoundHandle sound) noexcept = 0;
 
     virtual void        StartSound(SoundHandle sound) = 0;
@@ -52,4 +52,15 @@ public:
     virtual void SetSoundMinDistance     (SoundHandle sound, float distance) = 0;
     virtual void SetSoundMaxDistance     (SoundHandle sound, float distance) = 0;
     virtual void SetSoundAttenuationModel(SoundHandle sound, AttenuationModel model) = 0;
+
+    // ----------------------------------------------------------------------
+    // Bus mixer (Step 6). Four named buses (Music/SFX/UI/Ambient) parented to
+    // the engine master; Master is the engine endpoint. Volume is linear gain.
+    // ----------------------------------------------------------------------
+    virtual void  SetBusVolume(AudioBus bus, float volume) = 0;
+    virtual void  SetBusMute  (AudioBus bus, bool mute) = 0;
+    virtual void  SetBusSolo  (AudioBus bus, bool solo) = 0;
+    virtual float GetBusVolume(AudioBus bus) const = 0;
+    virtual bool  GetBusMute  (AudioBus bus) const = 0;
+    virtual bool  GetBusSolo  (AudioBus bus) const = 0;
 };

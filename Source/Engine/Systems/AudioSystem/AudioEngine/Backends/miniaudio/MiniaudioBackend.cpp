@@ -51,6 +51,14 @@ bool MiniaudioBackend::Initialize()
     }
 
     NOUS_INFO_C(CURRENT_CHANNEL, "miniaudio engine initialized successfully.");
+
+    if (!m_busGraph.Initialize(&m_audioEngine))
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to initialize audio bus graph.");
+        ma_engine_uninit(&m_audioEngine);
+        return false;
+    }
+
     return true;
 }
 
@@ -83,7 +91,7 @@ namespace
     }
 }
 
-SoundHandle MiniaudioBackend::CreateSound(ResourceAudio* rAudio)
+SoundHandle MiniaudioBackend::CreateSound(ResourceAudio* rAudio, AudioBus bus)
 {
     if (!rAudio)
         return nullptr;
@@ -100,7 +108,8 @@ SoundHandle MiniaudioBackend::CreateSound(ResourceAudio* rAudio)
     ma_sound* sound = NOUS_NEW<ma_sound>(MemoryTag::AUDIO_SYSTEM);
 
     const ma_result result = ma_sound_init_from_file(
-        &m_audioEngine, rAudio->GetLibraryPath().c_str(), flags, nullptr, nullptr, sound);
+        &m_audioEngine, rAudio->GetLibraryPath().c_str(), flags,
+        m_busGraph.GetGroup(bus), nullptr, sound);
 
     if (result != MA_SUCCESS)
     {
@@ -235,8 +244,20 @@ void MiniaudioBackend::SetSoundAttenuationModel(SoundHandle sound, AttenuationMo
         ma_sound_set_attenuation_model(AsSound(sound), ToMaAttenuation(model));
 }
 
+// ---------------------------------------------------------------------------
+// Bus mixer (forwarded to the owned MiniaudioBusGraph)
+// ---------------------------------------------------------------------------
+
+void  MiniaudioBackend::SetBusVolume(AudioBus bus, float volume) { m_busGraph.SetBusVolume(bus, volume); }
+void  MiniaudioBackend::SetBusMute  (AudioBus bus, bool mute)    { m_busGraph.SetBusMute(bus, mute); }
+void  MiniaudioBackend::SetBusSolo  (AudioBus bus, bool solo)    { m_busGraph.SetBusSolo(bus, solo); }
+float MiniaudioBackend::GetBusVolume(AudioBus bus) const         { return m_busGraph.GetBusVolume(bus); }
+bool  MiniaudioBackend::GetBusMute  (AudioBus bus) const         { return m_busGraph.GetBusMute(bus); }
+bool  MiniaudioBackend::GetBusSolo  (AudioBus bus) const         { return m_busGraph.GetBusSolo(bus); }
+
 void MiniaudioBackend::Shutdown() noexcept
 {
+    m_busGraph.Shutdown();      // uninit groups before the engine they hang off
     ma_engine_uninit(&m_audioEngine);
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Audio engine shutdown successfully.");

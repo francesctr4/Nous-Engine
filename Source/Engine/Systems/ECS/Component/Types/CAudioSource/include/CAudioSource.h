@@ -39,6 +39,11 @@ public:
     float            maxDistance = 50.0f;
     AttenuationModel attenuation = AttenuationModel::Inverse;
 
+    // ---- Bus routing (Step 6) ----
+    // Mixer bus this source plays through. Read when the voice is (re)created, so
+    // changing it mid-play applies on the next play session (see spec Limitations).
+    AudioBus targetBus = AudioBus::SFX;
+
     // Lifecycle
     NOUS_ENGINE_API void OnUpdate(float deltaTime) override;
     NOUS_ENGINE_API void OnDestroy() override;

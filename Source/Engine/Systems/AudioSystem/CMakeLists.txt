@@ -19,4 +19,5 @@ target_compile_definitions(${CLASS_NAME} PRIVATE
 )
 
 add_subdirectory(AudioEngine)
+add_subdirectory(AudioMixer)
 add_subdirectory(AudioProbe)
