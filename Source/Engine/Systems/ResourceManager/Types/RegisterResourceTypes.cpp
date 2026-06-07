@@ -13,6 +13,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ImporterAudio.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ImporterVideo.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceScene/include/ImporterScene.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ImporterAudioGraph.h"
 
 // Resources
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
@@ -21,6 +22,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
 
 namespace
 {
@@ -36,6 +38,9 @@ namespace
     // Scenes own no runtime resource object and no peer-resource pointers, so
     // their cleanup priority is inert; kept last for readability.
     constexpr int k_PrioScene    = 6;
+    // AudioGraph owns no peer-resource pointers (effects are self-contained), so
+    // its cleanup priority is inert; ordered after scene for readability.
+    constexpr int k_PrioAudioGraph = 7;
 }
 
 void RegisterResourceTypes(TypeRegistry& registry)
@@ -176,6 +181,24 @@ void RegisterResourceTypes(TypeRegistry& registry)
         // Resource lifecycle. Null guards in the resource manager already cover
         // the absent create/destroy callbacks.
         d.display.color[0] = 0.25f; d.display.color[1] = 0.55f; d.display.color[2] = 0.95f; d.display.color[3] = 1.0f;
+        registry.Register(std::move(d));
+    }
+
+    // ---------- AUDIO GRAPH ----------
+    {
+        TypeDescriptor d;
+        d.type = ResourceType::AUDIO_GRAPH;
+        d.name = "Audio Graph";
+        d.libraryFolder = "Library/AudioGraphs/";
+        d.libraryFixedExtension = "nafx";
+        d.sourceExtensions = { "nafx" };
+        d.libExtPolicy = LibraryExtPolicy::FIXED;
+        d.memoryTag = MemoryTag::RESOURCE_AUDIO;   // reuse audio tag (MVP; dedicated tag is a later cleanup)
+        d.cleanupPriority = k_PrioAudioGraph;
+        d.SetImporter<ImporterAudioGraph>();
+        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceAudioGraph>(MemoryTag::RESOURCE_AUDIO, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); };
+        d.display.color[0] = 0.20f; d.display.color[1] = 0.85f; d.display.color[2] = 0.85f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }
 }

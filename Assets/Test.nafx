@@ -1,0 +1,13 @@
+{
+    "effects": [
+        {
+            "type": "LowPass",
+            "params": {
+                "cutoff": 800.0
+            }
+        }
+    ],
+    "editor": {
+        "nodes": []
+    }
+}

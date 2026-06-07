@@ -15,6 +15,7 @@ enum class ResourceType : int8_t
     // (which store the integer enum value) keep resolving.
     SCENE,
     VIDEO,
+    AUDIO_GRAPH,
 
     ALL_TYPES
 };
