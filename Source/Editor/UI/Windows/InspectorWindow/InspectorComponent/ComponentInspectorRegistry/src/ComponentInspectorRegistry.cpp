@@ -30,6 +30,7 @@
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioListener/include/CAudioListener.h"
 #include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/VideoSystem/AudioExtract/include/AudioExtract.h"
@@ -295,6 +296,49 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
     else
     {
         ImGui::TextDisabled("No clip assigned.");
+    }
+
+    // Effect graph slot — assignable by dragging a .nafx from the Assets Browser.
+    ImGui::Spacing();
+    ImGui::Text("Effect Graph:");
+    ImGui::SameLine();
+    ImGui::Button(cAudioSource->effectGraph ? cAudioSource->effectGraph->GetName().c_str() : "None",
+                  ImVec2(200.0f, 0.0f));
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+        {
+            const auto* data = static_cast<const char*>(payload->Data);
+            const char* end = data + payload->DataSize;
+            while (data < end)
+            {
+                std::string path(data);
+                data += path.size() + 1;
+                if (std::filesystem::path(path).extension().string() == ".nafx")
+                {
+                    if (ResourceBase* r = rm->CreateResource(path))
+                    {
+                        if (cAudioSource->effectGraph)
+                            rm->UnloadResource(cAudioSource->effectGraph->GetUID());
+                        cAudioSource->effectGraph = down_cast<ResourceAudioGraph*>(r);
+                    }
+                    break;
+                }
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
+    if (cAudioSource->effectGraph)
+    {
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Clear##fx"))
+        {
+            rm->UnloadResource(cAudioSource->effectGraph->GetUID());
+            cAudioSource->effectGraph = nullptr;
+        }
+        // Re-check: Clear may have just nulled it this frame.
+        if (cAudioSource->effectGraph)
+            ImGui::TextDisabled("%zu effect(s)", cAudioSource->effectGraph->effects.size());
     }
 
     ImGui::DragFloat("Volume", &cAudioSource->volume, 0.01f, 0.0f, 2.0f, "%.2f");

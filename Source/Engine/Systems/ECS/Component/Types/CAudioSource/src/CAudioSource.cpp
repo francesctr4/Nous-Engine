@@ -10,6 +10,7 @@
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceType.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
@@ -78,6 +79,30 @@ ModuleAudio* CAudioSource::GetAudioModule() const
 }
 
 // ---------------------------------------------------------------------------
+// Effect chain helpers
+// ---------------------------------------------------------------------------
+
+void CAudioSource::BuildChain(ModuleAudio& audio, const AudioVoice& voice, EffectChainHandle& outChain)
+{
+    if (outChain || !voice)                                   // already built, or no voice
+        return;
+    if (!effectGraph || effectGraph->effects.empty())         // dry — no chain
+        return;
+
+    outChain = audio.CreateEffectChain(voice.Get(), effectGraph->effects, targetBus);
+    m_chainGeneration = effectGraph->generation;
+}
+
+void CAudioSource::DestroyChain(ModuleAudio& audio, EffectChainHandle& chain)
+{
+    if (chain)
+    {
+        audio.DestroyEffectChain(chain);
+        chain = nullptr;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
@@ -101,6 +126,7 @@ void CAudioSource::UpdatePreviewVoice(ModuleScene& moduleScene, ModuleAudio& aud
 
     if (!moduleScene.IsStopped() || !audio.IsSoundPlaying(m_previewSound.Get()))
     {
+        DestroyChain(audio, m_previewChain);   // before the voice it hangs off
         m_previewSound.Reset();
     }
     else
@@ -117,6 +143,7 @@ void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& au
     // STOPPED — tear the voice down so the next play session starts cleanly.
     if (moduleScene.IsStopped())
     {
+        DestroyChain(audio, m_chain);   // before m_sound.Reset() — chain reattaches the voice to its bus
         m_sound.Reset();
         m_started = false;
         m_paused  = false;
@@ -145,6 +172,7 @@ void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& au
 
             if (m_sound)
             {
+                BuildChain(audio, m_sound, m_chain);   // splice effects between the voice and its bus
                 audio.SetSoundLooping(m_sound.Get(), loop);
                 audio.StartSound(m_sound.Get());
             }
@@ -180,6 +208,19 @@ void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& au
             audio.SetSoundMaxDistance(m_sound.Get(), maxDistance);
             audio.SetSoundAttenuationModel(m_sound.Get(), attenuation);
         }
+
+        // Effect-graph live rebuild: the editor bumps generation on save (Layer 3),
+        // so this is dormant in Layer 2. Also covers the first-build case where a
+        // graph is assigned after the voice already exists.
+        if (effectGraph && m_chain && effectGraph->generation != m_chainGeneration)
+        {
+            DestroyChain(audio, m_chain);
+            BuildChain(audio, m_sound, m_chain);
+        }
+        else if (effectGraph && !m_chain && !effectGraph->effects.empty())
+        {
+            BuildChain(audio, m_sound, m_chain);
+        }
     }
 }
 
@@ -187,6 +228,14 @@ void CAudioSource::OnDestroy()
 {
     auto go = GetGameObject();
     Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
+
+    // Destroy chains before the voices they hang off (chain reattaches the voice to
+    // its bus on teardown). ModuleAudio outlives the scene, so the broker resolves.
+    if (ModuleAudio* audio = GetAudioModule())
+    {
+        DestroyChain(*audio, m_chain);
+        DestroyChain(*audio, m_previewChain);
+    }
 
     // Release both voices now (on logical destroy) rather than waiting for the member
     // destructors — a component removed at runtime should stop playing immediately.
@@ -201,6 +250,11 @@ void CAudioSource::OnDestroy()
     if (clip && scene && scene->GetResourceManager())
         scene->GetResourceManager()->UnloadResource(clip->GetUID());
     clip = nullptr;
+
+    // Drop our reference to the effect-graph resource (mirrors the clip).
+    if (effectGraph && scene && scene->GetResourceManager())
+        scene->GetResourceManager()->UnloadResource(effectGraph->GetUID());
+    effectGraph = nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,6 +276,7 @@ void CAudioSource::PreviewPlay()
         // current authored values and stay live via OnUpdate.
         audio->SetSoundLooping(m_previewSound.Get(), false);
         audio->SetSoundSpatializationEnabled(m_previewSound.Get(), false);  // preview is 2D
+        BuildChain(*audio, m_previewSound, m_previewChain);                  // audition WITH effects
         audio->SetSoundVolume(m_previewSound.Get(), volume);
         audio->SetSoundPitch(m_previewSound.Get(), pitch);
         audio->StartSound(m_previewSound.Get());
@@ -230,6 +285,10 @@ void CAudioSource::PreviewPlay()
 
 void CAudioSource::PreviewStop()
 {
+    // Destroy the chain before the voice it hangs off (chain reattaches the voice).
+    if (ModuleAudio* audio = GetAudioModule())
+        DestroyChain(*audio, m_previewChain);
+
     // AudioVoice releases through its captured broker — no need to re-resolve it.
     m_previewSound.Reset();
 }
@@ -285,6 +344,14 @@ JsonObject CAudioSource::Serialize() const
         root.Set("resourceUID", static_cast<double>(clip->GetUID()));
     }
 
+    // Effect graph reference (same asset+library+UID pattern as the clip).
+    root.Set("effectGraphAssetPath", effectGraph ? effectGraph->GetAssetsPath() : "");
+    if (effectGraph)
+    {
+        root.Set("effectGraphLibraryPath", effectGraph->GetLibraryPath());
+        root.Set("effectGraphUID",         static_cast<double>(effectGraph->GetUID()));
+    }
+
     root.Set("volume",      volume);
     root.Set("pitch",       pitch);
     root.Set("loop",        loop);
@@ -311,32 +378,54 @@ void CAudioSource::Deserialize(const JsonObject& obj)
     attenuation = AttenuationFromString(obj.GetString("attenuation", AttenuationToString(attenuation)));
     targetBus   = BusFromString(obj.GetString("targetBus", BusToString(targetBus)));
 
-    const std::string assetPath   = obj.GetString("assetPath");
-    const std::string libraryPath = obj.GetString("libraryPath");
-    const uint32      resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
-
-    if (assetPath.empty() && libraryPath.empty())
-        return;  // no clip authored
-
     auto go = GetGameObject();
     Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
     ModuleResourceManager* rm = scene ? scene->GetResourceManager() : nullptr;
     if (!rm)
         return;
 
-    // GAME path: load straight from Library without reading a .meta file.
-    if (!libraryPath.empty() && resourceUID != 0)
+    // ── Clip ──
+    const std::string assetPath   = obj.GetString("assetPath");
+    const std::string libraryPath = obj.GetString("libraryPath");
+    const uint32      resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
+
+    if (!assetPath.empty() || !libraryPath.empty())
     {
-        if (ResourceBase* r = rm->CreateResourceFromLibrary(
-                resourceUID, ResourceType::AUDIO,
-                nous::engine::filesystem::GetFilename(assetPath), assetPath, libraryPath))
-            clip = down_cast<ResourceAudio*>(r);
+        // GAME path: load straight from Library without reading a .meta file.
+        if (!libraryPath.empty() && resourceUID != 0)
+        {
+            if (ResourceBase* r = rm->CreateResourceFromLibrary(
+                    resourceUID, ResourceType::AUDIO,
+                    nous::engine::filesystem::GetFilename(assetPath), assetPath, libraryPath))
+                clip = down_cast<ResourceAudio*>(r);
+        }
+
+        // EDITOR path / fallback: resolve via the asset path.
+        if (!clip && !assetPath.empty())
+        {
+            if (ResourceBase* r = rm->CreateResource(assetPath))
+                clip = down_cast<ResourceAudio*>(r);
+        }
     }
 
-    // EDITOR path / fallback: resolve via the asset path.
-    if (!clip && !assetPath.empty())
+    // ── Effect graph (resolved the same way; a source may have a graph and no clip) ──
+    const std::string fxAssetPath   = obj.GetString("effectGraphAssetPath");
+    const std::string fxLibraryPath = obj.GetString("effectGraphLibraryPath");
+    const uint32      fxUID         = static_cast<uint32>(obj.GetDouble("effectGraphUID", 0.0));
+
+    if (!fxAssetPath.empty() || !fxLibraryPath.empty())
     {
-        if (ResourceBase* r = rm->CreateResource(assetPath))
-            clip = down_cast<ResourceAudio*>(r);
+        if (!fxLibraryPath.empty() && fxUID != 0)
+        {
+            if (ResourceBase* r = rm->CreateResourceFromLibrary(
+                    fxUID, ResourceType::AUDIO_GRAPH,
+                    nous::engine::filesystem::GetFilename(fxAssetPath), fxAssetPath, fxLibraryPath))
+                effectGraph = down_cast<ResourceAudioGraph*>(r);
+        }
+        if (!effectGraph && !fxAssetPath.empty())
+        {
+            if (ResourceBase* r = rm->CreateResource(fxAssetPath))
+                effectGraph = down_cast<ResourceAudioGraph*>(r);
+        }
     }
 }

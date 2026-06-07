@@ -3,9 +3,13 @@
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/AudioVoice.h"
 #include "Engine/Systems/AudioSystem/AudioTypes.h"
+#include "Engine/Systems/AudioSystem/EffectChainHandle.h"
 #include "Engine/EngineExport.h"
 
+#include <cstdint>
+
 class ResourceAudio;
+class ResourceAudioGraph;
 class ModuleAudio;
 class ModuleScene;
 
@@ -44,6 +48,11 @@ public:
     // changing it mid-play applies on the next play session (see spec Limitations).
     AudioBus targetBus = AudioBus::SFX;
 
+    // ---- Effect graph (Layer 2) ----
+    // Optional DSP chain spliced between this source's voice and its bus. Resolved
+    // from the .nafx asset on Deserialize / Inspector drop. null = dry (no effects).
+    ResourceAudioGraph* effectGraph = nullptr;
+
     // Lifecycle
     NOUS_ENGINE_API void OnUpdate(float deltaTime) override;
     NOUS_ENGINE_API void OnDestroy() override;
@@ -78,10 +87,22 @@ private:
     void UpdatePreviewVoice(ModuleScene& moduleScene, ModuleAudio& audio);
     void UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& audio);
 
+    // Builds/destroys the effect chain on the given voice. DestroyChain MUST run
+    // before the matching voice is reset (the chain reattaches the voice to its bus
+    // on teardown, so the voice must still be alive).
+    void BuildChain(ModuleAudio& audio, const AudioVoice& voice, EffectChainHandle& outChain);
+    void DestroyChain(ModuleAudio& audio, EffectChainHandle& chain);
+
     // Backend voice, created lazily on first play. RAII — releases itself on reset/destroy.
     AudioVoice m_sound;
     // Separate voice for the editor preview button (edit-mode auditioning).
     AudioVoice m_previewSound;
+
+    // Effect chains spliced onto the play / preview voices (null = none).
+    EffectChainHandle m_chain         = nullptr;
+    EffectChainHandle m_previewChain  = nullptr;
+    // ResourceAudioGraph::generation the play-voice chain was built from (live rebuild).
+    uint32_t          m_chainGeneration = 0;
     // True once playback has begun in the current play session; reset on STOP.
     bool        m_started      = false;
     // True while the voice is paused (cursor retained) so PLAYING can resume it.
