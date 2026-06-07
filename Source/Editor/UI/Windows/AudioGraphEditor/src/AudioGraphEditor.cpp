@@ -1,9 +1,19 @@
 #include "Editor/UI/Windows/AudioGraphEditor/include/AudioGraphEditor.h"
 
+#include "Editor/EditorContext.h"
+#include "Engine/Core/Globals.h"   // down_cast
+#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ImporterAudioGraph.h"
+
 #include <imgui.h>
+#include <glm/glm.hpp>
 
 #include <algorithm>
+#include <filesystem>
 #include <span>
+#include <string>
+#include <unordered_map>
 
 namespace ed = ax::NodeEditor;
 
@@ -77,6 +87,205 @@ void AudioGraphEditor::OnParamEdited(const AudioNode& /*node*/, int /*paramIndex
 {
 }
 
+// ---------------------------------------------------------------------------
+// Asset binding: linearize / load / save / new / open
+// ---------------------------------------------------------------------------
+
+ModuleResourceManager* AudioGraphEditor::ResourceManager() const
+{
+    return editorContext ? editorContext->GetResourceManager() : nullptr;
+}
+
+void AudioGraphEditor::BuildProxies(std::vector<nous::audio_editor::LinNode>& outNodes,
+                                    std::vector<nous::audio_editor::LinLink>& outLinks) const
+{
+    using namespace nous::audio_editor;
+    outNodes.clear();
+    outLinks.clear();
+
+    for (const AudioNode& n : m_nodes)
+    {
+        const LinNodeKind k = n.kind == AudioNodeKind::AudioSource ? LinNodeKind::Source
+                            : n.kind == AudioNodeKind::AudioOutput ? LinNodeKind::Output
+                                                                   : LinNodeKind::Effect;
+        const AudioEffectType et = IsEffect(n.kind) ? ToEffectType(n.kind) : AudioEffectType::Gain;
+        outNodes.push_back({ static_cast<uint64_t>(n.id.Get()), k, et, n.params });
+    }
+
+    // Resolve each link's endpoints to node ids by pin ownership. imgui-node-editor
+    // does not guarantee which of inputID/outputID is the output pin, so check both
+    // pin lists: a node owning an *output* pin is the "from", an *input* pin the "to".
+    for (const AudioGraphLink& l : m_links)
+    {
+        uint64_t fromNode = 0;
+        uint64_t toNode   = 0;
+        for (const AudioNode& n : m_nodes)
+        {
+            for (const AudioNodePin& p : n.outputs)
+                if (p.id == l.inputID || p.id == l.outputID) fromNode = static_cast<uint64_t>(n.id.Get());
+            for (const AudioNodePin& p : n.inputs)
+                if (p.id == l.inputID || p.id == l.outputID) toNode = static_cast<uint64_t>(n.id.Get());
+        }
+        if (fromNode && toNode)
+            outLinks.push_back({ fromNode, toNode });
+    }
+}
+
+bool AudioGraphEditor::LinearizeCurrent(AudioGraphDesc& outDesc) const
+{
+    std::vector<nous::audio_editor::LinNode> ln;
+    std::vector<nous::audio_editor::LinLink> ll;
+    BuildProxies(ln, ll);
+    return nous::audio_editor::Linearize(ln, ll, outDesc);
+}
+
+std::vector<AudioNode*> AudioGraphEditor::ChainOrderedNodes()
+{
+    std::vector<nous::audio_editor::LinNode> ln;
+    std::vector<nous::audio_editor::LinLink> ll;
+    BuildProxies(ln, ll);
+
+    std::vector<uint64_t> order;
+    if (!nous::audio_editor::LinearizeOrder(ln, ll, order))
+        return {};
+
+    std::unordered_map<uint64_t, AudioNode*> byId;
+    for (AudioNode& n : m_nodes)
+        byId[static_cast<uint64_t>(n.id.Get())] = &n;
+
+    std::vector<AudioNode*> result;
+    result.reserve(order.size());
+    for (uint64_t id : order)
+    {
+        auto it = byId.find(id);
+        if (it == byId.end())
+            return {};
+        result.push_back(it->second);
+    }
+    return result;
+}
+
+void AudioGraphEditor::LoadFromResource(ResourceAudioGraph* graph)
+{
+    // Release the previously-open asset's ref before swapping.
+    if (ModuleResourceManager* rm = ResourceManager())
+        if (m_graph && m_graph != graph)
+            rm->UnloadResource(m_graph->GetUID());
+
+    m_nodes.clear();
+    m_links.clear();
+    m_spawnStrideCount = 0;
+    m_initialFitDone   = false;
+    m_framesSinceOpen  = 0;
+    m_graph            = graph;
+    m_dirty            = false;
+
+    if (!graph)
+        return;
+
+    // Stored positions follow [source, effects..., output]; use them if the count
+    // matches, otherwise auto-place left→right.
+    const size_t expected = graph->effects.size() + 2;
+    const bool   usePos   = graph->editorPositions.size() == expected;
+    auto posAt = [&](size_t i, float fallbackX) -> ImVec2
+    {
+        if (usePos) return ImVec2(graph->editorPositions[i].x, graph->editorPositions[i].y);
+        return ImVec2(fallbackX, 80.0f);
+    };
+
+    m_nodes.push_back(MakeNode(AudioNodeKind::AudioSource, posAt(0, 40.0f)));
+
+    float x = 240.0f;
+    for (size_t i = 0; i < graph->effects.size(); ++i)
+    {
+        const AudioEffectDesc& e = graph->effects[i];
+        AudioNode fx = MakeNode(FromEffectType(e.type), posAt(i + 1, x));
+        fx.params = e.params;                                   // asset values override defaults
+        fx.params.resize(nous::audio::Params(e.type).size());  // keep schema-sized
+        m_nodes.push_back(std::move(fx));
+        x += 200.0f;
+    }
+
+    m_nodes.push_back(MakeNode(AudioNodeKind::AudioOutput, posAt(expected - 1, x)));
+
+    // Chain them: source → fx0 → ... → fxN → output.
+    for (size_t i = 0; i + 1 < m_nodes.size(); ++i)
+    {
+        const AudioNodePin& outPin = m_nodes[i].outputs.front();
+        const AudioNodePin& inPin  = m_nodes[i + 1].inputs.front();
+        m_links.push_back({ ed::LinkId(NextID()), inPin.id, outPin.id });
+    }
+}
+
+bool AudioGraphEditor::SaveToOpenAsset()
+{
+    if (!m_graph)
+        return false;
+
+    // Walk the chain once; effects[] and editorPositions stay parallel by construction.
+    std::vector<AudioNode*> ordered = ChainOrderedNodes();
+    if (ordered.empty())
+        return false;   // broken / disconnected chain — refuse to save a half-wired graph
+
+    m_graph->effects.clear();
+    m_graph->editorPositions.clear();
+
+    ed::SetCurrentEditor(m_context);
+    for (AudioNode* n : ordered)
+    {
+        const ImVec2 p = ed::GetNodePosition(n->id);
+        n->position = p;
+        m_graph->editorPositions.push_back(glm::vec2(p.x, p.y));
+        if (IsEffect(n->kind))
+            m_graph->effects.push_back({ ToEffectType(n->kind), n->params });
+    }
+    ed::SetCurrentEditor(nullptr);
+
+    m_graph->generation += 1;   // activates CAudioSource live-rebuild (Layer 2)
+
+    ImporterAudioGraph::WriteAudioGraphToFile(*m_graph, m_graph->GetAssetsPath());
+    ImporterAudioGraph::WriteAudioGraphToFile(*m_graph, m_graph->GetLibraryPath());
+    m_dirty = false;
+    return true;
+}
+
+void AudioGraphEditor::NewAsset()
+{
+    ModuleResourceManager* rm = ResourceManager();
+    if (!rm)
+        return;
+
+    const std::string dir = editorContext->GetAssetsBrowserDirectory();
+
+    // Auto-increment so a second New never clobbers the first.
+    std::string path;
+    for (int i = 0; i <= 9999; ++i)
+    {
+        const std::string name = (i == 0) ? "NewAudioGraph.nafx"
+                                          : ("NewAudioGraph_" + std::to_string(i) + ".nafx");
+        path = dir + "/" + name;
+        if (!std::filesystem::exists(path))
+            break;
+        if (i == 9999)
+            return;  // sanity bail
+    }
+
+    if (!ImporterAudioGraph::CreateNewAudioGraphFile(path))
+        return;
+    rm->ImportFile(path);   // mirror to Library + assign a UID
+    if (ResourceBase* r = rm->CreateResource(path))
+        LoadFromResource(down_cast<ResourceAudioGraph*>(r));
+}
+
+void AudioGraphEditor::OpenAsset(const std::string& nafxPath)
+{
+    ModuleResourceManager* rm = ResourceManager();
+    if (!rm)
+        return;
+    if (ResourceBase* r = rm->CreateResource(nafxPath))
+        LoadFromResource(down_cast<ResourceAudioGraph*>(r));
+}
+
 ImU32 AudioGraphEditor::GetCategoryHeaderColor(AudioNodeCategory category)
 {
     switch (category)
@@ -112,6 +321,12 @@ AudioGraphEditor::AudioGraphEditor(const char* title, EditorContext* context, bo
 
 AudioGraphEditor::~AudioGraphEditor()
 {
+    // Release the open asset's ref (preview voice teardown is added in Task 5).
+    if (ModuleResourceManager* rm = ResourceManager())
+        if (m_graph)
+            rm->UnloadResource(m_graph->GetUID());
+    m_graph = nullptr;
+
     if (m_context)
     {
         ed::DestroyEditor(m_context);
@@ -210,6 +425,15 @@ void AudioGraphEditor::DrawMenuBar()
     if (!ImGui::BeginMenuBar())
         return;
 
+    if (ImGui::BeginMenu("File"))
+    {
+        if (ImGui::MenuItem("New"))
+            NewAsset();
+        if (ImGui::MenuItem("Save", nullptr, false, m_graph != nullptr))
+            SaveToOpenAsset();
+        ImGui::EndMenu();
+    }
+
     if (ImGui::BeginMenu("Add Node"))
     {
         if (ImGui::MenuItem("Audio Source")) SpawnNode(AudioNodeKind::AudioSource);
@@ -244,8 +468,10 @@ void AudioGraphEditor::DrawMenuBar()
     }
 
     // Right-aligned status text
-    char status[64];
-    std::snprintf(status, sizeof(status), "%zu nodes  /  %zu links",
+    char status[160];
+    std::snprintf(status, sizeof(status), "%s%s  |  %zu nodes  /  %zu links",
+                  m_graph ? m_graph->GetName().c_str() : "(no asset)",
+                  m_dirty ? " *" : "",
                   m_nodes.size(), m_links.size());
     const float textWidth = ImGui::CalcTextSize(status).x;
     const float available = ImGui::GetContentRegionAvail().x;
@@ -503,6 +729,26 @@ void AudioGraphEditor::DrawContent()
     // imgui-node-editor's canvas-rect calculations require a real measured
     // item in the host window before ed::Begin (see feedback memory note).
     ImGui::Text(" RMB-drag: pan   |   Mouse wheel: zoom   |   Supr: remove selected");
+    // Drag a .nafx from the Assets Browser onto this row to open it.
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+        {
+            const char* data = static_cast<const char*>(payload->Data);
+            const char* end  = data + payload->DataSize;
+            while (data < end)
+            {
+                std::string path(data);
+                data += path.size() + 1;
+                if (std::filesystem::path(path).extension().string() == ".nafx")
+                {
+                    OpenAsset(path);
+                    break;
+                }
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
     ImGui::Separator();
 
     DrawCanvas();

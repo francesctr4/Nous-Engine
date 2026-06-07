@@ -104,9 +104,24 @@ private:
     // active preview chain (filled in Task 5; no-op until then).
     void OnParamEdited(const AudioNode& node, int paramIndex);
 
+    // --- Asset binding (Task 4) ---
+    ModuleResourceManager* ResourceManager() const;
+    // Build dependency-free proxies of the current graph for the pure linearizer.
+    void BuildProxies(std::vector<nous::audio_editor::LinNode>& outNodes,
+                      std::vector<nous::audio_editor::LinLink>& outLinks) const;
+    bool                    LinearizeCurrent(AudioGraphDesc& outDesc) const;  // editor → desc
+    std::vector<AudioNode*> ChainOrderedNodes();                              // [Source, fx..., Output] or empty
+    void                    LoadFromResource(ResourceAudioGraph* graph);      // rebuild canvas from an asset
+    bool                    SaveToOpenAsset();                                // write desc+positions, bump generation
+    void                    NewAsset();                                       // create + open a fresh .nafx
+    void                    OpenAsset(const std::string& nafxPath);           // resolve + LoadFromResource
+
     std::uintptr_t NextID() { return m_nextID++; }
 
     ax::NodeEditor::EditorContext* m_context = nullptr;
+
+    // Currently-open asset (ref held via the resource manager). null = scratch graph.
+    ResourceAudioGraph* m_graph = nullptr;
 
     std::vector<AudioNode>      m_nodes;
     std::vector<AudioGraphLink> m_links;
