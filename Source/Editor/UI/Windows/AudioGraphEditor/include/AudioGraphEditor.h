@@ -3,24 +3,28 @@
 #include "Editor/UI/IEditorWindow.h"
 #include "Editor/EditorExport.h"
 
+#include "Engine/Systems/AudioSystem/AudioGraph/AudioEffectRegistry.h"
+#include "Editor/UI/Windows/AudioGraphEditor/AudioGraphLinearize.h"
+
 #include <imgui-node-editor/imgui_node_editor.h>
 
 #include <string>
 #include <vector>
 #include <cstdint>
 
+class ResourceAudioGraph;
+class ModuleResourceManager;
+
+// MVP palette: two fixed anchors (the voice in, the bus out) plus one node per
+// stock effect. Effect kinds map 1:1 to AudioEffectType (see ToEffectType).
 enum class AudioNodeKind
 {
-    AudioSource,
-    AudioOutput,
-    Equalizer,
-    LowPassFilter,
-    HighPassFilter,
-    Reverb,
+    AudioSource,   // input anchor (the voice)
+    AudioOutput,   // output anchor (the bus)
+    LowPass,
+    HighPass,
     Delay,
-    Gain,
-    Mixer,
-    Splitter
+    Gain
 };
 
 enum class AudioNodeCategory
@@ -47,6 +51,7 @@ struct AudioNode
     bool                      positionPending = true;
     std::vector<AudioNodePin> inputs;
     std::vector<AudioNodePin> outputs;
+    std::vector<float>        params;   // effect params (parallel to the kind's schema); empty for anchors
 };
 
 struct AudioGraphLink
@@ -91,6 +96,14 @@ private:
     static ImU32             GetCategoryHeaderColor(AudioNodeCategory category);
     static ImColor           GetCategoryBorderColor(AudioNodeCategory category);
 
+    static bool            IsEffect(AudioNodeKind kind);
+    static AudioEffectType ToEffectType(AudioNodeKind kind);   // valid only when IsEffect(kind)
+    static AudioNodeKind   FromEffectType(AudioEffectType type);
+
+    // Called when an inline param widget changes — pushes the value live to an
+    // active preview chain (filled in Task 5; no-op until then).
+    void OnParamEdited(const AudioNode& node, int paramIndex);
+
     std::uintptr_t NextID() { return m_nextID++; }
 
     ax::NodeEditor::EditorContext* m_context = nullptr;
@@ -101,6 +114,7 @@ private:
     std::uintptr_t m_nextID          = 1;
     int            m_framesSinceOpen = 0;
     bool           m_initialFitDone  = false;
+    bool           m_dirty           = false;  // unsaved edits (param tweak / topology change)
 
     // Canvas-local position where the next spawned node will be placed.
     // Refreshed each frame from the canvas view center; menu spawns offset

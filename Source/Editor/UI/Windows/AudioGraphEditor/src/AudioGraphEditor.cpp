@@ -2,6 +2,9 @@
 
 #include <imgui.h>
 
+#include <algorithm>
+#include <span>
+
 namespace ed = ax::NodeEditor;
 
 // ---------------------------------------------------------------------------
@@ -12,16 +15,12 @@ AudioNodeCategory AudioGraphEditor::GetCategory(AudioNodeKind kind)
 {
     switch (kind)
     {
-        case AudioNodeKind::AudioSource:    return AudioNodeCategory::Source;
-        case AudioNodeKind::AudioOutput:    return AudioNodeCategory::Output;
-        case AudioNodeKind::Equalizer:
-        case AudioNodeKind::LowPassFilter:
-        case AudioNodeKind::HighPassFilter:
-        case AudioNodeKind::Reverb:
-        case AudioNodeKind::Delay:          return AudioNodeCategory::Effect;
-        case AudioNodeKind::Gain:
-        case AudioNodeKind::Mixer:
-        case AudioNodeKind::Splitter:       return AudioNodeCategory::Utility;
+        case AudioNodeKind::AudioSource: return AudioNodeCategory::Source;
+        case AudioNodeKind::AudioOutput: return AudioNodeCategory::Output;
+        case AudioNodeKind::LowPass:
+        case AudioNodeKind::HighPass:
+        case AudioNodeKind::Delay:       return AudioNodeCategory::Effect;
+        case AudioNodeKind::Gain:        return AudioNodeCategory::Utility;
     }
     return AudioNodeCategory::Utility;
 }
@@ -30,18 +29,52 @@ const char* AudioGraphEditor::GetKindLabel(AudioNodeKind kind)
 {
     switch (kind)
     {
-        case AudioNodeKind::AudioSource:    return "Audio Source";
-        case AudioNodeKind::AudioOutput:    return "Audio Output";
-        case AudioNodeKind::Equalizer:      return "Equalizer";
-        case AudioNodeKind::LowPassFilter:  return "Low-Pass Filter";
-        case AudioNodeKind::HighPassFilter: return "High-Pass Filter";
-        case AudioNodeKind::Reverb:         return "Reverb";
-        case AudioNodeKind::Delay:          return "Delay";
-        case AudioNodeKind::Gain:           return "Gain";
-        case AudioNodeKind::Mixer:          return "Mixer";
-        case AudioNodeKind::Splitter:       return "Splitter";
+        case AudioNodeKind::AudioSource: return "Audio Source";
+        case AudioNodeKind::AudioOutput: return "Audio Output";
+        case AudioNodeKind::LowPass:     return nous::audio::DisplayName(AudioEffectType::LowPass);
+        case AudioNodeKind::HighPass:    return nous::audio::DisplayName(AudioEffectType::HighPass);
+        case AudioNodeKind::Delay:       return nous::audio::DisplayName(AudioEffectType::Delay);
+        case AudioNodeKind::Gain:        return nous::audio::DisplayName(AudioEffectType::Gain);
     }
     return "Unknown";
+}
+
+// ---------------------------------------------------------------------------
+// Node-kind <-> effect-type mapping
+// ---------------------------------------------------------------------------
+
+bool AudioGraphEditor::IsEffect(AudioNodeKind kind)
+{
+    return kind != AudioNodeKind::AudioSource && kind != AudioNodeKind::AudioOutput;
+}
+
+AudioEffectType AudioGraphEditor::ToEffectType(AudioNodeKind kind)
+{
+    switch (kind)
+    {
+        case AudioNodeKind::LowPass:  return AudioEffectType::LowPass;
+        case AudioNodeKind::HighPass: return AudioEffectType::HighPass;
+        case AudioNodeKind::Delay:    return AudioEffectType::Delay;
+        case AudioNodeKind::Gain:     return AudioEffectType::Gain;
+        default:                      return AudioEffectType::Gain;   // unreachable for anchors
+    }
+}
+
+AudioNodeKind AudioGraphEditor::FromEffectType(AudioEffectType type)
+{
+    switch (type)
+    {
+        case AudioEffectType::LowPass:  return AudioNodeKind::LowPass;
+        case AudioEffectType::HighPass: return AudioNodeKind::HighPass;
+        case AudioEffectType::Delay:    return AudioNodeKind::Delay;
+        case AudioEffectType::Gain:     return AudioNodeKind::Gain;
+    }
+    return AudioNodeKind::Gain;
+}
+
+// Stub — replaced with the live-preview push in Task 5.
+void AudioGraphEditor::OnParamEdited(const AudioNode& /*node*/, int /*paramIndex*/)
+{
 }
 
 ImU32 AudioGraphEditor::GetCategoryHeaderColor(AudioNodeCategory category)
@@ -142,32 +175,16 @@ AudioNode AudioGraphEditor::MakeNode(AudioNodeKind kind, ImVec2 position)
         node.outputs.push_back({ ed::PinId(NextID()), ed::PinKind::Output, name });
     };
 
+    if (IsEffect(kind))
+        node.params = nous::audio::DefaultParams(ToEffectType(kind));
+
     switch (kind)
     {
-        case AudioNodeKind::AudioSource:    addOutput("Out"); break;
-        case AudioNodeKind::AudioOutput:    addInput("In");   break;
-
-        case AudioNodeKind::Equalizer:
-        case AudioNodeKind::LowPassFilter:
-        case AudioNodeKind::HighPassFilter:
-        case AudioNodeKind::Reverb:
-        case AudioNodeKind::Delay:
-        case AudioNodeKind::Gain:
+        case AudioNodeKind::AudioSource: addOutput("Out"); break;
+        case AudioNodeKind::AudioOutput: addInput("In");   break;
+        default:                                            // all effects: 1 in, 1 out
             addInput("In");
             addOutput("Out");
-            break;
-
-        case AudioNodeKind::Mixer:
-            addInput("In 1");
-            addInput("In 2");
-            addInput("In 3");
-            addOutput("Out");
-            break;
-
-        case AudioNodeKind::Splitter:
-            addInput("In");
-            addOutput("Out 1");
-            addOutput("Out 2");
             break;
     }
     return node;
@@ -195,31 +212,14 @@ void AudioGraphEditor::DrawMenuBar()
 
     if (ImGui::BeginMenu("Add Node"))
     {
-        if (ImGui::BeginMenu("Sources"))
+        if (ImGui::MenuItem("Audio Source")) SpawnNode(AudioNodeKind::AudioSource);
+        if (ImGui::MenuItem("Audio Output")) SpawnNode(AudioNodeKind::AudioOutput);
+        ImGui::Separator();
+        // Effect palette is registry-driven — grows automatically as effects are added.
+        for (AudioEffectType t : nous::audio::k_allEffects)
         {
-            if (ImGui::MenuItem("Audio Source"))     SpawnNode(AudioNodeKind::AudioSource);
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Outputs"))
-        {
-            if (ImGui::MenuItem("Audio Output"))     SpawnNode(AudioNodeKind::AudioOutput);
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Effects"))
-        {
-            if (ImGui::MenuItem("Equalizer"))        SpawnNode(AudioNodeKind::Equalizer);
-            if (ImGui::MenuItem("Low-Pass Filter"))  SpawnNode(AudioNodeKind::LowPassFilter);
-            if (ImGui::MenuItem("High-Pass Filter")) SpawnNode(AudioNodeKind::HighPassFilter);
-            if (ImGui::MenuItem("Reverb"))           SpawnNode(AudioNodeKind::Reverb);
-            if (ImGui::MenuItem("Delay"))            SpawnNode(AudioNodeKind::Delay);
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Utilities"))
-        {
-            if (ImGui::MenuItem("Gain"))     SpawnNode(AudioNodeKind::Gain);
-            if (ImGui::MenuItem("Mixer"))    SpawnNode(AudioNodeKind::Mixer);
-            if (ImGui::MenuItem("Splitter")) SpawnNode(AudioNodeKind::Splitter);
-            ImGui::EndMenu();
+            if (ImGui::MenuItem(nous::audio::DisplayName(t)))
+                SpawnNode(FromEffectType(t));
         }
         ImGui::EndMenu();
     }
@@ -313,6 +313,30 @@ void AudioGraphEditor::DrawNode(AudioNode& node)
         if (node.outputs.empty())
             ImGui::Dummy(ImVec2(40.0f, 0.0f));
         ImGui::EndGroup();
+
+        // --- Inline parameter widgets (effect nodes only), drawn from the schema ---
+        if (IsEffect(node.kind) && !node.params.empty())
+        {
+            ImGui::Dummy(ImVec2(0.0f, 4.0f));
+            ImGui::PushID(static_cast<int>(node.id.Get()));   // disambiguate identical param labels across nodes
+            ImGui::PushItemWidth(120.0f);
+
+            std::span<const AudioEffectParamDesc> schema = nous::audio::Params(ToEffectType(node.kind));
+            for (size_t i = 0; i < schema.size() && i < node.params.size(); ++i)
+            {
+                const AudioEffectParamDesc& p = schema[i];
+                if (ImGui::DragFloat(p.name, &node.params[i],
+                                     (p.max - p.min) * 0.005f, p.min, p.max, "%.3f"))
+                {
+                    node.params[i] = std::clamp(node.params[i], p.min, p.max);
+                    m_dirty = true;
+                    OnParamEdited(node, static_cast<int>(i));   // push live to preview if active (Task 5)
+                }
+            }
+
+            ImGui::PopItemWidth();
+            ImGui::PopID();
+        }
     }
     ed::EndNode();
 
