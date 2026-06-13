@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Nous Editor
+Comment=Nous Engine editor
+Exec=EditorApp
+Icon=nous-editor
+Categories=Development;
+Terminal=false
+StartupWMClass=EditorApp

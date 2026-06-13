@@ -1,0 +1,4 @@
+// Windows application icon for EditorApp.exe.
+// The lowest-numbered ICON resource is what Explorer / the taskbar display.
+// Path is resolved relative to this .rc file.
+1 ICON "EditorApp.ico"

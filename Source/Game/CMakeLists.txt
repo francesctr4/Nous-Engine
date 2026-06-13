@@ -6,6 +6,25 @@ add_executable(GameApp
         MainGame.cpp
 )
 
+# ----------------------------------------
+# Application icon (per-platform)
+# ----------------------------------------
+if(WIN32 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Branding/GameApp.ico")
+        # The .rc compiles into the exe; rc resolves "GameApp.ico" relative to itself.
+        target_sources(GameApp PRIVATE Branding/GameApp.rc)
+# elseif(APPLE)
+#         set(GAME_ICNS "${CMAKE_CURRENT_SOURCE_DIR}/Branding/GameApp.icns")
+#         set_source_files_properties(${GAME_ICNS} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+#         target_sources(GameApp PRIVATE ${GAME_ICNS})
+#         set_target_properties(GameApp PROPERTIES
+#                 MACOSX_BUNDLE TRUE
+#                 MACOSX_BUNDLE_ICON_FILE "GameApp.icns")
+# elseif(UNIX)
+#         install(FILES Branding/GameApp.desktop DESTINATION share/applications)
+#         install(FILES Branding/GameApp-256.png
+#                 DESTINATION share/icons/hicolor/256x256/apps RENAME nous-game.png)
+endif()
+
 find_package(parson CONFIG REQUIRED)
 
 target_link_libraries(GameApp PRIVATE

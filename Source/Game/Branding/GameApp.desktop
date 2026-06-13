@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Nous Game
+Comment=Game built with Nous Engine
+Exec=GameApp
+Icon=nous-game
+Categories=Game;
+Terminal=false
+StartupWMClass=GameApp

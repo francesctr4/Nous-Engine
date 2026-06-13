@@ -58,6 +58,25 @@ add_executable(EditorApp
         MainEditor.cpp
 )
 
+# ----------------------------------------
+# Application icon (per-platform)
+# ----------------------------------------
+if(WIN32 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Branding/EditorApp.ico")
+        # The .rc compiles into the exe; rc resolves "EditorApp.ico" relative to itself.
+        target_sources(EditorApp PRIVATE Branding/EditorApp.rc)
+# elseif(APPLE)
+#         set(EDITOR_ICNS "${CMAKE_CURRENT_SOURCE_DIR}/Branding/EditorApp.icns")
+#         set_source_files_properties(${EDITOR_ICNS} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+#         target_sources(EditorApp PRIVATE ${EDITOR_ICNS})
+#         set_target_properties(EditorApp PROPERTIES
+#                 MACOSX_BUNDLE TRUE
+#                 MACOSX_BUNDLE_ICON_FILE "EditorApp.icns")
+# elseif(UNIX)
+#         install(FILES Branding/EditorApp.desktop DESTINATION share/applications)
+#         install(FILES Branding/EditorApp-256.png
+#                 DESTINATION share/icons/hicolor/256x256/apps RENAME nous-editor.png)
+endif()
+
 target_link_libraries(EditorApp PRIVATE
         NousEngine::Editor
 )
