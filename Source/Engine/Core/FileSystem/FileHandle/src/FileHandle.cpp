@@ -1,5 +1,6 @@
 #include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
 
+#include "Engine/Core/FileSystem/FileSystem.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Logger/Logger.h"
 
@@ -16,12 +17,16 @@ FileHandle::~FileHandle()
     }
 }
 
-bool FileHandle::Open(const std::string& filePath, FileMode mode, bool isBinary)
+bool FileHandle::Open(const std::string& rawPath, FileMode mode, bool isBinary)
 {
     if (IsOpen())
     {
         Close();
     }
+
+    // Normalize separators so Windows-authored paths (backslashes, e.g. stored in .meta/.nous
+    // files) open on POSIX systems. Windows accepts forward slashes too, so this is a no-op there.
+    const std::string filePath = nous::engine::filesystem::NormalizePath(rawPath);
 
     SetPath(filePath);
 
