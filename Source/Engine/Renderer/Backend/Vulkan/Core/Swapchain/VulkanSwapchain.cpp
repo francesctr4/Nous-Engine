@@ -91,6 +91,13 @@ bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 widt
     swapChain->swapChainImageFormat = surfaceFormat.format;
     swapChain->swapChainExtent = extent;
 
+    // The surface's currentExtent can differ from the requested window size (e.g. X11/llvmpipe
+    // clamps it by a few px). Make framebufferWidth/Height authoritative = the real swapchain
+    // extent so framebuffers and offscreen images are sized to match the swapchain images
+    // exactly — otherwise vkCreateFramebuffer fails VUID-VkFramebufferCreateInfo-flags-04534.
+    vkContext->framebufferWidth  = static_cast<int32>(extent.width);
+    vkContext->framebufferHeight = static_cast<int32>(extent.height);
+
     swapChain->swapChainImageViews.resize(swapChain->swapChainImages.size());
 
     for (uint32_t i = 0; i < swapChain->swapChainImages.size(); ++i)

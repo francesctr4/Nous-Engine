@@ -1279,9 +1279,11 @@ bool VulkanBackend::RecreateResources()
 
     NOUS_VulkanSwapChain::RecreateSwapChain(vkContext, m_cachedFramebufferWidth, m_cachedFramebufferHeight, &vkContext->swapChain);
 
-    // Sync the framebuffer size with the cached sizes.
-    vkContext->framebufferWidth  = m_cachedFramebufferWidth;
-    vkContext->framebufferHeight = m_cachedFramebufferHeight;
+    // CreateSwapChain set framebufferWidth/Height to the *actual* surface extent (which may
+    // differ from the requested cached size). Use that — sizing framebuffers/offscreen images
+    // to the requested size instead would mismatch the swapchain images (VUID-...-04534).
+    vkContext->framebufferWidth  = static_cast<int32>(vkContext->swapChain.swapChainExtent.width);
+    vkContext->framebufferHeight = static_cast<int32>(vkContext->swapChain.swapChainExtent.height);
 
     vkContext->eventSystem->Broadcast(Event(EventType::IMGUI_RECREATION, {}));
 
