@@ -11,13 +11,20 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 {
     bool ret = true;
 
-    if (enableValidationLayers && !CheckValidationLayerSupport(validationLayers))
+    // Only enable validation if it was requested AND the layers are actually present;
+    // otherwise vkCreateInstance would fail with VK_ERROR_LAYER_NOT_PRESENT.
+    bool useValidation = enableValidationLayers && CheckValidationLayerSupport(validationLayers);
+
+    if (enableValidationLayers)
     {
-        NOUS_WARN("Vulkan Validation Layers requested, but not available!");
-    }
-    else
-    {
-        NOUS_DEBUG("Vulkan Validation Layers enabled successfully!");
+        if (useValidation)
+        {
+            NOUS_DEBUG("Vulkan Validation Layers enabled successfully!");
+        }
+        else
+        {
+            NOUS_WARN("Vulkan Validation Layers requested, but not available! Continuing without them.");
+        }
     }
 
     ShowSupportedExtensions();
@@ -35,13 +42,32 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
         }
     }
 
+    // Query the highest instance version the loader supports, then clamp our requested
+    // API version to it so we fail gracefully on a 1.0/1.1-only loader instead of relying
+    // on driver quirks. vkEnumerateInstanceVersion is a 1.1 entry point: look it up via
+    // vkGetInstanceProcAddr and fall back to 1.0 when it isn't exported.
+    uint32 loaderVersion = VK_API_VERSION_1_0;
+    auto fpEnumerateInstanceVersion = reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
+        vkGetInstanceProcAddr(nullptr, "vkEnumerateInstanceVersion"));
+    if (fpEnumerateInstanceVersion != nullptr)
+    {
+        VK_CHECK(fpEnumerateInstanceVersion(&loaderVersion));
+    }
+
+    const uint32 requestedVersion = VK_API_VERSION_1_2;
+    const uint32 selectedVersion = (loaderVersion < requestedVersion) ? loaderVersion : requestedVersion;
+
+    NOUS_INFO("Vulkan API Version: using %u.%u.%u (loader supports up to %u.%u.%u)",
+        VK_API_VERSION_MAJOR(selectedVersion), VK_API_VERSION_MINOR(selectedVersion), VK_API_VERSION_PATCH(selectedVersion),
+        VK_API_VERSION_MAJOR(loaderVersion), VK_API_VERSION_MINOR(loaderVersion), VK_API_VERSION_PATCH(loaderVersion));
+
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.apiVersion = VK_API_VERSION_1_2;
+    appInfo.apiVersion = selectedVersion;
     appInfo.pApplicationName = TITLE;
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
     appInfo.pEngineName = TITLE;
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
 
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -52,40 +78,21 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
         createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
     }
 
-    // Set up validation features
-    std::array<VkValidationFeatureEnableEXT, 2> enabledFeatures = 
-    {
-        VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
-        VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
-    };
-
-    VkValidationFeaturesEXT validationFeatures{};
-    validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
-    //validationFeatures.enabledValidationFeatureCount = static_cast<uint32>(enabledFeatures.size());
-    //validationFeatures.pEnabledValidationFeatures = enabledFeatures.data();
-    validationFeatures.enabledValidationFeatureCount = 0;
-    validationFeatures.pEnabledValidationFeatures = nullptr;
-
-    // Set up debug messenger create info
+    // Set up debug messenger create info so validation messages emitted *during*
+    // vkCreateInstance / vkDestroyInstance are captured (before the real messenger exists).
+    // It is chained directly into VkInstanceCreateInfo::pNext and must outlive the call below.
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (enableValidationLayers) 
+    if (useValidation)
     {
         NOUS_VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
-        validationFeatures.pNext = &debugCreateInfo;
     }
 
-    // Chain the validation features to the main create info
-    createInfo.pNext = &validationFeatures;
+    createInfo.pNext = useValidation ? &debugCreateInfo : nullptr;
     createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledExtensionCount = static_cast<uint32>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
-    createInfo.enabledLayerCount = enableValidationLayers ?
-        static_cast<uint32>(validationLayers.size()) : 0;
-    createInfo.ppEnabledLayerNames = enableValidationLayers ?
-        validationLayers.data() : nullptr;
-
-    createInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32>(validationLayers.size()) : 0;
-    createInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
+    createInfo.enabledLayerCount = useValidation ? static_cast<uint32>(validationLayers.size()) : 0;
+    createInfo.ppEnabledLayerNames = useValidation ? validationLayers.data() : nullptr;
 
     VkResult result = vkCreateInstance(&createInfo, vkContext->allocator, &vkContext->instance);
 
