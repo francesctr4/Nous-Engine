@@ -28,6 +28,22 @@ bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 widt
         imageCount = vkContext->device.swapChainSupport.capabilities.maxImageCount;
     }
 
+    // The engine's frame-sync arrays (inFlightFences / imagesInFlight / queueCompleteSemaphores)
+    // are hard-capped at 3 images (triple-buffering — see VulkanSyncObjects + CLAUDE.md). Some
+    // implementations request a higher count (e.g. Mesa llvmpipe in a VM reports a larger
+    // minImageCount), so cap the request at 3. minImageCount is a hard floor we must honour, so
+    // if a surface genuinely requires >3 images we leave it above the cap and the guard assert
+    // in CreateSyncObjects fires loudly rather than silently overrunning the arrays.
+    constexpr uint32_t c_maxSwapchainImages = 3;
+    if (imageCount > c_maxSwapchainImages)
+    {
+        imageCount = c_maxSwapchainImages;
+    }
+    if (imageCount < vkContext->device.swapChainSupport.capabilities.minImageCount)
+    {
+        imageCount = vkContext->device.swapChainSupport.capabilities.minImageCount;
+    }
+
     swapChain->maxFramesInFlight = imageCount - 1;
 
     VkSwapchainCreateInfoKHR createInfo{};
