@@ -24,13 +24,37 @@ bool NOUS_VulkanDevice::PickPhysicalDevice(VulkanContext* vkContext)
     std::vector<VkPhysicalDevice> devices(deviceCount);
     VK_CHECK(vkEnumeratePhysicalDevices(vkContext->instance, &deviceCount, devices.data()));
 
+    // Prefer a discrete GPU, but accept the first suitable non-discrete device
+    // (integrated GPU, or a software rasterizer like llvmpipe in a headless/VM
+    // environment) as a fallback. discreteGPU is no longer a hard requirement in
+    // VkPhysicalDeviceRequirements::Completed() — the preference is applied here.
+    VkPhysicalDevice fallback = VK_NULL_HANDLE;
+
     for (auto & device : devices)
     {
         if (IsPhysicalDeviceSuitable(device, vkContext))
         {
-            LogInfoAboutDevice(vkContext);
-            break;
+            // Discrete GPU wins outright — IsPhysicalDeviceSuitable already populated
+            // vkContext->device for this handle, so we're done.
+            if (vkContext->device.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            {
+                LogInfoAboutDevice(vkContext);
+                return true;
+            }
+
+            // Remember the first suitable non-discrete device as a fallback.
+            if (fallback == VK_NULL_HANDLE)
+                fallback = device;
         }
+    }
+
+    // No discrete GPU available — fall back to the first suitable device, re-running
+    // suitability so vkContext->device is repopulated for that specific handle.
+    if (fallback != VK_NULL_HANDLE && IsPhysicalDeviceSuitable(fallback, vkContext))
+    {
+        NOUS_WARN("No discrete GPU found — using non-discrete device '%s'.", vkContext->device.properties.deviceName);
+        LogInfoAboutDevice(vkContext);
+        return true;
     }
 
     if (vkContext->device.physicalDevice == VK_NULL_HANDLE)

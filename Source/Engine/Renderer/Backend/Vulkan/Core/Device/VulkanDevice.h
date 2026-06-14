@@ -37,11 +37,15 @@ struct VkPhysicalDeviceRequirements
 
 	bool Completed() const
 	{
+		// NOTE: discreteGPU is NOT a hard requirement — it is a *preference* applied
+		// in PickPhysicalDevice (discrete is chosen first, integrated/software is a
+		// fallback). This lets the engine run on integrated GPUs and on software
+		// rasterizers like llvmpipe (e.g. a headless/VM environment with no real GPU).
 #ifdef __APPLE__
-		// MoltenVK/Apple Silicon: no discrete GPU, no geometry shader support
+		// MoltenVK/Apple Silicon: no geometry shader support either.
 		return samplerAnisotropy && queueFamilies && extensionsSupported && swapChainAdequate;
 #else
-		return discreteGPU && geometryShader && samplerAnisotropy &&
+		return geometryShader && samplerAnisotropy &&
 			queueFamilies && extensionsSupported && swapChainAdequate;
 #endif
 	}
