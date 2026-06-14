@@ -80,14 +80,31 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 
     // Set up debug messenger create info so validation messages emitted *during*
     // vkCreateInstance / vkDestroyInstance are captured (before the real messenger exists).
-    // It is chained directly into VkInstanceCreateInfo::pNext and must outlive the call below.
+    // It is chained into VkInstanceCreateInfo::pNext and must outlive the call below.
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+
+    // Opt into synchronization validation (semaphore/fence/barrier hazards) on top of the
+    // standard validation layer. Requires VK_EXT_validation_features (added in GetRequiredExtensions).
+    const std::array<VkValidationFeatureEnableEXT, 1> enabledValidationFeatures =
+    {
+        VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
+    };
+
+    VkValidationFeaturesEXT validationFeatures{};
+    validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+
     if (useValidation)
     {
         NOUS_VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+
+        validationFeatures.enabledValidationFeatureCount = static_cast<uint32>(enabledValidationFeatures.size());
+        validationFeatures.pEnabledValidationFeatures = enabledValidationFeatures.data();
+        // Chain: createInfo -> validationFeatures -> debugCreateInfo (so creation-time messages
+        // still reach the callback).
+        validationFeatures.pNext = &debugCreateInfo;
     }
 
-    createInfo.pNext = useValidation ? &debugCreateInfo : nullptr;
+    createInfo.pNext = useValidation ? static_cast<const void*>(&validationFeatures) : nullptr;
     createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledExtensionCount = static_cast<uint32>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
@@ -214,10 +231,13 @@ std::vector<const char*> NOUS_VulkanInstance::GetRequiredExtensions()
     extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 #endif
 
-    // Add debug utils extension if validation is enabled
+    // Add debug utils + validation features extensions if validation is enabled.
+    // VK_EXT_validation_features is required to pass VkValidationFeaturesEXT (synchronization
+    // validation) in the instance pNext chain.
     if (enableValidationLayers)
     {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        extensions.push_back(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
     }
 
     // Debug output

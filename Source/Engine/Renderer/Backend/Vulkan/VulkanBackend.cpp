@@ -938,16 +938,22 @@ FrameResult VulkanBackend::BeginFrame(float dt)
                 VK_NULL_HANDLE,
                 &vkContext->imageIndex);
 
-        if (acquireRes == VK_ERROR_OUT_OF_DATE_KHR || acquireRes == VK_SUBOPTIMAL_KHR)
+        if (acquireRes == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            // Trigger recreation on next frame; skip now.
+            // Acquire FAILED: no image was acquired and imageAvailableSemaphores[currentFrame]
+            // was NOT signaled. Safe to schedule recreation and skip now.
             vkContext->recreatingSwapchain = true;
             NOUS_INFO_C(CURRENT_CHANNEL, "Swapchain acquire returned %s. Scheduling recreation, skipping frame.",
                       VkResultMessage(acquireRes, true).c_str());
             return FrameResult::SKIPPED;
         }
 
-        if (!VkResultIsSuccess(acquireRes))
+        // VK_SUBOPTIMAL_KHR is NOT handled here: on acquire it means the image WAS acquired and
+        // the semaphore IS signaled. Skipping would leak that signaled semaphore (a later acquire
+        // on this frame slot would then try to signal an already-signaled semaphore). Instead we
+        // render and present this frame normally; the suboptimal-on-present path in EndFrame (or a
+        // resize) drives recreation, which leaves the semaphore correctly consumed by the submit.
+        if (acquireRes != VK_SUBOPTIMAL_KHR && !VkResultIsSuccess(acquireRes))
         {
             NOUS_FATAL_C(CURRENT_CHANNEL, "Failed to acquire next image index: %s", VkResultMessage(acquireRes, true).c_str());
             return FrameResult::ERROR;
@@ -1018,9 +1024,10 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
         submitInfo.pCommandBuffers    = cmdBuffersEditor.data();
     }
 
-    // Signal when graphics queue is done
+    // Signal when graphics queue is done. Indexed by imageIndex (per swapchain image),
+    // since this semaphore is the present wait semaphore below — see CreateSyncObjects.
     submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores    = &vkContext->queueCompleteSemaphores[vkContext->currentFrame];
+    submitInfo.pSignalSemaphores    = &vkContext->queueCompleteSemaphores[vkContext->imageIndex];
 
     // Wait on the "image available" semaphore before executing CBs
     submitInfo.waitSemaphoreCount = 1;
@@ -1062,7 +1069,7 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
             &vkContext->swapChain,
             vkContext->device.graphicsQueue,
             vkContext->device.presentQueue,
-            vkContext->queueCompleteSemaphores[vkContext->currentFrame],
+            vkContext->queueCompleteSemaphores[vkContext->imageIndex],
             vkContext->imageIndex);
 
     if (presentRes == VK_ERROR_OUT_OF_DATE_KHR || presentRes == VK_SUBOPTIMAL_KHR)

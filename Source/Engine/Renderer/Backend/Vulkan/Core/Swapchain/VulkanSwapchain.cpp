@@ -11,10 +11,13 @@ bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 widt
 {
     bool ret = true;
 
+    // Re-query support up front so format, present mode AND extent are all chosen from the
+    // same fresh snapshot. (On recreation the cached snapshot from PickPhysicalDevice can be
+    // stale after display/output changes.)
+    vkContext->device.swapChainSupport = NOUS_VulkanDevice::QuerySwapChainSupport(vkContext->device.physicalDevice, vkContext);
+
     VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(vkContext->device.swapChainSupport.formats);
     VkPresentModeKHR presentMode = ChooseSwapPresentMode(vkContext->device.swapChainSupport.presentModes);
-
-    vkContext->device.swapChainSupport = NOUS_VulkanDevice::QuerySwapChainSupport(vkContext->device.physicalDevice, vkContext);
 
     VkExtent2D extent = ChooseSwapExtent(vkContext, vkContext->device.swapChainSupport.capabilities);
 
@@ -149,7 +152,7 @@ VkResult NOUS_VulkanSwapChain::SwapChainPresent(VulkanContext* vkContext, Vulkan
     presentInfo.pSwapchains = &swapchain->handle;
 
     presentInfo.pImageIndices = &presentImageIndex;
-    presentInfo.pResults = 0;
+    presentInfo.pResults = nullptr;
 
     VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 

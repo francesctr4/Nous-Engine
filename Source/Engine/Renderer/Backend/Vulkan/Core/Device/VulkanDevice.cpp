@@ -428,9 +428,12 @@ bool NOUS_VulkanDevice::CreateLogicalDevice(VulkanContext* vkContext)
     // Specifying used device features
 
     VkPhysicalDeviceFeatures deviceFeatures{};
+    // samplerAnisotropy is a hard requirement (see VkPhysicalDeviceRequirements::Completed),
+    // so any selected device is guaranteed to support it — safe to force-enable.
     deviceFeatures.samplerAnisotropy = VK_TRUE;
-    deviceFeatures.sampleRateShading = VK_TRUE;
-    // Enable optional pipeline features if the physical device supports them.
+    // Every other feature must be gated on actual support, or vkCreateDevice fails with
+    // VK_ERROR_FEATURE_NOT_PRESENT. None of these are part of the suitability requirements.
+    deviceFeatures.sampleRateShading  = vkContext->device.features.sampleRateShading;
     deviceFeatures.geometryShader    = vkContext->device.features.geometryShader;
     deviceFeatures.tessellationShader = vkContext->device.features.tessellationShader;
     deviceFeatures.wideLines          = vkContext->device.features.wideLines;
