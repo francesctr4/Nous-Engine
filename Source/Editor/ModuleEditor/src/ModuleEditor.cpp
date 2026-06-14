@@ -68,7 +68,7 @@ ModuleEditor::~ModuleEditor() = default;
 
 bool ModuleEditor::Awake()
 {
-	nous::engine::filesystem::CopyFile(R"(Assets\Settings\imgui.ini)", "imgui.ini");
+	nous::engine::filesystem::CopyFile("Assets/Settings/imgui.ini", "imgui.ini");
 
 	mModuleRenderer3D->GetRendererFrontend()->SetEditorOverlay(this);
 	currentBackendType = mModuleRenderer3D->GetRendererFrontend()->GetBackendType();
@@ -83,10 +83,10 @@ bool ModuleEditor::Awake()
 
 	nous::editor::imgui::ImGuiTheme_RedGrey();
 
-	fonts.push_back(io.Fonts->AddFontFromFileTTF(R"(Assets\Fonts\tahoma.ttf)", 15.0f));
+	fonts.push_back(io.Fonts->AddFontFromFileTTF("Assets/Fonts/tahoma.ttf", 15.0f));
 
 	// Optionally, load more fonts as needed
-	fonts.push_back(io.Fonts->AddFontFromFileTTF(R"(Assets\Fonts\tahoma.ttf)", 12.0f));
+	fonts.push_back(io.Fonts->AddFontFromFileTTF("Assets/Fonts/tahoma.ttf", 12.0f));
 
 	// Font Awesome icon font (fonts[2]) — used by AssetsBrowser for file-type icons
 	{
@@ -95,7 +95,7 @@ bool ModuleEditor::Awake()
 		iconConfig.MergeMode = false;
 		iconConfig.PixelSnapH = true;
 		iconConfig.GlyphMinAdvanceX = 64.0f;
-		fonts.push_back(io.Fonts->AddFontFromFileTTF(R"(Assets\Fonts\fa-solid-900.ttf)", 64.0f, &iconConfig, c_iconRanges));
+		fonts.push_back(io.Fonts->AddFontFromFileTTF("Assets/Fonts/fa-solid-900.ttf", 64.0f, &iconConfig, c_iconRanges));
 	}
 
 	switch (currentBackendType)

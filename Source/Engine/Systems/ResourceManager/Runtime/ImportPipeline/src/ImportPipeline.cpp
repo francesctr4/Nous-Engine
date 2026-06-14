@@ -544,8 +544,12 @@ bool ImportPipeline::ReadMetaFile(const std::string& metaFilePath, MetaFileData&
     outFileData.name         = metaObj.GetString("Name");
     outFileData.uid          = static_cast<uint32>(metaObj.GetDouble("UID"));
     outFileData.resourceType = static_cast<ResourceType>(metaObj.GetInt("Resource Type"));
-    outFileData.assetsPath   = metaObj.GetString("Assets Path");
-    outFileData.libraryPath  = metaObj.GetString("Library Path");
+    // Normalize separators: .meta files authored on Windows store backslash paths
+    // (e.g. "Assets\Shaders\x.glsl"). On POSIX a backslash is a literal filename
+    // character, so such a path resolves to nothing. NormalizePath makes the stored
+    // paths platform-independent on read.
+    outFileData.assetsPath   = nous::engine::filesystem::NormalizePath(metaObj.GetString("Assets Path"));
+    outFileData.libraryPath  = nous::engine::filesystem::NormalizePath(metaObj.GetString("Library Path"));
 
     return true;
 }
