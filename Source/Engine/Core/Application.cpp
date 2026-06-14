@@ -150,16 +150,44 @@ Application::~Application()
 bool Application::Awake() const
 {
     bool ret = true;
+    int failedIndex = -1;
 
     // Call Awake() in all modules
     for (int i = 0; i < static_cast<int>(listModules.size()) && ret; ++i)
     {
         if (listModules[i] != nullptr)
+        {
             ret = listModules[i]->Awake();
+            if (!ret)
+                failedIndex = i;
+        }
+    }
+
+    // A module's Awake() failed. The main loop bails straight to exit on a false
+    // return (skipping CleanUp()), and ~Application only deletes modules — it does
+    // not CleanUp() them. So the modules that already awoke would leak the resources
+    // they acquired (e.g. the audio/video backends, freed in CleanUp(), not in their
+    // destructors). Tear them down here in reverse order. The failed module is
+    // expected to have cleaned up after itself within its own Awake().
+    if (!ret)
+    {
+        NOUS_ERROR("Module Awake() failed at index %d — cleaning up already-awoken modules.", failedIndex);
+
+        // Mirror CleanUp(): drain in-flight jobs before any module tears down.
+        if (jobSystem)
+            jobSystem->WaitForPendingJobs();
+
+        for (int i = failedIndex - 1; i >= 0; --i)
+        {
+            if (listModules[i] != nullptr)
+                listModules[i]->CleanUp();
+        }
+
+        return false;
     }
 
     // Editor-only setup: runs after all Awakes and before Start().
-    if (ret && !m_isGameMode)
+    if (!m_isGameMode)
     {
         window->Maximize();
         resourceManager->ScanAndImportAssets();
