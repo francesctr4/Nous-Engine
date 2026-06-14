@@ -240,9 +240,10 @@ private:
 	// its GPU images are freed within the renderer's lifetime, before the scene is torn down.
 	DynamicTextureCache m_dynamicSurfaces;
 
-	// GPU frame counter — advanced after each successful EndFrame, used as the
-	// triple-buffering frame index (mFrameNumber % 3). Previously lived on the
-	// deleted RendererBackend wrapper. mutable so it can tick from const EndFrame().
+	// Monotonic GPU frame counter — advanced after each successful EndFrame. Previously
+	// lived on the deleted RendererBackend wrapper. mutable so it can tick from const
+	// EndFrame(). Note: it is NOT the instance-SSBO ring index — that is chosen from the
+	// swapchain image index in UploadInstanceMatrices so it can't desync on resize.
 	mutable uint64_t mFrameNumber = 0;
 
 	// Cached dependencies — applied to the backend after Create() inside Initialize()

@@ -577,6 +577,9 @@ void SceneViewport::CreateSceneViewportDescriptorSets()
 {
     VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 
+    // One descriptor set per swapchain image (runtime count) — size to match the images.
+    vkContext->imGuiResources.m_ViewportDescriptorSets.resize(vkContext->imGuiResources.m_ViewportImages.size());
+
     for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
     {
         vkContext->imGuiResources.m_ViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(
@@ -590,8 +593,13 @@ void SceneViewport::DestroySceneViewportDescriptorSets()
 {
     VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
 
-    for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
+    // Iterate over the descriptor-set vector itself (not the image vector): the two can
+    // differ in size before Create has populated the sets to match the images. Clear after
+    // so destroy is idempotent and the next Create resizes from empty.
+    auto& descriptorSets = vkContext->imGuiResources.m_ViewportDescriptorSets;
+    for (uint32 i = 0; i < descriptorSets.size(); ++i)
     {
-        ImGui_ImplVulkan_RemoveTexture(vkContext->imGuiResources.m_ViewportDescriptorSets[i]);
+        ImGui_ImplVulkan_RemoveTexture(descriptorSets[i]);
     }
+    descriptorSets.clear();
 }

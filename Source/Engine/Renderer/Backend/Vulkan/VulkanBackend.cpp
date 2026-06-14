@@ -1662,8 +1662,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     return true;
 }
 
-void VulkanBackend::UploadInstanceMatrices(uint32_t frameIndex,
-                                            const glm::mat4* matrices,
+void VulkanBackend::UploadInstanceMatrices(const glm::mat4* matrices,
                                             uint32_t count,
                                             uint32_t instanceOffset)
 {
@@ -1673,7 +1672,14 @@ void VulkanBackend::UploadInstanceMatrices(uint32_t frameIndex,
                              ? std::min(count, capacity - instanceOffset)
                              : 0;
     if (safeCount == 0) return;
-    auto* base = static_cast<glm::mat4*>(vkContext->instanceSSBOMapped[frameIndex]);
+
+    // Select the SSBO ring slot by swapchain image index, matching the static binding
+    // globalDescriptorSets[i] -> instanceSSBO[i % 3] (WriteInstanceSSBODescriptor). This makes
+    // the buffer the draw reads identical to the one we write — unlike indexing by a CPU frame
+    // counter, which desyncs from imageIndex after a swapchain recreate (currentFrame resets to 0
+    // while the frame counter keeps advancing) and made meshes read stale matrices post-resize.
+    const uint32_t slot = vkContext->imageIndex % 3;
+    auto* base = static_cast<glm::mat4*>(vkContext->instanceSSBOMapped[slot]);
     std::memcpy(base + instanceOffset, matrices, safeCount * sizeof(glm::mat4));
 }
 

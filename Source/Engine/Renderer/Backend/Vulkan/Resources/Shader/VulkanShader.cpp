@@ -133,7 +133,8 @@ static bool AllocateGlobalResources(VulkanContext* vkContext, VulkanShader* vs,
 
     vs->globalUBOStride = uboBlockSize;
 
-    constexpr uint32_t imageCount = 3; // triple-buffering
+    // One global descriptor set + UBO buffer per swapchain image (runtime count).
+    const uint32_t imageCount = static_cast<uint32_t>(vkContext->swapChain.swapChainImages.size());
     VkDevice dev = vkContext->device.logicalDevice;
 
     // ── Descriptor pool ───────────────────────────────────────────────────────
@@ -232,7 +233,7 @@ static bool AllocateInstanceResources(VulkanContext* vkContext, VulkanShader* vs
         maxBinding = std::max(maxBinding, rb.binding);
     vs->instanceBindingCount = maxBinding + 1;
 
-    constexpr uint32_t imageCount   = 3;
+    const uint32_t     imageCount   = static_cast<uint32_t>(vkContext->swapChain.swapChainImages.size());
     constexpr uint32_t maxInstances = VULKAN_SHADER_MAX_INSTANCE_COUNT;
     VkDevice dev = vkContext->device.logicalDevice;
 
@@ -904,14 +905,16 @@ bool NOUS_VulkanShader::AcquireInstanceSlot(VulkanContext* vkContext, VulkanShad
     {
         if (vs->instanceStates[i].inUse) continue;
 
-        // Allocate three descriptor sets (one per swapchain image).
+        // Allocate one descriptor set per swapchain image (runtime count).
+        const uint32_t imageCount = static_cast<uint32_t>(vkContext->swapChain.swapChainImages.size());
         const VkDescriptorSetLayout layout = vs->descriptorSetLayouts[1];
-        std::array<VkDescriptorSetLayout, 3> layouts = {layout, layout, layout};
+        std::array<VkDescriptorSetLayout, MAX_SWAPCHAIN_IMAGES> layouts;
+        layouts.fill(layout);
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool     = vs->instancePool;
-        allocInfo.descriptorSetCount = 3;
+        allocInfo.descriptorSetCount = imageCount;
         allocInfo.pSetLayouts        = layouts.data();
 
         VK_CHECK(vkAllocateDescriptorSets(vkContext->device.logicalDevice,
@@ -939,8 +942,9 @@ void NOUS_VulkanShader::ReleaseInstanceSlot(VulkanContext* vkContext, VulkanShad
 
     if (id >= VULKAN_SHADER_MAX_INSTANCE_COUNT || !vs->instanceStates[id].inUse) return;
 
+    const uint32_t imageCount = static_cast<uint32_t>(vkContext->swapChain.swapChainImages.size());
     VK_CHECK(vkFreeDescriptorSets(vkContext->device.logicalDevice, vs->instancePool,
-        3, vs->instanceStates[id].descriptorSets.data()));
+        imageCount, vs->instanceStates[id].descriptorSets.data()));
 
     vs->instanceStates[id].inUse = false;
 }

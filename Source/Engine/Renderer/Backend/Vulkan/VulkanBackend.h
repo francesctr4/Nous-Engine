@@ -49,8 +49,7 @@ public:
 
 	bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData) override;
 
-    void UploadInstanceMatrices(uint32_t frameIndex,
-                                const glm::mat4* matrices,
+    void UploadInstanceMatrices(const glm::mat4* matrices,
                                 uint32_t count,
                                 uint32_t instanceOffset) override;
 

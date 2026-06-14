@@ -225,7 +225,6 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 				if (!grouped.matrices.empty())
 				{
 					mBackend->UploadInstanceMatrices(
-						static_cast<uint32_t>(mFrameNumber % 3),
 						grouped.matrices.data(),
 						static_cast<uint32_t>(grouped.matrices.size()),
 						0);
@@ -325,7 +324,6 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 				if (!groupedGame.matrices.empty())
 				{
 					mBackend->UploadInstanceMatrices(
-						static_cast<uint32_t>(mFrameNumber % 3),
 						groupedGame.matrices.data(),
 						static_cast<uint32_t>(groupedGame.matrices.size()),
 						c_maxInstances);

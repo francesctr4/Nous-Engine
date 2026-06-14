@@ -17,8 +17,9 @@ constexpr uint32_t VULKAN_SHADER_MAX_INSTANCE_COUNT = 1024;
 // ── Per-instance (per-material / per-object) state ───────────────────────────
 struct VulkanShaderInstanceState
 {
-    std::array<VkDescriptorSet, 3>           descriptorSets =
-        {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE};
+    // One descriptor set per swapchain image; only the first swapChainImages.size()
+    // are allocated/used. Value-init nulls every slot (VK_NULL_HANDLE == 0).
+    std::array<VkDescriptorSet, MAX_SWAPCHAIN_IMAGES> descriptorSets{};
 
     // One entry per binding in set=1; sized at allocation time.
     std::vector<VulkanShaderDescriptorState> descriptorStates;

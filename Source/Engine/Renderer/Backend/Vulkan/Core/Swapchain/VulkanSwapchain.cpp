@@ -2,6 +2,7 @@
 #include "Engine/Renderer/Backend/Vulkan/Core/Device/VulkanDevice.h"
 #include "Engine/Renderer/Backend/Vulkan/Resources/Image/VulkanImage.h"
 #include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
+#include "Engine/Renderer/Backend/Vulkan/VulkanConstants.h"
 
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
@@ -70,6 +71,19 @@ bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 widt
     vkContext->currentFrame = 0;
 
     VK_CHECK(vkGetSwapchainImagesKHR(vkContext->device.logicalDevice, swapChain->handle, &imageCount, nullptr));
+
+    // The driver may return more images than requested (minImageCount is a floor — e.g. Mesa
+    // llvmpipe returns 4). Every per-swapchain-image inline array is capped at MAX_SWAPCHAIN_IMAGES,
+    // so fail loud (and, in release, fail init cleanly) rather than overrun if a driver exceeds it.
+    NOUS_ASSERT_MSG(imageCount <= MAX_SWAPCHAIN_IMAGES,
+        "Swapchain image count exceeds MAX_SWAPCHAIN_IMAGES — raise the cap.");
+    if (imageCount > MAX_SWAPCHAIN_IMAGES)
+    {
+        NOUS_ERROR("[VulkanSwapchain] Swapchain reports %u images, exceeding MAX_SWAPCHAIN_IMAGES (%u).",
+            imageCount, MAX_SWAPCHAIN_IMAGES);
+        return false;
+    }
+
     vkContext->swapChain.swapChainImages.resize(imageCount);
 
     VK_CHECK(vkGetSwapchainImagesKHR(vkContext->device.logicalDevice, swapChain->handle, &imageCount, swapChain->swapChainImages.data()));

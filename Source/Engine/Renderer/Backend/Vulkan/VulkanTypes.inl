@@ -91,7 +91,8 @@ struct VulkanSwapChain
     VulkanImage colorAttachment;
     VulkanImage depthAttachment;
 
-    std::array<VkFramebuffer, 3> swapChainFramebuffers;
+    // One framebuffer per swapchain image; sized to swapChainImages.size() in CreateFramebuffers.
+    std::vector<VkFramebuffer> swapChainFramebuffers;
 };
 
 struct VkSwapChainSupportDetails
@@ -174,13 +175,6 @@ struct VulkanPipeline
     VkPipelineLayout pipelineLayout;
 };
 
-struct VulkanDescriptorState
-{
-    // One per frame
-    uint32 generations[3];
-    uint32 ids[3];
-};
-
 // Max number of simultaneously uploaded geometries
 // TODO: make configurable
 constexpr uint32 VULKAN_MAX_GEOMETRY_COUNT = 4096;
@@ -208,22 +202,24 @@ struct VulkanImGuiResources
     VkDescriptorPool descriptorPool;
 
     // ---------- Scene Viewport Resources ---------- //
+    // Framebuffers + descriptor sets are one-per-swapchain-image; both vectors are
+    // sized to swapChainImages.size() at creation (CreateFramebuffers / Create*DescriptorSets).
     std::vector<VulkanImage> m_ViewportImages;
     VulkanImage m_ViewportDepthAttachment;
-    std::array<VkFramebuffer, 3> m_ViewportFramebuffers;
+    std::vector<VkFramebuffer> m_ViewportFramebuffers;
     std::vector<VulkanCommandBuffer> m_ViewportCommandBuffers;
 
     VkSampler m_ViewportTextureSampler;
-    std::array<VkDescriptorSet, 3> m_ViewportDescriptorSets;
+    std::vector<VkDescriptorSet> m_ViewportDescriptorSets;
 
     // ---------- Game Viewport Resources ---------- //
     std::vector<VulkanImage> m_GameViewportImages;
     VulkanImage m_GameViewportDepthAttachment;
-    std::array<VkFramebuffer, 3> m_GameViewportFramebuffers;
+    std::vector<VkFramebuffer> m_GameViewportFramebuffers;
     std::vector<VulkanCommandBuffer> m_GameViewportCommandBuffers;
 
     VkSampler m_GameViewportTextureSampler;
-    std::array<VkDescriptorSet, 3> m_GameViewportDescriptorSets;
+    std::vector<VkDescriptorSet> m_GameViewportDescriptorSets;
 
     // ---------- Pick (Mouse Picking) Resources ---------- //
     VulkanImage m_PickImage;
@@ -275,8 +271,9 @@ struct VulkanContext
     VulkanRenderpass pickRenderpass;
 
     // GAME mode only: non-offscreen renderpass + framebuffers targeting swapchain directly.
+    // One framebuffer per swapchain image; sized to swapChainImages.size() in CreateFramebuffers.
     VulkanRenderpass gameSwapchainRenderpass{};
-    std::array<VkFramebuffer, 3> gameSwapchainFramebuffers{};
+    std::vector<VkFramebuffer> gameSwapchainFramebuffers{};
 
     VulkanBuffer objectVertexBuffer;
     VulkanBuffer objectIndexBuffer;

@@ -67,8 +67,9 @@ struct IRendererBackend
 
     // instanceOffset: index into the SSBO where writing starts.
     // Scene pass uses offset 0; game pass uses offset c_maxInstances to avoid overwriting scene data.
-    virtual void UploadInstanceMatrices(uint32_t frameIndex,
-                                        const glm::mat4* matrices,
+    // The target SSBO ring slot is chosen internally from the current swapchain image index,
+    // matching the static per-image descriptor binding (see WriteInstanceSSBODescriptor).
+    virtual void UploadInstanceMatrices(const glm::mat4* matrices,
                                         uint32_t count,
                                         uint32_t instanceOffset) = 0;
 

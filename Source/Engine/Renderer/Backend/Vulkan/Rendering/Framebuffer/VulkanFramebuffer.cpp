@@ -5,10 +5,15 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 {
     bool ret = true;
 
-	uint32 imageCount = static_cast<uint32>(vkContext->swapChain.swapChainFramebuffers.size());
+	// Derive the count from the actual swapchain image views (runtime count), not from
+	// the framebuffer container — the latter is empty on first creation and would skip
+	// the loop. Resize the per-image framebuffer vectors to match before filling them.
+	uint32 imageCount = static_cast<uint32>(vkContext->swapChain.swapChainImageViews.size());
 
 	if (vkContext->renderMode == RenderMode::GAME)
 	{
+		vkContext->gameSwapchainFramebuffers.resize(imageCount);
+
 		// GAME mode: create framebuffers that target swapchain image views directly.
 		for (uint32 i = 0; i < imageCount; ++i)
 		{
@@ -31,6 +36,10 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 		}
 		return ret;
 	}
+
+	vkContext->imGuiResources.m_ViewportFramebuffers.resize(imageCount);
+	vkContext->imGuiResources.m_GameViewportFramebuffers.resize(imageCount);
+	vkContext->swapChain.swapChainFramebuffers.resize(imageCount);
 
 	for (uint16 i = 0; i < imageCount; ++i)
 	{

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/Renderer/Backend/Vulkan/VulkanConstants.h"
+
 #include <array>
 #include <cstdint>
 
@@ -10,9 +12,18 @@
 // ensuring the first frame after a hot-reload always forces a fresh write.
 struct VulkanShaderDescriptorState
 {
-    // One slot per swapchain image (triple-buffering)
-    std::array<uint32_t, 3> generations = {UINT32_MAX, UINT32_MAX, UINT32_MAX};
-    std::array<uint32_t, 3> ids         = {UINT32_MAX, UINT32_MAX, UINT32_MAX};
+    // One slot per swapchain image; only the first swapChainImages.size() are used.
+    std::array<uint32_t, MAX_SWAPCHAIN_IMAGES> generations;
+    std::array<uint32_t, MAX_SWAPCHAIN_IMAGES> ids;
+
+    // Fill all slots with the "never written" sentinel — a brace initializer can't
+    // express MAX_SWAPCHAIN_IMAGES identical values, and zero-filling the tail would
+    // wrongly read as "generation 0 / id 0" instead of UINT32_MAX.
+    VulkanShaderDescriptorState()
+    {
+        generations.fill(UINT32_MAX);
+        ids.fill(UINT32_MAX);
+    }
 };
 
 // ── Sampler write-decision logic ──────────────────────────────────────────────
