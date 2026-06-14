@@ -273,6 +273,22 @@ void NOUS_VulkanBuffer::CopyBuffer(VulkanContext* vkContext, VkCommandPool pool,
     VulkanCommandBuffer tempCommandBuffer;
     NOUS_VulkanCommandBuffer::CommandBufferAllocateAndBeginSingleTime(vkContext, pool, &tempCommandBuffer);
 
+    // Execution dependency: ensure prior queue work that may still be reading `dest` (e.g. a
+    // previous frame's vkCmdDrawIndexed using the shared vertex/index buffer) finishes before
+    // this transfer overwrites it. WRITE_AFTER_READ needs only an execution barrier — no memory/
+    // cache management — so this is an empty-scope barrier with just stage masks. Without it,
+    // re-uploading a mesh while an in-flight frame still reads the buffer (e.g. scene reload on
+    // play/stop) is a WAR hazard (flagged by sync validation; UB per spec).
+    //
+    // srcStage MUST be ALL_COMMANDS, not ALL_GRAPHICS: this command buffer comes from a pool on
+    // the *transfer* queue family (VulkanMultithreading), where graphics pipeline stages are not
+    // permitted. ALL_COMMANDS is valid on any queue family. On a unified-queue device (e.g. Mesa
+    // llvmpipe, where transfer == graphics queue) this orders the copy after the draws; on a
+    // device with a separate transfer queue it is a valid same-queue dependency.
+    vkCmdPipelineBarrier(tempCommandBuffer.handle,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0, 0, nullptr, 0, nullptr, 0, nullptr);
+
     // Prepare the copy command and add it to the command buffer.
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
