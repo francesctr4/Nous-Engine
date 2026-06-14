@@ -573,10 +573,24 @@ void ScriptManager::CleanupScripts()
     NOUS_INFO("Cleaned up all CScript instances");
 }
 
+// Platform-specific filename of the compiled scripts shared library.
+// Matches the build scripts (RebuildScripts.sh emits Scripts.so) and the initial-load
+// name in ModuleScene — the hot-reload path must agree or LoadDLL looks for the wrong file.
+static constexpr const char* ScriptLibFileName()
+{
+#ifdef _WIN32
+    return "Scripts.dll";
+#elif defined(__APPLE__)
+    return "Scripts.dylib";
+#else
+    return "Scripts.so";
+#endif
+}
+
 void ScriptManager::RecompileScripts()
 {
     const std::string dllPath =
-        (GetExeDir() / "Library" / "Scripts" / "Scripts.dll").string();
+        (GetExeDir() / "Library" / "Scripts" / ScriptLibFileName()).string();
 
     {
         std::lock_guard<std::mutex> lock(m_scriptComponentsMutex);
