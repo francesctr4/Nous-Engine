@@ -7,17 +7,14 @@ bool NOUS_VulkanSyncObjects::CreateSyncObjects(VulkanContext* vkContext)
 
     const uint32 imageCount = static_cast<uint32>(vkContext->swapChain.swapChainImages.size());
 
-    // The inFlightFences / imagesInFlight arrays are fixed-size (2 / 3); guard the hard-coded
-    // triple-buffer assumption so a swapchain reporting >3 images fails loudly instead of
-    // overrunning those arrays.
-    NOUS_ASSERT_MSG(imageCount <= 3, "Swapchain reported more images than the sync arrays support (max 3).");
-
     VkSemaphoreCreateInfo semaphoreCreateInfo{};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     // Per-frame-in-flight: the "image available" semaphore is signaled by vkAcquireNextImageKHR,
-    // so it is tied to the CPU frame index (currentFrame), not the swapchain image.
+    // so it is tied to the CPU frame index (currentFrame), not the swapchain image. The in-flight
+    // fences are indexed the same way, so both are sized to maxFramesInFlight.
     vkContext->imageAvailableSemaphores.resize(vkContext->swapChain.maxFramesInFlight);
+    vkContext->inFlightFences.resize(vkContext->swapChain.maxFramesInFlight);
 
     for (uint16 i = 0; i < vkContext->swapChain.maxFramesInFlight; ++i)
     {
@@ -44,14 +41,10 @@ bool NOUS_VulkanSyncObjects::CreateSyncObjects(VulkanContext* vkContext)
         VK_CHECK(vkCreateSemaphore(vkContext->device.logicalDevice, &semaphoreCreateInfo, vkContext->allocator, &vkContext->queueCompleteSemaphores[i]));
     }
 
-    // In flight fences should not yet exist at this point, so clear the list. These are stored in pointers
-    // because the initial state should be 0, and will be 0 when not in use. Acutal fences are not owned
-    // by this list.
-
-    for (uint16 i = 0; i < vkContext->imagesInFlight.size(); ++i)
-    {
-        vkContext->imagesInFlight[i] = 0;
-    }
+    // imagesInFlight is indexed by swapchain image index, so it is sized to the image count.
+    // Entries are non-owning aliases of inFlightFences (set per frame in DrawFrame) and must
+    // start at VK_NULL_HANDLE — value-initialization on resize gives exactly that.
+    vkContext->imagesInFlight.assign(imageCount, VK_NULL_HANDLE);
 
     return ret;
 }
@@ -87,4 +80,12 @@ void NOUS_VulkanSyncObjects::DestroySyncObjects(VulkanContext* vkContext)
 
     vkContext->queueCompleteSemaphores.clear();
     vkContext->queueCompleteSemaphores.shrink_to_fit();
+
+    // Fences themselves were destroyed in the loop above; drop the (now non-owning) handles
+    // so a subsequent CreateSyncObjects resizes from empty.
+    vkContext->inFlightFences.clear();
+    vkContext->inFlightFences.shrink_to_fit();
+
+    vkContext->imagesInFlight.clear();
+    vkContext->imagesInFlight.shrink_to_fit();
 }

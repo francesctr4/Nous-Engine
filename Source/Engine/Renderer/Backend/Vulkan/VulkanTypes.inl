@@ -286,8 +286,11 @@ struct VulkanContext
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> queueCompleteSemaphores;
 
-    std::array<VkFence, 2> inFlightFences;
-    std::array<VkFence, 3> imagesInFlight;
+    // Sized at runtime in CreateSyncObjects (maxFramesInFlight / swapchain image count
+    // respectively) — not fixed-size, so the engine adapts to swapchains that report
+    // more than 3 images (e.g. Mesa llvmpipe in a headless/VM environment).
+    std::vector<VkFence> inFlightFences;
+    std::vector<VkFence> imagesInFlight;
 
     uint32 imageIndex;
     uint32 currentFrame;
