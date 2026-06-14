@@ -88,12 +88,12 @@ bool VulkanBackend::Initialize()
 
     // Instance
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan instance...");
-    if (!NOUS_VulkanInstance::CreateInstance(vkContext)) 
+    if (!NOUS_VulkanInstance::CreateInstance(vkContext))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Instance. Shutting the Application.");
-        ret = false;
+        return false;
     }
-    else 
+    else
     {
         NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Instance created successfully!");
     }
@@ -115,9 +115,9 @@ bool VulkanBackend::Initialize()
     if (!NOUS_VulkanInstance::CreateSurface(vkContext))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Surface. Shutting the Application.");
-        ret = false;
+        return false;
     }
-    else 
+    else
     {
         NOUS_DEBUG_C(CURRENT_CHANNEL, "Vulkan Surface created successfully!");
     }
@@ -127,7 +127,7 @@ bool VulkanBackend::Initialize()
     if (!NOUS_VulkanDevice::PickPhysicalDevice(vkContext))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to find a suitable GPU!");
-        ret = false;
+        return false;
     }
     else
     {
@@ -139,7 +139,7 @@ bool VulkanBackend::Initialize()
     if (!NOUS_VulkanDevice::CreateLogicalDevice(vkContext))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Logical Device. Shutting the Application.");
-        ret = false;
+        return false;
     }
     else
     {
@@ -151,7 +151,7 @@ bool VulkanBackend::Initialize()
     if (!NOUS_VulkanSwapChain::CreateSwapChain(vkContext, vkContext->framebufferWidth, vkContext->framebufferHeight, &vkContext->swapChain))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Failed to create Vulkan Swap Chain. Shutting the Application.");
-        ret = false;
+        return false;
     }
     else
     {
@@ -792,23 +792,31 @@ void VulkanBackend::Shutdown() noexcept
         }
     }
 
-    NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
-
-    if (vkContext->renderMode == RenderMode::GAME)
+    // Sync objects, renderpasses, swapchain and the logical device only exist when
+    // Initialize() got past device creation. Skip them on a partial-init teardown
+    // (failure before the logical device) so we don't pass a VK_NULL_HANDLE device
+    // into the destroy helpers. Surface/debug-messenger/instance below were already
+    // created and are always torn down.
+    if (vkContext->device.logicalDevice != VK_NULL_HANDLE)
     {
-        NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->gameSwapchainRenderpass);
-    }
-    else
-    {
-        NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->uiRenderpass);
-        NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->gameRenderpass);
-        NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->pickRenderpass);
-        NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->sceneRenderpass);
-    }
+        NOUS_VulkanSyncObjects::DestroySyncObjects(vkContext);
 
-    NOUS_VulkanSwapChain::DestroySwapChain(vkContext, &vkContext->swapChain);
+        if (vkContext->renderMode == RenderMode::GAME)
+        {
+            NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->gameSwapchainRenderpass);
+        }
+        else
+        {
+            NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->uiRenderpass);
+            NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->gameRenderpass);
+            NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->pickRenderpass);
+            NOUS_VulkanRenderpass::DestroyRenderpass(vkContext, &vkContext->sceneRenderpass);
+        }
 
-    NOUS_VulkanDevice::DestroyLogicalDevice(vkContext);
+        NOUS_VulkanSwapChain::DestroySwapChain(vkContext, &vkContext->swapChain);
+
+        NOUS_VulkanDevice::DestroyLogicalDevice(vkContext);
+    }
 
     NOUS_VulkanInstance::DestroySurface(vkContext);
 
@@ -820,6 +828,15 @@ void VulkanBackend::Shutdown() noexcept
 void VulkanBackend::ReleaseFrameResources() noexcept
 {
     if (m_frameResourcesReleased) return;
+
+    // Nothing to release if the logical device was never created (e.g. Initialize()
+    // aborted at instance/surface/physical-device selection). Calling vkDeviceWaitIdle
+    // with a VK_NULL_HANDLE device is invalid and would crash during failure-path teardown.
+    if (vkContext->device.logicalDevice == VK_NULL_HANDLE)
+    {
+        m_frameResourcesReleased = true;
+        return;
+    }
 
     // Wait for the GPU to finish all submitted work.
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
