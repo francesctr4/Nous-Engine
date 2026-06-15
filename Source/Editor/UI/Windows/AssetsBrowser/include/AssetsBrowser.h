@@ -84,6 +84,7 @@ enum class FileType : int8_t
     SFX,
     VIDEO,
     GIF,
+    AUDIO_GRAPH,
 
     ALL_TYPES
 };

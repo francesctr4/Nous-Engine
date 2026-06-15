@@ -2,20 +2,49 @@
 
 #include "Editor/EditorContext.h"
 #include "Engine/Core/Globals.h"   // down_cast
+#include "Engine/Core/Logger/Logger.h"
+#include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ImporterAudioGraph.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>   // BeginDragDropTargetCustom + ImRect (full-canvas drop target)
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <cstring>
 #include <filesystem>
+#include <initializer_list>
 #include <span>
 #include <string>
 #include <unordered_map>
 
 namespace ed = ax::NodeEditor;
+
+namespace
+{
+// Walk an ASSETS_BROWSER_ITEMS drag-drop payload (a run of null-terminated paths) and
+// return the first path whose extension matches one of `exts`, or "" if none match.
+std::string FirstDroppedAsset(const ImGuiPayload* payload,
+                              std::initializer_list<const char*> exts)
+{
+    const char* data = static_cast<const char*>(payload->Data);
+    const char* end  = data + payload->DataSize;
+    while (data < end && *data)
+    {
+        std::string path(data);
+        data += path.size() + 1;
+        const std::string ext = std::filesystem::path(path).extension().string();
+        for (const char* e : exts)
+            if (ext == e)
+                return path;
+    }
+    return {};
+}
+} // namespace
 
 // ---------------------------------------------------------------------------
 // Category metadata
@@ -82,9 +111,121 @@ AudioNodeKind AudioGraphEditor::FromEffectType(AudioEffectType type)
     return AudioNodeKind::Gain;
 }
 
-// Stub — replaced with the live-preview push in Task 5.
-void AudioGraphEditor::OnParamEdited(const AudioNode& /*node*/, int /*paramIndex*/)
+// Push a live param edit to an active preview. Patches the single param in place via
+// SetEffectParam (no node teardown → no audible gap) for everything the backend can
+// update live. Delay-time (param 0) is baked into the buffer length at node init, so
+// it — and any change we can't map to the live chain — falls back to a full rebuild.
+void AudioGraphEditor::OnParamEdited(const AudioNode& node, int paramIndex)
 {
+    if (!m_previewVoice)
+        return;
+    ModuleAudio* audio = AudioModule();
+    if (!audio)
+        return;
+
+    const bool delayTime = IsEffect(node.kind)
+                        && ToEffectType(node.kind) == AudioEffectType::Delay
+                        && paramIndex == 0;
+
+    int effectIndex = -1;
+    if (!delayTime && m_previewChain)
+        effectIndex = EffectIndexInChain(node);
+
+    if (delayTime || !m_previewChain || effectIndex < 0)
+    {
+        RebuildPreviewChain();   // structural / unmappable change — full rebuild
+        return;
+    }
+
+    if (paramIndex >= 0 && paramIndex < static_cast<int>(node.params.size()))
+        audio->SetEffectParam(m_previewChain, effectIndex, paramIndex, node.params[paramIndex]);
+}
+
+int AudioGraphEditor::EffectIndexInChain(const AudioNode& node)
+{
+    // Effects are emitted into the chain in Source→Output path order — the same order
+    // ChainOrderedNodes walks — so counting effects up to `node` yields its chain index.
+    std::vector<AudioNode*> ordered = ChainOrderedNodes();
+    int idx = 0;
+    for (AudioNode* n : ordered)
+    {
+        if (!IsEffect(n->kind))
+            continue;
+        if (n->id == node.id)
+            return idx;
+        ++idx;
+    }
+    return -1;
+}
+
+// ---------------------------------------------------------------------------
+// In-editor preview (Task 5)
+// ---------------------------------------------------------------------------
+
+ModuleAudio* AudioGraphEditor::AudioModule() const
+{
+    ModuleScene* scene = editorContext ? editorContext->GetScene() : nullptr;
+    return scene ? scene->GetAudio() : nullptr;
+}
+
+void AudioGraphEditor::PreviewStop()
+{
+    ModuleAudio* audio = AudioModule();
+    if (audio)
+    {
+        if (m_previewChain) audio->DestroyEffectChain(m_previewChain);   // chain hangs off the voice — release first
+        if (m_previewVoice) audio->DestroySound(m_previewVoice);
+    }
+    m_previewChain = nullptr;
+    m_previewVoice = nullptr;
+}
+
+void AudioGraphEditor::PreviewPlay()
+{
+    ModuleAudio* audio = AudioModule();
+    if (!audio || !m_previewClip)
+        return;
+    PreviewStop();
+
+    m_previewVoice = audio->CreateSound(m_previewClip, AudioBus::Master);
+    if (!m_previewVoice)
+        return;
+
+    audio->SetSoundSpatializationEnabled(m_previewVoice, false);   // 2D audition
+    audio->SetSoundLooping(m_previewVoice, true);                  // loop so live edits stay audible
+
+    RebuildPreviewChain();          // build the DSP chain from the live graph
+    audio->StartSound(m_previewVoice);
+}
+
+void AudioGraphEditor::RebuildPreviewChain()
+{
+    ModuleAudio* audio = AudioModule();
+    if (!audio || !m_previewVoice)
+        return;
+
+    if (m_previewChain) { audio->DestroyEffectChain(m_previewChain); m_previewChain = nullptr; }
+
+    AudioGraphDesc desc;
+    if (LinearizeCurrent(desc) && !desc.empty())
+        m_previewChain = audio->CreateEffectChain(m_previewVoice, desc, AudioBus::Master);
+}
+
+void AudioGraphEditor::SetPreviewClip(const std::string& audioPath)
+{
+    ModuleResourceManager* rm = ResourceManager();
+    if (!rm)
+        return;
+
+    if (ResourceBase* r = rm->CreateResource(audioPath))
+    {
+        PreviewStop();   // drop a new clip → drop the old audition
+        // CreateResource added a fresh ref for this assignment, so always release
+        // the previously-held one (even if it's the same clip → balanced refcount).
+        if (m_previewClip)
+            rm->UnloadResource(m_previewClip->GetUID());
+        m_previewClip = down_cast<ResourceAudio*>(r);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -225,7 +366,14 @@ bool AudioGraphEditor::SaveToOpenAsset()
     // Walk the chain once; effects[] and editorPositions stay parallel by construction.
     std::vector<AudioNode*> ordered = ChainOrderedNodes();
     if (ordered.empty())
-        return false;   // broken / disconnected chain — refuse to save a half-wired graph
+    {
+        // Refuse to save a half-wired graph. Keep m_dirty set (the '*' marker stays) so
+        // the unsaved state is still visible, and tell the user why nothing was written.
+        NOUS_WARN("[AudioGraphEditor] Save skipped: '%s' has no complete Audio Source -> Audio Output path. "
+                  "Wire the chain before saving.",
+                  m_graph->GetName().c_str());
+        return false;
+    }
 
     m_graph->effects.clear();
     m_graph->editorPositions.clear();
@@ -249,7 +397,7 @@ bool AudioGraphEditor::SaveToOpenAsset()
     return true;
 }
 
-void AudioGraphEditor::NewAsset()
+void AudioGraphEditor::NewAsset(const std::string& name)
 {
     ModuleResourceManager* rm = ResourceManager();
     if (!rm)
@@ -257,17 +405,13 @@ void AudioGraphEditor::NewAsset()
 
     const std::string dir = editorContext->GetAssetsBrowserDirectory();
 
-    // Auto-increment so a second New never clobbers the first.
-    std::string path;
-    for (int i = 0; i <= 9999; ++i)
+    // Auto-suffix on collision so the chosen name never clobbers an existing file.
+    std::string path = dir + "/" + name + ".nafx";
+    for (int i = 1; std::filesystem::exists(path); ++i)
     {
-        const std::string name = (i == 0) ? "NewAudioGraph.nafx"
-                                          : ("NewAudioGraph_" + std::to_string(i) + ".nafx");
-        path = dir + "/" + name;
-        if (!std::filesystem::exists(path))
-            break;
-        if (i == 9999)
+        if (i > 9999)
             return;  // sanity bail
+        path = dir + "/" + name + "_" + std::to_string(i) + ".nafx";
     }
 
     if (!ImporterAudioGraph::CreateNewAudioGraphFile(path))
@@ -275,6 +419,55 @@ void AudioGraphEditor::NewAsset()
     rm->ImportFile(path);   // mirror to Library + assign a UID
     if (ResourceBase* r = rm->CreateResource(path))
         LoadFromResource(down_cast<ResourceAudioGraph*>(r));
+}
+
+void AudioGraphEditor::DrawNewAssetPopup()
+{
+    // OpenPopup must run at window scope, not inside the menu bar (the menu's
+    // ID stack mis-scopes the popup). The menu item only sets the flag.
+    if (m_showNewAssetPopup)
+    {
+        ImGui::OpenPopup("New Audio Graph");
+        std::strncpy(m_newAssetName, "NewAudioGraph", sizeof(m_newAssetName) - 1);
+        m_newAssetName[sizeof(m_newAssetName) - 1] = '\0';
+        m_showNewAssetPopup = false;
+    }
+
+    const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    if (ImGui::BeginPopupModal("New Audio Graph", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Create in: %s", editorContext->GetAssetsBrowserDirectory().c_str());
+        ImGui::Spacing();
+        ImGui::Text("Graph Name:");
+        ImGui::SetNextItemWidth(300.0f);
+        const bool enterPressed = ImGui::InputText("##NafxName", m_newAssetName, IM_ARRAYSIZE(m_newAssetName),
+                                                   ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        const bool nameEmpty = std::strlen(m_newAssetName) == 0;
+        ImGui::BeginDisabled(nameEmpty);
+        if (ImGui::Button("Create", ImVec2(120, 0)) || (enterPressed && !nameEmpty))
+        {
+            NewAsset(m_newAssetName);
+            m_newAssetName[0] = '\0';
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndDisabled();
+
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        {
+            m_newAssetName[0] = '\0';
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
 }
 
 void AudioGraphEditor::OpenAsset(const std::string& nafxPath)
@@ -321,11 +514,18 @@ AudioGraphEditor::AudioGraphEditor(const char* title, EditorContext* context, bo
 
 AudioGraphEditor::~AudioGraphEditor()
 {
-    // Release the open asset's ref (preview voice teardown is added in Task 5).
+    // Tear down the preview voice/chain first so no audio outlives the window
+    // (would leak the NOUS_NEW'd ma_sound and trip the ShutdownMemory leak-abort).
+    PreviewStop();
+
+    // Release the open asset's + preview clip's refs.
     if (ModuleResourceManager* rm = ResourceManager())
-        if (m_graph)
-            rm->UnloadResource(m_graph->GetUID());
-    m_graph = nullptr;
+    {
+        if (m_graph)       rm->UnloadResource(m_graph->GetUID());
+        if (m_previewClip) rm->UnloadResource(m_previewClip->GetUID());
+    }
+    m_graph       = nullptr;
+    m_previewClip = nullptr;
 
     if (m_context)
     {
@@ -428,7 +628,7 @@ void AudioGraphEditor::DrawMenuBar()
     if (ImGui::BeginMenu("File"))
     {
         if (ImGui::MenuItem("New"))
-            NewAsset();
+            m_showNewAssetPopup = true;  // deferred: OpenPopup at window scope (see DrawNewAssetPopup)
         if (ImGui::MenuItem("Save", nullptr, false, m_graph != nullptr))
             SaveToOpenAsset();
         ImGui::EndMenu();
@@ -672,10 +872,11 @@ void AudioGraphEditor::DrawCanvas()
         // CanAcceptUserInput() is true (focused AND hovered). In this host
         // setup that's flaky, so detect Delete ourselves and queue deletions
         // explicitly — BeginDelete/QueryDeleted* below will then pick them up.
-        // Accept Delete, Backspace, and Numpad-Decimal as "delete selection".
-        // On some keyboard layouts (notably Spanish ISO via SDL) the physical
-        // "Supr" key reports as SDL_SCANCODE_KP_PERIOD → ImGuiKey_KeypadDecimal
-        // instead of ImGuiKey_Delete, so we listen for all three.
+        // "Supr" / Delete as "delete selection". This host setup never receives a
+        // plain ImGuiKey_Delete: on the Spanish ISO layout (via SDL) the physical
+        // "Supr" key reports as SDL_SCANCODE_KP_PERIOD → ImGuiKey_KeypadDecimal,
+        // and the upper-row variant comes through as ImGuiKey_Pause — so listen for
+        // those two rather than ImGuiKey_Delete.
         const bool deletePressed =
             ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) &&
             (ImGui::IsKeyPressed(ImGuiKey_KeypadDecimal,  false) ||
@@ -715,6 +916,85 @@ void AudioGraphEditor::DrawCanvas()
 }
 
 // ---------------------------------------------------------------------------
+// Toolbar (preview controls + help)
+// ---------------------------------------------------------------------------
+
+void AudioGraphEditor::DrawToolbar()
+{
+    ModuleAudio* audio   = AudioModule();
+    const bool   playing = m_previewVoice && audio && audio->IsSoundPlaying(m_previewVoice);
+
+    // Play / Stop toggle. Disabled (greyed) until a preview clip is assigned.
+    if (playing)
+    {
+        if (ImGui::Button("Stop ##preview"))
+            PreviewStop();
+    }
+    else
+    {
+        ImGui::BeginDisabled(m_previewClip == nullptr);
+        if (ImGui::Button("Play ##preview"))
+            PreviewPlay();
+        ImGui::EndDisabled();
+    }
+
+    // Clip slot — labelled button doubling as a drop target for a .wav/.ogg.
+    ImGui::SameLine();
+    ImGui::TextUnformatted("Preview clip:");
+    ImGui::SameLine();
+    ImGui::Button(m_previewClip ? m_previewClip->GetName().c_str()
+                                : "(none — drop a .wav / .ogg)");
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+        {
+            const std::string clip = FirstDroppedAsset(payload, { ".wav", ".ogg" });
+            if (!clip.empty())
+                SetPreviewClip(clip);
+        }
+        ImGui::EndDragDropTarget();
+    }
+
+    // Right-aligned help marker — folds the pan/zoom/delete hints into a tooltip
+    // so the toolbar stays uncluttered.
+    const char* help = "(?)";
+    const float helpW = ImGui::CalcTextSize(help).x;
+    ImGui::SameLine(ImGui::GetContentRegionMax().x - helpW - ImGui::GetStyle().FramePadding.x);
+    ImGui::TextDisabled("%s", help);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("RMB-drag: pan\n"
+                          "Mouse wheel: zoom\n"
+                          "Supr: remove selected\n"
+                          "\n"
+                          "Drop a .nafx onto the canvas to open it.\n"
+                          "Drop a .wav / .ogg to set the preview clip.");
+}
+
+// ---------------------------------------------------------------------------
+// Full-canvas drop target (routes by extension)
+// ---------------------------------------------------------------------------
+
+void AudioGraphEditor::HandleCanvasDrop(const ImVec2& canvasMin, const ImVec2& canvasMax)
+{
+    // BeginDragDropTargetCustom registers a drop zone over an arbitrary rect without
+    // an owning item, and only becomes live while an external payload is being dragged
+    // — so it never steals the clicks the node editor needs for panning / selection.
+    const ImRect rect(canvasMin, canvasMax);
+    if (!ImGui::BeginDragDropTargetCustom(rect, ImGui::GetID("AudioGraphCanvasDrop")))
+        return;
+
+    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+    {
+        // .nafx wins over a clip if both appear in the same multi-select drop.
+        if (std::string nafx = FirstDroppedAsset(payload, { ".nafx" }); !nafx.empty())
+            OpenAsset(nafx);
+        else if (std::string clip = FirstDroppedAsset(payload, { ".wav", ".ogg" }); !clip.empty())
+            SetPreviewClip(clip);
+    }
+    ImGui::EndDragDropTarget();
+}
+
+// ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 
@@ -724,32 +1004,21 @@ void AudioGraphEditor::DrawContent()
         return;
 
     DrawMenuBar();
+    DrawNewAssetPopup();  // modal name prompt opened by File ▸ New
 
-    // Thin info row above the canvas. This also serves a load-bearing role:
-    // imgui-node-editor's canvas-rect calculations require a real measured
-    // item in the host window before ed::Begin (see feedback memory note).
-    ImGui::Text(" RMB-drag: pan   |   Mouse wheel: zoom   |   Supr: remove selected");
-    // Drag a .nafx from the Assets Browser onto this row to open it.
-    if (ImGui::BeginDragDropTarget())
-    {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
-        {
-            const char* data = static_cast<const char*>(payload->Data);
-            const char* end  = data + payload->DataSize;
-            while (data < end)
-            {
-                std::string path(data);
-                data += path.size() + 1;
-                if (std::filesystem::path(path).extension().string() == ".nafx")
-                {
-                    OpenAsset(path);
-                    break;
-                }
-            }
-        }
-        ImGui::EndDragDropTarget();
-    }
+    // The toolbar is also load-bearing: imgui-node-editor's canvas-rect calculation
+    // requires a real measured item in the host window before ed::Begin (its buttons
+    // satisfy that — see feedback_imgui_node_editor_host_setup).
+    DrawToolbar();
     ImGui::Separator();
 
+    // Capture the canvas rect before ed::Begin advances the cursor, so the whole
+    // remaining window area can be wired as a drop target after the canvas draws.
+    const ImVec2 canvasMin = ImGui::GetCursorScreenPos();
+    const ImVec2 avail     = ImGui::GetContentRegionAvail();
+    const ImVec2 canvasMax = ImVec2(canvasMin.x + avail.x, canvasMin.y + avail.y);
+
     DrawCanvas();
+
+    HandleCanvasDrop(canvasMin, canvasMax);
 }

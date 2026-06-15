@@ -52,7 +52,9 @@ static const std::unordered_map<std::string, FileType> extensionToFileType =
     {".wav",    FileType::SFX},
 
     {".mp4",    FileType::VIDEO},
-    {".gif",    FileType::GIF}
+    {".gif",    FileType::GIF},
+
+    {".nafx",   FileType::AUDIO_GRAPH}
 };
 
 static const std::unordered_map<FileType, const char*> icon_type_glyphs =
@@ -72,6 +74,7 @@ static const std::unordered_map<FileType, const char*> icon_type_glyphs =
     {FileType::SFX,      "\xEF\x80\xA8"},   // U+F028 fa-volume-up
     {FileType::VIDEO,    "\xEF\x80\xBD"},   // U+F03D fa-video
     {FileType::GIF,      "\xEF\x80\x88"},   // U+F008 fa-film
+    {FileType::AUDIO_GRAPH, "\xEF\x87\x9E"},// U+F1DE fa-sliders
 };
 
 static const std::unordered_map<FileType, uint32_t> icon_type_overlay_colors =
@@ -91,6 +94,7 @@ static const std::unordered_map<FileType, uint32_t> icon_type_overlay_colors =
     {FileType::SFX,      IM_COL32( 56, 218, 191, 255)},
     {FileType::VIDEO,    IM_COL32(153,  76, 237, 255)},   // purple — matches the Video registry asset color
     {FileType::GIF,      IM_COL32( 46, 204, 113, 255)},   // emerald — distinct from the purple .mp4 sibling
+    {FileType::AUDIO_GRAPH, IM_COL32(51, 217, 217, 255)}, // cyan — matches the AUDIO_GRAPH registry asset color
 };
 
 static void HelpMarker(const char* desc)
