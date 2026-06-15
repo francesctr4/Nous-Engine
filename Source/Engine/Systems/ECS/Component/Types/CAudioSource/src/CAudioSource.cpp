@@ -8,6 +8,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
@@ -164,6 +165,17 @@ void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& au
     // PLAYING.
     if (!m_started)
     {
+        // If a sibling video player is still loading (e.g. predecoding all its frames),
+        // hold our start until it's ready so the audio and video begin together instead of
+        // the music racing ahead during the decode hitch. Retried next frame; once the video
+        // finishes its load attempt (success or failure) the gate opens.
+        auto go = GetGameObject();
+        if (CVideoPlayer* video = go.IsValid() ? go.TryGetComponent<CVideoPlayer>() : nullptr)
+        {
+            if (video->IsLoadingForPlayback())
+                return;
+        }
+
         // First frame of the play session: honour playOnAwake.
         if (playOnAwake && clip)
         {

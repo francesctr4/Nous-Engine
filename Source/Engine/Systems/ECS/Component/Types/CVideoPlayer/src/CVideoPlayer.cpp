@@ -68,6 +68,11 @@ void CVideoPlayer::OnUpdate(float deltaTime)
     {
         if (playOnAwake && clip)
         {
+            // Force PREDECODED for a seamless loop if the user opted in. The backend reads
+            // GetDecodeMode() inside CreateVideo, so setting it here (just before) wins over
+            // the extension policy ImporterVideo applied at import (.mp4 -> STREAMED).
+            if (predecode)
+                clip->SetDecodeMode(VideoDecodeMode::PREDECODED);
             if (!handle)
                 handle = video->CreateVideo(clip);
             if (handle)
@@ -141,6 +146,7 @@ JsonObject CVideoPlayer::Serialize() const
     root.Set("loop",        loop);
     root.Set("playOnAwake", playOnAwake);
     root.Set("syncToAudio", syncToAudio);
+    root.Set("predecode",   predecode);
     root.Set("targetSlot",  targetSlot);
     return root;
 }
@@ -150,6 +156,7 @@ void CVideoPlayer::Deserialize(const JsonObject& obj)
     loop        = obj.GetBool  ("loop",        loop);
     playOnAwake = obj.GetBool  ("playOnAwake", playOnAwake);
     syncToAudio = obj.GetBool  ("syncToAudio", syncToAudio);
+    predecode   = obj.GetBool  ("predecode",   predecode);
     targetSlot  = obj.GetString("targetSlot", targetSlot.c_str());
 
     const std::string assetPath   = obj.GetString("assetPath");

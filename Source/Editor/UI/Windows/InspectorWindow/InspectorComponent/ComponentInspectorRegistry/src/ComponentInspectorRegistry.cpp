@@ -519,6 +519,13 @@ static void DrawVideoPlayer(const InspectorCtx& ctx, Component* c)
     if (!clipHasAudio)
         ImGui::EndDisabled();
 
+    ImGui::Checkbox("Predecode (seamless loop)", &cVideo->predecode);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Decode every frame into memory instead of streaming.\n"
+                          "Gives a seamless loop (no seek stutter at the loop point),\n"
+                          "but uses frames * width * height * 4 bytes of RAM.\n"
+                          "Use only for short, low-resolution clips. Takes effect on next Play.");
+
     // Target texture slot — choose which of the shader's texture samplers the video drives
     // (default "diffuseSampler"). Options come from SHADER REFLECTION (the material's
     // textureMaps only holds slots that already have an assigned texture, so we can't list

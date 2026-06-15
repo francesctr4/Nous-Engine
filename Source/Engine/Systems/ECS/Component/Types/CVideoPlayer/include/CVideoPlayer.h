@@ -37,6 +37,11 @@ public:
                                                    // clock for A/V sync — only when this clip has an
                                                    // audio track (never for GIFs). Uncheck to run the
                                                    // video on its own clock, independent of the audio.
+    bool           predecode   = false;            // decode every frame into memory up front instead of
+                                                   // streaming. Trades RAM (frames * w*h*4) for a SEAMLESS
+                                                   // loop — the streamed path stutters at the loop seam
+                                                   // because it must seek back to frame 0. Use only for
+                                                   // short, low-res clips (a long/4K clip would OOM).
     std::string    targetSlot  = "diffuseSampler"; // material textureMaps key the video drives
 
     // ---- Runtime state (not serialized; read by ModuleRenderer3D) ----
@@ -44,6 +49,16 @@ public:
     double      playhead   = 0.0;
     VideoFrame  latestFrame{};          // latched ptr from TryGetFrame (valid until next call)
     bool        frameDirty = false;     // a new frame is waiting to be uploaded
+
+    // True while this player is expected to start on play but hasn't finished its one-time
+    // load attempt yet (for PREDECODED clips that's the synchronous full-decode). A sibling
+    // CAudioSource uses this to delay its own start so audio and video begin together.
+    // Becomes false once the load attempt completes (whether it succeeded or failed), so a
+    // failed load never blocks the audio forever.
+    [[nodiscard]] bool IsLoadingForPlayback() const
+    {
+        return playOnAwake && clip != nullptr && !m_started;
+    }
 
     // Lifecycle
     NOUS_ENGINE_API void OnUpdate(float deltaTime) override;
