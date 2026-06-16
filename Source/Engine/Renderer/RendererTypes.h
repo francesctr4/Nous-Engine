@@ -173,45 +173,47 @@ struct CameraFrustumData
 };
 
 // -----------------------------------------------------------------------------
-// Bounding box data
+// Wireframe debug overlays (Scene View)
 // -----------------------------------------------------------------------------
 /**
- * @brief Transform and color for one bounding box draw call.
+ * @brief Identifies one of the backend-owned static wireframe debug meshes.
  *
- * The transform maps a unit cube (±0.5 on each axis) to the desired
- * bounding box in world space:
+ * Each value maps to a shared LINE_LIST vertex buffer created once at backend
+ * init. DrawWireframeMeshInstances() draws the selected mesh once per instance,
+ * applying the instance's transform + color via push constants.
+ *
+ * Conventional usage (the geometry, not the purpose, is what's named):
+ *   Cube    — axis-aligned / oriented bounding boxes
+ *   Sphere  — point-light position markers and range spheres
+ *   Pyramid — directional-light direction indicators
+ *   Cone    — spot-light marker and full-angle cones
+ */
+enum class WireframeMesh : uint8_t
+{
+    Cube,
+    Sphere,
+    Pyramid,
+    Cone,
+
+    COUNT
+};
+
+/**
+ * @brief One instanced wireframe draw: a transform mapping the shared mesh into
+ *        world space, plus a line color.
+ *
+ * The transform maps the unit mesh to the desired placement in world space, e.g.
+ * for a Cube bounding box:
  *   - AABB: translate(worldCenter) * scale(worldExtents)  — no rotation
  *   - OBB:  worldMatrix * translate(localCenter) * scale(localExtents)
  */
-struct BoundingBoxData
+struct WireframeInstance
 {
-    BoundingBoxData() : transform(1.0f), color(1.0f) {}
-    BoundingBoxData(const glm::mat4& t, const glm::vec4& c) : transform(t), color(c) {}
+    WireframeInstance() : transform(1.0f), color(1.0f) {}
+    WireframeInstance(const glm::mat4& t, const glm::vec4& c) : transform(t), color(c) {}
 
     glm::mat4 transform;
     glm::vec4 color;
-};
-
-// Per-directional-light debug pyramid data passed to DrawDirectionalLightDebugs().
-struct DirectionalLightDebugData
-{
-    DirectionalLightDebugData() : transform(1.0f), color(1.0f) {}
-    DirectionalLightDebugData(const glm::mat4& t, const glm::vec4& c) : transform(t), color(c) {}
-
-    glm::mat4 transform;  // GO position + direction-aligned rotation, no scale
-    glm::vec4 color;
-};
-
-// Per-spot-light debug cone data passed to DrawSpotLightDebugs().
-struct SpotLightDebugData
-{
-    SpotLightDebugData()
-        : markerTransform(1.0f), fullConeTransform(1.0f), color(1.0f), selected(false) {}
-
-    glm::mat4 markerTransform;    // small fixed cone — always drawn
-    glm::mat4 fullConeTransform;  // range+angle scaled cone — drawn only when selected
-    glm::vec4 color;
-    bool      selected;
 };
 
 // -----------------------------------------------------------------------------

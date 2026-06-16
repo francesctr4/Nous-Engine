@@ -243,53 +243,27 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 					mOutlineSettings);
 			}
 
-			if (!mBoundingBoxes.empty())
+			// Wireframe debug overlays. The backend updates the shared bounding-box
+			// shader's set=0 on the first of these draws each frame and only rebinds
+			// it on the rest, so they can be issued in any order with no caller-side
+			// bookkeeping (see the set=0 inheritance note in iRendererBackend.h).
+			const glm::mat4& sceneProj = packet->editorCamera->GetProjectionMatrix();
+			const glm::mat4& sceneView = packet->editorCamera->GetViewMatrix();
+
+			for (size_t m = 0; m < mWireframeInstances.size(); ++m)
 			{
-				success &= mBackend->DrawBoundingBoxes(
-					sceneRenderpass,
-					packet->editorCamera->GetProjectionMatrix(),
-					packet->editorCamera->GetViewMatrix(),
-					mBoundingBoxes);
+				const auto& instances = mWireframeInstances[m];
+				if (instances.empty()) continue;
+
+				success &= mBackend->DrawWireframeMeshInstances(
+					sceneRenderpass, sceneProj, sceneView,
+					static_cast<WireframeMesh>(m), instances);
 			}
 
 			if (!mCameraFrustums.empty())
 			{
 				success &= mBackend->DrawCameraFrustums(
-					sceneRenderpass,
-					packet->editorCamera->GetProjectionMatrix(),
-					packet->editorCamera->GetViewMatrix(),
-					mCameraFrustums,
-					/*globalAlreadySet=*/ !mBoundingBoxes.empty());
-			}
-
-			if (!mPointLightDebugs.empty())
-			{
-				success &= mBackend->DrawPointLightDebugs(
-					sceneRenderpass,
-					packet->editorCamera->GetProjectionMatrix(),
-					packet->editorCamera->GetViewMatrix(),
-					mPointLightDebugs,
-					/*globalAlreadySet=*/ !mBoundingBoxes.empty() || !mCameraFrustums.empty());
-			}
-
-			if (!mDirectionalLightDebugs.empty())
-			{
-				success &= mBackend->DrawDirectionalLightDebugs(
-					sceneRenderpass,
-					packet->editorCamera->GetProjectionMatrix(),
-					packet->editorCamera->GetViewMatrix(),
-					mDirectionalLightDebugs,
-					/*globalAlreadySet=*/ !mBoundingBoxes.empty() || !mCameraFrustums.empty() || !mPointLightDebugs.empty());
-			}
-
-			if (!mSpotLightDebugs.empty())
-			{
-				success &= mBackend->DrawSpotLightDebugs(
-					sceneRenderpass,
-					packet->editorCamera->GetProjectionMatrix(),
-					packet->editorCamera->GetViewMatrix(),
-					mSpotLightDebugs,
-					/*globalAlreadySet=*/ !mBoundingBoxes.empty() || !mCameraFrustums.empty() || !mPointLightDebugs.empty() || !mDirectionalLightDebugs.empty());
+					sceneRenderpass, sceneProj, sceneView, mCameraFrustums);
 			}
 		});
 	}
@@ -657,29 +631,15 @@ bool RendererFrontend::SetOutlinedGeometries(
 	return true;
 }
 
-void RendererFrontend::SetBoundingBoxes(const std::vector<BoundingBoxData>& boxes)
+void RendererFrontend::SetWireframeInstances(WireframeMesh mesh,
+                                             const std::vector<WireframeInstance>& instances)
 {
-	mBoundingBoxes = boxes;
+	mWireframeInstances[static_cast<size_t>(mesh)] = instances;
 }
 
 void RendererFrontend::SetCameraFrustums(const std::vector<CameraFrustumData>& frustums)
 {
 	mCameraFrustums = frustums;
-}
-
-void RendererFrontend::SetPointLightDebugs(const std::vector<BoundingBoxData>& lightDebugs)
-{
-	mPointLightDebugs = lightDebugs;
-}
-
-void RendererFrontend::SetDirectionalLightDebugs(const std::vector<DirectionalLightDebugData>& lightDebugs)
-{
-	mDirectionalLightDebugs = lightDebugs;
-}
-
-void RendererFrontend::SetSpotLightDebugs(const std::vector<SpotLightDebugData>& lightDebugs)
-{
-	mSpotLightDebugs = lightDebugs;
 }
 
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)

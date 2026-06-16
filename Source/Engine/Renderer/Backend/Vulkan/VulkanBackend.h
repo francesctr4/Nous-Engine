@@ -92,34 +92,16 @@ public:
 	                    const glm::mat4& projection,
 	                    const glm::mat4& view) override;
 
-	bool DrawBoundingBoxes(RenderpassType renderpassID,
-	                       const glm::mat4& projection,
-	                       const glm::mat4& view,
-	                       const std::vector<BoundingBoxData>& boxes) override;
+	bool DrawWireframeMeshInstances(RenderpassType renderpassID,
+	                                const glm::mat4& projection,
+	                                const glm::mat4& view,
+	                                WireframeMesh mesh,
+	                                const std::vector<WireframeInstance>& instances) override;
 
 	bool DrawCameraFrustums(RenderpassType renderpassID,
 	                        const glm::mat4& projection,
 	                        const glm::mat4& view,
-	                        const std::vector<CameraFrustumData>& frustums,
-	                        bool globalAlreadySet = false) override;
-
-	bool DrawPointLightDebugs(RenderpassType renderpassID,
-	                          const glm::mat4& projection,
-	                          const glm::mat4& view,
-	                          const std::vector<BoundingBoxData>& lightDebugs,
-	                          bool globalAlreadySet = false) override;
-
-	bool DrawDirectionalLightDebugs(RenderpassType renderpassID,
-	                                const glm::mat4& projection,
-	                                const glm::mat4& view,
-	                                const std::vector<DirectionalLightDebugData>& lightDebugs,
-	                                bool globalAlreadySet = false) override;
-
-	bool DrawSpotLightDebugs(RenderpassType renderpassID,
-	                         const glm::mat4& projection,
-	                         const glm::mat4& view,
-	                         const std::vector<SpotLightDebugData>& lightDebugs,
-	                         bool globalAlreadySet = false) override;
+	                        const std::vector<CameraFrustumData>& frustums) override;
 
 	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
 

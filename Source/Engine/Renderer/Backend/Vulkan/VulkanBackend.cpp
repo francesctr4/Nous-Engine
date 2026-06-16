@@ -1121,6 +1121,8 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
             commandBuffer = &vkContext->imGuiResources.m_ViewportCommandBuffers[vkContext->imageIndex];
             renderpass = &vkContext->sceneRenderpass;
             framebuffer = vkContext->imGuiResources.m_ViewportFramebuffers[vkContext->imageIndex];
+            // New scene command buffer this frame — no wireframe draw has bound set=0 yet.
+            vkContext->wireframeGlobalSetThisFrame = false;
             break;
         }
         case RenderpassType::GAME:
@@ -3056,60 +3058,99 @@ bool VulkanBackend::DrawBackground(const RenderpassType renderpassID,
     return true;
 }
 
-bool VulkanBackend::DrawBoundingBoxes(const RenderpassType renderpassID,
-                                       const glm::mat4& projection,
-                                       const glm::mat4& view,
-                                       const std::vector<BoundingBoxData>& boxes)
+bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID,
+                                               const glm::mat4& projection,
+                                               const glm::mat4& view,
+                                               const WireframeMesh mesh,
+                                               const std::vector<WireframeInstance>& instances)
 {
 #ifdef _PROFILING
-    ZoneScopedN("DrawBoundingBoxes");
+    ZoneScopedN("DrawWireframeMeshInstances");
 #endif
-    // Bounding boxes are scene-viewport only.
+    // Wireframe debug meshes are scene-viewport only.
     if (renderpassID != RenderpassType::SCENE)
         return true;
 
-    if (boxes.empty())
+    if (instances.empty())
         return true;
 
+    // All wireframe meshes reuse the bounding-box shader: same vertex format
+    // (Vertex3D.position), same GlobalUBO (projection + view), same push
+    // constants (mat4 model + vec4 color).
     const ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
     if (!rShader || !rShader->internalData)
         return true; // Shader not loaded yet — skip gracefully.
 
-    if (vkContext->boundingBoxVertexBuffer.handle == VK_NULL_HANDLE || vkContext->boundingBoxVertexCount == 0)
+    // Map the mesh kind to its shared static vertex buffer + line width.
+    const VulkanBuffer* vertexBuffer = nullptr;
+    uint32 vertexCount = 0;
+    float  lineWidth   = 1.5f;
+    switch (mesh)
+    {
+        case WireframeMesh::Cube:
+            vertexBuffer = &vkContext->boundingBoxVertexBuffer;
+            vertexCount  = vkContext->boundingBoxVertexCount;
+            lineWidth    = 2.0f; // bounding boxes drawn slightly thicker
+            break;
+        case WireframeMesh::Sphere:
+            vertexBuffer = &vkContext->pointLightSphereVertexBuffer;
+            vertexCount  = vkContext->pointLightSphereVertexCount;
+            break;
+        case WireframeMesh::Pyramid:
+            vertexBuffer = &vkContext->dirLightPyramidVertexBuffer;
+            vertexCount  = vkContext->dirLightPyramidVertexCount;
+            break;
+        case WireframeMesh::Cone:
+            vertexBuffer = &vkContext->spotLightConeVertexBuffer;
+            vertexCount  = vkContext->spotLightConeVertexCount;
+            break;
+        default:
+            return true;
+    }
+
+    if (vertexBuffer->handle == VK_NULL_HANDLE || vertexCount == 0)
         return true;
 
     const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
     const auto vs = down_cast<VulkanShader*>(rShader->internalData);
 
-    // Bind the bounding box pipeline and upload view/projection to the global UBO.
     NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
 
-    const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
-    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-        vkContext->imageIndex, &ubo, sizeof(ubo));
+    if (vkContext->wireframeGlobalSetThisFrame)
+    {
+        // A previous wireframe draw already updated set=0 this frame. Updating it
+        // again while bound would invalidate the command buffer — just rebind it
+        // (same projection/view). See the set=0 inheritance note in iRendererBackend.h.
+        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vs->pipeline.pipelineLayout, 0, 1,
+            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+    }
+    else
+    {
+        const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+            vkContext->imageIndex, &ubo, sizeof(ubo));
+        vkContext->wireframeGlobalSetThisFrame = true;
+    }
 
-    // Bind the shared unit-cube wireframe vertex buffer once.
+    // Bind the shared per-mesh wireframe vertex buffer once.
     constexpr VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->boundingBoxVertexBuffer.handle, &offset);
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vertexBuffer->handle, &offset);
 
     const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
-    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 2.0f : 1.0f);
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? lineWidth : 1.0f);
 
     // Push constant layout: mat4 model (64 bytes) + vec4 color (16 bytes) = 80 bytes.
-    struct BoundingBoxPushConstants
-    {
-        glm::mat4 model;
-        glm::vec4 color;
-    };
+    struct WireframePushConstants { glm::mat4 model; glm::vec4 color; };
 
-    for (const BoundingBoxData& box : boxes)
+    for (const WireframeInstance& inst : instances)
     {
-        BoundingBoxPushConstants pc{ box.transform, box.color };
+        WireframePushConstants pc{ inst.transform, inst.color };
         vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
             VK_SHADER_STAGE_VERTEX_BIT,
-            0, sizeof(BoundingBoxPushConstants), &pc);
+            0, sizeof(WireframePushConstants), &pc);
 
-        vkCmdDraw(cmdBuf->handle, vkContext->boundingBoxVertexCount, 1, 0, 0);
+        vkCmdDraw(cmdBuf->handle, vertexCount, 1, 0, 0);
     }
 
     return true;
@@ -3118,8 +3159,7 @@ bool VulkanBackend::DrawBoundingBoxes(const RenderpassType renderpassID,
 bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
                                         const glm::mat4& projection,
                                         const glm::mat4& view,
-                                        const std::vector<CameraFrustumData>& frustums,
-                                        bool globalAlreadySet)
+                                        const std::vector<CameraFrustumData>& frustums)
 {
 #ifdef _PROFILING
     ZoneScopedN("DrawCameraFrustums");
@@ -3182,12 +3222,13 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
 
     NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
 
-    if (globalAlreadySet)
+    if (vkContext->wireframeGlobalSetThisFrame)
     {
-        // DrawBoundingBoxes already called UpdateGlobal this frame, which bound
-        // the global descriptor set (set=0) into this command buffer. Calling
-        // vkUpdateDescriptorSets on it again would invalidate the CB.
-        // Just rebind it — no update needed (same projection/view matrices).
+        // A prior wireframe draw (DrawWireframeMeshInstances) already called
+        // UpdateGlobal this frame, which bound the global descriptor set (set=0)
+        // into this command buffer. Calling vkUpdateDescriptorSets on it again
+        // would invalidate the CB. Just rebind it — no update needed (same
+        // projection/view matrices).
         vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
             vs->pipeline.pipelineLayout, 0, 1,
             &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
@@ -3198,6 +3239,7 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
         struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
         NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
             vkContext->imageIndex, &ubo, sizeof(ubo));
+        vkContext->wireframeGlobalSetThisFrame = true;
     }
 
     VkDeviceSize offset = 0;
@@ -3216,192 +3258,6 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
             VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(FrustumPushConstants), &pc);
 
         vkCmdDraw(cmdBuf->handle, 24, 1, i * 24, 0);
-    }
-
-    return true;
-}
-
-bool VulkanBackend::DrawPointLightDebugs(const RenderpassType renderpassID,
-                                          const glm::mat4& projection,
-                                          const glm::mat4& view,
-                                          const std::vector<BoundingBoxData>& lightDebugs,
-                                          const bool globalAlreadySet)
-{
-#ifdef _PROFILING
-    ZoneScopedN("DrawPointLightDebugs");
-#endif
-    // Point light debug spheres are scene-viewport only.
-    if (renderpassID != RenderpassType::SCENE)
-        return true;
-
-    if (lightDebugs.empty())
-        return true;
-
-    // Reuse the bounding box shader: same vertex format (Vertex3D.position),
-    // same GlobalUBO (projection + view), same push constants (model + color).
-    const ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
-    if (!rShader || !rShader->internalData)
-        return true;
-
-    if (vkContext->pointLightSphereVertexBuffer.handle == VK_NULL_HANDLE ||
-        vkContext->pointLightSphereVertexCount == 0)
-        return true;
-
-    const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
-    const auto vs = down_cast<VulkanShader*>(rShader->internalData);
-
-    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
-
-    if (globalAlreadySet)
-    {
-        // A previous scenery draw (bounding boxes / frustums) already updated
-        // the global descriptor set this frame. Just rebind it; updating again
-        // while bound would invalidate the command buffer.
-        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            vs->pipeline.pipelineLayout, 0, 1,
-            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
-    }
-    else
-    {
-        const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
-        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-            vkContext->imageIndex, &ubo, sizeof(ubo));
-    }
-
-    constexpr VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->pointLightSphereVertexBuffer.handle, &offset);
-
-    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
-    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
-
-    struct SpherePushConstants { glm::mat4 model; glm::vec4 color; };
-
-    for (const BoundingBoxData& ld : lightDebugs)
-    {
-        SpherePushConstants pc{ ld.transform, ld.color };
-        vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
-            VK_SHADER_STAGE_VERTEX_BIT,
-            0, sizeof(SpherePushConstants), &pc);
-
-        vkCmdDraw(cmdBuf->handle, vkContext->pointLightSphereVertexCount, 1, 0, 0);
-    }
-
-    return true;
-}
-
-bool VulkanBackend::DrawDirectionalLightDebugs(const RenderpassType renderpassID,
-                                               const glm::mat4& projection,
-                                               const glm::mat4& view,
-                                               const std::vector<DirectionalLightDebugData>& lightDebugs,
-                                               const bool globalAlreadySet)
-{
-#ifdef _PROFILING
-    ZoneScopedN("DrawDirectionalLightDebugs");
-#endif
-    if (renderpassID != RenderpassType::SCENE) return true;
-    if (lightDebugs.empty())                   return true;
-
-    const ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
-    if (!rShader || !rShader->internalData)    return true;
-    if (vkContext->dirLightPyramidVertexBuffer.handle == VK_NULL_HANDLE ||
-        vkContext->dirLightPyramidVertexCount == 0)
-        return true;
-
-    const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
-    const auto vs = down_cast<VulkanShader*>(rShader->internalData);
-
-    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
-
-    if (globalAlreadySet)
-    {
-        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            vs->pipeline.pipelineLayout, 0, 1,
-            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
-    }
-    else
-    {
-        const struct MinUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
-        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-            vkContext->imageIndex, &ubo, sizeof(ubo));
-    }
-
-    constexpr VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->dirLightPyramidVertexBuffer.handle, &offset);
-
-    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
-    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
-
-    struct PushConstants { glm::mat4 model; glm::vec4 color; };
-
-    for (const DirectionalLightDebugData& ld : lightDebugs)
-    {
-        PushConstants pc{ ld.transform, ld.color };
-        vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
-            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pc);
-        vkCmdDraw(cmdBuf->handle, vkContext->dirLightPyramidVertexCount, 1, 0, 0);
-    }
-
-    return true;
-}
-
-bool VulkanBackend::DrawSpotLightDebugs(const RenderpassType renderpassID,
-                                        const glm::mat4& projection,
-                                        const glm::mat4& view,
-                                        const std::vector<SpotLightDebugData>& lightDebugs,
-                                        const bool globalAlreadySet)
-{
-#ifdef _PROFILING
-    ZoneScopedN("DrawSpotLightDebugs");
-#endif
-    if (renderpassID != RenderpassType::SCENE) return true;
-    if (lightDebugs.empty())                   return true;
-
-    const ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
-    if (!rShader || !rShader->internalData)    return true;
-    if (vkContext->spotLightConeVertexBuffer.handle == VK_NULL_HANDLE ||
-        vkContext->spotLightConeVertexCount == 0)
-        return true;
-
-    const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
-    const auto vs = down_cast<VulkanShader*>(rShader->internalData);
-
-    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
-
-    if (globalAlreadySet)
-    {
-        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            vs->pipeline.pipelineLayout, 0, 1,
-            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
-    }
-    else
-    {
-        const struct MinUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
-        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-            vkContext->imageIndex, &ubo, sizeof(ubo));
-    }
-
-    constexpr VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->spotLightConeVertexBuffer.handle, &offset);
-
-    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
-    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
-
-    struct PushConstants { glm::mat4 model; glm::vec4 color; };
-
-    for (const SpotLightDebugData& ld : lightDebugs)
-    {
-        PushConstants pcMarker{ ld.markerTransform, ld.color };
-        vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
-            VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pcMarker);
-        vkCmdDraw(cmdBuf->handle, vkContext->spotLightConeVertexCount, 1, 0, 0);
-
-        if (ld.selected)
-        {
-            PushConstants pcFull{ ld.fullConeTransform, ld.color };
-            vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
-                VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pcFull);
-            vkCmdDraw(cmdBuf->handle, vkContext->spotLightConeVertexCount, 1, 0, 0);
-        }
     }
 
     return true;

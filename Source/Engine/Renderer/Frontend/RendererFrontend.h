@@ -8,6 +8,7 @@
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
 #include "Engine/EngineExport.h"
 
+#include <array>
 #include <atomic>
 #include <functional>
 #include <mutex>
@@ -168,15 +169,18 @@ public:
 		const OutlineSettings& outlineSettings = OutlineSettings{});
 
 	// ---------------------------------------------------------------------
-	// Bounding Boxes
+	// Wireframe Debug Meshes (Scene View)
 	// ---------------------------------------------------------------------
 	/**
-	 * @brief Sets the bounding boxes to be drawn during the next frame.
-	 *        Each entry carries a pre-computed transform and a color so that
-	 *        both AABB and OBB can be submitted together.
-	 *        Passing an empty vector disables bounding box rendering.
+	 * @brief Sets the instances of one wireframe debug mesh to draw next frame.
+	 *        Each WireframeInstance carries a world-space transform and a color.
+	 *        Passing an empty vector disables that mesh's overlay.
+	 *
+	 *        Conventional usage: Cube = bounding boxes, Sphere = point lights,
+	 *        Pyramid = directional lights, Cone = spot lights.
 	 */
-	NOUS_ENGINE_API void SetBoundingBoxes(const std::vector<BoundingBoxData>& boxes);
+	NOUS_ENGINE_API void SetWireframeInstances(WireframeMesh mesh,
+	                                           const std::vector<WireframeInstance>& instances);
 
 	// Toggle AABB/OBB wireframe overlay. When false, skips both CPU overlay
 	// computation in ModuleRenderer3D and the GPU draw calls entirely.
@@ -191,19 +195,6 @@ public:
 	 *        Passing an empty vector disables frustum rendering.
 	 */
 	NOUS_ENGINE_API void SetCameraFrustums(const std::vector<CameraFrustumData>& frustums);
-
-	// ---------------------------------------------------------------------
-	// Point Light Debug Spheres
-	// ---------------------------------------------------------------------
-	/**
-	 * @brief Sets the point light debug sphere draws for the next frame.
-	 *        Each entry carries a translate+scale transform (maps unit sphere
-	 *        to world-space marker/range sphere) and a color.
-	 *        Passing an empty vector disables point light debug rendering.
-	 */
-	NOUS_ENGINE_API void SetPointLightDebugs(const std::vector<BoundingBoxData>& lightDebugs);
-	NOUS_ENGINE_API void SetDirectionalLightDebugs(const std::vector<DirectionalLightDebugData>& lightDebugs);
-	NOUS_ENGINE_API void SetSpotLightDebugs(const std::vector<SpotLightDebugData>& lightDebugs);
 
 	// ---------------------------------------------------------------------
 	// Accessors
@@ -281,20 +272,13 @@ private:
 	std::vector<GeometryRenderData> mOutlinedGeometries;
 	OutlineSettings                 mOutlineSettings;
 
-	// Bounding boxes — populated each frame by SetBoundingBoxes().
-	std::vector<BoundingBoxData> mBoundingBoxes;
+	// Wireframe debug mesh instances, indexed by WireframeMesh — populated each
+	// frame by SetWireframeInstances(). (Cube = bounding boxes, Sphere = point
+	// lights, Pyramid = directional lights, Cone = spot lights.)
+	std::array<std::vector<WireframeInstance>, static_cast<size_t>(WireframeMesh::COUNT)> mWireframeInstances;
 
 	// Camera frustums — populated each frame by SetCameraFrustums().
 	std::vector<CameraFrustumData> mCameraFrustums;
-
-	// Point light debug spheres — populated each frame by SetPointLightDebugs().
-	std::vector<BoundingBoxData> mPointLightDebugs;
-
-	// Directional light debug pyramids — populated each frame by SetDirectionalLightDebugs().
-	std::vector<DirectionalLightDebugData> mDirectionalLightDebugs;
-
-	// Spot light debug cones — populated each frame by SetSpotLightDebugs().
-	std::vector<SpotLightDebugData> mSpotLightDebugs;
 
 };
 

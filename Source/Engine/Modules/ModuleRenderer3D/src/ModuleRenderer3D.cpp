@@ -362,11 +362,11 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	{
 		mMeshAABBCache.clear();
 		mRendererFrontend->SetOutlinedGeometries({});
-		mRendererFrontend->SetBoundingBoxes({});
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Cube, {});
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Sphere, {});
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Pyramid, {});
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Cone, {});
 		mRendererFrontend->SetCameraFrustums({});
-		mRendererFrontend->SetPointLightDebugs({});
-		mRendererFrontend->SetDirectionalLightDebugs({});
-		mRendererFrontend->SetSpotLightDebugs({});
 	}
 
 	// Video surfaces: hand each playing CVideoPlayer's latest frame to the renderer, which owns
@@ -442,7 +442,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 #endif
 		if (sceneData.registry)
 		{
-			std::vector<BoundingBoxData> boundingBoxes;
+			std::vector<WireframeInstance> boundingBoxes;
 			auto view = sceneData.registry->view<CMesh, CTransform>();
 
 			for (auto [entity, meshComp, transform] : view.each())
@@ -512,7 +512,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			}
 
 			if (m_renderMode == RenderMode::EDITOR)
-				mRendererFrontend->SetBoundingBoxes(boundingBoxes);
+				mRendererFrontend->SetWireframeInstances(WireframeMesh::Cube, boundingBoxes);
 		}
 	}
 	else
@@ -584,7 +584,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 #ifdef _PROFILING
 		ZoneScopedN("Light Debugs");
 #endif
-		std::vector<BoundingBoxData> pointLightDebugs;
+		std::vector<WireframeInstance> pointLightDebugs;
 
 		if (sceneData.registry)
 		{
@@ -615,12 +615,12 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			}
 		}
 
-		mRendererFrontend->SetPointLightDebugs(pointLightDebugs);
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Sphere, pointLightDebugs);
 
 		// Directional light debug pyramids.
-		std::vector<DirectionalLightDebugData> dirLightDebugs;
+		std::vector<WireframeInstance> dirLightDebugs;
 		// Spot light debug cones.
-		std::vector<SpotLightDebugData> spotLightDebugs;
+		std::vector<WireframeInstance> spotLightDebugs;
 
 		if (sceneData.registry)
 		{
@@ -635,37 +635,38 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 				if (light.type == LightType::Directional)
 				{
-					DirectionalLightDebugData ddata{};
-					ddata.transform = glm::translate(glm::mat4(1.0f), transform.position) *
-					                  glm::mat4_cast(transform.orientation);
-					ddata.color = color;
-					dirLightDebugs.push_back(ddata);
+					dirLightDebugs.emplace_back(
+						glm::translate(glm::mat4(1.0f), transform.position) *
+						glm::mat4_cast(transform.orientation),
+						color);
 				}
 				else if (light.type == LightType::Spot)
 				{
 					const float outerRad  = glm::radians(light.outerAngle);
 					const float coneScale = std::tan(outerRad) * light.range;
 
-					SpotLightDebugData sdata{};
-					// Marker: small fixed sphere at the spot position.
-					sdata.markerTransform =
+					// Marker: small fixed cone at the spot position — always drawn.
+					spotLightDebugs.emplace_back(
 						glm::translate(glm::mat4(1.0f), transform.position) *
 						glm::mat4_cast(transform.orientation) *
-						glm::scale(glm::mat4(1.0f), glm::vec3(c_markerRadius));
-					// Full cone: scaled to outerAngle + range.
-					sdata.fullConeTransform =
-						glm::translate(glm::mat4(1.0f), transform.position) *
-						glm::mat4_cast(transform.orientation) *
-						glm::scale(glm::mat4(1.0f), glm::vec3(coneScale, light.range, coneScale));
-					sdata.color    = color;
-					sdata.selected = isSelected;
-					spotLightDebugs.push_back(sdata);
+						glm::scale(glm::mat4(1.0f), glm::vec3(c_markerRadius)),
+						color);
+
+					// Full cone: scaled to outerAngle + range — only when selected.
+					if (isSelected)
+					{
+						spotLightDebugs.emplace_back(
+							glm::translate(glm::mat4(1.0f), transform.position) *
+							glm::mat4_cast(transform.orientation) *
+							glm::scale(glm::mat4(1.0f), glm::vec3(coneScale, light.range, coneScale)),
+							color);
+					}
 				}
 			}
 		}
 
-		mRendererFrontend->SetDirectionalLightDebugs(dirLightDebugs);
-		mRendererFrontend->SetSpotLightDebugs(spotLightDebugs);
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Pyramid, dirLightDebugs);
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Cone, spotLightDebugs);
 	}
 
 	{

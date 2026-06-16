@@ -152,18 +152,28 @@ struct IRendererBackend
                                 const glm::mat4& projection,
                                 const glm::mat4& view) = 0;
 
-    // ─────────────────────────────── Bounding Boxes ──────────────────────────
+    // ─────────────────────────────── Wireframe Debug Meshes ──────────────────
     /**
-     * @brief Render wireframe bounding boxes (AABB and/or OBB) for debugging.
+     * @brief Draw N instances of a backend-owned static wireframe mesh
+     *        (cube / sphere / pyramid / cone) in the Scene View.
      *        Only draws when renderpassID == SCENE (editor viewport).
      *
-     * Each BoundingBoxData carries a pre-computed transform that maps the
-     * unit cube vertex buffer to the desired bounding box in world space.
+     * All variants reuse the bounding-box shader (LINE_LIST, mat4+vec4 push
+     * constants) and a shared per-mesh vertex buffer. Each WireframeInstance
+     * supplies a world-space transform and a line color. Replaces the former
+     * per-purpose DrawBoundingBoxes / DrawPointLightDebugs /
+     * DrawDirectionalLightDebugs / DrawSpotLightDebugs entry points.
+     *
+     * The shared set=0 global descriptor is updated by the first wireframe draw
+     * of the frame and only rebound by the rest; the backend tracks this
+     * internally (per-frame, reset when the SCENE renderpass begins), so callers
+     * issue these draws in any order without bookkeeping.
      */
-    virtual bool DrawBoundingBoxes(RenderpassType renderpassID,
-                                   const glm::mat4& projection,
-                                   const glm::mat4& view,
-                                   const std::vector<BoundingBoxData>& boxes) = 0;
+    virtual bool DrawWireframeMeshInstances(RenderpassType renderpassID,
+                                            const glm::mat4& projection,
+                                            const glm::mat4& view,
+                                            WireframeMesh mesh,
+                                            const std::vector<WireframeInstance>& instances) = 0;
 
     // ─────────────────────────────── Camera Frustums ─────────────────────────
     /**
@@ -172,63 +182,13 @@ struct IRendererBackend
      *
      * Each CameraFrustumData holds the 8 world-space corners of a perspective
      * frustum. 12 edges are drawn (near quad + far quad + 4 connecting lines).
-     */
-    /**
-     * @param globalAlreadySet  Pass true when the bounding-box shader's global
-     *        descriptor set was already updated this frame (e.g. DrawBoundingBoxes ran).
-     *        When true the function skips vkUpdateDescriptorSets and only rebinds,
-     *        avoiding the "descriptor set updated while bound" validation error.
+     * Kept separate from DrawWireframeMeshInstances because each frustum's
+     * geometry is unique (CPU-built per frame), not an affine transform of a
+     * shared mesh. Shares the same backend-tracked set=0 update-once-per-frame
+     * behavior as DrawWireframeMeshInstances.
      */
     virtual bool DrawCameraFrustums(RenderpassType renderpassID,
                                     const glm::mat4& projection,
                                     const glm::mat4& view,
-                                    const std::vector<CameraFrustumData>& frustums,
-                                    bool globalAlreadySet = false) = 0;
-
-    // ─────────────────────────────── Point Light Debugs ──────────────────────
-    /**
-     * @brief Render wireframe debug spheres for point lights in the Scene View.
-     *        Only draws when renderpassID == SCENE (editor viewport).
-     *
-     * Reuses the bounding-box shader (LINE_LIST, mat4+vec4 push constants) and
-     * a shared unit-sphere vertex buffer. Each BoundingBoxData carries a
-     * translate+scale transform and the light color.
-     *
-     * @param globalAlreadySet  Pass true when the bounding-box shader's global
-     *        descriptor set was already updated this frame (e.g. DrawBoundingBoxes
-     *        or DrawCameraFrustums ran). Avoids "descriptor set updated while
-     *        bound" validation errors.
-     */
-    virtual bool DrawPointLightDebugs(RenderpassType renderpassID,
-                                      const glm::mat4& projection,
-                                      const glm::mat4& view,
-                                      const std::vector<BoundingBoxData>& lightDebugs,
-                                      bool globalAlreadySet = false) = 0;
-
-    // ─────────────────────────────── Directional Light Debugs ────────────────
-    /**
-     * @brief Render wireframe debug pyramids for directional lights in the Scene View.
-     *        Only draws when renderpassID == SCENE.
-     * @param globalAlreadySet  Pass true when another scenery draw already updated
-     *        the bounding-box shader's global descriptor set this frame.
-     */
-    virtual bool DrawDirectionalLightDebugs(RenderpassType renderpassID,
-                                            const glm::mat4& projection,
-                                            const glm::mat4& view,
-                                            const std::vector<DirectionalLightDebugData>& lightDebugs,
-                                            bool globalAlreadySet = false) = 0;
-
-    // ─────────────────────────────── Spot Light Debugs ───────────────────────
-    /**
-     * @brief Render wireframe debug cones for spot lights in the Scene View.
-     *        Only draws when renderpassID == SCENE.
-     *        Draws a small marker cone always and a full-scale cone when selected.
-     * @param globalAlreadySet  Pass true when another scenery draw already updated
-     *        the bounding-box shader's global descriptor set this frame.
-     */
-    virtual bool DrawSpotLightDebugs(RenderpassType renderpassID,
-                                     const glm::mat4& projection,
-                                     const glm::mat4& view,
-                                     const std::vector<SpotLightDebugData>& lightDebugs,
-                                     bool globalAlreadySet = false) = 0;
+                                    const std::vector<CameraFrustumData>& frustums) = 0;
 };

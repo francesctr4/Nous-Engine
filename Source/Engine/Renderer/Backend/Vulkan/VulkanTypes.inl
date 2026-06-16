@@ -313,6 +313,13 @@ struct VulkanContext
     // ── Bounding box shader ────────────────────────────────────────────────────
     class ResourceShader* builtInBoundingBoxShader = nullptr; // Scene renderpass; ResourceManager-owned
 
+    // True once any wireframe debug draw has updated builtInBoundingBoxShader's
+    // set=0 this frame. Reset when the SCENE renderpass begins recording. The
+    // first wireframe draw updates set=0; the rest only rebind it (updating a
+    // bound descriptor set would invalidate the command buffer). See the set=0
+    // inheritance note in iRendererBackend.h.
+    bool wireframeGlobalSetThisFrame = false;
+
     // ── Bounding box unit-cube wireframe (static, shared for all boxes) ────────
     VulkanBuffer boundingBoxVertexBuffer{};
     uint32       boundingBoxVertexCount = 0;
