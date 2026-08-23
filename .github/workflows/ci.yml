@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, audio-engine, video-player]
+    branches: [main, develop, audio-engine, renderer-narrow-port]
   pull_request:
     branches: [main]
 
