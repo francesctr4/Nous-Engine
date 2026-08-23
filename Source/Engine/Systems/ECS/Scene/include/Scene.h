@@ -42,10 +42,7 @@ public:
 
     // Update
     void Update(float deltaTime);
-    // force=true recomputes every transform unconditionally, ignoring m_localDirty.
-    // Use after async deserialization, where a racing main-thread call may have
-    // already cleared dirty flags before parent-child wiring was complete.
-    NOUS_ENGINE_API void UpdateWorldMatrices(bool force = false);
+    NOUS_ENGINE_API void UpdateWorldMatrices();
 
     // Lookup
     NOUS_ENGINE_API GameObject FindGameObjectByID(uint32_t id);
@@ -58,7 +55,7 @@ public:
     NOUS_ENGINE_API std::vector<GameObject> GetGameObjects() const;
 
     // Alias for GetGameObjects — the name documents intent: the returned vector is a
-    // locked copy, safe to iterate on the main thread while a scene loads on a worker thread.
+    // copy, so iterating it is unaffected by structural changes made while iterating.
     std::vector<GameObject> GetGameObjectsSnapshot() const { return GetGameObjects(); }
 
     NOUS_ENGINE_API const std::string& GetName() const;
@@ -78,6 +75,11 @@ private:
     std::unordered_map<uint32_t, entt::entity> m_idToEntity;
     std::vector<entt::entity>                  m_orderedEntities;
     std::string                                m_name;
+    // Guards m_idToEntity / m_orderedEntities / ID generation. As of the main-thread
+    // ECS invariant every caller of those is on the main thread, so this is currently
+    // uncontended. Kept deliberately: it costs nothing measurable and it is the only
+    // thing standing between a future worker-thread scene lookup and a silent race
+    // that only a ThreadSanitizer run on Linux would ever catch.
     mutable std::mutex                         m_mutex;
     ModuleScene*                               m_moduleScene     = nullptr;
     ModuleResourceManager*                     m_resourceManager = nullptr;

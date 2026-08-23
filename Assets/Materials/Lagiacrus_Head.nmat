@@ -1,5 +1,5 @@
 {
-    "shader_library_path": "Library\\Shaders\\2783957516",
+    "shader_library_path": "Library\/Shaders\/2783957516",
     "texture_maps": [
         {
             "name": "diffuseSampler",
@@ -9,7 +9,7 @@
         }
     ],
     "shader_uid": 2783957516,
-    "shader_asset_path": "Assets\\Shaders\\BuiltIn.MaterialShader.glsl",
+    "shader_asset_path": "Assets\/Shaders\/BuiltIn.MaterialShader.glsl",
     "uniforms": [
         {
             "name": "diffuseColor",

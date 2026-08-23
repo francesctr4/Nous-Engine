@@ -155,14 +155,10 @@ static void UpdateWorldMatrixRecursive(entt::entity entity, entt::registry& regi
             UpdateWorldMatrixRecursive(child, registry, isDirty);
 }
 
-void Scene::UpdateWorldMatrices(bool force) {
-    // Passing `force` as the initial parentWasDirty propagates isDirty=true through
-    // every descendant, guaranteeing each transform's UpdateMatrix() runs even if
-    // m_localDirty was already cleared by a racing pass (e.g. main thread ran this
-    // mid-Deserialize on the worker thread, before parent wiring was complete).
+void Scene::UpdateWorldMatrices() {
     for (auto [entity, hierarchy] : m_registry.view<CHierarchy>().each()) {
         if (hierarchy.parent == entt::null)
-            UpdateWorldMatrixRecursive(entity, m_registry, force);
+            UpdateWorldMatrixRecursive(entity, m_registry, false);
     }
 }
 
@@ -311,16 +307,10 @@ void Scene::Deserialize(const std::string& filepath) {
     // GO's CHierarchy.parent was still entt::null (wiring happens in the second loop),
     // so the worldMatrix it computed was the local matrix only — children of a parent
     // with non-identity transform would render at the wrong position/scale until a
-    // later UpdateWorldMatrices() pass picked them up.
-    //
-    // force=true: when loaded via LoadSceneAsync, this runs on a worker thread while
-    // ModuleScene::PostUpdate (main thread) is also calling UpdateWorldMatrices() each
-    // frame. That main-thread pass can race in *before* parent wiring completes here,
-    // compute wrong worldMatrices from local-only data, and then clear m_localDirty.
-    // Without force=true, this final pass would then see m_localDirty=false and skip
-    // the recompute, leaving children at the wrong scale. Forcing makes us correct
-    // regardless of the racing pre-state.
-    UpdateWorldMatrices(true);
+    // later UpdateWorldMatrices() pass picked them up. CTransform::Deserialize ends
+    // with MarkDirty(), and only this pass clears m_localDirty, so every transform is
+    // still dirty here and gets recomputed with its parent in place.
+    UpdateWorldMatrices();
 
     NOUS_DEBUG("Loaded scene: %s with %d objects", filepath.c_str(), count);
 }
