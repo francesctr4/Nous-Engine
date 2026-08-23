@@ -1,5 +1,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
+#include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
+
 /// @brief NOUS_Thread constructor.
 nous::engine::multithreading::NOUS_Thread::NOUS_Thread() :
 	mThreadState(ThreadState::READY), mIsRunning(false),
@@ -65,13 +67,26 @@ nous::engine::multithreading::ThreadState nous::engine::multithreading::NOUS_Thr
 }
 
 void nous::engine::multithreading::NOUS_Thread::SetCurrentJob(NOUS_Job* job)
-{ 
-	mCurrentJob = job; 
+{
+	// Copy the name while the job is still guaranteed alive — this runs on the
+	// worker that owns it, before the pool deletes it. Observers read the copy.
+	{
+		std::lock_guard lock(mCurrentJobNameMutex);
+		mCurrentJobName = job ? job->GetName() : std::string();
+	}
+
+	mCurrentJob.store(job, std::memory_order_release);
 }
 
 nous::engine::multithreading::NOUS_Job* nous::engine::multithreading::NOUS_Thread::GetCurrentJob() const
-{ 
-	return mCurrentJob; 
+{
+	return mCurrentJob.load(std::memory_order_acquire);
+}
+
+std::string nous::engine::multithreading::NOUS_Thread::GetCurrentJobName() const
+{
+	std::lock_guard lock(mCurrentJobNameMutex);
+	return mCurrentJobName;  // by value: the caller must not alias pool-owned memory
 }
 
 bool nous::engine::multithreading::NOUS_Thread::IsRunning() const

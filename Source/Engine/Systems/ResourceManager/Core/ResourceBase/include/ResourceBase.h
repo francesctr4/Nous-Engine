@@ -4,6 +4,7 @@
 #include "Engine/EngineExport.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceType.h"
 
+#include <atomic>
 #include <string>
 
 enum class ResourceState : uint8_t
@@ -53,7 +54,13 @@ private:
 	std::string m_name;
 	uint32      m_uID              = 0;
 	ResourceType m_type             = ResourceType::UNKNOWN;
-	uint32      m_referenceCount   = 0;
+
+	// Atomic: resources are ref-counted from job-system workers (several at once
+	// via PreloadSceneResourcesAsync) while the editor reads the count to display
+	// it. A plain uint32 lost increments under concurrent load — an undercount
+	// frees a resource that is still in use. ThreadSanitizer flagged both halves
+	// of this on 2026-08-22 (ResourceBase.cpp:59 vs :64).
+	std::atomic<uint32> m_referenceCount{0};
 
 	std::string m_assetsFilePath;
 	std::string m_libraryFilePath;

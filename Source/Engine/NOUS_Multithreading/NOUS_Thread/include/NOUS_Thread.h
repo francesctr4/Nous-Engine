@@ -2,8 +2,10 @@
 
 #include "Engine/EngineExport.h"
 
+#include <atomic>
 #include <thread>
 #include <functional>
+#include <mutex>
 #include <string>
 #include <chrono>
 
@@ -54,8 +56,22 @@ namespace nous::engine::multithreading
 		NOUS_ENGINE_API const std::string& GetName() const;
 		NOUS_ENGINE_API void SetThreadState(ThreadState state);
 		NOUS_ENGINE_API ThreadState GetThreadState() const;
+		/// @brief Sets the job this thread is executing, and snapshots its name.
+		/// @note Must be called from the thread that owns the job's lifetime.
 		NOUS_ENGINE_API void SetCurrentJob(NOUS_Job* job);
+
+		/// @return Raw pointer to the running job, or nullptr.
+		/// @warning ONLY safe on the owning worker thread. The pool deletes the job
+		///          as soon as it finishes, so any other thread that dereferences
+		///          this pointer races that deletion — use GetCurrentJobName().
+		///          Off-thread, treat the result as a null/non-null flag only.
 		NOUS_ENGINE_API NOUS_Job* GetCurrentJob() const;
+
+		/// @return Copy of the running job's name, or "" if idle.
+		/// @note Thread-safe by value: observers (the editor) get a snapshot and
+		///       never touch memory owned by the pool. Returning a reference here
+		///       would reintroduce the use-after-free this exists to prevent.
+		[[nodiscard]] NOUS_ENGINE_API std::string GetCurrentJobName() const;
 		NOUS_ENGINE_API bool IsRunning() const;
 		NOUS_ENGINE_API std::thread::id GetID() const;
 
@@ -87,6 +103,13 @@ namespace nous::engine::multithreading
 
 		std::atomic<bool>			mIsRunning;
 		std::atomic<NOUS_Job*>		mCurrentJob;
+
+		// The pointer above is atomic, but the *pointee* is not lifetime-safe: the
+		// pool NOUS_DELETEs the job the moment it completes. Observers therefore
+		// read this snapshot instead. ThreadSanitizer caught the editor doing
+		// strlen() on a job name being freed by a worker (2026-08-22).
+		mutable std::mutex			mCurrentJobNameMutex;
+		std::string					mCurrentJobName;
 
         std::chrono::time_point<std::chrono::steady_clock>	mStartTime;
         std::chrono::time_point<std::chrono::steady_clock>	mEndTime;

@@ -5,6 +5,7 @@
 #include <vector>
 #include <queue>
 #include <mutex>
+#include <string>
 #include <condition_variable>
 
 namespace nous::engine::multithreading
@@ -37,9 +38,13 @@ namespace nous::engine::multithreading
 		/// @return A vector of NOUS_Thread contained inside the thread pool.
 		NOUS_ENGINE_API const std::vector<NOUS_Thread*>& GetThreads() const;
 
-		/// @return A snapshot copy of the pending job queue, taken under the internal lock.
-		/// @note Safe for cross-thread inspection (e.g. debug UI). Job pointers are valid at snapshot time only.
-		NOUS_ENGINE_API std::queue<NOUS_Job*> GetJobQueueSnapshot() const;
+		/// @return Names of the pending jobs, copied under the internal lock.
+		/// @note Returns names rather than NOUS_Job* on purpose. Handing out pointers
+		///       made this "snapshot" safe only until the lock was released: a worker
+		///       pops and NOUS_DELETEs a job immediately afterwards, so the debug UI
+		///       that read job->GetName() from the copy was a use-after-free.
+		///       Copying the strings under the lock removes the hazard entirely.
+		NOUS_ENGINE_API std::vector<std::string> GetJobQueueSnapshot() const;
 
 	private:
 

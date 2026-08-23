@@ -56,18 +56,29 @@ ResourceType ResourceBase::GetType() const
 
 uint32 ResourceBase::GetReferenceCount() const
 {
-	return m_referenceCount;
+	// relaxed: this is an observational read (editor display, diagnostics). It
+	// orders nothing, and a caller cannot act on the value safely anyway — the
+	// count may change the instant after it is read.
+	return m_referenceCount.load(std::memory_order_relaxed);
 }
 
 void ResourceBase::IncreaseReferenceCount()
 {
-	m_referenceCount++;
+	// relaxed: acquiring a reference publishes nothing on its own.
+	m_referenceCount.fetch_add(1, std::memory_order_relaxed);
 }
 
 void ResourceBase::DecreaseReferenceCount()
 {
-	NOUS_ASSERT_MSG(m_referenceCount > 0, "Reference count underflow — double-unload on a resource");
-	m_referenceCount--;
+	// acq_rel: the release half publishes this thread's writes to whichever
+	// thread drops the count to zero and tears the resource down; the acquire
+	// half makes those writes visible to it.
+	//
+	// The underflow check reads fetch_sub's return value rather than testing the
+	// counter first — a separate load-then-decrement could pass the check on one
+	// thread while another already took the count to zero.
+	const uint32 previous = m_referenceCount.fetch_sub(1, std::memory_order_acq_rel);
+	NOUS_ASSERT_MSG(previous > 0, "Reference count underflow — double-unload on a resource");
 }
 
 bool ResourceBase::IsLoaded() const

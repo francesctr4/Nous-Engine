@@ -82,11 +82,26 @@ const std::vector<nous::engine::multithreading::NOUS_Thread*>& nous::engine::mul
 	return mThreads; 
 }
 
-/// @return A snapshot copy of the pending job queue, taken under the internal lock.
-std::queue<nous::engine::multithreading::NOUS_Job*> nous::engine::multithreading::NOUS_ThreadPool::GetJobQueueSnapshot() const
+/// @return Names of the pending jobs, copied under the internal lock.
+std::vector<std::string> nous::engine::multithreading::NOUS_ThreadPool::GetJobQueueSnapshot() const
 {
 	std::lock_guard lock(mMutex);
-	return mJobQueue;
+
+	// The names are copied while the lock is held, so the caller never holds a
+	// pointer into a job the pool may free the moment this returns.
+	std::vector<std::string> names;
+	names.reserve(mJobQueue.size());
+
+	std::queue<NOUS_Job*> pending = mJobQueue;  // std::queue is not iterable
+	while (!pending.empty())
+	{
+		if (const NOUS_Job* job = pending.front())
+			names.emplace_back(job->GetName());
+
+		pending.pop();
+	}
+
+	return names;
 }
 
 /// @brief Worker loop that each thread executes to process jobs from the queue.
@@ -143,8 +158,11 @@ void nous::engine::multithreading::NOUS_ThreadPool::WorkerLoop(NOUS_Thread* thre
 				   job->GetName().c_str(), thread->GetName().c_str(),
 				   NOUS_Thread::GetDisplayID(thread->GetID()), thread->GetExecutionTimeMS() / 1000.0f);
 
-		NOUS_DELETE(job, MemoryTag::THREAD);
+		// Clear the pointer BEFORE freeing the job. The reverse order left a window
+		// where GetCurrentJob() handed out a dangling pointer to whoever was
+		// observing this thread.
 		thread->SetCurrentJob(nullptr);
+		NOUS_DELETE(job, MemoryTag::THREAD);
 		thread->SetThreadState(ThreadState::READY);
 	}
 

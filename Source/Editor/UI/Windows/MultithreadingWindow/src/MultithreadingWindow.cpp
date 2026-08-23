@@ -49,7 +49,6 @@ void Multithreading::DrawContent()
 
     const auto& threadPool = editorContext->GetJobSystem()->GetThreadPool();
     const auto& threads = threadPool.GetThreads();
-    auto jobQueue = threadPool.GetJobQueueSnapshot();
 
     ImGui::Columns(2);
     ImGui::Text("Max Hardware Threads: %u", nous::engine::multithreading::c_MAX_HARDWARE_THREADS);
@@ -162,14 +161,12 @@ void Multithreading::DrawContent()
 
             // Job
             ImGui::TableSetColumnIndex(3);
-            if (thread->GetCurrentJob())
-            {
-                ImGui::Text("%s", thread->GetCurrentJob()->GetName().c_str());
-            }
-            else
-            {
-                ImGui::Text("%s", "None");
-            }
+            // Read the name snapshot, never the job pointer: the worker frees the
+            // job as soon as it finishes, so dereferencing it from here was a
+            // use-after-free (and the old two-call null-check could also see a
+            // non-null pointer go null between the check and the dereference).
+            const std::string jobName = thread->GetCurrentJobName();
+            ImGui::Text("%s", jobName.empty() ? "None" : jobName.c_str());
 
             // Time
             ImGui::TableSetColumnIndex(4);
