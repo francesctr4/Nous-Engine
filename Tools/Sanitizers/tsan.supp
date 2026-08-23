@@ -1,0 +1,60 @@
+# ThreadSanitizer suppressions — Nous Engine
+#
+# Used via:  TSAN_OPTIONS=suppressions=<repo>/Tools/Sanitizers/tsan.supp
+#
+# ---------------------------------------------------------------------------
+# READ THIS BEFORE ADDING AN ENTRY
+# ---------------------------------------------------------------------------
+# This file starts empty ON PURPOSE. Every suppression is a report you will
+# never see again, so add one only after reading the stack and concluding the
+# race is genuinely not ours. Pre-emptively suppressing "probably Mesa" noise
+# is how a real bug goes unnoticed for a year.
+#
+# The reason false positives happen at all: vcpkg dependencies are built
+# WITHOUT -fsanitize=thread. TSan cannot see the synchronization performed
+# inside an uninstrumented library, so it reports happens-before edges it
+# cannot prove. Expect candidates from Mesa/llvmpipe (which spawns a worker
+# thread per core), SDL3, FFmpeg and miniaudio's realtime device thread.
+#
+# ---------------------------------------------------------------------------
+# SYNTAX
+# ---------------------------------------------------------------------------
+#   race:<function or file substring>       suppress a data race
+#   race_top:<function>                     match only the top frame
+#   thread:<function>                       suppress a thread-leak report
+#   mutex:<function>                        suppress a mutex misuse report
+#   deadlock:<function>                     suppress a lock-order inversion
+#   called_from_lib:<soname>                suppress everything originating in
+#                                           a given uninstrumented library
+#
+# ---------------------------------------------------------------------------
+# EXAMPLES (commented out — enable only if the stacks actually justify it)
+# ---------------------------------------------------------------------------
+# called_from_lib:libvulkan_lvp.so
+# called_from_lib:libLLVM.so
+# called_from_lib:libSDL3.so
+#
+# ---------------------------------------------------------------------------
+# ACTIVE SUPPRESSIONS
+# ---------------------------------------------------------------------------
+# Added 2026-08-22 after triaging the first TSan run of EditorApp on the Fedora VM.
+# All three were verified by reading the stacks: the racing frames are entirely
+# inside third-party code, and the Nous frames present are only the *creation*
+# sites of the thread or mutex involved (VulkanBackend.cpp:91 / :139 are where
+# vkCreateInstance/vkCreateDevice happen to spawn Mesa's internals).
+#
+# Matching is by substring against function names, deliberately NOT
+# `called_from_lib:`. A whole-library suppression would also hide a genuine race
+# of ours that merely happened to be reported through a Mesa or layer frame.
+
+# --- Mesa llvmpipe: its fence objects race their own condvar/mutex on teardown.
+# Reported as two data races between the 'llvmpipe-N' worker threads, in
+# lp_fence_create / lp_fence_destroy / cnd_broadcast. Mesa is built without
+# -fsanitize=thread, so TSan cannot see the synchronization it does internally.
+race:lp_fence_
+mutex:lp_fence_
+
+# --- Vulkan validation layer (VK_LAYER_KHRONOS_validation): lock-order inversion
+# between its own rwlocks, in the object_lifetimes tracker. Present only while
+# validation layers are enabled; not reachable from engine code.
+deadlock:object_lifetimes::

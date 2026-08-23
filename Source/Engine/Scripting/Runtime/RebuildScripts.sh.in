@@ -156,6 +156,17 @@ else
     FLAGS+=(-O2 -DNDEBUG)
 fi
 
+# Sanitizer flags, injected by CMake (empty unless NOUS_SANITIZE was set).
+# The engine and Scripts.so must agree: a sanitizer runtime cannot see inside an
+# uninstrumented shared object, so hot-reloading an unsanitized Scripts.so into a
+# sanitized process silently stops tracking everything script code touches.
+# Unquoted expansion is deliberate — the flags must word-split into separate args.
+SANITIZE_FLAGS="@NOUS_SCRIPTS_SANITIZE_FLAGS@"
+if [ -n "$SANITIZE_FLAGS" ]; then
+    FLAGS+=($SANITIZE_FLAGS)
+    echo "[INFO] SANITIZE_FLAGS        = $SANITIZE_FLAGS"
+fi
+
 OUTPUT="$SCRIPTS_OUTPUT_DIR/$SCRIPTS_LIB"
 
 # -----------------------------

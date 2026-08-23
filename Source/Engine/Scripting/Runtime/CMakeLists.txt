@@ -21,6 +21,22 @@ set(SCRIPTS_SRC_DIR      "${CMAKE_SOURCE_DIR}/Assets")
 file(MAKE_DIRECTORY "${SCRIPTS_OUTPUT_DIR}")
 file(MAKE_DIRECTORY "${SCRIPTS_TOOLING_DIR}")
 
+# Sanitizer flags for the HOT-RELOAD compile line.
+#
+# The `Scripts` CMake target below inherits the global flags from Sanitizers.cmake
+# automatically, but ScriptManager::RecompileScripts does not go through CMake — it
+# shells out to the generated RebuildScripts script, which builds its own flag list.
+# Without this, hot-reloading a script during a sanitizer session silently swapped in
+# an UNINSTRUMENTED Scripts.so, and accesses made inside script code stopped being
+# tracked. Substituted into the script as @NOUS_SCRIPTS_SANITIZE_FLAGS@.
+#
+# Empty unless NOUS_SANITIZE is set, so Release and shipped builds are unaffected.
+if(NOUS_SANITIZE AND NOT MSVC)
+    set(NOUS_SCRIPTS_SANITIZE_FLAGS "-fsanitize=${NOUS_SANITIZE} -fno-omit-frame-pointer")
+else()
+    set(NOUS_SCRIPTS_SANITIZE_FLAGS "")
+endif()
+
 if(WIN32)
     configure_file(
             "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.bat.in"

@@ -1,0 +1,29 @@
+# Valgrind memcheck suppressions — Nous Engine
+#
+# Wired in automatically via MEMORYCHECK_SUPPRESSIONS_FILE (cmake/Config/UnitTests.cmake),
+# so `ctest -T memcheck` picks it up with no extra flags.
+#
+# ---------------------------------------------------------------------------
+# READ THIS BEFORE ADDING AN ENTRY
+# ---------------------------------------------------------------------------
+# Empty on purpose. Add entries only for third-party noise you have actually
+# read and understood. To generate a well-formed block, re-run the failing test
+# with --gen-suppressions=all and paste the emitted stanza here:
+#
+#   valgrind --leak-check=full --gen-suppressions=all ./Build/Debug-Linux/bin/<t_Target>
+#
+# ---------------------------------------------------------------------------
+# SYNTAX
+# ---------------------------------------------------------------------------
+# {
+#     <a_name_you_choose>
+#     Memcheck:Leak            # or Cond / Value8 / Addr8 / Param ...
+#     fun:malloc
+#     fun:some_third_party_init
+#     ...
+# }
+#
+# ---------------------------------------------------------------------------
+# ACTIVE SUPPRESSIONS
+# ---------------------------------------------------------------------------
+# (none yet)

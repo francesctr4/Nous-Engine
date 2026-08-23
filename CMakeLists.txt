@@ -28,6 +28,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Config")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Functions")
 
 include(GlobalSettings)
+include(Sanitizers)   # must precede add_subdirectory(Source): applies global compile/link flags
 include(ProfilingOptions)
 include(UnitTests)
 include(Messages)

@@ -56,7 +56,24 @@ set_target_properties(${EDITOR_NAME} PROPERTIES
 
 add_executable(EditorApp
         MainEditor.cpp
+        SanitizerDefaults.cpp
 )
+
+# ----------------------------------------
+# Sanitizer runtime defaults
+# ----------------------------------------
+# Points TSan at Tools/Sanitizers/tsan.supp via the __tsan_default_options() hook
+# rather than TSAN_OPTIONS, so the suppressions apply however the binary is
+# launched — and so CLion keeps ownership of TSAN_OPTIONS for its log_path (which
+# is what drives the clickable "Sanitizers" tab).
+if(NOUS_SANITIZE MATCHES "thread")
+        target_compile_definitions(EditorApp PRIVATE
+                NOUS_TSAN_SUPPRESSIONS="${CMAKE_SOURCE_DIR}/Tools/Sanitizers/tsan.supp")
+endif()
+
+if(NOUS_SANITIZE MATCHES "undefined")
+        target_compile_definitions(EditorApp PRIVATE NOUS_UBSAN_ENABLED=1)
+endif()
 
 # ----------------------------------------
 # Application icon (per-platform)
