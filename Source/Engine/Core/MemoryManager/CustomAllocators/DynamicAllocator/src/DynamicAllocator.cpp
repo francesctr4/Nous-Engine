@@ -68,7 +68,22 @@ DynamicAllocator::~DynamicAllocator()
         }
 
         state_->freelist->~Freelist();
-        nous::engine::memory::ZeroMemory(state_, GetMemoryRequirement(state_->totalSize));
+
+        // Read the size BEFORE destroying state_ — GetMemoryRequirement reads
+        // state_->totalSize, which would be a use-after-destroy afterwards.
+        const uint64 total = state_->totalSize;
+
+        // InternalState was placement-new'd over the managed block, so nothing calls
+        // its destructor for us. It must be called explicitly: allocMap owns a bucket
+        // array on the SYSTEM heap (see the note on allocMap in the header — its nodes
+        // deliberately bypass MemoryManager), and zeroing the object's bytes without
+        // running the destructor leaked that array on every shutdown. The engine's own
+        // leak detector cannot see it because it only tracks pool allocations; ASan
+        // found it (2026-08-23).
+        state_->~InternalState();
+
+        nous::engine::memory::ZeroMemory(state_, GetMemoryRequirement(total));
+        state_ = nullptr;
     }
 }
 
