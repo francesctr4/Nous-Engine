@@ -110,16 +110,9 @@ UpdateStatus ModuleScene::PreUpdate(float dt)
 	// reached, the previous frame's EndFrame has fully submitted — safe to reload.
 	if (m_pendingStop)
 	{
-		m_pendingStop          = false;
-		m_pendingPrefabRefresh = false; // snapshot restore skips RefreshPrefabInstances; cancel any pending refresh
+		m_pendingStop = false;
 		LoadScene(m_snapshotPath);
 		NOUS_INFO("[Scene] Simulation stopped — scene restored from snapshot.");
-	}
-
-	if (m_pendingPrefabRefresh)
-	{
-		m_pendingPrefabRefresh = false;
-		RefreshPrefabInstances();
 	}
 
 	return UpdateStatus::CONTINUE;
@@ -495,14 +488,17 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 					f.get();
 			}
 
-			// Scene graph construction — resource lookups hit the cache if preload ran,
-			// or load serially here if the pool was too small to parallelise.
-			activeScene->Deserialize(loadPath);
-			// RefreshPrefabInstances() must NOT run on the job thread — it calls
-			// DestroyGameObject → CMesh::OnDestroy → vkDeviceWaitIdle, which deadlocks
-			// when the main thread is rendering. Defer to PreUpdate() instead.
-			m_pendingPrefabRefresh = true;
-			m_isLoadingScene       = false;
+			// Scene graph construction mutates the registry, so it runs on the main
+			// thread. Resource lookups hit the cache filled by the preload above.
+			// RefreshPrefabInstances can be called inline here: the reason it used to
+			// be deferred (DestroyGameObject → CMesh::OnDestroy → vkDeviceWaitIdle
+			// deadlocking from a worker) no longer applies on the main thread.
+			JobSystem->SubmitToMainThread([this, loadPath]
+				{
+					activeScene->Deserialize(loadPath);
+					RefreshPrefabInstances();
+					m_isLoadingScene = false;
+				}, "Apply scene");
 		}
 	);
 }
