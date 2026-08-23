@@ -5,6 +5,8 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <string>
 #include <vector>
 #include <atomic>
@@ -13,6 +15,8 @@
 class Scene;
 class Camera;
 class ScriptManager;
+class ResourceMesh;
+class ResourceMaterial;
 
 // Dependency Injection
 class ModuleInput;
@@ -21,6 +25,34 @@ class ModuleAudio;
 class ModuleVideo;
 
 enum class SimulationState : uint8_t { STOPPED, PLAYING, PAUSED };
+
+// Plain-data description of a model to be turned into GameObjects. Produced on a
+// worker thread (file I/O, resource resolution, matrix decomposition) and consumed
+// on the main thread by BuildModelHierarchy. Deliberately holds no entt types and
+// no file handles: everything slow has already happened by the time this exists.
+struct PendingSubMesh
+{
+	std::string       name;
+	glm::vec3         position{ 0.0f };
+	glm::quat         orientation{ 1.0f, 0.0f, 0.0f, 0.0f };
+	glm::vec3         scale{ 1.0f };
+	ResourceMesh*     mesh         = nullptr;
+	ResourceMaterial* material     = nullptr;   // already resolved (default included)
+	int32_t           submeshIndex = 0;
+};
+
+struct PendingModelSpawn
+{
+	std::string                 rootName;
+	std::vector<PendingSubMesh> submeshes;
+};
+
+/// @brief Turns a loaded model description into GameObjects in the given scene.
+/// @note MAIN THREAD ONLY - it mutates the entt registry.
+/// @note A free function rather than a ModuleScene method so it can be unit-tested
+///       without constructing a module (which would drag in the ResourceManager and
+///       the JobSystem). ModuleScene::BuildModelHierarchy forwards to it.
+NOUS_ENGINE_API void BuildModelHierarchyInto(Scene& scene, PendingModelSpawn&& spawn);
 
 class ModuleScene : public Module, public IEventListener
 {
@@ -68,6 +100,10 @@ public:
 	// CMesh (individual submesh resource), and default CMaterial.
 	// Safe to call from a job thread via CreateGameObjectDetached + RegisterGameObject.
 	NOUS_ENGINE_API void SpawnMeshAsHierarchy(const std::string& assetsPath) const;
+
+	// Main-thread half of SpawnMeshAsHierarchy: turns the plain-data description
+	// produced on a worker into GameObjects in the active scene.
+	NOUS_ENGINE_API void BuildModelHierarchy(PendingModelSpawn&& spawn);
 
 	// ---------------------------------------------------------------------------
 	// Simulation controls

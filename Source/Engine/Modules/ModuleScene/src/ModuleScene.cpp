@@ -582,50 +582,37 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
             meshResources[i] = mModuleResourceManager->RequestOrCreateSubMeshResource(assetsPath, i);
     }
 
-    // 4. Root GO — named after the file, no mesh of its own.
-    const std::string modelName = std::filesystem::path(assetsPath).filename().string();
-    GameObject rootGO = activeScene->CreateGameObjectDetached(modelName);
+    // 4. Build the plain-data description. Everything expensive — resource
+    //    resolution and the matrix decomposition — happens here, on the worker.
+    PendingModelSpawn spawn;
+    spawn.rootName = std::filesystem::path(assetsPath).filename().string();
+    spawn.submeshes.reserve(static_cast<size_t>(submeshCount));
 
-    // 5. One child GO per submesh — hierarchy construction uses preloaded resources.
     for (int32_t i = 0; i < submeshCount; ++i)
     {
         const SubMeshData& sub = submeshes[static_cast<size_t>(i)];
 
-        ResourceMesh* meshResource = meshResources[i];
-        if (!meshResource)
+        if (!meshResources[i])
         {
             NOUS_WARN("[SpawnMeshAsHierarchy] Failed to create sub-resource for submesh %d of '%s'.",
                 i, assetsPath.c_str());
             continue;
         }
 
-        // Create child GO attached to root.
-        GameObject childGO = activeScene->CreateGameObjectDetached(sub.name, &rootGO);
+        PendingSubMesh pending;
+        pending.name         = sub.name;
+        pending.mesh         = meshResources[i];
+        pending.submeshIndex = i;
 
         // Apply the node's accumulated world transform as the child's local transform.
-        if (auto* t = childGO.TryGetComponent<CTransform>())
-        {
-            glm::vec3 pos, scale, skew;
-            glm::vec4 persp;
-            glm::quat orient;
-            glm::decompose(sub.localTransform, scale, orient, pos, skew, persp);
-
-            t->position    = pos;
-            t->orientation = orient;
-            t->scale       = scale;
-            t->eulerHint   = t->GetEulerAngles();
-            t->UpdateMatrix();
-        }
-
-        // Mesh component — references the individual submesh resource.
-        auto& meshComp      = childGO.AddComponent<CMesh>();
-        meshComp.mesh        = meshResource;
-        meshComp.submeshIndex = i;
+        glm::vec3 skew;
+        glm::vec4 persp;
+        glm::decompose(sub.localTransform, pending.scale, pending.orientation, pending.position, skew, persp);
 
         // If the import baked a per-submesh material (V3 binary), resolve it via
         // the ResourceManager. Falls back to the default material when the field
         // is empty (V2 binary) or the .nmat asset is missing/unloadable.
-        auto& matComp = childGO.AddComponent<CMaterial>();
+        // Safe off-thread: ResourceTable has its own mutex and the refcount is atomic.
         ResourceMaterial* resolved = nullptr;
         if (!sub.materialAssetPath.empty())
         {
@@ -638,16 +625,66 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
                           sub.materialAssetPath.c_str(), i, assetsPath.c_str());
             }
         }
-        matComp.material = resolved ? resolved : mModuleResourceManager->GetDefaultMaterial();
+        // Resolved here rather than in the build step so BuildModelHierarchyInto
+        // stays free of the ResourceManager and remains unit-testable.
+        pending.material = resolved ? resolved : mModuleResourceManager->GetDefaultMaterial();
 
-        activeScene->RegisterGameObject(childGO);
+        spawn.submeshes.push_back(std::move(pending));
     }
 
-    // 6. Register root last so children are already in the scene list.
-    activeScene->RegisterGameObject(rootGO);
+    // 5. Hand off to the main thread. `spawn` is MOVED into the lambda: capturing
+    //    it by reference would dangle, since this function returns long before the
+    //    task runs. `mutable` is what allows moving out of the capture.
+    const std::string taskName = "Build " + spawn.rootName;
+    JobSystem->SubmitToMainThread(
+        [this, spawn = std::move(spawn)]() mutable
+        {
+            BuildModelHierarchyInto(*activeScene, std::move(spawn));
+        },
+        taskName);
+}
+
+void BuildModelHierarchyInto(Scene& scene, PendingModelSpawn&& spawn)
+{
+    NOUS_ASSERT_MAIN_THREAD();
+
+    // Root GO — named after the file, no mesh of its own.
+    GameObject rootGO = scene.CreateGameObjectDetached(spawn.rootName);
+
+    // One child GO per submesh.
+    for (PendingSubMesh& sub : spawn.submeshes)
+    {
+        GameObject childGO = scene.CreateGameObjectDetached(sub.name, &rootGO);
+
+        if (auto* t = childGO.TryGetComponent<CTransform>())
+        {
+            t->position    = sub.position;
+            t->orientation = sub.orientation;
+            t->scale       = sub.scale;
+            t->eulerHint   = t->GetEulerAngles();
+            t->UpdateMatrix();
+        }
+
+        auto& meshComp        = childGO.AddComponent<CMesh>();
+        meshComp.mesh         = sub.mesh;
+        meshComp.submeshIndex = sub.submeshIndex;
+
+        auto& matComp = childGO.AddComponent<CMaterial>();
+        matComp.material = sub.material;
+
+        scene.RegisterGameObject(childGO);
+    }
+
+    // Register root last so children are already in the scene list.
+    scene.RegisterGameObject(rootGO);
 
     NOUS_INFO("[SpawnMeshAsHierarchy] Spawned '%s' with %zu submesh(es).",
-        modelName.c_str(), submeshes.size());
+        spawn.rootName.c_str(), spawn.submeshes.size());
+}
+
+void ModuleScene::BuildModelHierarchy(PendingModelSpawn&& spawn)
+{
+    BuildModelHierarchyInto(*activeScene, std::move(spawn));
 }
 
 bool ModuleScene::HasMainCamera() const
