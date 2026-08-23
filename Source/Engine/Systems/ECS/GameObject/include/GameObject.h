@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Core/Logger/Asserts.h"
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/EngineExport.h"
 
@@ -87,6 +88,7 @@ private:
 template<typename T, typename... Args>
 T& GameObject::AddComponent(Args&&... args) {
     static_assert(std::is_base_of_v<Component, T>, "T must inherit from Component");
+    NOUS_ASSERT_MAIN_THREAD();
     T& comp = m_registry->emplace_or_replace<T>(m_entity, std::forward<Args>(args)...);
     comp.m_entity   = m_entity;
     comp.m_registry = m_registry;

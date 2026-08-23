@@ -52,11 +52,25 @@ NOUS_ENGINE_API void ReportAssertionFailure(const char* expression, const char* 
 #define NOUS_ASSERT_DEBUG(expr)
 #endif // _DEBUG
 
+// Structural mutation of the entt registry is main-thread-only. See CLAUDE.md
+// "Threading: Editor-Observes-Engine Rule". Debug-only: this is a guard rail for
+// development, and it matters most on Windows, where ThreadSanitizer does not exist.
+#ifdef _DEBUG
+    #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
+    #define NOUS_ASSERT_MAIN_THREAD()                                                 \
+        NOUS_ASSERT_MSG(nous::engine::multithreading::IsOnMainThread(),               \
+            "Registry mutation from a non-main thread. Wrap it in "                   \
+            "jobSystem->SubmitToMainThread(...) - see the main-thread ECS design doc.")
+#else
+    #define NOUS_ASSERT_MAIN_THREAD() ((void)0)
+#endif // _DEBUG
+
 #else // !NOUS_ASSERTIONS_ENABLED
 
 #define NOUS_ASSERT(expr)
 #define NOUS_ASSERT_MSG(expr, message)
 #define NOUS_ASSERT_DEBUG(expr)
+#define NOUS_ASSERT_MAIN_THREAD()
 
 #endif // NOUS_ASSERTIONS_ENABLED
 

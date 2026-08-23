@@ -17,6 +17,7 @@
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
+#include "Engine/Core/Logger/Asserts.h"
 #include "Engine/Core/Logger/Logger.h"
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
@@ -62,6 +63,8 @@ GameObject Scene::CreateGameObject(const std::string& name, GameObject* parent) 
 }
 
 GameObject Scene::CreateGameObjectDetached(const std::string& name, GameObject* parent, uint32_t preferredUID) {
+    NOUS_ASSERT_MAIN_THREAD();
+
     uint32_t id;
     {
         std::lock_guard lock(m_mutex);
@@ -233,6 +236,8 @@ void Scene::Serialize(const std::string& filepath) const {
 }
 
 void Scene::Deserialize(const std::string& filepath) {
+    NOUS_ASSERT_MAIN_THREAD();
+
     JsonObject root = JsonFile::LoadFromFile(filepath);
     if (root.IsEmpty()) {
         NOUS_ERROR("Failed to parse scene file: %s", filepath.c_str());
