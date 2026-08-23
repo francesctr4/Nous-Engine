@@ -22,4 +22,11 @@ namespace nous::engine::multithreading
     /// @brief Retrieves the main thread instance.
     /// @return Pointer to the main thread object, or nullptr if not registered.
     NOUS_ENGINE_API NOUS_Thread* GetMainThread();
+
+    /// @return true when the calling thread is the registered main thread.
+    /// @note Returns TRUE when no main thread has been registered at all. Unit-test
+    ///       binaries never call RegisterMainThread(), and a test that never spawns a
+    ///       worker cannot violate the main-thread invariant - so the permissive answer
+    ///       is the correct one there, and test code stays unaware the rule exists.
+    NOUS_ENGINE_API bool IsOnMainThread();
 }

@@ -38,4 +38,12 @@ namespace nous::engine::multithreading
     {
         return sMainThread;
     }
+
+    /// @return true when the calling thread is the registered main thread.
+    /// @note Permissive when no main thread is registered - see the header.
+    bool IsOnMainThread()
+    {
+        const NOUS_Thread* mainThread = GetMainThread();
+        return mainThread == nullptr || mainThread->GetID() == std::this_thread::get_id();
+    }
 }

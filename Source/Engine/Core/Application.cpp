@@ -391,6 +391,10 @@ UpdateStatus Application::Update()
 #ifdef _PROFILING
         ZoneScopedN("PreUpdate");
 #endif
+        // Apply work workers queued for the main thread (entity creation, scene
+        // deserialisation) BEFORE any module reads the registry this frame.
+        jobSystem->DrainMainThreadQueue();
+
         for (int i = 0; i < static_cast<int>(listModules.size()) && ret == UpdateStatus::CONTINUE; ++i)
         {
             if (listModules[i] != nullptr)
@@ -504,7 +508,14 @@ bool Application::CleanUp() const
     // Drain all in-flight jobs before any module starts tearing down.
     // This ensures all in-flight job lambdas complete while everything is still alive.
     if (jobSystem)
+    {
         jobSystem->WaitForPendingJobs();
+
+        // Stop accepting deferred main-thread work; anything still queued is dropped.
+        // Running entity construction while modules tear down is worse than losing a
+        // spawn the user will never see.
+        jobSystem->CloseMainThreadQueue();
+    }
 
     for (int i = static_cast<int>(listModules.size()) - 1; i >= 0 && ret; --i)
     {

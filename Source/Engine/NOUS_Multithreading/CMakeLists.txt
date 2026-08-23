@@ -14,6 +14,10 @@ add_subdirectory(NOUS_Thread)
 add_subdirectory(NOUS_ThreadPool)
 add_subdirectory(NOUS_JobSystem)
 
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()
+
 set_target_properties(${CLASS_NAME} PROPERTIES
         CXX_STANDARD 23
         CXX_STANDARD_REQUIRED ON
