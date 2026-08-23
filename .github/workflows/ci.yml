@@ -87,15 +87,25 @@ jobs:
           sudo apt-get install -y \
             ninja-build \
             nasm \
+            gperf \
+            python3-jinja2 \
             libvulkan-dev \
             libwayland-dev \
+            wayland-protocols \
+            libxkbcommon-dev \
             libx11-xcb-dev \
             libxrandr-dev \
             libxext-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
             libxcb-dri2-0-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
             pkg-config \
             libltdl-dev \
             autoconf \
+            autoconf-archive \
             automake \
             libtool
 
