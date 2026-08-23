@@ -2,10 +2,12 @@
 
 #include "Engine/EngineExport.h"
 
-#include <functional>
-#include <thread>
-#include <mutex>
 #include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 
 namespace nous::engine::multithreading
 {
@@ -43,6 +45,31 @@ namespace nous::engine::multithreading
 		/// @param jobName: Optional name identifier.
 		NOUS_ENGINE_API void SubmitJob(const std::function<void()>& userJob, const std::string& jobName = "Unnamed");
 
+		/// @brief Queues work to run on the MAIN thread, drained once per frame by
+		///        Application::Update before modules update.
+		/// @note Use this for anything a worker must not touch directly — above all,
+		///       structural mutation of the entt registry (creating GameObjects,
+		///       adding components).
+		/// @warning MOVE everything the task needs into the lambda. Capturing by
+		///          reference or by pointer to a temporary is a dangling read by the
+		///          time the task runs — it executes on a later frame, not here.
+		/// @note Deliberately NOT counted in the pending-job total: WaitForPendingJobs()
+		///       is called from the main thread, which is the only thread that can drain
+		///       this queue, so counting them would deadlock.
+		NOUS_ENGINE_API void SubmitToMainThread(std::function<void()> task, const std::string& taskName = "Unnamed");
+
+		/// @brief Runs and clears every queued main-thread task. Call ONLY from the main thread.
+		NOUS_ENGINE_API void DrainMainThreadQueue();
+
+		/// @brief Stops accepting main-thread tasks and discards those still queued.
+		/// @note Called during shutdown. Pending work is dropped, not run: executing
+		///       entity construction while modules are being torn down is worse than
+		///       losing a spawn the user will never see.
+		NOUS_ENGINE_API void CloseMainThreadQueue();
+
+		/// @return Number of main-thread tasks awaiting a drain.
+		[[nodiscard]] NOUS_ENGINE_API size_t GetPendingMainThreadTaskCount() const;
+
 		/// @brief Blocks until all submitted jobs complete.
 		NOUS_ENGINE_API void WaitForPendingJobs();
 
@@ -68,6 +95,16 @@ namespace nous::engine::multithreading
 
 		std::mutex					mWaitMutex;
 		std::condition_variable		mWaitCondition;
+
+		struct MainThreadTask
+		{
+			std::function<void()> fn;
+			std::string           name;
+		};
+
+		mutable std::mutex          m_mainThreadMutex;
+		std::vector<MainThreadTask> m_mainThreadQueue;
+		bool                        m_mainThreadQueueClosed = false;
 
 	};
 }
