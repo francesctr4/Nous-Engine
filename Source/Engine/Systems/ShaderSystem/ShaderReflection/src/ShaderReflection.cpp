@@ -3,7 +3,7 @@
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 
-#include <spirv_reflect.h>
+#include <spirv-reflect/spirv_reflect.h>
 #include <algorithm>
 
 static DescriptorType ToDescriptorType(const SpvReflectDescriptorType t)

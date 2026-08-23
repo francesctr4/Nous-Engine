@@ -1,16 +1,16 @@
 {
   "name" : "nous-engine",
   "version-string" : "0.7",
-  "builtin-baseline" : "b28d7e55666d6819ec408e392b8e0cdcfc2df6bd",
+  "builtin-baseline" : "127402f1c75bb3d5ff6bce04b285faa4930a5aca",
   "dependencies" : 
   [ 
     {
       "name" : "vulkan"
-    }, 
+    },
     {
       "name" : "sdl3",
       "features": [ "vulkan" ]
-    }, 
+    },
     {
       "name" : "assimp"
     }, 
@@ -23,7 +23,7 @@
     }, 
     {
       "name" : "parson"
-    }, 
+    },
     {
       "name" : "tracy"
     },

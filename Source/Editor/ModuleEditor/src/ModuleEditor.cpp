@@ -116,11 +116,11 @@ bool ModuleEditor::Awake()
 			imGuiVulkanInitInfo.Device = vkContext->device.logicalDevice;
 			imGuiVulkanInitInfo.ImageCount = vkContext->swapChain.swapChainImages.size();
 			imGuiVulkanInitInfo.Instance = vkContext->instance;
-			imGuiVulkanInitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+			imGuiVulkanInitInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 			imGuiVulkanInitInfo.PhysicalDevice = vkContext->device.physicalDevice;
 			imGuiVulkanInitInfo.Queue = vkContext->device.graphicsQueue;
 			imGuiVulkanInitInfo.QueueFamily = vkContext->device.graphicsQueueIndex;
-			imGuiVulkanInitInfo.RenderPass = vkContext->uiRenderpass.handle;
+			imGuiVulkanInitInfo.PipelineInfoMain.RenderPass = vkContext->uiRenderpass.handle;
 			imGuiVulkanInitInfo.UseDynamicRendering = false;
 			imGuiVulkanInitInfo.MinImageCount = 2;
 

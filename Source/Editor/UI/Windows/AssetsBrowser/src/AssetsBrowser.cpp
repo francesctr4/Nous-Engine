@@ -668,7 +668,7 @@ void AssetsBrowser::DrawContent()
                                                                ? icon_type_overlay_colors.at(item_data->fileType)
                                                                : IM_COL32(204, 204, 204, 255);
 
-                                const float iconFontSize = iconFont->FontSize;
+                                const float iconFontSize = ImGui::GetFontSize();
                                 const float iconScale    = LayoutItemSize.y * 0.55f / iconFontSize;
                                 const ImVec2 glyphSize   = iconFont->CalcTextSizeA(
                                     iconFontSize * iconScale, FLT_MAX, 0.0f, glyph);

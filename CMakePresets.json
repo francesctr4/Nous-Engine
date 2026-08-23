@@ -11,7 +11,7 @@
       "hidden": true,
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/Build/${presetName}",
-      "toolchainFile": "${sourceDir}/../vcpkg/scripts/buildsystems/vcpkg.cmake"
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
     },
     {
       "name": "debug-base",
@@ -118,6 +118,36 @@
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "x64-linux",
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets"
+      }
+    },
+    {
+      "name": "ASan-Linux",
+      "displayName": "ASan-Linux (address+undefined)",
+      "inherits": "debug-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+        "NOUS_SANITIZE": "address,undefined"
+      }
+    },
+    {
+      "name": "TSan-Linux",
+      "displayName": "TSan-Linux (thread)",
+      "inherits": "debug-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+        "NOUS_SANITIZE": "thread"
       }
     },
     {
