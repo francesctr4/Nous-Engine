@@ -66,15 +66,20 @@ void CMesh::Deserialize(const JsonObject& obj) {
         if (!rm) { mesh = nullptr; return; }
 
         // Try library path first (GAME mode / no .meta needed).
+        // NOTE: the null check before down_cast is load-bearing — down_cast asserts on
+        // null (Globals.h), and a failed resolve (missing/deleted asset) legitimately
+        // returns null. Same guarded shape as CAudioSource / CVideoPlayer.
         if (!libraryPath.empty() && resourceUID != 0)
         {
-            mesh = down_cast<ResourceMesh*>(rm->CreateResourceFromLibrary(
-                resourceUID, ResourceType::MESH, nous::engine::filesystem::GetFilename(assetPathStr),
-                assetPathStr, libraryPath));
+            if (ResourceBase* r = rm->CreateResourceFromLibrary(
+                    resourceUID, ResourceType::MESH, nous::engine::filesystem::GetFilename(assetPathStr),
+                    assetPathStr, libraryPath))
+                mesh = down_cast<ResourceMesh*>(r);
         }
         if (!mesh && !assetPathStr.empty())
         {
-            mesh = down_cast<ResourceMesh*>(rm->CreateResource(assetPathStr.c_str()));
+            if (ResourceBase* r = rm->CreateResource(assetPathStr.c_str()))
+                mesh = down_cast<ResourceMesh*>(r);
         }
     }
 }

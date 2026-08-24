@@ -46,15 +46,20 @@ void CMaterial::Deserialize(const JsonObject& obj) {
     const uint32 resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
 
     // Try library path first (GAME mode / no .meta needed).
+    // NOTE: the null check before down_cast is load-bearing — down_cast asserts on
+    // null (Globals.h), and a failed resolve (missing/deleted asset) legitimately
+    // returns null. Same guarded shape as CAudioSource / CVideoPlayer.
     if (!libraryPath.empty() && resourceUID != 0)
     {
-        material = down_cast<ResourceMaterial*>(rm->CreateResourceFromLibrary(
-            resourceUID, ResourceType::MATERIAL, nous::engine::filesystem::GetFilename(assetPath),
-            assetPath, libraryPath));
+        if (ResourceBase* r = rm->CreateResourceFromLibrary(
+                resourceUID, ResourceType::MATERIAL, nous::engine::filesystem::GetFilename(assetPath),
+                assetPath, libraryPath))
+            material = down_cast<ResourceMaterial*>(r);
     }
     if (!material)
     {
-        material = down_cast<ResourceMaterial*>(rm->CreateResource(assetPath));
+        if (ResourceBase* r = rm->CreateResource(assetPath))
+            material = down_cast<ResourceMaterial*>(r);
     }
 }
 
