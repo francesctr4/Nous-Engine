@@ -6,6 +6,7 @@
 #include <string>
 
 class ResourceBase;
+class ResourceMaterial;
 class ResourceMesh;
 enum class ResourceType : int8_t;
 
@@ -30,4 +31,11 @@ public:
     virtual ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(
         const std::string& libraryPath, int32_t submeshIndex,
         const std::string& assetsPath, uint32 hintUID = 0) = 0;
+
+    // Drops one reference to a loaded resource; frees it when the count hits zero.
+    // Returns false if the UID is not currently loaded.
+    virtual bool UnloadResource(uint32 uid) = 0;
+
+    // The engine's fallback material. Borrowed — do NOT UnloadResource() it.
+    virtual ResourceMaterial* GetDefaultMaterial() const = 0;
 };

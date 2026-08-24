@@ -3,6 +3,7 @@ set(CLASS_NAME "AudioSystem")
 add_library(${CLASS_NAME} STATIC
         SoundHandle.h
         EffectChainHandle.h
+        iAudioBroker.h
 )
 
 set_target_properties(${CLASS_NAME} PROPERTIES

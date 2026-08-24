@@ -3,6 +3,7 @@ set(CLASS_NAME "VideoSystem")
 add_library(${CLASS_NAME} STATIC
         VideoHandle.h
         VideoFrame.h
+        iVideoBroker.h
 )
 
 set_target_properties(${CLASS_NAME} PROPERTIES
