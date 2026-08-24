@@ -4,9 +4,9 @@
 
 #include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
 #include "Engine/Scripting/Internal/IScript.inl"   // ScriptProperty, GetProperties()
-#include "Engine/Scripting/ScriptManager.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Scripting/iScriptRegistry.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
+#include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Core/Logger/Logger.h"
 
@@ -53,10 +53,9 @@ void CScript::OnStart()
 {
     // Always register so the component appears in the registry and can be found
     // by PressPlay() / hot-reload regardless of simulation state.
-    auto go = GetGameObject();
-    if (!go.IsValid() || !go.GetScene()) return;
-    ModuleScene* moduleScene = go.GetScene()->GetModuleScene();
-    moduleScene->scriptManager->RegisterScriptComponent(this);
+    const ComponentServices& s = Services();
+    if (!s.scripts) return;
+    s.scripts->RegisterScriptComponent(this);
     m_registered = true;
 
     // Always create instances — even in edit mode — so the Inspector can
@@ -66,7 +65,7 @@ void CScript::OnStart()
 
     // Only fire the Awake/Start lifecycle when the simulation is actually running
     // (covers scene loads that happen mid-play).
-    if (!moduleScene->IsStopped())
+    if (s.host && !s.host->IsStopped())
         StartInstances();
 }
 
@@ -97,11 +96,8 @@ void CScript::OnDestroy()
     // module if OnStart() was never reached (e.g., component destroyed mid-construction).
     if (m_registered)
     {
-        auto go = GetGameObject();
-        if (go.IsValid() && go.GetScene())
-        {
-            go.GetScene()->GetModuleScene()->scriptManager->UnregisterScriptComponent(this);
-        }
+        if (IScriptRegistry* scripts = Services().scripts)
+            scripts->UnregisterScriptComponent(this);
         m_registered = false;
     }
 
@@ -121,10 +117,9 @@ void CScript::AddScript(const std::string& scriptName)
     auto go = GetGameObject();
     if (!go.IsValid()) return;
 
-    ModuleScene* moduleScene = go.GetScene() ? go.GetScene()->GetModuleScene() : nullptr;
-    if (!moduleScene) return;
-    ScriptManager* sm = moduleScene->scriptManager;
-    IScript* inst = sm->CreateScriptInstance(scriptName);
+    const ComponentServices& s = Services();
+    if (!s.scripts) return;
+    IScript* inst = s.scripts->CreateScriptInstance(scriptName);
     if (!inst)
     {
         NOUS_WARN("[CScript] Failed to add script '%s' — not found in registry", scriptName.c_str());
@@ -136,7 +131,7 @@ void CScript::AddScript(const std::string& scriptName)
 
     // Only invoke the lifecycle when the simulation is live; otherwise the
     // instance just sits waiting for PressPlay (but its fields are editable now).
-    if (!moduleScene->IsStopped())
+    if (s.host && !s.host->IsStopped())
     {
         inst->Awake();
         inst->Start();
@@ -189,8 +184,10 @@ void CScript::RecreateInstances()
     // Only re-enter the lifecycle when the simulation is live; in edit mode
     // we just want the fresh instances available for Inspector editing.
     {
-        auto go = GetGameObject();
-        if (!go.IsValid() || !go.GetScene() || go.GetScene()->GetModuleScene()->IsStopped())
+        // No host wired (headless) counts as "not simulating", matching the old
+        // behaviour where an unreachable ModuleScene meant no lifecycle call.
+        const ISceneHost* host = Services().host;
+        if (!host || host->IsStopped())
         {
             m_reloading.store(false, std::memory_order_seq_cst);
             return;
@@ -225,8 +222,9 @@ void CScript::CreateInstances()
     DestroyInstances();
 
     auto go = GetGameObject();
-    if (!go.IsValid() || !go.GetScene() || !go.GetScene()->GetModuleScene()) return;
-    ScriptManager* sm = go.GetScene()->GetModuleScene()->scriptManager;
+    if (!go.IsValid()) return;
+
+    IScriptRegistry* sm = Services().scripts;
     if (!sm) return;
 
     const uint32_t ownerID  = go.GetID();

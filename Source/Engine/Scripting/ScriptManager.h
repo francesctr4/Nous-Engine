@@ -34,7 +34,7 @@ public:
     NOUS_ENGINE_API void RecompileScripts();
 
     // Script management
-    IScript* CreateScriptInstance(const std::string& scriptName);
+    IScript* CreateScriptInstance(const std::string& scriptName) override;
 
     // Returns names of all scripts registered in the loaded DLL (empty if no DLL loaded)
     NOUS_ENGINE_API std::vector<std::string> GetAvailableScriptNames() const;

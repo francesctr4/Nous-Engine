@@ -1,7 +1,7 @@
 #include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
+#include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
@@ -48,12 +48,19 @@ void CCamera::OnUpdate(float /*deltaTime*/)
     if (!transform)
         return;
 
-    Scene* scene = go.GetScene();
-    if (!scene) return;
-    Camera* gameCamera = scene->GetModuleScene()->gameCamera;
+    const ComponentServices& s = Services();
+    if (!s.host) return;
 
     // Always derive aspect ratio from the actual window so it's correct on any display.
-    aspectRatio = scene->GetModuleScene()->GetWindowAspect();
+    // Assigned BEFORE the game-camera null check so it stays correct in a scene that
+    // has no game camera assigned — GetProjectionMatrix() reads it either way.
+    aspectRatio = s.host->GetWindowAspect();
+
+    // May legitimately be null (no game camera in this scene). The pre-seam code
+    // dereferenced this unconditionally and crashed; only isMainCamera defaulting
+    // to false kept it hidden.
+    Camera* gameCamera = s.host->GetGameCamera();
+    if (!gameCamera) return;
 
     gameCamera->SetPos(transform->position);
     gameCamera->SetFront(transform->GetForward());

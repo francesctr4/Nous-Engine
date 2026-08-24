@@ -4,6 +4,7 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
+#include "Engine/Systems/ECS/test/FakeComponentServices.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 
@@ -16,7 +17,7 @@ protected:
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(MiB(16));
-        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene");
+        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene", nullptr, nullptr, &fakes.services);
     }
 
     void TearDown() override
@@ -25,7 +26,9 @@ protected:
         nous::engine::memory::ShutdownMemory();
     }
 
-    Scene* scene = nullptr;
+    // Declared before `scene` so it outlives it — the Scene holds a pointer into it.
+    FakeServices fakes;
+    Scene*       scene = nullptr;
 };
 
 // =============================================================================
@@ -157,4 +160,65 @@ TEST_F(t_CCamera, MultipleGameObjects_IndependentCCamera)
     b.GetComponent<CCamera>().fov = 120.0f;
     EXPECT_FLOAT_EQ(a.GetComponent<CCamera>().fov, 60.0f);
     EXPECT_FLOAT_EQ(b.GetComponent<CCamera>().fov, 120.0f);
+}
+
+// =============================================================================
+// Main-camera sync (requires the ComponentServices seam)
+// =============================================================================
+
+TEST_F(t_CCamera, OnUpdate_MainCameraWithNullGameCamera_DoesNotCrash)
+{
+    // Regression: CCamera.cpp:53 dereferenced scene->GetModuleScene()->gameCamera
+    // with no null check on either link. It stayed hidden only because
+    // isMainCamera defaults to false, so OnUpdate returned before reaching it.
+    // FakeSceneHost::GetGameCamera() returns nullptr, which is a legitimate state
+    // (a scene with no game camera assigned).
+    GameObject go = scene->CreateGameObject("Camera");
+    auto& c = go.AddComponent<CCamera>();
+    c.isMainCamera = true;
+
+    c.OnUpdate(0.016f);
+
+    SUCCEED();
+}
+
+TEST_F(t_CCamera, OnUpdate_MainCamera_ReadsAspectFromHost)
+{
+    fakes.host.aspect = 2.0f;
+
+    GameObject go = scene->CreateGameObject("Camera");
+    auto& c = go.AddComponent<CCamera>();
+    c.isMainCamera = true;
+
+    c.OnUpdate(0.016f);
+
+    // Aspect must be written even when there is no game camera to push it into.
+    EXPECT_FLOAT_EQ(c.aspectRatio, 2.0f);
+}
+
+TEST_F(t_CCamera, OnUpdate_NotMainCamera_LeavesAspectUntouched)
+{
+    fakes.host.aspect = 2.0f;
+
+    GameObject go = scene->CreateGameObject("Camera");
+    auto& c = go.AddComponent<CCamera>();
+    c.isMainCamera  = false;
+    c.aspectRatio   = 1.0f;
+
+    c.OnUpdate(0.016f);
+
+    EXPECT_FLOAT_EQ(c.aspectRatio, 1.0f);
+}
+
+TEST_F(t_CCamera, OnUpdate_UnwiredScene_DoesNotCrash)
+{
+    Scene* bare = NOUS_NEW<Scene>(MemoryTag::SCENE, "Bare");
+    GameObject go = bare->CreateGameObject("Camera");
+    auto& c = go.AddComponent<CCamera>();
+    c.isMainCamera = true;
+
+    c.OnUpdate(0.016f);
+
+    NOUS_DELETE(bare, MemoryTag::SCENE);
+    SUCCEED();
 }

@@ -177,6 +177,12 @@ struct FakeScriptRegistry : IScriptRegistry
 
     void RegisterScriptComponent(CScript*) override   { calls.push_back("Register");   ++registered; }
     void UnregisterScriptComponent(CScript*) override { calls.push_back("Unregister"); --registered; }
+
+    // Always reports "script not found" — there is no script DLL in a unit test.
+    // CScript must degrade gracefully (it warns and skips), not crash.
+    IScript* CreateScriptInstance(const std::string&) override {
+        calls.push_back("CreateScriptInstance"); return nullptr;
+    }
 };
 
 // Owns one of each fake and exposes a ComponentServices wired to them.
