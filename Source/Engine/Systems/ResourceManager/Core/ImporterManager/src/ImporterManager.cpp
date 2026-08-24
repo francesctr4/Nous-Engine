@@ -26,12 +26,12 @@ ImporterManager::ImporterManager(const TypeRegistry& typeRegistry)
 {
 }
 
-void ImporterManager::Init(ModuleResourceManager* resourceManager)
+void ImporterManager::Init(IResourceLoader* resources)
 {
     for (const TypeDescriptor* d : m_typeRegistry->All())
     {
         if (d && d->importer)
-            d->importer->m_resourceManager = resourceManager;
+            d->importer->m_resources = resources;
     }
 }
 

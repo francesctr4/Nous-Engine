@@ -8,7 +8,7 @@ class ResourceBase;
 enum class ResourceType : int8_t;
 struct MetaFileData;
 class IGPUResourceFactory;
-class ModuleResourceManager;
+class IResourceLoader;
 
 // Full importer-manager surface: the import dispatch (inherited from
 // IImporterDispatcher) plus the runtime resource lifecycle. The owner
@@ -18,7 +18,7 @@ class ModuleResourceManager;
 class IImporterManager : public IImporterDispatcher
 {
 public:
-    virtual void Init(ModuleResourceManager* resourceManager) = 0;
+    virtual void Init(IResourceLoader* resources) = 0;
     virtual bool Deserialize(ResourceType type, const std::string& libraryPath, ResourceBase* resource) = 0;
     virtual void Evict(ResourceType type, ResourceBase* resource) = 0;
 

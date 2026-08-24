@@ -19,7 +19,7 @@ TEST(t_ResourceAudioGraph, EffectsAndParamsRoundTrip)
     ASSERT_TRUE(ImporterAudioGraph::WriteAudioGraphToFile(src, path));
 
     ResourceAudioGraph loaded(123);
-    ImporterAudioGraph importer;  // m_resourceManager unused — no external refs
+    ImporterAudioGraph importer;  // m_resources unused — no external refs
     ASSERT_TRUE(importer.Deserialize(path, &loaded));
 
     ASSERT_EQ(loaded.effects.size(), 2u);

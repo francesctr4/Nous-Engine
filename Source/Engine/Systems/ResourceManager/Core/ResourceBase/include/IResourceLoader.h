@@ -10,9 +10,14 @@ class ResourceMaterial;
 class ResourceMesh;
 enum class ResourceType : int8_t;
 
-// Minimal interface for loading and requesting resources.
-// Implemented by ModuleResourceManager; used by ScenePreloader so that
-// ScenePreloader can live in Systems/ without depending on Modules/.
+// The resource system, as seen from inside Systems/.
+// Implemented by ModuleResourceManager so that consumers in Systems/ (ScenePreloader,
+// the ECS components, the importers) can load, release and import resources without
+// depending on Modules/.
+//
+// Mostly load/request operations; ImportFile is the one asset-pipeline entry point,
+// added because ImporterMesh must import the peer textures/materials it discovers
+// inside a model file, and no load-oriented call can express that.
 class IResourceLoader
 {
 public:
@@ -38,4 +43,9 @@ public:
 
     // The engine's fallback material. Borrowed — do NOT UnloadResource() it.
     virtual ResourceMaterial* GetDefaultMaterial() const = 0;
+
+    // Runs the asset-import pipeline on one file (writes its .meta, mirrors it into
+    // Library/). Used by ImporterMesh to import the peer textures and materials it
+    // discovers inside a model. Returns false if the import failed.
+    virtual bool ImportFile(const std::string& path) = 0;
 };

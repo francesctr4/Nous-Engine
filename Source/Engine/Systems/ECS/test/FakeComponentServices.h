@@ -141,6 +141,7 @@ struct FakeResourceLoader : IResourceLoader
 {
     mutable std::vector<std::string> calls;
     mutable std::vector<uint32>      unloaded;
+    mutable std::vector<std::string> imported;
 
     bool Called(const char* name) const {
         return std::find(calls.begin(), calls.end(), name) != calls.end();
@@ -165,6 +166,9 @@ struct FakeResourceLoader : IResourceLoader
     }
     ResourceMaterial* GetDefaultMaterial() const override {
         calls.push_back("GetDefaultMaterial"); return nullptr;
+    }
+    bool ImportFile(const std::string& path) override {
+        calls.push_back("ImportFile"); imported.push_back(path); return true;
     }
 };
 

@@ -24,7 +24,7 @@
 class SpMockImporterManager : public IImporterManager
 {
 public:
-    void Init(ModuleResourceManager*) override                                    {}
+    void Init(IResourceLoader*) override                                          {}
     bool Import(ResourceType, const MetaFileData&) override                       { return true; }
     bool Deserialize(ResourceType, const std::string&, ResourceBase*) override        { return true; }
     void Evict(ResourceType, ResourceBase*) override                                  {}

@@ -3,7 +3,10 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
+// Was reaching ImportPipeline transitively through ModuleResourceManager.h; that
+// include is gone, so name it directly.
+#include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
 
 #include "Engine/Core/FileSystem/FileSystem.h"
@@ -150,7 +153,7 @@ static void DeserializeUniforms(const JsonObject& root, ResourceMaterial* materi
 }
 
 static void DeserializeTextureMaps(const JsonObject& root, ResourceMaterial* material,
-                                    ModuleResourceManager* rm)
+                                    IResourceLoader* rm)
 {
     // Data-driven: every texture slot lives in the "texture_maps" array with
     // name + asset_path + uid + library_path. Save() enriches uid/library_path
@@ -191,7 +194,7 @@ static void DeserializeTextureMaps(const JsonObject& root, ResourceMaterial* mat
 }
 
 static void DeserializeShader(const JsonObject& root, ResourceMaterial* material,
-                               ModuleResourceManager* rm)
+                               IResourceLoader* rm)
 {
     // Data-driven: shader_asset_path + shader_uid + shader_library_path are all
     // required. Save() enriches uid/library_path at import time.
@@ -236,8 +239,8 @@ bool ImporterMaterial::Deserialize(const std::string& libraryPath, ResourceBase*
     }
 
     DeserializeUniforms(root, material);
-    DeserializeTextureMaps(root, material, m_resourceManager);
-    DeserializeShader(root, material, m_resourceManager);
+    DeserializeTextureMaps(root, material, m_resources);
+    DeserializeShader(root, material, m_resources);
 
     return true;
 }
@@ -264,13 +267,15 @@ void ImporterMaterial::Evict(ResourceBase* inResource)
     {
         if (map.texture)
         {
-            m_resourceManager->UnloadResource(map.texture->GetUID());
+            if (m_resources)
+                m_resources->UnloadResource(map.texture->GetUID());
             map.texture = nullptr;
         }
     }
     if (material->shader)
     {
-        m_resourceManager->UnloadResource(material->shader->GetUID());
+        if (m_resources)
+            m_resources->UnloadResource(material->shader->GetUID());
         material->SetShader(nullptr);
     }
 }

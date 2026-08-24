@@ -9,7 +9,7 @@
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
 #include "Engine/Renderer/IGPUResourceFactory.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 
@@ -386,7 +386,7 @@ static std::string SanitizeFilenamePart(const std::string& in)
 // this to stamp per-submesh materialAssetPath via aiMesh::mMaterialIndex.
 static std::vector<std::string> ExtractTexturesAndMaterials(const aiScene* scene,
                                         const std::string& modelAssetPath,
-                                        ModuleResourceManager* rm)
+                                        IResourceLoader* rm)
 {
     std::vector<std::string> materialPaths;
     if (!rm || !scene || scene->mNumMaterials == 0) return materialPaths;
@@ -590,7 +590,7 @@ bool ImporterMesh::Import(const MetaFileData& metaFileData)
 
     std::vector<std::string> materialPaths;
     if (ext == ".gltf" || ext == ".glb")
-        materialPaths = ExtractTexturesAndMaterials(scene, metaFileData.assetsPath, m_resourceManager);
+        materialPaths = ExtractTexturesAndMaterials(scene, metaFileData.assetsPath, m_resources);
 
     std::vector<SubMeshData> submeshes;
     CollectSubMeshData(scene->mRootNode, scene, glm::mat4(1.0f), materialPaths, submeshes);

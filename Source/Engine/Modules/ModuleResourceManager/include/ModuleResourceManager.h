@@ -52,7 +52,7 @@ public:
 
 	// ------------------------------------------------------------------------ //
 
-	NOUS_ENGINE_API bool ImportFile(const std::string& path);
+	NOUS_ENGINE_API bool ImportFile(const std::string& path) override;
 	NOUS_ENGINE_API bool ImportDirectory(const std::string& directory);
 
 	// Rebuilds Library/Scenes/scene_manifest.json from current scene .meta files.

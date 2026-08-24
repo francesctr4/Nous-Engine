@@ -5,7 +5,7 @@
 class ResourceBase;
 struct MetaFileData;
 class IGPUResourceFactory;
-class ModuleResourceManager;
+class IResourceLoader;
 
 // Asset-pipeline importer — file I/O only, no runtime resource object and no GPU
 // residency. This is all a "pipeline-only" type (e.g. SCENE) needs to implement:
@@ -17,7 +17,9 @@ struct IAssetImporter
     // Asset pipeline — file I/O only, no GPU involvement.
     virtual bool Import(const MetaFileData& metaFileData) = 0;
 
-    ModuleResourceManager* m_resourceManager = nullptr;
+    // The resource registry, as an interface — keeps Systems/ off Modules/.
+    // Assigned once by ImporterManager::Init. May be null in tests.
+    IResourceLoader* m_resources = nullptr;
 };
 
 // Resource importer — a type that owns a runtime `Resource` object with a CPU/GPU

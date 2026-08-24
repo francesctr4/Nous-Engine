@@ -18,7 +18,7 @@ public:
     NOUS_ENGINE_API explicit ImporterManager(const TypeRegistry& typeRegistry);
 
     // IImporterManager overrides
-    void Init(ModuleResourceManager* resourceManager) override;
+    void Init(IResourceLoader* resources) override;
     bool Import(ResourceType type, const MetaFileData& metaFileData) override;
     bool Deserialize(ResourceType type, const std::string& libraryPath, ResourceBase* resource) override;
     void Evict(ResourceType type, ResourceBase* resource) override;

@@ -20,7 +20,7 @@ public:
 
     bool deserializeResult = true;
 
-    void Init(ModuleResourceManager*) override                                          { initCalled = true; }
+    void Init(IResourceLoader*) override                                                { initCalled = true; }
     bool Import(ResourceType, const MetaFileData&) override                             { return true; }
     bool Deserialize(ResourceType, const std::string&, ResourceBase*) override              { return deserializeResult; }
     void Evict(ResourceType, ResourceBase*) override                                        {}
