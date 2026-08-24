@@ -2,10 +2,10 @@
 
 #include "Engine/Core/Globals.h"                 // down_cast
 #include "Engine/Core/FileSystem/FileSystem.h"   // GetFilename
-#include "Engine/Modules/ModuleVideo/include/ModuleVideo.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
+#include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
+#include "Engine/Systems/VideoSystem/iVideoBroker.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
 #include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/VideoPlayhead.h"
@@ -15,41 +15,21 @@
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 // ---------------------------------------------------------------------------
-// Broker access
-// ---------------------------------------------------------------------------
-
-CVideoPlayer::SceneBroker CVideoPlayer::ResolveBroker() const
-{
-    SceneBroker broker;
-    auto go = GetGameObject();
-    if (!go.IsValid())
-        return broker;
-
-    broker.scene       = go.GetScene();
-    broker.moduleScene = broker.scene ? broker.scene->GetModuleScene() : nullptr;
-    broker.video       = broker.moduleScene ? broker.moduleScene->GetVideo() : nullptr;
-    return broker;
-}
-
-// ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
 void CVideoPlayer::OnUpdate(float deltaTime)
 {
-    const SceneBroker broker = ResolveBroker();
-    ModuleScene* moduleScene = broker.moduleScene;
-    ModuleVideo* video       = broker.video;
-    if (!video)
-        return;  // headless / test scene, or invalid GameObject — no video broker wired
-    // video != null guarantees moduleScene != null (derived from it).
+    const ComponentServices& s = Services();
+    if (!s.host || !s.video)
+        return;  // headless / test scene — no video broker wired
 
     // STOPPED — tear the decoder down so the next play session starts cleanly.
-    if (moduleScene->IsStopped())
+    if (s.host->IsStopped())
     {
         if (handle)
         {
-            video->DestroyVideo(handle);
+            s.video->DestroyVideo(handle);
             handle = nullptr;
         }
         playhead    = 0.0;
@@ -59,8 +39,9 @@ void CVideoPlayer::OnUpdate(float deltaTime)
         return;
     }
 
-    // PAUSED — hold the playhead; deliver nothing new.
-    if (moduleScene->IsPaused())
+    // PAUSED — hold the playhead; deliver nothing new. Note this holds the decoder
+    // too: only STOPPED tears it down, so resuming does not restart the clip.
+    if (s.host->IsPaused())
         return;
 
     // PLAYING.
@@ -74,11 +55,11 @@ void CVideoPlayer::OnUpdate(float deltaTime)
             if (predecode)
                 clip->SetDecodeMode(VideoDecodeMode::PREDECODED);
             if (!handle)
-                handle = video->CreateVideo(clip);
+                handle = s.video->CreateVideo(clip);
             if (handle)
             {
-                video->SetLooping(handle, loop);
-                video->Start(handle);
+                s.video->SetLooping(handle, loop);
+                s.video->Start(handle);
             }
         }
         m_started = true;   // don't retry creation every frame when there's no clip
@@ -100,30 +81,30 @@ void CVideoPlayer::OnUpdate(float deltaTime)
     const double audioSeconds      = audioClockActive ? audioSibling->GetPlaybackSeconds() : 0.0;
 
     playhead = ResolveVideoPlayhead(playhead, static_cast<double>(deltaTime),
-                                    static_cast<double>(video->GetDuration(handle)), loop,
+                                    static_cast<double>(s.video->GetDuration(handle)), loop,
                                     audioClockActive, audioSeconds);
 
-    if (video->TryGetFrame(handle, playhead, latestFrame))
+    if (s.video->TryGetFrame(handle, playhead, latestFrame))
         frameDirty = true;
 }
 
 void CVideoPlayer::OnDestroy()
 {
-    const SceneBroker broker = ResolveBroker();
+    const ComponentServices& s = Services();
 
     // Release the decoder handle. ModuleVideo is constructed before the scene, so it is
     // guaranteed alive during scene teardown (Application module order: VIDEO before SCENE).
     // No GPU work here — the dynamic texture is owned by the renderer (DynamicTextureCache).
-    if (broker.video && handle)
-        broker.video->DestroyVideo(handle);
+    if (s.video && handle)
+        s.video->DestroyVideo(handle);
     handle      = nullptr;
     frameDirty  = false;
     latestFrame = VideoFrame{};
     m_started   = false;
 
     // Drop our reference to the clip resource (mirrors CMesh / CAudioSource::OnDestroy).
-    if (clip && broker.scene && broker.scene->GetResourceManager())
-        broker.scene->GetResourceManager()->UnloadResource(clip->GetUID());
+    if (clip && s.resources)
+        s.resources->UnloadResource(clip->GetUID());
     clip = nullptr;
 }
 
@@ -166,9 +147,7 @@ void CVideoPlayer::Deserialize(const JsonObject& obj)
     if (assetPath.empty() && libraryPath.empty())
         return;  // no clip authored
 
-    auto go = GetGameObject();
-    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    ModuleResourceManager* rm = scene ? scene->GetResourceManager() : nullptr;
+    IResourceLoader* rm = Services().resources;
     if (!rm)
         return;
 
