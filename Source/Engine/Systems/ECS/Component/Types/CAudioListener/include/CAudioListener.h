@@ -3,9 +3,6 @@
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/EngineExport.h"
 
-class ModuleScene;
-class ModuleAudio;
-
 /**
  * @brief Audio listener ("the ears") component.
  *
@@ -27,8 +24,4 @@ public:
 
     NOUS_ENGINE_API JsonObject Serialize() const override;
     NOUS_ENGINE_API void       Deserialize(const JsonObject& obj) override;
-
-private:
-    ModuleScene* GetModuleScene() const;
-    ModuleAudio* GetAudioModule() const;
 };

@@ -1,37 +1,27 @@
 #include "Engine/Systems/ECS/Component/Types/CAudioListener/include/CAudioListener.h"
 
-#include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
+#include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
+#include "Engine/Systems/AudioSystem/iAudioBroker.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
-
-ModuleScene* CAudioListener::GetModuleScene() const
-{
-    auto go = GetGameObject();
-    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    return scene ? scene->GetModuleScene() : nullptr;
-}
-
-ModuleAudio* CAudioListener::GetAudioModule() const
-{
-    ModuleScene* moduleScene = GetModuleScene();
-    return moduleScene ? moduleScene->GetAudio() : nullptr;
-}
 
 void CAudioListener::OnUpdate(float /*deltaTime*/)
 {
     if (!isMainListener)
         return;
 
-    ModuleScene* moduleScene = GetModuleScene();
-    ModuleAudio* audio = moduleScene ? moduleScene->GetAudio() : nullptr;
-    if (!moduleScene || !audio)
+    const ComponentServices& s = Services();
+    if (!s.host || !s.audio)
         return;  // headless / test scene — no audio broker wired
 
     // Only drive the listener while the scene is simulating; voices only exist then.
-    if (moduleScene->IsStopped())
+    // Guarded on IsStopped rather than !IsPlaying: a PAUSED scene keeps its voices
+    // and their cursors, so the listener must stay current or a resumed scene pans
+    // from a stale position.
+    if (s.host->IsStopped())
         return;
 
     auto go = GetGameObject();
@@ -44,9 +34,9 @@ void CAudioListener::OnUpdate(float /*deltaTime*/)
     const glm::vec3 forward = t->GetForward();
     const glm::vec3 up      = t->GetUp();
 
-    audio->SetListenerPosition (pos.x, pos.y, pos.z);
-    audio->SetListenerDirection(forward.x, forward.y, forward.z);
-    audio->SetListenerWorldUp  (up.x, up.y, up.z);
+    s.audio->SetListenerPosition (pos.x, pos.y, pos.z);
+    s.audio->SetListenerDirection(forward.x, forward.y, forward.z);
+    s.audio->SetListenerWorldUp  (up.x, up.y, up.z);
 }
 
 JsonObject CAudioListener::Serialize() const
