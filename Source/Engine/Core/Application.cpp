@@ -124,7 +124,7 @@ Application::Application(const bool isGameMode)
     services.audio     = audio;
     services.video     = video;
     services.resources = resourceManager;
-    services.scripts   = scene->scriptManager;  // created in ModuleScene's ctor, non-null here
+    services.scripts   = scene->GetScriptRegistry();  // created in ModuleScene's ctor, non-null here
     scene->SetComponentServices(services);
 
     if (m_isGameMode)

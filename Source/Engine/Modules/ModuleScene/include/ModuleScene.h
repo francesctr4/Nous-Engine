@@ -17,6 +17,7 @@
 class Scene;
 class Camera;
 class ScriptManager;
+class IScriptRegistry;
 class ResourceMesh;
 class ResourceMaterial;
 
@@ -140,10 +141,11 @@ public:
 	// The camera CCamera's main-camera instance drives. May be null.
 	NOUS_ENGINE_API Camera* GetGameCamera() const override { return gameCamera; }
 
-	// Broker accessor: components (CAudioSource) reach the audio module through the
-	// scene, mirroring how CScript reaches scriptManager. May be null in tests.
+	// Editor-only accessor (AudioGraphEditor / AudioMixerWindow need the concrete
+	// module for the bus-mixer surface, which is deliberately off IAudioBroker).
+	// Components must NOT use this — they reach audio via Services().audio.
+	// GetVideo() was deleted with CVideoPlayer's migration; nothing needed it.
 	NOUS_ENGINE_API ModuleAudio* GetAudio() const { return mModuleAudio; }
-	NOUS_ENGINE_API ModuleVideo* GetVideo() const { return mModuleVideo; }
 
 	// Fills the aggregate every Scene this module creates already points at.
 	// Called by Application once the full module graph exists — which is AFTER
@@ -152,6 +154,15 @@ public:
 	// filling it here updates every live Scene in place. Do not change Scene to
 	// take the aggregate by value without also moving scene creation later.
 	NOUS_ENGINE_API void SetComponentServices(const ComponentServices& services);
+
+	// The script registry, as the interface Systems/ consumes (used by Application
+	// when assembling ComponentServices). Defined out-of-line so this header does
+	// not need ScriptManager's definition for the derived-to-base conversion.
+	NOUS_ENGINE_API IScriptRegistry* GetScriptRegistry() const;
+
+	// The concrete script manager. The editor needs the full type (script-name
+	// enumeration, recompile); Systems/ must use GetScriptRegistry() instead.
+	NOUS_ENGINE_API ScriptManager* GetScriptManager() const { return scriptManager; }
 
 	NOUS_ENGINE_API bool IsSelected(GameObject go) const;
 	NOUS_ENGINE_API void AddToSelection(GameObject go);      // no-op if already in set; updates primarySelection
@@ -164,9 +175,6 @@ public:
 	Scene*         activeScene    = nullptr;
 	std::vector<GameObject> selectedGameObjects;  // ordered by selection time; empty = nothing selected
 	GameObject              primarySelection;      // last item added; invalid handle when set is empty
-	// Prefer GetGameCamera(). Public only for legacy editor call sites.
-	Camera*        gameCamera    = nullptr;
-	ScriptManager* scriptManager = nullptr;
 	// Set by GameViewport::Draw() each frame; applied in ModuleRenderer3D::PostUpdate()
 	// before frustum build and DrawFrame() to override CCamera's authored aspect ratio.
 	// 0.0f = not yet set (first frame before the viewport has drawn).
@@ -177,6 +185,12 @@ public:
 	float          m_windowAspect = static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT);
 
 private:
+
+	// Reached through GetGameCamera() / GetScriptRegistry() / GetScriptManager().
+	// These were public raw members that the old Scene::GetModuleScene() locator
+	// chain reached through; the accessors are now the only supported path.
+	Camera*        gameCamera    = nullptr;
+	ScriptManager* scriptManager = nullptr;
 
 	// Dependency Injection
 	ModuleInput* mModuleInput;

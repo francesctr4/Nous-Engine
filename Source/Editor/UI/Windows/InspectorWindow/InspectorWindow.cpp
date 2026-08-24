@@ -45,7 +45,7 @@ void InspectorWindow::DrawContent()
     ctx.scene         = mScene->activeScene;
     ctx.rm            = editorContext->GetResourceManager();
     ctx.renderer      = editorContext->GetRendererFrontend();
-    ctx.scriptManager = mScene->scriptManager;
+    ctx.scriptManager = mScene->GetScriptManager();
 
     // Push a per-component ImGui ID scope so identically-labelled widgets in
     // different components (e.g. "Loop" / "Play On Awake" on both CVideoPlayer

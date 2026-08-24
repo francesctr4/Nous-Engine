@@ -80,6 +80,13 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading:
 	eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
+IScriptRegistry* ModuleScene::GetScriptRegistry() const
+{
+	// Out-of-line: the derived-to-base conversion needs ScriptManager's definition,
+	// which ModuleScene.h deliberately does not include.
+	return scriptManager;
+}
+
 void ModuleScene::OnEntityDestroyed(entt::registry& registry, entt::entity entity)
 {
 	// Fires once per destroyed GameObject (CEntityInfo is on every one of them),
