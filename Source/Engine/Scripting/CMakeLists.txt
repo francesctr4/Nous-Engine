@@ -5,6 +5,7 @@
 add_library(Scripting STATIC
         ScriptManager.h
         ScriptManager.cpp
+        iScriptRegistry.h
 )
 
 add_subdirectory(EngineAPI)
