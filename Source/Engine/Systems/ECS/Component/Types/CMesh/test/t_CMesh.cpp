@@ -3,8 +3,10 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
+#include "Engine/Systems/ECS/test/FakeComponentServices.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 class t_CMesh : public ::testing::Test
 {
@@ -12,7 +14,7 @@ protected:
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(MiB(16));
-        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene");
+        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene", nullptr, nullptr, &fakes.services);
     }
 
     void TearDown() override
@@ -21,7 +23,9 @@ protected:
         nous::engine::memory::ShutdownMemory();
     }
 
-    Scene* scene = nullptr;
+    // Declared before `scene` so it outlives it — the Scene holds a pointer into it.
+    FakeServices fakes;
+    Scene*       scene = nullptr;
 };
 
 // =============================================================================
@@ -99,4 +103,79 @@ TEST_F(t_CMesh, MultipleGameObjects_IndependentMesh)
     a.AddComponent<CMesh>();
     b.AddComponent<CMesh>();
     EXPECT_NE(&a.GetComponent<CMesh>(), &b.GetComponent<CMesh>());
+}
+
+// =============================================================================
+// Resource resolution (requires the ComponentServices seam)
+// =============================================================================
+
+TEST_F(t_CMesh, Deserialize_WithSubmeshIndex_RequestsSubMeshThroughTheLoader)
+{
+    GameObject go = scene->CreateGameObject("Mesh");
+    auto& m = go.AddComponent<CMesh>();
+
+    JsonObject json;
+    json.Set("assetPath",    "Assets/Models/cube.fbx");
+    json.Set("submeshIndex", 0);
+    m.Deserialize(json);
+
+    EXPECT_TRUE(fakes.resources.Called("RequestOrCreateSubMeshResource"));
+}
+
+TEST_F(t_CMesh, Deserialize_WithLibraryPath_PrefersTheLibraryCall)
+{
+    GameObject go = scene->CreateGameObject("Mesh");
+    auto& m = go.AddComponent<CMesh>();
+
+    JsonObject json;
+    json.Set("assetPath",    "Assets/Models/cube.fbx");
+    json.Set("libraryPath",  "Library/Meshes/9.mesh");
+    json.Set("resourceUID",  9.0);
+    json.Set("submeshIndex", 2);
+    m.Deserialize(json);
+
+    // GAME path is tried first; the fake returns null, so the asset path is the fallback.
+    EXPECT_TRUE(fakes.resources.Called("RequestOrCreateSubMeshResourceFromLibrary"));
+    EXPECT_EQ(m.submeshIndex, 2);
+}
+
+TEST_F(t_CMesh, Deserialize_NoSubmeshIndex_UsesWholeResourceCall)
+{
+    GameObject go = scene->CreateGameObject("Mesh");
+    auto& m = go.AddComponent<CMesh>();
+
+    JsonObject json;
+    json.Set("assetPath", "Assets/Models/cube.fbx");   // no submeshIndex key
+    m.Deserialize(json);
+
+    EXPECT_TRUE(fakes.resources.Called("CreateResource"));
+    EXPECT_EQ(m.submeshIndex, -1);
+}
+
+TEST_F(t_CMesh, Deserialize_EmptyPaths_LeavesMeshNullAndCallsNothing)
+{
+    GameObject go = scene->CreateGameObject("Mesh");
+    auto& m = go.AddComponent<CMesh>();
+
+    JsonObject json;
+    m.Deserialize(json);
+
+    EXPECT_EQ(m.mesh, nullptr);
+    EXPECT_TRUE(fakes.resources.calls.empty());
+}
+
+TEST_F(t_CMesh, Deserialize_UnwiredScene_DoesNotCrash)
+{
+    // No resource loader wired: the component must no-op, not dereference null.
+    Scene* bare = NOUS_NEW<Scene>(MemoryTag::SCENE, "Bare");
+    GameObject go = bare->CreateGameObject("Mesh");
+    auto& m = go.AddComponent<CMesh>();
+
+    JsonObject json;
+    json.Set("assetPath",    "Assets/Models/cube.fbx");
+    json.Set("submeshIndex", 0);
+    m.Deserialize(json);
+
+    EXPECT_EQ(m.mesh, nullptr);
+    NOUS_DELETE(bare, MemoryTag::SCENE);
 }

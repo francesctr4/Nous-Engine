@@ -163,7 +163,9 @@ struct FakeResourceLoader : IResourceLoader
     bool UnloadResource(uint32 uid) override {
         calls.push_back("UnloadResource"); unloaded.push_back(uid); return true;
     }
-    ResourceMaterial* GetDefaultMaterial() const override { return nullptr; }
+    ResourceMaterial* GetDefaultMaterial() const override {
+        calls.push_back("GetDefaultMaterial"); return nullptr;
+    }
 };
 
 struct FakeScriptRegistry : IScriptRegistry

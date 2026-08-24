@@ -3,8 +3,10 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
+#include "Engine/Systems/ECS/test/FakeComponentServices.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
+#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 class t_CMaterial : public ::testing::Test
 {
@@ -12,7 +14,7 @@ protected:
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(MiB(16));
-        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene");
+        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene", nullptr, nullptr, &fakes.services);
     }
 
     void TearDown() override
@@ -21,7 +23,9 @@ protected:
         nous::engine::memory::ShutdownMemory();
     }
 
-    Scene* scene = nullptr;
+    // Declared before `scene` so it outlives it — the Scene holds a pointer into it.
+    FakeServices fakes;
+    Scene*       scene = nullptr;
 };
 
 // =============================================================================
@@ -84,4 +88,64 @@ TEST_F(t_CMaterial, MultipleGameObjects_IndependentMaterial)
     a.AddComponent<CMaterial>();
     b.AddComponent<CMaterial>();
     EXPECT_NE(&a.GetComponent<CMaterial>(), &b.GetComponent<CMaterial>());
+}
+
+// =============================================================================
+// Resource resolution (requires the ComponentServices seam)
+// =============================================================================
+
+TEST_F(t_CMaterial, Deserialize_EmptyAssetPath_RestoresTheDefaultMaterial)
+{
+    // A GO that used the in-memory default material serializes an empty assetPath;
+    // it must come back as the default, not as nullptr, or the mesh stops rendering
+    // after a snapshot round-trip.
+    GameObject go = scene->CreateGameObject("Mat");
+    auto& m = go.AddComponent<CMaterial>();
+
+    JsonObject json;
+    json.Set("assetPath", "");
+    m.Deserialize(json);
+
+    EXPECT_TRUE(fakes.resources.Called("GetDefaultMaterial"));
+}
+
+TEST_F(t_CMaterial, Deserialize_WithAssetPath_ResolvesThroughTheLoader)
+{
+    GameObject go = scene->CreateGameObject("Mat");
+    auto& m = go.AddComponent<CMaterial>();
+
+    JsonObject json;
+    json.Set("assetPath", "Assets/Materials/stone.nmat");
+    m.Deserialize(json);
+
+    EXPECT_TRUE(fakes.resources.Called("CreateResource"));
+}
+
+TEST_F(t_CMaterial, Deserialize_WithLibraryPath_PrefersTheLibraryCall)
+{
+    GameObject go = scene->CreateGameObject("Mat");
+    auto& m = go.AddComponent<CMaterial>();
+
+    JsonObject json;
+    json.Set("assetPath",   "Assets/Materials/stone.nmat");
+    json.Set("libraryPath", "Library/Materials/5.nmat");
+    json.Set("resourceUID", 5.0);
+    m.Deserialize(json);
+
+    EXPECT_TRUE(fakes.resources.Called("CreateResourceFromLibrary"));
+}
+
+TEST_F(t_CMaterial, Deserialize_UnwiredScene_DoesNotCrash)
+{
+    // No resource loader wired: the component must no-op, not dereference null.
+    Scene* bare = NOUS_NEW<Scene>(MemoryTag::SCENE, "Bare");
+    GameObject go = bare->CreateGameObject("Mat");
+    auto& m = go.AddComponent<CMaterial>();
+
+    JsonObject json;
+    json.Set("assetPath", "Assets/Materials/stone.nmat");
+    m.Deserialize(json);
+
+    EXPECT_EQ(m.material, nullptr);
+    NOUS_DELETE(bare, MemoryTag::SCENE);
 }

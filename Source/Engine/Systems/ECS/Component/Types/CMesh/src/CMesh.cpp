@@ -1,9 +1,9 @@
 #include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 #include "Engine/Core/FileSystem/FileSystem.h"
 
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
@@ -40,51 +40,49 @@ void CMesh::Deserialize(const JsonObject& obj) {
     }
     const uint32 resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
 
+    // Null in a headless / test scene. Guarded once here rather than per call site.
+    IResourceLoader* rm = Services().resources;
+
     if (obj.HasKey("submeshIndex"))
     {
         submeshIndex = obj.GetInt("submeshIndex");
 
-        auto go = GetGameObject();
-        Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-        if (!scene) { mesh = nullptr; return; }
+        if (!rm) { mesh = nullptr; return; }
 
         if (!libraryPath.empty())
         {
-            mesh = scene->GetResourceManager()->RequestOrCreateSubMeshResourceFromLibrary(
+            mesh = rm->RequestOrCreateSubMeshResourceFromLibrary(
                 libraryPath, submeshIndex, assetPathStr.c_str(), resourceUID);
         }
         if (!mesh && !assetPathStr.empty())
         {
-            mesh = scene->GetResourceManager()->RequestOrCreateSubMeshResource(assetPathStr.c_str(), submeshIndex);
+            mesh = rm->RequestOrCreateSubMeshResource(assetPathStr.c_str(), submeshIndex);
         }
     }
     else
     {
         submeshIndex = -1;
 
-        auto go = GetGameObject();
-        Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-        if (!scene) { mesh = nullptr; return; }
+        if (!rm) { mesh = nullptr; return; }
 
         // Try library path first (GAME mode / no .meta needed).
         if (!libraryPath.empty() && resourceUID != 0)
         {
-            mesh = down_cast<ResourceMesh*>(scene->GetResourceManager()->CreateResourceFromLibrary(
+            mesh = down_cast<ResourceMesh*>(rm->CreateResourceFromLibrary(
                 resourceUID, ResourceType::MESH, nous::engine::filesystem::GetFilename(assetPathStr),
                 assetPathStr, libraryPath));
         }
         if (!mesh && !assetPathStr.empty())
         {
-            mesh = down_cast<ResourceMesh*>(scene->GetResourceManager()->CreateResource(assetPathStr.c_str()));
+            mesh = down_cast<ResourceMesh*>(rm->CreateResource(assetPathStr.c_str()));
         }
     }
 }
 
 void CMesh::OnDestroy() {
-    auto go = GetGameObject();
-    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    if (mesh && mesh->IsLoaded() && scene)
+    IResourceLoader* rm = Services().resources;
+    if (mesh && mesh->IsLoaded() && rm)
     {
-        scene->GetResourceManager()->UnloadResource(mesh->GetUID());
+        rm->UnloadResource(mesh->GetUID());
     }
 }
