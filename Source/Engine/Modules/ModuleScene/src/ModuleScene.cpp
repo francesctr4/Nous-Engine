@@ -52,8 +52,7 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading:
       mModuleAudio(moduleAudio), mModuleVideo(moduleVideo)
 {
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM, mModuleInput, this);
-	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager,
-	                                &m_componentServices);
+	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", &m_componentServices);
 	ConnectSceneObservers(activeScene);
 	gameCamera    = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 

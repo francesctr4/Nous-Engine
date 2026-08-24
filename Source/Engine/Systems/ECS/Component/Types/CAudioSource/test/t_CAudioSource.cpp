@@ -21,7 +21,7 @@ protected:
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(MiB(16));
-        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene", nullptr, nullptr, &fakes.services);
+        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene", &fakes.services);
         clip  = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO, 7u);
         clip->SetDurationSec(4.0f);
     }

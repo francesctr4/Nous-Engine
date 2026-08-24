@@ -13,14 +13,9 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/ComponentServices.h"
 
-class ModuleScene;
-class ModuleResourceManager;
-
 class Scene {
 public:
     NOUS_ENGINE_API explicit Scene(const std::string& name = "Untitled Scene",
-                                   ModuleScene* moduleScene = nullptr,
-                                   ModuleResourceManager* resourceManager = nullptr,
                                    const ComponentServices* services = nullptr);
     NOUS_ENGINE_API ~Scene();
 
@@ -31,9 +26,6 @@ public:
     // Registry access.
     NOUS_ENGINE_API       entt::registry& GetRegistry()       { return m_registry; }
     NOUS_ENGINE_API const entt::registry& GetRegistry() const { return m_registry; }
-
-    ModuleScene*           GetModuleScene()     const { return m_moduleScene; }
-    ModuleResourceManager* GetResourceManager() const { return m_resourceManager; }
 
     // GameObject creation / destruction
     NOUS_ENGINE_API GameObject CreateGameObject(const std::string& name = "GameObject",
@@ -87,8 +79,9 @@ private:
     // thing standing between a future worker-thread scene lookup and a silent race
     // that only a ThreadSanitizer run on Linux would ever catch.
     mutable std::mutex                         m_mutex;
-    ModuleScene*                               m_moduleScene     = nullptr;
-    ModuleResourceManager*                     m_resourceManager = nullptr;
     // Borrowed, owned by ModuleScene. Outlives every Scene it is handed to.
+    // This replaced the m_moduleScene / m_resourceManager back-pointers: Scene no
+    // longer names anything in Modules/, and components reach engine services
+    // through interfaces owned by Systems/ (see ComponentServices.h).
     const ComponentServices*                   m_services        = nullptr;
 };

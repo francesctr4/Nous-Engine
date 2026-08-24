@@ -43,7 +43,7 @@ void InspectorWindow::DrawContent()
     ctx.go            = &go;
     ctx.editor        = editorContext;
     ctx.scene         = mScene->activeScene;
-    ctx.rm            = go.GetScene()->GetResourceManager();
+    ctx.rm            = editorContext->GetResourceManager();
     ctx.renderer      = editorContext->GetRendererFrontend();
     ctx.scriptManager = mScene->scriptManager;
 

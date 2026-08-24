@@ -15,7 +15,6 @@
 #include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
 #include "Engine/Systems/ECS/Component/Types/ComponentTypes.h"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Core/Logger/Asserts.h"
 #include "Engine/Core/Logger/Logger.h"
@@ -27,9 +26,8 @@
 
 // ── Constructor / Destructor ──────────────────────────────────────────────────
 
-Scene::Scene(const std::string& name, ModuleScene* moduleScene, ModuleResourceManager* resourceManager,
-             const ComponentServices* services)
-    : m_name(name), m_moduleScene(moduleScene), m_resourceManager(resourceManager), m_services(services)
+Scene::Scene(const std::string& name, const ComponentServices* services)
+    : m_name(name), m_services(services)
 {
     m_registry.ctx().emplace<Scene*>(this);
     // Same channel that already backs GameObject::GetScene(). Component::Services()

@@ -59,7 +59,7 @@ TEST_F(t_Scene, GetServices_WiredScene_ReturnsTheInjectedAggregate)
     ComponentServices wired;
     wired.host = reinterpret_cast<ISceneHost*>(0x1);  // identity only, never dereferenced
 
-    Scene* wiredScene = NOUS_NEW<Scene>(MemoryTag::SCENE, "Wired", nullptr, nullptr, &wired);
+    Scene* wiredScene = NOUS_NEW<Scene>(MemoryTag::SCENE, "Wired", &wired);
     EXPECT_EQ(wiredScene->GetServices().host, wired.host);
     NOUS_DELETE(wiredScene, MemoryTag::SCENE);
 }
