@@ -10,8 +10,8 @@
 
 class ResourceAudio;
 class ResourceAudioGraph;
-class ModuleAudio;
-class ModuleScene;
+class ISceneHost;
+class IAudioBroker;
 
 /**
  * @brief 2D audio source component.
@@ -19,7 +19,7 @@ class ModuleScene;
  * Plays a single audio clip through the engine's audio backend. The component
  * owns exactly one backend voice (AudioVoice, a move-only RAII handle), created
  * lazily the first time the scene starts simulating. It never touches miniaudio
- * directly — all calls go through ModuleAudio (reached via the scene broker).
+ * directly — all calls go through IAudioBroker, reached via Component::Services().
  *
  * Playback is driven from OnUpdate (NOT OnStart): in this engine OnStart fires
  * when the component is *added* in the editor, whereas "play on awake" means
@@ -77,21 +77,16 @@ public:
     [[nodiscard]] NOUS_ENGINE_API double GetPlaybackSeconds() const;
 
 private:
-    // Scene/broker resolution (both null in headless/test scenes). GetAudioModule
-    // is GetModuleScene().GetAudio(); kept as a helper for the edit-mode preview path.
-    ModuleScene* GetModuleScene() const;
-    ModuleAudio* GetAudioModule() const;
-
     // OnUpdate split: edit-mode preview-voice maintenance vs the play-driven voice
-    // state machine. Both run every frame once a scene + audio broker are resolved.
-    void UpdatePreviewVoice(ModuleScene& moduleScene, ModuleAudio& audio);
-    void UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& audio);
+    // state machine. Both run every frame once the host + audio broker are resolved.
+    void UpdatePreviewVoice(const ISceneHost& host, const IAudioBroker& audio);
+    void UpdatePlaybackState(const ISceneHost& host, const IAudioBroker& audio);
 
     // Builds/destroys the effect chain on the given voice. DestroyChain MUST run
     // before the matching voice is reset (the chain reattaches the voice to its bus
     // on teardown, so the voice must still be alive).
-    void BuildChain(ModuleAudio& audio, const AudioVoice& voice, EffectChainHandle& outChain);
-    void DestroyChain(ModuleAudio& audio, EffectChainHandle& chain);
+    void BuildChain(const IAudioBroker& audio, const AudioVoice& voice, EffectChainHandle& outChain);
+    void DestroyChain(const IAudioBroker& audio, EffectChainHandle& chain);
 
     // Backend voice, created lazily on first play. RAII — releases itself on reset/destroy.
     AudioVoice m_sound;

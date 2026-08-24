@@ -3,7 +3,7 @@
 #include "Engine/Systems/AudioSystem/SoundHandle.h"
 #include "Engine/EngineExport.h"
 
-class ModuleAudio;
+class IAudioBroker;
 
 /**
  * @brief Move-only RAII owner of exactly one backend voice.
@@ -13,15 +13,16 @@ class ModuleAudio;
  * leaks the NOUS_NEW'd ma_sound and trips the ShutdownMemory leak-abort.
  *
  * Holds the broker because release must go through it. For a CAudioSource member
- * the destructor runs during component teardown, which is safe: ModuleAudio is
- * constructed before ModuleScene and so outlives every scene (Application module
- * order) — the same invariant the old explicit OnDestroy release relied on.
+ * the destructor runs during component teardown, which is safe: ModuleAudio (the
+ * IAudioBroker impl) is constructed before ModuleScene and so outlives every scene
+ * (Application module order) — the same invariant the old explicit OnDestroy
+ * release relied on.
  */
 class NOUS_ENGINE_API AudioVoice
 {
 public:
     AudioVoice() = default;
-    AudioVoice(ModuleAudio* audio, SoundHandle handle);
+    AudioVoice(const IAudioBroker* audio, SoundHandle handle);
     ~AudioVoice();
 
     AudioVoice(AudioVoice&& other) noexcept;
@@ -37,6 +38,6 @@ public:
     [[nodiscard]] explicit operator bool() const noexcept { return m_handle != nullptr; }
 
 private:
-    ModuleAudio* m_audio  = nullptr;
-    SoundHandle  m_handle = nullptr;
+    const IAudioBroker* m_audio  = nullptr;
+    SoundHandle         m_handle = nullptr;
 };

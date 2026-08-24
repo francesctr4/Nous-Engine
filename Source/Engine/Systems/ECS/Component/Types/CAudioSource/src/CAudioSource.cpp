@@ -2,10 +2,10 @@
 
 #include "Engine/Core/Globals.h"                 // down_cast
 #include "Engine/Core/FileSystem/FileSystem.h"   // GetFilename
-#include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
+#include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
+#include "Engine/Systems/AudioSystem/iAudioBroker.h"
+#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
@@ -63,27 +63,10 @@ namespace
 }
 
 // ---------------------------------------------------------------------------
-// Broker access
-// ---------------------------------------------------------------------------
-
-ModuleScene* CAudioSource::GetModuleScene() const
-{
-    auto go = GetGameObject();
-    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    return scene ? scene->GetModuleScene() : nullptr;
-}
-
-ModuleAudio* CAudioSource::GetAudioModule() const
-{
-    ModuleScene* moduleScene = GetModuleScene();
-    return moduleScene ? moduleScene->GetAudio() : nullptr;
-}
-
-// ---------------------------------------------------------------------------
 // Effect chain helpers
 // ---------------------------------------------------------------------------
 
-void CAudioSource::BuildChain(ModuleAudio& audio, const AudioVoice& voice, EffectChainHandle& outChain)
+void CAudioSource::BuildChain(const IAudioBroker& audio, const AudioVoice& voice, EffectChainHandle& outChain)
 {
     if (outChain || !voice)                                   // already built, or no voice
         return;
@@ -94,7 +77,7 @@ void CAudioSource::BuildChain(ModuleAudio& audio, const AudioVoice& voice, Effec
     m_chainGeneration = effectGraph->generation;
 }
 
-void CAudioSource::DestroyChain(ModuleAudio& audio, EffectChainHandle& chain)
+void CAudioSource::DestroyChain(const IAudioBroker& audio, EffectChainHandle& chain)
 {
     if (chain)
     {
@@ -109,23 +92,22 @@ void CAudioSource::DestroyChain(ModuleAudio& audio, EffectChainHandle& chain)
 
 void CAudioSource::OnUpdate(float /*deltaTime*/)
 {
-    ModuleScene* moduleScene = GetModuleScene();
-    ModuleAudio* audio = moduleScene ? moduleScene->GetAudio() : nullptr;
-    if (!moduleScene || !audio)
+    const ComponentServices& s = Services();
+    if (!s.host || !s.audio)
         return;  // headless / test scene — no audio broker wired
 
-    UpdatePreviewVoice(*moduleScene, *audio);
-    UpdatePlaybackState(*moduleScene, *audio);
+    UpdatePreviewVoice(*s.host, *s.audio);
+    UpdatePlaybackState(*s.host, *s.audio);
 }
 
 // Editor preview voice maintenance: drop it once the sim starts (the real voice
 // takes over) or when it finishes, otherwise keep it in sync with live Inspector tweaks.
-void CAudioSource::UpdatePreviewVoice(ModuleScene& moduleScene, ModuleAudio& audio)
+void CAudioSource::UpdatePreviewVoice(const ISceneHost& host, const IAudioBroker& audio)
 {
     if (!m_previewSound)
         return;
 
-    if (!moduleScene.IsStopped() || !audio.IsSoundPlaying(m_previewSound.Get()))
+    if (!host.IsStopped() || !audio.IsSoundPlaying(m_previewSound.Get()))
     {
         DestroyChain(audio, m_previewChain);   // before the voice it hangs off
         m_previewSound.Reset();
@@ -139,10 +121,10 @@ void CAudioSource::UpdatePreviewVoice(ModuleScene& moduleScene, ModuleAudio& aud
 
 // Play-driven voice state machine: tracks the scene's STOPPED/PAUSED/PLAYING edges
 // and creates/starts/pauses/releases the backend voice accordingly.
-void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& audio)
+void CAudioSource::UpdatePlaybackState(const ISceneHost& host, const IAudioBroker& audio)
 {
     // STOPPED — tear the voice down so the next play session starts cleanly.
-    if (moduleScene.IsStopped())
+    if (host.IsStopped())
     {
         DestroyChain(audio, m_chain);   // before m_sound.Reset() — chain reattaches the voice to its bus
         m_sound.Reset();
@@ -152,7 +134,7 @@ void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& au
     }
 
     // PAUSED — stop the voice but retain its cursor (resumed on PLAYING).
-    if (moduleScene.IsPaused())
+    if (host.IsPaused())
     {
         if (m_sound && !m_paused)
         {
@@ -238,12 +220,11 @@ void CAudioSource::UpdatePlaybackState(ModuleScene& moduleScene, ModuleAudio& au
 
 void CAudioSource::OnDestroy()
 {
-    auto go = GetGameObject();
-    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
+    const ComponentServices& s = Services();
 
     // Destroy chains before the voices they hang off (chain reattaches the voice to
     // its bus on teardown). ModuleAudio outlives the scene, so the broker resolves.
-    if (ModuleAudio* audio = GetAudioModule())
+    if (const IAudioBroker* audio = s.audio)
     {
         DestroyChain(*audio, m_chain);
         DestroyChain(*audio, m_previewChain);
@@ -259,13 +240,13 @@ void CAudioSource::OnDestroy()
     m_paused  = false;
 
     // Drop our reference to the clip resource (mirrors CMesh::OnDestroy).
-    if (clip && scene && scene->GetResourceManager())
-        scene->GetResourceManager()->UnloadResource(clip->GetUID());
+    if (clip && s.resources)
+        s.resources->UnloadResource(clip->GetUID());
     clip = nullptr;
 
     // Drop our reference to the effect-graph resource (mirrors the clip).
-    if (effectGraph && scene && scene->GetResourceManager())
-        scene->GetResourceManager()->UnloadResource(effectGraph->GetUID());
+    if (effectGraph && s.resources)
+        s.resources->UnloadResource(effectGraph->GetUID());
     effectGraph = nullptr;
 }
 
@@ -275,7 +256,7 @@ void CAudioSource::OnDestroy()
 
 void CAudioSource::PreviewPlay()
 {
-    ModuleAudio* audio = GetAudioModule();
+    const IAudioBroker* audio = Services().audio;
     if (!audio || !clip)
         return;
 
@@ -298,7 +279,7 @@ void CAudioSource::PreviewPlay()
 void CAudioSource::PreviewStop()
 {
     // Destroy the chain before the voice it hangs off (chain reattaches the voice).
-    if (ModuleAudio* audio = GetAudioModule())
+    if (const IAudioBroker* audio = Services().audio)
         DestroyChain(*audio, m_previewChain);
 
     // AudioVoice releases through its captured broker — no need to re-resolve it.
@@ -307,19 +288,19 @@ void CAudioSource::PreviewStop()
 
 bool CAudioSource::IsPreviewPlaying() const
 {
-    ModuleAudio* audio = GetAudioModule();
+    const IAudioBroker* audio = Services().audio;
     return audio && m_previewSound && audio->IsSoundPlaying(m_previewSound.Get());
 }
 
 bool CAudioSource::IsVoicePlaying() const
 {
-    ModuleAudio* audio = GetAudioModule();
+    const IAudioBroker* audio = Services().audio;
     return audio && m_sound && audio->IsSoundPlaying(m_sound.Get());
 }
 
 double CAudioSource::GetPlaybackSeconds() const
 {
-    ModuleAudio* audio = GetAudioModule();
+    const IAudioBroker* audio = Services().audio;
     if (!audio || !m_sound)
         return 0.0;
 
@@ -390,9 +371,7 @@ void CAudioSource::Deserialize(const JsonObject& obj)
     attenuation = AttenuationFromString(obj.GetString("attenuation", AttenuationToString(attenuation)));
     targetBus   = BusFromString(obj.GetString("targetBus", BusToString(targetBus)));
 
-    auto go = GetGameObject();
-    Scene* scene = go.IsValid() ? go.GetScene() : nullptr;
-    ModuleResourceManager* rm = scene ? scene->GetResourceManager() : nullptr;
+    IResourceLoader* rm = Services().resources;
     if (!rm)
         return;
 

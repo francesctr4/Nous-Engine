@@ -4,14 +4,16 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
 #include "Engine/Systems/AudioSystem/AudioTypes.h"
+#include "Engine/Systems/ECS/test/FakeComponentServices.h"
+#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
+#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
-// CAudioSource talks to the audio backend only through ModuleScene::GetAudio().
-// A standalone Scene has no ModuleScene wired, so OnUpdate/OnDestroy safely no-op
-// here — these tests cover defaults, ECS mechanics, and field serialization,
-// which is everything testable without a live audio device.
+// CAudioSource reaches the audio engine through the ComponentServices seam, so
+// these tests wire fake brokers into the Scene and assert on the voice-lifecycle
+// calls the component actually makes.
 
 class t_CAudioSource : public ::testing::Test
 {
@@ -19,16 +21,23 @@ protected:
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(MiB(16));
-        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene");
+        scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene", nullptr, nullptr, &fakes.services);
+        clip  = NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO, 7u);
+        clip->SetDurationSec(4.0f);
     }
 
     void TearDown() override
     {
+        // Scene first: component OnDestroy runs while the clip is still alive.
         NOUS_DELETE(scene, MemoryTag::SCENE);
+        NOUS_DELETE(clip, MemoryTag::RESOURCE_AUDIO);
         nous::engine::memory::ShutdownMemory();
     }
 
-    Scene* scene = nullptr;
+    // Declared before `scene` so it outlives it — the Scene holds a pointer into it.
+    FakeServices   fakes;
+    Scene*         scene = nullptr;
+    ResourceAudio* clip  = nullptr;
 };
 
 // =============================================================================
@@ -253,4 +262,206 @@ TEST_F(t_CAudioSource, Deserialize_MissingTargetBus_KeepsSFXDefault)
     json.Set("volume", 0.5f);  // no targetBus key
     a.Deserialize(json);
     EXPECT_EQ(a.targetBus, AudioBus::SFX);
+}
+
+// =============================================================================
+// Voice lifecycle (requires the ComponentServices seam)
+// =============================================================================
+
+TEST_F(t_CAudioSource, OnUpdate_PlayingWithClipAndPlayOnAwake_CreatesAndStartsVoice)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;
+    a.playOnAwake = true;
+
+    a.OnUpdate(0.016f);
+
+    EXPECT_EQ(fakes.audio.CountOf("CreateSound"), 1);
+    EXPECT_EQ(fakes.audio.CountOf("StartSound"),  1);
+    EXPECT_TRUE(fakes.audio.Called("SetSoundLooping"));
+}
+
+TEST_F(t_CAudioSource, OnUpdate_NoClip_DoesNotCreateVoice)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = nullptr;
+    a.playOnAwake = true;
+
+    a.OnUpdate(0.016f);
+
+    EXPECT_FALSE(fakes.audio.Called("CreateSound"));
+}
+
+TEST_F(t_CAudioSource, OnUpdate_PlayOnAwakeFalse_DoesNotCreateVoice)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;
+    a.playOnAwake = false;
+
+    a.OnUpdate(0.016f);
+
+    EXPECT_FALSE(fakes.audio.Called("CreateSound"));
+}
+
+TEST_F(t_CAudioSource, OnUpdate_CalledRepeatedly_CreatesVoiceOnlyOnce)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;
+    a.playOnAwake = true;
+
+    a.OnUpdate(0.016f);
+    a.OnUpdate(0.016f);
+    a.OnUpdate(0.016f);
+
+    EXPECT_EQ(fakes.audio.CountOf("CreateSound"), 1);
+    EXPECT_EQ(fakes.audio.CountOf("StartSound"),  1);
+}
+
+TEST_F(t_CAudioSource, OnUpdate_PlayingThenStopped_ReleasesTheVoice)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;
+    a.playOnAwake = true;
+
+    a.OnUpdate(0.016f);
+    ASSERT_EQ(fakes.audio.CountOf("CreateSound"), 1);
+
+    fakes.host.SetStopped();
+    a.OnUpdate(0.016f);
+
+    EXPECT_EQ(fakes.audio.CountOf("DestroySound"), 1);
+}
+
+TEST_F(t_CAudioSource, OnUpdate_PlayingThenPaused_StopsVoiceWithoutReleasingIt)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;
+    a.playOnAwake = true;
+
+    a.OnUpdate(0.016f);
+
+    fakes.host.SetPaused();
+    a.OnUpdate(0.016f);
+
+    // PAUSED retains the cursor: the voice is stopped, never destroyed.
+    EXPECT_EQ(fakes.audio.CountOf("StopSound"),    1);
+    EXPECT_EQ(fakes.audio.CountOf("DestroySound"), 0);
+}
+
+TEST_F(t_CAudioSource, OnUpdate_PausedThenPlaying_ResumesWithoutRecreating)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;
+    a.playOnAwake = true;
+
+    a.OnUpdate(0.016f);
+    fakes.host.SetPaused();
+    a.OnUpdate(0.016f);
+    fakes.host.SetPlaying();
+    a.OnUpdate(0.016f);
+
+    EXPECT_EQ(fakes.audio.CountOf("CreateSound"), 1);
+    EXPECT_EQ(fakes.audio.CountOf("StartSound"),  2);  // initial start + resume
+}
+
+TEST_F(t_CAudioSource, OnUpdate_WhilePlaying_PushesVolumeAndPitchEveryFrame)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;
+    a.playOnAwake = true;
+    a.volume      = 0.25f;
+    a.pitch       = 1.5f;
+
+    a.OnUpdate(0.016f);
+
+    EXPECT_FLOAT_EQ(fakes.audio.lastVolume, 0.25f);
+    EXPECT_FLOAT_EQ(fakes.audio.lastPitch,  1.5f);
+}
+
+TEST_F(t_CAudioSource, OnUpdate_Spatialized_PushesTransformPosition)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& t = go.GetComponent<CTransform>();
+    t.position = glm::vec3(4.0f, 5.0f, 6.0f);
+
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;
+    a.playOnAwake = true;
+    a.spatialize  = true;
+
+    a.OnUpdate(0.016f);
+
+    EXPECT_TRUE(fakes.audio.Called("SetSoundPosition"));
+    EXPECT_FLOAT_EQ(fakes.audio.lastPosition[0], 4.0f);
+    EXPECT_FLOAT_EQ(fakes.audio.lastPosition[1], 5.0f);
+    EXPECT_FLOAT_EQ(fakes.audio.lastPosition[2], 6.0f);
+}
+
+TEST_F(t_CAudioSource, OnUpdate_NotSpatialized_DoesNotPushPosition)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;
+    a.playOnAwake = true;
+    a.spatialize  = false;
+
+    a.OnUpdate(0.016f);
+
+    EXPECT_FALSE(fakes.audio.Called("SetSoundPosition"));
+}
+
+// =============================================================================
+// Sibling-sync surface (read by CVideoPlayer)
+// =============================================================================
+
+TEST_F(t_CAudioSource, IsVoicePlaying_NoVoice_IsFalse)
+{
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    EXPECT_FALSE(a.IsVoicePlaying());
+}
+
+TEST_F(t_CAudioSource, GetPlaybackSeconds_FoldsMonotonicCursorIntoClipDuration)
+{
+    fakes.host.SetPlaying();
+
+    GameObject go = scene->CreateGameObject("Audio");
+    auto& a = go.AddComponent<CAudioSource>();
+    a.clip        = clip;          // duration 4.0s
+    a.playOnAwake = true;
+    a.OnUpdate(0.016f);
+
+    // miniaudio's cursor grows monotonically across loops — it does NOT wrap.
+    // GetPlaybackSeconds must fold it, or a synced video races at decode speed.
+    fakes.audio.cursor = 9.0;
+
+    EXPECT_DOUBLE_EQ(a.GetPlaybackSeconds(), 1.0);  // fmod(9.0, 4.0)
 }
