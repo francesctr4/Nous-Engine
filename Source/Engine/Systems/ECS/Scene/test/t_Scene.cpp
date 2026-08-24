@@ -2,6 +2,7 @@
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/ComponentServices.h"
+#include "Engine/Systems/ECS/ECSInternalComponents.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
@@ -174,4 +175,98 @@ TEST_F(t_Scene, Clear_RemovesAllGameObjects)
     scene->CreateGameObject("Y");
     scene->Clear();
     EXPECT_EQ(scene->GetGameObjectsSnapshot().size(), 0u);
+}
+
+// =============================================================================
+// on_destroy<CEntityInfo> observer contract
+// =============================================================================
+//
+// ModuleScene prunes its selection by observing this signal instead of Scene
+// calling RemoveFromSelection directly (the Editor-Observes-Engine rule). These
+// tests pin down the assumption that mechanism rests on: the signal fires exactly
+// once per destroyed GameObject, for every destruction path, and stops firing
+// after disconnect. If entt ever changed that, the selection would silently hold
+// dangling handles.
+
+namespace
+{
+    struct DestructionObserver
+    {
+        std::vector<entt::entity> destroyed;
+
+        void OnEntityDestroyed(entt::registry&, entt::entity entity)
+        {
+            destroyed.push_back(entity);
+        }
+    };
+}
+
+TEST_F(t_Scene, OnDestroy_DestroyGameObject_FiresExactlyOnce)
+{
+    DestructionObserver obs;
+    scene->GetRegistry().on_destroy<CEntityInfo>()
+        .connect<&DestructionObserver::OnEntityDestroyed>(obs);
+
+    GameObject go = scene->CreateGameObject("Doomed");
+    scene->DestroyGameObject(go);
+
+    EXPECT_EQ(obs.destroyed.size(), 1u);
+
+    scene->GetRegistry().on_destroy<CEntityInfo>()
+        .disconnect<&DestructionObserver::OnEntityDestroyed>(obs);
+}
+
+TEST_F(t_Scene, OnDestroy_DestroyParent_FiresOncePerEntityInTheTree)
+{
+    DestructionObserver obs;
+    scene->GetRegistry().on_destroy<CEntityInfo>()
+        .connect<&DestructionObserver::OnEntityDestroyed>(obs);
+
+    GameObject parent = scene->CreateGameObject("Parent");
+    scene->CreateGameObject("ChildA", &parent);
+    scene->CreateGameObject("ChildB", &parent);
+
+    scene->DestroyGameObject(parent);
+
+    // A selected child must be pruned too, not just the object the user destroyed.
+    EXPECT_EQ(obs.destroyed.size(), 3u);
+
+    scene->GetRegistry().on_destroy<CEntityInfo>()
+        .disconnect<&DestructionObserver::OnEntityDestroyed>(obs);
+}
+
+TEST_F(t_Scene, OnDestroy_Clear_FiresForEveryGameObject)
+{
+    DestructionObserver obs;
+    scene->GetRegistry().on_destroy<CEntityInfo>()
+        .connect<&DestructionObserver::OnEntityDestroyed>(obs);
+
+    scene->CreateGameObject("X");
+    scene->CreateGameObject("Y");
+    scene->Clear();
+
+    // Scene load/reload goes through Clear(); the selection must not survive it.
+    EXPECT_EQ(obs.destroyed.size(), 2u);
+
+    scene->GetRegistry().on_destroy<CEntityInfo>()
+        .disconnect<&DestructionObserver::OnEntityDestroyed>(obs);
+}
+
+TEST_F(t_Scene, OnDestroy_AfterDisconnect_StopsFiring)
+{
+    DestructionObserver obs;
+    // on_destroy<>() returns a sink BY VALUE — a lightweight handle onto the
+    // registry's signal, not a reference to it. Bind it by value (or call the
+    // expression again, as the other tests here do).
+    scene->GetRegistry().on_destroy<CEntityInfo>()
+        .connect<&DestructionObserver::OnEntityDestroyed>(obs);
+    scene->GetRegistry().on_destroy<CEntityInfo>()
+        .disconnect<&DestructionObserver::OnEntityDestroyed>(obs);
+
+    GameObject go = scene->CreateGameObject("Doomed");
+    scene->DestroyGameObject(go);
+
+    // This is the half that prevents a use-after-free: ModuleScene must be able to
+    // detach before a Scene it observes is destroyed.
+    EXPECT_TRUE(obs.destroyed.empty());
 }

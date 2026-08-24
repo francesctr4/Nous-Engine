@@ -207,4 +207,18 @@ private:
 	// After a scene is deserialized, re-instantiates any GO that carries a CPrefab
 	// component from its source .nprefab file, replacing stale inline children.
 	void RefreshPrefabInstances() const;
+
+	// entt on_destroy<CEntityInfo> observer. Prunes the selection when any
+	// GameObject dies, so Scene never needs to know that selection exists — the
+	// module watches the scene instead of the scene telling the module
+	// (Editor-Observes-Engine rule).
+	void OnEntityDestroyed(entt::registry& registry, entt::entity entity);
+
+	// Connect/disconnect the observer around a Scene's lifetime. MUST be paired:
+	// an observer still connected when its Scene dies is fine (the signal dies with
+	// the registry), but a Scene outliving THIS module would leave a dangling
+	// `this` on the sink. Connect right after creating a Scene, disconnect right
+	// before destroying it.
+	void ConnectSceneObservers(Scene* scene);
+	void DisconnectSceneObservers(Scene* scene);
 };

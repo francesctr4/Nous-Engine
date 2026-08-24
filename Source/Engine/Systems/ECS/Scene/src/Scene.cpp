@@ -354,10 +354,9 @@ void Scene::CollectEntityTree(entt::entity root, std::vector<entt::entity>& out)
 void Scene::DestroyEntity(entt::entity entity) {
     if (!m_registry.valid(entity)) return;
 
-    if (m_moduleScene) {
-        GameObject go(entity, &m_registry);
-        m_moduleScene->RemoveFromSelection(go);
-    }
+    // NOTE: no selection pruning here. ModuleScene observes on_destroy<CEntityInfo>
+    // instead, so Scene does not know that "selection" exists — the module watches
+    // the scene rather than the scene announcing itself to the module.
 
     if (const auto* h = m_registry.try_get<CHierarchy>(entity)) {
         if (h->parent != entt::null) {

@@ -54,6 +54,7 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading:
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM, mModuleInput, this);
 	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager,
 	                                &m_componentServices);
+	ConnectSceneObservers(activeScene);
 	gameCamera    = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 
 	// Load the script library — path is exe-relative so it works regardless of working directory.
@@ -80,6 +81,27 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading:
 	eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 }
 
+void ModuleScene::OnEntityDestroyed(entt::registry& registry, entt::entity entity)
+{
+	// Fires once per destroyed GameObject (CEntityInfo is on every one of them),
+	// including children of a destroyed parent and every object dropped by Clear().
+	RemoveFromSelection(GameObject(entity, &registry));
+}
+
+void ModuleScene::ConnectSceneObservers(Scene* scene)
+{
+	if (!scene) return;
+	scene->GetRegistry().on_destroy<CEntityInfo>()
+		.connect<&ModuleScene::OnEntityDestroyed>(this);
+}
+
+void ModuleScene::DisconnectSceneObservers(Scene* scene)
+{
+	if (!scene) return;
+	scene->GetRegistry().on_destroy<CEntityInfo>()
+		.disconnect<&ModuleScene::OnEntityDestroyed>(this);
+}
+
 void ModuleScene::SetComponentServices(const ComponentServices& services)
 {
 	// Fills the object every live Scene already points at — see the header comment.
@@ -90,6 +112,7 @@ ModuleScene::~ModuleScene()
 {
 	ClearSelection();
 	NOUS_DELETE(gameCamera, MemoryTag::CAMERA);
+	DisconnectSceneObservers(activeScene);
 	NOUS_DELETE(activeScene, MemoryTag::SCENE);
 	NOUS_DELETE(scriptManager, MemoryTag::SCRIPTING_SYSTEM);
 }
