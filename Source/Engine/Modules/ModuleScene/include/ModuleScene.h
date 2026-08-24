@@ -6,6 +6,7 @@
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <string>
@@ -144,6 +145,14 @@ public:
 	NOUS_ENGINE_API ModuleAudio* GetAudio() const { return mModuleAudio; }
 	NOUS_ENGINE_API ModuleVideo* GetVideo() const { return mModuleVideo; }
 
+	// Fills the aggregate every Scene this module creates already points at.
+	// Called by Application once the full module graph exists — which is AFTER
+	// this module's constructor has already built activeScene. That is safe
+	// precisely because Scene stores a POINTER to m_componentServices, not a copy:
+	// filling it here updates every live Scene in place. Do not change Scene to
+	// take the aggregate by value without also moving scene creation later.
+	NOUS_ENGINE_API void SetComponentServices(const ComponentServices& services);
+
 	NOUS_ENGINE_API bool IsSelected(GameObject go) const;
 	NOUS_ENGINE_API void AddToSelection(GameObject go);      // no-op if already in set; updates primarySelection
 	NOUS_ENGINE_API void RemoveFromSelection(GameObject go); // primarySelection = back() or {} after remove
@@ -176,6 +185,11 @@ private:
 	ModuleVideo* mModuleVideo;
 
 	bool m_snapshotEnabled = false;
+
+	// Owned here so its address is stable for the lifetime of the module; every
+	// Scene created by this module holds a pointer to it. Populated by
+	// Application via SetComponentServices, all-null until then.
+	ComponentServices m_componentServices;
 
 	SceneRenderData m_renderData;
 

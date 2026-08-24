@@ -4,6 +4,10 @@
 
 add_library(ECS STATIC)
 
+target_sources(ECS PRIVATE
+        ComponentServices.h
+)
+
 add_subdirectory(Scene)
 add_subdirectory(GameObject)
 add_subdirectory(Component)

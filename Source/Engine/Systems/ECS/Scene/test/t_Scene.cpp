@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
@@ -36,6 +37,30 @@ TEST_F(t_Scene, NewScene_IsEmpty)
 TEST_F(t_Scene, GetName_ReturnsConstructorName)
 {
     EXPECT_EQ(scene->GetName(), "TestScene");
+}
+
+// =============================================================================
+// ComponentServices delivery
+// =============================================================================
+
+TEST_F(t_Scene, GetServices_UnwiredScene_ReturnsAllNullAggregate)
+{
+    const ComponentServices& s = scene->GetServices();
+    EXPECT_EQ(s.host,      nullptr);
+    EXPECT_EQ(s.audio,     nullptr);
+    EXPECT_EQ(s.video,     nullptr);
+    EXPECT_EQ(s.resources, nullptr);
+    EXPECT_EQ(s.scripts,   nullptr);
+}
+
+TEST_F(t_Scene, GetServices_WiredScene_ReturnsTheInjectedAggregate)
+{
+    ComponentServices wired;
+    wired.host = reinterpret_cast<ISceneHost*>(0x1);  // identity only, never dereferenced
+
+    Scene* wiredScene = NOUS_NEW<Scene>(MemoryTag::SCENE, "Wired", nullptr, nullptr, &wired);
+    EXPECT_EQ(wiredScene->GetServices().host, wired.host);
+    NOUS_DELETE(wiredScene, MemoryTag::SCENE);
 }
 
 // =============================================================================

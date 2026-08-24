@@ -20,6 +20,7 @@
 #include <Engine/Core/EventSystem/EventSystem.h>
 #include "Engine/Core/Logger/Logger.h"
 #include "Engine/Scripting/ScriptManager.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 
 #include <chrono>
@@ -112,6 +113,19 @@ Application::Application(const bool isGameMode)
     //    Must be last because RESOURCE MANAGER and SCENE must already exist.
     listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION,
         eventSystem, jobSystem, window, camera, resourceManager, scene));
+
+    // Assemble the component service seam — what lets Systems/ reach engine services
+    // without depending on Modules/. See ComponentServices.h. Each module upcasts to
+    // the interface it implements. Runs here, after the whole graph exists; ModuleScene
+    // has already built its Scene, which is fine because Scene holds a pointer to
+    // ModuleScene::m_componentServices rather than a copy of it.
+    ComponentServices services;
+    services.host      = scene;
+    services.audio     = audio;
+    services.video     = video;
+    services.resources = resourceManager;
+    services.scripts   = scene->scriptManager;  // created in ModuleScene's ctor, non-null here
+    scene->SetComponentServices(services);
 
     if (m_isGameMode)
     {

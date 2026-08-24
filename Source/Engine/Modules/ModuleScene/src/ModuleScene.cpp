@@ -52,7 +52,8 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading:
       mModuleAudio(moduleAudio), mModuleVideo(moduleVideo)
 {
 	scriptManager = NOUS_NEW<ScriptManager>(MemoryTag::SCRIPTING_SYSTEM, mModuleInput, this);
-	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager);
+	activeScene   = NOUS_NEW<Scene>(MemoryTag::SCENE, "Untitled Scene", this, mModuleResourceManager,
+	                                &m_componentServices);
 	gameCamera    = NOUS_NEW<Camera>(MemoryTag::CAMERA);
 
 	// Load the script library — path is exe-relative so it works regardless of working directory.
@@ -77,6 +78,12 @@ ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading:
 	}
 
 	eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
+}
+
+void ModuleScene::SetComponentServices(const ComponentServices& services)
+{
+	// Fills the object every live Scene already points at — see the header comment.
+	m_componentServices = services;
 }
 
 ModuleScene::~ModuleScene()

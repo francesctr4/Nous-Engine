@@ -27,10 +27,19 @@
 
 // ── Constructor / Destructor ──────────────────────────────────────────────────
 
-Scene::Scene(const std::string& name, ModuleScene* moduleScene, ModuleResourceManager* resourceManager)
-    : m_name(name), m_moduleScene(moduleScene), m_resourceManager(resourceManager)
+Scene::Scene(const std::string& name, ModuleScene* moduleScene, ModuleResourceManager* resourceManager,
+             const ComponentServices* services)
+    : m_name(name), m_moduleScene(moduleScene), m_resourceManager(resourceManager), m_services(services)
 {
     m_registry.ctx().emplace<Scene*>(this);
+    // Same channel that already backs GameObject::GetScene(). Component::Services()
+    // reads it back; a null pointer here degrades to the empty aggregate, not a throw.
+    m_registry.ctx().emplace<const ComponentServices*>(m_services);
+}
+
+const ComponentServices& Scene::GetServices() const {
+    static const ComponentServices s_empty;
+    return m_services ? *m_services : s_empty;
 }
 
 Scene::~Scene() {

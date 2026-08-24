@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include "Engine/Systems/ECS/ComponentServices.h"
 
 class ModuleScene;
 class ModuleResourceManager;
@@ -19,8 +20,13 @@ class Scene {
 public:
     NOUS_ENGINE_API explicit Scene(const std::string& name = "Untitled Scene",
                                    ModuleScene* moduleScene = nullptr,
-                                   ModuleResourceManager* resourceManager = nullptr);
+                                   ModuleResourceManager* resourceManager = nullptr,
+                                   const ComponentServices* services = nullptr);
     NOUS_ENGINE_API ~Scene();
+
+    // The engine services published to this scene's components. Never null:
+    // returns an all-null aggregate when nothing was injected (headless / tests).
+    NOUS_ENGINE_API const ComponentServices& GetServices() const;
 
     // Registry access.
     NOUS_ENGINE_API       entt::registry& GetRegistry()       { return m_registry; }
@@ -83,4 +89,6 @@ private:
     mutable std::mutex                         m_mutex;
     ModuleScene*                               m_moduleScene     = nullptr;
     ModuleResourceManager*                     m_resourceManager = nullptr;
+    // Borrowed, owned by ModuleScene. Outlives every Scene it is handed to.
+    const ComponentServices*                   m_services        = nullptr;
 };
