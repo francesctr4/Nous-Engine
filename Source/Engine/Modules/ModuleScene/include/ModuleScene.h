@@ -5,6 +5,7 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <string>
@@ -54,7 +55,7 @@ struct PendingModelSpawn
 ///       the JobSystem). ModuleScene::BuildModelHierarchy forwards to it.
 NOUS_ENGINE_API void BuildModelHierarchyInto(Scene& scene, PendingModelSpawn&& spawn);
 
-class ModuleScene : public Module, public IEventListener
+class ModuleScene : public Module, public IEventListener, public ISceneHost
 {
 public:
 
@@ -117,9 +118,9 @@ public:
 	NOUS_ENGINE_API void PressPause();  // PLAYING ↔ PAUSED toggle
 	NOUS_ENGINE_API void PressStep();   // Advances exactly one frame while PAUSED
 
-	NOUS_ENGINE_API bool            IsPlaying()           const { return m_simulationState == SimulationState::PLAYING; }
-	NOUS_ENGINE_API bool            IsPaused()            const { return m_simulationState == SimulationState::PAUSED;  }
-	NOUS_ENGINE_API bool            IsStopped()           const { return m_simulationState == SimulationState::STOPPED; }
+	NOUS_ENGINE_API bool            IsPlaying()           const override { return m_simulationState == SimulationState::PLAYING; }
+	NOUS_ENGINE_API bool            IsPaused()            const override { return m_simulationState == SimulationState::PAUSED;  }
+	NOUS_ENGINE_API bool            IsStopped()           const override { return m_simulationState == SimulationState::STOPPED; }
 	NOUS_ENGINE_API SimulationState GetSimulationState()  const { return m_simulationState; }
 
 	// Returns the per-frame snapshot built in PostUpdate for consumption by the renderer.
@@ -130,10 +131,13 @@ public:
 
 	// True while a LoadSceneAsync job is in flight. Read by ModuleRenderer3D to skip
 	// per-entity iteration that would otherwise race the worker thread mutating the registry.
-	NOUS_ENGINE_API bool IsLoadingScene() const { return m_isLoadingScene.load(std::memory_order_acquire); }
+	NOUS_ENGINE_API bool IsLoadingScene() const override { return m_isLoadingScene.load(std::memory_order_acquire); }
 
 	// Returns the aspect ratio of the current window, kept up-to-date by WINDOW_RESIZED events.
-	NOUS_ENGINE_API float GetWindowAspect() const { return m_windowAspect; }
+	NOUS_ENGINE_API float GetWindowAspect() const override { return m_windowAspect; }
+
+	// The camera CCamera's main-camera instance drives. May be null.
+	NOUS_ENGINE_API Camera* GetGameCamera() const override { return gameCamera; }
 
 	// Broker accessor: components (CAudioSource) reach the audio module through the
 	// scene, mirroring how CScript reaches scriptManager. May be null in tests.
@@ -151,6 +155,7 @@ public:
 	Scene*         activeScene    = nullptr;
 	std::vector<GameObject> selectedGameObjects;  // ordered by selection time; empty = nothing selected
 	GameObject              primarySelection;      // last item added; invalid handle when set is empty
+	// Prefer GetGameCamera(). Public only for legacy editor call sites.
 	Camera*        gameCamera    = nullptr;
 	ScriptManager* scriptManager = nullptr;
 	// Set by GameViewport::Draw() each frame; applied in ModuleRenderer3D::PostUpdate()

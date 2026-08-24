@@ -6,11 +6,12 @@
 #include "Engine/EngineExport.h"
 #include "Engine/Systems/VideoSystem/VideoFrame.h"
 #include "Engine/Systems/VideoSystem/VideoHandle.h"
+#include "Engine/Systems/VideoSystem/iVideoBroker.h"
 
 class IVideoDecoderBackend;
 class ResourceVideo;
 
-class ModuleVideo : public Module, public IEventListener
+class ModuleVideo : public Module, public IEventListener, public IVideoBroker
 {
 public:
 
@@ -28,18 +29,18 @@ public:
 
     // Decoder lifecycle surface — what CVideoPlayer (Phase 3) and the F12 debug key drive.
     // Components hold the opaque handle and never include FFmpeg.
-    NOUS_ENGINE_API VideoHandle CreateVideo(ResourceVideo* rVideo) const;
-    NOUS_ENGINE_API void        DestroyVideo(VideoHandle handle) const noexcept;
+    NOUS_ENGINE_API VideoHandle CreateVideo(ResourceVideo* rVideo) const override;
+    NOUS_ENGINE_API void        DestroyVideo(VideoHandle handle) const noexcept override;
 
-    NOUS_ENGINE_API void        Start(VideoHandle handle) const;
+    NOUS_ENGINE_API void        Start(VideoHandle handle) const override;
     NOUS_ENGINE_API void        Stop(VideoHandle handle) const;
-    NOUS_ENGINE_API void        SetLooping(VideoHandle handle, bool looping) const;
+    NOUS_ENGINE_API void        SetLooping(VideoHandle handle, bool looping) const override;
 
-    NOUS_ENGINE_API bool        TryGetFrame(VideoHandle handle, double playheadSec, VideoFrame& out) const;
+    NOUS_ENGINE_API bool        TryGetFrame(VideoHandle handle, double playheadSec, VideoFrame& out) const override;
 
     NOUS_ENGINE_API void        GetDimensions(VideoHandle handle, uint32& width, uint32& height) const;
     NOUS_ENGINE_API float       GetFrameRate(VideoHandle handle) const;
-    NOUS_ENGINE_API float       GetDuration(VideoHandle handle) const;
+    NOUS_ENGINE_API float       GetDuration(VideoHandle handle) const override;
     NOUS_ENGINE_API bool        IsFinished(VideoHandle handle) const;
 
 private:

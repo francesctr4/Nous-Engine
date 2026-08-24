@@ -9,6 +9,7 @@
 
 #include "Engine/EngineExport.h"
 #include "Engine/Utils/DataStructures/NOUS_Vector.h"
+#include "Engine/Scripting/iScriptRegistry.h"
 
 class IScript;
 class CScript;
@@ -17,7 +18,7 @@ class ScriptRegistry;
 class ModuleInput;
 class ModuleScene;
 
-class ScriptManager
+class ScriptManager : public IScriptRegistry
 {
 public:
 
@@ -45,8 +46,8 @@ public:
     // ---------------------------------------------------------------------------
     // CScript component registry — called by CScript::OnStart / OnDestroy
     // ---------------------------------------------------------------------------
-    void RegisterScriptComponent(CScript* component);
-    void UnregisterScriptComponent(CScript* component);
+    void RegisterScriptComponent(CScript* component) override;
+    void UnregisterScriptComponent(CScript* component) override;
 
     // Dispatches IScript::LateUpdate to all live components. Called from ModuleScene::PostUpdate.
     void DispatchLateUpdate(float dt);

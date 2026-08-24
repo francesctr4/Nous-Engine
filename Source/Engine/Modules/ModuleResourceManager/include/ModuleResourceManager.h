@@ -85,7 +85,7 @@ public:
 	    const std::string& libraryPath, int32_t submeshIndex,
 	    const std::string& assetsPath, uint32 hintUID = 0) override;
 
-	NOUS_ENGINE_API bool UnloadResource(uint32 uid);
+	NOUS_ENGINE_API bool UnloadResource(uint32 uid) override;
 
 	// Update the in-memory assets path of a loaded resource after it has been moved on disk.
 	// No-op if the UID is not currently loaded.
@@ -131,7 +131,7 @@ public:
     [[nodiscard]] ResourceTexture* GetWhiteTexture() const;
     [[nodiscard]] ResourceTexture* GetBlackTexture() const;
     [[nodiscard]] ResourceTexture* GetFlatNormalTexture() const;
-    [[nodiscard]] NOUS_ENGINE_API ResourceMaterial* GetDefaultMaterial() const;
+    [[nodiscard]] NOUS_ENGINE_API ResourceMaterial* GetDefaultMaterial() const override;
 
     // Returns the resource pointer WITHOUT bumping the reference count (borrowed reference).
     // Use for read-only access (e.g. Inspector UI) where the caller does not own the resource.

@@ -8,11 +8,12 @@
 #include "Engine/Systems/AudioSystem/EffectChainHandle.h"
 #include "Engine/Systems/AudioSystem/AudioTypes.h"
 #include "Engine/Systems/AudioSystem/AudioGraph/AudioEffectTypes.h"
+#include "Engine/Systems/AudioSystem/iAudioBroker.h"
 
 class IAudioEngineBackend;
 class ResourceAudio;
 
-class ModuleAudio : public Module, public IEventListener
+class ModuleAudio : public Module, public IEventListener, public IAudioBroker
 {
 public:
 
@@ -40,35 +41,35 @@ public:
     // Per-voice sound lifecycle — the surface CAudioSource drives. Components
     // hold the returned opaque handle and never touch miniaudio directly.
     // ----------------------------------------
-    NOUS_ENGINE_API SoundHandle CreateSound(ResourceAudio* rAudio, AudioBus bus) const;
-    NOUS_ENGINE_API void        DestroySound(SoundHandle sound) const noexcept;
+    NOUS_ENGINE_API SoundHandle CreateSound(ResourceAudio* rAudio, AudioBus bus) const override;
+    NOUS_ENGINE_API void        DestroySound(SoundHandle sound) const noexcept override;
 
-    NOUS_ENGINE_API void        StartSound(SoundHandle sound) const;
-    NOUS_ENGINE_API void        StopSound(SoundHandle sound) const;
+    NOUS_ENGINE_API void        StartSound(SoundHandle sound) const override;
+    NOUS_ENGINE_API void        StopSound(SoundHandle sound) const override;
 
-    NOUS_ENGINE_API void        SetSoundVolume(SoundHandle sound, float volume) const;
-    NOUS_ENGINE_API void        SetSoundPitch(SoundHandle sound, float pitch) const;
-    NOUS_ENGINE_API void        SetSoundLooping(SoundHandle sound, bool looping) const;
+    NOUS_ENGINE_API void        SetSoundVolume(SoundHandle sound, float volume) const override;
+    NOUS_ENGINE_API void        SetSoundPitch(SoundHandle sound, float pitch) const override;
+    NOUS_ENGINE_API void        SetSoundLooping(SoundHandle sound, bool looping) const override;
 
-    NOUS_ENGINE_API bool        IsSoundPlaying(SoundHandle sound) const;
+    NOUS_ENGINE_API bool        IsSoundPlaying(SoundHandle sound) const override;
 
     // Playback position of the voice in seconds (0 when no backend / null handle).
-    NOUS_ENGINE_API double      GetCursorSeconds(SoundHandle sound) const;
+    NOUS_ENGINE_API double      GetCursorSeconds(SoundHandle sound) const override;
 
     // ----------------------------------------
     // 3D spatialization (forwarded to the active backend). The main CAudioListener
     // writes the listener each frame; CAudioSource writes its voice's position +
     // attenuation. All no-op when there is no backend.
     // ----------------------------------------
-    NOUS_ENGINE_API void SetListenerPosition (float x, float y, float z);
-    NOUS_ENGINE_API void SetListenerDirection(float x, float y, float z) const;
-    NOUS_ENGINE_API void SetListenerWorldUp  (float x, float y, float z) const;
+    NOUS_ENGINE_API void SetListenerPosition (float x, float y, float z) override;
+    NOUS_ENGINE_API void SetListenerDirection(float x, float y, float z) const override;
+    NOUS_ENGINE_API void SetListenerWorldUp  (float x, float y, float z) const override;
 
-    NOUS_ENGINE_API void SetSoundSpatializationEnabled(SoundHandle sound, bool enabled) const;
-    NOUS_ENGINE_API void SetSoundPosition        (SoundHandle sound, float x, float y, float z) const;
-    NOUS_ENGINE_API void SetSoundMinDistance     (SoundHandle sound, float distance) const;
-    NOUS_ENGINE_API void SetSoundMaxDistance     (SoundHandle sound, float distance) const;
-    NOUS_ENGINE_API void SetSoundAttenuationModel(SoundHandle sound, AttenuationModel model) const;
+    NOUS_ENGINE_API void SetSoundSpatializationEnabled(SoundHandle sound, bool enabled) const override;
+    NOUS_ENGINE_API void SetSoundPosition        (SoundHandle sound, float x, float y, float z) const override;
+    NOUS_ENGINE_API void SetSoundMinDistance     (SoundHandle sound, float distance) const override;
+    NOUS_ENGINE_API void SetSoundMaxDistance     (SoundHandle sound, float distance) const override;
+    NOUS_ENGINE_API void SetSoundAttenuationModel(SoundHandle sound, AttenuationModel model) const override;
 
     // ----------------------------------------
     // Bus mixer (Step 6) — driven by the editor AudioMixerWindow. Getters return
@@ -84,9 +85,9 @@ public:
     // ----------------------------------------
     // Effect chain (forwarded to the active backend; guard-style no-ops).
     // ----------------------------------------
-    NOUS_ENGINE_API EffectChainHandle CreateEffectChain(SoundHandle sound, const AudioGraphDesc& desc, AudioBus outputBus) const;
-    NOUS_ENGINE_API void              SetEffectParam(EffectChainHandle chain, int effectIndex, int paramIndex, float value) const;
-    NOUS_ENGINE_API void              DestroyEffectChain(EffectChainHandle chain) const noexcept;
+    NOUS_ENGINE_API EffectChainHandle CreateEffectChain(SoundHandle sound, const AudioGraphDesc& desc, AudioBus outputBus) const override;
+    NOUS_ENGINE_API void              SetEffectParam(EffectChainHandle chain, int effectIndex, int paramIndex, float value) const override;
+    NOUS_ENGINE_API void              DestroyEffectChain(EffectChainHandle chain) const noexcept override;
 
 private:
 
