@@ -12,6 +12,11 @@ add_subdirectory(Scene)
 add_subdirectory(GameObject)
 add_subdirectory(Component)
 
+# FakeComponentServices.h is test-only and deliberately NOT in target_sources(ECS).
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()
+
 set_target_properties(ECS PROPERTIES
         CXX_STANDARD 23
         CXX_STANDARD_REQUIRED ON
