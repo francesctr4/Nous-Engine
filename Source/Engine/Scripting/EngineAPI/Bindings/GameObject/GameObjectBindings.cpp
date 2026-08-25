@@ -1,31 +1,31 @@
 #include "Engine/Scripting/EngineAPI/Bindings/GameObject/GameObjectBindings.h"
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Scripting/iScriptSceneHost.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Core/Logger/Logger.h"
 
-static ModuleScene* s_scene = nullptr;
+static IScriptSceneHost* s_scene = nullptr;
 
-void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene)
+void SetupGameObjectBindings(GameObjectAPI& gameObject, IScriptSceneHost* sceneHost)
 {
-    s_scene = moduleScene;
+    s_scene = sceneHost;
 
     // Create binding - converts const char* to GameObjectID
     gameObject.Create = [](const char* name) -> uint32_t {
-        if (!s_scene->activeScene) {
+        if (!s_scene->GetActiveScene()) {
             NOUS_ERROR("No active scene to create GameObject in!");
             return 0;
         }
-        GameObject go = s_scene->activeScene->CreateGameObject(name ? name : "GameObject");
+        GameObject go = s_scene->GetActiveScene()->CreateGameObject(name ? name : "GameObject");
         NOUS_DEBUG("Created GameObject '%s' with ID: %u", name, go.GetID());
         return go.GetID();
     };
 
     // Destroy binding - uses GameObjectID
     gameObject.Destroy = [](uint32_t id) {
-        if (!s_scene->activeScene) {
+        if (!s_scene->GetActiveScene()) {
             NOUS_ERROR("No active scene to destroy GameObject from!");
             return;
         }
@@ -34,17 +34,17 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
             return;
         }
         NOUS_DEBUG("Destroying GameObject with ID: %u", id);
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (go.IsValid())
-            s_scene->activeScene->DestroyGameObject(go);
+            s_scene->GetActiveScene()->DestroyGameObject(go);
     };
 
     gameObject.SetPosition = [](uint32_t id, float x, float y, float z) {
-        if (!s_scene || !s_scene->activeScene) {
+        if (!s_scene || !s_scene->GetActiveScene()) {
             NOUS_ERROR("Scene not available for SetPosition!");
             return;
         }
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid()) { NOUS_WARN("GameObject with ID %u not found for SetPosition!", id); return; }
         if (!go.HasComponent<CTransform>()) { NOUS_WARN("GameObject %u has no Transform component!", id); return; }
         auto& transform = go.GetComponent<CTransform>();
@@ -54,11 +54,11 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.SetRotation = [](uint32_t id, float x, float y, float z) {
-        if (!s_scene || !s_scene->activeScene) {
+        if (!s_scene || !s_scene->GetActiveScene()) {
             NOUS_ERROR("Scene not available for SetRotation!");
             return;
         }
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid()) { NOUS_WARN("GameObject with ID %u not found for SetRotation!", id); return; }
         if (!go.HasComponent<CTransform>()) { NOUS_WARN("GameObject %u has no Transform component!", id); return; }
         auto& transform = go.GetComponent<CTransform>();
@@ -67,11 +67,11 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.SetScale = [](uint32_t id, float x, float y, float z) {
-        if (!s_scene || !s_scene->activeScene) {
+        if (!s_scene || !s_scene->GetActiveScene()) {
             NOUS_ERROR("Scene not available for SetScale!");
             return;
         }
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid()) { NOUS_WARN("GameObject ID %u not found for SetScale!", id); return; }
         if (!go.HasComponent<CTransform>()) { NOUS_WARN("GameObject %u has no Transform for SetScale!", id); return; }
         auto& transform = go.GetComponent<CTransform>();
@@ -81,8 +81,8 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.GetPosition = [](uint32_t id, float* x, float* y, float* z) {
-        if (!s_scene || !s_scene->activeScene) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
         const auto& pos = go.GetComponent<CTransform>().position;
         if (x) *x = pos.x;
@@ -91,8 +91,8 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.GetRotation = [](uint32_t id, float* x, float* y, float* z) {
-        if (!s_scene || !s_scene->activeScene) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
         const glm::vec3 euler = go.GetComponent<CTransform>().GetEulerAngles();
         if (x) *x = euler.x;
@@ -101,8 +101,8 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.GetScale = [](uint32_t id, float* x, float* y, float* z) {
-        if (!s_scene || !s_scene->activeScene) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
         const auto& sc = go.GetComponent<CTransform>().scale;
         if (x) *x = sc.x;
@@ -111,14 +111,14 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.FindByName = [](const char* name) -> uint32_t {
-        if (!s_scene || !s_scene->activeScene || !name) return 0;
-        const GameObject go = s_scene->activeScene->FindGameObjectByName(name);
+        if (!s_scene || !s_scene->GetActiveScene() || !name) return 0;
+        const GameObject go = s_scene->GetActiveScene()->FindGameObjectByName(name);
         return go.IsValid() ? go.GetID() : 0;
     };
 
     gameObject.GetForward = [](uint32_t id, float* x, float* y, float* z) {
-        if (!s_scene || !s_scene->activeScene) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
         const glm::vec3 fwd = go.GetComponent<CTransform>().GetForward();
         if (x) *x = fwd.x;
@@ -127,8 +127,8 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.GetRight = [](uint32_t id, float* x, float* y, float* z) {
-        if (!s_scene || !s_scene->activeScene) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
         const glm::vec3 right = go.GetComponent<CTransform>().GetRight();
         if (x) *x = right.x;
@@ -137,8 +137,8 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.GetUp = [](uint32_t id, float* x, float* y, float* z) {
-        if (!s_scene || !s_scene->activeScene) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
         const glm::vec3 up = go.GetComponent<CTransform>().GetUp();
         if (x) *x = up.x;
@@ -147,8 +147,8 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.Translate = [](uint32_t id, float dx, float dy, float dz) {
-        if (!s_scene || !s_scene->activeScene) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
         auto& transform = go.GetComponent<CTransform>();
         transform.Translate(glm::vec3(dx, dy, dz));
@@ -156,8 +156,8 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.Rotate = [](uint32_t id, float dx, float dy, float dz) {
-        if (!s_scene || !s_scene->activeScene) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid() || !go.HasComponent<CTransform>()) return;
         auto& transform = go.GetComponent<CTransform>();
         transform.Rotate(glm::quat(glm::radians(glm::vec3(dx, dy, dz))));
@@ -165,36 +165,36 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.GetParent = [](uint32_t id) -> uint32_t {
-        if (!s_scene || !s_scene->activeScene) return 0;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return 0;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid()) return 0;
         const GameObject parent = go.GetParent();
         return parent.IsValid() ? parent.GetID() : 0;
     };
 
     gameObject.SetParent = [](uint32_t id, uint32_t parentId) {
-        if (!s_scene || !s_scene->activeScene) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid()) { NOUS_WARN("[GameObjectAPI] SetParent: GameObject %u not found", id); return; }
         if (parentId == 0) {
             go.SetParent({});
         } else {
-            GameObject parent = s_scene->activeScene->GetGameObjectByID(parentId);
+            GameObject parent = s_scene->GetActiveScene()->GetGameObjectByID(parentId);
             if (!parent.IsValid()) { NOUS_WARN("[GameObjectAPI] SetParent: parent %u not found", parentId); return; }
             go.SetParent(parent);
         }
     };
 
     gameObject.GetChildCount = [](uint32_t id) -> uint32_t {
-        if (!s_scene || !s_scene->activeScene) return 0;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return 0;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid()) return 0;
         return static_cast<uint32_t>(go.GetChildren().size());
     };
 
     gameObject.GetChild = [](uint32_t id, uint32_t index) -> uint32_t {
-        if (!s_scene || !s_scene->activeScene) return 0;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene()) return 0;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid()) return 0;
         const auto children = go.GetChildren();
         if (index >= children.size()) return 0;
@@ -202,8 +202,8 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.GetName = [](uint32_t id, char* buffer, int bufferSize) {
-        if (!s_scene || !s_scene->activeScene || !buffer || bufferSize <= 0) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene() || !buffer || bufferSize <= 0) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid()) return;
         const std::string& name = go.GetName();
         const int len = static_cast<int>(name.size());
@@ -213,8 +213,8 @@ void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene
     };
 
     gameObject.SetName = [](uint32_t id, const char* name) {
-        if (!s_scene || !s_scene->activeScene || !name) return;
-        GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+        if (!s_scene || !s_scene->GetActiveScene() || !name) return;
+        GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
         if (!go.IsValid()) { NOUS_WARN("[GameObjectAPI] SetName: GameObject %u not found", id); return; }
         go.SetName(name);
     };

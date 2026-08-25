@@ -408,9 +408,9 @@ struct InputAPI
     } SDL_Scancode;
 };
 
-class ModuleInput;
+class IScriptInput;
 
 // Setup function for this specific API
-void SetupInputBindings(InputAPI& input, ModuleInput* moduleInput);
+void SetupInputBindings(InputAPI& input, IScriptInput* scriptInput);
 
 #endif //NOUS_ENGINE_INPUTBINDINGS_H

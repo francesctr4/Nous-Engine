@@ -1,13 +1,13 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Scene/SceneBindings.h"
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Scripting/iScriptSceneHost.h"
 #include "Engine/Core/Logger/Logger.h"
 
-static ModuleScene* s_scene = nullptr;
+static IScriptSceneHost* s_scene = nullptr;
 
-void SetupSceneBindings(SceneAPI& scene, ModuleScene* moduleScene)
+void SetupSceneBindings(SceneAPI& scene, IScriptSceneHost* sceneHost)
 {
-    s_scene = moduleScene;
+    s_scene = sceneHost;
 
     scene.LoadScene = [](const char* path) {
         if (!s_scene || !path) return;

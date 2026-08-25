@@ -6,5 +6,5 @@ struct SceneAPI
     void (*ReloadScene)()                 = nullptr;
 };
 
-class ModuleScene;
-void SetupSceneBindings(SceneAPI& scene, ModuleScene* moduleScene);
+class IScriptSceneHost;
+void SetupSceneBindings(SceneAPI& scene, IScriptSceneHost* sceneHost);

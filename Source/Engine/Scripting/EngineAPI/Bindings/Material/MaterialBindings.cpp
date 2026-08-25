@@ -1,18 +1,18 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Material/MaterialBindings.h"
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Scripting/iScriptSceneHost.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Core/Logger/Logger.h"
 
-static ModuleScene* s_scene = nullptr;
+static IScriptSceneHost* s_scene = nullptr;
 
 static ResourceMaterial* GetMaterial(uint32_t id)
 {
-    if (!s_scene || !s_scene->activeScene) return nullptr;
-    GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+    if (!s_scene || !s_scene->GetActiveScene()) return nullptr;
+    GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
     if (!go.IsValid()) { NOUS_WARN("[MaterialAPI] GameObject %u not found", id); return nullptr; }
     if (!go.HasComponent<CMaterial>()) { NOUS_WARN("[MaterialAPI] GameObject %u has no CMaterial", id); return nullptr; }
     ResourceMaterial* mat = go.GetComponent<CMaterial>().material;
@@ -20,9 +20,9 @@ static ResourceMaterial* GetMaterial(uint32_t id)
     return mat;
 }
 
-void SetupMaterialBindings(MaterialAPI& material, ModuleScene* moduleScene)
+void SetupMaterialBindings(MaterialAPI& material, IScriptSceneHost* sceneHost)
 {
-    s_scene = moduleScene;
+    s_scene = sceneHost;
 
     material.GetFloat = [](uint32_t id, const char* name) -> float {
         const ResourceMaterial* mat = GetMaterial(id);

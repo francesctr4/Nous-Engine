@@ -136,6 +136,39 @@ std::unordered_map<uint32, ResourceBase*> ModuleResourceManager::GetResourcesMap
 }
 
 
+// Iterating a snapshot rather than under ScopedLock is required, not incidental:
+// the renderer's callbacks dispatch shader compile jobs and re-acquire descriptor
+// slots (which re-enters the resource system), so holding the table's
+// non-recursive mutex across them would deadlock.
+void ModuleResourceManager::ForEachShader(const std::function<void(ResourceShader*)>& fn) const
+{
+	const auto snapshot = m_table.Snapshot();
+
+	for (ResourceBase* resource : snapshot | std::views::values)
+	{
+		// A claimed-but-still-loading slot holds a nullptr placeholder.
+		if (resource == nullptr || resource->GetType() != ResourceType::SHADER)
+			continue;
+
+		fn(down_cast<ResourceShader*>(resource));
+	}
+}
+
+
+void ModuleResourceManager::ForEachMaterial(const std::function<void(ResourceMaterial*)>& fn) const
+{
+	const auto snapshot = m_table.Snapshot();
+
+	for (ResourceBase* resource : snapshot | std::views::values)
+	{
+		if (resource == nullptr || resource->GetType() != ResourceType::MATERIAL)
+			continue;
+
+		fn(down_cast<ResourceMaterial*>(resource));
+	}
+}
+
+
 void ModuleResourceManager::DeleteResource(ResourceBase*& resource)
 {
 	// SubMeshCache::EraseUID requires the table's lock to be held by the caller.

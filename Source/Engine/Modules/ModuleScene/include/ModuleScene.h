@@ -7,6 +7,7 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
 #include "Engine/Systems/ECS/ComponentServices.h"
+#include "Engine/Scripting/iScriptSceneHost.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <string>
@@ -57,7 +58,8 @@ struct PendingModelSpawn
 ///       the JobSystem). ModuleScene::BuildModelHierarchy forwards to it.
 NOUS_ENGINE_API void BuildModelHierarchyInto(Scene& scene, PendingModelSpawn&& spawn);
 
-class ModuleScene : public Module, public IEventListener, public ISceneHost
+class ModuleScene : public Module, public IEventListener, public ISceneHost,
+                    public IScriptSceneHost
 {
 public:
 
@@ -82,7 +84,7 @@ public:
 
 	NOUS_ENGINE_API void SaveScene(const std::string& path);
 	NOUS_ENGINE_API void LoadScene(const std::string& path);
-	NOUS_ENGINE_API void LoadSceneAsync(const std::string& path);
+	NOUS_ENGINE_API void LoadSceneAsync(const std::string& path) override;
 	NOUS_ENGINE_API void ClearScene();
 
 	// Clears the active scene and resets its tracked path so the next save
@@ -91,8 +93,13 @@ public:
 
 	// Returns the path of the scene currently loaded/saved, or empty string
 	// if the active scene has never been persisted.
-	NOUS_ENGINE_API const std::string& GetCurrentScenePath() const { return m_currentScenePath; }
-	NOUS_ENGINE_API bool                HasCurrentScenePath() const { return !m_currentScenePath.empty(); }
+	NOUS_ENGINE_API const std::string& GetCurrentScenePath() const override { return m_currentScenePath; }
+	NOUS_ENGINE_API bool                HasCurrentScenePath() const override { return !m_currentScenePath.empty(); }
+
+	// IScriptSceneHost accessor for the public `activeScene` member below. The
+	// member stays for the editor and the other modules that already use it;
+	// this is how it crosses the interface into Scripting/.
+	[[nodiscard]] NOUS_ENGINE_API Scene* GetActiveScene() const override { return activeScene; }
 
 	// Instantiates a .nprefab file into the active scene, optionally under parent.
 	// Returns the root of the instantiated prefab (null handle on failure).

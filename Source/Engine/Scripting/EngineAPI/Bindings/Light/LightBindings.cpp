@@ -1,25 +1,25 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Light/LightBindings.h"
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Scripting/iScriptSceneHost.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
 #include "Engine/Core/Logger/Logger.h"
 
-static ModuleScene* s_scene = nullptr;
+static IScriptSceneHost* s_scene = nullptr;
 
 static CLight* GetLight(uint32_t id)
 {
-    if (!s_scene || !s_scene->activeScene) return nullptr;
-    GameObject go = s_scene->activeScene->GetGameObjectByID(id);
+    if (!s_scene || !s_scene->GetActiveScene()) return nullptr;
+    GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(id);
     if (!go.IsValid()) { NOUS_WARN("[LightAPI] GameObject %u not found", id); return nullptr; }
     if (!go.HasComponent<CLight>()) { NOUS_WARN("[LightAPI] GameObject %u has no CLight", id); return nullptr; }
     return &go.GetComponent<CLight>();
 }
 
-void SetupLightBindings(LightAPI& light, ModuleScene* moduleScene)
+void SetupLightBindings(LightAPI& light, IScriptSceneHost* sceneHost)
 {
-    s_scene = moduleScene;
+    s_scene = sceneHost;
 
     light.GetType = [](uint32_t id) -> int {
         const CLight* l = GetLight(id);

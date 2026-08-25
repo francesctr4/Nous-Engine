@@ -22,8 +22,8 @@ class ResourceMaterial;
 class ResourceTexture;
 class ResourceShader;
 struct IEditorOverlay;
-class ModuleWindow;
-class ModuleResourceManager;
+class IRenderWindow;
+class IRenderResourceProvider;
 class EventSystem;
 struct IRendererBackend;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
@@ -43,10 +43,10 @@ public:
 	// Dependency Injection (call before Initialize)
 	// ---------------------------------------------------------------------
 	NOUS_ENGINE_API void InjectDependencies(
-		ModuleWindow* window,
+		IRenderWindow* window,
 		EventSystem* eventSystem,
 		nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-		ModuleResourceManager* resourceManager);
+		IRenderResourceProvider* resourceProvider);
 
 	// ---------------------------------------------------------------------
 	// Lifecycle
@@ -238,10 +238,10 @@ private:
 	mutable uint64_t mFrameNumber = 0;
 
 	// Cached dependencies — applied to the backend after Create() inside Initialize()
-	ModuleWindow*                        m_window          = nullptr;
+	IRenderWindow*                       m_window          = nullptr;
 	EventSystem*                         m_eventSystem     = nullptr;
 	nous::engine::multithreading::NOUS_JobSystem* m_jobSystem       = nullptr;
-	ModuleResourceManager*               m_resourceManager = nullptr;
+	IRenderResourceProvider*             m_resourceManager = nullptr;
 
 	IEditorOverlay* mEditorOverlay;
 

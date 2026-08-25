@@ -25,8 +25,8 @@ public:
 	void InjectDependencies(
 		EventSystem* eventSystem,
 		nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-		ModuleWindow* window,
-		ModuleResourceManager* resourceManager) override;
+		IRenderWindow* window,
+		IRenderResourceProvider* resourceProvider) override;
 
 	bool Initialize() override;
 	void Shutdown() noexcept override;

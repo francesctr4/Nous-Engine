@@ -41,8 +41,8 @@
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/Utils/Math/Vertex.inl"
 #include <Engine/Core/EventSystem/EventSystem.h>
-#include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Renderer/iRenderWindow.h"
+#include "Engine/Renderer/iRenderResourceProvider.h"
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_BACKEND_VULKAN_BACKEND;
 
@@ -61,13 +61,13 @@ VulkanBackend::~VulkanBackend()
 void VulkanBackend::InjectDependencies(
     EventSystem* eventSystem,
     nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-    ModuleWindow* window,
-    ModuleResourceManager* resourceManager)
+    IRenderWindow* window,
+    IRenderResourceProvider* resourceProvider)
 {
     vkContext->eventSystem     = eventSystem;
     vkContext->jobSystem       = jobSystem;
     vkContext->window          = window;
-    vkContext->resourceManager = resourceManager;
+    vkContext->resourceManager = resourceProvider;
 }
 
 bool VulkanBackend::Initialize()
@@ -2577,14 +2577,12 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     auto reacquireMaterialInstances = [&]
     {
         if (!vkContext->resourceManager) return;
-        for (auto& [uid, resource] : vkContext->resourceManager->GetResourcesMap())
+        vkContext->resourceManager->ForEachMaterial([this](ResourceMaterial* mat)
         {
-            if (resource->GetType() != ResourceType::MATERIAL) continue;
-            auto* mat = down_cast<ResourceMaterial*>(resource);
             mat->internalID      = INVALID_ID;  // bypass the "already acquired" guard
             mat->poolOwnerShader = nullptr;      // let CreateMaterial re-derive the pool owner
             CreateMaterial(mat);
-        }
+        });
     };
 
     // ── Recreate GPU resources (mirrors CreateShader path selection) ──────────

@@ -16,8 +16,8 @@
 class Freelist;
 
 // Forward declarations for injected dependencies
-class ModuleWindow;
-class ModuleResourceManager;
+class IRenderWindow;
+class IRenderResourceProvider;
 class EventSystem;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
@@ -364,10 +364,10 @@ struct VulkanContext
     bool isShuttingDown = false;
 
     // ── Injected dependencies (set before Initialize(), not owned) ─────────────
-    ModuleWindow*                              window          = nullptr;
+    IRenderWindow*                             window          = nullptr;
     EventSystem*                               eventSystem     = nullptr;
     nous::engine::multithreading::NOUS_JobSystem*        jobSystem       = nullptr;
-    ModuleResourceManager*                     resourceManager = nullptr;
+    IRenderResourceProvider*                   resourceManager = nullptr;
 };
 
 struct VulkanTextureData 

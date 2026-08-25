@@ -4,10 +4,11 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
+#include "Engine/Renderer/iRenderWindow.h"
 
 struct SDL_Window;
 
-class ModuleWindow : public Module, public IEventListener
+class ModuleWindow : public Module, public IEventListener, public IRenderWindow
 {
 public:
 
@@ -33,8 +34,9 @@ public:
 	NOUS_ENGINE_API void SetMinimized(bool value);
 	[[nodiscard]] NOUS_ENGINE_API bool IsMinimized() const;
 
-    [[nodiscard]] NOUS_ENGINE_API SDL_Window* GetSDL_Window() const;
-    void GetFramebufferSize(int32* width, int32* height) const;
+    // ---- IRenderWindow -----------------------------------------------------
+    [[nodiscard]] NOUS_ENGINE_API SDL_Window* GetSDL_Window() const override;
+    void GetFramebufferSize(int32* width, int32* height) const override;
 
 private:
 

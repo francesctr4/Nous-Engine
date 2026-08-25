@@ -2,7 +2,7 @@
 # ResourceAudio - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_ResourceAudio")
+set(TEST_NAME "t_ResourceManager_ResourceAudio")
 
 add_executable(${TEST_NAME}
         t_ImporterAudio.cpp

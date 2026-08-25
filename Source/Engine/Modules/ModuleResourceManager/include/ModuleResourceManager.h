@@ -12,6 +12,7 @@
 #include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/SubMeshCache.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
+#include "Engine/Renderer/iRenderResourceProvider.h"
 
 #include <future>
 #include <string>
@@ -27,8 +28,10 @@ class ResourceMesh;
 
 class ResourceTexture;
 class ResourceMaterial;
+class ResourceShader;
 
-class ModuleResourceManager : public Module, public IEventListener, public IResourceLoader
+class ModuleResourceManager : public Module, public IEventListener, public IResourceLoader,
+                              public IRenderResourceProvider
 {
 public:
 
@@ -127,11 +130,20 @@ public:
 	// be freed before Vulkan is shut down.  Only called from ModuleRenderer3D::CleanUp().
 	NOUS_ENGINE_API void ClearResources(IGPUResourceFactory* gpu);
 
-    [[nodiscard]] ResourceTexture* GetDefaultTexture() const;
-    [[nodiscard]] ResourceTexture* GetWhiteTexture() const;
-    [[nodiscard]] ResourceTexture* GetBlackTexture() const;
-    [[nodiscard]] ResourceTexture* GetFlatNormalTexture() const;
+    // Fallback resources. GetDefaultMaterial satisfies both IResourceLoader and
+    // IRenderResourceProvider; the textures are IRenderResourceProvider only.
+    [[nodiscard]] ResourceTexture* GetDefaultTexture() const override;
+    [[nodiscard]] ResourceTexture* GetWhiteTexture() const override;
+    [[nodiscard]] ResourceTexture* GetBlackTexture() const override;
+    [[nodiscard]] ResourceTexture* GetFlatNormalTexture() const override;
     [[nodiscard]] NOUS_ENGINE_API ResourceMaterial* GetDefaultMaterial() const override;
+
+    // ---- IRenderResourceProvider: typed iteration --------------------------
+    // Both walk a table snapshot, so the callback runs without the table lock
+    // held — required, since the renderer's callbacks dispatch compile jobs and
+    // re-acquire descriptor slots. Null placeholders are skipped.
+    void ForEachShader(const std::function<void(ResourceShader*)>& fn) const override;
+    void ForEachMaterial(const std::function<void(ResourceMaterial*)>& fn) const override;
 
     // Returns the resource pointer WITHOUT bumping the reference count (borrowed reference).
     // Use for read-only access (e.g. Inspector UI) where the caller does not own the resource.

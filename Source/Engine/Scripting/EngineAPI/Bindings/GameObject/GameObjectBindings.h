@@ -43,9 +43,9 @@ struct GameObjectAPI
     void (*SetName)(uint32_t id, const char* name)             = nullptr;
 };
 
-class ModuleScene;
+class IScriptSceneHost;
 
 // Setup function for this specific API
-void SetupGameObjectBindings(GameObjectAPI& gameObject, ModuleScene* moduleScene);
+void SetupGameObjectBindings(GameObjectAPI& gameObject, IScriptSceneHost* sceneHost);
 
 #endif //NOUS_ENGINE_GAMEOBJECTBINDINGS_H

@@ -1,6 +1,6 @@
-set(TEST_NAME "t_ResourceQueue")
+set(TEST_NAME "t_ResourceManager_ResourceQueue")
 
-add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} t_ResourceQueue.cpp)
 
 target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source)
 

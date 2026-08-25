@@ -15,14 +15,14 @@ class IScript;
 class CScript;
 struct EngineAPI;
 class ScriptRegistry;
-class ModuleInput;
-class ModuleScene;
+class IScriptInput;
+class IScriptSceneHost;
 
 class ScriptManager : public IScriptRegistry
 {
 public:
 
-    ScriptManager(ModuleInput* moduleInput, ModuleScene* moduleScene);
+    ScriptManager(IScriptInput* input, IScriptSceneHost* sceneHost);
     ~ScriptManager();
 
     // Hot-reload functionality
@@ -77,8 +77,8 @@ private:
     ScriptRegistry* m_scriptRegistry;
     EngineAPI* api = nullptr;
 
-    ModuleInput* m_moduleInput;
-    ModuleScene* m_moduleScene;
+    IScriptInput*     m_input;
+    IScriptSceneHost* m_sceneHost;
 
     // Flat registry of every live CScript component in the scene.
     // Used for hot-reload, LateUpdate dispatch, and cleanup.

@@ -17,5 +17,5 @@ struct MaterialAPI
     void (*SetVec4)(uint32_t id, const char* name, float x, float y, float z, float w) = nullptr;
 };
 
-class ModuleScene;
-void SetupMaterialBindings(MaterialAPI& material, ModuleScene* moduleScene);
+class IScriptSceneHost;
+void SetupMaterialBindings(MaterialAPI& material, IScriptSceneHost* sceneHost);

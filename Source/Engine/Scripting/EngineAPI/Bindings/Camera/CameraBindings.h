@@ -20,5 +20,5 @@ struct CameraAPI
     void (*SetMain)(uint32_t goId, int isMain) = nullptr;
 };
 
-class ModuleScene;
-void SetupCameraBindings(CameraAPI& camera, ModuleScene* moduleScene);
+class IScriptSceneHost;
+void SetupCameraBindings(CameraAPI& camera, IScriptSceneHost* sceneHost);

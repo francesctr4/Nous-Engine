@@ -1,18 +1,18 @@
 #include <Engine/Scripting/EngineAPI/Bindings/Input/InputBindings.h>
 
-#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
+#include "Engine/Scripting/iScriptInput.h"
 
-static ModuleInput* s_input = nullptr;
+static IScriptInput* s_input = nullptr;
 
-void SetupInputBindings(InputAPI& input, ModuleInput* moduleInput)
+void SetupInputBindings(InputAPI& input, IScriptInput* scriptInput)
 {
-    s_input = moduleInput;
+    s_input = scriptInput;
 
-    // All script-facing input is gated by ModuleInput::IsScriptInputEnabled() so the
+    // All script-facing input is gated by IScriptInput::IsScriptInputEnabled() so the
     // editor can pause script input while the GameViewport isn't the focused panel
     // (otherwise camera scripts keep running while you click around the rest of the UI).
     // Capture state is intentionally NOT gated — scripts may legitimately query/release
-    // capture during the gated frame, and ModuleInput already drops/restores capture
+    // capture during the gated frame, and the implementation already drops/restores capture
     // around the gate transitions.
 
     // Key state checking

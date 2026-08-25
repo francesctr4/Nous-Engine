@@ -39,44 +39,33 @@
       }
     },
     {
-      "name": "Debug-Windows",
-      "displayName": "Debug-Windows",
-      "inherits": "debug-base",
+      "name": "windows-base",
+      "hidden": true,
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
         "rhs": "Windows"
       },
-      
       "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows"
+        "VCPKG_TARGET_TRIPLET": "x64-windows",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
       }
+    },
+    {
+      "name": "Debug-Windows",
+      "displayName": "Debug-Windows",
+      "inherits": [ "debug-base", "windows-base" ]
     },
     {
       "name": "Profiling-Windows",
       "displayName": "Profiling-Windows",
-      "inherits": "profiling-base",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows"
-      }
+      "inherits": [ "profiling-base", "windows-base" ]
     },
     {
       "name": "Release-Windows",
       "displayName": "Release-Windows",
-      "inherits": "release-base",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows"
-      }
+      "inherits": [ "release-base", "windows-base" ]
     },
     {
       "name": "Debug-Linux",

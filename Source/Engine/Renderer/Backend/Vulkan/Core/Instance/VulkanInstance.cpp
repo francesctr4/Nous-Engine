@@ -5,7 +5,7 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"
 
-#include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
+#include "Engine/Renderer/iRenderWindow.h"
 
 bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 {

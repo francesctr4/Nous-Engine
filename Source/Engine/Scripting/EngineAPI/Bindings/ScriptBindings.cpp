@@ -17,17 +17,17 @@ void ScriptBindings::InitializeBindings(EngineAPI*& api)
     api->Scene      = NOUS_NEW<SceneAPI>     (MemoryTag::SCRIPTING_SYSTEM);
 }
 
-void ScriptBindings::SetupAllBindings(EngineAPI& api, ModuleInput* moduleInput, ModuleScene* moduleScene)
+void ScriptBindings::SetupAllBindings(EngineAPI& api, IScriptInput* input, IScriptSceneHost* sceneHost)
 {
     SetupLoggerBindings    (*api.Logger);
-    SetupInputBindings     (*api.Input,      moduleInput);
+    SetupInputBindings     (*api.Input,      input);
     SetupTimeBindings      (*api.Time);
-    SetupGameObjectBindings(*api.GameObject, moduleScene);
-    SetupComponentBindings (*api.Component,  moduleScene);
-    SetupLightBindings     (*api.Light,      moduleScene);
-    SetupMaterialBindings  (*api.Material,   moduleScene);
-    SetupCameraBindings    (*api.Camera,     moduleScene);
-    SetupSceneBindings     (*api.Scene,      moduleScene);
+    SetupGameObjectBindings(*api.GameObject, sceneHost);
+    SetupComponentBindings (*api.Component, sceneHost);
+    SetupLightBindings     (*api.Light, sceneHost);
+    SetupMaterialBindings  (*api.Material, sceneHost);
+    SetupCameraBindings    (*api.Camera, sceneHost);
+    SetupSceneBindings     (*api.Scene, sceneHost);
 }
 
 void ScriptBindings::DeleteBindings(EngineAPI*& api)

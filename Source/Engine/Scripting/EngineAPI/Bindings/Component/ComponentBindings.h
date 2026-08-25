@@ -10,5 +10,5 @@ struct ComponentAPI
     bool (*HasScript) (uint32_t goId) = nullptr;
 };
 
-class ModuleScene;
-void SetupComponentBindings(ComponentAPI& component, ModuleScene* moduleScene);
+class IScriptSceneHost;
+void SetupComponentBindings(ComponentAPI& component, IScriptSceneHost* sceneHost);

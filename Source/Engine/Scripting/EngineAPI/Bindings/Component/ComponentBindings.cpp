@@ -1,6 +1,6 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Component/ComponentBindings.h"
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Scripting/iScriptSceneHost.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
@@ -9,17 +9,17 @@
 #include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
 #include "Engine/Core/Logger/Logger.h"
 
-static ModuleScene* s_scene = nullptr;
+static IScriptSceneHost* s_scene = nullptr;
 
 static GameObject ResolveGO(uint32_t id)
 {
-    if (!s_scene || !s_scene->activeScene) return {};
-    return s_scene->activeScene->GetGameObjectByID(id);
+    if (!s_scene || !s_scene->GetActiveScene()) return {};
+    return s_scene->GetActiveScene()->GetGameObjectByID(id);
 }
 
-void SetupComponentBindings(ComponentAPI& component, ModuleScene* moduleScene)
+void SetupComponentBindings(ComponentAPI& component, IScriptSceneHost* sceneHost)
 {
-    s_scene = moduleScene;
+    s_scene = sceneHost;
 
     component.HasLight = [](uint32_t goId) -> bool {
         GameObject go = ResolveGO(goId);

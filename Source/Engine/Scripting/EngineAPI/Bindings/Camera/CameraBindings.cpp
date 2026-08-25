@@ -1,29 +1,29 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Camera/CameraBindings.h"
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include "Engine/Scripting/iScriptSceneHost.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
 #include "Engine/Core/Logger/Logger.h"
 
-static ModuleScene* s_scene = nullptr;
+static IScriptSceneHost* s_scene = nullptr;
 
 static CCamera* GetCamera(uint32_t goId)
 {
-    if (!s_scene || !s_scene->activeScene) return nullptr;
-    GameObject go = s_scene->activeScene->GetGameObjectByID(goId);
+    if (!s_scene || !s_scene->GetActiveScene()) return nullptr;
+    GameObject go = s_scene->GetActiveScene()->GetGameObjectByID(goId);
     if (!go.IsValid()) { NOUS_WARN("[CameraAPI] GameObject %u not found", goId); return nullptr; }
     if (!go.HasComponent<CCamera>()) { NOUS_WARN("[CameraAPI] GameObject %u has no CCamera", goId); return nullptr; }
     return &go.GetComponent<CCamera>();
 }
 
-void SetupCameraBindings(CameraAPI& camera, ModuleScene* moduleScene)
+void SetupCameraBindings(CameraAPI& camera, IScriptSceneHost* sceneHost)
 {
-    s_scene = moduleScene;
+    s_scene = sceneHost;
 
     camera.GetMainCamera = []() -> uint32_t {
-        if (!s_scene || !s_scene->activeScene) return 0;
-        for (GameObject& go : s_scene->activeScene->GetGameObjects()) {
+        if (!s_scene || !s_scene->GetActiveScene()) return 0;
+        for (GameObject& go : s_scene->GetActiveScene()->GetGameObjects()) {
             const CCamera* cam = go.TryGetComponent<CCamera>();
             if (cam && cam->isMainCamera)
                 return go.GetID();

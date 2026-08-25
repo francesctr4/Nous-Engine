@@ -3,8 +3,8 @@
 #include "Engine/Renderer/RendererTypes.h"
 
 // Forward declarations for dependency injection
-class ModuleWindow;
-class ModuleResourceManager;
+class IRenderWindow;
+class IRenderResourceProvider;
 class EventSystem;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
@@ -27,8 +27,8 @@ struct IRendererBackend
     virtual void InjectDependencies(
         EventSystem* eventSystem,
         nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-        ModuleWindow* window,
-        ModuleResourceManager* resourceManager) = 0;
+        IRenderWindow* window,
+        IRenderResourceProvider* resourceProvider) = 0;
 
     // ─────────────────────────────── Lifecycle ───────────────────────────────
     [[nodiscard]] virtual bool Initialize() = 0;

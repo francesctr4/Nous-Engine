@@ -1,7 +1,7 @@
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Renderer/Backend/RendererBackendFactory.h"
 
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include "Engine/Renderer/iRenderResourceProvider.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
@@ -38,17 +38,17 @@ RendererFrontend::~RendererFrontend()
 }
 
 void RendererFrontend::InjectDependencies(
-    ModuleWindow* window,
+    IRenderWindow* window,
     EventSystem* eventSystem,
     nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-    ModuleResourceManager* resourceManager)
+    IRenderResourceProvider* resourceProvider)
 {
     // Cache here — backend interface doesn't exist yet (Create() hasn't been called).
     // Applied in Initialize() after Create().
     m_window          = window;
     m_eventSystem     = eventSystem;
     m_jobSystem       = jobSystem;
-    m_resourceManager = resourceManager;
+    m_resourceManager = resourceProvider;
 }
 
 bool RendererFrontend::Initialize(const RendererBackendType backendType)
@@ -465,16 +465,12 @@ void RendererFrontend::FlushPendingReloads()
         return;
     }
 
-    for (auto& [uid, resource] : m_resourceManager->GetResourcesMap())
+    m_resourceManager->ForEachShader([this](ResourceShader* shader)
     {
-        if (resource->GetType() != ResourceType::SHADER)
-            continue;
-
-        auto* shader = down_cast<ResourceShader*>(resource);
         const std::string normalized =
             std::filesystem::path(shader->GetAssetsPath()).generic_string();
         DispatchCompileJob(normalized, shader);
-    }
+    });
 }
 
 void RendererFrontend::FlushCompletedReloads()
@@ -592,24 +588,26 @@ bool RendererFrontend::ReloadShaderByPath(const std::string& path)
 
     const std::string normalizedIncoming = std::filesystem::path(path).generic_string();
 
-    for (auto& [uid, resource] : m_resourceManager->GetResourcesMap())
-    {
-        if (resource->GetType() != ResourceType::SHADER)
-            continue;
+    // ForEachShader has no early exit, so match into a flag. DispatchCompileJob
+    // already dedups by path, so a duplicate assets path can't double-dispatch.
+    bool dispatched = false;
 
+    m_resourceManager->ForEachShader([&](ResourceShader* shader)
+    {
         const std::string normalizedStored =
-            std::filesystem::path(resource->GetAssetsPath()).generic_string();
+            std::filesystem::path(shader->GetAssetsPath()).generic_string();
 
         if (normalizedIncoming != normalizedStored)
-            continue;
+            return;
 
-        auto* shader = down_cast<ResourceShader*>(resource);
         DispatchCompileJob(normalizedIncoming, shader);
-        return true;  // job dispatched (shader found)
-    }
+        dispatched = true;
+    });
 
-    NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] No loaded shader found for path '%s'.", path.c_str());
-    return false;
+    if (!dispatched)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] No loaded shader found for path '%s'.", path.c_str());
+
+    return dispatched;
 }
 
 uint32_t RendererFrontend::PickObjectAt(const int32_t pixelX, const int32_t pixelY,

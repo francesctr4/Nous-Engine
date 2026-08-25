@@ -29,5 +29,5 @@ struct LightAPI
     void  (*SetRange)(uint32_t id, float range) = nullptr;
 };
 
-class ModuleScene;
-void SetupLightBindings(LightAPI& light, ModuleScene* moduleScene);
+class IScriptSceneHost;
+void SetupLightBindings(LightAPI& light, IScriptSceneHost* sceneHost);

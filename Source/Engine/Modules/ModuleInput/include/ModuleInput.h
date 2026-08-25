@@ -5,11 +5,14 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Core/Input/IInputReader.h"
+#include "Engine/Scripting/iScriptInput.h"
 
 constexpr int32 MAX_KEYBOARD_KEYS = 300;
 constexpr int32 MAX_MOUSE_BUTTONS = 5;
 
-class ModuleInput : public Module, public IEventListener, public IInputReader
+// IScriptInput already derives IInputReader, so ModuleCamera3D's narrower
+// IInputReader* view of this module keeps working unchanged.
+class ModuleInput : public Module, public IEventListener, public IScriptInput
 {
 public:
 
@@ -28,8 +31,8 @@ public:
 
 	NOUS_ENGINE_API void SetImGuiCaptureKeyboard(bool captured);
 
-	int32 GetMouseX() const;
-	int32 GetMouseY() const;
+	int32 GetMouseX() const override;
+	int32 GetMouseY() const override;
 	int32 GetMouseZ() const override;
 
 	int32 GetMouseXMotion() const override;
@@ -39,8 +42,8 @@ public:
 	// (the OS no longer clamps the cursor to the screen). Use for FPS-style camera input.
 	// In editor mode the OS cursor stays visible (ImGui needs it), but the logical capture
 	// state is still tracked so script code sees identical behavior in editor and game.
-	NOUS_ENGINE_API void SetMouseCaptured(bool captured);
-	NOUS_ENGINE_API bool IsMouseCaptured() const { return m_mouseCaptured; }
+	NOUS_ENGINE_API void SetMouseCaptured(bool captured) override;
+	NOUS_ENGINE_API bool IsMouseCaptured() const override { return m_mouseCaptured; }
 
 	// Set once at Application construction. Read by SetMouseCaptured to gate capture in editor.
 	NOUS_ENGINE_API void SetGameMode(bool gameMode) { m_gameMode = gameMode; }
@@ -51,7 +54,7 @@ public:
 	// logical mouse capture is dropped (and remembered) so the cursor reappears in the rest
 	// of the editor; it is restored on the next enabled transition.
 	NOUS_ENGINE_API void SetScriptInputEnabled(bool enabled);
-	NOUS_ENGINE_API bool IsScriptInputEnabled() const { return m_scriptInputEnabled; }
+	NOUS_ENGINE_API bool IsScriptInputEnabled() const override { return m_scriptInputEnabled; }
 
 private:
 
