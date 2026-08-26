@@ -61,18 +61,63 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # move sub-libraries out of the whole-archive range into the normal link section.
 # target_link_libraries is still used for CMake dependency tracking.
 
-set(NOUS_ENGINE_STATIC_LIBS
-    # Top-level aggregates
-    Core Modules NOUS_Multithreading Renderer Scripting Systems Utils
-    # Core sub-libraries
-    MemoryManager EventSystem FileSystem FileWatcher Logger TimeManager
-    # Modules sub-libraries
-    ModuleCamera3D ModuleInput ModuleRenderer3D ModuleResourceManager ModuleScene ModuleWindow
-    # Renderer sub-libraries
-    RendererFrontend RendererBackend VulkanBackend
-    # Systems sub-libraries
-    Camera ECS ResourceManager ShaderSystem
-)
+# The list is DERIVED, never hand-written. It used to be a manually maintained
+# copy of the target graph and had silently drifted five targets out of date
+# (ModuleAudio, ModuleVideo, AudioSystem, VideoSystem, PrefabManager). Those kept
+# working only because Application.cpp happens to reference them directly, so the
+# linker pulled their objects in anyway. A target reached solely through a
+# registration table, a factory, or virtual dispatch would have failed silently,
+# either as an LNK2019 somewhere unrelated or as a registration that never runs.
+#
+# CMake already knows every target, so ask it. Walking BUILDSYSTEM_TARGETS makes
+# the list correct by construction: a new leaf library is picked up the moment its
+# add_subdirectory runs, with nothing to remember.
+#
+# Filtering on TYPE is load-bearing, not defensive: it drops the ~63 test
+# executables and, critically, the `Scripts` SHARED library, which is the
+# hot-reloaded script plugin and must stay a separate DLL.
+#
+# Order is alphabetical for reproducibility. Safe because whole-archive pulls in
+# every object from every listed archive, so there is no archive-order symbol
+# resolution to depend on (which is also why the old aggregates-first ordering
+# was never load-bearing).
+function(nous_collect_static_libs DIR OUT_VAR)
+    set(collected "")
+
+    get_property(dirTargets DIRECTORY "${DIR}" PROPERTY BUILDSYSTEM_TARGETS)
+    foreach(target IN LISTS dirTargets)
+        get_target_property(targetType ${target} TYPE)
+        if (targetType STREQUAL "STATIC_LIBRARY")
+            list(APPEND collected ${target})
+        endif()
+    endforeach()
+
+    get_property(subDirs DIRECTORY "${DIR}" PROPERTY SUBDIRECTORIES)
+    foreach(subDir IN LISTS subDirs)
+        nous_collect_static_libs("${subDir}" subCollected)
+        list(APPEND collected ${subCollected})
+    endforeach()
+
+    set(${OUT_VAR} "${collected}" PARENT_SCOPE)
+endfunction()
+
+# Must run after every add_subdirectory above — a directory not yet processed
+# reports no targets.
+nous_collect_static_libs("${CMAKE_CURRENT_SOURCE_DIR}" NOUS_ENGINE_STATIC_LIBS)
+list(REMOVE_DUPLICATES NOUS_ENGINE_STATIC_LIBS)
+list(SORT NOUS_ENGINE_STATIC_LIBS)
+
+if (NOT NOUS_ENGINE_STATIC_LIBS)
+    message(FATAL_ERROR
+        "No static engine libraries were collected. Every engine symbol would be "
+        "dropped from the DLL and downstream targets would fail with LNK2019. "
+        "Check that the add_subdirectory() calls above run before this point.")
+endif()
+
+list(LENGTH NOUS_ENGINE_STATIC_LIBS NOUS_ENGINE_STATIC_LIB_COUNT)
+message(STATUS
+    "NousEngine: whole-archiving ${NOUS_ENGINE_STATIC_LIB_COUNT} static libraries "
+    "into the engine DLL")
 
 if (WIN32)
   foreach(lib IN LISTS NOUS_ENGINE_STATIC_LIBS)
