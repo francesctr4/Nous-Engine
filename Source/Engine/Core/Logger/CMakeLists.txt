@@ -15,6 +15,14 @@ target_compile_definitions(${CLASS_NAME} PRIVATE
         NOUS_ENGINE_EXPORTS
 )
 
+# NOUS_Multithreading is PUBLIC: Logger's async flush thread is part of its header
+# surface. Note this closes a cycle -- FileSystem and MemoryManager both assert
+# through Logger, and NOUS_Multithreading allocates through MemoryManager. CMake
+# permits cycles between STATIC libraries; see the note in Source/Engine/CMakeLists.txt.
+target_link_libraries(${CLASS_NAME} PUBLIC
+        NOUS_Multithreading
+)
+
 target_link_libraries(${CLASS_NAME} PRIVATE
         FileSystem
 )

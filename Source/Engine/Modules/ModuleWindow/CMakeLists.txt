@@ -11,4 +11,13 @@ target_include_directories(${CLASS_NAME} PUBLIC
 
 target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
-target_link_libraries(${CLASS_NAME} PUBLIC glm::glm)
+target_link_libraries(${CLASS_NAME} PUBLIC
+        glm::glm
+        ModuleBase
+        SDL3::SDL3        # SDL_Window* crosses IRenderWindow, a public header
+)
+
+target_link_libraries(${CLASS_NAME} PRIVATE
+        EventSystem
+        Logger
+)

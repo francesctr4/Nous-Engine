@@ -26,6 +26,12 @@ target_link_libraries(ShaderSystem PUBLIC
         unofficial::spirv-reflect
 )
 
+# ResourceManager closes a cycle: ResourceShader lives there, the compiler and
+# reflection live here.
 target_link_libraries(ShaderSystem PRIVATE
+        FileSystem
         Logger
+        MemoryManager
+        ResourceManager
+        Utils
 )

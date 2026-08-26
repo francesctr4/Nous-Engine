@@ -28,3 +28,8 @@ target_link_libraries(Utils PUBLIC
         glm::glm
         parson::parson
 )
+
+target_link_libraries(Utils PRIVATE
+        FileSystem
+        Logger
+)

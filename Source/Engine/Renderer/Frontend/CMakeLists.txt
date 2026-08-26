@@ -26,6 +26,17 @@ target_compile_definitions(RendererFrontend PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(RendererFrontend PUBLIC
         glm::glm
+        Renderer
+)
+
+target_link_libraries(RendererFrontend PRIVATE
+        Camera
+        Logger
+        MemoryManager
+        NOUS_Multithreading
+        RendererBackend   # CreateRendererBackend -- the compile firewall
+        ResourceManager
+        ShaderSystem
 )
 
 if (NOUS_BUILD_TESTS)

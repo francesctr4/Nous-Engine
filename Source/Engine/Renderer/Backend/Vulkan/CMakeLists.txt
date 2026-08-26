@@ -27,4 +27,17 @@ target_compile_definitions(VulkanBackend PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(VulkanBackend PUBLIC
         glm::glm
+        Renderer
+        Vulkan::Vulkan    # VulkanTypes.inl exposes VkThings in its public headers
+        Logger
+)
+
+target_link_libraries(VulkanBackend PRIVATE
+        EventSystem
+        FileSystem
+        MemoryManager
+        NOUS_Multithreading
+        ResourceManager
+        SDL3::SDL3
+        ShaderSystem
 )

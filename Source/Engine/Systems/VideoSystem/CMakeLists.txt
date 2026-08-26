@@ -27,6 +27,13 @@ target_include_directories(${CLASS_NAME} PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(${CLASS_NAME} PRIVATE ${FFMPEG_LIBRARY_DIRS})
 target_link_libraries(${CLASS_NAME} PRIVATE ${FFMPEG_LIBRARIES})
 
+# ResourceManager closes a cycle -- same shape as AudioSystem's.
+target_link_libraries(${CLASS_NAME} PRIVATE
+        Logger
+        MemoryManager
+        ResourceManager
+)
+
 add_subdirectory(VideoDecoder)
 add_subdirectory(VideoFrameQueue)
 add_subdirectory(VideoProbe)

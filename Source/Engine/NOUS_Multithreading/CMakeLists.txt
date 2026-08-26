@@ -30,6 +30,11 @@ target_include_directories(${CLASS_NAME} PUBLIC
 
 target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
+target_link_libraries(${CLASS_NAME} PRIVATE
+        Logger
+        MemoryManager
+)
+
 if (ENABLE_PROFILING)
     find_package(Tracy CONFIG REQUIRED)
     target_link_libraries(${CLASS_NAME} PRIVATE Tracy::TracyClient)

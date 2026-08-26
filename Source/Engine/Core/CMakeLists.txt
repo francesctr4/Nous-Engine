@@ -36,3 +36,17 @@ target_link_libraries(Core PUBLIC
         Logger
         MemoryManager
 )
+
+# Application is the composition root: it constructs every module and the
+# ImporterManager/TypeRegistry, so Core depends UPWARD on Modules here. That is
+# correct for a composition root, but it does mean "Core is the bottom layer" is
+# false -- the foundation is EventSystem/FileSystem/Logger/MemoryManager/
+# TimeManager above, not this target. Nothing depends back on Application, so
+# these edges are one-way and the graph stays acyclic.
+target_link_libraries(Core PRIVATE
+        Modules
+        NOUS_Multithreading
+        ResourceManager
+        Scripting
+        SDL3::SDL3
+)

@@ -11,7 +11,28 @@ target_include_directories(${CLASS_NAME} PUBLIC
 
 target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
-target_link_libraries(${CLASS_NAME} PUBLIC glm::glm PrefabManager)
+target_link_libraries(${CLASS_NAME} PUBLIC
+        glm::glm
+        PrefabManager
+        ModuleBase
+        ECS
+        EnTT::EnTT
+)
+
+target_link_libraries(${CLASS_NAME} PRIVATE
+        Camera
+        EventSystem
+        FileSystem
+        Logger
+        MemoryManager
+        ModuleInput
+        ModuleResourceManager
+        NOUS_Multithreading
+        ResourceManager
+        SDL3::SDL3
+        Scripting
+        TimeManager
+)
 
 if (NOUS_BUILD_TESTS)
     add_subdirectory(test)

@@ -16,6 +16,7 @@ target_compile_definitions(${CLASS_NAME} PRIVATE
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE
+        Logger
         MemoryManager
 )
 

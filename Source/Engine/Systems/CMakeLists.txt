@@ -38,3 +38,5 @@ target_link_libraries(Systems PUBLIC
         AudioSystem
         VideoSystem
 )
+
+target_link_libraries(Systems PRIVATE Logger)

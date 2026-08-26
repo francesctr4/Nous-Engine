@@ -32,4 +32,14 @@ target_compile_definitions(ECS PRIVATE NOUS_ENGINE_EXPORTS)
 target_link_libraries(ECS PUBLIC
         glm::glm
         EnTT::EnTT
+        Renderer          # RendererTypes.h in CLight's public header
+        Utils             # JsonObject in every component's Serialize/Deserialize
+)
+
+target_link_libraries(ECS PRIVATE
+        Camera
+        FileSystem
+        Logger
+        PrefabManager
+        ResourceManager
 )

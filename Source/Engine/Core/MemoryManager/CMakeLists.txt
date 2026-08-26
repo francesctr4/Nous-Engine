@@ -21,6 +21,7 @@ target_compile_definitions(${CLASS_NAME} PRIVATE
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE magic_enum::magic_enum)
+target_link_libraries(${CLASS_NAME} PRIVATE Logger)
 
 if (ENABLE_PROFILING)
     find_package(Tracy CONFIG REQUIRED)

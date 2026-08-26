@@ -20,6 +20,15 @@ target_compile_definitions(${CLASS_NAME} PRIVATE
         NOUS_ENGINE_EXPORTS
 )
 
+# ResourceManager closes a cycle: ResourceAudio/ResourceAudioGraph live there,
+# while the probe + effect registry live here and the importers call back into
+# them. CMake permits cycles between STATIC libraries.
+target_link_libraries(${CLASS_NAME} PRIVATE
+        Logger
+        MemoryManager
+        ResourceManager
+)
+
 add_subdirectory(AudioEngine)
 add_subdirectory(AudioGraph)
 add_subdirectory(AudioMixer)

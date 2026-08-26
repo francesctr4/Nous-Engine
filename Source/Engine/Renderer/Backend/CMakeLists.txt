@@ -27,4 +27,10 @@ target_compile_definitions(RendererBackend PRIVATE
 target_link_libraries(RendererBackend PUBLIC
         glm::glm
         VulkanBackend
+        Renderer
+)
+
+target_link_libraries(RendererBackend PRIVATE
+        Logger
+        MemoryManager
 )
