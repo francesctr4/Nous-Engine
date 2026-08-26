@@ -13,6 +13,7 @@ target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(${CLASS_NAME} PUBLIC
         ModuleBase
+        AudioSystem_headers   # ModuleAudio.h names SoundHandle/AudioBus/IAudioBroker
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

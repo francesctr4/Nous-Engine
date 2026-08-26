@@ -4,11 +4,11 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
-#include "Engine/Systems/AudioSystem/SoundHandle.h"
-#include "Engine/Systems/AudioSystem/EffectChainHandle.h"
-#include "Engine/Systems/AudioSystem/AudioTypes.h"
-#include "Engine/Systems/AudioSystem/AudioGraph/AudioEffectTypes.h"
-#include "Engine/Systems/AudioSystem/iAudioBroker.h"
+#include <AudioSystem/SoundHandle.h>
+#include <AudioSystem/EffectChainHandle.h>
+#include <AudioSystem/AudioTypes.h>
+#include <AudioSystem/AudioGraph/AudioEffectTypes.h>
+#include <AudioSystem/iAudioBroker.h>
 
 class IAudioEngineBackend;
 class ResourceAudio;

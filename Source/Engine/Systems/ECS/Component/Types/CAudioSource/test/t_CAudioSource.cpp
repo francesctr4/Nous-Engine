@@ -3,7 +3,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
-#include "Engine/Systems/AudioSystem/AudioTypes.h"
+#include <AudioSystem/AudioTypes.h>
 #include "Engine/Systems/ECS/test/FakeComponentServices.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"

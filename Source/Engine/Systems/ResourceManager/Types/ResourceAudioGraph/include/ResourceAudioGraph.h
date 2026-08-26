@@ -2,7 +2,7 @@
 
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Systems/AudioSystem/AudioGraph/AudioEffectTypes.h"
+#include <AudioSystem/AudioGraph/AudioEffectTypes.h>
 
 #include <glm/glm.hpp>
 #include <vector>

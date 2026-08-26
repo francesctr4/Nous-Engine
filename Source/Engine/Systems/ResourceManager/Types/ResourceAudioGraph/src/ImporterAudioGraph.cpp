@@ -1,7 +1,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ImporterAudioGraph.h"
 
 #include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
-#include "Engine/Systems/AudioSystem/AudioGraph/AudioEffectRegistry.h"
+#include <AudioSystem/AudioGraph/AudioEffectRegistry.h>
 
 #include "Engine/Core/Globals.h"               // down_cast
 #include "Engine/Core/FileSystem/FileSystem.h"

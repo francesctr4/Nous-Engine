@@ -4,7 +4,7 @@
 #include "Engine/Core/FileSystem/FileSystem.h"   // GetFilename
 #include "Engine/Systems/ECS/ComponentServices.h"
 #include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
-#include "Engine/Systems/AudioSystem/iAudioBroker.h"
+#include <AudioSystem/iAudioBroker.h>
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"

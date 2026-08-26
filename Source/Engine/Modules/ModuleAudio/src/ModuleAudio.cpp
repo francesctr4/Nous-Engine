@@ -5,8 +5,8 @@
 #include "Engine/Core/EventSystem/Event/include/Event.h"
 #include "Engine/Core/MemoryManager/MemoryManager.h"
 
-#include "Engine/Systems/AudioSystem/AudioEngine/AudioBackendFactory.h"
-#include "Engine/Systems/AudioSystem/AudioEngine/IAudioEngineBackend.h"
+#include <AudioSystem/AudioEngine/AudioBackendFactory.h>
+#include <AudioSystem/AudioEngine/IAudioEngineBackend.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_AUDIO;

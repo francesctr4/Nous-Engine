@@ -74,4 +74,9 @@ target_link_libraries(EditorUI PUBLIC
         imguizmo::imguizmo
         ImGuiCustom
         ImGuiColorTextEdit
+        # AudioGraphEditor + AudioMixerWindow name AudioSystem's public types.
+        # Headers only -- no objects, no transitive deps. Before AudioSystem was
+        # converted, this dependency existed just the same but was invisible,
+        # satisfied by the global Source/ include root.
+        AudioSystem_headers
 )

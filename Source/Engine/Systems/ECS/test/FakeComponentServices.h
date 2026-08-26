@@ -2,7 +2,7 @@
 
 #include "Engine/Systems/ECS/ComponentServices.h"
 #include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
-#include "Engine/Systems/AudioSystem/iAudioBroker.h"
+#include <AudioSystem/iAudioBroker.h>
 #include "Engine/Systems/VideoSystem/iVideoBroker.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 #include "Engine/Scripting/iScriptRegistry.h"

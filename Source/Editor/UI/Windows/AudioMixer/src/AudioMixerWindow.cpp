@@ -3,7 +3,7 @@
 #include "Editor/EditorContext.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
-#include "Engine/Systems/AudioSystem/AudioTypes.h"
+#include <AudioSystem/AudioTypes.h>
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"

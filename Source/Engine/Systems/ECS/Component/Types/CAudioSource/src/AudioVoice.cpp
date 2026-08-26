@@ -1,6 +1,6 @@
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/AudioVoice.h"
 
-#include "Engine/Systems/AudioSystem/iAudioBroker.h"
+#include <AudioSystem/iAudioBroker.h>
 
 AudioVoice::AudioVoice(const IAudioBroker* audio, SoundHandle handle)
     : m_audio(audio), m_handle(handle)

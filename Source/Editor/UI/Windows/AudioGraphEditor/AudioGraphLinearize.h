@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Systems/AudioSystem/AudioGraph/AudioEffectTypes.h"
+#include <AudioSystem/AudioGraph/AudioEffectTypes.h>
 
 #include <cstdint>
 #include <unordered_map>

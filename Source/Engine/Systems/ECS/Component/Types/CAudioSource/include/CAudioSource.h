@@ -2,8 +2,8 @@
 
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/AudioVoice.h"
-#include "Engine/Systems/AudioSystem/AudioTypes.h"
-#include "Engine/Systems/AudioSystem/EffectChainHandle.h"
+#include <AudioSystem/AudioTypes.h>
+#include <AudioSystem/EffectChainHandle.h>
 #include "Engine/EngineExport.h"
 
 #include <cstdint>

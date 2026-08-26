@@ -34,6 +34,9 @@ target_link_libraries(ECS PUBLIC
         EnTT::EnTT
         Renderer          # RendererTypes.h in CLight's public header
         Utils             # JsonObject in every component's Serialize/Deserialize
+        # CAudioSource.h / AudioVoice.h name SoundHandle, AudioBus and
+        # IAudioBroker. Headers only: ECS links no AudioSystem objects.
+        AudioSystem_headers
 )
 
 target_link_libraries(ECS PRIVATE

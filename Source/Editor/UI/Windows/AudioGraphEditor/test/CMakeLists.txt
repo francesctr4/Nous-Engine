@@ -13,6 +13,9 @@ find_package(GTest CONFIG REQUIRED)
 
 target_link_libraries(${TEST_NAME}
         PRIVATE
+        # AudioGraphLinearize.h names AudioGraphDesc. Headers only -- this test
+        # stays a pure headless test of the linearizer, with no engine objects.
+        AudioSystem_headers
         GTest::gtest
         GTest::gtest_main
 )

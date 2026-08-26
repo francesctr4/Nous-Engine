@@ -253,6 +253,42 @@ Use `final` on classes or methods that must not be further overridden.
 
 ---
 
+## Target Layout: public `include/`, private `src/`
+
+**Migration in progress (started 2026-08-26 with `AudioSystem`).** Converted targets use:
+
+```
+Systems/AudioSystem/
+├── include/AudioSystem/**   PUBLIC API   -> #include <AudioSystem/Foo.h>
+├── src/**                   IMPLEMENTATION, unreachable from outside the target
+│                            -> #include "AudioEngine/Backends/miniaudio/Bar.h"
+└── test/**                  mirrors the sub-unit structure of src/
+```
+
+**Tests live at the target root, not under `src/`.** A test of a *public* header filed
+under `src/` would contradict the distinction this layout exists to make, and keeping
+tests out means `src/` is exactly "the code that ships". Per-leaf `CMakeLists.txt` are
+kept in both `src/` and `test/`; `include/` has none, since the target root lists the
+public headers in one block so the whole API is readable at a glance.
+
+The target exposes `include/` PUBLIC and `src/` PRIVATE, so **a header under `src/` cannot
+be included from another target — the build system enforces the boundary**, not a comment.
+Deciding where a header goes *is* deciding whether it is API.
+
+Each converted target also declares two include-dir-only `INTERFACE` handles:
+
+- `<Target>_headers` — the public dir. The target links it PUBLIC, so ordinary consumers
+  get it transitively and never name it. Add it to the engine DLL's PUBLIC link list too.
+- `<Target>_private` — the implementation dir. **Only tests may link this**, and only to
+  cover deliberately dependency-free policy code. It exists so such a test needs no engine
+  objects at all: `t_GainDsp` links gtest plus this handle and nothing else.
+
+Unconverted targets keep the old `unit/include|src|test` layout and `Engine/`-rooted
+includes; `${CMAKE_SOURCE_DIR}/Source` stays on the include path until the last one is
+converted.
+
+---
+
 ## Include Order
 
 Within each group, sort alphabetically. Separate groups with a blank line.

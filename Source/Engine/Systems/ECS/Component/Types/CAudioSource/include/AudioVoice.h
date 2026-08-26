@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Systems/AudioSystem/SoundHandle.h"
+#include <AudioSystem/SoundHandle.h>
 #include "Engine/EngineExport.h"
 
 class IAudioBroker;

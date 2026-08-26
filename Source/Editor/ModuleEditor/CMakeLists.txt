@@ -14,4 +14,7 @@ target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_EDITOR_EXPORTS)
 find_package(glm CONFIG REQUIRED)
 target_link_libraries(${CLASS_NAME} PUBLIC
         glm::glm
+        # ModuleEditor.cpp includes AudioGraphEditor.h, which names the effect
+        # registry. Headers only.
+        AudioSystem_headers
 )

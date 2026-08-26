@@ -3,9 +3,9 @@
 #include "Editor/UI/IEditorWindow.h"
 #include "Editor/EditorExport.h"
 
-#include "Engine/Systems/AudioSystem/AudioGraph/AudioEffectRegistry.h"
-#include "Engine/Systems/AudioSystem/SoundHandle.h"
-#include "Engine/Systems/AudioSystem/EffectChainHandle.h"
+#include <AudioSystem/AudioGraph/AudioEffectRegistry.h>
+#include <AudioSystem/SoundHandle.h>
+#include <AudioSystem/EffectChainHandle.h>
 #include "Editor/UI/Windows/AudioGraphEditor/AudioGraphLinearize.h"
 
 #include <imgui-node-editor/imgui_node_editor.h>

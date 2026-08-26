@@ -41,6 +41,19 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME} PUBLIC
         # glm appears in public headers (RendererTypes.h, etc.) so must be PUBLIC
         glm::glm
+
+        # ---- Converted-target header dirs --------------------------------------
+        # Everything else is linked PRIVATE below, so the DLL propagates nothing
+        # and downstream targets (EditorApp, GameApp, the component tests) have
+        # been resolving engine headers purely through the global Source/ include
+        # root. As each target moves to the include/<Target>/ layout, its
+        # header-only INTERFACE handle is added here — that is what keeps the DLL's
+        # own public API (ModuleAudio.h, CAudioSource.h, ... all name AudioSystem
+        # types) resolvable once the global root goes away.
+        #
+        # Add one line per converted target. When the list is complete, the global
+        # Source/ root can be dropped and enforcement becomes engine-wide.
+        AudioSystem_headers
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

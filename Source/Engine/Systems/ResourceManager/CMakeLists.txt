@@ -26,6 +26,7 @@ target_link_libraries(ResourceManager PUBLIC
         FileWatcher       # HotReloader holds one
         MemoryManager     # NOUS_Vector in public resource headers
         Renderer          # IGPUResourceFactory / RendererTypes in public headers
+        AudioSystem_headers  # ResourceAudioGraph.h names AudioGraphDesc
 )
 
 # AudioSystem + VideoSystem close cycles: the Resource* types live here, the
