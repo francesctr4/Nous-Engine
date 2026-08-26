@@ -2,6 +2,7 @@
 #define VULKANBACKEND_H
 
 #include "Engine/Renderer/Backend/iRendererBackend.h"
+#include "Engine/Renderer/iEditorRenderBridge.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Core/Globals.h"
 
@@ -15,7 +16,7 @@ class ResourceShader;
 struct VulkanContext;
 struct VulkanCommandBuffer;
 
-class VulkanBackend : public IRendererBackend 
+class VulkanBackend : public IRendererBackend, public IEditorRenderBridge
 {
 public:
 
@@ -103,14 +104,32 @@ public:
 	                        const glm::mat4& view,
 	                        const std::vector<CameraFrustumData>& frustums) override;
 
-	NOUS_ENGINE_API static VulkanContext* GetVulkanContext();
+	IEditorRenderBridge* GetEditorBridge() noexcept override { return this; }
 
-	static void ProcessPendingSubmissions();
-	static VulkanCommandBuffer* GetCommandBufferByRenderpassID(RenderpassType renderpassID);
+	// ─────────────────────────── IEditorRenderBridge ─────────────────────────
+
+	[[nodiscard]] EditorGpuInfo GetGpuInfo() const override;
+	void DestroyImGuiResources() override;
+	void RecreateImGuiResources() override;
+	[[nodiscard]] VkCommandBuffer GetCurrentUICommandBuffer() const override;
+
+	[[nodiscard]] uint64 GetViewportTexture(EditorViewport viewport) const override;
+	[[nodiscard]] EditorViewportImages GetViewportImages(EditorViewport viewport) const override;
+	void SetViewportDescriptorSets(EditorViewport viewport,
+	                               std::vector<VkDescriptorSet> descriptorSets) override;
+	[[nodiscard]] std::vector<VkDescriptorSet> TakeViewportDescriptorSets(EditorViewport viewport) override;
+
+	void GetFramebufferSize(int32* outWidth, int32* outHeight) const override;
+	void RecreateWorkerCommandPools() override;
 
 private:
 
-	static VulkanContext* vkContext;
+	void ProcessPendingSubmissions();
+	VulkanCommandBuffer* GetCommandBufferByRenderpassID(RenderpassType renderpassID);
+
+	// Per-instance, not static: a static here was the ambient global the editor
+	// reached through. The editor now gets the narrow IEditorRenderBridge instead.
+	VulkanContext* vkContext = nullptr;
 	bool m_frameResourcesReleased = false;
 
 	int32 m_cachedFramebufferWidth  = 0;

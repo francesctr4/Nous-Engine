@@ -1,8 +1,6 @@
 #include "Editor/UI/Windows/GameViewport/include/GameViewport.h"
 
-#include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
-#include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
-#include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
+#include "Engine/Renderer/iEditorRenderBridge.h"
 
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
@@ -15,7 +13,7 @@ GameViewport::GameViewport(const char* title, EditorContext* context, const bool
 
 void GameViewport::Init()
 {
-    CreateGameViewportDescriptorSets();
+    CreateGameViewportDescriptorSets(editorContext->GetEditorRenderBridge());
 }
 
 bool GameViewport::UpdatesWhenCollapsed() const
@@ -82,16 +80,17 @@ void GameViewport::DrawContent()
         return;
     }
 
-    // Rendering context
-    const VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+    const IEditorRenderBridge* bridge = editorContext->GetEditorRenderBridge();
+    if (!bridge)
+    {
+        drawList->AddRect(contentPos, contentEnd, borderColor);
+        return;
+    }
 
     // Main image
     ImGui::SetCursorPos(contentMin);
     ImGui::Image(
-        NOUS_ImGuiVulkanResources::GetViewportTexture(
-            vkContext->imGuiResources
-                .m_GameViewportDescriptorSets[vkContext->imageIndex]
-        ),
+        bridge->GetViewportTexture(EditorViewport::Game),
         contentSize,
         uvMin,
         uvMax
@@ -105,33 +104,40 @@ void GameViewport::DrawContent()
     );
 }
 
-void GameViewport::CreateGameViewportDescriptorSets()
+void GameViewport::CreateGameViewportDescriptorSets(IEditorRenderBridge* bridge)
 {
-    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+    if (!bridge)
+        return;
 
     // One descriptor set per swapchain image (runtime count) — size to match the images.
-    vkContext->imGuiResources.m_GameViewportDescriptorSets.resize(vkContext->imGuiResources.m_GameViewportImages.size());
+    const EditorViewportImages images = bridge->GetViewportImages(EditorViewport::Game);
 
-    for (uint32 i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
+    std::vector<VkDescriptorSet> descriptorSets;
+    descriptorSets.reserve(images.views.size());
+
+    for (const VkImageView view : images.views)
     {
-        vkContext->imGuiResources.m_GameViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(
-                vkContext->imGuiResources.m_GameViewportTextureSampler,
-                vkContext->imGuiResources.m_GameViewportImages[i].view,
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        descriptorSets.push_back(ImGui_ImplVulkan_AddTexture(
+            images.sampler, view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
     }
+
+    bridge->SetViewportDescriptorSets(EditorViewport::Game, std::move(descriptorSets));
 }
 
-void GameViewport::DestroyGameViewportDescriptorSets()
+void GameViewport::DestroyGameViewportDescriptorSets(IEditorRenderBridge* bridge)
 {
-    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+    if (!bridge)
+        return;
 
-    // Iterate over the descriptor-set vector itself (not the image vector): the two can
-    // differ in size before Create has populated the sets to match the images. Clear after
-    // so destroy is idempotent and the next Create resizes from empty.
-    auto& descriptorSets = vkContext->imGuiResources.m_GameViewportDescriptorSets;
-    for (uint32 i = 0; i < descriptorSets.size(); ++i)
+    // Take-and-clear hands back exactly the sets that exist: the set count can be
+    // smaller than the image count before Create has run, and removing textures by
+    // the image count would read past the end. Destroy is idempotent — a second
+    // call gets an empty vector.
+    const std::vector<VkDescriptorSet> descriptorSets =
+        bridge->TakeViewportDescriptorSets(EditorViewport::Game);
+
+    for (const VkDescriptorSet set : descriptorSets)
     {
-        ImGui_ImplVulkan_RemoveTexture(descriptorSets[i]);
+        ImGui_ImplVulkan_RemoveTexture(set);
     }
-    descriptorSets.clear();
 }

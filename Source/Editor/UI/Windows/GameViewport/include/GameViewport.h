@@ -4,6 +4,8 @@
 #include "Editor/UI/IEditorWindow.h"
 #include "Editor/EditorExport.h"
 
+class IEditorRenderBridge;
+
 class GameViewport : public IEditorWindow
 {
 public:
@@ -23,8 +25,11 @@ protected:
 
 public:
 
-    static void CreateGameViewportDescriptorSets();
-    static void DestroyGameViewportDescriptorSets();
+    // Take the bridge as a parameter rather than reading it from an editor-side
+    // static: ModuleEditor calls these from its IMGUI_RECREATION handler, where
+    // it already holds the bridge.
+    static void CreateGameViewportDescriptorSets(IEditorRenderBridge* bridge);
+    static void DestroyGameViewportDescriptorSets(IEditorRenderBridge* bridge);
 };
 
 #endif // GAMEVIEWPORT_H

@@ -661,6 +661,11 @@ RendererBackendType RendererFrontend::GetBackendType() const noexcept
     return mBackendType;
 }
 
+IEditorRenderBridge* RendererFrontend::GetEditorBridge() const noexcept
+{
+    return mBackend ? mBackend->GetEditorBridge() : nullptr;
+}
+
 void RendererFrontend::SetBackendType(const RendererBackendType backendType) noexcept
 {
     mBackendType = backendType;

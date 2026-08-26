@@ -46,8 +46,6 @@
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_BACKEND_VULKAN_BACKEND;
 
-VulkanContext* VulkanBackend::vkContext = nullptr;
-
 VulkanBackend::VulkanBackend()
 {
     vkContext = NOUS_NEW<VulkanContext>(MemoryTag::RENDERER);
@@ -2921,9 +2919,130 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
     return objectID;
 }
 
-VulkanContext* VulkanBackend::GetVulkanContext()
+// ─────────────────────────────────────────────────────────────────────────────
+// IEditorRenderBridge — the editor-facing view of this backend.
+// See Renderer/iEditorRenderBridge.h for why this exists.
+// ─────────────────────────────────────────────────────────────────────────────
+
+EditorGpuInfo VulkanBackend::GetGpuInfo() const
 {
-    return vkContext;
+    EditorGpuInfo info{};
+    if (!vkContext)
+        return info;
+
+    info.instance            = vkContext->instance;
+    info.physicalDevice      = vkContext->device.physicalDevice;
+    info.device              = vkContext->device.logicalDevice;
+    info.graphicsQueueFamily = vkContext->device.graphicsQueueIndex;
+    info.graphicsQueue       = vkContext->device.graphicsQueue;
+    info.descriptorPool      = vkContext->imGuiResources.descriptorPool;
+    info.uiRenderpass        = vkContext->uiRenderpass.handle;
+    info.allocator           = vkContext->allocator;
+    info.imageCount          = static_cast<uint32>(vkContext->swapChain.swapChainImages.size());
+
+    // Hand over this TU's copy, so the reporting goes through the engine-side
+    // VkResultMessage and the editor needs no renderer-internal Vulkan header.
+    info.checkVkResultFn     = VK_CHECK_IMGUI;
+
+    return info;
+}
+
+void VulkanBackend::DestroyImGuiResources()
+{
+    if (vkContext)
+        NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(vkContext);
+}
+
+void VulkanBackend::RecreateImGuiResources()
+{
+    if (vkContext)
+        NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(vkContext);
+}
+
+VkCommandBuffer VulkanBackend::GetCurrentUICommandBuffer() const
+{
+    if (!vkContext || vkContext->imageIndex >= vkContext->graphicsCommandBuffers.size())
+        return VK_NULL_HANDLE;
+
+    return vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle;
+}
+
+uint64 VulkanBackend::GetViewportTexture(const EditorViewport viewport) const
+{
+    if (!vkContext)
+        return 0;
+
+    const auto& descriptorSets = (viewport == EditorViewport::Scene)
+        ? vkContext->imGuiResources.m_ViewportDescriptorSets
+        : vkContext->imGuiResources.m_GameViewportDescriptorSets;
+
+    if (vkContext->imageIndex >= descriptorSets.size())
+        return 0;
+
+    return NOUS_ImGuiVulkanResources::GetViewportTexture(descriptorSets[vkContext->imageIndex]);
+}
+
+EditorViewportImages VulkanBackend::GetViewportImages(const EditorViewport viewport) const
+{
+    EditorViewportImages out{};
+    if (!vkContext)
+        return out;
+
+    const bool isScene = (viewport == EditorViewport::Scene);
+
+    const auto& images = isScene ? vkContext->imGuiResources.m_ViewportImages
+                                 : vkContext->imGuiResources.m_GameViewportImages;
+
+    out.sampler = isScene ? vkContext->imGuiResources.m_ViewportTextureSampler
+                          : vkContext->imGuiResources.m_GameViewportTextureSampler;
+
+    out.views.reserve(images.size());
+    for (const auto& image : images)
+        out.views.push_back(image.view);
+
+    return out;
+}
+
+void VulkanBackend::SetViewportDescriptorSets(const EditorViewport viewport,
+                                              std::vector<VkDescriptorSet> descriptorSets)
+{
+    if (!vkContext)
+        return;
+
+    auto& target = (viewport == EditorViewport::Scene)
+        ? vkContext->imGuiResources.m_ViewportDescriptorSets
+        : vkContext->imGuiResources.m_GameViewportDescriptorSets;
+
+    target = std::move(descriptorSets);
+}
+
+std::vector<VkDescriptorSet> VulkanBackend::TakeViewportDescriptorSets(const EditorViewport viewport)
+{
+    if (!vkContext)
+        return {};
+
+    auto& source = (viewport == EditorViewport::Scene)
+        ? vkContext->imGuiResources.m_ViewportDescriptorSets
+        : vkContext->imGuiResources.m_GameViewportDescriptorSets;
+
+    // Move-and-clear: the caller must ImGui_ImplVulkan_RemoveTexture exactly the
+    // sets that exist, which can be fewer than the image count before Create ran.
+    std::vector<VkDescriptorSet> taken = std::move(source);
+    source.clear();
+
+    return taken;
+}
+
+void VulkanBackend::GetFramebufferSize(int32* outWidth, int32* outHeight) const
+{
+    if (outWidth)  *outWidth  = vkContext ? vkContext->framebufferWidth  : 0;
+    if (outHeight) *outHeight = vkContext ? vkContext->framebufferHeight : 0;
+}
+
+void VulkanBackend::RecreateWorkerCommandPools()
+{
+    if (vkContext)
+        NOUS_VulkanMultithreading::RecreateWorkerCommandPools(vkContext);
 }
 
 bool VulkanBackend::DrawGrid(const RenderpassType renderpassID,

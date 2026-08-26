@@ -9,8 +9,7 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
-#include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
-#include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
+#include "Engine/Renderer/iEditorRenderBridge.h"
 
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
@@ -19,7 +18,6 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
-#include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Renderer/RendererTypes.h"
 
@@ -44,7 +42,7 @@ SceneViewport::SceneViewport(const char* title, EditorContext* context, bool sta
 
 void SceneViewport::Init()
 {
-    CreateSceneViewportDescriptorSets();
+    CreateSceneViewportDescriptorSets(editorContext->GetEditorRenderBridge());
 }
 
 void SceneViewport::OnLayoutUpdated(const ImVec2& panelSize)
@@ -84,15 +82,19 @@ void SceneViewport::DrawContent()
         return;
     }
 
-    VulkanContext* vkCtx = VulkanBackend::GetVulkanContext();
+    const IEditorRenderBridge* bridge = editorContext->GetEditorRenderBridge();
+    if (!bridge)
+    {
+        m_GizmoWasActive = false;
+        return;
+    }
+
     constexpr ImVec2 uvMin(0.0f, 0.0f);
     constexpr ImVec2 uvMax(1.0f, 1.0f);
 
     // Position the image at the start of the content region and render
     ImGui::SetCursorPos(contentMin);
-    ImGui::Image(
-        NOUS_ImGuiVulkanResources::GetViewportTexture(
-            vkCtx->imGuiResources.m_ViewportDescriptorSets[vkCtx->imageIndex]),
+    ImGui::Image(bridge->GetViewportTexture(EditorViewport::Scene),
         contentSize, uvMin, uvMax);
 
     // Draw white border on top
@@ -487,11 +489,20 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
         return;
 
     // Full UV — panel-relative coords map directly to framebuffer UV (no cropping).
-    VulkanContext const* vkContext = VulkanBackend::GetVulkanContext();
-    int32_t pixelX = std::clamp(static_cast<int32_t>(relX * static_cast<float>(vkContext->framebufferWidth) + 0.5f),
-                                0, vkContext->framebufferWidth - 1);
-    int32_t pixelY = std::clamp(static_cast<int32_t>(relY * static_cast<float>(vkContext->framebufferHeight) + 0.5f),
-                                0, vkContext->framebufferHeight - 1);
+    const IEditorRenderBridge* bridge = editorContext->GetEditorRenderBridge();
+    if (!bridge)
+        return;
+
+    int32_t framebufferWidth = 0;
+    int32_t framebufferHeight = 0;
+    bridge->GetFramebufferSize(&framebufferWidth, &framebufferHeight);
+    if (framebufferWidth <= 0 || framebufferHeight <= 0)
+        return;
+
+    int32_t pixelX = std::clamp(static_cast<int32_t>(relX * static_cast<float>(framebufferWidth) + 0.5f),
+                                0, framebufferWidth - 1);
+    int32_t pixelY = std::clamp(static_cast<int32_t>(relY * static_cast<float>(framebufferHeight) + 0.5f),
+                                0, framebufferHeight - 1);
 
     // Build geometry list (same logic as ModuleRenderer3D::BuildRenderPacket)
     if (!editorContext->GetScene()->activeScene)
@@ -573,33 +584,40 @@ bool SceneViewport::IsValidASCII(const std::string& str)
     });
 }
 
-void SceneViewport::CreateSceneViewportDescriptorSets()
+void SceneViewport::CreateSceneViewportDescriptorSets(IEditorRenderBridge* bridge)
 {
-    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+    if (!bridge)
+        return;
 
     // One descriptor set per swapchain image (runtime count) — size to match the images.
-    vkContext->imGuiResources.m_ViewportDescriptorSets.resize(vkContext->imGuiResources.m_ViewportImages.size());
+    const EditorViewportImages images = bridge->GetViewportImages(EditorViewport::Scene);
 
-    for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
+    std::vector<VkDescriptorSet> descriptorSets;
+    descriptorSets.reserve(images.views.size());
+
+    for (const VkImageView view : images.views)
     {
-        vkContext->imGuiResources.m_ViewportDescriptorSets[i] = ImGui_ImplVulkan_AddTexture(
-            vkContext->imGuiResources.m_ViewportTextureSampler,
-            vkContext->imGuiResources.m_ViewportImages[i].view,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        descriptorSets.push_back(ImGui_ImplVulkan_AddTexture(
+            images.sampler, view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
     }
+
+    bridge->SetViewportDescriptorSets(EditorViewport::Scene, std::move(descriptorSets));
 }
 
-void SceneViewport::DestroySceneViewportDescriptorSets()
+void SceneViewport::DestroySceneViewportDescriptorSets(IEditorRenderBridge* bridge)
 {
-    VulkanContext* vkContext = VulkanBackend::GetVulkanContext();
+    if (!bridge)
+        return;
 
-    // Iterate over the descriptor-set vector itself (not the image vector): the two can
-    // differ in size before Create has populated the sets to match the images. Clear after
-    // so destroy is idempotent and the next Create resizes from empty.
-    auto& descriptorSets = vkContext->imGuiResources.m_ViewportDescriptorSets;
-    for (uint32 i = 0; i < descriptorSets.size(); ++i)
+    // Take-and-clear hands back exactly the sets that exist: the set count can be
+    // smaller than the image count before Create has run, and removing textures by
+    // the image count would read past the end. Destroy is idempotent — a second
+    // call gets an empty vector.
+    const std::vector<VkDescriptorSet> descriptorSets =
+        bridge->TakeViewportDescriptorSets(EditorViewport::Scene);
+
+    for (const VkDescriptorSet set : descriptorSets)
     {
-        ImGui_ImplVulkan_RemoveTexture(descriptorSets[i]);
+        ImGui_ImplVulkan_RemoveTexture(set);
     }
-    descriptorSets.clear();
 }

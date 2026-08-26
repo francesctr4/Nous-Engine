@@ -15,7 +15,7 @@
 #include <string>
 
 union SDL_Event;
-struct VulkanContext;
+class IEditorRenderBridge;
 enum class RendererBackendType : int8_t;
 struct ImGuiIO;
 struct ImFont;
@@ -60,6 +60,7 @@ public:
     RendererFrontend*      GetRendererFrontend()        const override;
     nous::engine::multithreading::NOUS_JobSystem* GetJobSystem() const override { return JobSystem; }
     GameExporter* GetGameExporter() const override { return m_gameExporter; }
+    IEditorRenderBridge*   GetEditorRenderBridge()      const override { return m_renderBridge; }
     std::string GetAssetsBrowserDirectory() const override;
     void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath) override;
     void WatchShaderFile(const std::string& path) override;
@@ -68,14 +69,11 @@ private:
 
 	static void InitFrame(RendererBackendType backendType);
 	void InternalDrawEditor();
-	static void EndFrame(RendererBackendType backendType);
+	void EndFrame(RendererBackendType backendType) const;
 
     IEditorWindow* GetEditorWindowByName(const std::string& name);
 
     void AddEditorWindow(IEditorWindow* editorWindow);
-
-    // Vulkan Specific
-    static VulkanContext* GetVulkanContext();
 
 	// --------------------------------------------------------------
 
@@ -88,6 +86,12 @@ private:
 	ModuleRenderer3D*      mModuleRenderer3D;
 
 	RendererBackendType currentBackendType;
+
+	// Resolved in Awake() from mModuleRenderer3D -- NOT in the constructor: the
+	// backend is created by ModuleRenderer3D::Awake(), which runs after this
+	// module is constructed in MainEditor.cpp, so a ctor parameter would be null.
+	// Owned by the backend; this module only observes it.
+	IEditorRenderBridge* m_renderBridge = nullptr;
 
     GameExporter* m_gameExporter = nullptr;
 

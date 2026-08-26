@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 
 struct ImVec2;
-struct VulkanContext;
+class IEditorRenderBridge;
 
 enum class GizmoOperation : uint8_t
 {
@@ -34,8 +34,11 @@ public:
     ImGuiWindowFlags GetWindowFlags() const override;
     NOUS_EDITOR_API void DrawContent() override;
 
-    static void CreateSceneViewportDescriptorSets();
-    static void DestroySceneViewportDescriptorSets();
+    // Take the bridge as a parameter rather than reading it from an editor-side
+    // static: ModuleEditor calls these from its IMGUI_RECREATION handler, where
+    // it already holds the bridge.
+    static void CreateSceneViewportDescriptorSets(IEditorRenderBridge* bridge);
+    static void DestroySceneViewportDescriptorSets(IEditorRenderBridge* bridge);
 
 private:
 

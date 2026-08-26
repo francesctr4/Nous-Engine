@@ -5,6 +5,7 @@
 // Forward declarations for dependency injection
 class IRenderWindow;
 class IRenderResourceProvider;
+class IEditorRenderBridge;
 class EventSystem;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
@@ -48,6 +49,18 @@ struct IRendererBackend
     virtual void ReleaseFrameResources() noexcept = 0;
 
     virtual void Resized(uint16_t width, uint16_t height) noexcept = 0;
+
+    // ─────────────────────────────── Editor Bridge ───────────────────────────
+    /**
+     * @brief The narrow, editor-facing view of this backend's GPU state.
+     *
+     * Only the editor's ImGui layer uses it, to bind ImGui to the live device and
+     * to sample the offscreen viewport images. Returning it from the backend --
+     * rather than exposing a static context accessor -- is what keeps that access
+     * injected instead of ambient. May return nullptr for a backend with no
+     * editor support. See Renderer/iEditorRenderBridge.h.
+     */
+    [[nodiscard]] virtual IEditorRenderBridge* GetEditorBridge() noexcept = 0;
 
     // ─────────────────────────────── Frame Lifecycle ─────────────────────────
     [[nodiscard]] virtual FrameResult BeginFrame(float dt) = 0;

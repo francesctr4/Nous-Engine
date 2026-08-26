@@ -4,8 +4,7 @@
 #include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
 #include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
 #include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
-#include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanMultithreading.h"
-#include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
+#include "Engine/Renderer/iEditorRenderBridge.h"
 #include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
 
 #include <algorithm>
@@ -42,7 +41,11 @@ void Multithreading::DrawContent()
     if (ImGui::Button("Resize Pool"))
     {
         editorContext->GetJobSystem()->Resize(static_cast<uint8_t>(newSize));
-        NOUS_VulkanMultithreading::RecreateWorkerCommandPools(VulkanBackend::GetVulkanContext());
+
+        // The per-worker command pools are sized to the thread count, so they must
+        // be rebuilt whenever the pool is resized.
+        if (IEditorRenderBridge* bridge = editorContext->GetEditorRenderBridge())
+            bridge->RecreateWorkerCommandPools();
     }
 
     ImGui::Separator();

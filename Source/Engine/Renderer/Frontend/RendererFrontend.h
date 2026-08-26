@@ -26,6 +26,7 @@ class IRenderWindow;
 class IRenderResourceProvider;
 class EventSystem;
 struct IRendererBackend;
+class IEditorRenderBridge;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
 /**
@@ -201,6 +202,15 @@ public:
 	// ---------------------------------------------------------------------
 	NOUS_ENGINE_API void SetBackendType(RendererBackendType backendType) noexcept;
 	[[nodiscard]] NOUS_ENGINE_API enum RendererBackendType GetBackendType() const noexcept;
+
+	/**
+	 * @brief The backend's editor-facing bridge (ImGui binding + viewport textures).
+	 *
+	 * Null until Initialize() has created a backend, and null for a backend with
+	 * no editor support. ModuleEditor resolves it in Awake(), which runs after
+	 * ModuleRenderer3D::Awake(). See Renderer/iEditorRenderBridge.h.
+	 */
+	[[nodiscard]] NOUS_ENGINE_API IEditorRenderBridge* GetEditorBridge() const noexcept;
 
 	NOUS_ENGINE_API void SetEditorOverlay(IEditorOverlay* overlay);
 	NOUS_ENGINE_API void SetRenderMode(RenderMode mode) noexcept;

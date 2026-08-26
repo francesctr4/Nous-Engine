@@ -5,9 +5,7 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 
-#include "Engine/Renderer/Backend/Vulkan/VulkanBackend.h"
-#include "Engine/Renderer/Backend/Vulkan/Utils/VulkanUtils.h"
-#include "Engine/Renderer/Backend/Vulkan/Resources/ImGui_Temp/VulkanImGuiResources.h"
+#include "Engine/Renderer/iEditorRenderBridge.h"
 
 #include "Editor/UI/IEditorWindow.h"
 #include "Editor/UI/ImGuiCustom/ImGuiCustom.h"
@@ -42,6 +40,7 @@
 #include <SDL3/SDL_keyboard.h>
 
 #include "Engine/Core/FileSystem/FileSystem.h"
+#include "Engine/Core/Logger/Asserts.h"
 #include "Engine/Core/Logger/Logger.h"
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
@@ -73,6 +72,11 @@ bool ModuleEditor::Awake()
 	mModuleRenderer3D->GetRendererFrontend()->SetEditorOverlay(this);
 	currentBackendType = mModuleRenderer3D->GetRendererFrontend()->GetBackendType();
 
+	// Resolve here, not in the ctor: MainEditor.cpp constructs this module before
+	// App->Awake(), and the backend that implements the bridge is created inside
+	// ModuleRenderer3D::Awake().
+	m_renderBridge = mModuleRenderer3D->GetRendererFrontend()->GetEditorBridge();
+
 	// Setup Dear ImGui_Temp context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -103,24 +107,26 @@ bool ModuleEditor::Awake()
 		case RendererBackendType::VULKAN:
 		{
             NOUS_INFO_C(CURRENT_CHANNEL, "Using Renderer Backend: %d (Vulkan)", currentBackendType);
-			const VulkanContext* vkContext = GetVulkanContext();
+
+			NOUS_ASSERT(m_renderBridge)
+			const EditorGpuInfo gpu = m_renderBridge->GetGpuInfo();
 
 			// Setup Platform/Renderer backends
 			ImGui_ImplSDL3_InitForVulkan(mModuleWindow->GetSDL_Window());
 
 			ImGui_ImplVulkan_InitInfo imGuiVulkanInitInfo{};
 
-			imGuiVulkanInitInfo.Allocator = vkContext->allocator;
-			imGuiVulkanInitInfo.CheckVkResultFn = VK_CHECK_IMGUI;
-			imGuiVulkanInitInfo.DescriptorPool = vkContext->imGuiResources.descriptorPool;
-			imGuiVulkanInitInfo.Device = vkContext->device.logicalDevice;
-			imGuiVulkanInitInfo.ImageCount = vkContext->swapChain.swapChainImages.size();
-			imGuiVulkanInitInfo.Instance = vkContext->instance;
+			imGuiVulkanInitInfo.Allocator = gpu.allocator;
+			imGuiVulkanInitInfo.CheckVkResultFn = gpu.checkVkResultFn;
+			imGuiVulkanInitInfo.DescriptorPool = gpu.descriptorPool;
+			imGuiVulkanInitInfo.Device = gpu.device;
+			imGuiVulkanInitInfo.ImageCount = gpu.imageCount;
+			imGuiVulkanInitInfo.Instance = gpu.instance;
 			imGuiVulkanInitInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-			imGuiVulkanInitInfo.PhysicalDevice = vkContext->device.physicalDevice;
-			imGuiVulkanInitInfo.Queue = vkContext->device.graphicsQueue;
-			imGuiVulkanInitInfo.QueueFamily = vkContext->device.graphicsQueueIndex;
-			imGuiVulkanInitInfo.PipelineInfoMain.RenderPass = vkContext->uiRenderpass.handle;
+			imGuiVulkanInitInfo.PhysicalDevice = gpu.physicalDevice;
+			imGuiVulkanInitInfo.Queue = gpu.graphicsQueue;
+			imGuiVulkanInitInfo.QueueFamily = gpu.graphicsQueueFamily;
+			imGuiVulkanInitInfo.PipelineInfoMain.RenderPass = gpu.uiRenderpass;
 			imGuiVulkanInitInfo.UseDynamicRendering = false;
 			imGuiVulkanInitInfo.MinImageCount = 2;
 
@@ -203,7 +209,8 @@ bool ModuleEditor::CleanUp()
 		case RendererBackendType::VULKAN:
 		{
 			ImGui_ImplVulkan_Shutdown();
-			NOUS_ImGuiVulkanResources::DestroyImGuiVulkanResources(GetVulkanContext());
+			if (m_renderBridge)
+				m_renderBridge->DestroyImGuiResources();
 
 			break;
 		}
@@ -318,7 +325,7 @@ void ModuleEditor::InternalDrawEditor()
 	}
 }
 
-void ModuleEditor::EndFrame(const RendererBackendType backendType)
+void ModuleEditor::EndFrame(const RendererBackendType backendType) const
 {
 	ImGui::Render();
 
@@ -326,7 +333,8 @@ void ModuleEditor::EndFrame(const RendererBackendType backendType)
 	{
 		case RendererBackendType::VULKAN:
 		{
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), GetVulkanContext()->graphicsCommandBuffers[GetVulkanContext()->imageIndex].handle);
+			if (m_renderBridge)
+				ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_renderBridge->GetCurrentUICommandBuffer());
 
 			break;
 		}
@@ -346,11 +354,6 @@ void ModuleEditor::EndFrame(const RendererBackendType backendType)
 			break;
 		}
 	}
-}
-
-VulkanContext* ModuleEditor::GetVulkanContext()
-{
-	return VulkanBackend::GetVulkanContext();
 }
 
 void ModuleEditor::AddEditorWindow(IEditorWindow* editorWindow)
@@ -411,15 +414,18 @@ void ModuleEditor::OnEvent(const Event &event)
             {
                 case RendererBackendType::VULKAN:
                 {
-                    VulkanContext* vkContext = GetVulkanContext();
+                    if (!m_renderBridge)
+                        break;
 
-                    GameViewport::DestroyGameViewportDescriptorSets();
-                    SceneViewport::DestroySceneViewportDescriptorSets();
+                    // The image views change, so the descriptor sets must be torn
+                    // down before the recreate and rebuilt from the new images after.
+                    GameViewport::DestroyGameViewportDescriptorSets(m_renderBridge);
+                    SceneViewport::DestroySceneViewportDescriptorSets(m_renderBridge);
 
-                    NOUS_ImGuiVulkanResources::RecreateImGuiVulkanResources(vkContext);
+                    m_renderBridge->RecreateImGuiResources();
 
-                    SceneViewport::CreateSceneViewportDescriptorSets();
-                    GameViewport::CreateGameViewportDescriptorSets();
+                    SceneViewport::CreateSceneViewportDescriptorSets(m_renderBridge);
+                    GameViewport::CreateGameViewportDescriptorSets(m_renderBridge);
                     break;
                 }
                 default: break;

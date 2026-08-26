@@ -12,6 +12,7 @@ class ModuleCamera3D;
 class ModuleInput;
 class ModuleResourceManager;
 class RendererFrontend;
+class IEditorRenderBridge;
 class GameExporter;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
 
@@ -30,6 +31,17 @@ public:
     [[nodiscard]] virtual RendererFrontend*                     GetRendererFrontend() const = 0;
     [[nodiscard]] virtual nous::engine::multithreading::NOUS_JobSystem*  GetJobSystem()        const = 0;
     [[nodiscard]] virtual GameExporter*                                  GetGameExporter()     const = 0;
+
+    /**
+     * @brief The renderer's editor-facing bridge: the ImGui-Vulkan binding, the
+     *        offscreen viewport textures, and the pick framebuffer size.
+     *
+     * Injected, never fetched -- it replaces VulkanBackend::GetVulkanContext(),
+     * which handed the whole mutable VulkanContext to any caller. Null before
+     * ModuleEditor::Awake() has resolved it, and for a backend with no editor
+     * support; guard it. See Engine/Renderer/iEditorRenderBridge.h.
+     */
+    [[nodiscard]] virtual IEditorRenderBridge*                           GetEditorRenderBridge() const = 0;
 
     [[nodiscard]] virtual std::string GetAssetsBrowserDirectory() const = 0;
 
