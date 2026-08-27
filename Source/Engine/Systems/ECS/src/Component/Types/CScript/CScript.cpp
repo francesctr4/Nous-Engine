@@ -2,7 +2,7 @@
 // Created by TheFr on 09/11/2025.
 //
 
-#include <ECS/Component/Types/CScript.h>
+#include <ECS/Component/Types/CScript/CScript.h>
 #include "Engine/Scripting/Internal/IScript.inl"   // ScriptProperty, GetProperties()
 #include "Engine/Scripting/iScriptRegistry.h"
 #include <ECS/ComponentServices.h>

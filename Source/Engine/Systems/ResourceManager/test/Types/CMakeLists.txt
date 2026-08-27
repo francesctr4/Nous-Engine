@@ -1,0 +1,7 @@
+add_subdirectory(ResourceAudio)
+add_subdirectory(ResourceAudioGraph)
+add_subdirectory(ResourceMaterial)
+add_subdirectory(ResourceMesh)
+add_subdirectory(ResourceShader)
+add_subdirectory(ResourceTexture)
+add_subdirectory(ResourceVideo)

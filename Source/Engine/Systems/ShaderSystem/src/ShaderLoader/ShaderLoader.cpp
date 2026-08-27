@@ -6,7 +6,7 @@
 #include <ShaderSystem/ShaderLoader/ShaderLoaderTypes.h>
 #include <ShaderSystem/ShaderParser/ShaderParser.h>
 #include <ShaderSystem/ShaderReflection/ShaderReflection.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
+#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 

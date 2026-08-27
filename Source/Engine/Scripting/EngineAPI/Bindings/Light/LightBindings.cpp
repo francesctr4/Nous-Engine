@@ -3,7 +3,7 @@
 #include "Engine/Scripting/iScriptSceneHost.h"
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CLight.h>
+#include <ECS/Component/Types/CLight/CLight.h>
 #include <Logger/Logger.h>
 
 static IScriptSceneHost* s_scene = nullptr;

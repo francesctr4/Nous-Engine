@@ -29,4 +29,5 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         NOUS_Multithreading_headers
         ShaderSystem_headers
         ECS_headers
+        ResourceManager_headers
 )

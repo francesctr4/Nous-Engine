@@ -4,7 +4,7 @@
 
 #include <ECS/GameObject.h>
 #include <ECS/Scene/Scene.h>
-#include <ECS/Component/Types/CPrefab.h>
+#include <ECS/Component/Types/CPrefab/CPrefab.h>
 #include <ECS/Component/Types/ComponentTypes.h>
 #include "Editor/UI/Windows/InspectorWindow/InspectorComponent/ComponentInspectorRegistry/include/ComponentInspectorRegistry.h"
 

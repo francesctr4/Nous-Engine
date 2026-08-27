@@ -1,18 +1,18 @@
-#include <ECS/Component/Types/CAudioSource.h>
+#include <ECS/Component/Types/CAudioSource/CAudioSource.h>
 
 #include "Engine/Core/Globals.h"                 // down_cast
 #include <FileSystem/FileSystem.h>   // GetFilename
 #include <ECS/ComponentServices.h>
 #include <ECS/Scene/iSceneHost.h>
 #include <AudioSystem/iAudioBroker.h>
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
+#include <ResourceManager/Core/IResourceLoader.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CTransform.h>
-#include <ECS/Component/Types/CVideoPlayer.h>
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceType.h"
+#include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
+#include <ResourceManager/Core/ResourceBase.h>
+#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
+#include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
+#include <ResourceManager/Types/ResourceType.h>
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 #include <cmath>

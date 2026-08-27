@@ -3,16 +3,16 @@
 #include <algorithm>   // std::clamp
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
+#include <ResourceManager/Core/ResourceBase.h>
+#include <ResourceManager/Core/TypeRegistry.h>
 #include <FileSystem/FileSystem.h>
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include <CameraSystem/Camera.h>
 
 #include "Engine/Renderer/iEditorRenderBridge.h"
 
-#include <ECS/Component/Types/CTransform.h>
-#include <ECS/Component/Types/CMesh.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CMesh/CMesh.h>
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include <ECS/GameObject.h>

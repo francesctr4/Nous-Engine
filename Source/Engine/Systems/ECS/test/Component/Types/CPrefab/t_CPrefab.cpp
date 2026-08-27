@@ -2,7 +2,7 @@
 
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CPrefab.h>
+#include <ECS/Component/Types/CPrefab/CPrefab.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 

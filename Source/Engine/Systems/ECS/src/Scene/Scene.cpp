@@ -4,15 +4,15 @@
 #include <tracy/Tracy.hpp>
 #endif
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CTransform.h>
-#include <ECS/Component/Types/CMesh.h>
-#include <ECS/Component/Types/CMaterial.h>
-#include <ECS/Component/Types/CCamera.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ImporterMaterial.h"
-#include <ECS/Component/Types/CLight.h>
-#include <ECS/Component/Types/CScript.h>
-#include <ECS/Component/Types/CPrefab.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CMesh/CMesh.h>
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
+#include <ECS/Component/Types/CCamera/CCamera.h>
+#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
+#include <ResourceManager/Types/ResourceMaterial/ImporterMaterial.h>
+#include <ECS/Component/Types/CLight/CLight.h>
+#include <ECS/Component/Types/CScript/CScript.h>
+#include <ECS/Component/Types/CPrefab/CPrefab.h>
 #include <ECS/Component/Types/ComponentTypes.h>
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Utils/Serialization/Random/Random.h"

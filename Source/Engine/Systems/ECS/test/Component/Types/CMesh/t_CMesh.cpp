@@ -2,7 +2,7 @@
 
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CMesh.h>
+#include <ECS/Component/Types/CMesh/CMesh.h>
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"

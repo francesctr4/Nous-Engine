@@ -7,7 +7,7 @@
 
 #include <AudioSystem/AudioEngine/AudioBackendFactory.h>
 #include <AudioSystem/AudioEngine/IAudioEngineBackend.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
+#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_AUDIO;
 

@@ -24,6 +24,11 @@
 #                    as AudioSystem's GainDsp -- and t_VideoPlayhead is now a
 #                    real unit test, reaching it through ECS_private.
 #
+# include/ mirrors a folder per component under Component/Types/, matching src/
+# and test/. Adding a component is a recurring workflow, so a component's files
+# stay one identically-named folder in each of the three trees -- the checklist
+# is "the three CFoo folders". Same reasoning as ResourceManager's Types/.
+#
 # ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================
 
@@ -54,17 +59,17 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Component/Component.h
         include/${CLASS_NAME}/Component/ComponentList.h
         include/${CLASS_NAME}/Component/Types/ComponentTypes.h
-        include/${CLASS_NAME}/Component/Types/AudioVoice.h
-        include/${CLASS_NAME}/Component/Types/CAudioListener.h
-        include/${CLASS_NAME}/Component/Types/CAudioSource.h
-        include/${CLASS_NAME}/Component/Types/CCamera.h
-        include/${CLASS_NAME}/Component/Types/CLight.h
-        include/${CLASS_NAME}/Component/Types/CMaterial.h
-        include/${CLASS_NAME}/Component/Types/CMesh.h
-        include/${CLASS_NAME}/Component/Types/CPrefab.h
-        include/${CLASS_NAME}/Component/Types/CScript.h
-        include/${CLASS_NAME}/Component/Types/CTransform.h
-        include/${CLASS_NAME}/Component/Types/CVideoPlayer.h
+        include/${CLASS_NAME}/Component/Types/CAudioSource/AudioVoice.h
+        include/${CLASS_NAME}/Component/Types/CAudioListener/CAudioListener.h
+        include/${CLASS_NAME}/Component/Types/CAudioSource/CAudioSource.h
+        include/${CLASS_NAME}/Component/Types/CCamera/CCamera.h
+        include/${CLASS_NAME}/Component/Types/CLight/CLight.h
+        include/${CLASS_NAME}/Component/Types/CMaterial/CMaterial.h
+        include/${CLASS_NAME}/Component/Types/CMesh/CMesh.h
+        include/${CLASS_NAME}/Component/Types/CPrefab/CPrefab.h
+        include/${CLASS_NAME}/Component/Types/CScript/CScript.h
+        include/${CLASS_NAME}/Component/Types/CTransform/CTransform.h
+        include/${CLASS_NAME}/Component/Types/CVideoPlayer/CVideoPlayer.h
 )
 
 set_target_properties(${CLASS_NAME} PROPERTIES

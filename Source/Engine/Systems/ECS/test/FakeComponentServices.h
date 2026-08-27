@@ -4,7 +4,7 @@
 #include <ECS/Scene/iSceneHost.h>
 #include <AudioSystem/iAudioBroker.h>
 #include <VideoSystem/iVideoBroker.h>
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
+#include <ResourceManager/Core/IResourceLoader.h>
 #include "Engine/Scripting/iScriptRegistry.h"
 
 #include <algorithm>

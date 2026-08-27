@@ -5,7 +5,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include <FileSystem/FileSystem.h>
-#include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
+#include <ResourceManager/Runtime/ImportPipeline.h>
 
 #include <SDL3/SDL.h>
 

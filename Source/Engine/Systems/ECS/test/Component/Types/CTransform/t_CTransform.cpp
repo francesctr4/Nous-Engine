@@ -2,7 +2,7 @@
 
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CTransform.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 

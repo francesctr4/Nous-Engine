@@ -7,18 +7,18 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include <ECS/Component/Component.h>
-#include <ECS/Component/Types/CTransform.h>
-#include <ECS/Component/Types/CMesh.h>
-#include <ECS/Component/Types/CCamera.h>
-#include <ECS/Component/Types/CLight.h>
-#include <ECS/Component/Types/CMaterial.h>
-#include <ECS/Component/Types/CScript.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CMesh/CMesh.h>
+#include <ECS/Component/Types/CCamera/CCamera.h>
+#include <ECS/Component/Types/CLight/CLight.h>
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
+#include <ECS/Component/Types/CScript/CScript.h>
 #include <ECS/GameObject.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ImporterMaterial.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
+#include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
+#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
+#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
+#include <ResourceManager/Types/ResourceMaterial/ImporterMaterial.h>
+#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 
 #include "imgui.h"
 #include <glm/glm.hpp>
@@ -27,12 +27,12 @@
 #include <string>
 #include <utility>
 
-#include <ECS/Component/Types/CAudioSource.h>
-#include <ECS/Component/Types/CAudioListener.h>
-#include <ECS/Component/Types/CVideoPlayer.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
+#include <ECS/Component/Types/CAudioSource/CAudioSource.h>
+#include <ECS/Component/Types/CAudioListener/CAudioListener.h>
+#include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
+#include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
+#include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
+#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <VideoSystem/AudioExtract/AudioExtract.h>
 
 // ─────────────────────────────────────────────────────────────────────────────

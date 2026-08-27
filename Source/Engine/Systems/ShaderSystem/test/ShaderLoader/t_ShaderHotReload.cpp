@@ -3,7 +3,7 @@
 #include <MemoryManager/MemoryManager.h>
 #include <ShaderSystem/ShaderLoader/ShaderLoader.h>
 #include <ShaderSystem/ShaderLoader/ShaderLoaderTypes.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
+#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <ShaderSystem/ShaderCompiler/ShaderCompilerTypes.h>
 
 using namespace nous::engine::shader_system;

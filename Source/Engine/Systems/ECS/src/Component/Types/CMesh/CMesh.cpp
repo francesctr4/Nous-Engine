@@ -1,9 +1,9 @@
-#include <ECS/Component/Types/CMesh.h>
+#include <ECS/Component/Types/CMesh/CMesh.h>
 #include <ECS/ComponentServices.h>
 #include <ECS/GameObject.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
+#include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
+#include <ResourceManager/Core/ResourceBase.h>
+#include <ResourceManager/Core/IResourceLoader.h>
 #include <FileSystem/FileSystem.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"

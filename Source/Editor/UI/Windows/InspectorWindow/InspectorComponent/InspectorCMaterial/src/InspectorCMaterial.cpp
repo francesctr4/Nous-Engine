@@ -3,13 +3,13 @@
 #include <Logger/Logger.h>
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include <ECS/Component/Types/CMaterial.h>
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
 #include <ECS/GameObject.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ImporterMaterial.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
+#include <ResourceManager/Types/ResourceMaterial/ImporterMaterial.h>
+#include <ResourceManager/Core/MetaFileData.h>
+#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
+#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
+#include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
 #include <ShaderSystem/ShaderReflection/ShaderReflectionTypes.h>
 
 #include <filesystem>

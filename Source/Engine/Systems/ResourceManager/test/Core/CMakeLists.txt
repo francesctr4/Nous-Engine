@@ -1,0 +1,3 @@
+add_subdirectory(ResourceQueue)
+add_subdirectory(ResourceTable)
+add_subdirectory(TypeRegistry)

@@ -3,7 +3,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include <ECS/Scene/Scene.h>
 #include <ECS/ECSInternalComponents.h>
-#include <ECS/Component/Types/CTransform.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
 #include <MemoryManager/MemoryManager.h>
 
 #include <glm/glm.hpp>

@@ -3,15 +3,15 @@
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
 #include "Engine/Core/EventSystem/IEventListener.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceQueue/include/ResourceQueue.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceTable/include/ResourceTable.h"
-#include "Engine/Systems/ResourceManager/Runtime/Builtins/include/BuiltinResources.h"
-#include "Engine/Systems/ResourceManager/Runtime/HotReloader/include/HotReloader.h"
-#include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
-#include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/SubMeshCache.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
+#include <ResourceManager/Core/ResourceBase.h>
+#include <ResourceManager/Core/ResourceQueue.h>
+#include <ResourceManager/Core/ResourceTable.h>
+#include <ResourceManager/Runtime/BuiltinResources.h>
+#include <ResourceManager/Runtime/HotReloader.h>
+#include <ResourceManager/Runtime/ImportPipeline.h>
+#include <ResourceManager/Runtime/ScenePreloader.h>
+#include <ResourceManager/Types/ResourceMesh/SubMeshCache.h>
+#include <ResourceManager/Core/IResourceLoader.h>
 #include "Engine/Renderer/iRenderResourceProvider.h"
 
 #include <future>

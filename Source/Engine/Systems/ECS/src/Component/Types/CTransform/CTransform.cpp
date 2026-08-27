@@ -1,4 +1,4 @@
-#include <ECS/Component/Types/CTransform.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/GameObject.h>
 
 #define GLM_ENABLE_EXPERIMENTAL

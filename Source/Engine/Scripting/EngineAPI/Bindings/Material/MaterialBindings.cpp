@@ -3,8 +3,8 @@
 #include "Engine/Scripting/iScriptSceneHost.h"
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CMaterial.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
+#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <Logger/Logger.h>
 
 static IScriptSceneHost* s_scene = nullptr;

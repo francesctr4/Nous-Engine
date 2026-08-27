@@ -1,21 +1,21 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
+#include <ResourceManager/Core/ResourceBase.h>
 #include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
+#include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
+#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
+#include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
+#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
+#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
 
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
+#include <ResourceManager/Core/MetaFileData.h>
 
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
-#include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
+#include <ResourceManager/Core/IImporterManager.h>
+#include <ResourceManager/Core/IImporter.h>
+#include <ResourceManager/Core/TypeRegistry.h>
 #include <NOUS_Multithreading/NOUS_Thread.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 

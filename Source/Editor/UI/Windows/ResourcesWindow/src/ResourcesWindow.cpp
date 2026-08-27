@@ -1,8 +1,8 @@
 #include "Editor/UI/Windows/ResourcesWindow/include/ResourcesWindow.h"
 
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
+#include <ResourceManager/Core/ResourceBase.h>
+#include <ResourceManager/Core/TypeRegistry.h>
 #include <FileSystem/FileSystem.h>
 
 #include <unordered_map>

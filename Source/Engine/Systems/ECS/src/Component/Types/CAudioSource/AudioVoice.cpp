@@ -1,4 +1,4 @@
-#include <ECS/Component/Types/AudioVoice.h>
+#include <ECS/Component/Types/CAudioSource/AudioVoice.h>
 
 #include <AudioSystem/iAudioBroker.h>
 

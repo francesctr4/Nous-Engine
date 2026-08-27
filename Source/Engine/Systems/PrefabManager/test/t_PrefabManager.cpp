@@ -3,9 +3,9 @@
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CPrefab.h>
-#include <ECS/Component/Types/CTransform.h>
-#include <ECS/Component/Types/CCamera.h>
+#include <ECS/Component/Types/CPrefab/CPrefab.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CCamera/CCamera.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 

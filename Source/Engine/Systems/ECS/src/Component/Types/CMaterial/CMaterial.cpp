@@ -1,10 +1,10 @@
-#include <ECS/Component/Types/CMaterial.h>
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
 
 #include <ECS/ComponentServices.h>
 #include <ECS/GameObject.h>
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
+#include <ResourceManager/Core/IResourceLoader.h>
+#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
+#include <ResourceManager/Core/ResourceBase.h>
 #include <FileSystem/FileSystem.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"

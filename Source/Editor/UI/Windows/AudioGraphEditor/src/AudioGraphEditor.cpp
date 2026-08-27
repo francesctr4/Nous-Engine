@@ -6,9 +6,9 @@
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ImporterAudioGraph.h"
+#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
+#include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
+#include <ResourceManager/Types/ResourceAudioGraph/ImporterAudioGraph.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>   // BeginDragDropTargetCustom + ImRect (full-canvas drop target)

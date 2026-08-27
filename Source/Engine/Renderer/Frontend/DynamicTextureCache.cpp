@@ -4,8 +4,8 @@
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Renderer/RendererTypes.h"   // TextureMap
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
+#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
+#include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
 
 #include <string>
 

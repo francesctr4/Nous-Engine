@@ -2,7 +2,7 @@
 
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CLight.h>
+#include <ECS/Component/Types/CLight/CLight.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"

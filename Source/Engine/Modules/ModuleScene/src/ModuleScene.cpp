@@ -6,8 +6,8 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include <Logger/Logger.h>
 
-#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
+#include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
+#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <MemoryManager/MemoryManager.h>
 #include <CameraSystem/Camera.h>
 
@@ -16,10 +16,10 @@
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
 
-#include <ECS/Component/Types/CMesh.h>
-#include <ECS/Component/Types/CMaterial.h>
-#include <ECS/Component/Types/CTransform.h>
-#include <ECS/Component/Types/CCamera.h>
+#include <ECS/Component/Types/CMesh/CMesh.h>
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CCamera/CCamera.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -40,10 +40,10 @@
 #include <algorithm>
 
 #include <NOUS_Multithreading/NOUS_ThreadPool.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ImporterMesh.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
+#include <ResourceManager/Types/ResourceMesh/ImporterMesh.h>
+#include <ResourceManager/Core/MetaFileData.h>
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
-#include <ECS/Component/Types/CPrefab.h>
+#include <ECS/Component/Types/CPrefab/CPrefab.h>
 
 ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
     ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager, ModuleAudio* moduleAudio,

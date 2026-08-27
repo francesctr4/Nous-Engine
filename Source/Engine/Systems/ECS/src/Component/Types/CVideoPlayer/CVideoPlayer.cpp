@@ -1,17 +1,17 @@
-#include <ECS/Component/Types/CVideoPlayer.h>
+#include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
 
 #include "Engine/Core/Globals.h"                 // down_cast
 #include <FileSystem/FileSystem.h>   // GetFilename
 #include <ECS/ComponentServices.h>
 #include <ECS/Scene/iSceneHost.h>
 #include <VideoSystem/iVideoBroker.h>
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
+#include <ResourceManager/Core/IResourceLoader.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CAudioSource.h>
+#include <ECS/Component/Types/CAudioSource/CAudioSource.h>
 #include "Component/Types/CVideoPlayer/VideoPlayhead.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceType.h"
+#include <ResourceManager/Core/ResourceBase.h>
+#include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
+#include <ResourceManager/Types/ResourceType.h>
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-#include <ECS/Component/Types/CPrefab.h>
+#include <ECS/Component/Types/CPrefab/CPrefab.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 

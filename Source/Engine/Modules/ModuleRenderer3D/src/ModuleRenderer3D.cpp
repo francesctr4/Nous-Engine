@@ -12,29 +12,29 @@
 
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CMesh.h>
-#include <ECS/Component/Types/CMaterial.h>
-#include <ECS/Component/Types/CVideoPlayer.h>
-#include <ECS/Component/Types/CTransform.h>
-#include <ECS/Component/Types/CCamera.h>
-#include <ECS/Component/Types/CLight.h>
+#include <ECS/Component/Types/CMesh/CMesh.h>
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
+#include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CCamera/CCamera.h>
+#include <ECS/Component/Types/CLight/CLight.h>
 #include <ECS/ECSInternalComponents.h>
 
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include <Logger/LogChannel.h>
 #include <Logger/Logger.h>
-#include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
-#include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
+#include <ResourceManager/Core/AssetPaths.h>
+#include <ResourceManager/Core/ResourceBase.h>
+#include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
+#include <ResourceManager/Core/IImporterManager.h>
 #include <FileSystem/FileSystem.h>
 
 #include <filesystem>
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include <CameraSystem/Camera.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
+#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
+#include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
 #include "Engine/Utils/Math/FrustumCulling.h"
 
 

@@ -2,7 +2,7 @@
 
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
+#include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include "VideoFrameQueue/VideoFrameQueue.h"
 
 #include <atomic>

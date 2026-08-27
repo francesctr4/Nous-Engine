@@ -4,7 +4,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
 #include <AudioSystem/AudioTypes.h>
-#include <ECS/Component/Types/CAudioSource.h>
+#include <ECS/Component/Types/CAudioSource/CAudioSource.h>
 #include <ECS/GameObject.h>
 #include <ECS/Scene/Scene.h>
 

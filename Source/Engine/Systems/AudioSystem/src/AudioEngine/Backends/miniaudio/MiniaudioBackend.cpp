@@ -2,7 +2,7 @@
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
 #include <AudioSystem/AudioTypes.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
+#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 
 // miniaudio Library Documentation
 // https://miniaud.io/docs/manual/index.html

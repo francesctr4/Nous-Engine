@@ -3,10 +3,10 @@
 #include "Engine/Scripting/iScriptSceneHost.h"
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CLight.h>
-#include <ECS/Component/Types/CCamera.h>
-#include <ECS/Component/Types/CMesh.h>
-#include <ECS/Component/Types/CScript.h>
+#include <ECS/Component/Types/CLight/CLight.h>
+#include <ECS/Component/Types/CCamera/CCamera.h>
+#include <ECS/Component/Types/CMesh/CMesh.h>
+#include <ECS/Component/Types/CScript/CScript.h>
 #include <Logger/Logger.h>
 
 static IScriptSceneHost* s_scene = nullptr;

@@ -2,7 +2,7 @@
 
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CMaterial.h>
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"

@@ -2,10 +2,10 @@
 
 #include "Editor/UI/IEditorWindow.h"
 #include "Engine/Scripting/Internal/IScript.inl"
-#include <ECS/Component/Types/CMaterial.h>
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
 #include <ECS/Scene/Scene.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
+#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
+#include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
 #include <cstdint>
 #include <string>
 

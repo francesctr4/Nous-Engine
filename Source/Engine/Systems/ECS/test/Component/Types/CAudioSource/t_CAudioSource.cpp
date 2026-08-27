@@ -2,11 +2,11 @@
 
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CAudioSource.h>
+#include <ECS/Component/Types/CAudioSource/CAudioSource.h>
 #include <AudioSystem/AudioTypes.h>
 #include <FakeComponentServices.h>
-#include <ECS/Component/Types/CTransform.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
+#include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"

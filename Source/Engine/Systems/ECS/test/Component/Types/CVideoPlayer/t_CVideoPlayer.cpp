@@ -2,9 +2,9 @@
 
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CVideoPlayer.h>
+#include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
 #include <FakeComponentServices.h>
-#include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
+#include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"

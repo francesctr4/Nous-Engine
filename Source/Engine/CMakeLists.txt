@@ -62,6 +62,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         ShaderSystem_headers
         VideoSystem_headers
         ECS_headers
+        ResourceManager_headers
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

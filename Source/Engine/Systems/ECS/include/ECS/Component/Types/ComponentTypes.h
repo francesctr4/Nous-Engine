@@ -3,16 +3,16 @@
 
 #include <ECS/Component/ComponentList.h>
 
-#include <ECS/Component/Types/CTransform.h>
-#include <ECS/Component/Types/CMesh.h>
-#include <ECS/Component/Types/CMaterial.h>
-#include <ECS/Component/Types/CCamera.h>
-#include <ECS/Component/Types/CLight.h>
-#include <ECS/Component/Types/CScript.h>
-#include <ECS/Component/Types/CPrefab.h>
-#include <ECS/Component/Types/CAudioSource.h>
-#include <ECS/Component/Types/CAudioListener.h>
-#include <ECS/Component/Types/CVideoPlayer.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CMesh/CMesh.h>
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
+#include <ECS/Component/Types/CCamera/CCamera.h>
+#include <ECS/Component/Types/CLight/CLight.h>
+#include <ECS/Component/Types/CScript/CScript.h>
+#include <ECS/Component/Types/CPrefab/CPrefab.h>
+#include <ECS/Component/Types/CAudioSource/CAudioSource.h>
+#include <ECS/Component/Types/CAudioListener/CAudioListener.h>
+#include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE single edit site for registering an ECS component type.

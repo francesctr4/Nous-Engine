@@ -1,8 +1,8 @@
-#include <ECS/Component/Types/CCamera.h>
+#include <ECS/Component/Types/CCamera/CCamera.h>
 
 #include <ECS/ComponentServices.h>
 #include <ECS/Scene/iSceneHost.h>
-#include <ECS/Component/Types/CTransform.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/GameObject.h>
 #include <CameraSystem/Camera.h>
 

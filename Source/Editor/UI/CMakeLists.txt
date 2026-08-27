@@ -103,6 +103,8 @@ target_link_libraries(EditorUI PRIVATE
 target_link_libraries(EditorUI PUBLIC
         ShaderSystem_headers
         # HierarchyWindow.h and InspectorWindow.h name GameObject, Scene and the
-        # component types in their public headers.
+        # component types in their public headers. InspectorWindow.h also holds
+        # ResourceShader/ResourceTexture.
         ECS_headers
+        ResourceManager_headers
 )
