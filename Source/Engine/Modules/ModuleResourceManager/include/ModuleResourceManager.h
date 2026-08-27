@@ -2,7 +2,7 @@
 
 #include "Engine/Modules/Module.h"
 #include "Engine/EngineExport.h"
-#include "Engine/Core/EventSystem/IEventListener.h"
+#include <EventSystem/IEventListener.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Core/ResourceQueue.h>
 #include <ResourceManager/Core/ResourceTable.h>

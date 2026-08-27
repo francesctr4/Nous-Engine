@@ -1,8 +1,8 @@
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 
 #include <Logger/Logger.h>
-#include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/Core/EventSystem/Event/include/Event.h"
+#include <EventSystem/EventSystem.h>
+#include <EventSystem/Event.h>
 
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Editor/UI/IEditorWindow.h"
-#include "Engine/Utils/Math/MathUtils.h"
+#include <Utils/Math/MathUtils.h>
 #include "Engine/Core/Globals.h"
 
 #include <atomic>

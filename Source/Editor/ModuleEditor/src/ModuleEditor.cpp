@@ -3,7 +3,7 @@
 #include <RendererFrontend/RendererFrontend.h>
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Core/EventSystem/EventSystem.h"
+#include <EventSystem/EventSystem.h>
 
 #include <Renderer/iEditorRenderBridge.h>
 

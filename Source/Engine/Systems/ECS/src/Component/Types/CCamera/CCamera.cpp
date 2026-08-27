@@ -7,7 +7,7 @@
 #include <CameraSystem/Camera.h>
 
 #include <glm/gtc/matrix_transform.hpp>
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 // ---------------------------------------------------------------------------
 // Matrix computation

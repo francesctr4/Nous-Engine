@@ -1,7 +1,7 @@
 #include <CameraSystem/Camera.h>
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Utils/Math/MathUtils.h"
+#include <Utils/Math/MathUtils.h>
 
 #include "glm/gtc/matrix_transform.hpp"
 

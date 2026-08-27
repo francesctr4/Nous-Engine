@@ -12,8 +12,8 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include <ResourceManager/Runtime/ImportPipeline.h>
 #include <ResourceManager/Core/MetaFileData.h>
-#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonFile.h>
+#include <Utils/Serialization/JsonObject.h>
 #include "Engine/Scripting/ScriptManager.h"
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include <Logger/Logger.h>

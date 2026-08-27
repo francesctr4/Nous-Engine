@@ -6,7 +6,7 @@
 #include <ResourceManager/Core/IResourceLoader.h>
 #include <FileSystem/FileSystem.h>
 
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 JsonObject CMesh::Serialize() const {
     JsonObject root;

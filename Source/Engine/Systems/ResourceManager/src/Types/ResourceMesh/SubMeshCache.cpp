@@ -8,7 +8,7 @@
 #include <ResourceManager/Runtime/ImportPipeline.h>
 #include <ResourceManager/Types/ResourceMesh/ImporterMesh.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
-#include "Engine/Utils/Serialization/Random/Random.h"
+#include <Utils/Serialization/Random.h>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 

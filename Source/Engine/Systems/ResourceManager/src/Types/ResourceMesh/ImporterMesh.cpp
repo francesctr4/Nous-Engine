@@ -15,9 +15,9 @@
 
 #include <Logger/Logger.h>
 
-#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
+#include <Utils/Serialization/JsonFile.h>
+#include <Utils/Serialization/JsonObject.h>
+#include <Utils/Serialization/JsonArray.h>
 
 // Assimp
 #define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace)

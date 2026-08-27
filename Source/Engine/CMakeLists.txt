@@ -55,9 +55,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         # Source/ root can be dropped and enforcement becomes engine-wide.
         AudioSystem_headers
         FileSystem_headers
+        EventSystem_headers
+        FileWatcher_headers
+        TimeManager_headers
         Logger_headers
         MemoryManager_headers
         NOUS_Multithreading_headers
+        Utils_headers
         CameraSystem_headers
         ShaderSystem_headers
         VideoSystem_headers

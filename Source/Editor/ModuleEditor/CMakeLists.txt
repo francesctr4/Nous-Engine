@@ -19,6 +19,10 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         AudioSystem_headers
         # ModuleEditor.h includes NOUS_Vector.h, which names NOUS_STLAllocator.
         MemoryManager_headers
+        # NOUS_Vector.h itself lives in Utils, and ModuleEditor.h implements
+        # IEventListener -- both reached from the public header, so both PUBLIC.
+        Utils_headers
+        EventSystem_headers
         # ModuleEditor.h implements IEditorOverlay, so this one is PUBLIC.
         RendererFrontend_headers
 )
@@ -32,6 +36,7 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         ShaderSystem_headers
         ECS_headers
         ResourceManager_headers
+        FileWatcher_headers
 )
 
 # ModuleEditor.cpp reaches the backend through IEditorRenderBridge; its own public

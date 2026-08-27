@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Core/FileWatcher/FileWatcher.h"
+#include <FileWatcher/FileWatcher.h>
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
 #include <ResourceManager/Types/ResourceType.h>

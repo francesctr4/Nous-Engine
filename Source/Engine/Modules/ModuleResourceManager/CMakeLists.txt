@@ -15,6 +15,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         glm::glm
         ModuleBase
         ResourceManager
+        EventSystem_headers   # <Module>.h implements IEventListener
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE
@@ -23,6 +24,7 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         MemoryManager
         ModuleInput
         NOUS_Multithreading
+        Utils
 )
 
 if (NOUS_BUILD_TESTS)

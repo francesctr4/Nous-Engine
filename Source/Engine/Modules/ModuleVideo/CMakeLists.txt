@@ -17,6 +17,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         # PUBLIC header, so the API dir has to propagate (Application.cpp includes
         # it). The VideoSystem objects stay PRIVATE below -- headers only.
         VideoSystem_headers
+        EventSystem_headers   # <Module>.h implements IEventListener
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

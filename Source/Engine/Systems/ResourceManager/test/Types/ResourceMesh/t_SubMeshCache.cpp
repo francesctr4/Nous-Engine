@@ -6,7 +6,7 @@
 #include <ResourceManager/Core/ResourceTable.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
-#include "Engine/Utils/Math/Vertex.inl"
+#include <Utils/Math/Vertex.inl>
 
 #include <cstdint>
 #include <filesystem>

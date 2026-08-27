@@ -1,6 +1,6 @@
 #include <ECS/Component/Types/CLight/CLight.h>
 
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 #include <string_view>
 
 void CLight::OnUpdate(float /*deltaTime*/) {}

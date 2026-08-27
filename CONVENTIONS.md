@@ -256,10 +256,11 @@ Use `final` on classes or methods that must not be further overridden.
 ## Target Layout: public `include/`, private `src/`
 
 **Migration in progress.** Converted so far: `AudioSystem` (2026-08-26); the
-foundation — `Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` — and all of
+foundation — `Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` — all of
 `Systems/` — `VideoSystem`, `ShaderSystem`, `CameraSystem`, `ECS`, `ResourceManager`,
-`PrefabManager` (2026-08-27). Remaining: `Core/`'s other units, `Utils`, `Scripting`,
-`Renderer/`, `Modules/`, `Editor/`. Converted targets use:
+`PrefabManager` — all four `Renderer/` targets, and the rest of the foundation —
+`EventSystem`, `FileWatcher`, `TimeManager`, `Utils` (2026-08-27). Remaining:
+`Core` itself (`Application`), `Scripting`, `Modules/`, `Editor/`. Converted targets use:
 
 ```
 Systems/AudioSystem/
@@ -294,9 +295,11 @@ converted.
 **`Tools/check_header_layout.py` enforces the two rules below and runs in CI**
 (before Configure, no build needed). Run it after any conversion or any new
 `#include` of a converted header — it reports `MISSING_LINK` (a target compiles a
-converted header with no link providing it) and `PRIVATE_LEAK` (a target names a
+converted header with no link providing it), `PRIVATE_LEAK` (a target names a
 converted target from a PUBLIC header while declaring the dependency PRIVATE, so
-consumers break at a distance). It prints the include chain behind each finding,
+consumers break at a distance) and `PRIVATE_HEADER` (a header under `include/`
+includes one under its own target's `src/`, which makes that header public in fact
+while the layout claims otherwise). It prints the include chain behind each finding,
 because these requirements are usually transitive and the right fix is often on the
 intermediate target. Add each newly converted target to its `CONVERTED` table.
 

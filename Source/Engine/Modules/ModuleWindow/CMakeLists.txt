@@ -16,6 +16,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         ModuleBase
         SDL3::SDL3        # SDL_Window* crosses IRenderWindow, a public header
         Renderer_headers  # ModuleWindow.h implements IRenderWindow
+        EventSystem_headers   # <Module>.h implements IEventListener
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

@@ -4,7 +4,7 @@
 #include <thread>
 #include <chrono>
 
-#include "Engine/Core/FileWatcher/FileWatcher.h"
+#include <FileWatcher/FileWatcher.h>
 
 namespace fs = std::filesystem;
 

@@ -21,7 +21,7 @@
 #include <ECS/ECSInternalComponents.h>
 
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/EventSystem/EventSystem.h"
+#include <EventSystem/EventSystem.h>
 #include <Logger/LogChannel.h>
 #include <Logger/Logger.h>
 #include <ResourceManager/Core/AssetPaths.h>
@@ -31,11 +31,11 @@
 #include <FileSystem/FileSystem.h>
 
 #include <filesystem>
-#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
+#include <Utils/Serialization/JsonFile.h>
 #include <CameraSystem/Camera.h>
 #include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
-#include "Engine/Utils/Math/FrustumCulling.h"
+#include <Utils/Math/FrustumCulling.h>
 
 
 #ifdef _PROFILING

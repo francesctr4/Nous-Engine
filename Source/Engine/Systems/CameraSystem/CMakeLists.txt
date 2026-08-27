@@ -50,6 +50,11 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         glm::glm
 )
 
+# Camera.cpp uses MathUtils; Camera.h does not, so Utils stays PRIVATE.
+target_link_libraries(${CLASS_NAME} PRIVATE
+        Utils
+)
+
 if (NOUS_BUILD_TESTS)
     add_subdirectory(test)
 endif()

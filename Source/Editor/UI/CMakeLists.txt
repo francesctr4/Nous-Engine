@@ -87,6 +87,12 @@ target_link_libraries(EditorUI PUBLIC
         Logger_headers
         MemoryManager_headers
         NOUS_Multithreading_headers
+        # Converted 2026-08-27 alongside them. Utils is PUBLIC because
+        # AssetsBrowser.h/HierarchyWindow.h/InspectorWindow.h reach
+        # <Utils/Serialization/JsonObject.h> through Component.h.
+        Utils_headers
+        EventSystem_headers
+        FileWatcher_headers
 )
 
 # Converted 2026-08-27, and PRIVATE rather than PUBLIC because these are named

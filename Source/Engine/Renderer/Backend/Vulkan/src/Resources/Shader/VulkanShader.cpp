@@ -10,7 +10,7 @@
 
 #include <algorithm>
 
-#include "Engine/Utils/Math/Vertex.inl"
+#include <Utils/Math/Vertex.inl>
 
 // ─────────────────────────────── Module helpers ───────────────────────────────
 

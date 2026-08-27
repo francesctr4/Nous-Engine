@@ -15,9 +15,9 @@
 
 #include <SDL3/SDL.h>
 
-#include <Engine/Core/TimeManager/TimeManager.h>
+#include <TimeManager/TimeManager.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
-#include <Engine/Core/EventSystem/EventSystem.h>
+#include <EventSystem/EventSystem.h>
 #include <Logger/Logger.h>
 #include "Engine/Scripting/ScriptManager.h"
 #include <ECS/ComponentServices.h>

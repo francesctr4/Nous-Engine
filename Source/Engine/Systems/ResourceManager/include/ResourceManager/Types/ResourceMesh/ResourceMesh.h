@@ -3,7 +3,7 @@
 
 #include "Engine/Core/Globals.h"
 #include <ResourceManager/Core/ResourceBase.h>
-#include "Engine/Utils/Math/Vertex.inl"
+#include <Utils/Math/Vertex.inl>
 
 #include <vector>
 #include <glm/glm.hpp>

@@ -8,7 +8,7 @@
 #include <mutex>
 
 #include "Engine/EngineExport.h"
-#include "Engine/Utils/DataStructures/NOUS_Vector.h"
+#include <Utils/DataStructures/NOUS_Vector.h>
 #include "Engine/Scripting/iScriptRegistry.h"
 
 class IScript;

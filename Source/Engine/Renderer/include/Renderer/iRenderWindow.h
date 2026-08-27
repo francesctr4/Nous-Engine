@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Core/Globals.h"
+#include <cstdint>
 
 struct SDL_Window;
 
@@ -35,5 +35,5 @@ public:
      * Only a starting point for the swapchain: the surface extent the driver
      * reports wins (X11/llvmpipe clamps it a few px off). See CreateSwapChain.
      */
-    virtual void GetFramebufferSize(int32* width, int32* height) const = 0;
+    virtual void GetFramebufferSize(int32_t* width, int32_t* height) const = 0;
 };

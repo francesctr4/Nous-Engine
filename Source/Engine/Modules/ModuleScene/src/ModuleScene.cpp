@@ -3,7 +3,7 @@
 #include <FileSystem/FileSystem.h>
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Core/EventSystem/EventSystem.h"
+#include <EventSystem/EventSystem.h>
 #include <Logger/Logger.h>
 
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
@@ -33,7 +33,7 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-#include "Engine/Core/TimeManager/TimeManager.h"
+#include <TimeManager/TimeManager.h>
 
 #include <SDL3/SDL.h>
 #include <filesystem>

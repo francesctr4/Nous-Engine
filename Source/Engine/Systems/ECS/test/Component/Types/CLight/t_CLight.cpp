@@ -5,7 +5,7 @@
 #include <ECS/Component/Types/CLight/CLight.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 class t_CLight : public ::testing::Test
 {

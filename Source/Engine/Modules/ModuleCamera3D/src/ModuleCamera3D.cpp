@@ -6,7 +6,7 @@
 // SDL3
 #include "SDL3/SDL.h"
 
-#include "Engine/Core/EventSystem/EventSystem.h"
+#include <EventSystem/EventSystem.h>
 
 #include "glm/gtc/quaternion.hpp"
 #include <MemoryManager/MemoryManager.h>

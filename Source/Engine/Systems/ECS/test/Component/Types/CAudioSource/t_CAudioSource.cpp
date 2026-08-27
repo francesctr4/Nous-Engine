@@ -9,7 +9,7 @@
 #include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 // CAudioSource reaches the audio engine through the ComponentServices seam, so
 // these tests wire fake brokers into the Scene and assert on the voice-lifecycle

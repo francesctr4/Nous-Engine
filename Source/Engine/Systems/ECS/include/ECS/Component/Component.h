@@ -4,7 +4,7 @@
 #include <string_view>
 #include <entt/entity/fwd.hpp>     // entt::entity + entt::registry forward decls (full <entt/entt.hpp> not needed here)
 #include <entt/entity/entity.hpp>  // entt::null
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 class GameObject;
 struct ComponentServices;

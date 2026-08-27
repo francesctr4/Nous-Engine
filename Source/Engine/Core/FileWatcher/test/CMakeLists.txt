@@ -8,7 +8,6 @@ find_package(GTest CONFIG REQUIRED)
 
 target_include_directories(${TEST_NAME}
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/..
         ${CMAKE_SOURCE_DIR}/Source
 )
 

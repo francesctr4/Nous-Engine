@@ -7,9 +7,9 @@
 #include <FileSystem/FileSystem.h>
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
+#include <Utils/Serialization/JsonFile.h>
+#include <Utils/Serialization/JsonObject.h>
+#include <Utils/Serialization/JsonArray.h>
 #include <ResourceManager/Core/MetaFileData.h>
 
 namespace ae = nous::audio;

@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 #include <atomic>
-#include "Engine/Core/EventSystem/IEventListener.h"
+#include <EventSystem/IEventListener.h>
 
 class Scene;
 class Camera;

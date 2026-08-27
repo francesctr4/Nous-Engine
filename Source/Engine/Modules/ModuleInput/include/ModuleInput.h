@@ -3,7 +3,7 @@
 
 #include "Engine/Modules/Module.h"
 #include "Engine/Core/Globals.h"
-#include "Engine/Core/EventSystem/IEventListener.h"
+#include <EventSystem/IEventListener.h>
 #include "Engine/Core/Input/IInputReader.h"
 #include "Engine/Scripting/iScriptInput.h"
 

@@ -1,6 +1,6 @@
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
 
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 JsonObject CPrefab::Serialize() const
 {

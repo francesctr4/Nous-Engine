@@ -17,6 +17,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         ModuleBase
         ECS
         EnTT::EnTT
+        EventSystem_headers   # <Module>.h implements IEventListener
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

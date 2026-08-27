@@ -4,7 +4,7 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include <ResourceManager/Core/IImporterManager.h>
 #include <ResourceManager/Core/TypeRegistry.h>
-#include "Engine/Core/EventSystem/EventSystem.h"
+#include <EventSystem/EventSystem.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"

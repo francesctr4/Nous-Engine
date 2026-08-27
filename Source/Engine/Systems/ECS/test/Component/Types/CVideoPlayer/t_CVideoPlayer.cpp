@@ -7,7 +7,7 @@
 #include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 // CVideoPlayer reaches the decoder through the ComponentServices seam, so these
 // tests wire fake brokers into the Scene and assert on the decoder-handle

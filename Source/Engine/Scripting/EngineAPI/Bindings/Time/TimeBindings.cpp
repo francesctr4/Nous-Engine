@@ -1,6 +1,6 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Time/TimeBindings.h"
 
-#include "Engine/Core/TimeManager/TimeManager.h"
+#include <TimeManager/TimeManager.h>
 
 void SetupTimeBindings(TimeAPI& time)
 {

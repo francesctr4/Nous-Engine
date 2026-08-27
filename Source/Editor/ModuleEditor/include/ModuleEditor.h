@@ -5,11 +5,11 @@
 
 #include "Engine/Modules/Module.h"
 #include <RendererFrontend/IEditorOverlay.h>
-#include "Engine/Core/EventSystem/IEventListener.h"
+#include <EventSystem/IEventListener.h>
 #include "Editor/EditorContext.h"
 #include "Editor/GameExporter/include/GameExporter.h"
 
-#include "Engine/Utils/DataStructures/NOUS_Vector.h"
+#include <Utils/DataStructures/NOUS_Vector.h>
 
 #include <memory>
 #include <string>

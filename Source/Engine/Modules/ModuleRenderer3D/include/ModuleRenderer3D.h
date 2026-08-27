@@ -16,8 +16,8 @@
 // -----------------------------------------------------------------------------
 
 #include "Engine/Modules/Module.h"
-#include "Engine/Core/EventSystem/IEventListener.h"
-#include "Engine/Core/FileWatcher/FileWatcher.h"
+#include <EventSystem/IEventListener.h>
+#include <FileWatcher/FileWatcher.h>
 #include "Engine/EngineExport.h"
 #include <Renderer/RendererTypes.h>
 

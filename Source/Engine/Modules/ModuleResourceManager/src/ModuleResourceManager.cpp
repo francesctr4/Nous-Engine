@@ -1,6 +1,6 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include <ResourceManager/Core/ResourceBase.h>
-#include "Engine/Core/EventSystem/EventSystem.h"
+#include <EventSystem/EventSystem.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
 #include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>

@@ -2,7 +2,7 @@
 #define MODULE_CAMERA_3D_H
 
 #include "Engine/Modules/Module.h"
-#include "Engine/Core/EventSystem/IEventListener.h"
+#include <EventSystem/IEventListener.h>
 #include "Engine/Core/Input/IInputReader.h"
 
 #include <glm/glm.hpp>

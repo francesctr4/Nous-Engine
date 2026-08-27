@@ -39,8 +39,8 @@
 #include "Resources/Shader/VulkanShader.h"
 
 #include <NOUS_Multithreading/NOUS_Thread.h>
-#include "Engine/Utils/Math/Vertex.inl"
-#include <Engine/Core/EventSystem/EventSystem.h>
+#include <Utils/Math/Vertex.inl>
+#include <EventSystem/EventSystem.h>
 #include <Renderer/iRenderWindow.h>
 #include <Renderer/iRenderResourceProvider.h>
 

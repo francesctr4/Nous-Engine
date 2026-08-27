@@ -7,7 +7,7 @@
 #include <ResourceManager/Core/ResourceBase.h>
 #include <FileSystem/FileSystem.h>
 
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 // -----------------------------------------------------------------------------
 // Serialization

@@ -6,7 +6,7 @@
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 class t_CMaterial : public ::testing::Test
 {

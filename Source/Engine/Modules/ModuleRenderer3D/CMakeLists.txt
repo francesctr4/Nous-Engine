@@ -16,6 +16,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         ModuleBase
         FileWatcher       # owns the shader hot-reload watcher
         Renderer
+        EventSystem_headers   # <Module>.h implements IEventListener
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

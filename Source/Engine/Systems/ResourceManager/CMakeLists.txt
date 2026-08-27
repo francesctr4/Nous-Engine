@@ -92,6 +92,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         MemoryManager     # NOUS_Vector in public resource headers
         Renderer          # IGPUResourceFactory / RendererTypes in public headers
         AudioSystem_headers  # ResourceAudioGraph.h names AudioGraphDesc
+        Utils_headers     # ResourceMesh.h / ImporterMesh.h include <Utils/Math/Vertex.inl>
 )
 
 # AudioSystem + VideoSystem close cycles: the Resource* types live here, the

@@ -12,7 +12,7 @@
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <ResourceManager/Types/ResourceType.h>
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
+#include <Utils/Serialization/JsonObject.h>
 
 // ---------------------------------------------------------------------------
 // Lifecycle

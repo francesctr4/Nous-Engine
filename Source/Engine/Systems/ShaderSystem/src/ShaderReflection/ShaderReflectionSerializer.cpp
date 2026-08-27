@@ -1,8 +1,8 @@
 #include <ShaderSystem/ShaderReflection/ShaderReflectionSerializer.h>
 #include <Logger/Logger.h>
 
-#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
+#include <Utils/Serialization/JsonFile.h>
+#include <Utils/Serialization/JsonArray.h>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 

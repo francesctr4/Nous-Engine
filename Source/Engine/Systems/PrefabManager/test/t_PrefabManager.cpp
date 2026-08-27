@@ -9,9 +9,9 @@
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 
-#include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
-#include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
+#include <Utils/Serialization/JsonFile.h>
+#include <Utils/Serialization/JsonObject.h>
+#include <Utils/Serialization/JsonArray.h>
 #include <glm/glm.hpp>
 #include <filesystem>
 #include <string>

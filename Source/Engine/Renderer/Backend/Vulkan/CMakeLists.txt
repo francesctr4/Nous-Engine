@@ -74,6 +74,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
 
 target_link_libraries(${CLASS_NAME} PRIVATE
         EventSystem
+        Utils
         FileSystem
         Logger
         MemoryManager

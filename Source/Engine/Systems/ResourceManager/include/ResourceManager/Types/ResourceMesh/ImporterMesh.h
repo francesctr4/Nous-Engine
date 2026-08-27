@@ -3,7 +3,7 @@
 
 #include <ResourceManager/Core/IImporter.h>
 #include "Engine/EngineExport.h"
-#include "Engine/Utils/Math/Vertex.inl"
+#include <Utils/Math/Vertex.inl>
 
 #include <glm/glm.hpp>
 #include <string>
