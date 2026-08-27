@@ -5,7 +5,7 @@
 #include <ECS/Component/Types/CCamera/CCamera.h>
 #include <ECS/Component/Types/CLight/CLight.h>
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
-#include "Engine/Systems/PrefabManager/include/PrefabManager.h"
+#include <PrefabManager/PrefabManager.h>
 
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include <Logger/Logger.h>

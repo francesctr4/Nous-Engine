@@ -69,6 +69,7 @@ CONVERTED = {
     "CameraSystem":        "Engine/Systems/CameraSystem/include",
     "ECS":                 "Engine/Systems/ECS/include",
     "ResourceManager":     "Engine/Systems/ResourceManager/include",
+    "PrefabManager":       "Engine/Systems/PrefabManager/include",
 }
 
 # Targets that re-export every converted _headers handle PUBLIC. Anything linking

@@ -42,7 +42,7 @@
 #include <NOUS_Multithreading/NOUS_ThreadPool.h>
 #include <ResourceManager/Types/ResourceMesh/ImporterMesh.h>
 #include <ResourceManager/Core/MetaFileData.h>
-#include "Engine/Systems/PrefabManager/include/PrefabManager.h"
+#include <PrefabManager/PrefabManager.h>
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
 
 ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,

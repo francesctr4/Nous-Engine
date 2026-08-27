@@ -95,6 +95,7 @@ target_link_libraries(EditorUI PUBLIC
 target_link_libraries(EditorUI PRIVATE
         CameraSystem_headers
         VideoSystem_headers
+        PrefabManager_headers   # HierarchyWindow.cpp spawns prefabs
 )
 
 # ShaderSystem is PUBLIC rather than PRIVATE: InspectorWindow.h is a public

@@ -63,6 +63,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         VideoSystem_headers
         ECS_headers
         ResourceManager_headers
+        PrefabManager_headers
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

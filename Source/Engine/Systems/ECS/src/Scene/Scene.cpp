@@ -14,7 +14,7 @@
 #include <ECS/Component/Types/CScript/CScript.h>
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
 #include <ECS/Component/Types/ComponentTypes.h>
-#include "Engine/Systems/PrefabManager/include/PrefabManager.h"
+#include <PrefabManager/PrefabManager.h>
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include <Logger/Asserts.h>
 #include <Logger/Logger.h>

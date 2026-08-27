@@ -256,9 +256,10 @@ Use `final` on classes or methods that must not be further overridden.
 ## Target Layout: public `include/`, private `src/`
 
 **Migration in progress.** Converted so far: `AudioSystem` (2026-08-26); the
-foundation — `Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` — and the
-Systems leaves — `VideoSystem`, `ShaderSystem`, `CameraSystem` (2026-08-27). Converted
-targets use:
+foundation — `Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` — and all of
+`Systems/` — `VideoSystem`, `ShaderSystem`, `CameraSystem`, `ECS`, `ResourceManager`,
+`PrefabManager` (2026-08-27). Remaining: `Core/`'s other units, `Utils`, `Scripting`,
+`Renderer/`, `Modules/`, `Editor/`. Converted targets use:
 
 ```
 Systems/AudioSystem/
@@ -311,6 +312,20 @@ because the DLL's PUBLIC link list carries every converted target's `_headers` h
 prefix.** `CameraSystem/Camera/` defining a target called `Camera` would have produced
 `<Camera/Camera.h>` — too generic a prefix to add to every consumer's include path — so
 it was renamed and flattened to `Systems/CameraSystem/` on conversion.
+
+**Mirror a folder per unit in `include/` where the units are a family you extend.**
+`ResourceManager/Types/ResourceMesh/` and `ECS/Component/Types/CTransform/` exist in
+`include/`, `src/` and `test/` under the same name, so adding a resource type or a
+component stays "the three `X` folders" rather than a header filed away from its
+sources. Apply this wherever there is a recurring add-one-more workflow; do **not**
+apply it to one-off units (`ResourceManager/Core/`, `Runtime/`), where it only produces
+`HotReloader/HotReloader.h`.
+
+**Decide public/private by asking "is it reached through a public header?", not by
+counting includers.** `ComponentList.h` (one includer) and `IImporterDispatcher.h`
+(none outside its target) are both public, because `ComponentTypes.h` and
+`IImporterManager.h` include them. Counting alone would have filed both under `src/`
+and broken every consumer.
 
 **Where a sub-unit contributes exactly one public header, `include/` is flat.**
 `NOUS_JobSystem/NOUS_JobSystem.h` under `include/NOUS_Multithreading/` would be pure
