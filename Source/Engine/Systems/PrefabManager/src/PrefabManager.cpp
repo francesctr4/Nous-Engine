@@ -1,18 +1,18 @@
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/Component.h"
-#include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
-#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
-#include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
-#include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
+#include <ECS/Scene/Scene.h>
+#include <ECS/GameObject.h>
+#include <ECS/Component/Component.h>
+#include <ECS/Component/Types/CPrefab.h>
+#include <ECS/Component/Types/CTransform.h>
+#include <ECS/Component/Types/CMesh.h>
+#include <ECS/Component/Types/CMaterial.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ImporterMaterial.h"
-#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
-#include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
-#include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
-#include "Engine/Systems/ECS/Component/Types/ComponentTypes.h"
+#include <ECS/Component/Types/CCamera.h>
+#include <ECS/Component/Types/CLight.h>
+#include <ECS/Component/Types/CScript.h>
+#include <ECS/Component/Types/ComponentTypes.h>
 #include <Logger/Logger.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"

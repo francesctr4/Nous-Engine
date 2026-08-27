@@ -1,12 +1,12 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Component/ComponentBindings.h"
 
 #include "Engine/Scripting/iScriptSceneHost.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
-#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
-#include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
-#include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
+#include <ECS/Scene/Scene.h>
+#include <ECS/GameObject.h>
+#include <ECS/Component/Types/CLight.h>
+#include <ECS/Component/Types/CCamera.h>
+#include <ECS/Component/Types/CMesh.h>
+#include <ECS/Component/Types/CScript.h>
 #include <Logger/Logger.h>
 
 static IScriptSceneHost* s_scene = nullptr;

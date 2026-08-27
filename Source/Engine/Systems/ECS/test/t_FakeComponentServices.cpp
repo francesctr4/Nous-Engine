@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Systems/ECS/test/FakeComponentServices.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include <FakeComponentServices.h>
+#include <ECS/Scene/Scene.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 

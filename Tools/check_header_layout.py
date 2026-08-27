@@ -67,6 +67,7 @@ CONVERTED = {
     "VideoSystem":         "Engine/Systems/VideoSystem/include",
     "ShaderSystem":        "Engine/Systems/ShaderSystem/include",
     "CameraSystem":        "Engine/Systems/CameraSystem/include",
+    "ECS":                 "Engine/Systems/ECS/include",
 }
 
 # Targets that re-export every converted _headers handle PUBLIC. Anything linking

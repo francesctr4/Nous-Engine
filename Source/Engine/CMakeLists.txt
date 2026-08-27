@@ -61,6 +61,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         CameraSystem_headers
         ShaderSystem_headers
         VideoSystem_headers
+        ECS_headers
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

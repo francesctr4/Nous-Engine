@@ -1,9 +1,9 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Material/MaterialBindings.h"
 
 #include "Engine/Scripting/iScriptSceneHost.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
+#include <ECS/Scene/Scene.h>
+#include <ECS/GameObject.h>
+#include <ECS/Component/Types/CMaterial.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include <Logger/Logger.h>
 

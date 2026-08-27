@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/EngineExport.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include <ECS/GameObject.h>
 
 #include <string>
 

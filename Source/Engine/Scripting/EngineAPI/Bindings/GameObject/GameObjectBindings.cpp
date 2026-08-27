@@ -1,9 +1,9 @@
 #include "Engine/Scripting/EngineAPI/Bindings/GameObject/GameObjectBindings.h"
 
 #include "Engine/Scripting/iScriptSceneHost.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
+#include <ECS/Scene/Scene.h>
+#include <ECS/GameObject.h>
+#include <ECS/Component/Types/CTransform.h>
 #include <Logger/Logger.h>
 
 static IScriptSceneHost* s_scene = nullptr;

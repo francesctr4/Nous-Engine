@@ -2,8 +2,8 @@
 
 #include "Editor/UI/IEditorWindow.h"
 #include "Engine/Scripting/Internal/IScript.inl"
-#include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include <ECS/Component/Types/CMaterial.h>
+#include <ECS/Scene/Scene.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include <cstdint>

@@ -28,4 +28,5 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         # the Multithreading/JobQueue windows (job system).
         NOUS_Multithreading_headers
         ShaderSystem_headers
+        ECS_headers
 )

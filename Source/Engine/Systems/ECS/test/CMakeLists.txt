@@ -1,3 +1,9 @@
+# Tests live at the target root, not under src/ - see CONVENTIONS.md.
+# The sub-unit structure of src/ is mirrored here.
+add_subdirectory(Component)
+add_subdirectory(GameObject)
+add_subdirectory(Scene)
+
 # ===========================================
 # ComponentServices fakes - Unit Tests
 # ===========================================
@@ -10,7 +16,6 @@ add_executable(${TEST_NAME}
 
 target_include_directories(${TEST_NAME}
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/..
         ${CMAKE_SOURCE_DIR}/Source
 )
 
@@ -20,6 +25,7 @@ find_package(GTest CONFIG REQUIRED)
 target_link_libraries(${TEST_NAME}
         PRIVATE
         NousEngine::Engine
+        ECS_test_headers   # <FakeComponentServices.h>
         NousEngine::Editor
         GTest::gtest
         GTest::gtest_main

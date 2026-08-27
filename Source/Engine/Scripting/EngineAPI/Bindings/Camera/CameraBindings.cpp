@@ -1,9 +1,9 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Camera/CameraBindings.h"
 
 #include "Engine/Scripting/iScriptSceneHost.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
+#include <ECS/Scene/Scene.h>
+#include <ECS/GameObject.h>
+#include <ECS/Component/Types/CCamera.h>
 #include <Logger/Logger.h>
 
 static IScriptSceneHost* s_scene = nullptr;

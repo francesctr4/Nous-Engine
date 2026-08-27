@@ -2,10 +2,10 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
-#include "Engine/Systems/ECS/Component/Types/ComponentTypes.h"
+#include <ECS/GameObject.h>
+#include <ECS/Scene/Scene.h>
+#include <ECS/Component/Types/CPrefab.h>
+#include <ECS/Component/Types/ComponentTypes.h>
 #include "Editor/UI/Windows/InspectorWindow/InspectorComponent/ComponentInspectorRegistry/include/ComponentInspectorRegistry.h"
 
 #include "imgui.h"

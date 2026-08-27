@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Systems/ECS/ComponentServices.h"
-#include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
+#include <ECS/ComponentServices.h>
+#include <ECS/Scene/iSceneHost.h>
 #include <AudioSystem/iAudioBroker.h>
 #include <VideoSystem/iVideoBroker.h>
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"

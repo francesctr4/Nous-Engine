@@ -6,9 +6,9 @@
 #include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
 #include "Engine/Scripting/ScriptManager.h"
 #include "Engine/Scripting/Internal/IScript.inl"
-#include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include <ECS/Component/Types/CScript.h>
+#include <ECS/GameObject.h>
+#include <ECS/Scene/Scene.h>
 
 // ---------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------

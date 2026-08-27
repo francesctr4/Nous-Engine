@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include <ECS/GameObject.h>
 
 #include <entt/entt.hpp>
 #include <vector>

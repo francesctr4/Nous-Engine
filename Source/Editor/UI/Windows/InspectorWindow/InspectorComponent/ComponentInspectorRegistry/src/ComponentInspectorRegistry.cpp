@@ -6,14 +6,14 @@
 
 #include "Engine/Core/Globals.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Systems/ECS/Component/Component.h"
-#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
-#include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
-#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
-#include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
-#include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
-#include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include <ECS/Component/Component.h>
+#include <ECS/Component/Types/CTransform.h>
+#include <ECS/Component/Types/CMesh.h>
+#include <ECS/Component/Types/CCamera.h>
+#include <ECS/Component/Types/CLight.h>
+#include <ECS/Component/Types/CMaterial.h>
+#include <ECS/Component/Types/CScript.h>
+#include <ECS/GameObject.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
@@ -27,9 +27,9 @@
 #include <string>
 #include <utility>
 
-#include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
-#include "Engine/Systems/ECS/Component/Types/CAudioListener/include/CAudioListener.h"
-#include "Engine/Systems/ECS/Component/Types/CVideoPlayer/include/CVideoPlayer.h"
+#include <ECS/Component/Types/CAudioSource.h>
+#include <ECS/Component/Types/CAudioListener.h>
+#include <ECS/Component/Types/CVideoPlayer.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"

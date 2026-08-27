@@ -1,10 +1,10 @@
 #include "Editor/UI/Windows/HierarchyWindow/include/HierarchyWindow.h"
 
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
-#include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
-#include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
+#include <ECS/Scene/Scene.h>
+#include <ECS/GameObject.h>
+#include <ECS/Component/Types/CCamera.h>
+#include <ECS/Component/Types/CLight.h>
+#include <ECS/Component/Types/CPrefab.h>
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"

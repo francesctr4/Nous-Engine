@@ -4,9 +4,9 @@
 #include "Engine/EngineExport.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
-#include "Engine/Systems/ECS/ComponentServices.h"
+#include <ECS/GameObject.h>
+#include <ECS/Scene/iSceneHost.h>
+#include <ECS/ComponentServices.h>
 #include "Engine/Scripting/iScriptSceneHost.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>

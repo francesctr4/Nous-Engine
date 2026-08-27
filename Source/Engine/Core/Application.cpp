@@ -20,7 +20,7 @@
 #include <Engine/Core/EventSystem/EventSystem.h>
 #include <Logger/Logger.h>
 #include "Engine/Scripting/ScriptManager.h"
-#include "Engine/Systems/ECS/ComponentServices.h"
+#include <ECS/ComponentServices.h>
 #include <NOUS_Multithreading/NOUS_Thread.h>
 
 #include <chrono>

@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/ECSInternalComponents.h"
-#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
+#include <ECS/Scene/Scene.h>
+#include <ECS/ECSInternalComponents.h>
+#include <ECS/Component/Types/CTransform.h>
 #include <MemoryManager/MemoryManager.h>
 
 #include <glm/glm.hpp>

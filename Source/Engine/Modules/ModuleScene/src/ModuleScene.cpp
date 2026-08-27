@@ -13,13 +13,13 @@
 
 #include "Engine/Scripting/ScriptManager.h"
 
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
+#include <ECS/Scene/Scene.h>
+#include <ECS/GameObject.h>
 
-#include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
-#include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"
-#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
-#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
+#include <ECS/Component/Types/CMesh.h>
+#include <ECS/Component/Types/CMaterial.h>
+#include <ECS/Component/Types/CTransform.h>
+#include <ECS/Component/Types/CCamera.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -43,7 +43,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ImporterMesh.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
-#include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
+#include <ECS/Component/Types/CPrefab.h>
 
 ModuleScene::ModuleScene(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
     ModuleInput* moduleInput, ModuleResourceManager* moduleResourceManager, ModuleAudio* moduleAudio,

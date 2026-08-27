@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
-#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
-#include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
+#include <ECS/Scene/Scene.h>
+#include <ECS/GameObject.h>
+#include <ECS/Component/Types/CPrefab.h>
+#include <ECS/Component/Types/CTransform.h>
+#include <ECS/Component/Types/CCamera.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 

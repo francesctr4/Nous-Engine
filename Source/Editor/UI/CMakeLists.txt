@@ -102,4 +102,7 @@ target_link_libraries(EditorUI PRIVATE
 # consumers of that header need the dir too.
 target_link_libraries(EditorUI PUBLIC
         ShaderSystem_headers
+        # HierarchyWindow.h and InspectorWindow.h name GameObject, Scene and the
+        # component types in their public headers.
+        ECS_headers
 )

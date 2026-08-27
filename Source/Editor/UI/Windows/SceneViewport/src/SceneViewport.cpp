@@ -11,12 +11,12 @@
 
 #include "Engine/Renderer/iEditorRenderBridge.h"
 
-#include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
-#include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
+#include <ECS/Component/Types/CTransform.h>
+#include <ECS/Component/Types/CMesh.h>
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/ECS/Scene/include/Scene.h"
+#include <ECS/GameObject.h>
+#include <ECS/Scene/Scene.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Renderer/RendererTypes.h"
