@@ -19,7 +19,7 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Core/FileWatcher/FileWatcher.h"
 #include "Engine/EngineExport.h"
-#include "Engine/Renderer/RendererTypes.h"
+#include <Renderer/RendererTypes.h>
 
 #include <unordered_map>
 #include <utility>

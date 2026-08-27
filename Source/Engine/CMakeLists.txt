@@ -64,6 +64,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         ECS_headers
         ResourceManager_headers
         PrefabManager_headers
+        Renderer_headers
+        RendererFrontend_headers
+        RendererBackend_headers
+        VulkanBackend_headers
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

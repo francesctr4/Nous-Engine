@@ -20,6 +20,14 @@ break a consumer that had been getting the header for free. Two checks catch it:
   MISSING_LINK   a target compiles <Converted/...> but nothing in its link
                  closure provides that include dir.
 
+  PRIVATE_HEADER a PUBLIC header includes a header under its own target's src/.
+                 The public header then cannot compile outside the target at all.
+                 This is the "reached through a public header" trap: a raw
+                 includer count says the src/ header is private, because nothing
+                 outside includes it DIRECTLY -- but its type is a by-value member
+                 of the public one. Bit three times (ComponentList.h,
+                 IImporterDispatcher.h, GroupGeometries.h), so it is checked.
+
   PRIVATE_LEAK   a target names <Converted/...> from one of its own PUBLIC
                  headers while declaring the dependency PRIVATE. It compiles
                  fine itself; its consumers do not inherit the dir and break at
@@ -70,6 +78,10 @@ CONVERTED = {
     "ECS":                 "Engine/Systems/ECS/include",
     "ResourceManager":     "Engine/Systems/ResourceManager/include",
     "PrefabManager":       "Engine/Systems/PrefabManager/include",
+    "Renderer":            "Engine/Renderer/include",
+    "RendererFrontend":    "Engine/Renderer/Frontend/include",
+    "RendererBackend":     "Engine/Renderer/Backend/include",
+    "VulkanBackend":       "Engine/Renderer/Backend/Vulkan/include",
 }
 
 # Targets that re-export every converted _headers handle PUBLIC. Anything linking
@@ -77,6 +89,9 @@ CONVERTED = {
 # declarations of their own. See the PUBLIC block in Source/Engine/CMakeLists.txt.
 ENGINE_UMBRELLAS = {"NousEngine", "Nous-Engine", "NousEngine::Engine",
                     "Nous-Editor", "NousEngine::Editor"}
+
+# Target roots of every converted target: the include dir with "/include" removed.
+CONVERTED_ROOTS = [d[: -len("/include")] for d in CONVERTED.values()]
 
 SOURCE_SUFFIXES = (".h", ".cpp", ".inl")
 HEADER_SUFFIXES = (".h", ".inl")
@@ -163,12 +178,23 @@ class Tree:
         if prefix in CONVERTED:
             candidate = posix(Path(CONVERTED[prefix]) / spec)
             return candidate if candidate in self.text else None
-        for candidate in (posix(Path(spec)),
-                          posix(Path(current).parent / spec)):
+        candidates = [posix(Path(spec)), posix(Path(current).parent / spec)]
+        # A converted target puts its own src/ on the include path (PRIVATE), so a
+        # quoted include from anywhere in that target can resolve there. Without
+        # this the PRIVATE_HEADER check silently passes: the offending include
+        # just looks external and is skipped.
+        for root in self._target_roots:
+            if current.startswith(root + "/"):
+                candidates.append(posix(Path(root) / "src" / spec))
+        for candidate in candidates:
             candidate = posix(os.path.normpath(candidate))
             if candidate in self.text:
                 return candidate
         return None
+
+    @property
+    def _target_roots(self):
+        return CONVERTED_ROOTS
 
     def needs(self, path, stack=()):
         """Converted prefixes reachable from `path` through the include graph."""
@@ -256,6 +282,26 @@ class Tree:
             current = parent
 
 
+def private_headers_in_public(tree):
+    """PUBLIC headers that include a header under the same target's src/.
+
+    Decided structurally, from the paths, so it holds for every converted target
+    without needing to know which headers are "meant" to be private.
+    """
+    findings = []
+    for path in tree.text:
+        if not path.endswith(HEADER_SUFFIXES) or "/include/" not in path:
+            continue
+        target_root = path.split("/include/")[0]
+        for spec in INCLUDE_RE.findall(tree.text[path]):
+            resolved = tree._resolve(spec, path)
+            if resolved is None:
+                continue
+            if resolved.startswith(target_root + "/src/"):
+                findings.append((path, resolved))
+    return findings
+
+
 def audit(tree):
     """Return (missing_link, private_leak) findings."""
     required = {}                    # target dir -> set of prefixes needed
@@ -310,9 +356,10 @@ def main():
 
     tree = Tree(SOURCE_DIR)
     missing, leaks = audit(tree)
+    privates = private_headers_in_public(tree)
 
     if args.quiet:
-        return 1 if (missing or leaks) else 0
+        return 1 if (missing or leaks or privates) else 0
 
     if args.list:
         print(f"Converted targets ({len(CONVERTED)}):")
@@ -338,7 +385,16 @@ def main():
                 print("      via " + " -> ".join(chain[1:]))
         print()
 
-    total = len(missing) + len(leaks)
+    if privates:
+        print("PRIVATE_HEADER - a PUBLIC header includes one of its target's src/ headers:")
+        for public, private in privates:
+            print(f"  Source/{public}")
+            print(f"      includes Source/{private}")
+            print("      -> that header is reached through the API, so it is API: move it "
+                  "to include/, or hide it behind a pimpl/forward declaration first")
+        print()
+
+    total = len(missing) + len(leaks) + len(privates)
     print(f"{total} finding(s); {len(tree.text)} files, {len(tree.targets)} target dirs scanned.")
     return 1 if total else 0
 

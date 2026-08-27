@@ -3,7 +3,7 @@
 
 #include "Engine/Core/Globals.h"
 #include <ResourceManager/Core/ResourceBase.h>
-#include "Engine/Renderer/RendererTypes.h"
+#include <Renderer/RendererTypes.h>
 #include <ShaderSystem/ShaderReflection/ShaderReflectionTypes.h>
 
 #include "glm/glm.hpp"

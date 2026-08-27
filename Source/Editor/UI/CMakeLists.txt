@@ -96,6 +96,10 @@ target_link_libraries(EditorUI PRIVATE
         CameraSystem_headers
         VideoSystem_headers
         PrefabManager_headers   # HierarchyWindow.cpp spawns prefabs
+        # SceneViewport/GameViewport hold IEditorRenderBridge* and call the
+        # frontend; both from .cpp only.
+        Renderer_headers
+        RendererFrontend_headers
 )
 
 # ShaderSystem is PUBLIC rather than PRIVATE: InspectorWindow.h is a public

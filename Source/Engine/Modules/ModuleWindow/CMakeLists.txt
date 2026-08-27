@@ -15,6 +15,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         glm::glm
         ModuleBase
         SDL3::SDL3        # SDL_Window* crosses IRenderWindow, a public header
+        Renderer_headers  # ModuleWindow.h implements IRenderWindow
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

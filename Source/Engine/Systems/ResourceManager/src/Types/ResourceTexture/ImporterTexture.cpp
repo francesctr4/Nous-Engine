@@ -1,5 +1,5 @@
 #include "Types/ResourceTexture/ImporterTexture.h"
-#include "Engine/Renderer/IGPUResourceFactory.h"
+#include <Renderer/IGPUResourceFactory.h>
 #include <FileSystem/FileHandle.h>
 #include <FileSystem/FileSystem.h>
 

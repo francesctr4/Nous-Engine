@@ -7,7 +7,7 @@
 // Was reaching ImportPipeline transitively through ModuleResourceManager.h; that
 // include is gone, so name it directly.
 #include <ResourceManager/Runtime/ImportPipeline.h>
-#include "Engine/Renderer/IGPUResourceFactory.h"
+#include <Renderer/IGPUResourceFactory.h>
 
 #include <FileSystem/FileSystem.h>
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"

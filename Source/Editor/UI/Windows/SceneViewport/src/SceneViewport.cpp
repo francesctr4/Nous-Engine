@@ -9,7 +9,7 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include <CameraSystem/Camera.h>
 
-#include "Engine/Renderer/iEditorRenderBridge.h"
+#include <Renderer/iEditorRenderBridge.h>
 
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/Component/Types/CMesh/CMesh.h>
@@ -18,8 +18,8 @@
 #include <ECS/GameObject.h>
 #include <ECS/Scene/Scene.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Renderer/RendererTypes.h"
+#include <RendererFrontend/RendererFrontend.h>
+#include <Renderer/RendererTypes.h>
 
 #include "imgui.h"
 #include "imgui_internal.h"

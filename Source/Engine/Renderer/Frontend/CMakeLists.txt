@@ -1,30 +1,54 @@
 # ==============================
 # Nous Engine - Renderer Frontend
+#
+# include/RendererFrontend/**  is the API. src/** is implementation.
+#
+# All four headers are public, and GroupGeometries.h / DynamicTextureCache.h are
+# the interesting pair: no consumer outside this target includes either DIRECTLY,
+# so a raw includer count says "private". They are wrong to move, because
+# RendererFrontend.h -- the public header -- includes both by value
+# (mGroupedGeometries, mDynamicTextures are members, not pointers). A header
+# reached THROUGH a public header is public, whatever the count says. Making them
+# genuinely private means giving RendererFrontend.h a pimpl or forward-declared
+# members first; that is a real refactor, not a file move.
 # ==============================
 
-add_library(RendererFrontend STATIC
-        IEditorOverlay.h
-        GroupGeometries.h
-        GroupGeometries.cpp
-        DynamicTextureCache.h
-        DynamicTextureCache.cpp
-        RendererFrontend.h
-        RendererFrontend.cpp
+set(CLASS_NAME "RendererFrontend")
+
+add_library(${CLASS_NAME}_headers INTERFACE)
+target_include_directories(${CLASS_NAME}_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_library(${CLASS_NAME}_private INTERFACE)
+target_include_directories(${CLASS_NAME}_private INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_library(${CLASS_NAME} STATIC
+        src/GroupGeometries.cpp
+        src/DynamicTextureCache.cpp
+        src/${CLASS_NAME}.cpp
 )
 
-set_target_properties(RendererFrontend PROPERTIES
+target_sources(${CLASS_NAME} PRIVATE
+        include/${CLASS_NAME}/${CLASS_NAME}.h
+        include/${CLASS_NAME}/IEditorOverlay.h
+        include/${CLASS_NAME}/GroupGeometries.h
+        include/${CLASS_NAME}/DynamicTextureCache.h
+)
+
+set_target_properties(${CLASS_NAME} PROPERTIES
         CXX_STANDARD 23
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS OFF
 )
 
-target_include_directories(RendererFrontend PUBLIC
-        ${CMAKE_SOURCE_DIR}/Source
+target_include_directories(${CLASS_NAME}
+        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_compile_definitions(RendererFrontend PRIVATE NOUS_ENGINE_EXPORTS)
+target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
-target_link_libraries(RendererFrontend PUBLIC
+target_link_libraries(${CLASS_NAME} PUBLIC
+        ${CLASS_NAME}_headers
         glm::glm
         Renderer
         # RendererFrontend.h names ShaderLoaderTypes in its PUBLIC header, so the
@@ -34,7 +58,7 @@ target_link_libraries(RendererFrontend PUBLIC
         ShaderSystem_headers
 )
 
-target_link_libraries(RendererFrontend PRIVATE
+target_link_libraries(${CLASS_NAME} PRIVATE
         CameraSystem
         Logger
         MemoryManager

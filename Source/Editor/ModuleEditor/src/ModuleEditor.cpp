@@ -1,11 +1,11 @@
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
 #include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include <RendererFrontend/RendererFrontend.h>
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
 
-#include "Engine/Renderer/iEditorRenderBridge.h"
+#include <Renderer/iEditorRenderBridge.h>
 
 #include "Editor/UI/IEditorWindow.h"
 #include "Editor/UI/ImGuiCustom/ImGuiCustom.h"

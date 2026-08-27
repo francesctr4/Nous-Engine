@@ -19,6 +19,8 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         AudioSystem_headers
         # ModuleEditor.h includes NOUS_Vector.h, which names NOUS_STLAllocator.
         MemoryManager_headers
+        # ModuleEditor.h implements IEditorOverlay, so this one is PUBLIC.
+        RendererFrontend_headers
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE
@@ -30,4 +32,10 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         ShaderSystem_headers
         ECS_headers
         ResourceManager_headers
+)
+
+# ModuleEditor.cpp reaches the backend through IEditorRenderBridge; its own public
+# header does not name it, so PRIVATE is the honest scope.
+target_link_libraries(${CLASS_NAME} PRIVATE
+        Renderer_headers
 )

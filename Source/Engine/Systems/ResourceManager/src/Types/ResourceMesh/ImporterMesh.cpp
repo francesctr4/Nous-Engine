@@ -8,7 +8,7 @@
 
 #include <MemoryManager/MemoryManager.h>
 
-#include "Engine/Renderer/IGPUResourceFactory.h"
+#include <Renderer/IGPUResourceFactory.h>
 #include <ResourceManager/Core/IResourceLoader.h>
 #include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>

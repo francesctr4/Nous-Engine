@@ -3,7 +3,7 @@
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
 #include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
-#include "Engine/Renderer/IGPUResourceFactory.h"
+#include <Renderer/IGPUResourceFactory.h>
 #include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 

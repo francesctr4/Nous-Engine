@@ -4,7 +4,7 @@
 #include "Editor/EditorExport.h"
 
 #include "Engine/Modules/Module.h"
-#include "Engine/Renderer/Frontend/IEditorOverlay.h"
+#include <RendererFrontend/IEditorOverlay.h>
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Editor/EditorContext.h"
 #include "Editor/GameExporter/include/GameExporter.h"

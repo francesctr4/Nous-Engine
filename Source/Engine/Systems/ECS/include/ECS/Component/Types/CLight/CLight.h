@@ -2,7 +2,7 @@
 
 #include <ECS/Component/Component.h>
 #include "Engine/EngineExport.h"
-#include "Engine/Renderer/RendererTypes.h"
+#include <Renderer/RendererTypes.h>
 
 #include <glm/glm.hpp>
 

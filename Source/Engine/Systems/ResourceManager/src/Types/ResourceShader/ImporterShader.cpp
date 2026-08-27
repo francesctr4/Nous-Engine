@@ -8,7 +8,7 @@
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <ResourceManager/Core/MetaFileData.h>
 
-#include "Engine/Renderer/IGPUResourceFactory.h"
+#include <Renderer/IGPUResourceFactory.h>
 
 // ShaderSystem — using Parser + Compiler + Reflection directly to avoid
 // a circular CMake dependency (ShaderLoader returns ResourceShader*).

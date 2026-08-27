@@ -2,7 +2,7 @@
 
 #include <Logger/Logger.h>
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include <RendererFrontend/RendererFrontend.h>
 #include <ECS/Component/Types/CMaterial/CMaterial.h>
 #include <ECS/GameObject.h>
 #include <ResourceManager/Types/ResourceMaterial/ImporterMaterial.h>

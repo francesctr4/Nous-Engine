@@ -6,7 +6,7 @@
 #include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
-#include "Engine/Renderer/IGPUResourceFactory.h"
+#include <Renderer/IGPUResourceFactory.h>
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>

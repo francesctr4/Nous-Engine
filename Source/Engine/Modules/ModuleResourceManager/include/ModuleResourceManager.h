@@ -12,7 +12,7 @@
 #include <ResourceManager/Runtime/ScenePreloader.h>
 #include <ResourceManager/Types/ResourceMesh/SubMeshCache.h>
 #include <ResourceManager/Core/IResourceLoader.h>
-#include "Engine/Renderer/iRenderResourceProvider.h"
+#include <Renderer/iRenderResourceProvider.h>
 
 #include <future>
 #include <string>

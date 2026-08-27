@@ -4,7 +4,7 @@
 #include <NOUS_Multithreading/NOUS_Job.h>
 #include <NOUS_Multithreading/NOUS_Thread.h>
 #include <NOUS_Multithreading/NOUS_Multithreading.h>
-#include "Engine/Renderer/iEditorRenderBridge.h"
+#include <Renderer/iEditorRenderBridge.h>
 #include <NOUS_Multithreading/NOUS_ThreadPool.h>
 
 #include <algorithm>

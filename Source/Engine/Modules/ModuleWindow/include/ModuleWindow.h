@@ -4,7 +4,7 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
-#include "Engine/Renderer/iRenderWindow.h"
+#include <Renderer/iRenderWindow.h>
 
 struct SDL_Window;
 

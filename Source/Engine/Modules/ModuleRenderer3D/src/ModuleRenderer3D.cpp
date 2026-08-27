@@ -8,7 +8,7 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 
-#include "Engine/Renderer/Frontend/RendererFrontend.h"
+#include <RendererFrontend/RendererFrontend.h>
 
 #include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
 #include <ECS/GameObject.h>
