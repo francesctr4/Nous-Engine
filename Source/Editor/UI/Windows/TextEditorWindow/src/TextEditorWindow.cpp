@@ -1,8 +1,8 @@
 #include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
 
 #include <Logger/Logger.h>
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include <ModuleResourceManager/ModuleResourceManager.h>
+#include <ModuleScene/ModuleScene.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include "imgui.h"

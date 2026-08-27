@@ -1,7 +1,7 @@
 #ifndef MODULE_CAMERA_3D_H
 #define MODULE_CAMERA_3D_H
 
-#include "Engine/Modules/Module.h"
+#include <ModuleBase/Module.h>
 #include <EventSystem/IEventListener.h>
 #include "Engine/Core/Input/IInputReader.h"
 

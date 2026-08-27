@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Engine/Modules/Module.h"
+#include <ModuleBase/Module.h>
 #include "Engine/EngineExport.h"
 #include "Engine/Core/Globals.h"
-#include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
+#include <ModuleScene/SceneRenderData.h>
 #include <ECS/GameObject.h>
 #include <ECS/Scene/iSceneHost.h>
 #include <ECS/ComponentServices.h>

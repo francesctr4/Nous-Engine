@@ -1,7 +1,7 @@
 #ifndef MODULEINPUT_H
 #define MODULEINPUT_H
 
-#include "Engine/Modules/Module.h"
+#include <ModuleBase/Module.h>
 #include "Engine/Core/Globals.h"
 #include <EventSystem/IEventListener.h>
 #include "Engine/Core/Input/IInputReader.h"

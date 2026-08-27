@@ -1,7 +1,7 @@
 #include "Editor/UI/Windows/InspectorWindow/InspectorComponent/InspectorCMaterial/include/InspectorCMaterial.h"
 
 #include <Logger/Logger.h>
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include <ModuleResourceManager/ModuleResourceManager.h>
 #include <RendererFrontend/RendererFrontend.h>
 #include <ECS/Component/Types/CMaterial/CMaterial.h>
 #include <ECS/GameObject.h>

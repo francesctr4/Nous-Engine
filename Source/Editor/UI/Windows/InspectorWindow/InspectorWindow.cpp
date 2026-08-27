@@ -1,6 +1,6 @@
 #include "InspectorWindow.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include <ModuleScene/ModuleScene.h>
+#include <ModuleResourceManager/ModuleResourceManager.h>
 
 #include <ECS/GameObject.h>
 #include <ECS/Scene/Scene.h>

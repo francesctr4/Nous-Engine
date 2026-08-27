@@ -3,8 +3,8 @@
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
 #include <NOUS_Multithreading/NOUS_Multithreading.h>
-#include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include <ModuleWindow/ModuleWindow.h>
+#include <ModuleScene/ModuleScene.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include <Utils/Serialization/JsonFile.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Modules/Module.h"
+#include <ModuleBase/Module.h>
 #include <EventSystem/IEventListener.h>
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"

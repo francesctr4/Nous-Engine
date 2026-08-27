@@ -9,7 +9,7 @@
 #include <chrono>
 
 #include <FileSystem/FileSystem.h>
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include <ModuleResourceManager/ModuleResourceManager.h>
 #include <ResourceManager/Runtime/ImportPipeline.h>
 #include <ResourceManager/Core/MetaFileData.h>
 #include <Utils/Serialization/JsonFile.h>

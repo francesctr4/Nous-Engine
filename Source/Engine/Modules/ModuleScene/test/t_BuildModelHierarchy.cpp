@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include <ModuleScene/ModuleScene.h>
 #include <ECS/Scene/Scene.h>
 #include <ECS/ECSInternalComponents.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>

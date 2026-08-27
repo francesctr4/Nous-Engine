@@ -7,7 +7,7 @@
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
 #include <PrefabManager/PrefabManager.h>
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include <ModuleScene/ModuleScene.h>
 #include <Logger/Logger.h>
 
 #include "imgui.h"

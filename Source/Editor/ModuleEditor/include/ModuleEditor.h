@@ -3,7 +3,7 @@
 
 #include "Editor/EditorExport.h"
 
-#include "Engine/Modules/Module.h"
+#include <ModuleBase/Module.h>
 #include <RendererFrontend/IEditorOverlay.h>
 #include <EventSystem/IEventListener.h>
 #include "Editor/EditorContext.h"

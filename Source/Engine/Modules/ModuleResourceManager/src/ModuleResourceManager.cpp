@@ -1,4 +1,4 @@
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include <ModuleResourceManager/ModuleResourceManager.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <EventSystem/EventSystem.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
@@ -7,7 +7,7 @@
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 #include <Renderer/IGPUResourceFactory.h>
-#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
+#include <ModuleInput/ModuleInput.h>
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
 

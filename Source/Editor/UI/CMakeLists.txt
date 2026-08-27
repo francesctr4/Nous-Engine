@@ -106,6 +106,14 @@ target_link_libraries(EditorUI PRIVATE
         # frontend; both from .cpp only.
         Renderer_headers
         RendererFrontend_headers
+        # The editor windows reach the modules through EditorContext, from .cpp
+        # only -- no public EditorUI header names a module, so all PRIVATE.
+        ModuleBase_headers
+        ModuleAudio_headers
+        ModuleCamera3D_headers
+        ModuleInput_headers
+        ModuleResourceManager_headers
+        ModuleScene_headers
 )
 
 # ShaderSystem is PUBLIC rather than PRIVATE: InspectorWindow.h is a public

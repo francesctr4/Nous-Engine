@@ -72,6 +72,15 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         RendererFrontend_headers
         RendererBackend_headers
         VulkanBackend_headers
+        ModuleBase_headers
+        ModuleAudio_headers
+        ModuleCamera3D_headers
+        ModuleInput_headers
+        ModuleRenderer3D_headers
+        ModuleResourceManager_headers
+        ModuleScene_headers
+        ModuleVideo_headers
+        ModuleWindow_headers
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

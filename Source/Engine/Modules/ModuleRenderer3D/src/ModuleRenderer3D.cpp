@@ -1,16 +1,16 @@
-#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
+#include <ModuleRenderer3D/ModuleRenderer3D.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
-#include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
-#include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include <ModuleWindow/ModuleWindow.h>
+#include <ModuleCamera3D/ModuleCamera3D.h>
+#include <ModuleScene/ModuleScene.h>
+#include <ModuleResourceManager/ModuleResourceManager.h>
 
 #include <RendererFrontend/RendererFrontend.h>
 
-#include "Engine/Modules/ModuleScene/include/SceneRenderData.h"
+#include <ModuleScene/SceneRenderData.h>
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CMesh/CMesh.h>
 #include <ECS/Component/Types/CMaterial/CMaterial.h>

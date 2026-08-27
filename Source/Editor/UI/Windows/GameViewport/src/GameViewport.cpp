@@ -5,8 +5,8 @@
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
+#include <ModuleScene/ModuleScene.h>
+#include <ModuleInput/ModuleInput.h>
 
 GameViewport::GameViewport(const char* title, EditorContext* context, const bool start_open)
     : IEditorWindow(title, context, nullptr, start_open) {}

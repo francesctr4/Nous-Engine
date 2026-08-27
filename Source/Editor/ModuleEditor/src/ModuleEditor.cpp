@@ -1,8 +1,8 @@
 #include "Editor/ModuleEditor/include/ModuleEditor.h"
-#include "Engine/Modules/ModuleRenderer3D/include/ModuleRenderer3D.h"
+#include <ModuleRenderer3D/ModuleRenderer3D.h>
 #include <RendererFrontend/RendererFrontend.h>
-#include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
-#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
+#include <ModuleWindow/ModuleWindow.h>
+#include <ModuleInput/ModuleInput.h>
 #include <EventSystem/EventSystem.h>
 
 #include <Renderer/iEditorRenderBridge.h>

@@ -6,11 +6,27 @@
 # Modules aggregate below, which links every concrete module: the base class sits
 # at the BOTTOM of the module graph (everyone depends on it) while the aggregate
 # sits at the TOP (it depends on everyone). Holding both in one target made
-# Modules <-> ModuleX a dependency cycle. The files have not moved -- the include
-# path is still "Engine/Modules/Module.h".
+# Modules <-> ModuleX a dependency cycle.
+#
+# Converted to the public/private header layout (see CONVENTIONS.md). The include
+# prefix is the TARGET name, not the directory: <ModuleBase/Module.h>, even though
+# the files live in Modules/. Naming it <Modules/Module.h> would collide with the
+# Modules aggregate, which is an INTERFACE target with no headers of its own.
+#
+# Module.h is public -- all eight concrete modules and ModuleEditor derive from it
+# in their own public headers.
+add_library(ModuleBase_headers INTERFACE)
+target_include_directories(ModuleBase_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_library(ModuleBase_private INTERFACE)
+target_include_directories(ModuleBase_private INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 add_library(ModuleBase STATIC
-        Module.h
-        Module.cpp
+        src/Module.cpp
+)
+
+target_sources(ModuleBase PRIVATE
+        include/ModuleBase/Module.h
 )
 
 set_target_properties(ModuleBase PROPERTIES
@@ -21,9 +37,12 @@ set_target_properties(ModuleBase PROPERTIES
 
 target_compile_definitions(ModuleBase PRIVATE NOUS_ENGINE_EXPORTS)
 
-target_include_directories(ModuleBase PUBLIC
-        ${CMAKE_SOURCE_DIR}/Source
+target_include_directories(ModuleBase
+        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, until the last target converts
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+target_link_libraries(ModuleBase PUBLIC ModuleBase_headers)
 
 add_subdirectory(ModuleCamera3D)
 add_subdirectory(ModuleInput)

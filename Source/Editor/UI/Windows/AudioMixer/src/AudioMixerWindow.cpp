@@ -1,8 +1,8 @@
 #include "Editor/UI/Windows/AudioMixer/include/AudioMixerWindow.h"
 
 #include "Editor/EditorContext.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
+#include <ModuleScene/ModuleScene.h>
+#include <ModuleAudio/ModuleAudio.h>
 #include <AudioSystem/AudioTypes.h>
 #include <ECS/Component/Types/CAudioSource/CAudioSource.h>
 #include <ECS/GameObject.h>

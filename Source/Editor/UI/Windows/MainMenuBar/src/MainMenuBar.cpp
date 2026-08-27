@@ -2,7 +2,7 @@
 #include "Editor/GameExporter/include/GameExporter.h"
 
 #include "imgui.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include <ModuleScene/ModuleScene.h>
 #include <RendererFrontend/RendererFrontend.h>
 #include <FileSystem/FileSystem.h>
 #include <ResourceManager/Runtime/ImportPipeline.h>

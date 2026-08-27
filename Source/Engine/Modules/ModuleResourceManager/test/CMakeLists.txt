@@ -2,7 +2,7 @@ set(TEST_NAME "t_ModuleResourceManager")
 
 add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
 
-target_include_directories(${TEST_NAME} PRIVATE ../include ${CMAKE_SOURCE_DIR}/Source)
+target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source)
 
 find_package(GTest CONFIG REQUIRED)
 

@@ -1,17 +1,42 @@
 set(CLASS_NAME "ModuleScene")
 
+# ==============================================================================
+# ModuleScene -- converted to the public/private header layout (see CONVENTIONS.md).
+#
+#   include/ModuleScene/**  is the API, reached as <ModuleScene/ModuleScene.h>.
+#   src/**             is implementation, reachable only from inside this target.
+#
+# Both headers are public. SceneRenderData.h has ONE includer outside this
+# target (ModuleRenderer3D.cpp), which does not decide it -- ModuleScene.h,
+# the public header, includes it too, so it is API either way.
+#
+# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
+# ==============================================================================
+
+add_library(${CLASS_NAME}_headers INTERFACE)
+target_include_directories(${CLASS_NAME}_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_library(${CLASS_NAME}_private INTERFACE)
+target_include_directories(${CLASS_NAME}_private INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 add_library(${CLASS_NAME} STATIC
-        include/${CLASS_NAME}.h
         src/${CLASS_NAME}.cpp
 )
 
-target_include_directories(${CLASS_NAME} PUBLIC
-        ${CMAKE_SOURCE_DIR}/Source
+target_sources(${CLASS_NAME} PRIVATE
+        include/${CLASS_NAME}/${CLASS_NAME}.h
+        include/${CLASS_NAME}/SceneRenderData.h
+)
+
+target_include_directories(${CLASS_NAME}
+        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(${CLASS_NAME} PUBLIC
+        ${CLASS_NAME}_headers
         glm::glm
         PrefabManager
         ModuleBase

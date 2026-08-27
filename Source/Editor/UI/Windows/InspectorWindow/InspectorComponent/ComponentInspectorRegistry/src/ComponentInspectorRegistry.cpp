@@ -5,7 +5,7 @@
 #include "Editor/UI/Windows/InspectorWindow/InspectorComponent/InspectorCScript/include/InspectorCScript.h"
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include <ModuleResourceManager/ModuleResourceManager.h>
 #include <ECS/Component/Component.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/Component/Types/CMesh/CMesh.h>

@@ -3,9 +3,9 @@
 #include "Editor/EditorContext.h"
 #include "Engine/Core/Globals.h"   // down_cast
 #include <Logger/Logger.h>
-#include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include <ModuleAudio/ModuleAudio.h>
+#include <ModuleResourceManager/ModuleResourceManager.h>
+#include <ModuleScene/ModuleScene.h>
 #include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
 #include <ResourceManager/Types/ResourceAudioGraph/ImporterAudioGraph.h>

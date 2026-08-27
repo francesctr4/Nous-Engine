@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include <ModuleResourceManager/ModuleResourceManager.h>
 #include <ResourceManager/Core/IImporterManager.h>
 #include <EventSystem/EventSystem.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>

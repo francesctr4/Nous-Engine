@@ -86,6 +86,15 @@ CONVERTED = {
     "RendererFrontend":    "Engine/Renderer/Frontend/include",
     "RendererBackend":     "Engine/Renderer/Backend/include",
     "VulkanBackend":       "Engine/Renderer/Backend/Vulkan/include",
+    "ModuleBase":         "Engine/Modules/include",
+    "ModuleAudio":        "Engine/Modules/ModuleAudio/include",
+    "ModuleCamera3D":     "Engine/Modules/ModuleCamera3D/include",
+    "ModuleInput":        "Engine/Modules/ModuleInput/include",
+    "ModuleRenderer3D":   "Engine/Modules/ModuleRenderer3D/include",
+    "ModuleResourceManager": "Engine/Modules/ModuleResourceManager/include",
+    "ModuleScene":        "Engine/Modules/ModuleScene/include",
+    "ModuleVideo":        "Engine/Modules/ModuleVideo/include",
+    "ModuleWindow":       "Engine/Modules/ModuleWindow/include",
 }
 
 # Targets that re-export every converted _headers handle PUBLIC. Anything linking

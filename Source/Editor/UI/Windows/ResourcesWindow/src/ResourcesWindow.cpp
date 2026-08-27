@@ -1,6 +1,6 @@
 #include "Editor/UI/Windows/ResourcesWindow/include/ResourcesWindow.h"
 
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include <ModuleResourceManager/ModuleResourceManager.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Core/TypeRegistry.h>
 #include <FileSystem/FileSystem.h>

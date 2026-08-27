@@ -25,6 +25,8 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         EventSystem_headers
         # ModuleEditor.h implements IEditorOverlay, so this one is PUBLIC.
         RendererFrontend_headers
+        # ModuleEditor derives from Module, so ModuleBase is PUBLIC too.
+        ModuleBase_headers
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE
@@ -37,6 +39,10 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         ECS_headers
         ResourceManager_headers
         FileWatcher_headers
+        # ModuleEditor.cpp drives these three; its public header names none of them.
+        ModuleInput_headers
+        ModuleRenderer3D_headers
+        ModuleWindow_headers
 )
 
 # ModuleEditor.cpp reaches the backend through IEditorRenderBridge; its own public

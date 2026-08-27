@@ -1,8 +1,8 @@
-#include "Engine/Modules/ModuleScene/include/ModuleScene.h"
+#include <ModuleScene/ModuleScene.h>
 #include <vector>
 #include <FileSystem/FileSystem.h>
-#include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
+#include <ModuleInput/ModuleInput.h>
+#include <ModuleResourceManager/ModuleResourceManager.h>
 #include <EventSystem/EventSystem.h>
 #include <Logger/Logger.h>
 

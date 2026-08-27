@@ -1,4 +1,4 @@
-#include "Module.h"
+#include <ModuleBase/Module.h>
 
 Module::Module(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem) :
     eventSystem(eventSystem),
