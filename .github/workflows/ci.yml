@@ -122,6 +122,17 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1.13.0
 
+      # A converted target's public headers resolve ONLY through its
+      # <Target>_headers handle, never through the global Source/ include root,
+      # so a consumer that fails to declare the link breaks -- sometimes not in
+      # itself but in whatever includes its public header. This catches both
+      # cases statically, in seconds, without a build. See CONVENTIONS.md,
+      # "Target Layout". Windows-only because the check reads CMakeLists and
+      # #include lines: it is platform-independent, so one runner is enough.
+      - name: Check header layout declarations
+        if: runner.os == 'Windows'
+        run: python Tools/check_header_layout.py
+
       - name: Configure
         run: cmake --preset ${{ matrix.preset }} -DNOUS_BUILD_TESTS=ON
 

@@ -94,6 +94,12 @@ target_link_libraries(EditorUI PUBLIC
 # reflection types, ComponentInspectorRegistry the video audio-extract helper.
 target_link_libraries(EditorUI PRIVATE
         CameraSystem_headers
-        ShaderSystem_headers
         VideoSystem_headers
+)
+
+# ShaderSystem is PUBLIC rather than PRIVATE: InspectorWindow.h is a public
+# EditorUI header and reaches ShaderTypes.h through ResourceShader.h, so
+# consumers of that header need the dir too.
+target_link_libraries(EditorUI PUBLIC
+        ShaderSystem_headers
 )

@@ -290,6 +290,15 @@ Unconverted targets keep the old `unit/include|src|test` layout and `Engine/`-ro
 includes; `${CMAKE_SOURCE_DIR}/Source` stays on the include path until the last one is
 converted.
 
+**`Tools/check_header_layout.py` enforces the two rules below and runs in CI**
+(before Configure, no build needed). Run it after any conversion or any new
+`#include` of a converted header — it reports `MISSING_LINK` (a target compiles a
+converted header with no link providing it) and `PRIVATE_LEAK` (a target names a
+converted target from a PUBLIC header while declaring the dependency PRIVATE, so
+consumers break at a distance). It prints the include chain behind each finding,
+because these requirements are usually transitive and the right fix is often on the
+intermediate target. Add each newly converted target to its `CONVERTED` table.
+
 **A converted target's headers no longer resolve through the global `Source/` root.**
 `<Logger/Logger.h>` resolves only via `Logger_headers`, so every consumer must declare
 the link — which is the point, and is how the foundation conversion surfaced three

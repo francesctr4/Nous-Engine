@@ -22,7 +22,13 @@ target_include_directories(Scripting PUBLIC
 
 target_compile_definitions(Scripting PRIVATE NOUS_ENGINE_EXPORTS)
 
-target_link_libraries(Scripting PUBLIC glm::glm)
+# Utils is PUBLIC and was previously undeclared entirely: ScriptManager.h holds a
+# NOUS_Vector, which routes through NOUS_STLAllocator, so consumers of that header
+# need Utils' API dir and MemoryManager's with it.
+target_link_libraries(Scripting PUBLIC
+        glm::glm
+        Utils
+)
 
 target_link_libraries(Scripting PRIVATE
         ECS
