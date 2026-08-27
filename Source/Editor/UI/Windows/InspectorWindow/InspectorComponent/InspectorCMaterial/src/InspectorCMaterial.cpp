@@ -10,7 +10,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
+#include <ShaderSystem/ShaderReflection/ShaderReflectionTypes.h>
 
 #include <filesystem>
 #include <imgui.h>

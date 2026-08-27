@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Engine/Systems/ECS/Component/Component.h"
-#include "Engine/Systems/VideoSystem/VideoFrame.h"
-#include "Engine/Systems/VideoSystem/VideoHandle.h"
+#include <VideoSystem/VideoFrame.h>
+#include <VideoSystem/VideoHandle.h>
 #include "Engine/EngineExport.h"
 
 #include <string>

@@ -30,7 +30,7 @@ target_compile_definitions(Systems PRIVATE
 )
 
 target_link_libraries(Systems PUBLIC
-        Camera
+        CameraSystem
         ECS
         PrefabManager
         ResourceManager

@@ -27,10 +27,15 @@ target_compile_definitions(RendererFrontend PRIVATE NOUS_ENGINE_EXPORTS)
 target_link_libraries(RendererFrontend PUBLIC
         glm::glm
         Renderer
+        # RendererFrontend.h names ShaderLoaderTypes in its PUBLIC header, so the
+        # API dir has to propagate. The ShaderSystem objects stay PRIVATE below --
+        # this is headers only. Mis-scoped until the include/ split made it fail
+        # to compile in ModuleEditor.
+        ShaderSystem_headers
 )
 
 target_link_libraries(RendererFrontend PRIVATE
-        Camera
+        CameraSystem
         Logger
         MemoryManager
         NOUS_Multithreading

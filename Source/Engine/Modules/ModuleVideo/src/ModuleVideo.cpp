@@ -5,8 +5,8 @@
 #include "Engine/Core/EventSystem/Event/include/Event.h"
 #include <MemoryManager/MemoryManager.h>
 
-#include "Engine/Systems/VideoSystem/VideoDecoder/IVideoDecoderBackend.h"
-#include "Engine/Systems/VideoSystem/VideoDecoder/VideoDecoderBackendFactory.h"
+#include <VideoSystem/VideoDecoder/IVideoDecoderBackend.h>
+#include <VideoSystem/VideoDecoder/VideoDecoderBackendFactory.h>
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_VIDEO;
 

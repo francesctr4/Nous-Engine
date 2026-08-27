@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/ShaderSystem/ShaderTypes.h"
+#include <ShaderSystem/ShaderTypes.h>
 #include "Engine/Core/Globals.h"
 
 // =============================================================================

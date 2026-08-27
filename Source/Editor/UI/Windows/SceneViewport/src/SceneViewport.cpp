@@ -7,7 +7,7 @@
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include <FileSystem/FileSystem.h>
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
-#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
+#include <CameraSystem/Camera.h>
 
 #include "Engine/Renderer/iEditorRenderBridge.h"
 

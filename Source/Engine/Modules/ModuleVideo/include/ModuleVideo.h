@@ -4,9 +4,9 @@
 #include "Engine/Core/EventSystem/IEventListener.h"
 #include "Engine/Core/Globals.h"
 #include "Engine/EngineExport.h"
-#include "Engine/Systems/VideoSystem/VideoFrame.h"
-#include "Engine/Systems/VideoSystem/VideoHandle.h"
-#include "Engine/Systems/VideoSystem/iVideoBroker.h"
+#include <VideoSystem/VideoFrame.h>
+#include <VideoSystem/VideoHandle.h>
+#include <VideoSystem/iVideoBroker.h>
 
 class IVideoDecoderBackend;
 class ResourceVideo;

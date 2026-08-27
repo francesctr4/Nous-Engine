@@ -1,6 +1,6 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include <Logger/Logger.h>
-#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
+#include <CameraSystem/Camera.h>
 #include <algorithm>
 
 // SDL3

@@ -3,8 +3,8 @@
 
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Systems/ShaderSystem/ShaderTypes.h"
-#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
+#include <ShaderSystem/ShaderTypes.h>
+#include <ShaderSystem/ShaderReflection/ShaderReflectionTypes.h>
 
 // No renderer headers included here — forward declaration keeps the
 // ResourceManager layer decoupled from any backend implementation.

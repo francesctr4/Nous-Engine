@@ -24,4 +24,8 @@ target_link_libraries(${CLASS_NAME} PUBLIC
 target_link_libraries(${CLASS_NAME} PRIVATE
         FileSystem_headers
         Logger_headers
+        # ModuleEditor.cpp compiles RendererFrontend.h (shader loader types) and
+        # the Multithreading/JobQueue windows (job system).
+        NOUS_Multithreading_headers
+        ShaderSystem_headers
 )

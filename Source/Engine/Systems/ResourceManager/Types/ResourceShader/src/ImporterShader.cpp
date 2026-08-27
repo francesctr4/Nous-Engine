@@ -12,10 +12,10 @@
 
 // ShaderSystem — using Parser + Compiler + Reflection directly to avoid
 // a circular CMake dependency (ShaderLoader returns ResourceShader*).
-#include "Engine/Systems/ShaderSystem/ShaderParser/include/ShaderParser.h"
-#include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
-#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflection.h"
-#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionSerializer.h"
+#include <ShaderSystem/ShaderParser/ShaderParser.h>
+#include <ShaderSystem/ShaderCompiler/ShaderCompiler.h>
+#include <ShaderSystem/ShaderReflection/ShaderReflection.h>
+#include <ShaderSystem/ShaderReflection/ShaderReflectionSerializer.h>
 
 #include <filesystem>
 #include <cstring>

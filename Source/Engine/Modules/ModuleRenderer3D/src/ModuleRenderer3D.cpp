@@ -32,7 +32,7 @@
 
 #include <filesystem>
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
-#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
+#include <CameraSystem/Camera.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Utils/Math/FrustumCulling.h"

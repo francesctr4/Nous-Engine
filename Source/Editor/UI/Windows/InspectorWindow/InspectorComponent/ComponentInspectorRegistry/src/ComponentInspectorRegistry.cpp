@@ -33,7 +33,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceAudioGraph/include/ResourceAudioGraph.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
-#include "Engine/Systems/VideoSystem/AudioExtract/include/AudioExtract.h"
+#include <VideoSystem/AudioExtract/AudioExtract.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Drawers — one per inspectable component type. Uniform signature so they can be

@@ -4,8 +4,8 @@
 #include "Engine/Renderer/iRenderResourceProvider.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
-#include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
+#include <ShaderSystem/ShaderLoader/ShaderLoader.h>
+#include <ShaderSystem/ShaderCompiler/ShaderCompilerTypes.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include <Logger/Asserts.h>
 
@@ -17,7 +17,7 @@
 #include <tracy/Tracy.hpp>
 #endif
 
-#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
+#include <CameraSystem/Camera.h>
 #include <MemoryManager/MemoryManager.h>
 #include <Logger/Logger.h>
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"

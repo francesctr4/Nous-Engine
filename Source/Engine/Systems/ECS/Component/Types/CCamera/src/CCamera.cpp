@@ -4,7 +4,7 @@
 #include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
+#include <CameraSystem/Camera.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"

@@ -4,7 +4,7 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Renderer/RendererTypes.h"
-#include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionTypes.h"
+#include <ShaderSystem/ShaderReflection/ShaderReflectionTypes.h>
 
 #include "glm/glm.hpp"
 #include <cstdint>

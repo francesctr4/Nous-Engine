@@ -58,6 +58,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         Logger_headers
         MemoryManager_headers
         NOUS_Multithreading_headers
+        CameraSystem_headers
+        ShaderSystem_headers
+        VideoSystem_headers
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

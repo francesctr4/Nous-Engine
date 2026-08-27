@@ -13,6 +13,10 @@ target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_link_libraries(${CLASS_NAME} PUBLIC
         ModuleBase
+        # ModuleVideo.h names VideoFrame, VideoHandle and IVideoBroker in its
+        # PUBLIC header, so the API dir has to propagate (Application.cpp includes
+        # it). The VideoSystem objects stay PRIVATE below -- headers only.
+        VideoSystem_headers
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

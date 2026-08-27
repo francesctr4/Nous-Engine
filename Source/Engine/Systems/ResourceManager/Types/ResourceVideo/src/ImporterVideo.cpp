@@ -6,8 +6,8 @@
 
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
-#include "Engine/Systems/VideoSystem/AudioExtract/include/AudioExtract.h"
-#include "Engine/Systems/VideoSystem/VideoProbe/include/VideoProbe.h"
+#include <VideoSystem/AudioExtract/AudioExtract.h>
+#include <VideoSystem/VideoProbe/VideoProbe.h>
 
 #include <filesystem>
 

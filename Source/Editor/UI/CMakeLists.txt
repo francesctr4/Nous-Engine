@@ -88,3 +88,12 @@ target_link_libraries(EditorUI PUBLIC
         MemoryManager_headers
         NOUS_Multithreading_headers
 )
+
+# Converted 2026-08-27, and PRIVATE rather than PUBLIC because these are named
+# only from .cpp: SceneViewport uses Camera, InspectorCMaterial the shader
+# reflection types, ComponentInspectorRegistry the video audio-extract helper.
+target_link_libraries(EditorUI PRIVATE
+        CameraSystem_headers
+        ShaderSystem_headers
+        VideoSystem_headers
+)

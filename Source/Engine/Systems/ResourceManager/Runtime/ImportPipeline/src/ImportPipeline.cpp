@@ -7,7 +7,7 @@
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
-#include "Engine/Systems/VideoSystem/AudioExtract/include/AudioExtract.h"
+#include <VideoSystem/AudioExtract/AudioExtract.h>
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"

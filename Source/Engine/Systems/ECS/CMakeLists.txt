@@ -37,10 +37,17 @@ target_link_libraries(ECS PUBLIC
         # CAudioSource.h / AudioVoice.h name SoundHandle, AudioBus and
         # IAudioBroker. Headers only: ECS links no AudioSystem objects.
         AudioSystem_headers
+        # CVideoPlayer.h names VideoFrame and VideoHandle in its public header,
+        # so this one is PUBLIC too. Headers only: ECS links no VideoSystem
+        # objects either.
+        VideoSystem_headers
+        # GameObject.h -- a public ECS header -- includes <Logger/Asserts.h>, so
+        # the API dir must propagate. The Logger objects stay PRIVATE below.
+        Logger_headers
 )
 
 target_link_libraries(ECS PRIVATE
-        Camera
+        CameraSystem
         FileSystem
         Logger
         PrefabManager

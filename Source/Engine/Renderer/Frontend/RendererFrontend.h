@@ -5,7 +5,7 @@
 #include "Engine/Renderer/Frontend/GroupGeometries.h"
 #include "Engine/Renderer/Frontend/DynamicTextureCache.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
-#include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
+#include <ShaderSystem/ShaderLoader/ShaderLoaderTypes.h>
 #include "Engine/EngineExport.h"
 
 #include <array>

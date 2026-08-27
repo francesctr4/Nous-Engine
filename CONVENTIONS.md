@@ -255,9 +255,10 @@ Use `final` on classes or methods that must not be further overridden.
 
 ## Target Layout: public `include/`, private `src/`
 
-**Migration in progress (started 2026-08-26 with `AudioSystem`; the foundation —
-`Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` — converted
-2026-08-27).** Converted targets use:
+**Migration in progress.** Converted so far: `AudioSystem` (2026-08-26); the
+foundation — `Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` — and the
+Systems leaves — `VideoSystem`, `ShaderSystem`, `CameraSystem` (2026-08-27). Converted
+targets use:
 
 ```
 Systems/AudioSystem/
@@ -296,6 +297,11 @@ targets (`Utils`, `EditorUI`, `ModuleEditor`) that had been including Logger,
 MemoryManager, FileSystem and the job system for free. Expect that on every conversion.
 Targets linking `NousEngine::Engine` or `NousEngine::Editor` are covered automatically,
 because the DLL's PUBLIC link list carries every converted target's `_headers` handle.
+
+**A target is named after its own directory, because the target name is the include
+prefix.** `CameraSystem/Camera/` defining a target called `Camera` would have produced
+`<Camera/Camera.h>` — too generic a prefix to add to every consumer's include path — so
+it was renamed and flattened to `Systems/CameraSystem/` on conversion.
 
 **Where a sub-unit contributes exactly one public header, `include/` is flat.**
 `NOUS_JobSystem/NOUS_JobSystem.h` under `include/NOUS_Multithreading/` would be pure

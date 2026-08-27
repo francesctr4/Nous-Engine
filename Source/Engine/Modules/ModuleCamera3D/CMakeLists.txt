@@ -14,7 +14,7 @@ target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 target_link_libraries(${CLASS_NAME} PUBLIC glm::glm ModuleBase)
 
 target_link_libraries(${CLASS_NAME} PRIVATE
-        Camera
+        CameraSystem
         EventSystem
         Logger
         MemoryManager
