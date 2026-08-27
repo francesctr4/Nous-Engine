@@ -74,7 +74,13 @@ public:
 
     // Calls Awake/Start on existing instances. Called by ModuleScene::PressPlay.
     // Safe to call multiple times (no-op if already started).
-    void StartInstances();
+    // Exported: ScriptManager reaches it from inside the DLL, but t_CScript drives
+    // it across the DLL boundary to reproduce the editor's load-then-Play ordering.
+    NOUS_ENGINE_API void StartInstances();
+
+    // Start instances that were created after OnStart() already ran — i.e. a scene
+    // deserialized into a live simulation. No-op while stopped.
+    void StartInstancesIfSimulating();
 
     // Called by ModuleScene::CleanupScripts() during engine shutdown — marks the component
     // as unregistered so that the subsequent OnDestroy() (from scene destruction) does not

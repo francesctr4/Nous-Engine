@@ -187,6 +187,10 @@
                     ],
                     "properties": {
                         "CameraMovement": {
+                            "m_rotSensitivity": {
+                                "type": 0,
+                                "value": 0.15000000596046448
+                            },
                             "m_speed": {
                                 "type": 0,
                                 "value": 50

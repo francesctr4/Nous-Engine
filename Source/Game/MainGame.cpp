@@ -5,7 +5,6 @@
 #include <NOUS_Multithreading/NOUS_Multithreading.h>
 #include <ModuleWindow/ModuleWindow.h>
 #include <ModuleScene/ModuleScene.h>
-#include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include <Utils/Serialization/JsonFile.h>
 #include <string>
@@ -114,7 +113,8 @@ int main(int argc, char** argv)
                 // Fullscreen after Start so the window/swapchain are fully initialized.
                 App->GetWindow()->SetFullscreen(true);
 
-                // Kick off async scene load. PressPlay is deferred until the job finishes.
+                // Kick off async scene load. PressPlay is deferred until the scene has
+                // actually been applied — see the IsLoadingScene() note in Update below.
                 App->GetScene()->LoadSceneAsync(cfg.startScene);
 
                 NOUS_INFO_C(CURRENT_CHANNEL, "---------- Application Update ----------");
@@ -124,8 +124,23 @@ int main(int argc, char** argv)
 
             case GameState::Update:
             {
-                // Once the async scene load job completes, start simulation.
-                if (!sceneReady && App->GetJobSystem()->GetPendingJobs() == 0)
+                // Once the async scene load completes, start simulation.
+                //
+                // This MUST be ModuleScene's own flag, not GetPendingJobs() == 0.
+                // LoadSceneAsync's worker does the slow part and then hands the
+                // registry mutation to the main thread via SubmitToMainThread, and
+                // those tasks are deliberately NOT counted in mPendingJobs (counting
+                // them would deadlock WaitForPendingJobs, which runs on the only
+                // thread that drains them). So the job counter reaches 0 while the
+                // scene is still an empty shell, and PressPlay would run against
+                // nothing: every script then deserialized into an already-PLAYING
+                // sim and never received Awake/Start.
+                //
+                // m_isLoadingScene is set before LoadSceneAsync returns and cleared
+                // inside the main-thread task, after Deserialize + RefreshPrefabInstances,
+                // so it covers the whole handoff. It also self-clears when the scene
+                // path fails to resolve, so a bad startScene still reaches Update.
+                if (!sceneReady && !App->GetScene()->IsLoadingScene())
                 {
                     App->GetScene()->PressPlay();
                     sceneReady = true;

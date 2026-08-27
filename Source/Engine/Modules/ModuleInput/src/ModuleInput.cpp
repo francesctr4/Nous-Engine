@@ -98,7 +98,17 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 		{
 			case SDL_EVENT_KEY_DOWN:
 			{
-				if (GetKey(SDL_SCANCODE_ESCAPE) == KeyState::DOWN)
+				// Escape quits the EDITOR only — it is a dev convenience, and the
+				// editor has no script that could want the key.
+				//
+				// In a standalone game Escape belongs to the game: the shipped
+				// camera script (and the template's own example) uses it to release
+				// mouse capture, so stealing it here killed the app the first time
+				// the player tried to get their cursor back. A game still quits
+				// through SDL_EVENT_QUIT below (window close / Alt-F4); if a game
+				// wants to quit from script, that needs an EngineAPI binding rather
+				// than a hard-coded key.
+				if (!m_gameMode && GetKey(SDL_SCANCODE_ESCAPE) == KeyState::DOWN)
 				{
 					ret = UpdateStatus::STOP;
 				}

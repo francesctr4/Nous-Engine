@@ -198,6 +198,27 @@ void CScript::RecreateInstances()
     m_reloading.store(false, std::memory_order_seq_cst);
 }
 
+void CScript::StartInstancesIfSimulating()
+{
+    // Deserialize() runs AFTER OnStart(), so when a scene is built into an already
+    // running simulation the instances that exist now are not the ones OnStart() saw
+    // — it ran against an empty m_scriptNames and marked m_started with nothing to
+    // start. Re-arm so these instances get the Awake/Start they missed.
+    //
+    // Reachable whenever a scene is deserialized into a live sim: loading a scene
+    // while playing in the editor, and any standalone-game ordering that presses
+    // Play before the load has been applied. (MainGame used to do exactly that by
+    // gating PressPlay on GetPendingJobs()==0 — fixed to ModuleScene::IsLoadingScene()
+    // — but this component must not depend on its host getting that ordering right.)
+    // The editor's usual path deserializes while stopped and starts on Play, which
+    // is why the bug stayed hidden there.
+    const ISceneHost* host = Services().host;
+    if (!host || host->IsStopped()) return;
+
+    m_started = false;
+    StartInstances();
+}
+
 void CScript::StartInstances()
 {
     if (m_started) return;
@@ -396,7 +417,10 @@ void CScript::Deserialize(const JsonObject& obj)
     if (propsObj.IsEmpty()) {
         // No saved properties — still recreate instances with the script names we loaded.
         if (m_registered && !m_scriptNames.empty())
+        {
             CreateInstances();
+            StartInstancesIfSimulating();
+        }
         return;
     }
 
@@ -433,7 +457,10 @@ void CScript::Deserialize(const JsonObject& obj)
     // empty m_scriptNames; this call creates the real instances and ApplyProperties()
     // restores all SCRIPT_FIELD values (including SCRIPT_GAMEOBJECT references).
     if (m_registered && !m_scriptNames.empty())
+    {
         CreateInstances();
+        StartInstancesIfSimulating();
+    }
 
     NOUS_DEBUG("[CScript::Deserialize] this=%p owner=%u instances=%zu names=%zu",
                static_cast<const void*>(this),
