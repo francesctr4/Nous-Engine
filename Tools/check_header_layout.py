@@ -95,6 +95,10 @@ CONVERTED = {
     "ModuleScene":        "Engine/Modules/ModuleScene/include",
     "ModuleVideo":        "Engine/Modules/ModuleVideo/include",
     "ModuleWindow":       "Engine/Modules/ModuleWindow/include",
+    "EditorCore":         "Editor/EditorCore/include",
+    "ImGuiCustom":        "Editor/UI/ImGuiCustom/include",
+    "ModuleEditor":       "Editor/ModuleEditor/include",
+    "EditorUI":           "Editor/UI/include",
 }
 
 # Targets that re-export every converted _headers handle PUBLIC. Anything linking

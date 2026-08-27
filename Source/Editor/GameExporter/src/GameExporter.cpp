@@ -1,4 +1,4 @@
-#include "Editor/GameExporter/include/GameExporter.h"
+#include <ModuleEditor/GameExporter.h>
 
 #include <Utils/Serialization/JsonFile.h>
 #include <Utils/Serialization/JsonObject.h>

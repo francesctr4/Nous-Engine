@@ -1,0 +1,39 @@
+#pragma once
+
+#include <EditorUI/IEditorWindow.h>
+#include "Engine/Scripting/Internal/IScript.inl"
+#include <ECS/Component/Types/CMaterial/CMaterial.h>
+#include <ECS/Scene/Scene.h>
+#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
+#include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
+#include <cstdint>
+#include <string>
+
+class ScriptManager;
+class CScript;
+class CLight;
+class CCamera;
+class CTransform;
+class CMesh;
+class GameObject;
+
+class InspectorWindow : public IEditorWindow
+{
+public:
+
+    explicit InspectorWindow(const char* title, EditorContext* context, bool start_open = true);
+
+protected:
+
+    void DrawContent() override;
+
+private:
+
+    void DrawGameObjectHeader(GameObject* go);
+
+    void DrawAddComponentSection(GameObject* go) const;
+
+    std::string m_nameBuffer;
+    uint32_t m_lastSelectedID = UINT32_MAX;
+
+};

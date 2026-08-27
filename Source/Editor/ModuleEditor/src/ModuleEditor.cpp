@@ -1,4 +1,4 @@
-#include "Editor/ModuleEditor/include/ModuleEditor.h"
+#include <ModuleEditor/ModuleEditor.h>
 #include <ModuleRenderer3D/ModuleRenderer3D.h>
 #include <RendererFrontend/RendererFrontend.h>
 #include <ModuleWindow/ModuleWindow.h>
@@ -7,8 +7,8 @@
 
 #include <Renderer/iEditorRenderBridge.h>
 
-#include "Editor/UI/IEditorWindow.h"
-#include "Editor/UI/ImGuiCustom/ImGuiCustom.h"
+#include <EditorUI/IEditorWindow.h>
+#include <ImGuiCustom/ImGuiCustom.h>
 
 // ImGui_Temp
 #include "imgui.h"
@@ -18,20 +18,20 @@
 
 #pragma region EDITOR WINDOWS
 
-#include "Editor/UI/Windows/MainMenuBar/include/MainMenuBar.h"
-#include "Editor/UI/Windows/AssetsBrowser/include/AssetsBrowser.h"
-#include "Editor/UI/Windows/ResourcesWindow/include/ResourcesWindow.h"
-#include "Editor/UI/Windows/MultithreadingWindow/include/MultithreadingWindow.h"
-#include "Editor/UI/Windows/JobQueueWindow/include/JobQueueWindow.h"
-#include "Editor/UI/Windows/SceneViewport/include/SceneViewport.h"
-#include "Editor/UI/Windows/GameViewport/include/GameViewport.h"
-#include "Editor/UI/Windows/HierarchyWindow/include/HierarchyWindow.h"
-#include "Editor/UI/Windows/InspectorWindow/InspectorWindow.h"
-#include "Editor/UI/Windows/ConsoleWindow/include/ConsoleWindow.h"
-#include "Editor/UI/Windows/MemoryWindow/include/MemoryWindow.h"
-#include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
-#include "Editor/UI/Windows/AudioGraphEditor/include/AudioGraphEditor.h"
-#include "Editor/UI/Windows/AudioMixer/include/AudioMixerWindow.h"
+#include <EditorUI/MainMenuBar.h>
+#include <EditorUI/AssetsBrowser.h>
+#include <EditorUI/ResourcesWindow.h>
+#include <EditorUI/MultithreadingWindow.h>
+#include <EditorUI/JobQueueWindow.h>
+#include <EditorUI/SceneViewport.h>
+#include <EditorUI/GameViewport.h>
+#include <EditorUI/HierarchyWindow.h>
+#include <EditorUI/InspectorWindow.h>
+#include <EditorUI/ConsoleWindow.h>
+#include <EditorUI/MemoryWindow.h>
+#include <EditorUI/TextEditorWindow.h>
+#include <EditorUI/AudioGraphEditor.h>
+#include <EditorUI/AudioMixerWindow.h>
 
 #pragma endregion
 

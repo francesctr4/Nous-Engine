@@ -5,7 +5,7 @@
 #include <MemoryManager/MemoryManager.h>
 
 // Editor
-#include "Editor/ModuleEditor/include/ModuleEditor.h"
+#include <ModuleEditor/ModuleEditor.h>
 
 typedef enum MainState : uint8_t
 {

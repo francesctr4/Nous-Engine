@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "Editor/GameExporter/include/GameExporter.h"
+#include <ModuleEditor/GameExporter.h>
 
 #include <filesystem>
 #include <fstream>

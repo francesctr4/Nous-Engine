@@ -8,15 +8,24 @@
 
 set(EDITOR_NAME "Nous-Editor")
 
+add_subdirectory(EditorCore)
 add_subdirectory(ModuleEditor)
 add_subdirectory(GameExporter)
 add_subdirectory(UI)
 
-add_library(${EDITOR_NAME} SHARED EditorExport.h EditorContext.h)
+# The two headers moved down to EditorCore (see that CMakeLists for why); they are
+# still listed here because CMake refuses a target with no sources at all, and
+# this target genuinely has none of its own -- all its objects arrive through the
+# whole-archive links below. Listing headers is IDE-only and compiles nothing.
+add_library(${EDITOR_NAME} SHARED
+        EditorCore/include/EditorCore/EditorExport.h
+        EditorCore/include/EditorCore/EditorContext.h
+)
 add_library(NousEngine::Editor ALIAS ${EDITOR_NAME})
 
 target_link_libraries(${EDITOR_NAME} PUBLIC
         NousEngine::Engine
+        EditorCore
         EditorUI
         ModuleEditor
 )

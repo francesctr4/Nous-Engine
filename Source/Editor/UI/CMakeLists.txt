@@ -45,13 +45,67 @@ set_target_properties(ImGuiColorTextEdit PROPERTIES
 # ----------------------------------------
 # EditorUI target
 # ----------------------------------------
+# ==============================================================================
+# EditorUI -- converted to the public/private header layout (see CONVENTIONS.md).
+#
+#   include/EditorUI/**  is the API, reached as <EditorUI/SceneViewport.h>.
+#   src/**               is implementation, reachable only from inside this target.
+#
+# The Windows/ tree is NOT a set of targets -- every leaf is a target_sources()
+# into this one target -- so all 16 window headers share the single EditorUI
+# prefix rather than getting one each.
+#
+# THREE headers are genuinely private, the first real private set in the editor:
+# ComponentInspectorRegistry.h plus the two per-component drawers it owns
+# (InspectorCMaterial.h, InspectorCScript.h). Nothing outside this target names
+# them and no public header reaches them, so the registry is now the only door to
+# the per-component inspectors -- which was always the design, and is now enforced.
+#
+# AudioGraphLinearize.h is the counter-example and stays PUBLIC: it too has no
+# external includer, but AudioGraphEditor.h includes it, and a header reached
+# THROUGH a public header is public whatever the includer count says.
+#
+# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
+# ==============================================================================
+
+add_library(EditorUI_headers INTERFACE)
+target_include_directories(EditorUI_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# An _headers handle must carry the header-level deps of the API it exposes.
+# TextEditorWindow.h includes <TextEditor.h>, so anyone handed EditorUI's API dir
+# alone -- ModuleEditor.cpp constructs every window -- needs this dir too. It used
+# to arrive as the relative path "Editor/../../ThirdParty/...", which only ever
+# resolved through the global Source/ root and would have broken when that goes.
+target_include_directories(EditorUI_headers SYSTEM INTERFACE ${IMGUI_COLOR_TEXT_EDIT_DIR})
+
+add_library(EditorUI_private INTERFACE)
+target_include_directories(EditorUI_private INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 add_library(EditorUI STATIC
-        IEditorWindow.h
-        IEditorWindow.cpp
+        src/IEditorWindow.cpp
+)
+
+target_sources(EditorUI PRIVATE
+        include/EditorUI/IEditorWindow.h
+        include/EditorUI/AssetsBrowser.h
+        include/EditorUI/AudioGraphEditor.h
+        include/EditorUI/AudioGraphLinearize.h
+        include/EditorUI/AudioMixerWindow.h
+        include/EditorUI/ConsoleWindow.h
+        include/EditorUI/GameViewport.h
+        include/EditorUI/HierarchyWindow.h
+        include/EditorUI/InspectorWindow.h
+        include/EditorUI/JobQueueWindow.h
+        include/EditorUI/MainMenuBar.h
+        include/EditorUI/MemoryWindow.h
+        include/EditorUI/MultithreadingWindow.h
+        include/EditorUI/ResourcesWindow.h
+        include/EditorUI/SceneViewport.h
+        include/EditorUI/TextEditorWindow.h
 )
 
 add_subdirectory(ImGuiCustom)
-add_subdirectory(Windows)
+add_subdirectory(src/Windows)
 
 set_target_properties(EditorUI PROPERTIES
         CXX_STANDARD 23
@@ -59,8 +113,9 @@ set_target_properties(EditorUI PROPERTIES
         CXX_EXTENSIONS OFF
 )
 
-target_include_directories(EditorUI PUBLIC
-        ${CMAKE_SOURCE_DIR}/Source
+target_include_directories(EditorUI
+        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_include_directories(EditorUI SYSTEM PUBLIC
         ${IMGUI_COLOR_TEXT_EDIT_DIR}
@@ -69,6 +124,8 @@ target_include_directories(EditorUI SYSTEM PUBLIC
 target_compile_definitions(EditorUI PRIVATE NOUS_EDITOR_EXPORTS)
 
 target_link_libraries(EditorUI PUBLIC
+        EditorUI_headers
+        EditorCore
         ModuleEditor
         imgui::imgui
         imguizmo::imguizmo
@@ -127,3 +184,9 @@ target_link_libraries(EditorUI PUBLIC
         ECS_headers
         ResourceManager_headers
 )
+# Tests moved from the leaves to a top-level test/ mirroring src/, so EditorUI's
+# whole suite is visible in one place (see CONVENTIONS.md).
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test/Windows/AudioGraphEditor)
+    add_subdirectory(test/Windows/InspectorWindow/ComponentInspectorRegistry)
+endif()
