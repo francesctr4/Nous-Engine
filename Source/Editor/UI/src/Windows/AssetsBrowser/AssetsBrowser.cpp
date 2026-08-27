@@ -14,7 +14,7 @@
 #include <ResourceManager/Core/MetaFileData.h>
 #include <Utils/Serialization/JsonFile.h>
 #include <Utils/Serialization/JsonObject.h>
-#include "Engine/Scripting/ScriptManager.h"
+#include <Scripting/ScriptManager.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include <Logger/Logger.h>
 

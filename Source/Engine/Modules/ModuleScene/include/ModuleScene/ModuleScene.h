@@ -7,7 +7,7 @@
 #include <ECS/GameObject.h>
 #include <ECS/Scene/iSceneHost.h>
 #include <ECS/ComponentServices.h>
-#include "Engine/Scripting/iScriptSceneHost.h"
+#include <Scripting/iScriptSceneHost.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <string>

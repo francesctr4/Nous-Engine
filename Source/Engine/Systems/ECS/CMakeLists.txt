@@ -105,6 +105,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
 
 target_link_libraries(${CLASS_NAME} PRIVATE
         CameraSystem
+        Scripting_headers   # CScript.cpp names IScriptRegistry
         FileSystem
         Logger
         PrefabManager

@@ -10,7 +10,7 @@ REM   %~dp0\SDK\ ............... script SDK headers + EngineAPI.cpp
 REM   %~dp0\..\..\Library\Scripts\Scripts.dll ...... build output
 REM
 REM Requirements:
-REM   <tooling>\SDK\include\Engine\...\IScript.inl
+REM   <tooling>\SDK\include\Scripting\Internal\IScript.inl
 REM   <tooling>\SDK\src\EngineAPI.cpp
 REM   @CMAKE_SOURCE_DIR@\Assets\**\*.cpp   (dev build — source tree)
 REM   <exe_dir>\Assets\**\*.cpp            (shipped — Assets next to exe)
@@ -105,16 +105,16 @@ REM -----------------------------
 REM 3.5) Sync SDK headers from source so hot-reload always uses the latest
 REM      engine headers without requiring a full engine rebuild.
 REM -----------------------------
-set ENGINE_SCRIPTING_SRC=@CMAKE_SOURCE_DIR@\Source\Engine\Scripting
+set ENGINE_SCRIPTING_SRC=@CMAKE_SOURCE_DIR@\Source\Engine\Scripting\include\Scripting
 if exist "%ENGINE_SCRIPTING_SRC%" (
-    xcopy /S /Y /Q "%ENGINE_SCRIPTING_SRC%\*.inl" "%SDK_INCLUDE%\Engine\Scripting\" >nul 2>&1
-    xcopy /S /Y /Q "%ENGINE_SCRIPTING_SRC%\*.h"   "%SDK_INCLUDE%\Engine\Scripting\" >nul 2>&1
+    xcopy /S /Y /Q "%ENGINE_SCRIPTING_SRC%\*.inl" "%SDK_INCLUDE%\Scripting\" >nul 2>&1
+    xcopy /S /Y /Q "%ENGINE_SCRIPTING_SRC%\*.h"   "%SDK_INCLUDE%\Scripting\" >nul 2>&1
 )
 
 REM Validate SDK exists
-if not exist "%SDK_INCLUDE%\Engine\Scripting\Internal\IScript.inl" (
+if not exist "%SDK_INCLUDE%\Scripting\Internal\IScript.inl" (
     echo [ERROR] Script SDK headers missing.
-    echo         Expected: "%SDK_INCLUDE%\Engine\Scripting\Internal\IScript.inl"
+    echo         Expected: "%SDK_INCLUDE%\Scripting\Internal\IScript.inl"
     exit /b 1
 )
 

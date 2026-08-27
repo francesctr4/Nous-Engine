@@ -1,7 +1,7 @@
 #pragma once
 
 #include <EditorUI/IEditorWindow.h>
-#include "Engine/Scripting/Internal/IScript.inl"
+#include <Scripting/Internal/IScript.inl>
 #include <ECS/Component/Types/CMaterial/CMaterial.h>
 #include <ECS/Scene/Scene.h>
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>

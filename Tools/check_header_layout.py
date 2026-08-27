@@ -75,6 +75,7 @@ CONVERTED = {
     "TimeManager":         "Engine/Core/TimeManager/include",
     "NOUS_Multithreading": "Engine/NOUS_Multithreading/include",
     "Utils":               "Engine/Utils/include",
+    "Scripting":           "Engine/Scripting/include",
     "AudioSystem":         "Engine/Systems/AudioSystem/include",
     "VideoSystem":         "Engine/Systems/VideoSystem/include",
     "ShaderSystem":        "Engine/Systems/ShaderSystem/include",

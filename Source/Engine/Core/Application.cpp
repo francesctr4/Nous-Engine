@@ -19,7 +19,7 @@
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include <EventSystem/EventSystem.h>
 #include <Logger/Logger.h>
-#include "Engine/Scripting/ScriptManager.h"
+#include <Scripting/ScriptManager.h>
 #include <ECS/ComponentServices.h>
 #include <NOUS_Multithreading/NOUS_Thread.h>
 

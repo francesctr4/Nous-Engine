@@ -58,4 +58,5 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         ResourceManager
         Utils
         glm::glm
+        Scripting_headers
 )

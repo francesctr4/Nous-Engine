@@ -62,6 +62,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         MemoryManager_headers
         NOUS_Multithreading_headers
         Utils_headers
+        Scripting_headers
         CameraSystem_headers
         ShaderSystem_headers
         VideoSystem_headers

@@ -150,6 +150,7 @@ target_link_libraries(EditorUI PUBLIC
         Utils_headers
         EventSystem_headers
         FileWatcher_headers
+        Scripting_headers   # InspectorWindow.h includes IScript.inl
 )
 
 # Converted 2026-08-27, and PRIVATE rather than PUBLIC because these are named

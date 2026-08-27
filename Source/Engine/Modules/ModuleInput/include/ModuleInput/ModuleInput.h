@@ -5,7 +5,7 @@
 #include "Engine/Core/Globals.h"
 #include <EventSystem/IEventListener.h>
 #include "Engine/Core/Input/IInputReader.h"
-#include "Engine/Scripting/iScriptInput.h"
+#include <Scripting/iScriptInput.h>
 
 constexpr int32 MAX_KEYBOARD_KEYS = 300;
 constexpr int32 MAX_MOUSE_BUTTONS = 5;

@@ -4,8 +4,8 @@
 #include "Windows/InspectorWindow/InspectorComponent/InspectorCScript/InspectorCScript.h"
 
 #include <EditorUI/TextEditorWindow.h>
-#include "Engine/Scripting/ScriptManager.h"
-#include "Engine/Scripting/Internal/IScript.inl"
+#include <Scripting/ScriptManager.h>
+#include <Scripting/Internal/IScript.inl>
 #include <ECS/Component/Types/CScript/CScript.h>
 #include <ECS/GameObject.h>
 #include <ECS/Scene/Scene.h>

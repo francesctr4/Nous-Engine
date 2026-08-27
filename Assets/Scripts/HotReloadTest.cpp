@@ -7,10 +7,10 @@
  *     coding_start and coding_end
  ****************************************************/
 
-#include <Engine/Scripting/Internal/IScript.inl>
-#include <Engine/Scripting/Internal/ScriptRegistry.inl>
-#include <Engine/Scripting/EngineAPI/EngineAPI.h>
-#include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
+#include <Scripting/Internal/IScript.inl>
+#include <Scripting/Internal/ScriptRegistry.inl>
+#include <Scripting/EngineAPI/EngineAPI.h>
+#include <Scripting/EngineAPI/Bindings/ScriptBindings.h>
 
 // ----- HEADER FILES ----- //
 /*coding_start::HotReloadTest*/
@@ -95,7 +95,7 @@ private:
 
     // ----- ATTRIBUTES ----- //
     /*coding_start::HotReloadTest*/
-    float m_version = 31.0f;  // bump this between recompiles to verify hot-reload
+    float m_version = 32.0f;  // bump this between recompiles to verify hot-reload
     float m_interval = 1.0f;  // seconds between log prints
     /*coding_end::HotReloadTest*/
 

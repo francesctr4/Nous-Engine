@@ -5,7 +5,7 @@
 #include <AudioSystem/iAudioBroker.h>
 #include <VideoSystem/iVideoBroker.h>
 #include <ResourceManager/Core/IResourceLoader.h>
-#include "Engine/Scripting/iScriptRegistry.h"
+#include <Scripting/iScriptRegistry.h>
 
 #include <algorithm>
 #include <array>

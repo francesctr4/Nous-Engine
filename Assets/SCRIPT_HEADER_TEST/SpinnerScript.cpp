@@ -1,7 +1,7 @@
-#include <Engine/Scripting/Internal/IScript.inl>
-#include <Engine/Scripting/Internal/ScriptRegistry.inl>
-#include <Engine/Scripting/EngineAPI/EngineAPI.h>
-#include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
+#include <Scripting/Internal/IScript.inl>
+#include <Scripting/Internal/ScriptRegistry.inl>
+#include <Scripting/EngineAPI/EngineAPI.h>
+#include <Scripting/EngineAPI/Bindings/ScriptBindings.h>
 
 // Include the helper class defined in the same folder.
 // This is the whole point of the test: a script that pulls in a .h/.cpp pair.

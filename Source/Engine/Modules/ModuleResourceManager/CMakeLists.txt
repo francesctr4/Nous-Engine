@@ -49,6 +49,7 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         ModuleInput
         NOUS_Multithreading
         Utils
+        Scripting_headers
 )
 
 if (NOUS_BUILD_TESTS)

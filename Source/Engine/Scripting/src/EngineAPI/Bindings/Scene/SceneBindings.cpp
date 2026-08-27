@@ -1,0 +1,25 @@
+#include <Scripting/EngineAPI/Bindings/SceneBindings.h>
+
+#include <Scripting/iScriptSceneHost.h>
+#include <Logger/Logger.h>
+
+static IScriptSceneHost* s_scene = nullptr;
+
+void SetupSceneBindings(SceneAPI& scene, IScriptSceneHost* sceneHost)
+{
+    s_scene = sceneHost;
+
+    scene.LoadScene = [](const char* path) {
+        if (!s_scene || !path) return;
+        s_scene->LoadSceneAsync(path);
+    };
+
+    scene.ReloadScene = []() {
+        if (!s_scene) return;
+        if (!s_scene->HasCurrentScenePath()) {
+            NOUS_WARN("[SceneAPI] ReloadScene called but no scene has been saved/loaded.");
+            return;
+        }
+        s_scene->LoadSceneAsync(s_scene->GetCurrentScenePath());
+    };
+}

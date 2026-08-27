@@ -43,6 +43,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         ECS
         EnTT::EnTT
         EventSystem_headers   # <Module>.h implements IEventListener
+        Scripting_headers   # ModuleScene.h implements IScriptSceneHost
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

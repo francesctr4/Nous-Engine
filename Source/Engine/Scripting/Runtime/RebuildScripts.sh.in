@@ -87,20 +87,20 @@ SDK_ENGINE_API_CPP="$SDK_DIR/src/EngineAPI.cpp"
 # 3.5) Sync SDK headers from source so hot-reload always uses the latest
 #      engine headers without requiring a full engine rebuild.
 # -----------------------------
-ENGINE_SCRIPTING_SRC="@CMAKE_SOURCE_DIR@/Source/Engine/Scripting"
+ENGINE_SCRIPTING_SRC="@CMAKE_SOURCE_DIR@/Source/Engine/Scripting/include/Scripting"
 if [ -d "$ENGINE_SCRIPTING_SRC" ]; then
     while IFS= read -r -d '' f; do
         rel="${f#"$ENGINE_SCRIPTING_SRC"/}"
-        dest_dir="$SDK_INCLUDE/Engine/Scripting/$(dirname "$rel")"
+        dest_dir="$SDK_INCLUDE/Scripting/$(dirname "$rel")"
         mkdir -p "$dest_dir"
         cp "$f" "$dest_dir/"
     done < <(find "$ENGINE_SCRIPTING_SRC" \( -name "*.inl" -o -name "*.h" \) -print0)
 fi
 
 # Validate SDK
-if [ ! -f "$SDK_INCLUDE/Engine/Scripting/Internal/IScript.inl" ]; then
+if [ ! -f "$SDK_INCLUDE/Scripting/Internal/IScript.inl" ]; then
     echo "[ERROR] Script SDK headers missing."
-    echo "        Expected: $SDK_INCLUDE/Engine/Scripting/Internal/IScript.inl"
+    echo "        Expected: $SDK_INCLUDE/Scripting/Internal/IScript.inl"
     exit 1
 fi
 

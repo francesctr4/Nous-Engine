@@ -259,8 +259,9 @@ Use `final` on classes or methods that must not be further overridden.
 foundation — `Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` — all of
 `Systems/` — `VideoSystem`, `ShaderSystem`, `CameraSystem`, `ECS`, `ResourceManager`,
 `PrefabManager` — all four `Renderer/` targets, and the rest of the foundation —
-`EventSystem`, `FileWatcher`, `TimeManager`, `Utils` (2026-08-27). Remaining:
-`Core` itself (`Application`), `Scripting`, `Modules/`, `Editor/`. Converted targets use:
+`EventSystem`, `FileWatcher`, `TimeManager`, `Utils` (2026-08-27); all of `Modules/`
+all of `Editor/` and `Scripting` (2026-08-28). Remaining: `Core` itself
+(`Application`). Converted targets use:
 
 ```
 Systems/AudioSystem/

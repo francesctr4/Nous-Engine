@@ -7,10 +7,10 @@
  *     coding_start and coding_end
  ****************************************************/
 
-#include <Engine/Scripting/Internal/IScript.inl>
-#include <Engine/Scripting/Internal/ScriptRegistry.inl>
-#include <Engine/Scripting/EngineAPI/EngineAPI.h>
-#include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
+#include <Scripting/Internal/IScript.inl>
+#include <Scripting/Internal/ScriptRegistry.inl>
+#include <Scripting/EngineAPI/EngineAPI.h>
+#include <Scripting/EngineAPI/Bindings/ScriptBindings.h>
 
 // ----- HEADER FILES ----- //
 /*coding_start::MoveScript*/

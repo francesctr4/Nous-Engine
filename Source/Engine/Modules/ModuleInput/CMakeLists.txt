@@ -39,6 +39,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         SDL3::SDL3
         ModuleBase
         EventSystem_headers   # <Module>.h implements IEventListener
+        Scripting_headers   # ModuleInput.h implements IScriptInput
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

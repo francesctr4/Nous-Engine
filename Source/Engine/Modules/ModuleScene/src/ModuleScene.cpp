@@ -11,7 +11,7 @@
 #include <MemoryManager/MemoryManager.h>
 #include <CameraSystem/Camera.h>
 
-#include "Engine/Scripting/ScriptManager.h"
+#include <Scripting/ScriptManager.h>
 
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>

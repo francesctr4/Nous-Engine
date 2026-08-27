@@ -74,6 +74,7 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         # ImGuiCustom; ModuleEditor.h names neither, so both stay PRIVATE.
         EditorUI_headers
         ImGuiCustom_headers
+        Scripting_headers
 )
 
 # ModuleEditor.cpp reaches the backend through IEditorRenderBridge; its own public

@@ -6,6 +6,12 @@
 #
 #   <bin>/Library/Scripts/Scripts.dll   ← BUILD OUTPUT (user-deletable; regenerable)
 #   <bin>/EngineCore/Scripts/           ← BUILD TOOLING (must survive Library deletion)
+#
+# Since the header-layout conversion the SDK include tree is a VERBATIM COPY of
+# Scripting/include/, so a user script includes exactly what an engine TU does:
+#   #include <Scripting/EngineAPI/EngineAPI.h>
+# Keep it that way -- if the two ever diverge, a script compiles in-tree and
+# fails on hot-reload (or the reverse), which is very hard to diagnose.
 #       ├── RebuildScripts.bat / .sh    ← script that compiles Scripts.dll
 #       ├── ScriptTemplate.inl          ← template used when creating a new script
 #       └── SDK/                        ← engine headers + EngineAPI.cpp the bat consumes
@@ -56,7 +62,7 @@ else()
                         WORLD_READ WORLD_EXECUTE
     )
 endif()
-file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptTemplate.inl"
+file(COPY "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/include/Scripting/Internal/ScriptTemplate.inl"
         DESTINATION "${SCRIPTS_TOOLING_DIR}")
 
 set(SCRIPTS_SDK_DIR "${SCRIPTS_TOOLING_DIR}/SDK")
@@ -64,48 +70,46 @@ set(SCRIPTS_SDK_INCLUDE_DIR "${SCRIPTS_SDK_DIR}/include")
 set(SCRIPTS_SDK_SRC_DIR "${SCRIPTS_SDK_DIR}/src")
 
 file(MAKE_DIRECTORY
-        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/Internal"
-        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/EngineAPI"
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Scripting/Internal"
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Scripting/EngineAPI"
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Scripting/EngineAPI/Bindings"
 )
 
 file(COPY
-        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/IScript.inl"
-        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Internal/ScriptRegistry.inl"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/include/Scripting/Internal/IScript.inl"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/include/Scripting/Internal/ScriptRegistry.inl"
         DESTINATION
-        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/Internal"
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Scripting/Internal"
 )
 
 file(COPY
-        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.h"
-        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/NOUS_SCANCODE.h"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/include/Scripting/EngineAPI/EngineAPI.h"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/include/Scripting/EngineAPI/NOUS_SCANCODE.h"
         DESTINATION
-        "${SCRIPTS_SDK_INCLUDE_DIR}/Engine/Scripting/EngineAPI"
+        "${SCRIPTS_SDK_INCLUDE_DIR}/Scripting/EngineAPI"
 )
 
 file(COPY
-        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.cpp"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/src/EngineAPI/EngineAPI.cpp"
         DESTINATION
         "${SCRIPTS_SDK_SRC_DIR}"
 )
 
-# Copy ALL headers under EngineAPI/Bindings preserving folders
-file(GLOB_RECURSE SDK_BINDINGS_HEADERS
-        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/Bindings/*.h"
-        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/Bindings/*.inl"
+# All binding headers, flat -- the per-domain folders live under src/ now, so the
+# old relative-path walk is gone.
+file(GLOB SDK_BINDINGS_HEADERS
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/include/Scripting/EngineAPI/Bindings/*.h"
 )
 
-foreach(hdr IN LISTS SDK_BINDINGS_HEADERS)
-    file(RELATIVE_PATH rel "${CMAKE_SOURCE_DIR}/Source" "${hdr}")
-    get_filename_component(rel_dir "${rel}" DIRECTORY)
-    file(MAKE_DIRECTORY "${SCRIPTS_SDK_INCLUDE_DIR}/${rel_dir}")
-    file(COPY "${hdr}" DESTINATION "${SCRIPTS_SDK_INCLUDE_DIR}/${rel_dir}")
-endforeach()
+file(COPY ${SDK_BINDINGS_HEADERS}
+        DESTINATION "${SCRIPTS_SDK_INCLUDE_DIR}/Scripting/EngineAPI/Bindings"
+)
 
 # Discover script sources from source Assets/Scripts — edits there take effect immediately
 file(GLOB_RECURSE SCRIPT_SOURCES
         CONFIGURE_DEPENDS
         "${SCRIPTS_SRC_DIR}/*.cpp"
-        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/EngineAPI/EngineAPI.cpp"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/src/EngineAPI/EngineAPI.cpp"
 )
 
 add_library(Scripts SHARED ${SCRIPT_SOURCES})
@@ -124,8 +128,11 @@ set_target_properties(Scripts PROPERTIES
 )
 
 # Include engine headers + source scripts dir
+# Deliberately NOT ${CMAKE_SOURCE_DIR}/Source: the hot-reload compile line only
+# passes /I<SDK_INCLUDE>, so giving this target the whole engine tree would let a
+# script build here and fail on hot-reload. Same surface, both paths.
 target_include_directories(Scripts PUBLIC
-        "${CMAKE_SOURCE_DIR}/Source/"
+        "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/include"
         "${SCRIPTS_SRC_DIR}"
 )
 

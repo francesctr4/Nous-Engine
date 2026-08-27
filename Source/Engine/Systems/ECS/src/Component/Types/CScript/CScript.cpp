@@ -3,8 +3,8 @@
 //
 
 #include <ECS/Component/Types/CScript/CScript.h>
-#include "Engine/Scripting/Internal/IScript.inl"   // ScriptProperty, GetProperties()
-#include "Engine/Scripting/iScriptRegistry.h"
+#include <Scripting/Internal/IScript.inl>   // ScriptProperty, GetProperties()
+#include <Scripting/iScriptRegistry.h>
 #include <ECS/ComponentServices.h>
 #include <ECS/Scene/iSceneHost.h>
 #include <ECS/GameObject.h>
