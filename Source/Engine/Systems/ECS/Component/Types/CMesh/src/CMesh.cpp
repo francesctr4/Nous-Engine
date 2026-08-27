@@ -4,7 +4,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <FileSystem/FileSystem.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 

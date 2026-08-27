@@ -1,8 +1,8 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ImporterVideo.h"
 
-#include "Engine/Core/FileSystem/FileSystem.h"
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <FileSystem/FileSystem.h>
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
 
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"

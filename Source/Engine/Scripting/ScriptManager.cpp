@@ -1,9 +1,9 @@
 #include <Engine/Scripting/ScriptManager.h>
 #include <Engine/Scripting/Internal/ScriptRegistry.inl>
-#include "Engine/Core/Logger/Logger.h"
-#include <Engine/Core/MemoryManager/MemoryManager.h>
-#include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
-#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
+#include <NOUS_Multithreading/NOUS_Multithreading.h>
+#include <NOUS_Multithreading/NOUS_Thread.h>
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>
 #include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
 #include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"

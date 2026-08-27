@@ -6,7 +6,7 @@
 #include "Engine/Systems/ECS/Component/Types/CPrefab/include/CPrefab.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"

@@ -1,5 +1,5 @@
 #include "Engine/Systems/ShaderSystem/ShaderParser/include/ShaderParser.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Systems/ShaderSystem/ShaderTypes.h"
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;

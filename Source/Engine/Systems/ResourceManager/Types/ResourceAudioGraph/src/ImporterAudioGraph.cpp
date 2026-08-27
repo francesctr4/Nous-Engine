@@ -4,9 +4,9 @@
 #include <AudioSystem/AudioGraph/AudioEffectRegistry.h>
 
 #include "Engine/Core/Globals.h"               // down_cast
-#include "Engine/Core/FileSystem/FileSystem.h"
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <FileSystem/FileSystem.h>
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"

@@ -1,6 +1,6 @@
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/EventSystem/Event/include/Event.h"
 

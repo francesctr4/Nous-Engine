@@ -1,6 +1,6 @@
 #include "Editor/UI/Windows/InspectorWindow/InspectorComponent/InspectorCMaterial/include/InspectorCMaterial.h"
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Systems/ECS/Component/Types/CMaterial/include/CMaterial.h"

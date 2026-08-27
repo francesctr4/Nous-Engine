@@ -11,17 +11,17 @@
 #include "Engine/Modules/ModuleVideo/include/ModuleVideo.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 
-#include <Engine/Core/MemoryManager/MemoryManager.h>
+#include <MemoryManager/MemoryManager.h>
 
 #include <SDL3/SDL.h>
 
 #include <Engine/Core/TimeManager/TimeManager.h>
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include <Engine/Core/EventSystem/EventSystem.h>
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Scripting/ScriptManager.h"
 #include "Engine/Systems/ECS/ComponentServices.h"
-#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
+#include <NOUS_Multithreading/NOUS_Thread.h>
 
 #include <chrono>
 #include <cmath>

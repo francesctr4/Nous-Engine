@@ -1,11 +1,11 @@
 #include "Engine/Systems/ResourceManager/Runtime/ScenePreloader/include/ScenePreloader.h"
 
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"

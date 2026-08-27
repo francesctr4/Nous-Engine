@@ -7,7 +7,7 @@
 #include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/Types/CMesh/include/CMesh.h"
 #include "Engine/Systems/ECS/Component/Types/CScript/include/CScript.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 static IScriptSceneHost* s_scene = nullptr;
 

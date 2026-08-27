@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Globals.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/EngineExport.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"

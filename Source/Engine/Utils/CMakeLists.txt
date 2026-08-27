@@ -27,6 +27,10 @@ find_package(parson CONFIG REQUIRED)
 target_link_libraries(Utils PUBLIC
         glm::glm
         parson::parson
+        # NOUS_Vector.h is a PUBLIC Utils header and routes STL containers through
+        # NOUS_STLAllocator, so consumers need MemoryManager's API dir too.
+        # Headers only -- no objects, no transitive deps.
+        MemoryManager_headers
 )
 
 target_link_libraries(Utils PRIVATE

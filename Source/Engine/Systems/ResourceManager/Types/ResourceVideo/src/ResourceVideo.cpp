@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
 
-#include "Engine/Core/FileSystem/FileSystem.h"  // GetExtension
+#include <FileSystem/FileSystem.h>  // GetExtension
 
 VideoFileType VideoFileTypeFromExtension(const std::string& libraryPath)
 {

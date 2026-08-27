@@ -54,6 +54,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         # Add one line per converted target. When the list is complete, the global
         # Source/ root can be dropped and enforcement becomes engine-wide.
         AudioSystem_headers
+        FileSystem_headers
+        Logger_headers
+        MemoryManager_headers
+        NOUS_Multithreading_headers
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

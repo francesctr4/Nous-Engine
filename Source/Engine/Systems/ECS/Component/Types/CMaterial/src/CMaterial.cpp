@@ -5,7 +5,7 @@
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <FileSystem/FileSystem.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 

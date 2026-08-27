@@ -8,15 +8,15 @@
 #include <cmath>
 #include <chrono>
 
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <FileSystem/FileSystem.h>
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Scripting/ScriptManager.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
+#include <Logger/Logger.h>
 
 static const std::unordered_map<std::string, FileType> extensionToFileType =
 {

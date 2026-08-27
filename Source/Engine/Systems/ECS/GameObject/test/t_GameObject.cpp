@@ -4,7 +4,7 @@
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 
 class t_GameObject : public ::testing::Test

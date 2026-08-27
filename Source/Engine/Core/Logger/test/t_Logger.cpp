@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 #include <atomic>
 #include <chrono>

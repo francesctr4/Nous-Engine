@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"

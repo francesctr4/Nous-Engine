@@ -8,16 +8,16 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
 
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
-#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include <NOUS_Multithreading/NOUS_Thread.h>
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include <future>
 #include <ranges>

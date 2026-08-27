@@ -4,7 +4,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/ECSInternalComponents.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 
 #include <glm/glm.hpp>
 

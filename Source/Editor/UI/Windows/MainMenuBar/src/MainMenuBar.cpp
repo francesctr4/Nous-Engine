@@ -4,7 +4,7 @@
 #include "imgui.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <FileSystem/FileSystem.h>
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 
 #include <SDL3/SDL.h>

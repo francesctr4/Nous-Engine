@@ -4,7 +4,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceQueue/include/ResourceQueue.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceTable/include/ResourceTable.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 #include "Engine/Utils/Math/Vertex.inl"
 

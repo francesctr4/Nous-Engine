@@ -20,10 +20,10 @@
 #include <cstring>
 #include <memory>
 
-#include <Engine/Core/FileSystem/FileSystem.h>
+#include <FileSystem/FileSystem.h>
 
-#include <Engine/Core/MemoryManager/MemoryManager.h>
-#include "Engine/Core/Logger/Logger.h"
+#include <MemoryManager/MemoryManager.h>
+#include <Logger/Logger.h>
 
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
@@ -38,7 +38,7 @@
 #endif
 #include "Engine/Renderer/Backend/Vulkan/Resources/Shader/VulkanShader.h"
 
-#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
+#include <NOUS_Multithreading/NOUS_Thread.h>
 #include "Engine/Utils/Math/Vertex.inl"
 #include <Engine/Core/EventSystem/EventSystem.h>
 #include "Engine/Renderer/iRenderWindow.h"

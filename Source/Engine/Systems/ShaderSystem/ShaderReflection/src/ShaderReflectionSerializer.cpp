@@ -1,5 +1,5 @@
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflectionSerializer.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"

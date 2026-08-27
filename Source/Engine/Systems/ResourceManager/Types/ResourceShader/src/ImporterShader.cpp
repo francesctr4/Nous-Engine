@@ -1,9 +1,9 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ImporterShader.h"
 
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
+#include <FileSystem/FileHandle.h>
+#include <FileSystem/FileSystem.h>
 
 #include "Engine/Systems/ResourceManager/Types/ResourceShader/include/ResourceShader.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"

@@ -3,7 +3,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ImporterAudio.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 
 #include <cstdint>

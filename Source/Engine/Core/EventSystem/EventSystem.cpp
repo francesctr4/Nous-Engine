@@ -1,5 +1,5 @@
 #include "EventSystem.h"
-#include "Engine/Core/Logger/Logger.h"   // uses your NOUS_INFO / NOUS_WARN macros
+#include <Logger/Logger.h>   // uses your NOUS_INFO / NOUS_WARN macros
 #include <algorithm>
 #include <ranges>
 

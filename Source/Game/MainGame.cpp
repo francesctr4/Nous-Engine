@@ -1,11 +1,11 @@
 #include "Engine/Core/Globals.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
+#include <NOUS_Multithreading/NOUS_Multithreading.h>
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include <string>

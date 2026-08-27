@@ -1,6 +1,6 @@
 #include "FileWatcher.h"
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 void FileWatcher::Watch(const std::string& path, Callback callback)
 {

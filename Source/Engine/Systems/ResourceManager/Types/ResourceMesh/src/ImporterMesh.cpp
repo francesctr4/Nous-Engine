@@ -1,19 +1,19 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ImporterMesh.h"
-#include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
+#include <FileSystem/FileHandle.h>
 
 #include <map>
 
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 
 #include "Engine/Renderer/IGPUResourceFactory.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/IResourceLoader.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"

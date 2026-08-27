@@ -255,7 +255,9 @@ Use `final` on classes or methods that must not be further overridden.
 
 ## Target Layout: public `include/`, private `src/`
 
-**Migration in progress (started 2026-08-26 with `AudioSystem`).** Converted targets use:
+**Migration in progress (started 2026-08-26 with `AudioSystem`; the foundation —
+`Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` — converted
+2026-08-27).** Converted targets use:
 
 ```
 Systems/AudioSystem/
@@ -287,6 +289,21 @@ Unconverted targets keep the old `unit/include|src|test` layout and `Engine/`-ro
 includes; `${CMAKE_SOURCE_DIR}/Source` stays on the include path until the last one is
 converted.
 
+**A converted target's headers no longer resolve through the global `Source/` root.**
+`<Logger/Logger.h>` resolves only via `Logger_headers`, so every consumer must declare
+the link — which is the point, and is how the foundation conversion surfaced three
+targets (`Utils`, `EditorUI`, `ModuleEditor`) that had been including Logger,
+MemoryManager, FileSystem and the job system for free. Expect that on every conversion.
+Targets linking `NousEngine::Engine` or `NousEngine::Editor` are covered automatically,
+because the DLL's PUBLIC link list carries every converted target's `_headers` handle.
+
+**Where a sub-unit contributes exactly one public header, `include/` is flat.**
+`NOUS_JobSystem/NOUS_JobSystem.h` under `include/NOUS_Multithreading/` would be pure
+repetition, so it is `<NOUS_Multithreading/NOUS_JobSystem.h>`. `src/` and `test/` still
+keep the sub-unit directory (and its `CMakeLists.txt`) as the unit-boundary marker.
+`AudioSystem` mirrors sub-unit dirs inside `include/` because its sub-units carry
+several headers each; both are correct.
+
 ---
 
 ## Include Order
@@ -297,8 +314,8 @@ Within each group, sort alphabetically. Separate groups with a blank line.
 // 1. Own header (in .cpp files) — use shortest resolvable path from configured include dirs
 #include "Engine/Modules/ModuleWindow/include/ModuleWindow.h"
 
-// 2. Engine headers
-#include "Engine/Core/Logger/Logger.h"
+// 2. Engine headers -- converted targets use <Target/Header.h>, the rest are Engine/-rooted
+#include <Logger/Logger.h>
 #include "Engine/Systems/ResourceManager/ResourceBase.h"
 
 // 3. Third-party headers

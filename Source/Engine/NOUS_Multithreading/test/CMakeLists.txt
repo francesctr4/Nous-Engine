@@ -1,3 +1,10 @@
+# Tests live at the target root, not under src/ — see CONVENTIONS.md.
+# The sub-unit structure of src/ is mirrored here.
+add_subdirectory(NOUS_Job)
+add_subdirectory(NOUS_JobSystem)
+add_subdirectory(NOUS_Thread)
+add_subdirectory(NOUS_ThreadPool)
+
 # ===========================================
 # NOUS_Multithreading - Unit Tests
 # ===========================================
@@ -10,7 +17,6 @@ add_executable(${TEST_NAME}
 
 target_include_directories(${TEST_NAME}
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/..
         ${CMAKE_SOURCE_DIR}/Source
 )
 

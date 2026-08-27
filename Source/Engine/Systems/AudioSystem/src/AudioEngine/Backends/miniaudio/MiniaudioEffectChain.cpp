@@ -1,7 +1,7 @@
 #include "AudioEngine/Backends/miniaudio/MiniaudioEffectChain.h"
 #include "AudioEngine/Backends/miniaudio/MiniaudioGainNode.h"
 
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 
 bool MiniaudioEffectChain::Build(ma_engine* engine, ma_node* source, const AudioGraphDesc& desc, ma_node* output)
 {

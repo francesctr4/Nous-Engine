@@ -5,7 +5,7 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <FileSystem/FileSystem.h>
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
@@ -17,7 +17,7 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Renderer/RendererTypes.h"
 
@@ -32,7 +32,7 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include <utility>
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "SDL3/SDL.h"
 
 SceneViewport::SceneViewport(const char* title, EditorContext* context, bool start_open)

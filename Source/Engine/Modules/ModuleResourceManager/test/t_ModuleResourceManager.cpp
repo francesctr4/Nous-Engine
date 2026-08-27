@@ -3,8 +3,8 @@
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"

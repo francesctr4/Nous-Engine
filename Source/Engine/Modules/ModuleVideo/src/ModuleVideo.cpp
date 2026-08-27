@@ -1,9 +1,9 @@
 #include "Engine/Modules/ModuleVideo/include/ModuleVideo.h"
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/EventSystem/Event/include/Event.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 
 #include "Engine/Systems/VideoSystem/VideoDecoder/IVideoDecoderBackend.h"
 #include "Engine/Systems/VideoSystem/VideoDecoder/VideoDecoderBackendFactory.h"

@@ -1,8 +1,8 @@
 #include "JsonFile.h"
 
 #include <parson.h>
-#include "Engine/Core/FileSystem/FileSystem.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <FileSystem/FileSystem.h>
+#include <Logger/Logger.h>
 
 JsonObject JsonFile::LoadFromFile(std::string_view path) {
     // Normalize separators (Windows-authored .meta/.nous/.nmat paths use backslashes, which are

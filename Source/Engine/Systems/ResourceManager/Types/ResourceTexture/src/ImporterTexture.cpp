@@ -1,12 +1,12 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ImporterTexture.h"
 #include "Engine/Renderer/IGPUResourceFactory.h"
-#include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <FileSystem/FileHandle.h>
+#include <FileSystem/FileSystem.h>
 
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #define STB_IMAGE_IMPLEMENTATION
@@ -14,7 +14,7 @@
 #define STBI_THREAD_LOCAL
 #include "stb_image.h"
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 bool ImporterTexture::Import(const MetaFileData& metaFileData)
 {

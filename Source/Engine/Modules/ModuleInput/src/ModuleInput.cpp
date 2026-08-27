@@ -1,7 +1,7 @@
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
 
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_vulkan.h"

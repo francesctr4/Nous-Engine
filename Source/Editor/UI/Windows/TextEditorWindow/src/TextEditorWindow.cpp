@@ -1,9 +1,9 @@
 #include "Editor/UI/Windows/TextEditorWindow/include/TextEditorWindow.h"
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include "imgui.h"
 

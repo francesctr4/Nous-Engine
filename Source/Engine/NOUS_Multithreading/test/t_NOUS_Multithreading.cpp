@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
-#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <NOUS_Multithreading/NOUS_Multithreading.h>
+#include <NOUS_Multithreading/NOUS_Thread.h>
+#include <MemoryManager/MemoryManager.h>
 
 #include <thread>
 

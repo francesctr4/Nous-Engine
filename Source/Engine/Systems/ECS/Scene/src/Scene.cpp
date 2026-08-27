@@ -16,8 +16,8 @@
 #include "Engine/Systems/ECS/Component/Types/ComponentTypes.h"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"
 #include "Engine/Utils/Serialization/Random/Random.h"
-#include "Engine/Core/Logger/Asserts.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Asserts.h>
+#include <Logger/Logger.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"

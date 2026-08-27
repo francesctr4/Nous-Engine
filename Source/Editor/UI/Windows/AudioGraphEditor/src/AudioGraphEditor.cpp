@@ -2,7 +2,7 @@
 
 #include "Editor/EditorContext.h"
 #include "Engine/Core/Globals.h"   // down_cast
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"

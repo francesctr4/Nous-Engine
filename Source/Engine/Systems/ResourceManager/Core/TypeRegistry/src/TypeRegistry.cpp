@@ -1,7 +1,7 @@
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 
-#include "Engine/Core/Logger/Asserts.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Asserts.h>
+#include <Logger/Logger.h>
 
 #include <algorithm>
 

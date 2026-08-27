@@ -1,7 +1,7 @@
 #include "Editor/UI/Windows/JobQueueWindow/include/JobQueueWindow.h"
 
-#include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include <NOUS_Multithreading/NOUS_ThreadPool.h>
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include "imgui.h"
 

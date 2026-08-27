@@ -1,9 +1,9 @@
 #include "Engine/Modules/ModuleAudio/include/ModuleAudio.h"
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Core/EventSystem/EventSystem.h"
 #include "Engine/Core/EventSystem/Event/include/Event.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 
 #include <AudioSystem/AudioEngine/AudioBackendFactory.h>
 #include <AudioSystem/AudioEngine/IAudioEngineBackend.h>

@@ -5,7 +5,7 @@
 #include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
 #include "Engine/Systems/ECS/Component/Types/CTransform/include/CTransform.h"
 #include "Engine/Systems/ECS/test/FakeComponentServices.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 
 #include <glm/glm.hpp>

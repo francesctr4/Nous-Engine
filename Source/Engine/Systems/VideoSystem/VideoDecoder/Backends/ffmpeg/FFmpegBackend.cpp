@@ -1,7 +1,7 @@
 #include "Engine/Systems/VideoSystem/VideoDecoder/Backends/ffmpeg/FFmpegBackend.h"
 
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceVideo/include/ResourceVideo.h"
 #include "Engine/Systems/VideoSystem/VideoFrameQueue/include/VideoFrameQueue.h"
 

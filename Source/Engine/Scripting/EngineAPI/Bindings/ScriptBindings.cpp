@@ -1,7 +1,7 @@
 #include <Engine/Scripting/EngineAPI/Bindings/ScriptBindings.h>
 
 #include <Engine/Scripting/EngineAPI/EngineAPI.h>
-#include <Engine/Core/MemoryManager/MemoryManager.h>
+#include <MemoryManager/MemoryManager.h>
 
 void ScriptBindings::InitializeBindings(EngineAPI*& api)
 {

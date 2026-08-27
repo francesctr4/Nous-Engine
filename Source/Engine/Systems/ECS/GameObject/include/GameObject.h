@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Core/Logger/Asserts.h"
+#include <Logger/Asserts.h>
 #include "Engine/Systems/ECS/Component/Component.h"
 #include "Engine/EngineExport.h"
 

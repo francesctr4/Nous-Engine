@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"
 
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporter.h"
 
 #include <ranges>

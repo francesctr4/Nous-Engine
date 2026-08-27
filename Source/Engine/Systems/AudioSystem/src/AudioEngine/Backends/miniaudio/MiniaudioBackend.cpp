@@ -1,6 +1,6 @@
 #include "AudioEngine/Backends/miniaudio/MiniaudioBackend.h"
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
 #include <AudioSystem/AudioTypes.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceAudio/include/ResourceAudio.h"
 

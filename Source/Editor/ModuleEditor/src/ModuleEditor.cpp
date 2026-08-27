@@ -39,9 +39,9 @@
 #include <memory>
 #include <SDL3/SDL_keyboard.h>
 
-#include "Engine/Core/FileSystem/FileSystem.h"
-#include "Engine/Core/Logger/Asserts.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <FileSystem/FileSystem.h>
+#include <Logger/Asserts.h>
+#include <Logger/Logger.h>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MODULE_EDITOR;
 

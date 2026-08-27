@@ -1,7 +1,7 @@
 #include "Engine/Systems/ResourceManager/Runtime/ImportPipeline/include/ImportPipeline.h"
 
-#include "Engine/Core/FileSystem/FileSystem.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <FileSystem/FileSystem.h>
+#include <Logger/Logger.h>
 #include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
@@ -11,7 +11,7 @@
 #include "Engine/Utils/Serialization/Random/Random.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include <filesystem>
 #include <format>

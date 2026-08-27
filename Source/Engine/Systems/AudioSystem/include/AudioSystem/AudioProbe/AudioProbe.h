@@ -2,6 +2,7 @@
 
 #include "Engine/EngineExport.h"
 #include <string>
+#include <cstdint>
 
 // ---------------------------------------------------------------------------
 // Decode-only audio probe — asset-import API, not runtime playback.

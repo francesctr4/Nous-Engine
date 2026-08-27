@@ -4,7 +4,7 @@
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
 #include "Engine/Systems/ECS/Component/Types/CCamera/include/CCamera.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 static IScriptSceneHost* s_scene = nullptr;
 

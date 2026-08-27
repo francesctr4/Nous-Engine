@@ -1,7 +1,7 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/SubMeshCache.h"
 
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceQueue/include/ResourceQueue.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceTable/include/ResourceTable.h"

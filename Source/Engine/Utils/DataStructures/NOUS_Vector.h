@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_NOUS_VECTOR_H
 #define NOUS_ENGINE_NOUS_VECTOR_H
 
-#include "Engine/Core/MemoryManager/CustomAllocators/NOUS_STLAllocator/include/NOUS_STLAllocator.h"
+#include <MemoryManager/NOUS_STLAllocator.h>
 
 #include <vector>
 

@@ -1,3 +1,7 @@
+# Tests live at the target root, not under src/ — see CONVENTIONS.md.
+# The sub-unit structure of src/ is mirrored here.
+add_subdirectory(CustomAllocators)
+
 set(TEST_NAME "t_MemoryManager")
 
 add_executable(${TEST_NAME}

@@ -1,14 +1,14 @@
 #include "Engine/Modules/ModuleScene/include/ModuleScene.h"
 #include <vector>
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <FileSystem/FileSystem.h>
 #include "Engine/Modules/ModuleInput/include/ModuleInput.h"
 #include "Engine/Modules/ModuleResourceManager/include/ModuleResourceManager.h"
 #include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ResourceMesh.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 
 #include "Engine/Scripting/ScriptManager.h"
@@ -24,8 +24,8 @@
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
-#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
+#include <NOUS_Multithreading/NOUS_Thread.h>
 
 #include <future>
 
@@ -39,7 +39,7 @@
 #include <filesystem>
 #include <algorithm>
 
-#include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
+#include <NOUS_Multithreading/NOUS_ThreadPool.h>
 #include "Engine/Systems/ResourceManager/Types/ResourceMesh/include/ImporterMesh.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/MetaFileData.h"
 #include "Engine/Systems/PrefabManager/include/PrefabManager.h"

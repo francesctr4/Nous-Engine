@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Editor/UI/IEditorWindow.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include <utility>
 #include <vector>
 #include <string>

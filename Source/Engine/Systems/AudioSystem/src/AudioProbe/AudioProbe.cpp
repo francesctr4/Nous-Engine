@@ -1,7 +1,7 @@
 #include <AudioSystem/AudioProbe/AudioProbe.h>
 
-#include "Engine/Core/Logger/LogChannel.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/LogChannel.h>
+#include <Logger/Logger.h>
 
 #include <miniaudio.h>
 

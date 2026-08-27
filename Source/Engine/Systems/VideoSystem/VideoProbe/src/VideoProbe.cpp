@@ -1,6 +1,6 @@
 #include "Engine/Systems/VideoSystem/VideoProbe/include/VideoProbe.h"
 
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 extern "C" {
 #include <libavformat/avformat.h>

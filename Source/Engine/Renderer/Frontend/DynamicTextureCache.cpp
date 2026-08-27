@@ -1,7 +1,7 @@
 #include "Engine/Renderer/Frontend/DynamicTextureCache.h"
 
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Renderer/Frontend/RendererFrontend.h"
 #include "Engine/Renderer/RendererTypes.h"   // TextureMap
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"

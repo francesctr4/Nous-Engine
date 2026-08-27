@@ -1,7 +1,7 @@
 #include "Engine/Systems/ResourceManager/Runtime/HotReloader/include/HotReloader.h"
 
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
+#include <Logger/Logger.h>
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterDispatcher.h"
 #include "Engine/Systems/ResourceManager/Core/TypeRegistry/include/TypeRegistry.h"

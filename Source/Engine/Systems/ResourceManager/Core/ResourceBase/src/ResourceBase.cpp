@@ -1,6 +1,6 @@
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 
-#include "Engine/Core/Logger/Asserts.h"
+#include <Logger/Asserts.h>
 
 #include <utility>
 

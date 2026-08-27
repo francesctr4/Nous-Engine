@@ -79,4 +79,12 @@ target_link_libraries(EditorUI PUBLIC
         # converted, this dependency existed just the same but was invisible,
         # satisfied by the global Source/ include root.
         AudioSystem_headers
+        # The foundation targets, converted 2026-08-27. Same story: the editor
+        # windows have always included Logger/MemoryManager/FileSystem/the job
+        # system; the dependency was satisfied invisibly by the global Source/
+        # include root and is now declared.
+        FileSystem_headers
+        Logger_headers
+        MemoryManager_headers
+        NOUS_Multithreading_headers
 )

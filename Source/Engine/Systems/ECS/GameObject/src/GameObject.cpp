@@ -3,7 +3,7 @@
 #include "Engine/Systems/ECS/ECSInternalComponents.h"
 
 #include "Engine/Systems/ECS/Component/Types/ComponentTypes.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"
 #include <ranges>

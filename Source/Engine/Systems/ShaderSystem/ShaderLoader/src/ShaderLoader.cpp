@@ -1,8 +1,8 @@
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <Logger/Logger.h>
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompiler.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
-#include "Engine/Core/FileSystem/FileHandle/include/FileHandle.h"
+#include <FileSystem/FileHandle.h>
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoaderTypes.h"
 #include "Engine/Systems/ShaderSystem/ShaderParser/include/ShaderParser.h"
 #include "Engine/Systems/ShaderSystem/ShaderReflection/include/ShaderReflection.h"

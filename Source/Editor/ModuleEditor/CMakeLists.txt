@@ -17,4 +17,11 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         # ModuleEditor.cpp includes AudioGraphEditor.h, which names the effect
         # registry. Headers only.
         AudioSystem_headers
+        # ModuleEditor.h includes NOUS_Vector.h, which names NOUS_STLAllocator.
+        MemoryManager_headers
+)
+
+target_link_libraries(${CLASS_NAME} PRIVATE
+        FileSystem_headers
+        Logger_headers
 )

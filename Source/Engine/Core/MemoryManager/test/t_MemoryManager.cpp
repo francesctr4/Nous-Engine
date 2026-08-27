@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 
 // ─────────────────────────────────────────────────────────────────────────────

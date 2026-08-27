@@ -1,7 +1,7 @@
 #include "Engine/Scripting/EngineAPI/Bindings/Scene/SceneBindings.h"
 
 #include "Engine/Scripting/iScriptSceneHost.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 static IScriptSceneHost* s_scene = nullptr;
 

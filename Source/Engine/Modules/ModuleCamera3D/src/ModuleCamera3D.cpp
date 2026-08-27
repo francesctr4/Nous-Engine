@@ -1,5 +1,5 @@
 #include "Engine/Modules/ModuleCamera3D/include/ModuleCamera3D.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
 #include <algorithm>
 
@@ -9,7 +9,7 @@
 #include "Engine/Core/EventSystem/EventSystem.h"
 
 #include "glm/gtc/quaternion.hpp"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 
 #ifdef _PROFILING
 #include <tracy/Tracy.hpp>

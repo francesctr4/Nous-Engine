@@ -2,7 +2,7 @@
 
 #include "Engine/Systems/ECS/test/FakeComponentServices.h"
 #include "Engine/Systems/ECS/Scene/include/Scene.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/Globals.h"
 
 class t_FakeComponentServices : public ::testing::Test

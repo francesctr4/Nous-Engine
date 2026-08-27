@@ -1,11 +1,11 @@
 #include "Editor/UI/Windows/MultithreadingWindow/include/MultithreadingWindow.h"
 
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
-#include "Engine/NOUS_Multithreading/NOUS_Job/include/NOUS_Job.h"
-#include "Engine/NOUS_Multithreading/NOUS_Thread/include/NOUS_Thread.h"
-#include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
+#include <NOUS_Multithreading/NOUS_Job.h>
+#include <NOUS_Multithreading/NOUS_Thread.h>
+#include <NOUS_Multithreading/NOUS_Multithreading.h>
 #include "Engine/Renderer/iEditorRenderBridge.h"
-#include "Engine/NOUS_Multithreading/NOUS_ThreadPool/include/NOUS_ThreadPool.h"
+#include <NOUS_Multithreading/NOUS_ThreadPool.h>
 
 #include <algorithm>
 #include <format>

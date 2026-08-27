@@ -20,15 +20,15 @@
 #include "Engine/Systems/ECS/Component/Types/CLight/include/CLight.h"
 #include "Engine/Systems/ECS/ECSInternalComponents.h"
 
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 #include "Engine/Core/EventSystem/EventSystem.h"
-#include "Engine/Core/Logger/LogChannel.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/LogChannel.h>
+#include <Logger/Logger.h>
 #include "Engine/Systems/ResourceManager/Core/AssetPaths/include/AssetPaths.h"
 #include "Engine/Systems/ResourceManager/Core/ResourceBase/include/ResourceBase.h"
 #include "Engine/Systems/ResourceManager/Types/ResourceTexture/include/ResourceTexture.h"
 #include "Engine/Systems/ResourceManager/Core/ImporterManager/include/IImporterManager.h"
-#include "Engine/Core/FileSystem/FileSystem.h"
+#include <FileSystem/FileSystem.h>
 
 #include <filesystem>
 #include "Engine/Utils/Serialization/JsonFile/JsonFile.h"

@@ -3,8 +3,8 @@
 #include "Engine/Renderer/Backend/Vulkan/Rendering/CommandBuffer/VulkanCommandBuffer.h"
 #include "Engine/Renderer/Backend/Vulkan/Core/Device/VulkanDevice.h"
 
-#include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Core/MemoryManager/CustomAllocators/FreeList/include/FreeList.h"
+#include <MemoryManager/MemoryManager.h>
+#include <MemoryManager/FreeList.h>
 #include "Engine/Utils/Math/Vertex.inl"
 
 void CleanupFreelist(VulkanBuffer* buffer) 

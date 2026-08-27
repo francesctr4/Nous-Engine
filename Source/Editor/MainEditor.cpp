@@ -1,8 +1,8 @@
 #include <Engine/Core/Globals.h>
 #include <Engine/Core/Application.h>
-#include "Engine/Core/Logger/Logger.h"
-#include "Engine/NOUS_Multithreading/NOUS_Multithreading.h"
-#include <Engine/Core/MemoryManager/MemoryManager.h>
+#include <Logger/Logger.h>
+#include <NOUS_Multithreading/NOUS_Multithreading.h>
+#include <MemoryManager/MemoryManager.h>
 
 // Editor
 #include "Editor/ModuleEditor/include/ModuleEditor.h"

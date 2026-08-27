@@ -6,8 +6,8 @@
 #include "Engine/Systems/ResourceManager/Types/ResourceMaterial/include/ResourceMaterial.h"
 #include "Engine/Systems/ShaderSystem/ShaderLoader/include/ShaderLoader.h"
 #include "Engine/Systems/ShaderSystem/ShaderCompiler/include/ShaderCompilerTypes.h"
-#include "Engine/NOUS_Multithreading/NOUS_JobSystem/include/NOUS_JobSystem.h"
-#include "Engine/Core/Logger/Asserts.h"
+#include <NOUS_Multithreading/NOUS_JobSystem.h>
+#include <Logger/Asserts.h>
 
 #include <algorithm>
 #include <cmath>
@@ -18,8 +18,8 @@
 #endif
 
 #include "Engine/Systems/CameraSystem/Camera/include/Camera.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <MemoryManager/MemoryManager.h>
+#include <Logger/Logger.h>
 #include "Engine/Renderer/Frontend/IEditorOverlay.h"
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_FRONTEND;

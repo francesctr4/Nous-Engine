@@ -2,8 +2,8 @@
 #define VULKANUTILS_H
 
 #include "Engine/Renderer/Backend/Vulkan/VulkanTypes.inl"
-#include "Engine/Core/Logger/Asserts.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Asserts.h>
+#include <Logger/Logger.h>
 #include "Engine/EngineExport.h"
 
 /**

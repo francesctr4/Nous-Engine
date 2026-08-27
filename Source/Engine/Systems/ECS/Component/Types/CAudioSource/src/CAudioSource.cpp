@@ -1,7 +1,7 @@
 #include "Engine/Systems/ECS/Component/Types/CAudioSource/include/CAudioSource.h"
 
 #include "Engine/Core/Globals.h"                 // down_cast
-#include "Engine/Core/FileSystem/FileSystem.h"   // GetFilename
+#include <FileSystem/FileSystem.h>   // GetFilename
 #include "Engine/Systems/ECS/ComponentServices.h"
 #include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
 #include <AudioSystem/iAudioBroker.h>

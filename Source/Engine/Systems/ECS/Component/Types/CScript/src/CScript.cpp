@@ -8,7 +8,7 @@
 #include "Engine/Systems/ECS/ComponentServices.h"
 #include "Engine/Systems/ECS/Scene/include/iSceneHost.h"
 #include "Engine/Systems/ECS/GameObject/include/GameObject.h"
-#include "Engine/Core/Logger/Logger.h"
+#include <Logger/Logger.h>
 
 #include "Engine/Utils/Serialization/JsonFile/JsonObject.h"
 #include "Engine/Utils/Serialization/JsonFile/JsonArray.h"

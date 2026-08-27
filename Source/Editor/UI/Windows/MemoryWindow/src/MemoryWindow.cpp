@@ -1,5 +1,5 @@
 #include "Editor/UI/Windows/MemoryWindow/include/MemoryWindow.h"
-#include "Engine/Core/MemoryManager/MemoryManager.h"
+#include <MemoryManager/MemoryManager.h>
 
 #include <imgui.h>
 #include <algorithm>
