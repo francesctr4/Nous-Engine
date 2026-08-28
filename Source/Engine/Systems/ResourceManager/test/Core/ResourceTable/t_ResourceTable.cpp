@@ -112,7 +112,7 @@ TEST(ResourceTable, SnapshotReflectsCurrentContents)
     table.Set(1, &a);
     table.Set(2, &b);
 
-    const std::unordered_map<uint32, ResourceBase*> snap = table.Snapshot();
+    const std::unordered_map<uint32_t, ResourceBase*> snap = table.Snapshot();
     ASSERT_EQ(snap.size(), 2u);
     EXPECT_EQ(snap.at(1), &a);
     EXPECT_EQ(snap.at(2), &b);
@@ -124,7 +124,7 @@ TEST(ResourceTable, SnapshotIsACopyAndDoesNotTrackLaterMutations)
     ResourceBase a;
     table.Set(1, &a);
 
-    const std::unordered_map<uint32, ResourceBase*> snap = table.Snapshot();
+    const std::unordered_map<uint32_t, ResourceBase*> snap = table.Snapshot();
     table.Erase(1); // mutate after snapshotting
 
     EXPECT_EQ(snap.size(), 1u);     // snapshot unchanged

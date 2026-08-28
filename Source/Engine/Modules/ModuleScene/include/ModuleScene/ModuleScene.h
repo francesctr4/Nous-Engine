@@ -1,8 +1,8 @@
 #pragma once
 
 #include <ModuleBase/Module.h>
+#include <EngineCore/AppConfig.h>
 #include <EngineCore/EngineExport.h>
-#include <EngineCore/Globals.h>
 #include <ModuleScene/SceneRenderData.h>
 #include <ECS/GameObject.h>
 #include <ECS/Scene/iSceneHost.h>

@@ -6,7 +6,6 @@
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 #include <Utils/Serialization/JsonObject.h>
 
 // CAudioListener reaches the audio engine through the ComponentServices seam, so

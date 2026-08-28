@@ -1,7 +1,6 @@
 #ifndef RESOURCEMESH_H
 #define RESOURCEMESH_H
 
-#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <Utils/Math/Vertex.inl>
 
@@ -16,7 +15,7 @@ public:
 
 	// Constructor & Destructor
 
-	NOUS_ENGINE_API ResourceMesh(uint32 uid = 0);
+	NOUS_ENGINE_API ResourceMesh(uint32_t uid = 0);
 	NOUS_ENGINE_API ~ResourceMesh() override;
 
 public:
@@ -24,10 +23,10 @@ public:
 	// GPU-side slot index into VulkanContext::geometries[].
 	// Set by VulkanBackend::CreateGeometry, cleared to INVALID_ID on destroy.
 	// Used every frame to locate the vertex/index buffer offsets for this mesh.
-	uint32 internalID;
+	uint32_t internalID;
 
 	std::vector<Vertex3D> vertices;
-	std::vector<uint32> indices;
+	std::vector<uint32_t> indices;
 
 	// Local-space AABB computed once after import. Used every frame by the
 	// AABB cache pass — avoids iterating all vertices per frame.

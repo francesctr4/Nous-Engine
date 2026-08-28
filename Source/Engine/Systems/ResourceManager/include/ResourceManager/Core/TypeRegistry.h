@@ -1,6 +1,5 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 #include <MemoryManager/MemoryManager.h>
 #include <EngineCore/EngineExport.h>
 #include <ResourceManager/Core/IImporter.h>
@@ -12,6 +11,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <cstdint>
 
 class IGPUResourceFactory;
 
@@ -53,7 +53,7 @@ struct TypeDescriptor
     std::unique_ptr<IAssetImporter> importer;
     IResourceImporter* resourceImporter = nullptr; // non-owning alias into `importer`
 
-    std::function<ResourceBase* (uint32 uid)> createFn;
+    std::function<ResourceBase* (uint32_t uid)> createFn;
     std::function<void(ResourceBase*)>        destroyFn;
 
     // Constructs the importer and wires both handles. `resourceImporter` is set

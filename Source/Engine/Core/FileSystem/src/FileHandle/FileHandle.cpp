@@ -80,7 +80,7 @@ void FileHandle::Close()
     fileStream.reset();
 }
 
-bool FileHandle::ReadBytes(uint64 dataSize, char* outReadData, uint64* outBytesRead)
+bool FileHandle::ReadBytes(uint64_t dataSize, char* outReadData, uint64_t* outBytesRead)
 {
     // Check if the file is open and valid
     if (!IsOpen())
@@ -114,7 +114,7 @@ bool FileHandle::ReadBytes(uint64 dataSize, char* outReadData, uint64* outBytesR
     fileStream->read(outReadData, dataSize);
 
     // Check how many bytes were actually read
-    *outBytesRead = static_cast<uint64>(fileStream->gcount());
+    *outBytesRead = static_cast<uint64_t>(fileStream->gcount());
 
     // Log an error if fewer bytes were read than requested
     if (*outBytesRead < dataSize)
@@ -126,7 +126,7 @@ bool FileHandle::ReadBytes(uint64 dataSize, char* outReadData, uint64* outBytesR
     return (*outBytesRead > 0);
 }
 
-bool FileHandle::ReadAllBytes(char** outBytes, uint64* outBytesRead)
+bool FileHandle::ReadAllBytes(char** outBytes, uint64_t* outBytesRead)
 {
     // Check if the file is open and valid
     if (!IsOpen())
@@ -160,7 +160,7 @@ bool FileHandle::ReadAllBytes(char** outBytes, uint64* outBytesRead)
     }
 
     // Allocate memory for the file content
-    *outBytes = NOUS_NEW_ARRAY<char>(static_cast<uint64>(fileSize), MemoryTag::FILE);
+    *outBytes = NOUS_NEW_ARRAY<char>(static_cast<uint64_t>(fileSize), MemoryTag::FILE);
 
     if (!(*outBytes))
     {
@@ -173,12 +173,12 @@ bool FileHandle::ReadAllBytes(char** outBytes, uint64* outBytesRead)
     fileStream->read(*outBytes, fileSize);
 
     // Check how many bytes were actually read
-    *outBytesRead = static_cast<uint64>(fileStream->gcount());
+    *outBytesRead = static_cast<uint64_t>(fileStream->gcount());
 
     // Validate if the entire file was read
-    if (*outBytesRead != static_cast<uint64>(fileSize))
+    if (*outBytesRead != static_cast<uint64_t>(fileSize))
     {
-        NOUS_WARN("Only %llu out of %llu bytes were read from the file.", *outBytesRead, static_cast<uint64>(fileSize));
+        NOUS_WARN("Only %llu out of %llu bytes were read from the file.", *outBytesRead, static_cast<uint64_t>(fileSize));
     }
 
     // Return true if at least some bytes were successfully read
@@ -256,7 +256,7 @@ bool FileHandle::WriteLine(const std::string& line)
     return true;
 }
 
-bool FileHandle::Write(uint64 dataSize, const void* data, uint64* outBytesWritten)
+bool FileHandle::Write(uint64_t dataSize, const void* data, uint64_t* outBytesWritten)
 {
     // Check if the file is open and valid
     if (!IsOpen())
@@ -285,7 +285,7 @@ bool FileHandle::Write(uint64 dataSize, const void* data, uint64* outBytesWritte
     // Check how many bytes were actually written
     if (outBytesWritten)
     {
-        *outBytesWritten = static_cast<uint64>(fileStream->tellp());
+        *outBytesWritten = static_cast<uint64_t>(fileStream->tellp());
     }
 
     // Check for write failures

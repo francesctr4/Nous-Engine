@@ -1,6 +1,6 @@
 #include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
+#include <EngineCore/Casts.h>
 
-#include <EngineCore/Globals.h>                 // down_cast
 #include <FileSystem/FileSystem.h>   // GetFilename
 #include <ECS/ComponentServices.h>
 #include <ECS/Scene/iSceneHost.h>
@@ -142,7 +142,7 @@ void CVideoPlayer::Deserialize(const JsonObject& obj)
 
     const std::string assetPath   = obj.GetString("assetPath");
     const std::string libraryPath = obj.GetString("libraryPath");
-    const uint32      resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
+    const uint32_t      resourceUID = static_cast<uint32_t>(obj.GetDouble("resourceUID", 0.0));
 
     if (assetPath.empty() && libraryPath.empty())
         return;  // no clip authored

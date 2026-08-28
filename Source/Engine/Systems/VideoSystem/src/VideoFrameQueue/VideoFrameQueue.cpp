@@ -2,10 +2,10 @@
 
 #include <algorithm>
 
-int SelectNewestFrameIndex(const double* ptsSeconds, uint32 count, double playheadSec)
+int SelectNewestFrameIndex(const double* ptsSeconds, uint32_t count, double playheadSec)
 {
     int idx = -1;
-    for (uint32 i = 0; i < count; ++i)
+    for (uint32_t i = 0; i < count; ++i)
     {
         if (ptsSeconds[i] <= playheadSec) idx = static_cast<int>(i);
         else                              break;   // ascending: no later frame qualifies
@@ -13,14 +13,14 @@ int SelectNewestFrameIndex(const double* ptsSeconds, uint32 count, double playhe
     return idx;
 }
 
-VideoFrameQueue::VideoFrameQueue(const uint32 capacity)
+VideoFrameQueue::VideoFrameQueue(const uint32_t capacity)
     : m_capacity(capacity == 0 ? 1 : capacity)
 {
 }
 
 VideoFrameQueue::~VideoFrameQueue() = default;
 
-bool VideoFrameQueue::TryPush(const uint8_t* rgba, const uint32 width, const uint32 height, const double ptsSec)
+bool VideoFrameQueue::TryPush(const uint8_t* rgba, const uint32_t width, const uint32_t height, const double ptsSec)
 {
     std::lock_guard lock(m_mutex);
     if (m_slots.size() >= m_capacity) return false;
@@ -34,7 +34,7 @@ bool VideoFrameQueue::TryPush(const uint8_t* rgba, const uint32 width, const uin
     return true;
 }
 
-void VideoFrameQueue::Push(const uint8_t* rgba, const uint32 width, const uint32 height, const double ptsSec)
+void VideoFrameQueue::Push(const uint8_t* rgba, const uint32_t width, const uint32_t height, const double ptsSec)
 {
     std::unique_lock lock(m_mutex);
     m_notFull.wait(lock, [this] { return m_stopped || m_slots.size() < m_capacity; });
@@ -88,13 +88,13 @@ void VideoFrameQueue::Stop()
     m_notFull.notify_all();
 }
 
-uint32 VideoFrameQueue::Size() const
+uint32_t VideoFrameQueue::Size() const
 {
     std::lock_guard lock(m_mutex);
-    return static_cast<uint32>(m_slots.size());
+    return static_cast<uint32_t>(m_slots.size());
 }
 
-uint32 VideoFrameQueue::Capacity() const
+uint32_t VideoFrameQueue::Capacity() const
 {
     std::lock_guard lock(m_mutex);
     return m_capacity;

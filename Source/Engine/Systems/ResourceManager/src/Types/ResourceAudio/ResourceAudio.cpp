@@ -1,6 +1,6 @@
 #include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 
-ResourceAudio::ResourceAudio(const uint32 uid) : ResourceBase(uid, ResourceType::AUDIO)
+ResourceAudio::ResourceAudio(const uint32_t uid) : ResourceBase(uid, ResourceType::AUDIO)
 {
     streamingMode = AudioStreamingMode::DECODED;
     fileType = AudioFileType::UNKNOWN;
@@ -29,12 +29,12 @@ void ResourceAudio::SetDurationSec(const float _durationSec)
     durationSec = _durationSec;
 }
 
-void ResourceAudio::SetSampleRate(const uint32 _sampleRate)
+void ResourceAudio::SetSampleRate(const uint32_t _sampleRate)
 {
     sampleRate = _sampleRate;
 }
 
-void ResourceAudio::SetChannelCount(const uint8 _channelCount)
+void ResourceAudio::SetChannelCount(const uint8_t _channelCount)
 {
     channelCount = _channelCount;
 }
@@ -59,12 +59,12 @@ float ResourceAudio::GetDurationSec() const
     return durationSec;
 }
 
-uint32 ResourceAudio::GetSampleRate() const
+uint32_t ResourceAudio::GetSampleRate() const
 {
     return sampleRate;
 }
 
-uint8 ResourceAudio::GetChannelCount() const
+uint8_t ResourceAudio::GetChannelCount() const
 {
     return channelCount;
 }

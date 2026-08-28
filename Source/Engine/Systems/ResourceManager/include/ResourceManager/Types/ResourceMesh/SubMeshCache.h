@@ -1,6 +1,5 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 #include <EngineCore/EngineExport.h>
 
 #include <cstdint>
@@ -28,7 +27,7 @@ enum class ResourceType : int8_t;
 class SubMeshCache
 {
 public:
-    using CacheKey = std::pair<uint32, int32_t>;
+    using CacheKey = std::pair<uint32_t, int32_t>;
 
     NOUS_ENGINE_API SubMeshCache(ResourceTable& table, ResourceQueue& uploads);
 
@@ -40,11 +39,11 @@ public:
     // created resources get a stable UID instead of a random one.
     NOUS_ENGINE_API ResourceMesh* RequestOrCreateFromLibrary(
         const std::string& libraryPath, int32_t submeshIndex,
-        const std::string& assetsPath = "", uint32 hintUID = 0);
+        const std::string& assetsPath = "", uint32_t hintUID = 0);
 
     // Remove all index entries that map to the given UID.
     // Caller MUST hold the ResourceTable's lock.
-    NOUS_ENGINE_API void EraseUID(uint32 uid);
+    NOUS_ENGINE_API void EraseUID(uint32_t uid);
 
     // Drop all entries. Called from ClearResources during full teardown.
     NOUS_ENGINE_API void Clear();
@@ -55,20 +54,20 @@ private:
         const std::string& libraryPath,
         int32_t submeshIndex,
         const std::string& assetsPath,
-        uint32 hintUID = 0);
+        uint32_t hintUID = 0);
 
     // Removes the m_index entry at `mapIt` and the matching key from the
     // corresponding m_reverseIndex bucket. Caller MUST hold the
     // ResourceTable's lock (same contract as EraseUID).
-    void EraseIndexEntry(std::map<CacheKey, uint32>::iterator mapIt);
+    void EraseIndexEntry(std::map<CacheKey, uint32_t>::iterator mapIt);
 
     // Primary index: (baseUID, submeshIndex) -> resource UID.
-    std::map<CacheKey, uint32>                             m_index;
+    std::map<CacheKey, uint32_t>                             m_index;
 
     // Reverse index: resource UID -> the CacheKeys that point at it. Keeps
     // EraseUID O(k) instead of O(n) — k = number of submeshes sharing a UID,
     // typically 1, bounded by the submesh count of the source mesh.
-    std::unordered_map<uint32, std::vector<CacheKey>>      m_reverseIndex;
+    std::unordered_map<uint32_t, std::vector<CacheKey>>      m_reverseIndex;
 
     ResourceTable&             m_table;
     ResourceQueue&             m_uploads;

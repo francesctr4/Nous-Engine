@@ -2,7 +2,6 @@
 
 #include <ModuleBase/Module.h>
 #include <EventSystem/IEventListener.h>
-#include <EngineCore/Globals.h>
 #include <EngineCore/EngineExport.h>
 #include <AudioSystem/SoundHandle.h>
 #include <AudioSystem/EffectChainHandle.h>

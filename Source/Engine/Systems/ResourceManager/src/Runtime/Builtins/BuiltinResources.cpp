@@ -1,26 +1,26 @@
 #include <ResourceManager/Runtime/BuiltinResources.h>
+#include <EngineCore/InvalidID.h>
 
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
 #include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <Renderer/IGPUResourceFactory.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 
 std::vector<std::pair<ResourceType, ResourceBase*>> BuiltinResources::Create()
 {
     // -----------------------------------------------------------------------
     // Textures
-    // Reserved UIDs sit at the top of the uint32 range so they cannot collide
+    // Reserved UIDs sit at the top of the uint32_t range so they cannot collide
     // with randomly-generated asset UIDs in .meta files.
     // These UIDs are what the descriptor lazy-write dedup (WriteInstanceSampler)
     // keys off via ResourceBase::GetUID(), so each fallback must be unique.
     // -----------------------------------------------------------------------
 
     // Default Texture — 256×256 checkerboard
-    constexpr uint32 texDimension = 256;
-    constexpr uint32 channels     = 4;
-    constexpr uint32 pixelCount   = texDimension * texDimension;
+    constexpr uint32_t texDimension = 256;
+    constexpr uint32_t channels     = 4;
+    constexpr uint32_t pixelCount   = texDimension * texDimension;
 
     m_defaultTexture = NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE);
     m_defaultTexture->SetUID(INVALID_ID - 1);
@@ -33,7 +33,7 @@ std::vector<std::pair<ResourceType, ResourceBase*>> BuiltinResources::Create()
     {
         for (uint32_t col = 0; col < texDimension; ++col)
         {
-            constexpr uint32 squareSize = 16;
+            constexpr uint32_t squareSize = 16;
             const uint32_t   indexBpp   = (row * texDimension + col) * channels;
             const bool       isWhite    = row / squareSize % 2 == col / squareSize % 2;
             m_defaultTexture->pixelData[indexBpp + 0] = isWhite ? 255 : 0;

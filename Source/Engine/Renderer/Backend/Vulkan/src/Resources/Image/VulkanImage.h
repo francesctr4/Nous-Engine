@@ -5,13 +5,13 @@
 
 namespace NOUS_VulkanImage 
 {
-    void CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32 width, uint32 height,
-        uint32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling,
+    void CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32_t width, uint32_t height,
+        uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling,
         VkImageUsageFlags usage, VkMemoryPropertyFlags memoryFlags, bool createView,
         VkImageAspectFlags viewAspectFlags, VulkanImage* outImage);
 
     void CreateVulkanImageView(VulkanContext* vkContext, VkFormat format,
-        VulkanImage* image, VkImageAspectFlags aspectFlags, uint32 mipLevels);
+        VulkanImage* image, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
     /**
      * Transitions the provided image from old_layout to new_layout.

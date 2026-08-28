@@ -16,7 +16,7 @@ static constexpr uint32_t k_MeshBinaryMagic = 0xFA7C0DE1u;
 static void WriteU32(std::ofstream& f, uint32_t v) { f.write(reinterpret_cast<const char*>(&v), 4); }
 static void WriteU64(std::ofstream& f, uint64_t v) { f.write(reinterpret_cast<const char*>(&v), 8); }
 
-// Writes a V1 legacy binary: uint64 vertCount | Vertex3D[] | uint64 idxCount | uint32[]
+// Writes a V1 legacy binary: uint64_t vertCount | Vertex3D[] | uint64_t idxCount | uint32_t[]
 static void WriteV1Binary(const std::string& path,
                           const std::vector<Vertex3D>& verts,
                           const std::vector<uint32_t>& indices)

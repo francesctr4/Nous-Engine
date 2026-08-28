@@ -2,39 +2,58 @@
 #define MEMORYMANAGER_H
 
 #include <string>
+#include <MemoryManager/MemoryManager.h>
 #include <utility>
 #include <array>
 
-#include <EngineCore/Globals.h>
 #include <EngineCore/EngineExport.h>
 #include <MemoryManager/MemoryTag.h>
+#include <cstdint>
+
+// Memory size literals. Moved here from Globals.h: every caller is either passing
+// one to InitializeMemory or formatting a byte count, so MemoryManager is where
+// they belong.
+//
+// Only MiB (and GiB/KiB inside MemoryManager.cpp's unit formatter) has callers
+// today. The decimal GB/MB/KB are kept deliberately to complete the pair of unit
+// families -- do not "clean them up" for being unused.
+
+// Binary units
+constexpr uint64_t GiB(const uint64_t amount) { return amount * 1024ULL * 1024 * 1024; }  // 2^30
+constexpr uint64_t MiB(const uint64_t amount) { return amount * 1024ULL * 1024; }         // 2^20
+constexpr uint64_t KiB(const uint64_t amount) { return amount * 1024ULL; }                // 2^10
+
+// Decimal units
+constexpr uint64_t GB(const uint64_t amount)  { return amount * 1000ULL * 1000 * 1000; }  // 10^9
+constexpr uint64_t MB(const uint64_t amount)  { return amount * 1000ULL * 1000; }         // 10^6
+constexpr uint64_t KB(const uint64_t amount)  { return amount * 1000ULL; }                // 10^3
 
 namespace nous::engine::memory
 {
-    NOUS_ENGINE_API void InitializeMemory(uint64 preAllocatedMemorySize);
+    NOUS_ENGINE_API void InitializeMemory(uint64_t preAllocatedMemorySize);
 
     NOUS_ENGINE_API void ShutdownMemory();
 
-    NOUS_ENGINE_API void* Allocate(uint64 size, MemoryTag tag);
+    NOUS_ENGINE_API void* Allocate(uint64_t size, MemoryTag tag);
 
     NOUS_ENGINE_API void Free(void* block, MemoryTag tag);
-    NOUS_ENGINE_API void Free(void* block, uint64 size, MemoryTag tag);
+    NOUS_ENGINE_API void Free(void* block, uint64_t size, MemoryTag tag);
 
-    NOUS_ENGINE_API void* ZeroMemory(void* block, uint64 size);
+    NOUS_ENGINE_API void* ZeroMemory(void* block, uint64_t size);
 
-    NOUS_ENGINE_API void* CopyMemory(void* destination, const void* source, uint64 size);
+    NOUS_ENGINE_API void* CopyMemory(void* destination, const void* source, uint64_t size);
 
-    NOUS_ENGINE_API void* SetMemory(void* destination, int32 value, uint64 size);
+    NOUS_ENGINE_API void* SetMemory(void* destination, int32_t value, uint64_t size);
 
     NOUS_ENGINE_API std::string GetMemoryUsageStats();
 
-    NOUS_ENGINE_API uint64 GetMemoryAllocationCount();
+    NOUS_ENGINE_API uint64_t GetMemoryAllocationCount();
 
 	struct MemoryStatsSnapshot
 	{
-		uint64 totalAllocated;
-		uint64 totalAllocations;
-		std::array<uint64, static_cast<uint64>(std::to_underlying(MemoryTag::MAX))> taggedAllocations;
+		uint64_t totalAllocated;
+		uint64_t totalAllocations;
+		std::array<uint64_t, static_cast<uint64_t>(std::to_underlying(MemoryTag::MAX))> taggedAllocations;
 	};
 
 	NOUS_ENGINE_API MemoryStatsSnapshot GetMemoryStats();
@@ -42,8 +61,8 @@ namespace nous::engine::memory
 
 	struct MemoryConfigSnapshot
 	{
-		uint64 totalAllocationSize;
-		uint64 allocatorRequirement;
+		uint64_t totalAllocationSize;
+		uint64_t allocatorRequirement;
 	};
 
 	NOUS_ENGINE_API MemoryConfigSnapshot GetMemoryConfig();

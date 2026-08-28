@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test types
@@ -39,7 +38,7 @@ struct DestructorTracker
 class t_MemoryManager : public ::testing::Test
 {
 protected:
-    static constexpr uint64 kPoolSize = MiB(4);
+    static constexpr uint64_t kPoolSize = MiB(4);
 
     void SetUp() override
     {
@@ -130,7 +129,7 @@ TEST_F(t_MemoryManager, NOUS_DELETE_OnNullptrIsNoop)
 
 TEST_F(t_MemoryManager, NOUS_NEW_IncreasesAllocationCount)
 {
-    const uint64 before = nous::engine::memory::GetMemoryStats().totalAllocations;
+    const uint64_t before = nous::engine::memory::GetMemoryStats().totalAllocations;
     int* p = NOUS_NEW<int>(MemoryTag::APPLICATION);
     EXPECT_EQ(nous::engine::memory::GetMemoryStats().totalAllocations, before + 1);
     NOUS_DELETE(p, MemoryTag::APPLICATION);
@@ -139,7 +138,7 @@ TEST_F(t_MemoryManager, NOUS_NEW_IncreasesAllocationCount)
 TEST_F(t_MemoryManager, NOUS_NEW_IncreasesTaggedBytes)
 {
     const auto before = nous::engine::memory::GetMemoryStats();
-    const uint64 tagIdx = static_cast<uint64>(MemoryTag::RENDERER);
+    const uint64_t tagIdx = static_cast<uint64_t>(MemoryTag::RENDERER);
 
     int* p = NOUS_NEW<int>(MemoryTag::RENDERER);
     const auto after = nous::engine::memory::GetMemoryStats();
@@ -153,7 +152,7 @@ TEST_F(t_MemoryManager, NOUS_NEW_IncreasesTaggedBytes)
 TEST_F(t_MemoryManager, NOUS_DELETE_DecreasesAllocationCount)
 {
     int* p = NOUS_NEW<int>(MemoryTag::APPLICATION);
-    const uint64 afterAlloc = nous::engine::memory::GetMemoryStats().totalAllocations;
+    const uint64_t afterAlloc = nous::engine::memory::GetMemoryStats().totalAllocations;
 
     NOUS_DELETE(p, MemoryTag::APPLICATION);
     EXPECT_EQ(nous::engine::memory::GetMemoryStats().totalAllocations, afterAlloc - 1);
@@ -173,8 +172,8 @@ TEST_F(t_MemoryManager, NOUS_NEW_DELETE_Roundtrip_RestoresStats)
 
 TEST_F(t_MemoryManager, MultipleTagsTrackedIndependently)
 {
-    const uint64 meshIdx = static_cast<uint64>(MemoryTag::RESOURCE_MESH);
-    const uint64 texIdx  = static_cast<uint64>(MemoryTag::RESOURCE_TEXTURE);
+    const uint64_t meshIdx = static_cast<uint64_t>(MemoryTag::RESOURCE_MESH);
+    const uint64_t texIdx  = static_cast<uint64_t>(MemoryTag::RESOURCE_TEXTURE);
 
     const auto before = nous::engine::memory::GetMemoryStats();
 
@@ -249,7 +248,7 @@ TEST_F(t_MemoryManager, NOUS_DELETE_ARRAY_NullsOutPointer)
 
 TEST_F(t_MemoryManager, NOUS_NEW_ARRAY_IncreasesAllocationCount)
 {
-    const uint64 before = nous::engine::memory::GetMemoryStats().totalAllocations;
+    const uint64_t before = nous::engine::memory::GetMemoryStats().totalAllocations;
     int* arr = NOUS_NEW_ARRAY<int>(16, MemoryTag::ARRAY);
     EXPECT_EQ(nous::engine::memory::GetMemoryStats().totalAllocations, before + 1);
     NOUS_DELETE_ARRAY(arr, 16, MemoryTag::ARRAY);

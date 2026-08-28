@@ -4,15 +4,15 @@
 #include <Logger/Logger.h>
 #include <Logger/Asserts.h>
 
-uint64 DynamicAllocator::GetMemoryRequirement(uint64 totalSize)
+uint64_t DynamicAllocator::GetMemoryRequirement(uint64_t totalSize)
 {
-    const uint64 freelistReq = Freelist::GetMemoryRequirement(totalSize);
+    const uint64_t freelistReq = Freelist::GetMemoryRequirement(totalSize);
     // Align the start of user memory to 16 bytes so every allocation is 16-byte aligned.
-    const uint64 headerSize  = Align16(sizeof(InternalState) + freelistReq);
+    const uint64_t headerSize  = Align16(sizeof(InternalState) + freelistReq);
     return headerSize + totalSize;
 }
 
-DynamicAllocator::DynamicAllocator(uint64 totalSize, void* memory)
+DynamicAllocator::DynamicAllocator(uint64_t totalSize, void* memory)
 {
     if (!memory)
     {
@@ -33,11 +33,11 @@ DynamicAllocator::DynamicAllocator(uint64 totalSize, void* memory)
     char* memPtr = static_cast<char*>(memory);
 
     // Calculate freelist requirement
-    const uint64 freelistReq = Freelist::GetMemoryRequirement(totalSize);
+    const uint64_t freelistReq = Freelist::GetMemoryRequirement(totalSize);
 
     // Align the header (InternalState + freelist) to 16 bytes so userMemory is
     // 16-byte aligned and every allocation inherits that alignment.
-    const uint64 headerSize  = Align16(sizeof(InternalState) + freelistReq);
+    const uint64_t headerSize  = Align16(sizeof(InternalState) + freelistReq);
 
     state_->freelistMemory = memPtr + sizeof(InternalState);
     state_->userMemory     = memPtr + headerSize;
@@ -71,7 +71,7 @@ DynamicAllocator::~DynamicAllocator()
 
         // Read the size BEFORE destroying state_ — GetMemoryRequirement reads
         // state_->totalSize, which would be a use-after-destroy afterwards.
-        const uint64 total = state_->totalSize;
+        const uint64_t total = state_->totalSize;
 
         // InternalState was placement-new'd over the managed block, so nothing calls
         // its destructor for us. It must be called explicitly: allocMap owns a bucket
@@ -87,12 +87,12 @@ DynamicAllocator::~DynamicAllocator()
     }
 }
 
-void* DynamicAllocator::Allocate(uint64 size)
+void* DynamicAllocator::Allocate(uint64_t size)
 {
     if (!state_ || size == 0) return nullptr;
 
-    const uint64 aligned = Align16(size);
-    uint64 offset = 0;
+    const uint64_t aligned = Align16(size);
+    uint64_t offset = 0;
 
     if (state_->freelist->Allocate(aligned, &offset))
     {
@@ -109,7 +109,7 @@ void* DynamicAllocator::Allocate(uint64 size)
 }
 
 // Sized path — caller provides the size (fast path, no map lookup needed).
-bool DynamicAllocator::Free(void* block, uint64 size)
+bool DynamicAllocator::Free(void* block, uint64_t size)
 {
     if (!state_ || !block || size == 0) return false;
 
@@ -132,8 +132,8 @@ bool DynamicAllocator::Free(void* block, uint64 size)
         state_->allocMap.erase(it);
     }
 
-    const uint64 aligned = Align16(size);
-    const uint64 offset  = static_cast<uint64>(p - base);
+    const uint64_t aligned = Align16(size);
+    const uint64_t offset  = static_cast<uint64_t>(p - base);
     return state_->freelist->Free(aligned, offset);
 }
 
@@ -142,7 +142,7 @@ bool DynamicAllocator::Free(void* block)
 {
     if (!state_ || !block) return false;
 
-    uint64 aligned = 0;
+    uint64_t aligned = 0;
 
     {
         std::scoped_lock g(state_->mapMutex);
@@ -167,12 +167,12 @@ bool DynamicAllocator::Free(void* block)
         return false;
     }
 
-    const uint64 offset = static_cast<uint64>(blockPtr - userMemStart);
+    const uint64_t offset = static_cast<uint64_t>(blockPtr - userMemStart);
     return state_->freelist->Free(aligned, offset);
 }
 
 // For MemoryManager stats: return the raw requested size (0 if unknown)
-uint64 DynamicAllocator::GetRecordedSize(void* block) const
+uint64_t DynamicAllocator::GetRecordedSize(void* block) const
 {
     if (!state_ || !block) return 0;
 
@@ -181,7 +181,7 @@ uint64 DynamicAllocator::GetRecordedSize(void* block) const
     return (it != state_->allocMap.end()) ? it->second.rawSize : 0;
 }
 
-uint64 DynamicAllocator::GetFreeSpace() const
+uint64_t DynamicAllocator::GetFreeSpace() const
 {
     return state_ ? state_->freelist->FreeSpace() : 0;
 }

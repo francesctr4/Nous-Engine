@@ -1,7 +1,7 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 #include <string>
+#include <cstdint>
 
 // ---------------------------------------------------------------------------
 // Decode-only video probe — asset-import API, not runtime playback.
@@ -15,8 +15,8 @@
 
 struct VideoProbeInfo
 {
-    uint32      width         = 0;
-    uint32      height        = 0;
+    uint32_t      width         = 0;
+    uint32_t      height        = 0;
     float       durationSec   = 0.0f;
     float       frameRate     = 0.0f;   // average fps (approximate for GIF)
     std::string codecName;

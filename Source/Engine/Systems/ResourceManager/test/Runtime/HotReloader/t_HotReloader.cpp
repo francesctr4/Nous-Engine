@@ -6,7 +6,6 @@
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Core/TypeRegistry.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include <filesystem>
@@ -64,7 +63,7 @@ static void WriteMetaFile(const std::string& assetsPath,
 class t_HotReloader : public ::testing::Test
 {
 protected:
-    static constexpr uint64 kMemoryPoolSize = MiB(32);
+    static constexpr uint64_t kMemoryPoolSize = MiB(32);
 
     MockImporterManager   mockImporter;
     nous::engine::multithreading::NOUS_JobSystem* jobSystem = nullptr;

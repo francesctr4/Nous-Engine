@@ -2,9 +2,9 @@
 
 #include <ModuleBase/Module.h>
 #include <EventSystem/IEventListener.h>
-#include <EngineCore/Globals.h>
 #include <EngineCore/EngineExport.h>
 #include <Renderer/iRenderWindow.h>
+#include <cstdint>
 
 struct SDL_Window;
 
@@ -36,7 +36,7 @@ public:
 
     // ---- IRenderWindow -----------------------------------------------------
     [[nodiscard]] NOUS_ENGINE_API SDL_Window* GetSDL_Window() const override;
-    void GetFramebufferSize(int32* width, int32* height) const override;
+    void GetFramebufferSize(int32_t* width, int32_t* height) const override;
 
 private:
 

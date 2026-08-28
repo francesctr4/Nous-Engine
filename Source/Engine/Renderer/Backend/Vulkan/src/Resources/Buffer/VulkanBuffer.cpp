@@ -22,7 +22,7 @@ bool NOUS_VulkanBuffer::CreateBuffers(VulkanContext* vkContext)
     VkMemoryPropertyFlagBits memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     // Geometry Vertex Buffer (VBO)
-    const uint64 vertexBufferSize = sizeof(Vertex3D) * 1024 * 1024; // Placeholder
+    const uint64_t vertexBufferSize = sizeof(Vertex3D) * 1024 * 1024; // Placeholder
 
     if (!CreateBuffer(vkContext, vertexBufferSize,
         (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
@@ -34,7 +34,7 @@ bool NOUS_VulkanBuffer::CreateBuffers(VulkanContext* vkContext)
     }
 
     // Geometry Index Buffer (EBO)
-    const uint64 indexBufferSize = sizeof(uint32) * 1024 * 1024; // Placeholder
+    const uint64_t indexBufferSize = sizeof(uint32_t) * 1024 * 1024; // Placeholder
 
     if (!CreateBuffer(vkContext, indexBufferSize,
         (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
@@ -58,8 +58,8 @@ void NOUS_VulkanBuffer::DestroyBuffers(VulkanContext* vkContext)
 
 // -------------------------------------------------------------------------------------------------------- //
 
-bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64 size, VkBufferUsageFlagBits usage, 
-	uint32 memoryPropertyFlags, bool bindOnCreate, VulkanBuffer* outBuffer)
+bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64_t size, VkBufferUsageFlagBits usage, 
+	uint32_t memoryPropertyFlags, bool bindOnCreate, VulkanBuffer* outBuffer)
 {
     nous::engine::memory::ZeroMemory(outBuffer, sizeof(VulkanBuffer));
 
@@ -71,7 +71,7 @@ bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64 size, VkBu
     // Only create a FreeList for buffers large enough to benefit from sub-allocation.
     // Small buffers (e.g. staging readback buffers) are used as a single whole-buffer
     // allocation and don't need a FreeList.  DestroyBuffer already handles nullptr safely.
-    constexpr uint64 kFreelistMinSize = sizeof(void*) * sizeof(Freelist::Node); // 192 bytes
+    constexpr uint64_t kFreelistMinSize = sizeof(void*) * sizeof(Freelist::Node); // 192 bytes
     if (size >= kFreelistMinSize)
     {
         outBuffer->freelistMemoryRequirement = Freelist::GetMemoryRequirement(size);
@@ -109,7 +109,7 @@ bool NOUS_VulkanBuffer::CreateBuffer(VulkanContext* vkContext, uint64 size, VkBu
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 
     memoryAllocateInfo.allocationSize = requirements.size;
-    memoryAllocateInfo.memoryTypeIndex = static_cast<uint32>(outBuffer->memoryIndex);
+    memoryAllocateInfo.memoryTypeIndex = static_cast<uint32_t>(outBuffer->memoryIndex);
 
     // Allocate the memory.
     VkResult result = vkAllocateMemory(vkContext->device.logicalDevice, 
@@ -156,7 +156,7 @@ void NOUS_VulkanBuffer::DestroyBuffer(VulkanContext* vkContext, VulkanBuffer* bu
     buffer->isLocked = false;
 }
 
-bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64 newSize, 
+bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64_t newSize, 
 	VulkanBuffer* buffer, VkQueue queue, VkCommandPool pool)
 {
     // ----- FREE LIST ----- //
@@ -167,7 +167,7 @@ bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64 newSize,
     }
 
     // Resize the freelist first
-    uint64 newMemoryRequirement = 0;
+    uint64_t newMemoryRequirement = 0;
 
     // First call: Get memory requirement
     if (!buffer->bufferFreelist->Resize(newSize, &newMemoryRequirement, nullptr, nullptr)) 
@@ -217,7 +217,7 @@ bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64 newSize,
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 
     memoryAllocateInfo.allocationSize = requirements.size;
-    memoryAllocateInfo.memoryTypeIndex = static_cast<uint32>(buffer->memoryIndex);
+    memoryAllocateInfo.memoryTypeIndex = static_cast<uint32_t>(buffer->memoryIndex);
 
     // Allocate the memory.
     VkDeviceMemory newMemory;
@@ -261,7 +261,7 @@ bool NOUS_VulkanBuffer::ResizeBuffer(VulkanContext* vkContext, uint64 newSize,
 }
 
 void NOUS_VulkanBuffer::CopyBuffer(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue,
-	VkBuffer source, uint64 sourceOffset, VkBuffer dest, uint64 destOffset, uint64 size)
+	VkBuffer source, uint64_t sourceOffset, VkBuffer dest, uint64_t destOffset, uint64_t size)
 {
     // NOTE: do NOT call vkQueueWaitIdle here directly — this function may be called
     // from a worker thread, and calling vkQueueWaitIdle on the queue from a non-main
@@ -302,7 +302,7 @@ void NOUS_VulkanBuffer::CopyBuffer(VulkanContext* vkContext, VkCommandPool pool,
 }
 
 void NOUS_VulkanBuffer::LoadData(VulkanContext* vkContext, VulkanBuffer* buffer,
-	uint64 offset, uint64 size, uint32 flags, const void* data)
+	uint64_t offset, uint64_t size, uint32_t flags, const void* data)
 {
     void* dataPtr;
     VK_CHECK(vkMapMemory(vkContext->device.logicalDevice, buffer->memory, offset, size, flags, &dataPtr));
@@ -315,7 +315,7 @@ void NOUS_VulkanBuffer::BindBuffer(VulkanContext* vkContext, VulkanBuffer* buffe
     VK_CHECK(vkBindBufferMemory(vkContext->device.logicalDevice, buffer->handle, buffer->memory, memoryOffset));
 }
 
-void* NOUS_VulkanBuffer::LockMemory(VulkanContext* vkContext, VulkanBuffer* buffer, uint64 offset, uint64 size, uint32 flags)
+void* NOUS_VulkanBuffer::LockMemory(VulkanContext* vkContext, VulkanBuffer* buffer, uint64_t offset, uint64_t size, uint32_t flags)
 {
     void* data;
     VK_CHECK(vkMapMemory(vkContext->device.logicalDevice, buffer->memory, offset, size, flags, &data));
@@ -327,7 +327,7 @@ void NOUS_VulkanBuffer::UnlockMemory(VulkanContext* vkContext, VulkanBuffer* buf
     vkUnmapMemory(vkContext->device.logicalDevice, buffer->memory);
 }
 
-bool NOUS_VulkanBuffer::Allocate(VulkanBuffer* buffer, uint64 size, uint64* outOffset)
+bool NOUS_VulkanBuffer::Allocate(VulkanBuffer* buffer, uint64_t size, uint64_t* outOffset)
 {
     // ----- FREE LIST ----- //
     if (!buffer || !size || !outOffset)
@@ -346,7 +346,7 @@ bool NOUS_VulkanBuffer::Allocate(VulkanBuffer* buffer, uint64 size, uint64* outO
     return buffer->bufferFreelist->Allocate(size, outOffset);
 }
 
-bool NOUS_VulkanBuffer::Free(VulkanBuffer* buffer, uint64 size, uint64 offset)
+bool NOUS_VulkanBuffer::Free(VulkanBuffer* buffer, uint64_t size, uint64_t offset)
 {
     // ----- FREE LIST ----- //
     if (!buffer || !size)
@@ -367,7 +367,7 @@ bool NOUS_VulkanBuffer::Free(VulkanBuffer* buffer, uint64 size, uint64 offset)
 
 // -------------------------------------------------------------------------------------------------------- //
 
-bool NOUS_VulkanBuffer::UploadDataRange(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, uint64* outOffset, uint64 size, const void* data)
+bool NOUS_VulkanBuffer::UploadDataRange(VulkanContext* vkContext, VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, uint64_t* outOffset, uint64_t size, const void* data)
 {
     // ----- FREE LIST ----- //
     // Allocate space in the buffer.
@@ -396,7 +396,7 @@ bool NOUS_VulkanBuffer::UploadDataRange(VulkanContext* vkContext, VkCommandPool 
     return true;
 }
 
-void NOUS_VulkanBuffer::FreeDataRange(VulkanContext* vkContext, VulkanBuffer* buffer, uint64 offset, uint64 size)
+void NOUS_VulkanBuffer::FreeDataRange(VulkanContext* vkContext, VulkanBuffer* buffer, uint64_t offset, uint64_t size)
 {
     // ----- FREE LIST ----- //
     if (buffer) 

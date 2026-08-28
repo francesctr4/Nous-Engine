@@ -70,11 +70,11 @@ public:
 	// .meta sidecars are preserved so UIDs remain stable.
 	NOUS_ENGINE_API void RegenerateLibrary();
 
-	NOUS_ENGINE_API bool ResourceExists(uint32 uid) const;
+	NOUS_ENGINE_API bool ResourceExists(uint32_t uid) const;
 	NOUS_ENGINE_API ResourceBase* CreateResource(const std::string& assetsPath) override;
 
 	// GAME mode variant: load directly from a known library path without reading a .meta file.
-	NOUS_ENGINE_API ResourceBase* CreateResourceFromLibrary(uint32 uid, ResourceType type,
+	NOUS_ENGINE_API ResourceBase* CreateResourceFromLibrary(uint32_t uid, ResourceType type,
 	                                                    const std::string& name,
 	                                                    const std::string& assetsPath,
 	                                                    const std::string& libraryPath) override;
@@ -86,17 +86,17 @@ public:
 	// assetsPath and CMesh::Deserialize would drop the reference on the next load.
 	NOUS_ENGINE_API ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(
 	    const std::string& libraryPath, int32_t submeshIndex,
-	    const std::string& assetsPath, uint32 hintUID = 0) override;
+	    const std::string& assetsPath, uint32_t hintUID = 0) override;
 
-	NOUS_ENGINE_API bool UnloadResource(uint32 uid) override;
+	NOUS_ENGINE_API bool UnloadResource(uint32_t uid) override;
 
 	// Update the in-memory assets path of a loaded resource after it has been moved on disk.
 	// No-op if the UID is not currently loaded.
-	NOUS_ENGINE_API void UpdateResourcePath(uint32 uid, const std::string& newAssetsPath);
+	NOUS_ENGINE_API void UpdateResourcePath(uint32_t uid, const std::string& newAssetsPath);
 
 	// Returns a thread-safe snapshot copy of the resources map.
 	// Safe to call from any thread (e.g. editor UI) concurrently with resource loading.
-	NOUS_ENGINE_API std::unordered_map<uint32, ResourceBase*> GetResourcesMap() const;
+	NOUS_ENGINE_API std::unordered_map<uint32_t, ResourceBase*> GetResourcesMap() const;
 
 	// Takes and clears the pending upload queue — called by Renderer::PreUpdate/Start.
 	// Each entry is a resource that has been Deserialized and needs GPU Upload.
@@ -149,7 +149,7 @@ public:
     // Use for read-only access (e.g. Inspector UI) where the caller does not own the resource.
     // Do NOT call UnloadResource on the returned pointer.
     // Returns nullptr if the resource is not currently loaded.
-    NOUS_ENGINE_API ResourceBase* GetLoadedResource(uint32 uid);
+    NOUS_ENGINE_API ResourceBase* GetLoadedResource(uint32_t uid);
 
     // Returns the injected importer manager — used by ModuleRenderer3D to call
     // Upload/Release through the IImporterManager interface.
@@ -180,11 +180,11 @@ private:
 
 	// Spins until the slot's loading thread writes a real pointer, then bumps the refcount and returns it.
 	// Returns nullptr if the entry was evicted from the map before it resolved.
-	ResourceBase* SpinWaitForSlot(uint32 uid);
+	ResourceBase* SpinWaitForSlot(uint32_t uid);
 
 	// Instantiates, populates, deserializes, and registers a resource into an already-claimed slot.
 	// Caller must have won m_table.TryInsert(uid, nullptr) before calling this.
-	ResourceBase* LoadResourceIntoSlot(uint32 uid, ResourceType type,
+	ResourceBase* LoadResourceIntoSlot(uint32_t uid, ResourceType type,
 	    const std::string& name,
 	    const std::string& assetsPath,
 	    const std::string& libraryPath);

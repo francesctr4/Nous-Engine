@@ -27,7 +27,7 @@ namespace NOUS_VulkanRenderpass
         VulkanContext* vkContext,
         VulkanRenderpass* outRenderpass,
         glm::vec4 renderArea, glm::vec4 clearColor,
-        float depth, uint32 stencil, uint8 clearFlags,
+        float depth, uint32_t stencil, uint8_t clearFlags,
         bool prevPass, bool nextPass,
         bool offscreen = false,
         VkFormat colorFormatOverride = VK_FORMAT_UNDEFINED);

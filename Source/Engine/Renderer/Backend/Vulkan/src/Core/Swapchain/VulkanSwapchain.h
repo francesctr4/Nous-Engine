@@ -1,22 +1,22 @@
 #ifndef VULKANSWAPCHAIN_H
 #define VULKANSWAPCHAIN_H
 
-#include <EngineCore/Globals.h>
 #include "VulkanTypes.inl"
+#include <cstdint>
 
 namespace NOUS_VulkanSwapChain
 {
-    bool CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain);
-    void RecreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain);
+    bool CreateSwapChain(VulkanContext* vkContext, uint32_t width, uint32_t height, VulkanSwapChain* swapChain);
+    void RecreateSwapChain(VulkanContext* vkContext, uint32_t width, uint32_t height, VulkanSwapChain* swapChain);
     void DestroySwapChain(VulkanContext* vkContext, VulkanSwapChain* swapChain);
 
     VkResult SwapChainAcquireNextImageIndex(
         VulkanContext* vkContext,
         VulkanSwapChain* swapchain,
-        uint64 timeout_ns,
+        uint64_t timeout_ns,
         VkSemaphore imageAvailableSemaphore,
         VkFence fence,
-        uint32* outImageIndex);
+        uint32_t* outImageIndex);
 
     VkResult SwapChainPresent(
         VulkanContext* vkContext,
@@ -24,7 +24,7 @@ namespace NOUS_VulkanSwapChain
         VkQueue graphicsQueue,
         VkQueue presentQueue,
         VkSemaphore renderCompleteSemaphore,
-        uint32 presentImageIndex);
+        uint32_t presentImageIndex);
 
     VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);

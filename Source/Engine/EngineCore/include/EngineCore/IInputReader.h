@@ -1,5 +1,6 @@
 #pragma once
-#include <EngineCore/Globals.h>
+
+#include <cstdint>
 
 enum class KeyState : uint8_t
 {
@@ -17,8 +18,8 @@ public:
     virtual KeyState GetKey(int id) const = 0;
     virtual KeyState GetMouseButton(int id) const = 0;
 
-    virtual int32 GetMouseXMotion() const = 0;
-    virtual int32 GetMouseYMotion() const = 0;
-    virtual int32 GetMouseZ() const = 0;
+    virtual int32_t GetMouseXMotion() const = 0;
+    virtual int32_t GetMouseYMotion() const = 0;
+    virtual int32_t GetMouseZ() const = 0;
 };
 

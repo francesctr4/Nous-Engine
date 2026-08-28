@@ -140,7 +140,7 @@ struct FakeVideoBroker : IVideoBroker
 struct FakeResourceLoader : IResourceLoader
 {
     mutable std::vector<std::string> calls;
-    mutable std::vector<uint32>      unloaded;
+    mutable std::vector<uint32_t>      unloaded;
     mutable std::vector<std::string> imported;
 
     bool Called(const char* name) const {
@@ -150,7 +150,7 @@ struct FakeResourceLoader : IResourceLoader
     ResourceBase* CreateResource(const std::string&) override {
         calls.push_back("CreateResource"); return nullptr;
     }
-    ResourceBase* CreateResourceFromLibrary(uint32, ResourceType, const std::string&,
+    ResourceBase* CreateResourceFromLibrary(uint32_t, ResourceType, const std::string&,
                                             const std::string&, const std::string&) override {
         calls.push_back("CreateResourceFromLibrary"); return nullptr;
     }
@@ -158,10 +158,10 @@ struct FakeResourceLoader : IResourceLoader
         calls.push_back("RequestOrCreateSubMeshResource"); return nullptr;
     }
     ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(const std::string&, int32_t,
-                                                            const std::string&, uint32) override {
+                                                            const std::string&, uint32_t) override {
         calls.push_back("RequestOrCreateSubMeshResourceFromLibrary"); return nullptr;
     }
-    bool UnloadResource(uint32 uid) override {
+    bool UnloadResource(uint32_t uid) override {
         calls.push_back("UnloadResource"); unloaded.push_back(uid); return true;
     }
     ResourceMaterial* GetDefaultMaterial() const override {

@@ -21,17 +21,17 @@ static std::mutex memoryMutex;
 
 struct MemoryStats 
 {
-	uint64 totalAllocated;
-	uint64 totalAllocations;
-	uint64 taggedAllocations[static_cast<uint64>(MemoryTag::MAX)];
+	uint64_t totalAllocated;
+	uint64_t totalAllocations;
+	uint64_t taggedAllocations[static_cast<uint64_t>(MemoryTag::MAX)];
 };
 
 struct MemorySystemConfig
 {
 	MemoryStats stats;
 
-	uint64 totalAllocationSize;
-	uint64 allocatorRequirement;
+	uint64_t totalAllocationSize;
+	uint64_t allocatorRequirement;
 
 	// Separate storage for the DynamicAllocator object so it doesn't alias
 	// allocatorBlock. Placing new(&allocatorBlock) DA(...) would overwrite
@@ -44,7 +44,7 @@ struct MemorySystemConfig
 
 static struct MemorySystemConfig config;
 
-void nous::engine::memory::InitializeMemory(uint64 preAllocatedMemorySize)
+void nous::engine::memory::InitializeMemory(uint64_t preAllocatedMemorySize)
 {
 	ZeroMemory(&config, sizeof(config));
 
@@ -90,7 +90,7 @@ void nous::engine::memory::ShutdownMemory()
 
 	// ----------------------------------------------------------------------- //
 
-	for (uint32 i = 0; i < static_cast<uint32>(MemoryTag::MAX); ++i)
+	for (uint32_t i = 0; i < static_cast<uint32_t>(MemoryTag::MAX); ++i)
 	{
 		NOUS_ASSERT_MSG(config.stats.taggedAllocations[i] == 0, "Memory Leaks Detected!");
 	}
@@ -101,7 +101,7 @@ void nous::engine::memory::ShutdownMemory()
 	// ----------------------------------------------------------------------- //
 }
 
-void* nous::engine::memory::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
+void* nous::engine::memory::Allocate(uint64_t size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 
@@ -123,7 +123,7 @@ void* nous::engine::memory::Allocate(uint64 size, MemoryTag tag = MemoryTag::UNK
 	// Update stats only after a confirmed successful allocation.
 	config.stats.totalAllocated += size;
 	config.stats.totalAllocations++;
-	config.stats.taggedAllocations[static_cast<uint64>(tag)] += size;
+	config.stats.taggedAllocations[static_cast<uint64_t>(tag)] += size;
 
 	ZeroMemory(block, size);
 
@@ -143,7 +143,7 @@ void nous::engine::memory::Free(void* block, MemoryTag tag)
 	TracyFree(block);
 #endif
 
-	const uint64 raw = config.allocator->GetRecordedSize(block);
+	const uint64_t raw = config.allocator->GetRecordedSize(block);
 	if (raw == 0)
 	{
 		// Not tracked by allocator: do not touch stats to avoid underflow
@@ -158,7 +158,7 @@ void nous::engine::memory::Free(void* block, MemoryTag tag)
 
 	config.stats.totalAllocated -= raw;
 	config.stats.totalAllocations--;
-	config.stats.taggedAllocations[static_cast<uint64>(tag)] -= raw;
+	config.stats.taggedAllocations[static_cast<uint64_t>(tag)] -= raw;
 
 	const bool ok = config.allocator->Free(block);
 	if (!ok)
@@ -169,7 +169,7 @@ void nous::engine::memory::Free(void* block, MemoryTag tag)
 	}
 }
 
-void nous::engine::memory::Free(void* block, uint64 size, MemoryTag tag = MemoryTag::UNKNOWN)
+void nous::engine::memory::Free(void* block, uint64_t size, MemoryTag tag = MemoryTag::UNKNOWN)
 {
 	if (!block) return;
 	std::scoped_lock lock(memoryMutex);
@@ -179,7 +179,7 @@ void nous::engine::memory::Free(void* block, uint64 size, MemoryTag tag = Memory
 		NOUS_WARN_C(CURRENT_CHANNEL, "Memory Free called using MEMORY_TAG_UNKNOWN.");
 	}
 
-	const uint64 raw = config.allocator->GetRecordedSize(block);
+	const uint64_t raw = config.allocator->GetRecordedSize(block);
 	if (raw == 0)
 	{
 		// Not tracked by allocator: skip stats to avoid underflow
@@ -196,7 +196,7 @@ void nous::engine::memory::Free(void* block, uint64 size, MemoryTag tag = Memory
 
 	config.stats.totalAllocated -= raw;
 	config.stats.totalAllocations--;
-	config.stats.taggedAllocations[static_cast<uint64>(tag)] -= raw;
+	config.stats.taggedAllocations[static_cast<uint64_t>(tag)] -= raw;
 
 	const bool ok = config.allocator->Free(block);
 	if (!ok)
@@ -207,17 +207,17 @@ void nous::engine::memory::Free(void* block, uint64 size, MemoryTag tag = Memory
 	}
 }
 
-void* nous::engine::memory::ZeroMemory(void* block, uint64 size)
+void* nous::engine::memory::ZeroMemory(void* block, uint64_t size)
 {
 	return std::memset(block, 0, size);
 }
 
-void* nous::engine::memory::CopyMemory(void* destination, const void* source, uint64 size)
+void* nous::engine::memory::CopyMemory(void* destination, const void* source, uint64_t size)
 {
 	return std::memcpy(destination, source, size);
 }
 
-void* nous::engine::memory::SetMemory(void* destination, int32 value, uint64 size)
+void* nous::engine::memory::SetMemory(void* destination, int32_t value, uint64_t size)
 {
 	return std::memset(destination, value, size);
 }
@@ -235,7 +235,7 @@ std::string nous::engine::memory::GetMemoryUsageStats()
 		if (tag == MemoryTag::MAX)
 			continue;
 
-		uint64 bytes = config.stats.taggedAllocations[static_cast<uint64>(tag)];
+		uint64_t bytes = config.stats.taggedAllocations[static_cast<uint64_t>(tag)];
 		if (bytes == 0)
 			continue;
 
@@ -284,7 +284,7 @@ std::string nous::engine::memory::GetMemoryUsageStats()
 	return out.str();
 }
 
-uint64 nous::engine::memory::GetMemoryAllocationCount()
+uint64_t nous::engine::memory::GetMemoryAllocationCount()
 {
 	std::lock_guard<std::mutex> lock(memoryMutex);
 	return config.stats.totalAllocations;
@@ -297,7 +297,7 @@ nous::engine::memory::MemoryStatsSnapshot nous::engine::memory::GetMemoryStats()
 	snapshot.totalAllocated = config.stats.totalAllocated;
 	snapshot.totalAllocations = config.stats.totalAllocations;
 
-	for (uint64 i = 0; i < static_cast<uint64>(MemoryTag::MAX); ++i)
+	for (uint64_t i = 0; i < static_cast<uint64_t>(MemoryTag::MAX); ++i)
 		snapshot.taggedAllocations[i] = config.stats.taggedAllocations[i];
 
 	return snapshot;

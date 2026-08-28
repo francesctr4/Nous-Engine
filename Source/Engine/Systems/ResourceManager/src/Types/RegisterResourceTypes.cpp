@@ -1,4 +1,5 @@
 #include <ResourceManager/Core/TypeRegistry.h>
+#include <EngineCore/Casts.h>
 
 #include <MemoryManager/MemoryManager.h>
 #include <ResourceManager/Core/IImporter.h>
@@ -57,7 +58,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_SHADER;
         d.cleanupPriority = k_PrioShader;
         d.SetImporter<ImporterShader>();
-        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER, uid); };
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_SHADER); };
         d.display.color[0] = 0.7f; d.display.color[1] = 0.2f; d.display.color[2] = 1.0f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
@@ -75,7 +76,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_MATERIAL;
         d.cleanupPriority = k_PrioMaterial;
         d.SetImporter<ImporterMaterial>();
-        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL, uid); };
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceMaterial>(MemoryTag::RESOURCE_MATERIAL, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_MATERIAL); };
         d.hotReloadable = true;
         // Texture refs are still alive at this point (lower priority); null them
@@ -102,7 +103,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_TEXTURE;
         d.cleanupPriority = k_PrioTexture;
         d.SetImporter<ImporterTexture>();
-        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE, uid); };
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceTexture>(MemoryTag::RESOURCE_TEXTURE, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_TEXTURE); };
         d.hotReloadable = true;
         d.display.color[0] = 0.5f; d.display.color[1] = 0.8f; d.display.color[2] = 0.0f; d.display.color[3] = 1.0f;
@@ -121,7 +122,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_MESH;
         d.cleanupPriority = k_PrioMesh;
         d.SetImporter<ImporterMesh>();
-        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH, uid); };
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_MESH); };
         d.display.color[0] = 0.0f; d.display.color[1] = 0.8f; d.display.color[2] = 0.5f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
@@ -139,7 +140,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_AUDIO;
         d.cleanupPriority = k_PrioAudio;
         d.SetImporter<ImporterAudio>();
-        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO, uid); };
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceAudio>(MemoryTag::RESOURCE_AUDIO, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); };
         d.display.color[0] = 0.93f; d.display.color[1] = 0.28f; d.display.color[2] = 0.60f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
@@ -157,7 +158,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_VIDEO;
         d.cleanupPriority = k_PrioVideo;
         d.SetImporter<ImporterVideo>();
-        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceVideo>(MemoryTag::RESOURCE_VIDEO, uid); };
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceVideo>(MemoryTag::RESOURCE_VIDEO, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_VIDEO); };
         d.display.color[0] = 0.60f; d.display.color[1] = 0.30f; d.display.color[2] = 0.93f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
@@ -196,7 +197,7 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.memoryTag = MemoryTag::RESOURCE_AUDIO;   // reuse audio tag (MVP; dedicated tag is a later cleanup)
         d.cleanupPriority = k_PrioAudioGraph;
         d.SetImporter<ImporterAudioGraph>();
-        d.createFn = [](uint32 uid) -> ResourceBase* { return NOUS_NEW<ResourceAudioGraph>(MemoryTag::RESOURCE_AUDIO, uid); };
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceAudioGraph>(MemoryTag::RESOURCE_AUDIO, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); };
         d.display.color[0] = 0.20f; d.display.color[1] = 0.85f; d.display.color[2] = 0.85f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));

@@ -58,7 +58,7 @@ TEST_F(t_LinearAllocator, SequentialAllocationsAreContiguous)
     ASSERT_NE(a, nullptr);
     ASSERT_NE(b, nullptr);
     // b should start immediately after a
-    EXPECT_EQ(static_cast<uint8*>(b), static_cast<uint8*>(a) + 128);
+    EXPECT_EQ(static_cast<uint8_t*>(b), static_cast<uint8_t*>(a) + 128);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ TEST_F(t_LinearAllocator, FreeAllResetsOwnedAllocator)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_LinearAllocator, FreeAllOnExternalMemoryOnlyResetsCursor)
 {
-    constexpr uint64 kCap = 256;
+    constexpr uint64_t kCap = 256;
     std::vector<uint8_t> buf(kCap, 0);
     LinearAllocator la(kCap, buf.data());
 
@@ -130,7 +130,7 @@ TEST_F(t_LinearAllocator, FreeAllOnExternalMemoryOnlyResetsCursor)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_LinearAllocator, AllocateFromExternalBuffer)
 {
-    constexpr uint64 kCap = 512;
+    constexpr uint64_t kCap = 512;
     std::vector<uint8_t> buf(kCap, 0xAB);
     LinearAllocator la(kCap, buf.data());
 
@@ -164,7 +164,7 @@ TEST_F(t_LinearAllocator, DefaultAlignmentSatisfiesMaxAlign)
     LinearAllocator la(256);
 
     // Allocate odd sizes — each returned pointer must be max-aligned.
-    for (uint64 size : {1u, 3u, 7u, 13u})
+    for (uint64_t size : {1u, 3u, 7u, 13u})
     {
         void* p = la.Allocate(size);
         ASSERT_NE(p, nullptr) << "Allocate(" << size << ") returned null";
@@ -204,7 +204,7 @@ TEST_F(t_LinearAllocator, AlignmentPaddingReflectedInOffset)
     ASSERT_NE(p2, nullptr);
 
     // The gap between p1 and p2 must equal the alignment (padding was inserted).
-    EXPECT_EQ(static_cast<uint8*>(p2) - static_cast<uint8*>(p1),
+    EXPECT_EQ(static_cast<uint8_t*>(p2) - static_cast<uint8_t*>(p1),
               static_cast<ptrdiff_t>(alignof(std::max_align_t)));
 }
 
@@ -229,7 +229,7 @@ TEST_F(t_LinearAllocator, ResetReusesOwnedBuffer)
 
 TEST_F(t_LinearAllocator, ResetReusesExternalBuffer)
 {
-    constexpr uint64 kCap = 256;
+    constexpr uint64_t kCap = 256;
     std::vector<uint8_t> buf(kCap, 0);
     LinearAllocator la(kCap, buf.data());
 

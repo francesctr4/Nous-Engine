@@ -1,4 +1,5 @@
 #include "Types/ResourceShader/ImporterShader.h"
+#include <EngineCore/Casts.h>
 
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
@@ -74,7 +75,7 @@ static bool ReadShaderSource(const std::string& assetsPath, std::string& outSour
     }
 
     char*  rawSource = nullptr;
-    uint64 bytesRead = 0;
+    uint64_t bytesRead = 0;
     if (!glslFile.ReadAllBytes(&rawSource, &bytesRead))
     {
         NOUS_ERROR("[ImporterShader] Failed to read '%s'.", assetsPath.c_str());
@@ -122,7 +123,7 @@ static bool CompileShaderStages(const nous::engine::shader_system::ParseResult& 
         }
 
         const std::string spvPath   = (std::filesystem::path(shaderDir) / stageName).replace_extension(".spv").string();
-        const uint64      byteSize  = compiled.shaderSource.spirvBinary.size() * sizeof(uint32_t);
+        const uint64_t      byteSize  = compiled.shaderSource.spirvBinary.size() * sizeof(uint32_t);
 
         FileHandle spvFile;
         if (!spvFile.Open(spvPath, FileMode::WRITE, true))
@@ -132,7 +133,7 @@ static bool CompileShaderStages(const nous::engine::shader_system::ParseResult& 
             continue;
         }
 
-        uint64 bytesWritten = 0;
+        uint64_t bytesWritten = 0;
         if (!spvFile.Write(byteSize, compiled.shaderSource.spirvBinary.data(), &bytesWritten))
         {
             NOUS_ERROR("[ImporterShader] Failed to write SPIR-V for stage '%s'.", stageName);
@@ -254,7 +255,7 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, ResourceBase* o
         }
 
         char*  rawBytes  = nullptr;
-        uint64 bytesRead = 0;
+        uint64_t bytesRead = 0;
         if (!file.ReadAllBytes(&rawBytes, &bytesRead))
         {
             NOUS_ERROR("[ImporterShader] Failed to read '%s'.", entry.path().string().c_str());

@@ -2,7 +2,6 @@
 
 #include <FileSystem/FileHandle.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 
 #include <filesystem>
 #include <string>
@@ -74,7 +73,7 @@ TEST_F(t_FileHandle, WriteAndReadAllBytes_Roundtrip)
     {
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
-        uint64 written = 0;
+        uint64_t written = 0;
         ASSERT_TRUE(fh.Write(payload.size(), payload.data(), &written));
         EXPECT_EQ(written, payload.size());
         fh.Close();
@@ -84,7 +83,7 @@ TEST_F(t_FileHandle, WriteAndReadAllBytes_Roundtrip)
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
         char*  buffer    = nullptr;
-        uint64 bytesRead = 0;
+        uint64_t bytesRead = 0;
         ASSERT_TRUE(fh.ReadAllBytes(&buffer, &bytesRead));
         ASSERT_NE(buffer, nullptr);
         EXPECT_EQ(bytesRead, payload.size());
@@ -101,7 +100,7 @@ TEST_F(t_FileHandle, ReadBytes_ReadsSubset)
     {
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
-        uint64 w = 0;
+        uint64_t w = 0;
         fh.Write(payload.size(), payload.data(), &w);
         fh.Close();
     }
@@ -110,7 +109,7 @@ TEST_F(t_FileHandle, ReadBytes_ReadsSubset)
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
         char   buf[4]    = {};
-        uint64 bytesRead = 0;
+        uint64_t bytesRead = 0;
         ASSERT_TRUE(fh.ReadBytes(4, buf, &bytesRead));
         EXPECT_EQ(bytesRead, 4u);
         EXPECT_EQ(std::string(buf, 4), "ABCD");
@@ -173,7 +172,7 @@ TEST_F(t_FileHandle, BinaryWrite_PreservesExactBytes)
     {
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
-        uint64 w = 0;
+        uint64_t w = 0;
         fh.Write(sizeof(bytes), bytes, &w);
         fh.Close();
     }
@@ -182,7 +181,7 @@ TEST_F(t_FileHandle, BinaryWrite_PreservesExactBytes)
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
         char*  buf   = nullptr;
-        uint64 bread = 0;
+        uint64_t bread = 0;
         ASSERT_TRUE(fh.ReadAllBytes(&buf, &bread));
         ASSERT_EQ(bread, sizeof(bytes));
         for (int i = 0; i < static_cast<int>(sizeof(bytes)); ++i)

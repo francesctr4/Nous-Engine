@@ -1,4 +1,7 @@
 #include <VulkanBackend/VulkanBackend.h>
+#include <EngineCore/AppConfig.h>
+#include <EngineCore/InvalidID.h>
+#include <EngineCore/Casts.h>
 #include "VulkanTypes.inl"
 
 #include "Core/Device/VulkanDevice.h"
@@ -78,7 +81,7 @@ bool VulkanBackend::Initialize()
     vkContext->allocator = nullptr;
 
     // Get Framebuffer Size
-    int32 initialWidth = 0, initialHeight = 0;
+    int32_t initialWidth = 0, initialHeight = 0;
     vkContext->window->GetFramebufferSize(&initialWidth, &initialHeight);
 
     vkContext->framebufferWidth  = (initialWidth  != 0) ? initialWidth  : WINDOW_WIDTH;
@@ -318,7 +321,7 @@ bool VulkanBackend::Initialize()
     }
 
     // Mark all geometries as invalid
-    for (uint32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i)
+    for (uint32_t i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i)
     {
         vkContext->geometries[i].ID = INVALID_ID;
         vkContext->geometries[i].generation = INVALID_ID;
@@ -397,8 +400,8 @@ bool VulkanBackend::Initialize()
             gridVerts.push_back(v4);
         }
 
-        vkContext->gridVertexCount = static_cast<uint32>(gridVerts.size());
-        const uint64 bufferSize    = gridVerts.size() * sizeof(Vertex3D);
+        vkContext->gridVertexCount = static_cast<uint32_t>(gridVerts.size());
+        const uint64_t bufferSize    = gridVerts.size() * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufferSize,
             static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
@@ -447,8 +450,8 @@ bool VulkanBackend::Initialize()
             boxVerts.push_back(v);
         }
 
-        vkContext->boundingBoxVertexCount = static_cast<uint32>(boxVerts.size());
-        const uint64 bbBufSize = boxVerts.size() * sizeof(Vertex3D);
+        vkContext->boundingBoxVertexCount = static_cast<uint32_t>(boxVerts.size());
+        const uint64_t bbBufSize = boxVerts.size() * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bbBufSize,
             static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
@@ -470,13 +473,13 @@ bool VulkanBackend::Initialize()
     // 3 great-circle rings (XY, XZ, YZ planes) as LINE_LIST; scaled per-draw
     // via push-constant model matrix (translate + uniform scale).
     {
-        constexpr uint32 k_RingSegments = 24;
+        constexpr uint32_t k_RingSegments = 24;
         std::vector<Vertex3D> sphereVerts;
         sphereVerts.reserve(k_RingSegments * 2 * 3);
 
-        for (uint32 plane = 0; plane < 3; ++plane)
+        for (uint32_t plane = 0; plane < 3; ++plane)
         {
-            for (uint32 i = 0; i < k_RingSegments; ++i)
+            for (uint32_t i = 0; i < k_RingSegments; ++i)
             {
                 const float a0 = (2.0f * glm::pi<float>() * static_cast<float>(i))     / static_cast<float>(k_RingSegments);
                 const float a1 = (2.0f * glm::pi<float>() * static_cast<float>(i + 1)) / static_cast<float>(k_RingSegments);
@@ -506,8 +509,8 @@ bool VulkanBackend::Initialize()
             }
         }
 
-        vkContext->pointLightSphereVertexCount = static_cast<uint32>(sphereVerts.size());
-        const uint64 sphereBufSize = sphereVerts.size() * sizeof(Vertex3D);
+        vkContext->pointLightSphereVertexCount = static_cast<uint32_t>(sphereVerts.size());
+        const uint64_t sphereBufSize = sphereVerts.size() * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, sphereBufSize,
             static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
@@ -547,8 +550,8 @@ bool VulkanBackend::Initialize()
         setPos(pyramidVerts[12], apex); setPos(pyramidVerts[13], bfr);
         setPos(pyramidVerts[14], apex); setPos(pyramidVerts[15], bfl);
 
-        vkContext->dirLightPyramidVertexCount = static_cast<uint32>(pyramidVerts.size());
-        const uint64 bufSize = pyramidVerts.size() * sizeof(Vertex3D);
+        vkContext->dirLightPyramidVertexCount = static_cast<uint32_t>(pyramidVerts.size());
+        const uint64_t bufSize = pyramidVerts.size() * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufSize,
             static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
@@ -570,11 +573,11 @@ bool VulkanBackend::Initialize()
     // Apex at origin, base circle at y=-1 in XZ plane; 24 segments.
     // 24 base segments × 2 + 24 spokes × 2 = 96 line endpoints. Points in local -Y.
     {
-        constexpr uint32 k_ConeSegments = 24;
+        constexpr uint32_t k_ConeSegments = 24;
         std::vector<Vertex3D> coneVerts;
         coneVerts.reserve(k_ConeSegments * 4);
 
-        for (uint32 i = 0; i < k_ConeSegments; ++i)
+        for (uint32_t i = 0; i < k_ConeSegments; ++i)
         {
             const float a0 = (2.0f * glm::pi<float>() * static_cast<float>(i))     / static_cast<float>(k_ConeSegments);
             const float a1 = (2.0f * glm::pi<float>() * static_cast<float>(i + 1)) / static_cast<float>(k_ConeSegments);
@@ -592,8 +595,8 @@ bool VulkanBackend::Initialize()
             coneVerts.push_back(vRim);
         }
 
-        vkContext->spotLightConeVertexCount = static_cast<uint32>(coneVerts.size());
-        const uint64 bufSize = coneVerts.size() * sizeof(Vertex3D);
+        vkContext->spotLightConeVertexCount = static_cast<uint32_t>(coneVerts.size());
+        const uint64_t bufSize = coneVerts.size() * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufSize,
             static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
@@ -614,9 +617,9 @@ bool VulkanBackend::Initialize()
     // ── Create camera frustum wireframe vertex buffer (dynamic, host-visible) ─
     // Capacity: 8 frustums × 24 vertices (12 edges × 2 endpoints per frustum).
     {
-        constexpr uint32 k_MaxCameraFrustums    = 8;
-        constexpr uint32 k_FrustumVertCapacity  = k_MaxCameraFrustums * 24;
-        constexpr uint64 frustumBufSize = k_FrustumVertCapacity * sizeof(Vertex3D);
+        constexpr uint32_t k_MaxCameraFrustums    = 8;
+        constexpr uint32_t k_FrustumVertCapacity  = k_MaxCameraFrustums * 24;
+        constexpr uint64_t frustumBufSize = k_FrustumVertCapacity * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, frustumBufSize,
             static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
@@ -859,7 +862,7 @@ void VulkanBackend::WaitForGPUIdle() noexcept
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 }
 
-void VulkanBackend::Resized(uint16 width, uint16 height) noexcept
+void VulkanBackend::Resized(uint16_t width, uint16_t height) noexcept
 {
     // Update the "framebuffer size generation", a counter which indicates when the
     // framebuffer size has been updated.
@@ -1035,7 +1038,7 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
             gameCB,
             vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle
         };
-        submitInfo.commandBufferCount = static_cast<uint32>(cmdBuffersEditor.size());
+        submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffersEditor.size());
         submitInfo.pCommandBuffers    = cmdBuffersEditor.data();
     }
 
@@ -1268,7 +1271,7 @@ bool VulkanBackend::RecreateResources()
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
     // Clear these out just in case.
-    for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
+    for (uint32_t i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
     {
         vkContext->imagesInFlight[i] = nullptr;
     }
@@ -1282,8 +1285,8 @@ bool VulkanBackend::RecreateResources()
     // CreateSwapChain set framebufferWidth/Height to the *actual* surface extent (which may
     // differ from the requested cached size). Use that — sizing framebuffers/offscreen images
     // to the requested size instead would mismatch the swapchain images (VUID-...-04534).
-    vkContext->framebufferWidth  = static_cast<int32>(vkContext->swapChain.swapChainExtent.width);
-    vkContext->framebufferHeight = static_cast<int32>(vkContext->swapChain.swapChainExtent.height);
+    vkContext->framebufferWidth  = static_cast<int32_t>(vkContext->swapChain.swapChainExtent.width);
+    vkContext->framebufferHeight = static_cast<int32_t>(vkContext->swapChain.swapChainExtent.height);
 
     vkContext->eventSystem->Broadcast(Event(EventType::IMGUI_RECREATION, {}));
 
@@ -1296,12 +1299,12 @@ bool VulkanBackend::RecreateResources()
     // Free old command buffers and framebuffers before recreating them.
     if (vkContext->renderMode == RenderMode::GAME)
     {
-        for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
+        for (uint32_t i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
         {
             NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool,
                 &vkContext->imGuiResources.m_GameViewportCommandBuffers[i]);
         }
-        for (uint32 i = 0; i < vkContext->gameSwapchainFramebuffers.size(); ++i)
+        for (uint32_t i = 0; i < vkContext->gameSwapchainFramebuffers.size(); ++i)
         {
             if (vkContext->gameSwapchainFramebuffers[i])
             {
@@ -1313,7 +1316,7 @@ bool VulkanBackend::RecreateResources()
     }
     else
     {
-        for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
+        for (uint32_t i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
         {
             NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->graphicsCommandBuffers[i]);
             NOUS_VulkanCommandBuffer::CommandBufferFree(vkContext, vkContext->device.mainGraphicsCommandPool, &vkContext->imGuiResources.m_ViewportCommandBuffers[i]);
@@ -1326,7 +1329,7 @@ bool VulkanBackend::RecreateResources()
             vkContext->imGuiResources.m_PickFramebuffer = VK_NULL_HANDLE;
         }
 
-        for (uint32 i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
+        for (uint32_t i = 0; i < vkContext->swapChain.swapChainImages.size(); ++i)
         {
             vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportFramebuffers[i], vkContext->allocator);
             vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportFramebuffers[i], vkContext->allocator);
@@ -1882,7 +1885,7 @@ bool VulkanBackend::DrawGeometryBatched(RenderpassType renderpassID,
 // ----------------------------------------------------------------------------------------------- //
 // TEMPORAL //
 
-bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
+bool VulkanBackend::CreateTexture(const uint8_t* pixels, ResourceTexture* texture)
 {
     // Internal data creation.
     // TODO: Use an allocator for this.
@@ -1974,7 +1977,7 @@ bool VulkanBackend::CreateTexture(const uint8* pixels, ResourceTexture* texture)
     return true;
 }
 
-bool VulkanBackend::UpdateDynamicTexture(const uint8* pixels, ResourceTexture* texture)
+bool VulkanBackend::UpdateDynamicTexture(const uint8_t* pixels, ResourceTexture* texture)
 {
     if (!texture || !texture->internalData || !pixels)
         return false;
@@ -2129,7 +2132,7 @@ void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
     material->poolOwnerShader = nullptr;
 }
 
-bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry)
+bool VulkanBackend::CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices, uint32_t indexCount, const uint32_t* indices, ResourceMesh* geometry)
 {
     if (!vertexCount || !vertices) 
     {
@@ -2162,7 +2165,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     else
     {
         std::lock_guard<std::mutex> geoLock(vkContext->geometriesMutex);
-        for (uint32 i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i)
+        for (uint32_t i = 0; i < VULKAN_MAX_GEOMETRY_COUNT; ++i)
         {
             if (vkContext->geometries[i].ID == INVALID_ID)
             {
@@ -2202,7 +2205,7 @@ bool VulkanBackend::CreateGeometry(uint32 vertexCount, const Vertex3D* vertices,
     if (indexCount && indices)
     {
         internalData->indexCount = indexCount;
-        internalData->indexSize = sizeof(uint32) * indexCount;
+        internalData->indexSize = sizeof(uint32_t) * indexCount;
 
         std::lock_guard idxLock(vkContext->indexBufferMutex);
         if (!NOUS_VulkanBuffer::UploadDataRange(vkContext, pool, nullptr, queue, &vkContext->objectIndexBuffer,
@@ -2748,7 +2751,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     return true;
 }
 
-uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
+uint32_t VulkanBackend::PickObjectAt(int32_t pixelX, int32_t pixelY,
                                    const glm::mat4& projection, const glm::mat4& view,
                                    const std::vector<GeometryRenderData>& geometries)
 {
@@ -2789,8 +2792,8 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
 
     VkRect2D scissor{};
     scissor.offset = {0, 0};
-    scissor.extent = { static_cast<uint32>(vkContext->framebufferWidth),
-                       static_cast<uint32>(vkContext->framebufferHeight) };
+    scissor.extent = { static_cast<uint32_t>(vkContext->framebufferWidth),
+                       static_cast<uint32_t>(vkContext->framebufferHeight) };
     vkCmdSetScissor(cmdBuffer.handle, 0, 1, &scissor);
 
     // --- Begin renderpass (dedicated UNORM pick renderpass) ---
@@ -2811,7 +2814,7 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
     struct PickPushConstants
     {
         glm::mat4 model;
-        uint32 objectID;
+        uint32_t objectID;
     };
 
     for (const auto& geo : geometries)
@@ -2899,14 +2902,14 @@ uint32 VulkanBackend::PickObjectAt(int32 pixelX, int32 pixelY,
     NOUS_VulkanCommandBuffer::CommandBufferEndAndFreeSingleTime(vkContext, pool, &cmdBuffer, queue);
 
     // --- Read back pixel data ---
-    uint32 objectID = 0;
+    uint32_t objectID = 0;
     if (void* mapped = NOUS_VulkanBuffer::LockMemory(vkContext, &stagingBuffer, 0, 4, 0))
     {
-        const auto* pixel = static_cast<const uint8*>(mapped);
-        objectID = static_cast<uint32>(pixel[0])
-                 | static_cast<uint32>(pixel[1]) << 8
-                 | static_cast<uint32>(pixel[2]) << 16
-                 | static_cast<uint32>(pixel[3]) << 24;
+        const auto* pixel = static_cast<const uint8_t*>(mapped);
+        objectID = static_cast<uint32_t>(pixel[0])
+                 | static_cast<uint32_t>(pixel[1]) << 8
+                 | static_cast<uint32_t>(pixel[2]) << 16
+                 | static_cast<uint32_t>(pixel[3]) << 24;
         NOUS_VulkanBuffer::UnlockMemory(vkContext, &stagingBuffer);
     }
 
@@ -2938,7 +2941,7 @@ EditorGpuInfo VulkanBackend::GetGpuInfo() const
     info.descriptorPool      = vkContext->imGuiResources.descriptorPool;
     info.uiRenderpass        = vkContext->uiRenderpass.handle;
     info.allocator           = vkContext->allocator;
-    info.imageCount          = static_cast<uint32>(vkContext->swapChain.swapChainImages.size());
+    info.imageCount          = static_cast<uint32_t>(vkContext->swapChain.swapChainImages.size());
 
     // Hand over this TU's copy, so the reporting goes through the engine-side
     // VkResultMessage and the editor needs no renderer-internal Vulkan header.
@@ -2967,7 +2970,7 @@ VkCommandBuffer VulkanBackend::GetCurrentUICommandBuffer() const
     return vkContext->graphicsCommandBuffers[vkContext->imageIndex].handle;
 }
 
-uint64 VulkanBackend::GetViewportTexture(const EditorViewport viewport) const
+uint64_t VulkanBackend::GetViewportTexture(const EditorViewport viewport) const
 {
     if (!vkContext)
         return 0;
@@ -3033,7 +3036,7 @@ std::vector<VkDescriptorSet> VulkanBackend::TakeViewportDescriptorSets(const Edi
     return taken;
 }
 
-void VulkanBackend::GetFramebufferSize(int32* outWidth, int32* outHeight) const
+void VulkanBackend::GetFramebufferSize(int32_t* outWidth, int32_t* outHeight) const
 {
     if (outWidth)  *outWidth  = vkContext ? vkContext->framebufferWidth  : 0;
     if (outHeight) *outHeight = vkContext ? vkContext->framebufferHeight : 0;
@@ -3200,7 +3203,7 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
 
     // Map the mesh kind to its shared static vertex buffer + line width.
     const VulkanBuffer* vertexBuffer = nullptr;
-    uint32 vertexCount = 0;
+    uint32_t vertexCount = 0;
     float  lineWidth   = 1.5f;
     switch (mesh)
     {
@@ -3323,7 +3326,7 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
         }
     }
 
-    const auto totalVerts = static_cast<uint32>(verts.size());
+    const auto totalVerts = static_cast<uint32_t>(verts.size());
     if (totalVerts > vkContext->frustumVertexCapacity)
     {
         NOUS_WARN_C(CURRENT_CHANNEL, "[DrawCameraFrustums] Frustum vertex count (%u) exceeds buffer capacity (%u). Skipping.",
@@ -3368,7 +3371,7 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
     // model = identity: frustum vertices are already in world space.
     struct FrustumPushConstants { glm::mat4 model; glm::vec4 color; };
 
-    for (uint32 i = 0; i < static_cast<uint32>(frustums.size()); ++i)
+    for (uint32_t i = 0; i < static_cast<uint32_t>(frustums.size()); ++i)
     {
         FrustumPushConstants pc{ glm::mat4(1.0f), frustums[i].color };
         vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,

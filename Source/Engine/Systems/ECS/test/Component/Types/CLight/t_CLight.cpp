@@ -4,7 +4,6 @@
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CLight/CLight.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 #include <Utils/Serialization/JsonObject.h>
 
 class t_CLight : public ::testing::Test

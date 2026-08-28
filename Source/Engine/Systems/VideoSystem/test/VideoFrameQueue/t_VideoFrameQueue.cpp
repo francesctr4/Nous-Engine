@@ -28,7 +28,7 @@ TEST(t_VideoFrameQueue, SelectPicksNewestNotAfterPlayhead)
 
 // ---------------- VideoFrameQueue ----------------
 
-static std::vector<uint8_t> SolidFrame(uint32 w, uint32 h, uint8_t v)
+static std::vector<uint8_t> SolidFrame(uint32_t w, uint32_t h, uint8_t v)
 {
     return std::vector<uint8_t>(static_cast<size_t>(w) * h * 4, v);
 }

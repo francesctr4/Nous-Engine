@@ -2,11 +2,11 @@
 
 #include <ModuleBase/Module.h>
 #include <EventSystem/IEventListener.h>
-#include <EngineCore/Globals.h>
 #include <EngineCore/EngineExport.h>
 #include <VideoSystem/VideoFrame.h>
 #include <VideoSystem/VideoHandle.h>
 #include <VideoSystem/iVideoBroker.h>
+#include <cstdint>
 
 class IVideoDecoderBackend;
 class ResourceVideo;
@@ -38,7 +38,7 @@ public:
 
     NOUS_ENGINE_API bool        TryGetFrame(VideoHandle handle, double playheadSec, VideoFrame& out) const override;
 
-    NOUS_ENGINE_API void        GetDimensions(VideoHandle handle, uint32& width, uint32& height) const;
+    NOUS_ENGINE_API void        GetDimensions(VideoHandle handle, uint32_t& width, uint32_t& height) const;
     NOUS_ENGINE_API float       GetFrameRate(VideoHandle handle) const;
     NOUS_ENGINE_API float       GetDuration(VideoHandle handle) const override;
     NOUS_ENGINE_API bool        IsFinished(VideoHandle handle) const;

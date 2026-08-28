@@ -4,7 +4,6 @@
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

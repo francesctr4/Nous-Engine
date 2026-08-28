@@ -1,4 +1,5 @@
 #include <ResourceManager/Types/ResourceMesh/SubMeshCache.h>
+#include <EngineCore/Casts.h>
 
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
@@ -50,11 +51,11 @@ ResourceMesh* SubMeshCache::RequestOrCreate(const std::string& assetsPath, int32
 
 ResourceMesh* SubMeshCache::RequestOrCreateFromLibrary(
     const std::string& libraryPath, int32_t submeshIndex,
-    const std::string& assetsPath, uint32 hintUID)
+    const std::string& assetsPath, uint32_t hintUID)
 {
     // Derive a stable synthetic base UID from the library path so dedup works
     // without a .meta file (GAME mode path).
-    const auto baseUID = static_cast<uint32>(std::hash<std::string>{}(libraryPath) & 0xFFFFFFFF);
+    const auto baseUID = static_cast<uint32_t>(std::hash<std::string>{}(libraryPath) & 0xFFFFFFFF);
     const CacheKey key  = { baseUID, submeshIndex };
 
     {
@@ -79,7 +80,7 @@ ResourceMesh* SubMeshCache::RequestOrCreateFromLibrary(
     return BuildAndRegister(key, libraryPath, submeshIndex, assetsPath, hintUID);
 }
 
-void SubMeshCache::EraseUID(uint32 uid)
+void SubMeshCache::EraseUID(uint32_t uid)
 {
     // Caller MUST hold the ResourceTable's lock — see locking contract in SubMeshCache.h.
     const auto rev = m_reverseIndex.find(uid);
@@ -95,9 +96,9 @@ void SubMeshCache::Clear()
     m_reverseIndex.clear();
 }
 
-void SubMeshCache::EraseIndexEntry(std::map<CacheKey, uint32>::iterator mapIt)
+void SubMeshCache::EraseIndexEntry(std::map<CacheKey, uint32_t>::iterator mapIt)
 {
-    const uint32   uid = mapIt->second;
+    const uint32_t   uid = mapIt->second;
     const CacheKey key = mapIt->first;
     m_index.erase(mapIt);
 
@@ -112,7 +113,7 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
     const std::string& libraryPath,
     int32_t submeshIndex,
     const std::string& assetsPath,
-    uint32 hintUID)
+    uint32_t hintUID)
 {
     const auto hierarchy = ImporterMesh::LoadHierarchy(libraryPath);
     if (submeshIndex < 0 || submeshIndex >= static_cast<int32_t>(hierarchy.size()))
@@ -147,7 +148,7 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
 
     mesh->SetState(ResourceState::CPU_READY);
 
-    uint32 uid;
+    uint32_t uid;
     {
         ResourceTable::ScopedLock lock(m_table);
         auto& resources = lock.Map();
@@ -158,7 +159,7 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
             uid = hintUID;
         else
         {
-            do { uid = static_cast<uint32>(Random::Generate()); }
+            do { uid = static_cast<uint32_t>(Random::Generate()); }
             while (uid == 0 || resources.contains(uid));
         }
         resources[uid] = mesh;

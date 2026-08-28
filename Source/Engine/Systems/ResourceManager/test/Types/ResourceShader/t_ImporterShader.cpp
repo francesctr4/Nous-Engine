@@ -4,7 +4,6 @@
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <ResourceManager/Core/MetaFileData.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 
 #include <filesystem>
 #include <fstream>

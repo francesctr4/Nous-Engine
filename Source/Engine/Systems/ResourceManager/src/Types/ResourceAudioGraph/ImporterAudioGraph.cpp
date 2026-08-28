@@ -1,9 +1,9 @@
 #include <ResourceManager/Types/ResourceAudioGraph/ImporterAudioGraph.h>
+#include <EngineCore/Casts.h>
 
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
 #include <AudioSystem/AudioGraph/AudioEffectRegistry.h>
 
-#include <EngineCore/Globals.h>               // down_cast
 #include <FileSystem/FileSystem.h>
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>

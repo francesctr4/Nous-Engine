@@ -1,4 +1,6 @@
 #include <ResourceManager/Types/ResourceMaterial/ImporterMaterial.h>
+#include <EngineCore/InvalidID.h>
+#include <EngineCore/Casts.h>
 
 #include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
@@ -180,7 +182,7 @@ static void DeserializeTextureMaps(const JsonObject& root, ResourceMaterial* mat
         const std::string assetPath = nous::engine::filesystem::NormalizePath(rawPath);
         const std::string libPath   = nous::engine::filesystem::NormalizePath(libRaw);
 
-        const uint32      texUID  = static_cast<uint32>(uidDouble);
+        const uint32_t      texUID  = static_cast<uint32_t>(uidDouble);
         const std::string texName = nous::engine::filesystem::GetFilename(assetPath);
         ResourceTexture*  tex     = down_cast<ResourceTexture*>(
             rm->CreateResourceFromLibrary(texUID, ResourceType::TEXTURE, texName, assetPath, libPath));
@@ -211,7 +213,7 @@ static void DeserializeShader(const JsonObject& root, ResourceMaterial* material
 
     const std::string shaderName = nous::engine::filesystem::GetFilename(shaderAssetRaw);
     ResourceBase* r = rm->CreateResourceFromLibrary(
-        static_cast<uint32>(shaderUID), ResourceType::SHADER, shaderName,
+        static_cast<uint32_t>(shaderUID), ResourceType::SHADER, shaderName,
         shaderAssetRaw, shaderLibRaw);
 
     if (ResourceShader* loadedShader = r ? down_cast<ResourceShader*>(r) : nullptr)

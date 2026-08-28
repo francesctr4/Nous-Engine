@@ -132,8 +132,8 @@ static void ProcessEntry(const LogEntry& entry)
     {
         std::lock_guard lock(s_fileMutex);
         if (s_logFile.IsOpen()) {
-            const uint64 len = static_cast<uint64>(entry.message.size());
-            uint64 written = 0;
+            const uint64_t len = static_cast<uint64_t>(entry.message.size());
+            uint64_t written = 0;
             s_logFile.Write(len, entry.message.c_str(), &written);
         }
     }
@@ -407,8 +407,8 @@ void AppendToLogFile(const char* message)
 {
     std::lock_guard lock(s_fileMutex);
     if (s_logFile.IsOpen()) {
-        const uint64 len = static_cast<uint64>(std::strlen(message));
-        uint64 written = 0;
+        const uint64_t len = static_cast<uint64_t>(std::strlen(message));
+        uint64_t written = 0;
         if (!s_logFile.Write(len, message, &written))
             fprintf(stderr, "[Logger] AppendToLogFile: write failed.\n");
     }

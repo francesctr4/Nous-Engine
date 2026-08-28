@@ -1,7 +1,7 @@
 # ==============================================================================
 # EngineCore — the bottom of the engine graph.
 #
-#   include/EngineCore/**  is the API, reached as <EngineCore/Globals.h>.
+#   include/EngineCore/**  is the API, reached as <EngineCore/AppConfig.h>.
 #
 # These four headers are the ones literally everything names: EngineExport.h and
 # Globals.h have ~74 includers each, and both are reached THROUGH the public

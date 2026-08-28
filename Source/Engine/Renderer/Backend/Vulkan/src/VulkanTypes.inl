@@ -1,7 +1,6 @@
 #ifndef VULKANTYPES_INL
 #define VULKANTYPES_INL
 
-#include <EngineCore/Globals.h>
 #include <Renderer/RendererTypes.h>
 
 #include <vulkan/vulkan.h>
@@ -12,6 +11,7 @@
 #include <deque>
 #include <unordered_map>
 #include <vector>
+#include <cstdint>
 
 class Freelist;
 
@@ -27,8 +27,8 @@ struct VulkanImage
     VkDeviceMemory memory;
     VkImageView view;
 
-    uint32 width;
-    uint32 height;
+    uint32_t width;
+    uint32_t height;
 };
 
 enum class VulkanRenderPassState : uint8_t
@@ -49,9 +49,9 @@ struct VulkanRenderpass
     glm::vec4 clearColor;
 
     float depth;
-    uint32 stencil;
+    uint32_t stencil;
 
-    uint8 clearFlags;
+    uint8_t clearFlags;
     bool prevPass;
     bool nextPass;
 
@@ -64,14 +64,14 @@ struct VulkanBuffer
     VkBufferUsageFlagBits usage;
 
     VkDeviceMemory memory;
-    int32 memoryIndex;
-    uint32 memoryPropertyFlags;
+    int32_t memoryIndex;
+    uint32_t memoryPropertyFlags;
 
-    uint64 totalSize;
+    uint64_t totalSize;
     bool isLocked;
 
     // ------- Freelist ------- //
-    uint64 freelistMemoryRequirement;   // The amount of memory required for the freelist.
+    uint64_t freelistMemoryRequirement;   // The amount of memory required for the freelist.
     void* freelistBlock;                // The memory block used by the internal freelist.
     Freelist* bufferFreelist;           // A freelist to track allocations.
 };
@@ -83,7 +83,7 @@ struct VulkanSwapChain
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
-    uint8 maxFramesInFlight;
+    uint8_t maxFramesInFlight;
 
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
@@ -134,10 +134,10 @@ struct VulkanDevice
     VkFormat colorFormat;
     VkFormat depthFormat;
 
-    int32 graphicsQueueIndex;
-    int32 presentQueueIndex;
-    int32 computeQueueIndex;
-    int32 transferQueueIndex;
+    int32_t graphicsQueueIndex;
+    int32_t presentQueueIndex;
+    int32_t computeQueueIndex;
+    int32_t transferQueueIndex;
 
     bool supportsDeviceLocalHostVisible;
 
@@ -177,23 +177,23 @@ struct VulkanPipeline
 
 // Max number of simultaneously uploaded geometries
 // TODO: make configurable
-constexpr uint32 VULKAN_MAX_GEOMETRY_COUNT = 4096;
+constexpr uint32_t VULKAN_MAX_GEOMETRY_COUNT = 4096;
 
 /**
  * @brief Internal buffer data for geometry.
  */
 struct VulkanGeometryData
 {
-    uint32 ID;
-    uint32 generation;
+    uint32_t ID;
+    uint32_t generation;
 
-    uint32 vertexCount;
-    uint32 vertexSize;
-    uint64 vertexBufferOffset;
+    uint32_t vertexCount;
+    uint32_t vertexSize;
+    uint64_t vertexBufferOffset;
 
-    uint32 indexCount;
-    uint32 indexSize;
-    uint64 indexBufferOffset;
+    uint32_t indexCount;
+    uint32_t indexSize;
+    uint64_t indexBufferOffset;
 };
 
 struct VulkanImGuiResources
@@ -243,15 +243,15 @@ struct VulkanContext
 {
     float frameDeltaTime;
 
-    int32 framebufferWidth;
-    int32 framebufferHeight;
+    int32_t framebufferWidth;
+    int32_t framebufferHeight;
 
     // Current generation of framebuffer size. If it does not match framebuffer_size_last_generation,
     // a new one should be generated.
-    uint64 framebufferSizeGeneration;
+    uint64_t framebufferSizeGeneration;
     // The generation of the framebuffer when it was last created. Set to framebuffer_size_generation
     // when updated.
-    uint64 framebufferSizeLastGeneration;
+    uint64_t framebufferSizeLastGeneration;
 
 	VkInstance instance;
 	VkAllocationCallbacks* allocator;
@@ -289,8 +289,8 @@ struct VulkanContext
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
 
-    uint32 imageIndex;
-    uint32 currentFrame;
+    uint32_t imageIndex;
+    uint32_t currentFrame;
     bool recreatingSwapchain;
 
     // ── Built-in shaders via the ResourceShader / VulkanShader system ─────────
@@ -308,7 +308,7 @@ struct VulkanContext
 
     // ── Editor grid resources ──────────────────────────────────────────────────
     VulkanBuffer gridVertexBuffer{};
-    uint32       gridVertexCount = 0;
+    uint32_t       gridVertexCount = 0;
 
     // ── Bounding box shader ────────────────────────────────────────────────────
     class ResourceShader* builtInBoundingBoxShader = nullptr; // Scene renderpass; ResourceManager-owned
@@ -322,27 +322,27 @@ struct VulkanContext
 
     // ── Bounding box unit-cube wireframe (static, shared for all boxes) ────────
     VulkanBuffer boundingBoxVertexBuffer{};
-    uint32       boundingBoxVertexCount = 0;
+    uint32_t       boundingBoxVertexCount = 0;
 
     // ── Camera frustum wireframe (dynamic, updated each frame) ─────────────────
     // Capacity: k_MaxCameraFrustums (8) × 24 vertices (12 edges × 2 endpoints)
     VulkanBuffer frustumVertexBuffer{};
-    uint32       frustumVertexCapacity = 0; // in vertices
+    uint32_t       frustumVertexCapacity = 0; // in vertices
 
     // ── Point light debug sphere wireframe (static, shared for all lights) ─────
     // 3 great-circle rings (XY, XZ, YZ planes) as line lists; scaled per-draw.
     VulkanBuffer pointLightSphereVertexBuffer{};
-    uint32       pointLightSphereVertexCount = 0;
+    uint32_t       pointLightSphereVertexCount = 0;
 
     // ── Directional light debug pyramid wireframe (static, shared for all dir lights) ─
     // Narrow pyramid pointing in local -Y (8 edges = 16 line endpoints). LINE_LIST.
     VulkanBuffer dirLightPyramidVertexBuffer{};
-    uint32       dirLightPyramidVertexCount = 0;
+    uint32_t       dirLightPyramidVertexCount = 0;
 
     // ── Spot light debug cone wireframe (static, shared for all spot lights) ──────
     // Apex at origin, base circle at y=-1 (24 segments + 24 spokes = 96 endpoints). LINE_LIST.
     VulkanBuffer spotLightConeVertexBuffer{};
-    uint32       spotLightConeVertexCount = 0;
+    uint32_t       spotLightConeVertexCount = 0;
 
     // ── Per-frame instance SSBO (model matrices for GPU instancing) ────────────
     // One buffer per frame-in-flight (triple-buffered). Persistently mapped.

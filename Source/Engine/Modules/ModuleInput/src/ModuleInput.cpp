@@ -25,8 +25,8 @@ ModuleInput::ModuleInput(EventSystem* eventSystem, nous::engine::multithreading:
 {
 	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 
-	nous::engine::memory::SetMemory(keyboard, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_KEYBOARD_KEYS);
-	nous::engine::memory::SetMemory(mouseButtons, static_cast<int32>(KeyState::IDLE), sizeof(KeyState) * MAX_MOUSE_BUTTONS);
+	nous::engine::memory::SetMemory(keyboard, static_cast<int32_t>(KeyState::IDLE), sizeof(KeyState) * MAX_KEYBOARD_KEYS);
+	nous::engine::memory::SetMemory(mouseButtons, static_cast<int32_t>(KeyState::IDLE), sizeof(KeyState) * MAX_MOUSE_BUTTONS);
 
 	mouseX = 0;
 	mouseY = 0;
@@ -70,14 +70,14 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 
 	// --------------- Handle Keyboard State --------------- \\
 
-    const uint8* keys = reinterpret_cast<const uint8*>(SDL_GetKeyboardState(NULL));
+    const uint8_t* keys = reinterpret_cast<const uint8_t*>(SDL_GetKeyboardState(NULL));
 
 	for (int i = 0; i < MAX_KEYBOARD_KEYS; ++i)
 		keyboard[i] = m_imguiCaptureKeyboard ? AdvanceKeyState(keyboard[i], false) : AdvanceKeyState(keyboard[i], keys[i] == 1);
 
 	// --------------- Handle Mouse State --------------- \\
 
-    int32 buttons = SDL_GetMouseState(&mouseX, &mouseY);
+    int32_t buttons = SDL_GetMouseState(&mouseX, &mouseY);
 
 	mouseZ = 0;
 
@@ -285,27 +285,27 @@ void ModuleInput::SetScriptInputEnabled(bool enabled)
 }
 
 
-int32 ModuleInput::GetMouseX() const
+int32_t ModuleInput::GetMouseX() const
 {
 	return mouseX;
 }
 
-int32 ModuleInput::GetMouseY() const
+int32_t ModuleInput::GetMouseY() const
 {
 	return mouseY;
 }
 
-int32 ModuleInput::GetMouseZ() const
+int32_t ModuleInput::GetMouseZ() const
 {
 	return mouseZ;
 }
 
-int32 ModuleInput::GetMouseXMotion() const
+int32_t ModuleInput::GetMouseXMotion() const
 {
 	return mouseXMotion;
 }
 
-int32 ModuleInput::GetMouseYMotion() const
+int32_t ModuleInput::GetMouseYMotion() const
 {
 	return mouseYMotion;
 }

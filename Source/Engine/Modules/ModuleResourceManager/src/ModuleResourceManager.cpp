@@ -1,4 +1,5 @@
 #include <ModuleResourceManager/ModuleResourceManager.h>
+#include <EngineCore/Casts.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <EventSystem/EventSystem.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
@@ -130,7 +131,7 @@ void ModuleResourceManager::RefreshSceneManifest()
 	ImportPipeline::WriteSceneManifest();
 }
 
-std::unordered_map<uint32, ResourceBase*> ModuleResourceManager::GetResourcesMap() const
+std::unordered_map<uint32_t, ResourceBase*> ModuleResourceManager::GetResourcesMap() const
 {
 	return m_table.Snapshot();
 }
@@ -186,12 +187,12 @@ void ModuleResourceManager::DeleteResource(ResourceBase*& resource)
 	// so the map is clean before we reach this point.
 }
 
-bool ModuleResourceManager::ResourceExists(const uint32 uid) const
+bool ModuleResourceManager::ResourceExists(const uint32_t uid) const
 {
 	return m_table.Contains(uid);
 }
 
-void ModuleResourceManager::UpdateResourcePath(const uint32 uid, const std::string& newAssetsPath)
+void ModuleResourceManager::UpdateResourcePath(const uint32_t uid, const std::string& newAssetsPath)
 {
 	ResourceTable::ScopedLock lock(m_table);
 	auto& resources = lock.Map();
@@ -200,7 +201,7 @@ void ModuleResourceManager::UpdateResourcePath(const uint32 uid, const std::stri
 		it->second->SetAssetsPath(newAssetsPath);
 }
 
-ResourceBase* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
+ResourceBase* ModuleResourceManager::SpinWaitForSlot(const uint32_t uid)
 {
 	ResourceBase* resource = nullptr;
 	while (true)
@@ -223,7 +224,7 @@ ResourceBase* ModuleResourceManager::SpinWaitForSlot(const uint32 uid)
 	return resource;
 }
 
-ResourceBase* ModuleResourceManager::LoadResourceIntoSlot(const uint32 uid, ResourceType type,
+ResourceBase* ModuleResourceManager::LoadResourceIntoSlot(const uint32_t uid, ResourceType type,
     const std::string& name, const std::string& assetsPath, const std::string& libraryPath)
 {
 	ResourceBase* resource = InstantiateResource(*mTypeRegistry, type);
@@ -275,7 +276,7 @@ ResourceBase* ModuleResourceManager::CreateResource(const std::string& assetsPat
 	return SpinWaitForSlot(metaFileData.uid);
 }
 
-ResourceBase* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid, const ResourceType type,
+ResourceBase* ModuleResourceManager::CreateResourceFromLibrary(const uint32_t uid, const ResourceType type,
                                                             const std::string& name,
                                                             const std::string& assetsPath,
                                                             const std::string& libraryPath)
@@ -288,13 +289,13 @@ ResourceBase* ModuleResourceManager::CreateResourceFromLibrary(const uint32 uid,
 
 ResourceMesh* ModuleResourceManager::RequestOrCreateSubMeshResourceFromLibrary(
     const std::string& libraryPath, const int32_t submeshIndex,
-    const std::string& assetsPath, const uint32 hintUID)
+    const std::string& assetsPath, const uint32_t hintUID)
 {
 	return m_subMeshCache.RequestOrCreateFromLibrary(libraryPath, submeshIndex, assetsPath, hintUID);
 }
 
 
-bool ModuleResourceManager::UnloadResource(const uint32 uid)
+bool ModuleResourceManager::UnloadResource(const uint32_t uid)
 {
 	ResourceBase* resource = nullptr;
 	{
@@ -416,7 +417,7 @@ ResourceTexture*  ModuleResourceManager::GetBlackTexture()      const { return m
 ResourceTexture*  ModuleResourceManager::GetFlatNormalTexture() const { return m_builtinResources.GetFlatNormalTexture(); }
 ResourceMaterial* ModuleResourceManager::GetDefaultMaterial()   const { return m_builtinResources.GetDefaultMaterial();  }
 
-ResourceBase* ModuleResourceManager::GetLoadedResource(const uint32 uid)
+ResourceBase* ModuleResourceManager::GetLoadedResource(const uint32_t uid)
 {
     return m_table.TryGet(uid);
 }

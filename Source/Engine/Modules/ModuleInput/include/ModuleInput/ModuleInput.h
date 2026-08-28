@@ -2,13 +2,13 @@
 #define MODULEINPUT_H
 
 #include <ModuleBase/Module.h>
-#include <EngineCore/Globals.h>
 #include <EventSystem/IEventListener.h>
 #include <EngineCore/IInputReader.h>
 #include <Scripting/iScriptInput.h>
+#include <cstdint>
 
-constexpr int32 MAX_KEYBOARD_KEYS = 300;
-constexpr int32 MAX_MOUSE_BUTTONS = 5;
+constexpr int32_t MAX_KEYBOARD_KEYS = 300;
+constexpr int32_t MAX_MOUSE_BUTTONS = 5;
 
 // IScriptInput already derives IInputReader, so ModuleCamera3D's narrower
 // IInputReader* view of this module keeps working unchanged.
@@ -31,12 +31,12 @@ public:
 
 	NOUS_ENGINE_API void SetImGuiCaptureKeyboard(bool captured);
 
-	int32 GetMouseX() const override;
-	int32 GetMouseY() const override;
-	int32 GetMouseZ() const override;
+	int32_t GetMouseX() const override;
+	int32_t GetMouseY() const override;
+	int32_t GetMouseZ() const override;
 
-	int32 GetMouseXMotion() const override;
-	int32 GetMouseYMotion() const override;
+	int32_t GetMouseXMotion() const override;
+	int32_t GetMouseYMotion() const override;
 
 	// Relative mouse mode: hides the cursor and reports unbounded motion deltas
 	// (the OS no longer clamps the cursor to the screen). Use for FPS-style camera input.
@@ -63,13 +63,13 @@ private:
 
 	float mouseX;
 	float mouseY;
-	int32 mouseZ;
+	int32_t mouseZ;
 
-	int32 mouseXMotion;
-	int32 mouseYMotion;
+	int32_t mouseXMotion;
+	int32_t mouseYMotion;
 
-	int32 m_lastWindowWidth  = 0;
-	int32 m_lastWindowHeight = 0;
+	int32_t m_lastWindowWidth  = 0;
+	int32_t m_lastWindowHeight = 0;
 
 	bool m_imguiCaptureKeyboard = false;
 

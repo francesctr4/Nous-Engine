@@ -1,4 +1,5 @@
 #include <Core/Application.h>
+#include <EngineCore/AppConfig.h>
 #include <ModuleWindow/ModuleWindow.h>
 #include <ModuleInput/ModuleInput.h>
 #include <ModuleCamera3D/ModuleCamera3D.h>
@@ -336,7 +337,7 @@ static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::
                 static_cast<int>(rAudio->GetStreamingMode()),
                 rAudio->GetDurationSec(),
                 rAudio->GetSampleRate(),
-                static_cast<uint32>(rAudio->GetChannelCount()));
+                static_cast<uint32_t>(rAudio->GetChannelCount()));
             audio->PlayAudio(rAudio);
         }
 
@@ -356,7 +357,7 @@ static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::
                 static_cast<int>(rAudio->GetStreamingMode()),
                 rAudio->GetDurationSec(),
                 rAudio->GetSampleRate(),
-                static_cast<uint32>(rAudio->GetChannelCount()));
+                static_cast<uint32_t>(rAudio->GetChannelCount()));
             audio->PlayAudio(rAudio);
         }
     }
@@ -366,7 +367,7 @@ static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::
     {
         const auto map = resourceManager->GetResourcesMap();
         NOUS_INFO("[AudioDebug] Loaded audio resources:");
-        uint32 audioCount = 0;
+        uint32_t audioCount = 0;
         for (const auto& [uid, res] : map)
         {
             if (!res || res->GetType() != ResourceType::AUDIO) continue;
@@ -378,7 +379,7 @@ static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::
                 rAudio->GetLibraryPath().c_str(),
                 rAudio->GetDurationSec(),
                 rAudio->GetSampleRate(),
-                static_cast<uint32>(rAudio->GetChannelCount()),
+                static_cast<uint32_t>(rAudio->GetChannelCount()),
                 rAudio->GetReferenceCount(),
                 static_cast<int>(rAudio->GetState()));
             ++audioCount;

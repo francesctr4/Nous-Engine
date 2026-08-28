@@ -1,4 +1,5 @@
 #include "VulkanInstance.h"
+#include <EngineCore/AppConfig.h>
 #include "Utils/VulkanUtils.h"
 #include "Core/DebugMessenger/VulkanDebugMessenger.h"
 
@@ -46,7 +47,7 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
     // API version to it so we fail gracefully on a 1.0/1.1-only loader instead of relying
     // on driver quirks. vkEnumerateInstanceVersion is a 1.1 entry point: look it up via
     // vkGetInstanceProcAddr and fall back to 1.0 when it isn't exported.
-    uint32 loaderVersion = VK_API_VERSION_1_0;
+    uint32_t loaderVersion = VK_API_VERSION_1_0;
     auto fpEnumerateInstanceVersion = reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
         vkGetInstanceProcAddr(nullptr, "vkEnumerateInstanceVersion"));
     if (fpEnumerateInstanceVersion != nullptr)
@@ -54,8 +55,8 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
         VK_CHECK(fpEnumerateInstanceVersion(&loaderVersion));
     }
 
-    const uint32 requestedVersion = VK_API_VERSION_1_2;
-    const uint32 selectedVersion = (loaderVersion < requestedVersion) ? loaderVersion : requestedVersion;
+    const uint32_t requestedVersion = VK_API_VERSION_1_2;
+    const uint32_t selectedVersion = (loaderVersion < requestedVersion) ? loaderVersion : requestedVersion;
 
     NOUS_INFO("Vulkan API Version: using %u.%u.%u (loader supports up to %u.%u.%u)",
         VK_API_VERSION_MAJOR(selectedVersion), VK_API_VERSION_MINOR(selectedVersion), VK_API_VERSION_PATCH(selectedVersion),
@@ -97,7 +98,7 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
     {
         NOUS_VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
 
-        validationFeatures.enabledValidationFeatureCount = static_cast<uint32>(enabledValidationFeatures.size());
+        validationFeatures.enabledValidationFeatureCount = static_cast<uint32_t>(enabledValidationFeatures.size());
         validationFeatures.pEnabledValidationFeatures = enabledValidationFeatures.data();
         // Chain: createInfo -> validationFeatures -> debugCreateInfo (so creation-time messages
         // still reach the callback).
@@ -106,9 +107,9 @@ bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 
     createInfo.pNext = useValidation ? static_cast<const void*>(&validationFeatures) : nullptr;
     createInfo.pApplicationInfo = &appInfo;
-    createInfo.enabledExtensionCount = static_cast<uint32>(extensions.size());
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
-    createInfo.enabledLayerCount = useValidation ? static_cast<uint32>(validationLayers.size()) : 0;
+    createInfo.enabledLayerCount = useValidation ? static_cast<uint32_t>(validationLayers.size()) : 0;
     createInfo.ppEnabledLayerNames = useValidation ? validationLayers.data() : nullptr;
 
     VkResult result = vkCreateInstance(&createInfo, vkContext->allocator, &vkContext->instance);
@@ -145,7 +146,7 @@ bool NOUS_VulkanInstance::CheckValidationLayerSupport(const std::array<const cha
 {
     bool ret = true;
 
-    uint32 layerCount;
+    uint32_t layerCount;
     VK_CHECK(vkEnumerateInstanceLayerProperties(&layerCount, nullptr));
 
     std::vector<VkLayerProperties> availableLayers(layerCount);
@@ -186,7 +187,7 @@ bool NOUS_VulkanInstance::CheckValidationLayerSupport(const std::array<const cha
 
 void NOUS_VulkanInstance::ShowSupportedExtensions()
 {
-    uint32 extensionCount = 0;
+    uint32_t extensionCount = 0;
     VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr));
 
     std::vector<VkExtensionProperties> supportedExtensions(extensionCount);
@@ -204,7 +205,7 @@ void NOUS_VulkanInstance::ShowSupportedExtensions()
 
 std::vector<const char*> NOUS_VulkanInstance::GetRequiredExtensions()
 {
-    uint32 sdlExtensionCount = 0;  // Use unsigned int to match SDL3 API
+    uint32_t sdlExtensionCount = 0;  // Use unsigned int to match SDL3 API
 
     // Get the array of required instance extensions from SDL
     const char* const* sdlExtensions = SDL_Vulkan_GetInstanceExtensions(&sdlExtensionCount);
@@ -219,7 +220,7 @@ std::vector<const char*> NOUS_VulkanInstance::GetRequiredExtensions()
     extensions.reserve(sdlExtensionCount + (enableValidationLayers ? 1 : 0));  // Preallocate memory
 
     // Copy SDL extensions into our vector
-    for (uint32 i = 0; i < sdlExtensionCount; ++i)
+    for (uint32_t i = 0; i < sdlExtensionCount; ++i)
     {
         extensions.push_back(sdlExtensions[i]);
     }

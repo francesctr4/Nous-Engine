@@ -1,5 +1,5 @@
-#include <EngineCore/Globals.h>
 #include <Core/Application.h>
+#include <EngineCore/AppConfig.h>
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
 #include <NOUS_Multithreading/NOUS_Multithreading.h>

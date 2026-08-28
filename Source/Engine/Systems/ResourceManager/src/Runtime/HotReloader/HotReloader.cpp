@@ -116,7 +116,7 @@ void HotReloader::WaitForInFlight()
         std::this_thread::yield();
 }
 
-void HotReloader::TrackAsset(const std::string& assetsPath, uint32 uid, ResourceType type)
+void HotReloader::TrackAsset(const std::string& assetsPath, uint32_t uid, ResourceType type)
 {
     if (!m_enabled || assetsPath.empty()) return;
     // Hot-reload eligibility is owned by the TypeDescriptor — adding a new
@@ -212,7 +212,7 @@ void HotReloader::DispatchReimportJob(const std::string& normalizedPath)
 {
     NOUS_INFO_C(CURRENT_CHANNEL, "[AssetHotReload] DispatchReimportJob called for: %s", normalizedPath.c_str());
 
-    uint32       uid  = 0;
+    uint32_t       uid  = 0;
     ResourceType type = ResourceType::UNKNOWN;
     std::string  assetsPath;
     {

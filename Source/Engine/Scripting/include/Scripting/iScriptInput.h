@@ -1,7 +1,7 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 #include <EngineCore/IInputReader.h>
+#include <cstdint>
 
 // -----------------------------------------------------------------------------
 // Input, as seen from inside Scripting/.
@@ -30,8 +30,8 @@ public:
 
     // ─────────────────────────────── Mouse position ──────────────────────────
     // Absolute window coordinates, as opposed to IInputReader's per-frame deltas.
-    [[nodiscard]] virtual int32 GetMouseX() const = 0;
-    [[nodiscard]] virtual int32 GetMouseY() const = 0;
+    [[nodiscard]] virtual int32_t GetMouseX() const = 0;
+    [[nodiscard]] virtual int32_t GetMouseY() const = 0;
 
     // ─────────────────────────────── Mouse capture ───────────────────────────
     // Relative mouse mode, for first-person camera scripts.

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 #include <VideoSystem/VideoFrame.h>
 #include <VideoSystem/VideoHandle.h>
+#include <cstdint>
 
 class ResourceVideo;
 
@@ -32,7 +32,7 @@ public:
     // no new frame is available; out.pixels valid until the next call on this handle.
     virtual bool        TryGetFrame(VideoHandle handle, double playheadSec, VideoFrame& out) = 0;
 
-    virtual void        GetDimensions(VideoHandle handle, uint32& width, uint32& height) const = 0;
+    virtual void        GetDimensions(VideoHandle handle, uint32_t& width, uint32_t& height) const = 0;
     virtual float       GetFrameRate(VideoHandle handle) const = 0;
     virtual float       GetDuration(VideoHandle handle) const = 0;
     virtual bool        IsFinished(VideoHandle handle) const = 0;

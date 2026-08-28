@@ -96,7 +96,7 @@ ShaderLoadResult nous::engine::shader_system::LoadShaderFromFile(
     }
 
     char*  buffer    = nullptr;
-    uint64 bytesRead = 0;
+    uint64_t bytesRead = 0;
 
     if (!file.ReadAllBytes(&buffer, &bytesRead))
     {

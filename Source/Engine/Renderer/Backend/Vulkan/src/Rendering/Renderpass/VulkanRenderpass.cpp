@@ -11,7 +11,7 @@ bool NOUS_VulkanRenderpass::CreateRenderpass(
     VulkanContext* vkContext,
     VulkanRenderpass* outRenderpass,
     glm::vec4 renderArea, glm::vec4 clearColor,
-    float depth, uint32 stencil, uint8 clearFlags,
+    float depth, uint32_t stencil, uint8_t clearFlags,
     bool prevPass, bool nextPass,
     bool offscreen,
     VkFormat colorFormatOverride)
@@ -142,10 +142,10 @@ void NOUS_VulkanRenderpass::BeginRenderpass(VulkanCommandBuffer* commandBuffer, 
     renderPassInfo.renderPass  = renderpass->handle;
     renderPassInfo.framebuffer = frameBuffer;
 
-    renderPassInfo.renderArea.offset = { static_cast<int32>(renderpass->renderArea.x),
-                                         static_cast<int32>(renderpass->renderArea.y) };
-    renderPassInfo.renderArea.extent = { static_cast<uint32>(renderpass->renderArea.z),
-                                         static_cast<uint32>(renderpass->renderArea.w) };
+    renderPassInfo.renderArea.offset = { static_cast<int32_t>(renderpass->renderArea.x),
+                                         static_cast<int32_t>(renderpass->renderArea.y) };
+    renderPassInfo.renderArea.extent = { static_cast<uint32_t>(renderpass->renderArea.z),
+                                         static_cast<uint32_t>(renderpass->renderArea.w) };
 
     std::array<VkClearValue, 2> clearValues{};
     renderPassInfo.clearValueCount = 0;

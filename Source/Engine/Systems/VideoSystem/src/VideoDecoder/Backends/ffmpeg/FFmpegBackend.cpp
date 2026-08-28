@@ -22,7 +22,7 @@ constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_VIDEOSYSTE
 
 namespace
 {
-    constexpr uint32 k_streamQueueCapacity = 4;
+    constexpr uint32_t k_streamQueueCapacity = 4;
 
     struct FFmpegVideo
     {
@@ -33,8 +33,8 @@ namespace
         AVRational       streamTimeBase{ 0, 1 };
 
         VideoDecodeMode  mode      = VideoDecodeMode::STREAMED;
-        uint32           width     = 0;
-        uint32           height    = 0;
+        uint32_t           width     = 0;
+        uint32_t           height    = 0;
         float            frameRate = 0.0f;
         float            duration  = 0.0f;
 
@@ -110,8 +110,8 @@ namespace
         if (avcodec_open2(v->codec, dec, nullptr) < 0)
         { NOUS_WARN_C(CURRENT_CHANNEL, "codec open failed for '%s'", path.c_str()); return false; }
 
-        v->width  = static_cast<uint32>(v->codec->width);
-        v->height = static_cast<uint32>(v->codec->height);
+        v->width  = static_cast<uint32_t>(v->codec->width);
+        v->height = static_cast<uint32_t>(v->codec->height);
 
         const AVRational fr = stream->avg_frame_rate;
         v->frameRate = (fr.num != 0 && fr.den != 0) ? static_cast<float>(fr.num) / static_cast<float>(fr.den) : 0.0f;
@@ -303,7 +303,7 @@ bool FFmpegBackend::TryGetFrame(VideoHandle handle, double playheadSec, VideoFra
 
     // PREDECODED: index the immutable array; point directly at it (valid for handle life).
     const int idx = SelectNewestFrameIndex(v->framePts.data(),
-                                           static_cast<uint32>(v->framePts.size()), playheadSec);
+                                           static_cast<uint32_t>(v->framePts.size()), playheadSec);
     if (idx < 0) return false;
     const double pts = v->framePts[static_cast<size_t>(idx)];
     if (pts == v->lastDeliveredPts) return false;
@@ -316,7 +316,7 @@ bool FFmpegBackend::TryGetFrame(VideoHandle handle, double playheadSec, VideoFra
     return true;
 }
 
-void FFmpegBackend::GetDimensions(VideoHandle handle, uint32& width, uint32& height) const
+void FFmpegBackend::GetDimensions(VideoHandle handle, uint32_t& width, uint32_t& height) const
 {
     if (!handle) { width = 0; height = 0; return; }
     const FFmpegVideo* v = AsVideo(handle);

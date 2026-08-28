@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
+#include <EngineCore/InvalidID.h>
 
 #include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
-#include <EngineCore/Globals.h>
 
 // =====================================================
 // Tests — ResourceMaterial

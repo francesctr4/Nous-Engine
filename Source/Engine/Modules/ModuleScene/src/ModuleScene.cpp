@@ -1,4 +1,5 @@
 #include <ModuleScene/ModuleScene.h>
+#include <EngineCore/Casts.h>
 #include <vector>
 #include <FileSystem/FileSystem.h>
 #include <ModuleInput/ModuleInput.h>

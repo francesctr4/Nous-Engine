@@ -21,7 +21,7 @@ VideoDecodeMode VideoDecodeModeFromFileType(const VideoFileType fileType)
     }
 }
 
-ResourceVideo::ResourceVideo(const uint32 uid) : ResourceBase(uid, ResourceType::VIDEO)
+ResourceVideo::ResourceVideo(const uint32_t uid) : ResourceBase(uid, ResourceType::VIDEO)
 {
     fileType      = VideoFileType::UNKNOWN;
     decodeMode    = VideoDecodeMode::STREAMED;
@@ -36,8 +36,8 @@ ResourceVideo::~ResourceVideo() = default;
 
 void ResourceVideo::SetFileType(const VideoFileType _fileType)        { fileType = _fileType; }
 void ResourceVideo::SetDecodeMode(const VideoDecodeMode _decodeMode)  { decodeMode = _decodeMode; }
-void ResourceVideo::SetWidth(const uint32 _width)                     { width = _width; }
-void ResourceVideo::SetHeight(const uint32 _height)                   { height = _height; }
+void ResourceVideo::SetWidth(const uint32_t _width)                     { width = _width; }
+void ResourceVideo::SetHeight(const uint32_t _height)                   { height = _height; }
 void ResourceVideo::SetDurationSec(const float _durationSec)          { durationSec = _durationSec; }
 void ResourceVideo::SetFrameRate(const float _frameRate)              { frameRate = _frameRate; }
 void ResourceVideo::SetCodecName(const std::string_view _codecName)   { codecName = _codecName; }
@@ -45,8 +45,8 @@ void ResourceVideo::SetHasAudioTrack(const bool _hasAudioTrack)       { hasAudio
 
 VideoFileType   ResourceVideo::GetFileType() const      { return fileType; }
 VideoDecodeMode ResourceVideo::GetDecodeMode() const    { return decodeMode; }
-uint32          ResourceVideo::GetWidth() const         { return width; }
-uint32          ResourceVideo::GetHeight() const        { return height; }
+uint32_t          ResourceVideo::GetWidth() const         { return width; }
+uint32_t          ResourceVideo::GetHeight() const        { return height; }
 float           ResourceVideo::GetDurationSec() const   { return durationSec; }
 float           ResourceVideo::GetFrameRate() const     { return frameRate; }
 std::string     ResourceVideo::GetCodecName() const     { return codecName; }

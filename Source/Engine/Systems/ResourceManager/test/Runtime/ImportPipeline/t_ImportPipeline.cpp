@@ -5,7 +5,6 @@
 #include <ResourceManager/Core/MetaFileData.h>
 #include <ResourceManager/Core/TypeRegistry.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 
 #include <chrono>
 #include <filesystem>
@@ -32,7 +31,7 @@ public:
 class t_ImportPipeline : public ::testing::Test
 {
 protected:
-    static constexpr uint64 kMemoryPoolSize = MiB(32);
+    static constexpr uint64_t kMemoryPoolSize = MiB(32);
 
     MockImporterManager     mockImporter;
     ImportPipeline* pipeline   = nullptr;

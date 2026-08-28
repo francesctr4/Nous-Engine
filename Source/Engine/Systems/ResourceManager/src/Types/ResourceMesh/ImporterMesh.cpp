@@ -1,4 +1,6 @@
 #include <ResourceManager/Types/ResourceMesh/ImporterMesh.h>
+#include <EngineCore/InvalidID.h>
+#include <EngineCore/Casts.h>
 #include <FileSystem/FileHandle.h>
 
 #include <map>
@@ -31,10 +33,10 @@
 #include <unordered_map>
 
 // ─── Binary format ────────────────────────────────────────────────────────────
-// V1 (legacy): uint64 vertexCount | Vertex3D[] | uint64 indexCount | uint32[]
-// V2 (legacy): uint32 magic | uint32 submeshCount | N×(nameLen:u64, name:chars,
+// V1 (legacy): uint64_t vertexCount | Vertex3D[] | uint64_t indexCount | uint32_t[]
+// V2 (legacy): uint32_t magic | uint32_t submeshCount | N×(nameLen:u64, name:chars,
 //              localTransform:16×float, vertexCount:u64, Vertex3D[],
-//              indexCount:u64, uint32[])
+//              indexCount:u64, uint32_t[])
 // V3 (current): same as V2 plus a per-submesh material reference inserted between
 //               localTransform and vertexCount:
 //               ... localTransform:16×float, matPathLen:u64, matPath:chars,
@@ -640,7 +642,7 @@ bool ImporterMesh::Deserialize(const std::string& libraryPath, ResourceBase* out
         const size_t prevI = mesh->indices.size();
         mesh->indices.resize(prevI + sub.indices.size());
         for (size_t i = 0; i < sub.indices.size(); ++i)
-            mesh->indices[prevI + i] = sub.indices[i] + static_cast<uint32>(prevV);
+            mesh->indices[prevI + i] = sub.indices[i] + static_cast<uint32_t>(prevV);
     }
 
     // Compute local AABB once from the merged vertex set.

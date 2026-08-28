@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <EngineCore/Casts.h>
 
 // Forward declarations
 class ResourceMaterial;

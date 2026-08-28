@@ -1,6 +1,5 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 #include <cstdint>
 
 // A single decoded video frame handed across the decode seam. The `pixels` buffer is
@@ -11,7 +10,7 @@
 struct VideoFrame
 {
     const uint8_t* pixels = nullptr;   // tightly-packed RGBA8 (MVP)
-    uint32         width  = 0;
-    uint32         height = 0;
+    uint32_t         width  = 0;
+    uint32_t         height = 0;
     double         ptsSec = 0.0;
 };

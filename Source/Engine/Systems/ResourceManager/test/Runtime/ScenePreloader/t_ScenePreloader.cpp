@@ -7,7 +7,6 @@
 #include <EventSystem/EventSystem.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Core/MetaFileData.h>
 
@@ -85,7 +84,7 @@ static void WriteSceneFile(const std::filesystem::path& path,
 class t_ScenePreloader : public ::testing::Test
 {
 protected:
-    static constexpr uint64 kMemoryPoolSize = MiB(64);
+    static constexpr uint64_t kMemoryPoolSize = MiB(64);
 
     EventSystem*                         eventSystem = nullptr;
     nous::engine::multithreading::NOUS_JobSystem* jobSystem   = nullptr;

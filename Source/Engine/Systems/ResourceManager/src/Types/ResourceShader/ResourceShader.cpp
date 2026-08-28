@@ -1,6 +1,7 @@
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
+#include <EngineCore/InvalidID.h>
 
-ResourceShader::ResourceShader(uint32 uid) : ResourceBase(uid, ResourceType::SHADER)
+ResourceShader::ResourceShader(uint32_t uid) : ResourceBase(uid, ResourceType::SHADER)
 {
     generation = INVALID_ID;
 }

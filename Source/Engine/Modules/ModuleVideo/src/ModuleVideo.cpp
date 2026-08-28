@@ -74,7 +74,7 @@ bool ModuleVideo::TryGetFrame(VideoHandle handle, double playheadSec, VideoFrame
     return m_backend && m_backend->TryGetFrame(handle, playheadSec, out);
 }
 
-void ModuleVideo::GetDimensions(VideoHandle handle, uint32& width, uint32& height) const
+void ModuleVideo::GetDimensions(VideoHandle handle, uint32_t& width, uint32_t& height) const
 {
     if (m_backend) m_backend->GetDimensions(handle, width, height);
     else { width = 0; height = 0; }

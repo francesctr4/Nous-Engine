@@ -1,14 +1,14 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 #include "ResourceBase.h"
+#include <cstdint>
 
 struct MetaFileData
 {
     MetaFileData() : uid(0), resourceType(ResourceType::UNKNOWN) {}
     
 	std::string name;
-    uint32 uid;
+    uint32_t uid;
     ResourceType resourceType;
     std::string assetsPath;
     std::string libraryPath;

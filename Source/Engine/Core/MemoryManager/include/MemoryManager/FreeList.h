@@ -1,7 +1,7 @@
+#include <EngineCore/InvalidID.h>
 #ifndef FREELIST_H
 #define FREELIST_H
 
-#include <EngineCore/Globals.h>
 class Freelist
 {
 public:
@@ -15,33 +15,33 @@ public:
 #pragma pack(push, 1)
     struct Node 
     {
-        uint64 offset;
-        uint64 size;
+        uint64_t offset;
+        uint64_t size;
         Node* next;
 
         Node() : offset(INVALID_ID), size(INVALID_ID), next(nullptr) {}
     };
 #pragma pack(pop)
 
-    static uint64 GetMemoryRequirement(uint64 totalSize);
+    static uint64_t GetMemoryRequirement(uint64_t totalSize);
 
-    Freelist(uint64 totalSize, void* memory);
+    Freelist(uint64_t totalSize, void* memory);
     ~Freelist();
 
-    bool Allocate(uint64 size, uint64* outOffset);
-    bool Free(uint64 size, uint64 offset);
+    bool Allocate(uint64_t size, uint64_t* outOffset);
+    bool Free(uint64_t size, uint64_t offset);
 
-    bool Resize(uint64 newSize, uint64* memoryRequirement, void* newMemory, void** outOldMemory);
+    bool Resize(uint64_t newSize, uint64_t* memoryRequirement, void* newMemory, void** outOldMemory);
     void Clear();
 
-    uint64 FreeSpace() const;
+    uint64_t FreeSpace() const;
 
 private:
 
     struct InternalState 
     {
-        uint64 totalSize;
-        uint64 maxEntries;
+        uint64_t totalSize;
+        uint64_t maxEntries;
         Node* head;
         Node* nodes;
 

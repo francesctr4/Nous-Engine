@@ -5,11 +5,11 @@
 // EventContext Helper Implementations
 // ============================================================
 
-// -------- [int32] --------
+// -------- [int32_t] --------
 EventContext SendContext(const int32_t a)
 {
     EventContext ctx; ctx.i32[0] = a;
-    NOUS_TRACE("Created int32 context: %d", a);
+    NOUS_TRACE("Created int32_t context: %d", a);
     return ctx;
 }
 
@@ -35,11 +35,11 @@ EventContext SendContext(const int32_t a, const int32_t b, const int32_t c, cons
     return ctx;
 }
 
-// -------- [uint32] --------
+// -------- [uint32_t] --------
 EventContext SendContext(const uint32_t a)
 {
     EventContext ctx; ctx.u32[0] = a;
-    NOUS_TRACE("Created uint32 context: %u", a);
+    NOUS_TRACE("Created uint32_t context: %u", a);
     return ctx;
 }
 
@@ -110,7 +110,7 @@ EventContext SendContext(const char* str)
     return ctx;
 }
 
-// -------- [int64] --------
+// -------- [int64_t] --------
 EventContext SendContext(const int64_t a, const int64_t b)
 {
     EventContext ctx;

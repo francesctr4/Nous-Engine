@@ -1,20 +1,21 @@
 #include <MemoryManager/FreeList.h>
+#include <EngineCore/InvalidID.h>
 #include <MemoryManager/MemoryManager.h>
 
 #include <Logger/Logger.h>
 
-uint64 Freelist::GetMemoryRequirement(uint64 totalSize)
+uint64_t Freelist::GetMemoryRequirement(uint64_t totalSize)
 {
     // Guarantee at least 1 node so the constructor can safely initialize
     // the head node.  Without this, a tiny totalSize (e.g. 4) truncates
     // maxEntries to 0 and the constructor writes a node out-of-bounds.
-    const uint64 maxEntries = (totalSize < sizeof(void*) * sizeof(Node))
+    const uint64_t maxEntries = (totalSize < sizeof(void*) * sizeof(Node))
                             ? 1
                             : totalSize / (sizeof(void*) * sizeof(Node));
     return sizeof(InternalState) + (sizeof(Node) * maxEntries);
 }
 
-Freelist::Freelist(uint64 totalSize, void* memory)
+Freelist::Freelist(uint64_t totalSize, void* memory)
 {
     if (!memory)
     {
@@ -50,7 +51,7 @@ Freelist::Freelist(uint64 totalSize, void* memory)
     state_->head->next = nullptr;
 
     // Initialize remaining nodes
-    for (uint64 i = 1; i < state_->maxEntries; ++i)
+    for (uint64_t i = 1; i < state_->maxEntries; ++i)
     {
         state_->nodes[i] = Node();
     }
@@ -60,7 +61,7 @@ Freelist::~Freelist()
 {
     if (state_)
     {
-        const uint64 free = FreeSpace();
+        const uint64_t free = FreeSpace();
         if (free < state_->totalSize)
         {
             NOUS_WARN("Freelist::~Freelist() — %llu bytes still allocated at destruction (totalSize=%llu). "
@@ -70,7 +71,7 @@ Freelist::~Freelist()
     }
 }
 
-bool Freelist::Allocate(uint64 size, uint64* outOffset)
+bool Freelist::Allocate(uint64_t size, uint64_t* outOffset)
 {
     if (!outOffset || !state_) return false;
 
@@ -128,7 +129,7 @@ bool Freelist::Allocate(uint64 size, uint64* outOffset)
     return false;
 }
 
-bool Freelist::Free(uint64 size, uint64 offset)
+bool Freelist::Free(uint64_t size, uint64_t offset)
 {
     if (!state_ || size == 0) return false;
 
@@ -147,8 +148,8 @@ bool Freelist::Free(uint64 size, uint64 offset)
         Node* check = state_->head;
         while (check)
         {
-            const uint64 freeEnd  = check->offset + check->size;
-            const uint64 blockEnd = offset + size;
+            const uint64_t freeEnd  = check->offset + check->size;
+            const uint64_t blockEnd = offset + size;
             if (offset < freeEnd && blockEnd > check->offset)
             {
                 NOUS_ERROR("Freelist::Free() double-free detected: "
@@ -255,7 +256,7 @@ void Freelist::Clear()
     // Reset ALL nodes to INVALID before resetting the head.
     // Skipping this leaves dangling `next` pointers when multiple
     // nodes were live, producing a corrupt list after Clear().
-    for (uint64 i = 0; i < state_->maxEntries; ++i)
+    for (uint64_t i = 0; i < state_->maxEntries; ++i)
     {
         state_->nodes[i] = Node(); // sets offset/size = INVALID_ID, next = nullptr
     }
@@ -267,11 +268,11 @@ void Freelist::Clear()
     state_->head->next = nullptr;
 }
 
-uint64 Freelist::FreeSpace() const
+uint64_t Freelist::FreeSpace() const
 {
     if (!state_) return 0;
 
-    uint64 total = 0;
+    uint64_t total = 0;
     Node* current = state_->head;
 
     while (current) 
@@ -283,7 +284,7 @@ uint64 Freelist::FreeSpace() const
     return total;
 }
 
-bool Freelist::Resize(uint64 newSize, uint64* memoryRequirement, void* newMemory, void** outOldMemory) 
+bool Freelist::Resize(uint64_t newSize, uint64_t* memoryRequirement, void* newMemory, void** outOldMemory) 
 {
     if (!memoryRequirement || state_->totalSize > newSize) 
     {
@@ -375,7 +376,7 @@ Freelist::Node* Freelist::GetNode()
     // Search from index 0 (not 1) so that nodes[0] can be reclaimed after
     // being returned via ReturnNode.  Starting at 1 permanently lost any
     // slot that was returned while it was the head node.
-    for (uint64 i = 0; i < state_->maxEntries; ++i)
+    for (uint64_t i = 0; i < state_->maxEntries; ++i)
     {
         if (state_->nodes[i].offset == INVALID_ID)
         {

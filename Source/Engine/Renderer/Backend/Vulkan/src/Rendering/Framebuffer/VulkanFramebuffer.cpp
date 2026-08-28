@@ -8,14 +8,14 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 	// Derive the count from the actual swapchain image views (runtime count), not from
 	// the framebuffer container — the latter is empty on first creation and would skip
 	// the loop. Resize the per-image framebuffer vectors to match before filling them.
-	uint32 imageCount = static_cast<uint32>(vkContext->swapChain.swapChainImageViews.size());
+	uint32_t imageCount = static_cast<uint32_t>(vkContext->swapChain.swapChainImageViews.size());
 
 	if (vkContext->renderMode == RenderMode::GAME)
 	{
 		vkContext->gameSwapchainFramebuffers.resize(imageCount);
 
 		// GAME mode: create framebuffers that target swapchain image views directly.
-		for (uint32 i = 0; i < imageCount; ++i)
+		for (uint32_t i = 0; i < imageCount; ++i)
 		{
 			std::array<VkImageView, 2> attachments = {
 				vkContext->swapChain.swapChainImageViews[i],
@@ -25,7 +25,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 			VkFramebufferCreateInfo fbInfo{};
 			fbInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			fbInfo.renderPass      = vkContext->gameSwapchainRenderpass.handle;
-			fbInfo.attachmentCount = static_cast<uint32>(attachments.size());
+			fbInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 			fbInfo.pAttachments    = attachments.data();
 			fbInfo.width           = vkContext->framebufferWidth;
 			fbInfo.height          = vkContext->framebufferHeight;
@@ -41,7 +41,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 	vkContext->imGuiResources.m_GameViewportFramebuffers.resize(imageCount);
 	vkContext->swapChain.swapChainFramebuffers.resize(imageCount);
 
-	for (uint16 i = 0; i < imageCount; ++i)
+	for (uint16_t i = 0; i < imageCount; ++i)
 	{
 		// Scene Viewport Attachments
 
@@ -50,7 +50,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 		VkFramebufferCreateInfo sceneFramebufferCreateInfo{};
 		sceneFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		sceneFramebufferCreateInfo.renderPass = vkContext->sceneRenderpass.handle;
-		sceneFramebufferCreateInfo.attachmentCount = static_cast<uint32>(sceneAttachments.size());
+		sceneFramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(sceneAttachments.size());
 		sceneFramebufferCreateInfo.pAttachments = sceneAttachments.data();
 		sceneFramebufferCreateInfo.width = vkContext->framebufferWidth;
 		sceneFramebufferCreateInfo.height = vkContext->framebufferHeight;
@@ -66,7 +66,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 		VkFramebufferCreateInfo gameFramebufferCreateInfo{};
 		gameFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		gameFramebufferCreateInfo.renderPass = vkContext->gameRenderpass.handle;
-		gameFramebufferCreateInfo.attachmentCount = static_cast<uint32>(gameAttachments.size());
+		gameFramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(gameAttachments.size());
 		gameFramebufferCreateInfo.pAttachments = gameAttachments.data();
 		gameFramebufferCreateInfo.width = vkContext->framebufferWidth;
 		gameFramebufferCreateInfo.height = vkContext->framebufferHeight;
@@ -82,7 +82,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 		VkFramebufferCreateInfo uiFramebufferCreateInfo{};
 		uiFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		uiFramebufferCreateInfo.renderPass = vkContext->uiRenderpass.handle;
-		uiFramebufferCreateInfo.attachmentCount = static_cast<uint32>(uiAttachments.size());
+		uiFramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(uiAttachments.size());
 		uiFramebufferCreateInfo.pAttachments = uiAttachments.data();
 		uiFramebufferCreateInfo.width = vkContext->framebufferWidth;
 		uiFramebufferCreateInfo.height = vkContext->framebufferHeight;
@@ -99,7 +99,7 @@ bool NOUS_VulkanFramebuffer::CreateFramebuffers(VulkanContext* vkContext)
 	VkFramebufferCreateInfo pickFramebufferCreateInfo{};
 	pickFramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	pickFramebufferCreateInfo.renderPass = vkContext->pickRenderpass.handle;
-	pickFramebufferCreateInfo.attachmentCount = static_cast<uint32>(pickAttachments.size());
+	pickFramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(pickAttachments.size());
 	pickFramebufferCreateInfo.pAttachments = pickAttachments.data();
 	pickFramebufferCreateInfo.width = vkContext->framebufferWidth;
 	pickFramebufferCreateInfo.height = vkContext->framebufferHeight;
@@ -117,7 +117,7 @@ void NOUS_VulkanFramebuffer::DestroyFramebuffers(VulkanContext* vkContext)
 
     if (vkContext->renderMode == RenderMode::GAME)
     {
-        for (uint32 i = 0; i < vkContext->gameSwapchainFramebuffers.size(); ++i)
+        for (uint32_t i = 0; i < vkContext->gameSwapchainFramebuffers.size(); ++i)
         {
             if (vkContext->gameSwapchainFramebuffers[i])
             {
@@ -134,7 +134,7 @@ void NOUS_VulkanFramebuffer::DestroyFramebuffers(VulkanContext* vkContext)
 		vkContext->imGuiResources.m_PickFramebuffer = VK_NULL_HANDLE;
     }
 
-    for (uint16 i = 0; i < vkContext->swapChain.swapChainFramebuffers.size(); ++i)
+    for (uint16_t i = 0; i < vkContext->swapChain.swapChainFramebuffers.size(); ++i)
     {
 		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_ViewportFramebuffers[i], vkContext->allocator);
 		vkDestroyFramebuffer(vkContext->device.logicalDevice, vkContext->imGuiResources.m_GameViewportFramebuffers[i], vkContext->allocator);

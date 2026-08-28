@@ -48,7 +48,7 @@ namespace
         d.sourceExtensions = std::move(exts);
         d.cleanupPriority  = cleanupPriority;
         d.SetImporter<TestResourceImporter>();
-        d.createFn  = [](uint32) -> ResourceBase* { return nullptr; };
+        d.createFn  = [](uint32_t) -> ResourceBase* { return nullptr; };
         d.destroyFn = [](ResourceBase*) {};
         return d;
     }

@@ -1,7 +1,6 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <EngineCore/Globals.h>
 #include <EngineCore/EngineExport.h>
 #include <Logger/LogChannel.h>
 

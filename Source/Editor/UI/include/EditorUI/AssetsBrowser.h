@@ -2,7 +2,6 @@
 
 #include <EditorUI/IEditorWindow.h>
 #include <Utils/Math/MathUtils.h>
-#include <EngineCore/Globals.h>
 
 #include <atomic>
 #include <string>
@@ -13,6 +12,7 @@
 #include <mutex>
 
 #include "imgui.h"
+#include <cstdint>
 
 // Extends ImGuiSelectionBasicStorage with deletion helpers for multi-select.
 struct MultiSelectStorage : ImGuiSelectionBasicStorage

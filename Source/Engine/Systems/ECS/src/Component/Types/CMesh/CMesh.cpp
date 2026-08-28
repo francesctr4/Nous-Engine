@@ -1,4 +1,5 @@
 #include <ECS/Component/Types/CMesh/CMesh.h>
+#include <EngineCore/Casts.h>
 #include <ECS/ComponentServices.h>
 #include <ECS/GameObject.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
@@ -38,7 +39,7 @@ void CMesh::Deserialize(const JsonObject& obj) {
         mesh = nullptr;
         return;
     }
-    const uint32 resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
+    const uint32_t resourceUID = static_cast<uint32_t>(obj.GetDouble("resourceUID", 0.0));
 
     // Null in a headless / test scene. Guarded once here rather than per call site.
     IResourceLoader* rm = Services().resources;

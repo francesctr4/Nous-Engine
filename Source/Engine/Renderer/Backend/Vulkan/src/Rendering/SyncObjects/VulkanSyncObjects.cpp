@@ -5,7 +5,7 @@ bool NOUS_VulkanSyncObjects::CreateSyncObjects(VulkanContext* vkContext)
 {
     bool ret = true;
 
-    const uint32 imageCount = static_cast<uint32>(vkContext->swapChain.swapChainImages.size());
+    const uint32_t imageCount = static_cast<uint32_t>(vkContext->swapChain.swapChainImages.size());
 
     VkSemaphoreCreateInfo semaphoreCreateInfo{};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -16,7 +16,7 @@ bool NOUS_VulkanSyncObjects::CreateSyncObjects(VulkanContext* vkContext)
     vkContext->imageAvailableSemaphores.resize(vkContext->swapChain.maxFramesInFlight);
     vkContext->inFlightFences.resize(vkContext->swapChain.maxFramesInFlight);
 
-    for (uint16 i = 0; i < vkContext->swapChain.maxFramesInFlight; ++i)
+    for (uint16_t i = 0; i < vkContext->swapChain.maxFramesInFlight; ++i)
     {
         VK_CHECK(vkCreateSemaphore(vkContext->device.logicalDevice, &semaphoreCreateInfo, vkContext->allocator, &vkContext->imageAvailableSemaphores[i]));
 
@@ -36,7 +36,7 @@ bool NOUS_VulkanSyncObjects::CreateSyncObjects(VulkanContext* vkContext)
     // still be pending — the image-in-flight fence provides the reuse ordering.
     vkContext->queueCompleteSemaphores.resize(imageCount);
 
-    for (uint32 i = 0; i < imageCount; ++i)
+    for (uint32_t i = 0; i < imageCount; ++i)
     {
         VK_CHECK(vkCreateSemaphore(vkContext->device.logicalDevice, &semaphoreCreateInfo, vkContext->allocator, &vkContext->queueCompleteSemaphores[i]));
     }
@@ -54,7 +54,7 @@ void NOUS_VulkanSyncObjects::DestroySyncObjects(VulkanContext* vkContext)
     NOUS_DEBUG("Destroying Sync Objects...");
 
     // Per-frame-in-flight: image-available semaphores + in-flight fences.
-    for (uint16 i = 0; i < vkContext->swapChain.maxFramesInFlight; ++i)
+    for (uint16_t i = 0; i < vkContext->swapChain.maxFramesInFlight; ++i)
     {
         if (vkContext->imageAvailableSemaphores[i])
         {

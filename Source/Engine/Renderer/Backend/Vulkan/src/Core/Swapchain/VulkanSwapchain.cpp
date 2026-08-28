@@ -8,7 +8,7 @@
 #include <Renderer/iRenderWindow.h>
 #include <algorithm>  // Required for std::clamp
 
-bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain)
+bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32_t width, uint32_t height, VulkanSwapChain* swapChain)
 {
     bool ret = true;
 
@@ -43,7 +43,7 @@ bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 widt
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    uint32 queueFamilyIndices[] = { static_cast<uint32>(vkContext->device.graphicsQueueIndex), static_cast<uint32>(vkContext->device.presentQueueIndex) };
+    uint32_t queueFamilyIndices[] = { static_cast<uint32_t>(vkContext->device.graphicsQueueIndex), static_cast<uint32_t>(vkContext->device.presentQueueIndex) };
 
     if (vkContext->device.graphicsQueueIndex != vkContext->device.presentQueueIndex) 
     {
@@ -95,8 +95,8 @@ bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 widt
     // clamps it by a few px). Make framebufferWidth/Height authoritative = the real swapchain
     // extent so framebuffers and offscreen images are sized to match the swapchain images
     // exactly — otherwise vkCreateFramebuffer fails VUID-VkFramebufferCreateInfo-flags-04534.
-    vkContext->framebufferWidth  = static_cast<int32>(extent.width);
-    vkContext->framebufferHeight = static_cast<int32>(extent.height);
+    vkContext->framebufferWidth  = static_cast<int32_t>(extent.width);
+    vkContext->framebufferHeight = static_cast<int32_t>(extent.height);
 
     swapChain->swapChainImageViews.resize(swapChain->swapChainImages.size());
 
@@ -120,7 +120,7 @@ bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32 widt
     return ret;
 }
 
-void NOUS_VulkanSwapChain::RecreateSwapChain(VulkanContext* vkContext, uint32 width, uint32 height, VulkanSwapChain* swapChain)
+void NOUS_VulkanSwapChain::RecreateSwapChain(VulkanContext* vkContext, uint32_t width, uint32_t height, VulkanSwapChain* swapChain)
 {
     DestroySwapChain(vkContext, swapChain);
     CreateSwapChain(vkContext, width, height, swapChain);
@@ -142,8 +142,8 @@ void NOUS_VulkanSwapChain::DestroySwapChain(VulkanContext* vkContext, VulkanSwap
     vkDestroySwapchainKHR(vkContext->device.logicalDevice, swapChain->handle, vkContext->allocator);
 }
 
-VkResult NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(VulkanContext* vkContext, VulkanSwapChain* swapchain, uint64 timeout_ns,
-    VkSemaphore imageAvailableSemaphore, VkFence fence, uint32* outImageIndex)
+VkResult NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(VulkanContext* vkContext, VulkanSwapChain* swapchain, uint64_t timeout_ns,
+    VkSemaphore imageAvailableSemaphore, VkFence fence, uint32_t* outImageIndex)
 {
     VkResult result = vkAcquireNextImageKHR(vkContext->device.logicalDevice, swapchain->handle, timeout_ns,
         imageAvailableSemaphore, fence, outImageIndex);
@@ -160,7 +160,7 @@ VkResult NOUS_VulkanSwapChain::SwapChainAcquireNextImageIndex(VulkanContext* vkC
 }
 
 VkResult NOUS_VulkanSwapChain::SwapChainPresent(VulkanContext* vkContext, VulkanSwapChain* swapchain, VkQueue graphicsQueue,
-    VkQueue presentQueue, VkSemaphore renderCompleteSemaphore, uint32 presentImageIndex)
+    VkQueue presentQueue, VkSemaphore renderCompleteSemaphore, uint32_t presentImageIndex)
 {
     // Return the image to the swapchain for presentation.
     VkPresentInfoKHR presentInfo{};
@@ -229,10 +229,10 @@ VkExtent2D NOUS_VulkanSwapChain::ChooseSwapExtent(VulkanContext* vkContext, cons
     }
     else
     {
-        int32 width, height;
+        int32_t width, height;
         vkContext->window->GetFramebufferSize(&width, &height);
 
-        VkExtent2D actualExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
+        VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
         actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
         actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);

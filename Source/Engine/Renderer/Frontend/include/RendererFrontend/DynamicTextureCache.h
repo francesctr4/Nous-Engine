@@ -1,6 +1,5 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 
 #include <cstdint>
 #include <string>
@@ -26,8 +25,8 @@ public:
     // Mark `objectUID` live this frame and, when `pixels` is non-null, upload them into a
     // renderer-owned dynamic texture bound into material[targetSlot]. Returns true when the
     // pixels were consumed (created or updated), false when skipped (no pixels / guarded).
-    bool Submit(RendererFrontend* frontend, uint32 objectUID,
-                const uint8_t* pixels, uint32 width, uint32 height,
+    bool Submit(RendererFrontend* frontend, uint32_t objectUID,
+                const uint8_t* pixels, uint32_t width, uint32_t height,
                 const std::string& targetSlot,
                 ResourceMaterial* material, const ResourceMaterial* defaultMaterial);
 
@@ -46,12 +45,12 @@ private:
         ResourceMaterial* boundMaterial   = nullptr;
         std::string       boundSlot;
         ResourceTexture*  originalSlotTex = nullptr;  // captured to restore on teardown
-        uint32            w = 0, h = 0;
+        uint32_t            w = 0, h = 0;
     };
 
     void Destroy(RendererFrontend* frontend, Surface& s);
 
-    std::unordered_map<uint32, Surface> m_surfaces;      // objectUID -> surface
-    std::unordered_set<uint32>          m_liveThisFrame; // UIDs Submit()ed this frame
+    std::unordered_map<uint32_t, Surface> m_surfaces;      // objectUID -> surface
+    std::unordered_set<uint32_t>          m_liveThisFrame; // UIDs Submit()ed this frame
     std::unordered_set<std::string>     m_warned;        // one-time guard warnings (key = reason+UID)
 };

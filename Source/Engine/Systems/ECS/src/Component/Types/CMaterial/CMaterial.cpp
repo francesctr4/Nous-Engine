@@ -1,4 +1,5 @@
 #include <ECS/Component/Types/CMaterial/CMaterial.h>
+#include <EngineCore/Casts.h>
 
 #include <ECS/ComponentServices.h>
 #include <ECS/GameObject.h>
@@ -43,7 +44,7 @@ void CMaterial::Deserialize(const JsonObject& obj) {
     if (!rm) { material = nullptr; return; }
 
     const std::string libraryPath = obj.GetString("libraryPath");
-    const uint32 resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
+    const uint32_t resourceUID = static_cast<uint32_t>(obj.GetDouble("resourceUID", 0.0));
 
     // Try library path first (GAME mode / no .meta needed).
     // NOTE: the null check before down_cast is load-bearing — down_cast asserts on

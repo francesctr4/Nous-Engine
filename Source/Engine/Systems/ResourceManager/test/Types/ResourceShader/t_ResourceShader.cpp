@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
+#include <EngineCore/InvalidID.h>
 
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <ShaderSystem/ShaderTypes.h>
-#include <EngineCore/Globals.h>
 
 // =============================================================================
 // Constructor

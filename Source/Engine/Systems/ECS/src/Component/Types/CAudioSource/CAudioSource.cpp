@@ -1,6 +1,6 @@
 #include <ECS/Component/Types/CAudioSource/CAudioSource.h>
+#include <EngineCore/Casts.h>
 
-#include <EngineCore/Globals.h>                 // down_cast
 #include <FileSystem/FileSystem.h>   // GetFilename
 #include <ECS/ComponentServices.h>
 #include <ECS/Scene/iSceneHost.h>
@@ -378,7 +378,7 @@ void CAudioSource::Deserialize(const JsonObject& obj)
     // ── Clip ──
     const std::string assetPath   = obj.GetString("assetPath");
     const std::string libraryPath = obj.GetString("libraryPath");
-    const uint32      resourceUID = static_cast<uint32>(obj.GetDouble("resourceUID", 0.0));
+    const uint32_t      resourceUID = static_cast<uint32_t>(obj.GetDouble("resourceUID", 0.0));
 
     if (!assetPath.empty() || !libraryPath.empty())
     {
@@ -402,7 +402,7 @@ void CAudioSource::Deserialize(const JsonObject& obj)
     // ── Effect graph (resolved the same way; a source may have a graph and no clip) ──
     const std::string fxAssetPath   = obj.GetString("effectGraphAssetPath");
     const std::string fxLibraryPath = obj.GetString("effectGraphLibraryPath");
-    const uint32      fxUID         = static_cast<uint32>(obj.GetDouble("effectGraphUID", 0.0));
+    const uint32_t      fxUID         = static_cast<uint32_t>(obj.GetDouble("effectGraphUID", 0.0));
 
     if (!fxAssetPath.empty() || !fxLibraryPath.empty())
     {

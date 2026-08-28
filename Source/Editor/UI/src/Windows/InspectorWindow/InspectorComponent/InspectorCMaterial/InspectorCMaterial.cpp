@@ -1,4 +1,5 @@
 #include "Windows/InspectorWindow/InspectorComponent/InspectorCMaterial/InspectorCMaterial.h"
+#include <EngineCore/Casts.h>
 
 #include <Logger/Logger.h>
 #include <ModuleResourceManager/ModuleResourceManager.h>
@@ -237,7 +238,7 @@ ResourceShader* GetEffectiveShader(CMaterial& mat, ModuleResourceManager* rm)
     {
         // Use GetLoadedResource (no ref-count bump) — the built-in material
         // shader is always loaded by the renderer, so we just borrow it.
-        static uint32 s_builtInMatShaderUID = 0;
+        static uint32_t s_builtInMatShaderUID = 0;
         if (s_builtInMatShaderUID == 0)
         {
             MetaFileData meta;

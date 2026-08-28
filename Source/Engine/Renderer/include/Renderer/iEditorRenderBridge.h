@@ -1,10 +1,10 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 
 #include <vulkan/vulkan.h>
 
 #include <vector>
+#include <cstdint>
 
 // -----------------------------------------------------------------------------
 // The renderer, as seen from inside the editor's ImGui layer.
@@ -39,7 +39,7 @@
  */
 
 /** @brief Which offscreen viewport a call refers to. */
-enum class EditorViewport : uint8
+enum class EditorViewport : uint8_t
 {
     Scene,
     Game
@@ -61,12 +61,12 @@ struct EditorGpuInfo
     VkInstance             instance            = VK_NULL_HANDLE;
     VkPhysicalDevice       physicalDevice      = VK_NULL_HANDLE;
     VkDevice               device              = VK_NULL_HANDLE;
-    uint32                 graphicsQueueFamily = 0;
+    uint32_t                 graphicsQueueFamily = 0;
     VkQueue                graphicsQueue       = VK_NULL_HANDLE;
     VkDescriptorPool       descriptorPool      = VK_NULL_HANDLE;
     VkRenderPass           uiRenderpass        = VK_NULL_HANDLE;
     VkAllocationCallbacks* allocator           = nullptr;
-    uint32                 imageCount          = 0;
+    uint32_t                 imageCount          = 0;
     PfnEditorVkCheckResult checkVkResultFn     = nullptr;
 };
 
@@ -103,7 +103,7 @@ public:
     // ───────────────────────────── Viewport textures ─────────────────────────
 
     /** @brief ImTextureID for this frame's image of the given viewport. */
-    [[nodiscard]] virtual uint64 GetViewportTexture(EditorViewport viewport) const = 0;
+    [[nodiscard]] virtual uint64_t GetViewportTexture(EditorViewport viewport) const = 0;
 
     /** @brief The image views + sampler to build descriptor sets against.
      *         One view per swapchain image. */
@@ -136,7 +136,7 @@ public:
 
     /** @brief Offscreen framebuffer size in pixels -- the pick buffer's coordinate
      *         space, which is NOT the editor panel's size. */
-    virtual void GetFramebufferSize(int32* outWidth, int32* outHeight) const = 0;
+    virtual void GetFramebufferSize(int32_t* outWidth, int32_t* outHeight) const = 0;
 
     /** @brief Rebuild the per-worker command pools after the job system's thread
      *         count changed. */

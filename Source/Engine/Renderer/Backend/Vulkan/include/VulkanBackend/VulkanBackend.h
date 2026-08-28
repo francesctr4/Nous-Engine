@@ -4,7 +4,7 @@
 #include <RendererBackend/iRendererBackend.h>
 #include <Renderer/iEditorRenderBridge.h>
 #include <EngineCore/EngineExport.h>
-#include <EngineCore/Globals.h>
+#include <cstdint>
 
 class ResourceMesh;
 class ResourceMaterial;
@@ -34,7 +34,7 @@ public:
 	void SetRenderMode(RenderMode mode) noexcept override;
 	void ReleaseFrameResources() noexcept override;
 
-	void Resized(uint16 width, uint16 height) noexcept override;
+	void Resized(uint16_t width, uint16_t height) noexcept override;
 
 	FrameResult BeginFrame(float dt) override;
 	FrameResult EndFrame(float dt) override;
@@ -60,15 +60,15 @@ public:
 	// ----------------------------------------------------------------------------------------------- //
 	// TEMPORAL //
 
-	bool CreateTexture(const uint8* pixels, ResourceTexture* outTexture) override;
+	bool CreateTexture(const uint8_t* pixels, ResourceTexture* outTexture) override;
 	void DestroyTexture(ResourceTexture* texture) noexcept override;
 
-	bool UpdateDynamicTexture(const uint8* pixels, ResourceTexture* texture) override;
+	bool UpdateDynamicTexture(const uint8_t* pixels, ResourceTexture* texture) override;
 
 	bool CreateMaterial(ResourceMaterial* material) override;
     void DestroyMaterial(ResourceMaterial* material) noexcept override;
 
-	bool CreateGeometry(uint32 vertexCount, const Vertex3D* vertices, uint32 indexCount, const uint32* indices, ResourceMesh* geometry) override;
+	bool CreateGeometry(uint32_t vertexCount, const Vertex3D* vertices, uint32_t indexCount, const uint32_t* indices, ResourceMesh* geometry) override;
     void DestroyGeometry(ResourceMesh* geometry) noexcept override;
 
 	bool CreateShader(ResourceShader* shader) override;
@@ -77,7 +77,7 @@ public:
 	bool ApplyCompiledShader(ResourceShader* shader) noexcept override;
 	void WaitForGPUIdle() noexcept override;
 
-	uint32 PickObjectAt(int32 pixelX, int32 pixelY,
+	uint32_t PickObjectAt(int32_t pixelX, int32_t pixelY,
 						const glm::mat4& projection, const glm::mat4& view,
 						const std::vector<GeometryRenderData>& geometries) override;
 
@@ -113,13 +113,13 @@ public:
 	void RecreateImGuiResources() override;
 	[[nodiscard]] VkCommandBuffer GetCurrentUICommandBuffer() const override;
 
-	[[nodiscard]] uint64 GetViewportTexture(EditorViewport viewport) const override;
+	[[nodiscard]] uint64_t GetViewportTexture(EditorViewport viewport) const override;
 	[[nodiscard]] EditorViewportImages GetViewportImages(EditorViewport viewport) const override;
 	void SetViewportDescriptorSets(EditorViewport viewport,
 	                               std::vector<VkDescriptorSet> descriptorSets) override;
 	[[nodiscard]] std::vector<VkDescriptorSet> TakeViewportDescriptorSets(EditorViewport viewport) override;
 
-	void GetFramebufferSize(int32* outWidth, int32* outHeight) const override;
+	void GetFramebufferSize(int32_t* outWidth, int32_t* outHeight) const override;
 	void RecreateWorkerCommandPools() override;
 
 private:
@@ -132,8 +132,8 @@ private:
 	VulkanContext* vkContext = nullptr;
 	bool m_frameResourcesReleased = false;
 
-	int32 m_cachedFramebufferWidth  = 0;
-	int32 m_cachedFramebufferHeight = 0;
+	int32_t m_cachedFramebufferWidth  = 0;
+	int32_t m_cachedFramebufferHeight = 0;
 
 };
 

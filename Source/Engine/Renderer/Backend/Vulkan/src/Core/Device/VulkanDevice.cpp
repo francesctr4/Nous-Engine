@@ -12,7 +12,7 @@ bool NOUS_VulkanDevice::PickPhysicalDevice(VulkanContext* vkContext)
 {
     bool ret = true;
 
-    uint32 deviceCount = 0;
+    uint32_t deviceCount = 0;
     VK_CHECK(vkEnumeratePhysicalDevices(vkContext->instance, &deviceCount, nullptr));
 
     if (deviceCount == 0)
@@ -98,7 +98,7 @@ bool NOUS_VulkanDevice::IsPhysicalDeviceSuitable(VkPhysicalDevice& physicalDevic
 
     NOUS_INFO("Evaluating device: '%s'", deviceProperties.deviceName);
 
-    for (uint32 i = 0; i < deviceMemory.memoryTypeCount; ++i)
+    for (uint32_t i = 0; i < deviceMemory.memoryTypeCount; ++i)
     {
         // Check each memory type to see if its bit is set to 1.
         if (((deviceMemory.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0) &&
@@ -202,7 +202,7 @@ VkPhysicalDeviceQueueFamilyIndices NOUS_VulkanDevice::FindQueueFamilies(const Vk
 
 bool NOUS_VulkanDevice::CheckDeviceExtensionSupport(const VkPhysicalDevice& physicalDevice, VulkanContext* vkContext)
 {
-    uint32 extensionCount;
+    uint32_t extensionCount;
     VK_CHECK(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr));
 
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
@@ -224,7 +224,7 @@ VkSwapChainSupportDetails NOUS_VulkanDevice::QuerySwapChainSupport(const VkPhysi
 
     // Device Formats
 
-    uint32 formatCount;
+    uint32_t formatCount;
     VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vkContext->surface, &formatCount, nullptr));
 
     if (formatCount != 0) 
@@ -235,7 +235,7 @@ VkSwapChainSupportDetails NOUS_VulkanDevice::QuerySwapChainSupport(const VkPhysi
 
     // Device Present Modes
 
-    uint32 presentModeCount;
+    uint32_t presentModeCount;
     VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vkContext->surface, &presentModeCount, nullptr));
 
     if (presentModeCount != 0) 
@@ -251,7 +251,7 @@ VkSwapChainSupportDetails NOUS_VulkanDevice::QuerySwapChainSupport(const VkPhysi
     return details;
 }
 
-int32 NOUS_VulkanDevice::FindMemoryIndex(const VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties)
+int32_t NOUS_VulkanDevice::FindMemoryIndex(const VkPhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -387,7 +387,7 @@ void NOUS_VulkanDevice::LogInfoAboutDevice(VulkanContext* vkContext)
         VK_VERSION_PATCH(vkContext->device.properties.apiVersion));
 
     // Memory information
-    for (uint32 i = 0; i < vkContext->device.memory.memoryHeapCount; ++i) 
+    for (uint32_t i = 0; i < vkContext->device.memory.memoryHeapCount; ++i) 
     {
         float memorySizeGib = ((static_cast<float>(vkContext->device.memory.memoryHeaps[i].size)) / (1024.0f * 1024.0f * 1024.0f));
 
@@ -416,7 +416,7 @@ void NOUS_VulkanDevice::LogInfoAboutDevice(VulkanContext* vkContext)
     NOUS_INFO("Compute Family Index:  %d", vkContext->device.computeQueueIndex);
     NOUS_INFO("Transfer Family Index: %d", vkContext->device.transferQueueIndex);
 
-    NOUS_INFO("MSAA: %d", static_cast<uint8>(vkContext->device.msaaSamples));
+    NOUS_INFO("MSAA: %d", static_cast<uint8_t>(vkContext->device.msaaSamples));
 }
 
 // ----------------------------------------------------------- //
@@ -431,13 +431,13 @@ bool NOUS_VulkanDevice::CreateLogicalDevice(VulkanContext* vkContext)
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
-    std::unordered_set<uint32> uniqueQueueFamilies =
+    std::unordered_set<uint32_t> uniqueQueueFamilies =
     { indices.graphicsFamilyIndex.value(), indices.computeFamilyIndex.value(),
       indices.transferFamilyIndex.value(), indices.presentFamilyIndex.value() };
 
     float queuePriority = 1.0f;
 
-    for (uint32 queueFamily : uniqueQueueFamilies)
+    for (uint32_t queueFamily : uniqueQueueFamilies)
     {
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -465,16 +465,16 @@ bool NOUS_VulkanDevice::CreateLogicalDevice(VulkanContext* vkContext)
     VkDeviceCreateInfo deviceCreateInfo{};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-    deviceCreateInfo.queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size());
+    deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
-    deviceCreateInfo.enabledExtensionCount = static_cast<uint32>(deviceExtensions.size());
+    deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     /* DEPRECATED */
-    //deviceCreateInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32>(validationLayers.size()) : 0;
+    //deviceCreateInfo.enabledLayerCount = enableValidationLayers ? static_cast<uint32_t>(validationLayers.size()) : 0;
     //deviceCreateInfo.ppEnabledLayerNames = enableValidationLayers ? validationLayers.data() : nullptr;
 
     VK_CHECK_MSG(vkCreateDevice(vkContext->device.physicalDevice, &deviceCreateInfo, vkContext->allocator, &vkContext->device.logicalDevice), "Failed vkCreateDevice!");

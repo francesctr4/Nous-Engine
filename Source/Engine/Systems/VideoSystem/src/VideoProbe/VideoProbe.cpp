@@ -36,8 +36,8 @@ bool ProbeVideoFile(const std::string& libraryPath, VideoProbeInfo& outInfo)
     const AVStream*          videoStream = fmt->streams[videoStreamIndex];
     const AVCodecParameters* codecPar    = videoStream->codecpar;
 
-    outInfo.width  = static_cast<uint32>(codecPar->width);
-    outInfo.height = static_cast<uint32>(codecPar->height);
+    outInfo.width  = static_cast<uint32_t>(codecPar->width);
+    outInfo.height = static_cast<uint32_t>(codecPar->height);
 
     if (const AVCodecDescriptor* desc = avcodec_descriptor_get(codecPar->codec_id))
         outInfo.codecName = desc->name;

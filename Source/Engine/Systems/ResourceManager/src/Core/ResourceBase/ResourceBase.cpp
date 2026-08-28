@@ -6,7 +6,7 @@
 
 ResourceBase::ResourceBase() = default;
 
-ResourceBase::ResourceBase(const uint32 uID, const ResourceType type)
+ResourceBase::ResourceBase(const uint32_t uID, const ResourceType type)
     : m_uID(uID)
     , m_type(type)
 {
@@ -19,7 +19,7 @@ void ResourceBase::SetName(const std::string_view name)
 	this->m_name = name;
 }
 
-void ResourceBase::SetUID(uint32 uid)
+void ResourceBase::SetUID(uint32_t uid)
 {
 	this->m_uID = uid;
 }
@@ -44,7 +44,7 @@ std::string ResourceBase::GetName() const
 	return m_name;
 }
 
-uint32 ResourceBase::GetUID() const
+uint32_t ResourceBase::GetUID() const
 {
 	return m_uID;
 }
@@ -54,7 +54,7 @@ ResourceType ResourceBase::GetType() const
 	return m_type;
 }
 
-uint32 ResourceBase::GetReferenceCount() const
+uint32_t ResourceBase::GetReferenceCount() const
 {
 	// relaxed: this is an observational read (editor display, diagnostics). It
 	// orders nothing, and a caller cannot act on the value safely anyway — the
@@ -77,7 +77,7 @@ void ResourceBase::DecreaseReferenceCount()
 	// The underflow check reads fetch_sub's return value rather than testing the
 	// counter first — a separate load-then-decrement could pass the check on one
 	// thread while another already took the count to zero.
-	const uint32 previous = m_referenceCount.fetch_sub(1, std::memory_order_acq_rel);
+	const uint32_t previous = m_referenceCount.fetch_sub(1, std::memory_order_acq_rel);
 	NOUS_ASSERT_MSG(previous > 0, "Reference count underflow — double-unload on a resource");
 }
 

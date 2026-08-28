@@ -1,6 +1,5 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 
 #include <cstdint>
 #include <string>
@@ -25,7 +24,7 @@ public:
 
     virtual ResourceBase* CreateResource(const std::string& assetsPath) = 0;
 
-    virtual ResourceBase* CreateResourceFromLibrary(uint32 uid, ResourceType type,
+    virtual ResourceBase* CreateResourceFromLibrary(uint32_t uid, ResourceType type,
                                                 const std::string& name,
                                                 const std::string& assetsPath,
                                                 const std::string& libraryPath) = 0;
@@ -35,11 +34,11 @@ public:
 
     virtual ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(
         const std::string& libraryPath, int32_t submeshIndex,
-        const std::string& assetsPath, uint32 hintUID = 0) = 0;
+        const std::string& assetsPath, uint32_t hintUID = 0) = 0;
 
     // Drops one reference to a loaded resource; frees it when the count hits zero.
     // Returns false if the UID is not currently loaded.
-    virtual bool UnloadResource(uint32 uid) = 0;
+    virtual bool UnloadResource(uint32_t uid) = 0;
 
     // The engine's fallback material. Borrowed — do NOT UnloadResource() it.
     virtual ResourceMaterial* GetDefaultMaterial() const = 0;

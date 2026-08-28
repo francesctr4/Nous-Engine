@@ -1,6 +1,6 @@
 #include <CameraSystem/Camera.h>
+#include <EngineCore/AppConfig.h>
 
-#include <EngineCore/Globals.h>
 #include <Utils/Math/MathUtils.h>
 
 #include "glm/gtc/matrix_transform.hpp"

@@ -66,7 +66,7 @@ TEST_F(t_NOUS_STLAllocator, TagAccountingIsAccurate)
     const auto after = nous::engine::memory::GetMemoryStats();
 
     // Ensure ARRAY tag usage returns to zero
-    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::ARRAY], 0)
+    EXPECT_EQ(after.taggedAllocations[(uint64_t)MemoryTag::ARRAY], 0)
                         << "ARRAY tag should be zero after destruction.";
     EXPECT_EQ(after.totalAllocations, before.totalAllocations);
 }
@@ -121,8 +121,8 @@ TEST_F(t_NOUS_STLAllocator, IndependentContainersTrackSeparateTags)
     const auto after = nous::engine::memory::GetMemoryStats();
 
     EXPECT_EQ(after.totalAllocations, before.totalAllocations);
-    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::ARRAY], 0);
-    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::DICT], 0);
+    EXPECT_EQ(after.taggedAllocations[(uint64_t)MemoryTag::ARRAY], 0);
+    EXPECT_EQ(after.taggedAllocations[(uint64_t)MemoryTag::DICT], 0);
 }
 
 // ------------------------------------------------------------
@@ -202,7 +202,7 @@ TEST_F(t_NOUS_STLAllocator, ListWithRebindTracksCorrectly)
     }
 
     const auto after = nous::engine::memory::GetMemoryStats();
-    EXPECT_EQ(after.taggedAllocations[(uint64)MemoryTag::ARRAY], 0)
+    EXPECT_EQ(after.taggedAllocations[(uint64_t)MemoryTag::ARRAY], 0)
         << "std::list node allocations should be freed and tracked under ARRAY tag.";
     EXPECT_EQ(after.totalAllocations, before.totalAllocations);
 }
@@ -213,18 +213,18 @@ TEST_F(t_NOUS_STLAllocator, ListWithRebindTracksCorrectly)
 // ------------------------------------------------------------
 TEST_F(t_NOUS_STLAllocator, RawAllocateDeallocateRoundtrip)
 {
-    NOUS_STLAllocator<uint64> alloc(MemoryTag::ARRAY);
+    NOUS_STLAllocator<uint64_t> alloc(MemoryTag::ARRAY);
 
     constexpr std::size_t n = 16;
     const auto before = nous::engine::memory::GetMemoryStats();
 
-    uint64* p = alloc.allocate(n);
+    uint64_t* p = alloc.allocate(n);
     ASSERT_NE(p, nullptr);
-    EXPECT_GT(nous::engine::memory::GetMemoryStats().taggedAllocations[(uint64)MemoryTag::ARRAY], 0u);
+    EXPECT_GT(nous::engine::memory::GetMemoryStats().taggedAllocations[(uint64_t)MemoryTag::ARRAY], 0u);
 
     alloc.deallocate(p, n);
-    EXPECT_EQ(nous::engine::memory::GetMemoryStats().taggedAllocations[(uint64)MemoryTag::ARRAY],
-              before.taggedAllocations[(uint64)MemoryTag::ARRAY]);
+    EXPECT_EQ(nous::engine::memory::GetMemoryStats().taggedAllocations[(uint64_t)MemoryTag::ARRAY],
+              before.taggedAllocations[(uint64_t)MemoryTag::ARRAY]);
 }
 
 // ------------------------------------------------------------

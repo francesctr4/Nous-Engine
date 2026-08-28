@@ -1,11 +1,11 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <AudioSystem/AudioGraph/AudioEffectTypes.h>
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <cstdint>
 
 // CPU-only data resource: the ordered effect "recipe" authored in the
 // AudioGraphEditor. No GPU residency — the per-source DSP chain is built at
@@ -17,10 +17,10 @@
 class ResourceAudioGraph : public ResourceBase
 {
 public:
-    NOUS_ENGINE_API explicit ResourceAudioGraph(uint32 uid = 0);
+    NOUS_ENGINE_API explicit ResourceAudioGraph(uint32_t uid = 0);
     NOUS_ENGINE_API ~ResourceAudioGraph() override;
 
     AudioGraphDesc         effects;          // chain order == vector order
     std::vector<glm::vec2> editorPositions;  // editor view-state (Layer 3)
-    uint32                 generation = 0;    // bumped on save → live rebuild (Layer 3)
+    uint32_t                 generation = 0;    // bumped on save → live rebuild (Layer 3)
 };

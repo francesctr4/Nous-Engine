@@ -5,8 +5,8 @@
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
 
-void NOUS_VulkanImage::CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32 width, uint32 height,
-    uint32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, 
+void NOUS_VulkanImage::CreateVulkanImage(VulkanContext* vkContext, VkImageType imageType, uint32_t width, uint32_t height,
+    uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, 
     VkImageUsageFlags usage, VkMemoryPropertyFlags memoryFlags, bool createView, 
     VkImageAspectFlags viewAspectFlags, VulkanImage* outImage)
 {
@@ -37,7 +37,7 @@ void NOUS_VulkanImage::CreateVulkanImage(VulkanContext* vkContext, VkImageType i
     VkMemoryRequirements memoryRequirements;
     vkGetImageMemoryRequirements(vkContext->device.logicalDevice, outImage->handle, &memoryRequirements);
 
-    int32 memoryType = NOUS_VulkanDevice::FindMemoryIndex(vkContext->device.physicalDevice, memoryRequirements.memoryTypeBits, memoryFlags);
+    int32_t memoryType = NOUS_VulkanDevice::FindMemoryIndex(vkContext->device.physicalDevice, memoryRequirements.memoryTypeBits, memoryFlags);
     if (memoryType == -1) 
     {
         NOUS_ERROR("Required memory type not found. Image not valid.");
@@ -61,7 +61,7 @@ void NOUS_VulkanImage::CreateVulkanImage(VulkanContext* vkContext, VkImageType i
 }
 
 void NOUS_VulkanImage::CreateVulkanImageView(VulkanContext* vkContext, VkFormat format,
-	VulkanImage* image, VkImageAspectFlags aspectFlags, uint32 mipLevels)
+	VulkanImage* image, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
 {
     VkImageViewCreateInfo imageViewCreateInfo{}; 
     imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;

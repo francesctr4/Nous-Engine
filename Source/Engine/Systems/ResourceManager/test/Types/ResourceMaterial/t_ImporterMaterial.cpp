@@ -16,7 +16,7 @@
 class t_ImporterMaterial : public ::testing::Test
 {
 protected:
-    static constexpr uint64 kMemoryPoolSize = MiB(16);
+    static constexpr uint64_t kMemoryPoolSize = MiB(16);
 
     std::string m_testFilePath;
 

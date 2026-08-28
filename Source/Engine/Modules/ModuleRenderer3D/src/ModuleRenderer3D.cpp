@@ -1,4 +1,5 @@
 #include <ModuleRenderer3D/ModuleRenderer3D.h>
+#include <EngineCore/InvalidID.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -221,7 +222,7 @@ void ModuleRenderer3D::FlushPendingAssetUploads()
 		// Save the generation BEFORE Deserialize — it resets texture generation to 0,
 		// which can collide with the previous value and fool the lazy descriptor-write
 		// guard into skipping the re-write after a hot-reload.
-		const uint32 preReloadGeneration = (type == ResourceType::TEXTURE)
+		const uint32_t preReloadGeneration = (type == ResourceType::TEXTURE)
 		    ? static_cast<ResourceTexture*>(resource)->generation : 0;
 
 		// Deserialize on the main thread so it never races with DrawGeometryBatched.
@@ -381,7 +382,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		for (auto [entity, player] : videoView.each())
 		{
 			const auto* info   = sceneData.registry->try_get<CEntityInfo>(entity);
-			const uint32 goUID = info ? info->id : 0u;
+			const uint32_t goUID = info ? info->id : 0u;
 			const auto* matC   = sceneData.registry->try_get<CMaterial>(entity);
 			ResourceMaterial* material = matC ? matC->material : nullptr;
 
@@ -796,7 +797,7 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 		JsonObject entry = root.GetObject(key);
 		if (entry.IsEmpty()) { NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: missing entry '%s'.", key); return; }
 
-		const uint32      uid     = static_cast<uint32>(entry.GetDouble("uid", 0.0));
+		const uint32_t      uid     = static_cast<uint32_t>(entry.GetDouble("uid", 0.0));
 		const std::string libPath = entry.GetString("libraryPath");
 
 		if (uid == 0 || libPath.empty())

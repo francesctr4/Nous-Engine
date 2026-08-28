@@ -16,7 +16,7 @@ struct FFmpegBackend : IVideoDecoderBackend
 
     bool        TryGetFrame(VideoHandle handle, double playheadSec, VideoFrame& out) override;
 
-    void        GetDimensions(VideoHandle handle, uint32& width, uint32& height) const override;
+    void        GetDimensions(VideoHandle handle, uint32_t& width, uint32_t& height) const override;
     float       GetFrameRate(VideoHandle handle) const override;
     float       GetDuration(VideoHandle handle) const override;
     bool        IsFinished(VideoHandle handle) const override;

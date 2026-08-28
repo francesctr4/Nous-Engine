@@ -16,8 +16,8 @@ Resources::Resources(const char* title, EditorContext* context, bool start_open)
 
 void Resources::DrawContent()
 {
-    std::unordered_map<uint32, ResourceBase*> resourcesMap = editorContext->GetResourceManager()->GetResourcesMap();
-    auto currentResourceCount = static_cast<uint32>(resourcesMap.size());
+    std::unordered_map<uint32_t, ResourceBase*> resourcesMap = editorContext->GetResourceManager()->GetResourcesMap();
+    auto currentResourceCount = static_cast<uint32_t>(resourcesMap.size());
 
     ImGui::TextColored(
         ImVec4(1.f, 0.5f, 0.5f, 1.f),

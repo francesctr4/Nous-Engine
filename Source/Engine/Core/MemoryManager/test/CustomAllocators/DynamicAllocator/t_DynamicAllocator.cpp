@@ -8,7 +8,7 @@
 class t_DynamicAllocator : public ::testing::Test
 {
 protected:
-    static constexpr uint64 kPoolSize = 65536; // 64 KiB
+    static constexpr uint64_t kPoolSize = 65536; // 64 KiB
 
     void SetUp() override
     {
@@ -29,7 +29,7 @@ protected:
         rawMemory = nullptr;
     }
 
-    uint64            memReq    = 0;
+    uint64_t            memReq    = 0;
     void*             rawMemory = nullptr;
     alignas(DynamicAllocator) char allocator_buf[sizeof(DynamicAllocator)] = {};
     DynamicAllocator* allocator = nullptr;
@@ -58,7 +58,7 @@ TEST_F(t_DynamicAllocator, AllocateReturnsNonNull)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_DynamicAllocator, AllocateAndFreeTracksSpace)
 {
-    const uint64 before = allocator->GetFreeSpace();
+    const uint64_t before = allocator->GetFreeSpace();
     void* p = allocator->Allocate(256);
     ASSERT_NE(p, nullptr);
     EXPECT_LT(allocator->GetFreeSpace(), before);
@@ -104,7 +104,7 @@ TEST_F(t_DynamicAllocator, AllocatedPointersAreDistinct)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_DynamicAllocator, AllocationsAre16ByteAligned)
 {
-    for (uint64 size : {1u, 7u, 15u, 17u, 63u, 128u})
+    for (uint64_t size : {1u, 7u, 15u, 17u, 63u, 128u})
     {
         void* p = allocator->Allocate(size);
         ASSERT_NE(p, nullptr);
@@ -119,7 +119,7 @@ TEST_F(t_DynamicAllocator, AllocationsAre16ByteAligned)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_DynamicAllocator, GetRecordedSizeReturnsRawSize)
 {
-    constexpr uint64 reqSize = 37;
+    constexpr uint64_t reqSize = 37;
     void* p = allocator->Allocate(reqSize);
     ASSERT_NE(p, nullptr);
     EXPECT_EQ(allocator->GetRecordedSize(p), reqSize);
@@ -131,7 +131,7 @@ TEST_F(t_DynamicAllocator, GetRecordedSizeReturnsRawSize)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_DynamicAllocator, SizelessFreeRoundtrip)
 {
-    const uint64 before = allocator->GetFreeSpace();
+    const uint64_t before = allocator->GetFreeSpace();
     void* p = allocator->Allocate(512);
     ASSERT_NE(p, nullptr);
     EXPECT_TRUE(allocator->Free(p)); // size-less overload

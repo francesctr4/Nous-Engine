@@ -1,10 +1,10 @@
 #ifndef FILEHANDLE_H
 #define FILEHANDLE_H
 
-#include <EngineCore/Globals.h>
 #include <string>
 #include <memory>
 #include <fstream>
+#include <cstdint>
 
 enum class FileMode : int8_t
 {
@@ -25,13 +25,13 @@ public:
 	bool Open(const std::string& filePath, FileMode mode, bool isBinary);
 	void Close();
 
-	bool ReadBytes(uint64 dataSize, char* outReadData, uint64* outBytesRead);
-	bool ReadAllBytes(char** outBytes, uint64* outBytesRead);
+	bool ReadBytes(uint64_t dataSize, char* outReadData, uint64_t* outBytesRead);
+	bool ReadAllBytes(char** outBytes, uint64_t* outBytesRead);
 	
 	bool ReadLine(std::string& outLine);
 	bool WriteLine(const std::string& line);
 	 
-	bool Write(uint64 dataSize, const void* data, uint64* outBytesWritten);
+	bool Write(uint64_t dataSize, const void* data, uint64_t* outBytesWritten);
 
 	// ---------------------------------------------------------------------------- //
 

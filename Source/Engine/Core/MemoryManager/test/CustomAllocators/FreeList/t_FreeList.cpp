@@ -8,7 +8,7 @@
 class t_FreeList : public ::testing::Test
 {
 protected:
-    static constexpr uint64 kPoolSize = 4096;
+    static constexpr uint64_t kPoolSize = 4096;
 
     void SetUp() override
     {
@@ -29,7 +29,7 @@ protected:
         rawMemory = nullptr;
     }
 
-    uint64   memReq   = 0;
+    uint64_t   memReq   = 0;
     void*    rawMemory = nullptr;
     alignas(Freelist) char freelist_buf[sizeof(Freelist)] = {};
     Freelist* freelist = nullptr;
@@ -48,7 +48,7 @@ TEST_F(t_FreeList, InitialFreeSpaceEqualsPoolSize)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_FreeList, AllocateReducesFreeSpace)
 {
-    uint64 offset = 0;
+    uint64_t offset = 0;
     ASSERT_TRUE(freelist->Allocate(256, &offset));
     EXPECT_EQ(freelist->FreeSpace(), kPoolSize - 256);
 }
@@ -58,7 +58,7 @@ TEST_F(t_FreeList, AllocateReducesFreeSpace)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_FreeList, SequentialAllocationsReturnSequentialOffsets)
 {
-    uint64 off1 = 0, off2 = 0;
+    uint64_t off1 = 0, off2 = 0;
     ASSERT_TRUE(freelist->Allocate(128, &off1));
     ASSERT_TRUE(freelist->Allocate(128, &off2));
     EXPECT_EQ(off1, 0u);
@@ -70,7 +70,7 @@ TEST_F(t_FreeList, SequentialAllocationsReturnSequentialOffsets)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_FreeList, ExactFitAllocationDrainsPool)
 {
-    uint64 offset = 0;
+    uint64_t offset = 0;
     ASSERT_TRUE(freelist->Allocate(kPoolSize, &offset));
     EXPECT_EQ(freelist->FreeSpace(), 0u);
 }
@@ -80,7 +80,7 @@ TEST_F(t_FreeList, ExactFitAllocationDrainsPool)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_FreeList, FreeRestoresFreeSpace)
 {
-    uint64 offset = 0;
+    uint64_t offset = 0;
     ASSERT_TRUE(freelist->Allocate(256, &offset));
     ASSERT_TRUE(freelist->Free(256, offset));
     EXPECT_EQ(freelist->FreeSpace(), kPoolSize);
@@ -91,13 +91,13 @@ TEST_F(t_FreeList, FreeRestoresFreeSpace)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_FreeList, AdjacentFreeBlocksMerge)
 {
-    uint64 off1 = 0, off2 = 0;
+    uint64_t off1 = 0, off2 = 0;
     ASSERT_TRUE(freelist->Allocate(256, &off1));
     ASSERT_TRUE(freelist->Allocate(256, &off2));
     ASSERT_TRUE(freelist->Free(256, off1));
     ASSERT_TRUE(freelist->Free(256, off2));
     // After merging, a single 512-byte block should be allocatable
-    uint64 bigOffset = 0;
+    uint64_t bigOffset = 0;
     EXPECT_TRUE(freelist->Allocate(512, &bigOffset));
 }
 
@@ -108,10 +108,10 @@ TEST_F(t_FreeList, FreeBlockAfterAllExistingFreeNodes)
 {
     // Drain the entire pool so the only free space comes from explicit frees.
     // This makes FreeSpace() == sum-of-freed-blocks, which is what we want to verify.
-    constexpr uint64 chunkSize = 128;
-    constexpr uint64 numChunks = kPoolSize / chunkSize; // 32
-    uint64 offsets[numChunks] = {};
-    for (uint64 i = 0; i < numChunks; ++i)
+    constexpr uint64_t chunkSize = 128;
+    constexpr uint64_t numChunks = kPoolSize / chunkSize; // 32
+    uint64_t offsets[numChunks] = {};
+    for (uint64_t i = 0; i < numChunks; ++i)
         ASSERT_TRUE(freelist->Allocate(chunkSize, &offsets[i]));
     ASSERT_EQ(freelist->FreeSpace(), 0u);
 
@@ -130,7 +130,7 @@ TEST_F(t_FreeList, FreeBlockAfterAllExistingFreeNodes)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_FreeList, AllocateBeyondCapacityReturnsFalse)
 {
-    uint64 offset = 0;
+    uint64_t offset = 0;
     EXPECT_FALSE(freelist->Allocate(kPoolSize + 1, &offset));
 }
 
@@ -139,7 +139,7 @@ TEST_F(t_FreeList, AllocateBeyondCapacityReturnsFalse)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_FreeList, AllocateZeroSizeReturnsFalse)
 {
-    uint64 offset = 0;
+    uint64_t offset = 0;
     EXPECT_FALSE(freelist->Allocate(0, &offset));
 }
 
@@ -156,13 +156,13 @@ TEST_F(t_FreeList, FreeOutOfBoundsReturnsFalse)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_FreeList, TinyPoolAllocationAndFreeRoundtrip)
 {
-    constexpr uint64 tinySize = 4;
-    uint64 req = Freelist::GetMemoryRequirement(tinySize);
+    constexpr uint64_t tinySize = 4;
+    uint64_t req = Freelist::GetMemoryRequirement(tinySize);
     void* mem = malloc(req);
     alignas(Freelist) char tiny_buf[sizeof(Freelist)] = {};
     Freelist* tiny = new (tiny_buf) Freelist(tinySize, mem);
 
-    uint64 offset = 0;
+    uint64_t offset = 0;
     EXPECT_TRUE(tiny->Allocate(tinySize, &offset));
     EXPECT_EQ(offset, 0u);
     EXPECT_EQ(tiny->FreeSpace(), 0u);
@@ -178,7 +178,7 @@ TEST_F(t_FreeList, TinyPoolAllocationAndFreeRoundtrip)
 // ─────────────────────────────────────────────────────────────────────────────
 TEST_F(t_FreeList, ClearRestoresFullCapacity)
 {
-    uint64 off1 = 0, off2 = 0;
+    uint64_t off1 = 0, off2 = 0;
     ASSERT_TRUE(freelist->Allocate(512, &off1));
     ASSERT_TRUE(freelist->Allocate(512, &off2));
     // Free in reverse order so two separate nodes exist
@@ -189,7 +189,7 @@ TEST_F(t_FreeList, ClearRestoresFullCapacity)
     EXPECT_EQ(freelist->FreeSpace(), kPoolSize);
 
     // Should be able to allocate full capacity again
-    uint64 bigOffset = 0;
+    uint64_t bigOffset = 0;
     EXPECT_TRUE(freelist->Allocate(kPoolSize, &bigOffset));
 }
 
@@ -201,7 +201,7 @@ TEST_F(t_FreeList, NodeZeroIsReusableAfterExactFitAllocation)
 {
     // Exact-fit allocation removes nodes[0] (the head) and returns it.
     // GetNode() must be able to reclaim it for the next Free call.
-    uint64 offset = 0;
+    uint64_t offset = 0;
     ASSERT_TRUE(freelist->Allocate(kPoolSize, &offset));
     EXPECT_EQ(freelist->FreeSpace(), 0u);
 

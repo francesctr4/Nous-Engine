@@ -25,7 +25,7 @@ constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMAN
 // when the policy is PRESERVE_SOURCE (e.g. AUDIO keeps .wav/.ogg) and may
 // include a leading dot.
 static std::string BuildLibraryFilename(const TypeDescriptor& d,
-                                        uint32 uid,
+                                        uint32_t uid,
                                         const std::string& sourceExtensionWithDot)
 {
     std::string out = std::format("{}{}", d.libraryFolder, uid);
@@ -325,7 +325,7 @@ void ImportPipeline::CollectPendingImports(const std::string& directory,
         if (!nous::engine::filesystem::Exists(metaFilePath))
         {
             // Case 1: new asset — create meta file now (sequential), schedule import.
-            const auto resourceUID = static_cast<uint32>(Random::Generate());
+            const auto resourceUID = static_cast<uint32_t>(Random::Generate());
             const TypeDescriptor* desc = m_typeRegistry->Get(resourceType);
             if (!desc)
             {
@@ -466,7 +466,7 @@ bool ImportPipeline::ImportFileFromAssets(const std::string& relativePath, const
 bool ImportPipeline::ImportCase1_NewAsset(const std::string_view relativePath, const std::string& metaFilePath,
                                                    const ResourceType resourceType, const std::string_view fileName) const
 {
-    const auto resourceUID = static_cast<uint32>(Random::Generate());
+    const auto resourceUID = static_cast<uint32_t>(Random::Generate());
     const TypeDescriptor* desc = m_typeRegistry->Get(resourceType);
     if (!desc)
     {
@@ -542,7 +542,7 @@ bool ImportPipeline::ReadMetaFile(const std::string& metaFilePath, MetaFileData&
     }
 
     outFileData.name         = metaObj.GetString("Name");
-    outFileData.uid          = static_cast<uint32>(metaObj.GetDouble("UID"));
+    outFileData.uid          = static_cast<uint32_t>(metaObj.GetDouble("UID"));
     outFileData.resourceType = static_cast<ResourceType>(metaObj.GetInt("Resource Type"));
     // Normalize separators: .meta files authored on Windows store backslash paths
     // (e.g. "Assets\Shaders\x.glsl"). On POSIX a backslash is a literal filename

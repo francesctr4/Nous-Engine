@@ -7,40 +7,40 @@
 class DynamicAllocator
 {
 public:
-    static uint64 GetMemoryRequirement(uint64 totalSize);
+    static uint64_t GetMemoryRequirement(uint64_t totalSize);
 
-    DynamicAllocator(uint64 totalSize, void* memory);
+    DynamicAllocator(uint64_t totalSize, void* memory);
     ~DynamicAllocator();
 
     // Allocation
-    void* Allocate(uint64 size);
+    void* Allocate(uint64_t size);
 
     // Free (existing sized path)
-    bool Free(void* block, uint64 size);
+    bool Free(void* block, uint64_t size);
 
     // ✅ New: size-less free (looks up the size internally)
     bool Free(void* block);
 
     // Optional helper for MemoryManager stats (raw requested size)
-    uint64 GetRecordedSize(void* block) const;
+    uint64_t GetRecordedSize(void* block) const;
 
-    uint64 GetFreeSpace() const;
+    uint64_t GetFreeSpace() const;
 
     // Non-copyable
     DynamicAllocator(const DynamicAllocator&) = delete;
     DynamicAllocator& operator=(const DynamicAllocator&) = delete;
 
 private:
-    static inline uint64 Align16(uint64 s) { return (s + 15ULL) & ~15ULL; }
+    static inline uint64_t Align16(uint64_t s) { return (s + 15ULL) & ~15ULL; }
 
     struct AllocInfo {
-        uint64 rawSize;     // size requested by caller
-        uint64 alignedSize; // size actually given to freelist
+        uint64_t rawSize;     // size requested by caller
+        uint64_t alignedSize; // size actually given to freelist
     };
 
     struct InternalState
     {
-        uint64   totalSize;
+        uint64_t   totalSize;
         void*    freelistMemory;
         void*    userMemory;
         Freelist* freelist;

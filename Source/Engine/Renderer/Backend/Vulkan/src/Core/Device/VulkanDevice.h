@@ -1,10 +1,10 @@
 #ifndef VULKANDEVICE_H
 #define VULKANDEVICE_H
 
-#include <EngineCore/Globals.h>
 #include "VulkanTypes.inl"
 
 #include <optional>
+#include <cstdint>
 
 #ifdef __APPLE__
 const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset" };
@@ -14,10 +14,10 @@ const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_N
 
 struct VkPhysicalDeviceQueueFamilyIndices
 {
-	std::optional<uint32> graphicsFamilyIndex;
-	std::optional<uint32> presentFamilyIndex;
-	std::optional<uint32> computeFamilyIndex;
-	std::optional<uint32> transferFamilyIndex;
+	std::optional<uint32_t> graphicsFamilyIndex;
+	std::optional<uint32_t> presentFamilyIndex;
+	std::optional<uint32_t> computeFamilyIndex;
+	std::optional<uint32_t> transferFamilyIndex;
 
 	bool IsComplete()
 	{
@@ -67,7 +67,7 @@ namespace NOUS_VulkanDevice
 
 	VkSwapChainSupportDetails QuerySwapChainSupport(const VkPhysicalDevice& physicalDevice, const VulkanContext* vkContext);
 
-	int32 FindMemoryIndex(const VkPhysicalDevice& physicalDevice, uint32 typeFilter, VkMemoryPropertyFlags properties);
+	int32_t FindMemoryIndex(const VkPhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	VkFormat FindDepthFormat(const VkPhysicalDevice& physicalDevice);
 	VkFormat FindSupportedFormat(const VkPhysicalDevice& physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);

@@ -1,6 +1,7 @@
 #include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
+#include <EngineCore/InvalidID.h>
 
-ResourceTexture::ResourceTexture(uint32 uid) : ResourceBase(uid, ResourceType::TEXTURE)
+ResourceTexture::ResourceTexture(uint32_t uid) : ResourceBase(uid, ResourceType::TEXTURE)
 {
     internalData = nullptr;
 	generation = INVALID_ID;

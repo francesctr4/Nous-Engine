@@ -5,7 +5,6 @@
 #include <ResourceManager/Core/ResourceQueue.h>
 #include <ResourceManager/Core/ResourceTable.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 #include <Utils/Math/Vertex.inl>
 
 #include <cstdint>
@@ -88,7 +87,7 @@ static void WriteMetaFile(const std::string& assetsPath,
 class t_SubMeshCache : public ::testing::Test
 {
 protected:
-    static constexpr uint64 kMemoryPoolSize = MiB(32);
+    static constexpr uint64_t kMemoryPoolSize = MiB(32);
 
     // SubMeshCache owns references to these; they must outlive the cache object.
     ResourceTable         table;
@@ -329,7 +328,7 @@ TEST_F(t_SubMeshCache, EraseUID_ForcesRebuildOnNextRequest)
 
     ResourceMesh* first = cache->RequestOrCreateFromLibrary("Library/Meshes/test.nmesh", 0);
     ASSERT_NE(first, nullptr);
-    const uint32 firstUID = first->GetUID();
+    const uint32_t firstUID = first->GetUID();
 
     // Erase the index entry under the required lock (the table's mutex).
     { ResourceTable::ScopedLock lock(table); cache->EraseUID(firstUID); }

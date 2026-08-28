@@ -105,8 +105,8 @@ void NOUS_ImGuiVulkanResources::CreateImGuiDescriptorPool(VulkanContext* vkConte
 	descriptorPoolCreateInfo.pNext = nullptr; // No extensions, so null
 	descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-	descriptorPoolCreateInfo.maxSets = static_cast<uint32>((1000 * descriptorPoolSizes.size()));
-	descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32>(descriptorPoolSizes.size());
+	descriptorPoolCreateInfo.maxSets = static_cast<uint32_t>((1000 * descriptorPoolSizes.size()));
+	descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
 	descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
 
 	VK_CHECK(vkCreateDescriptorPool(vkContext->device.logicalDevice, &descriptorPoolCreateInfo, vkContext->allocator, &vkContext->imGuiResources.descriptorPool));
@@ -149,7 +149,7 @@ void NOUS_ImGuiVulkanResources::CreateViewportImages(VulkanContext* vkContext)
 {
 	vkContext->imGuiResources.m_ViewportImages.resize(vkContext->swapChain.swapChainImages.size());
 
-	for (uint32 i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
+	for (uint32_t i = 0; i < vkContext->imGuiResources.m_ViewportImages.size(); ++i)
 	{
 		// Create depth image and its view.
 		NOUS_VulkanImage::CreateVulkanImage(
@@ -173,7 +173,7 @@ void NOUS_ImGuiVulkanResources::CreateViewportImages(VulkanContext* vkContext)
 
 	vkContext->imGuiResources.m_GameViewportImages.resize(vkContext->swapChain.swapChainImages.size());
 
-	for (uint32 i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
+	for (uint32_t i = 0; i < vkContext->imGuiResources.m_GameViewportImages.size(); ++i)
 	{
 		// Create depth image and its view.
 		NOUS_VulkanImage::CreateVulkanImage(

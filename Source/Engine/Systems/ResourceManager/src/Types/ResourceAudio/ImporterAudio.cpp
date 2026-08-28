@@ -1,4 +1,5 @@
 #include "Types/ResourceAudio/ImporterAudio.h"
+#include <EngineCore/Casts.h>
 
 #include <FileSystem/FileSystem.h>
 #include <Logger/Logger.h>

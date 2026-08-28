@@ -1,4 +1,5 @@
 #include <ModuleWindow/ModuleWindow.h>
+#include <EngineCore/AppConfig.h>
 
 #include <Logger/Logger.h>
 #include <EventSystem/EventSystem.h>
@@ -121,7 +122,7 @@ SDL_Window* ModuleWindow::GetSDL_Window() const
     return m_window;
 }
 
-void ModuleWindow::GetFramebufferSize(int32* width, int32* height) const
+void ModuleWindow::GetFramebufferSize(int32_t* width, int32_t* height) const
 {
     SDL_GetWindowSizeInPixels(m_window, width, height);
 }

@@ -5,7 +5,6 @@
 #include <ECS/Component/Types/CMesh/CMesh.h>
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 #include <Utils/Serialization/JsonObject.h>
 
 class t_CMesh : public ::testing::Test

@@ -11,8 +11,8 @@
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_FRONTEND;
 
-bool DynamicTextureCache::Submit(RendererFrontend* frontend, uint32 objectUID,
-                                 const uint8_t* pixels, uint32 width, uint32 height,
+bool DynamicTextureCache::Submit(RendererFrontend* frontend, uint32_t objectUID,
+                                 const uint8_t* pixels, uint32_t width, uint32_t height,
                                  const std::string& targetSlot,
                                  ResourceMaterial* material, const ResourceMaterial* defaultMaterial)
 {

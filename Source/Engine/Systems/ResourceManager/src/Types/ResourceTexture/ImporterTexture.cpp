@@ -1,4 +1,5 @@
 #include "Types/ResourceTexture/ImporterTexture.h"
+#include <EngineCore/Casts.h>
 #include <Renderer/IGPUResourceFactory.h>
 #include <FileSystem/FileHandle.h>
 #include <FileSystem/FileSystem.h>
@@ -35,7 +36,7 @@ bool ImporterTexture::Deserialize(const std::string& libraryPath, ResourceBase* 
 {
     ResourceTexture* texture = down_cast<ResourceTexture*>(outResource);
 
-    const int32 requiredChannelCount = 4;
+    const int32_t requiredChannelCount = 4;
     stbi_set_flip_vertically_on_load_thread(true);
 
     FileHandle fileHandle;
@@ -46,7 +47,7 @@ bool ImporterTexture::Deserialize(const std::string& libraryPath, ResourceBase* 
     }
 
     char* fileBuffer = nullptr;
-    uint64 fileSize = 0;
+    uint64_t fileSize = 0;
     if (!fileHandle.ReadAllBytes(&fileBuffer, &fileSize) || !fileBuffer || fileSize == 0)
     {
         NOUS_WARN("ImporterTexture::Deserialize() failed to read file '%s'", libraryPath.c_str());
@@ -55,14 +56,14 @@ bool ImporterTexture::Deserialize(const std::string& libraryPath, ResourceBase* 
     }
 
     int width, height, channels;
-    uint8* data = stbi_load_from_memory(
+    uint8_t* data = stbi_load_from_memory(
         reinterpret_cast<const stbi_uc*>(fileBuffer),
         static_cast<int>(fileSize),
         &width, &height, &channels,
         requiredChannelCount
     );
 
-    NOUS_DELETE_ARRAY(fileBuffer, static_cast<uint64>(fileSize), MemoryTag::FILE);
+    NOUS_DELETE_ARRAY(fileBuffer, static_cast<uint64_t>(fileSize), MemoryTag::FILE);
     fileHandle.Close();
 
     if (!data)
@@ -73,14 +74,14 @@ bool ImporterTexture::Deserialize(const std::string& libraryPath, ResourceBase* 
         return false;
     }
 
-    texture->width        = static_cast<uint32>(width);
-    texture->height       = static_cast<uint32>(height);
+    texture->width        = static_cast<uint32_t>(width);
+    texture->height       = static_cast<uint32_t>(height);
     texture->channelCount = requiredChannelCount;
 
-    const uint64 totalSize = texture->width * texture->height * requiredChannelCount;
+    const uint64_t totalSize = texture->width * texture->height * requiredChannelCount;
 
     bool hasTransparency = false;
-    for (uint64 i = 0; i < totalSize; i += requiredChannelCount)
+    for (uint64_t i = 0; i < totalSize; i += requiredChannelCount)
     {
         if (data[i + 3] < 255) { hasTransparency = true; break; }
     }

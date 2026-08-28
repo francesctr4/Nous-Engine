@@ -106,11 +106,11 @@ void MemoryWindow::DrawContent()
         ImGui::TableSetupColumn("Allocated (MB)");
         ImGui::TableHeadersRow();
 
-        uint64 totalBytes = 0;
+        uint64_t totalBytes = 0;
 
-        for (uint32 i = 0; i < static_cast<uint32>(std::to_underlying(MemoryTag::MAX)); ++i)
+        for (uint32_t i = 0; i < static_cast<uint32_t>(std::to_underlying(MemoryTag::MAX)); ++i)
         {
-            uint64 bytes = stats.taggedAllocations[i];
+            uint64_t bytes = stats.taggedAllocations[i];
             if (bytes == 0) continue;
 
             totalBytes += bytes;

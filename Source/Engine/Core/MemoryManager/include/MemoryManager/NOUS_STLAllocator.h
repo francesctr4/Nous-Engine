@@ -58,7 +58,7 @@ public:
         }
 
         const std::size_t bytes = n * sizeof(T);
-        void* p = nous::engine::memory::Allocate(static_cast<uint64>(bytes), tag_);
+        void* p = nous::engine::memory::Allocate(static_cast<uint64_t>(bytes), tag_);
         if (!p) {
             throw std::bad_alloc();
         }
@@ -83,7 +83,7 @@ public:
     // Queries the live pool capacity so containers don't attempt reserves beyond it.
     // Falls back to the theoretical maximum if the pool isn't initialised yet.
     size_type max_size() const noexcept {
-        const uint64 poolSize = nous::engine::memory::GetMemoryConfig().totalAllocationSize;
+        const uint64_t poolSize = nous::engine::memory::GetMemoryConfig().totalAllocationSize;
         if (poolSize == 0)
             return std::numeric_limits<size_type>::max() / sizeof(T);
         return static_cast<size_type>(poolSize / sizeof(T));

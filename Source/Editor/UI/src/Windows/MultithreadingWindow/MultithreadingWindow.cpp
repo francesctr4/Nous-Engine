@@ -55,7 +55,7 @@ void Multithreading::DrawContent()
 
     ImGui::Columns(2);
     ImGui::Text("Max Hardware Threads: %u", nous::engine::multithreading::c_MAX_HARDWARE_THREADS);
-    ImGui::Text("Total Worker Threads: %u", static_cast<uint8>(threads.size()));
+    ImGui::Text("Total Worker Threads: %u", static_cast<uint8_t>(threads.size()));
     ImGui::Text("Total Jobs: %u", editorContext->GetJobSystem()->GetPendingJobs());
     ImGui::NextColumn();
 

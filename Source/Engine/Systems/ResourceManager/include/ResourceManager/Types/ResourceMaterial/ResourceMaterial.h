@@ -1,8 +1,8 @@
 #ifndef RESOURCEMATERIAL_H
 #define RESOURCEMATERIAL_H
 
-#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
+#include <EngineCore/InvalidID.h>
 #include <Renderer/RendererTypes.h>
 #include <ShaderSystem/ShaderReflection/ShaderReflectionTypes.h>
 
@@ -92,7 +92,7 @@ public:
 
 	// Constructor & Destructor
 
-	NOUS_ENGINE_API explicit ResourceMaterial(uint32 uid = 0);
+	NOUS_ENGINE_API explicit ResourceMaterial(uint32_t uid = 0);
 	NOUS_ENGINE_API ~ResourceMaterial() override;
 
     // Sets shader + shaderUID and clears poolOwnerShader in one atomic step.
@@ -106,7 +106,7 @@ public:
     // GPU-side descriptor set instance slot index inside the owning shader's pool.
     // Set by VulkanBackend::CreateMaterial, cleared to INVALID_ID on destroy.
     // Used every frame to bind the correct per-material descriptor set.
-    uint32 internalID;
+    uint32_t internalID;
 
     std::unordered_map<std::string, TextureMap>   textureMaps;   // key = GLSL binding name (e.g. "diffuseSampler")
     std::unordered_map<std::string, UniformValue> uniformValues; // key = GLSL InstanceUBO member name
@@ -125,7 +125,7 @@ public:
     //                   Never set outside the renderer backend.
     // -----------------------------------------------------------------------
     ResourceShader* shader          = nullptr;    // null = use built-in MaterialShader
-    uint32          shaderUID       = INVALID_ID; // for serialisation / reload
+    uint32_t          shaderUID       = INVALID_ID; // for serialisation / reload
     ResourceShader* poolOwnerShader = nullptr;    // runtime only — which shader's pool owns internalID
 
 };

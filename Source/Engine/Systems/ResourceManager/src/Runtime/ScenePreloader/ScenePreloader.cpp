@@ -2,7 +2,6 @@
 
 #include <ResourceManager/Core/IResourceLoader.h>
 #include <Logger/Logger.h>
-#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
@@ -13,6 +12,7 @@
 #include <map>
 #include <ranges>
 #include <utility>
+#include <cstdint>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
 
@@ -22,7 +22,7 @@ namespace
     {
         std::string assetPath;
         std::string libraryPath;
-        uint32      uid          = 0;
+        uint32_t      uid          = 0;
         int32_t     submeshIndex = -1;
     };
 
@@ -73,7 +73,7 @@ namespace
                 MeshRequest req;
                 req.assetPath    = assetPath;
                 req.libraryPath  = compObj.GetString("libraryPath");
-                req.uid          = static_cast<uint32>(compObj.GetDouble("resourceUID",  0.0));
+                req.uid          = static_cast<uint32_t>(compObj.GetDouble("resourceUID",  0.0));
                 req.submeshIndex = compObj.HasKey("submeshIndex")
                                  ? static_cast<int32_t>(compObj.GetDouble("submeshIndex", 0.0))
                                  : -1;

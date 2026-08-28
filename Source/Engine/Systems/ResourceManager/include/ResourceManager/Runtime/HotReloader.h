@@ -1,7 +1,6 @@
 #pragma once
 
 #include <FileWatcher/FileWatcher.h>
-#include <EngineCore/Globals.h>
 #include <EngineCore/EngineExport.h>
 #include <ResourceManager/Types/ResourceType.h>
 
@@ -11,6 +10,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <cstdint>
 
 class IImporterDispatcher;
 class TypeRegistry;
@@ -32,7 +32,7 @@ class HotReloader
 public:
     struct ReadyUpload
     {
-        uint32       uid  = 0;
+        uint32_t       uid  = 0;
         ResourceType type = ResourceType::UNKNOWN;
     };
 
@@ -64,7 +64,7 @@ public:
     // queues a watch registration to be picked up by the next Poll().
     // Safe to call from any thread. No-op when disabled, when assetsPath is
     // empty, or when the type is not hot-reloadable (currently TEXTURE/MATERIAL).
-    NOUS_ENGINE_API void TrackAsset(const std::string& assetsPath, uint32 uid, ResourceType type);
+    NOUS_ENGINE_API void TrackAsset(const std::string& assetsPath, uint32_t uid, ResourceType type);
 
     // Removes any tracked entry for the given assets path. Safe to call from
     // any thread. No-op when disabled or when the path was never tracked.
@@ -86,7 +86,7 @@ public:
 private:
     struct TrackedAsset
     {
-        uint32       uid  = 0;
+        uint32_t       uid  = 0;
         ResourceType type = ResourceType::UNKNOWN;
         std::string  assetsPath;  // engine-relative form, e.g. "Assets/foo/bar.png"
     };
@@ -119,7 +119,7 @@ private:
 
     // dedup: at most one reimport job per UID at a time
     std::mutex                                     m_inFlightMutex;
-    std::unordered_set<uint32>                     m_inFlightUIDs;
+    std::unordered_set<uint32_t>                     m_inFlightUIDs;
     std::atomic<int>                               m_inFlightJobCount { 0 };
 
     // worker -> main-thread handoff (drained by Renderer)

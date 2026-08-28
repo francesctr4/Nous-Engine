@@ -1,10 +1,10 @@
 #pragma once
 
-#include <EngineCore/Globals.h>
 #include <EngineCore/EngineExport.h>
 
 #include <mutex>
 #include <unordered_map>
+#include <cstdint>
 
 class ResourceBase;
 
@@ -39,7 +39,7 @@ public:
         // Whole-map access while the lock is held. Callers that only need a
         // single read/write should prefer the single-call helpers on the
         // parent table instead.
-        [[nodiscard]] std::unordered_map<uint32, ResourceBase*>& Map() noexcept
+        [[nodiscard]] std::unordered_map<uint32_t, ResourceBase*>& Map() noexcept
         {
             return m_table->m_resources;
         }
@@ -53,25 +53,25 @@ public:
 
     // Returns the pointer for the slot, or nullptr if absent or still loading
     // (placeholder). Does NOT bump the reference count.
-    [[nodiscard]] NOUS_ENGINE_API ResourceBase* TryGet(uint32 uid) const;
+    [[nodiscard]] NOUS_ENGINE_API ResourceBase* TryGet(uint32_t uid) const;
 
     // True if the slot has an entry, even a nullptr placeholder.
-    [[nodiscard]] NOUS_ENGINE_API bool Contains(uint32 uid) const;
+    [[nodiscard]] NOUS_ENGINE_API bool Contains(uint32_t uid) const;
 
     // Atomic claim — returns true if this thread inserted the slot, false if it
     // was already present. Use to implement load-or-wait patterns.
-    NOUS_ENGINE_API bool TryInsert(uint32 uid, ResourceBase* resource);
+    NOUS_ENGINE_API bool TryInsert(uint32_t uid, ResourceBase* resource);
 
     // Unconditional set (overwrite or insert). Use to write the final resource
     // pointer into a slot that was previously claimed with TryInsert(nullptr).
-    NOUS_ENGINE_API void Set(uint32 uid, ResourceBase* resource);
+    NOUS_ENGINE_API void Set(uint32_t uid, ResourceBase* resource);
 
     // Returns true if an entry was removed.
-    NOUS_ENGINE_API bool Erase(uint32 uid);
+    NOUS_ENGINE_API bool Erase(uint32_t uid);
 
     // Returns a copy of the map. Safe to call concurrently with any mutation;
     // the snapshot is a moment-in-time view.
-    [[nodiscard]] NOUS_ENGINE_API std::unordered_map<uint32, ResourceBase*> Snapshot() const;
+    [[nodiscard]] NOUS_ENGINE_API std::unordered_map<uint32_t, ResourceBase*> Snapshot() const;
 
     // Drops every entry without locking. Single-threaded shutdown only; using
     // this while other threads can still call the table is a race.
@@ -79,5 +79,5 @@ public:
 
 private:
     mutable std::mutex                    m_mutex;
-    std::unordered_map<uint32, ResourceBase*> m_resources;
+    std::unordered_map<uint32_t, ResourceBase*> m_resources;
 };

@@ -5,7 +5,7 @@
 LinearAllocator::LinearAllocator()
     : capacity(0), offset(0), memory(nullptr), ownsMemory(true) {}
 
-LinearAllocator::LinearAllocator(uint64 capacity, void* preAllocatedMemory)
+LinearAllocator::LinearAllocator(uint64_t capacity, void* preAllocatedMemory)
     : capacity(capacity), offset(0), memory(preAllocatedMemory), ownsMemory(preAllocatedMemory == nullptr)
 {
     if (memory == nullptr) 
@@ -35,7 +35,7 @@ LinearAllocator::~LinearAllocator()
     ownsMemory = false;
 }
 
-void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
+void LinearAllocator::Create(uint64_t capacity, void* preAllocatedMemory)
 {
     // Guard against re-initialization: free existing owned memory first.
     if (memory != nullptr)
@@ -68,7 +68,7 @@ void LinearAllocator::Create(uint64 capacity, void* preAllocatedMemory)
     nous::engine::memory::ZeroMemory(memory, capacity);
 }
 
-void* LinearAllocator::Allocate(uint64 size, uint64 alignment)
+void* LinearAllocator::Allocate(uint64_t size, uint64_t alignment)
 {
     if (size == 0)
     {
@@ -87,10 +87,10 @@ void* LinearAllocator::Allocate(uint64 size, uint64 alignment)
     // Aligning the relative offset alone is insufficient when the buffer base
     // itself is not aligned to 'alignment'.
     // alignment must be a power of two (not validated here — callers must ensure this).
-    const auto cursor       = reinterpret_cast<uintptr_t>(static_cast<uint8*>(memory) + offset);
+    const auto cursor       = reinterpret_cast<uintptr_t>(static_cast<uint8_t*>(memory) + offset);
     const auto aligned      = (cursor + static_cast<uintptr_t>(alignment) - 1)
                               & ~(static_cast<uintptr_t>(alignment) - 1);
-    const uint64 alignedOffset = static_cast<uint64>(aligned - reinterpret_cast<uintptr_t>(memory));
+    const uint64_t alignedOffset = static_cast<uint64_t>(aligned - reinterpret_cast<uintptr_t>(memory));
 
     if (alignedOffset + size > capacity)
     {
@@ -99,7 +99,7 @@ void* LinearAllocator::Allocate(uint64 size, uint64 alignment)
         return nullptr;
     }
 
-    void* block = static_cast<uint8*>(memory) + alignedOffset;
+    void* block = static_cast<uint8_t*>(memory) + alignedOffset;
     offset = alignedOffset + size;
     return block;
 }
@@ -129,17 +129,17 @@ void LinearAllocator::FreeAll()
     offset = 0;
 }
 
-uint64 LinearAllocator::GetTotalSize() const
+uint64_t LinearAllocator::GetTotalSize() const
 {
     return capacity;
 }
 
-uint64 LinearAllocator::GetAllocatedSize() const
+uint64_t LinearAllocator::GetAllocatedSize() const
 {
     return offset;
 }
 
-uint64 LinearAllocator::GetRemainingSize() const
+uint64_t LinearAllocator::GetRemainingSize() const
 {
     return capacity - offset;
 }

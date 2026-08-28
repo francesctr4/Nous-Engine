@@ -5,7 +5,6 @@
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/Component/Types/CCamera/CCamera.h>
 #include <MemoryManager/MemoryManager.h>
-#include <EngineCore/Globals.h>
 
 class t_GameObject : public ::testing::Test
 {
