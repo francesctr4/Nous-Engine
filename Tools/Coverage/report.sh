@@ -54,7 +54,10 @@ lcov --capture \
      --directory "${BUILD_DIR}" \
      --output-file "${OUT_DIR}/raw.info" \
      "${BRANCH_RC[@]}" "${GCOV_TOOL[@]}" \
-     --ignore-errors mismatch,gcov,source,empty \
+     # 'negative' is a safety net only: the real fix is -fprofile-update=atomic in
+     # Coverage.cmake. If this ever fires, a threaded test wrote a counter
+     # non-atomically and that file's numbers are understated.
+     --ignore-errors mismatch,gcov,source,empty,negative \
      >/dev/null
 
 # Keep only this engine's own sources. Everything else -- vcpkg headers, the STL,

@@ -38,7 +38,15 @@ if(NOUS_COVERAGE)
     else()
         # --coverage is the portable spelling of -fprofile-arcs -ftest-coverage and
         # works on both GCC (gcov) and Clang (llvm-cov gcov-compatible mode).
-        add_compile_options(--coverage -O0 -g -fno-inline -fno-elide-constructors)
+        # -fprofile-update=atomic is REQUIRED here, not a refinement. gcov counters
+        # are plain increments by default, and this suite runs genuinely concurrent
+        # tests (t_ResourceManager_ResourceBase spawns 8 threads over one refcount;
+        # the NOUS_Multithreading tests hammer the job system). Concurrent updates
+        # lose increments and can drive a counter NEGATIVE, at which point lcov
+        # aborts with "Unexpected negative count" rather than reporting anything.
+        # Atomic counters cost runtime but make the numbers trustworthy.
+        add_compile_options(--coverage -fprofile-update=atomic
+                            -O0 -g -fno-inline -fno-elide-constructors)
         add_link_options(--coverage)
 
         message(STATUS "Coverage ENABLED: --coverage (-O0, inlining off)")
