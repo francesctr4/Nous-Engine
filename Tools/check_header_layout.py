@@ -114,6 +114,16 @@ ENGINE_UMBRELLAS = {"NousEngine", "Nous-Engine", "NousEngine::Engine",
 # Target roots of every converted target: the include dir with "/include" removed.
 CONVERTED_ROOTS = [d[: -len("/include")] for d in CONVERTED.values()]
 
+# Dirs published by a <Target>_test_headers handle: shared test doubles that are
+# neither API nor implementation. Not in CONVERTED (nothing outside test/ may link
+# them), but they MUST be resolvable, or the closure of a test double is invisible
+# and every requirement it pulls in goes unreported -- which is exactly how
+# FakeComponentServices.h hid AudioSystem/ResourceManager/Scripting/VideoSystem
+# from seven ECS component tests.
+TEST_HEADER_DIRS = {
+    "ECS_test_headers": "Engine/Systems/ECS/test",
+}
+
 SOURCE_SUFFIXES = (".h", ".cpp", ".inl")
 HEADER_SUFFIXES = (".h", ".inl")
 
@@ -209,6 +219,7 @@ class Tree:
             # must still fall through to the src/ candidates below.
             candidates.append(posix(Path(CONVERTED[prefix]) / spec))
         candidates += [posix(Path(spec)), posix(Path(current).parent / spec)]
+        candidates += [posix(Path(d) / spec) for d in TEST_HEADER_DIRS.values()]
         # A converted target puts its own src/ on the include path (PRIVATE), so a
         # quoted include from anywhere in that target can resolve there. Without
         # this the PRIVATE_HEADER check silently passes: the offending include

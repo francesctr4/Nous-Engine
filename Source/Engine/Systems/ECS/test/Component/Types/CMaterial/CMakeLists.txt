@@ -1,6 +1,4 @@
-# ===========================================
-# NOUS_Job - Unit Tests
-# ===========================================
+find_package(GTest CONFIG REQUIRED)
 
 set(TEST_NAME "t_CMaterial")
 
@@ -8,24 +6,26 @@ add_executable(${TEST_NAME}
         ${TEST_NAME}.cpp
 )
 
-target_include_directories(${TEST_NAME}
-        PRIVATE
-        ../include
-)
-
-# These must match the packages found in your main Nous Engine build
-find_package(GTest CONFIG REQUIRED)
-
+# Links the static libraries this test actually uses, not NousEngine::Engine.
+# ECS carries most of the closure transitively (Utils, Logger, MemoryManager,
+# NOUS_Multithreading, Renderer, and the AudioSystem/VideoSystem header dirs).
+# The last two do not arrive through ECS: they are reached through
+# FakeComponentServices.h, which ECS itself never includes.
 target_link_libraries(${TEST_NAME}
         PRIVATE
-        NousEngine::Engine
-        ECS_test_headers   # <FakeComponentServices.h>
-        NousEngine::Editor
+        ECS
+        MemoryManager             # InitializeMemory / ShutdownMemory, called directly
+        ECS_test_headers          # <FakeComponentServices.h>
+        ResourceManager_headers   # IResourceLoader, via FakeComponentServices.h
+        Scripting_headers         # IScriptRegistry, via FakeComponentServices.h
         GTest::gtest
         GTest::gtest_main
 )
 
-# Register test
+# Engine code is linked INTO this binary, so NOUS_ENGINE_API must be neither
+# dllimport nor dllexport. See the comment in EngineCore/EngineExport.h.
+target_compile_definitions(${TEST_NAME} PRIVATE NOUS_ENGINE_STATIC)
+
 include(GoogleTest)
 
 set_target_properties(${TEST_NAME} PROPERTIES

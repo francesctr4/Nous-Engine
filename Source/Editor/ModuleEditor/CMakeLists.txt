@@ -38,6 +38,14 @@ target_include_directories(${CLASS_NAME}
 target_compile_definitions(${CLASS_NAME} PRIVATE NOUS_EDITOR_EXPORTS)
 
 find_package(glm CONFIG REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
+
+# GameExporter.cpp calls SDL_GetBasePath directly. No editor target had ever
+# declared SDL3: it resolved because EditorUI drags it in transitively and
+# Nous-Editor links both archives into one DLL. Linking ModuleEditor on its own
+# (t_GameExporter) is what surfaced it.
+target_link_libraries(${CLASS_NAME} PRIVATE SDL3::SDL3)
+
 target_link_libraries(${CLASS_NAME} PUBLIC
         ${CLASS_NAME}_headers
         # ModuleEditor.h implements EditorContext.

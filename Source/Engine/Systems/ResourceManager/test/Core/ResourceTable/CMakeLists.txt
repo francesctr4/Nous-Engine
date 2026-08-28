@@ -6,11 +6,16 @@ find_package(GTest CONFIG REQUIRED)
 
 target_link_libraries(${TEST_NAME}
         PRIVATE
-        NousEngine::Engine
-        NousEngine::Editor
+        # Narrow link: the static libraries this test actually uses, not the
+        # NousEngine::Engine umbrella. See EngineCore/EngineExport.h.
+        ResourceManager
         GTest::gtest
         GTest::gtest_main
 )
+
+# Engine code is linked INTO this binary, so the API macros must be neither
+# dllimport nor dllexport. See EngineCore/EngineExport.h.
+target_compile_definitions(${TEST_NAME} PRIVATE NOUS_ENGINE_STATIC)
 
 include(GoogleTest)
 
