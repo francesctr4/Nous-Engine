@@ -58,3 +58,17 @@ add_subdirectory(src/FileHandle)
 if (NOUS_BUILD_TESTS)
     add_subdirectory(test)
 endif()
+
+# The Core cycle (FileSystem <-> Logger <-> MemoryManager <-> NOUS_Multithreading)
+# is intrinsic and documented in .claude/CLAUDE.md. CMake resolves static-library
+# cycles by repeating the group on the link line, and its default of 2 is not
+# enough here: FileSystem lands after MemoryManager in BOTH repetitions, so the
+# last libFileSystem.a has no libMemoryManager.a after it. GNU ld scans archives
+# left to right and never revisits one, so a symbol first needed from that last
+# FileSystem object is unresolvable.
+#
+# Normally invisible: the reference comes from the NOUS_NEW_ARRAY<char> COMDAT
+# template instantiation in FileHandle.cpp, which an ordinary build discards as
+# unused. --coverage instruments and KEEPS it, which is how the coverage build
+# found a fragility every other Linux config had been getting away with.
+set_target_properties(${CLASS_NAME} PROPERTIES LINK_INTERFACE_MULTIPLICITY 3)
