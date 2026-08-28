@@ -1,7 +1,6 @@
 #pragma once
 
 #include <EngineCore/Globals.h>
-#include <EngineCore/EngineExport.h>
 #include <VideoSystem/VideoFrame.h>
 
 #include <condition_variable>
@@ -13,7 +12,7 @@
 // Pure selection helper: index of the newest frame whose ptsSeconds[i] <= playheadSec,
 // or -1 if none. Assumes ptsSeconds is sorted ascending (true for decoded frames).
 // FFmpeg-free; shared by the streamed queue and the predecoded array path.
-[[nodiscard]] NOUS_ENGINE_API int SelectNewestFrameIndex(const double* ptsSeconds, uint32 count, double playheadSec);
+[[nodiscard]] int SelectNewestFrameIndex(const double* ptsSeconds, uint32 count, double playheadSec);
 
 // Bounded, thread-safe RGBA frame ring. Producer = decoder thread (Push/TryPush);
 // consumer = main thread (TryGetForPlayhead). Selection drops frames older than the one
@@ -21,24 +20,24 @@
 class VideoFrameQueue
 {
 public:
-    NOUS_ENGINE_API explicit VideoFrameQueue(uint32 capacity);
-    NOUS_ENGINE_API ~VideoFrameQueue();
+    explicit VideoFrameQueue(uint32 capacity);
+    ~VideoFrameQueue();
 
     // Producer. TryPush returns false when full (non-blocking). Push blocks until a slot
     // frees or Stop() is called. Both copy the pixel bytes (width*height*4) into the ring.
-    NOUS_ENGINE_API bool TryPush(const uint8_t* rgba, uint32 width, uint32 height, double ptsSec);
-    NOUS_ENGINE_API void Push(const uint8_t* rgba, uint32 width, uint32 height, double ptsSec);
+    bool TryPush(const uint8_t* rgba, uint32 width, uint32 height, double ptsSec);
+    void Push(const uint8_t* rgba, uint32 width, uint32 height, double ptsSec);
 
     // Consumer. Selects the newest frame with ptsSec <= playheadSec, discards older
     // frames, copies the selected one into an internal latch and points out.pixels at it
     // (valid until the next call). Returns false when no frame is <= playheadSec.
-    NOUS_ENGINE_API bool TryGetForPlayhead(double playheadSec, VideoFrame& out);
+    bool TryGetForPlayhead(double playheadSec, VideoFrame& out);
 
-    NOUS_ENGINE_API void Clear();
-    NOUS_ENGINE_API void Stop();   // wake any blocked Push (shutdown)
+    void Clear();
+    void Stop();   // wake any blocked Push (shutdown)
 
-    [[nodiscard]] NOUS_ENGINE_API uint32 Size() const;
-    [[nodiscard]] NOUS_ENGINE_API uint32 Capacity() const;
+    [[nodiscard]] uint32 Size() const;
+    [[nodiscard]] uint32 Capacity() const;
 
 private:
     struct Slot

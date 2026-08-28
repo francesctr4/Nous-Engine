@@ -1,6 +1,5 @@
 #pragma once
 
-#include <EngineCore/EngineExport.h>
 #include <ResourceManager/Core/IImporter.h>
 
 // Scene importer — scenes have no runtime resource object (no `ResourceScene`
@@ -12,5 +11,5 @@
 class ImporterScene final : public IAssetImporter
 {
 public:
-    NOUS_ENGINE_API bool Import(const MetaFileData& metaFileData) override;
+    bool Import(const MetaFileData& metaFileData) override;
 };

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <EngineCore/EngineExport.h>
 #include <string>
 #include <cstdint>
 
@@ -22,4 +21,4 @@ struct AudioProbeInfo
     uint8_t  channelCount = 0;
 };
 
-NOUS_ENGINE_API bool ProbeAudioFile(const std::string& libraryPath, AudioProbeInfo& outInfo);
+bool ProbeAudioFile(const std::string& libraryPath, AudioProbeInfo& outInfo);

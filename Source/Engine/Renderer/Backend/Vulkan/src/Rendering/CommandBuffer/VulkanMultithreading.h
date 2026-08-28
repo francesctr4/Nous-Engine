@@ -2,12 +2,10 @@
 #define VULKANMULTITHREADING_H
 
 #include "VulkanTypes.inl"
-#include <EngineCore/EngineExport.h>
-
 namespace NOUS_VulkanMultithreading 
 {
 	bool CreateWorkerCommandPools(VulkanContext* vkContext);
-	NOUS_ENGINE_API bool RecreateWorkerCommandPools(VulkanContext* vkContext);
+	bool RecreateWorkerCommandPools(VulkanContext* vkContext);
 	bool DestroyWorkerCommandPools(VulkanContext* vkContext);
 
     VkCommandPool GetThreadCommandPool(VulkanContext* vkContext, std::thread::id threadID);

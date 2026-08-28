@@ -4,21 +4,19 @@
 #include "VulkanTypes.inl"
 #include <Logger/Asserts.h>
 #include <Logger/Logger.h>
-#include <EngineCore/EngineExport.h>
-
 /**
  * Returns the string representation of result.
  * @param result The result to get the string for.
  * @param extended Indicates whether to also return an extended result.
  * @returns The error code and/or extended error message in string form. Defaults to success for unknown result types.
  */
-NOUS_ENGINE_API std::string VkResultMessage(VkResult result, bool extended);
+std::string VkResultMessage(VkResult result, bool extended);
 
 /**
  * Inticates if the passed result is a success or an error as defined by the Vulkan spec.
  * @returns True if success; otherwise false. Defaults to true for unknown result types.
  */
-NOUS_ENGINE_API bool VkResultIsSuccess(VkResult result);
+bool VkResultIsSuccess(VkResult result);
 
 /**
  * @brief Checks the given expression's return value against VK_SUCCESS.

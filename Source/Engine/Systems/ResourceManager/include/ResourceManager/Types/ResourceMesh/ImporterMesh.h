@@ -2,7 +2,6 @@
 #define IMPORTERMESH_H
 
 #include <ResourceManager/Core/IImporter.h>
-#include <EngineCore/EngineExport.h>
 #include <Utils/Math/Vertex.inl>
 
 #include <glm/glm.hpp>
@@ -26,17 +25,17 @@ struct SubMeshData
 
 struct ImporterMesh : IResourceImporter
 {
-    NOUS_ENGINE_API bool Import(const MetaFileData& metaFileData) override;
-    NOUS_ENGINE_API bool Save(const MetaFileData& metaFileData, ResourceBase*& inResource) override;
-    NOUS_ENGINE_API bool Deserialize(const std::string& libraryPath, ResourceBase* resource) override;
-    NOUS_ENGINE_API void Evict(ResourceBase* resource) override;
-    NOUS_ENGINE_API bool Upload(ResourceBase* resource, IGPUResourceFactory* gpu) override;
-    NOUS_ENGINE_API void Release(ResourceBase* resource, IGPUResourceFactory* gpu) override;
+    bool Import(const MetaFileData& metaFileData) override;
+    bool Save(const MetaFileData& metaFileData, ResourceBase*& inResource) override;
+    bool Deserialize(const std::string& libraryPath, ResourceBase* resource) override;
+    void Evict(ResourceBase* resource) override;
+    bool Upload(ResourceBase* resource, IGPUResourceFactory* gpu) override;
+    void Release(ResourceBase* resource, IGPUResourceFactory* gpu) override;
 
     // Loads all submeshes from a library binary written by this importer.
     // Returns one SubMeshData per logical submesh; empty on failure.
     // Used by ModuleScene::SpawnMeshAsHierarchy to build per-submesh GameObjects.
-    NOUS_ENGINE_API static std::vector<SubMeshData> LoadHierarchy(const std::string& libraryPath);
+    static std::vector<SubMeshData> LoadHierarchy(const std::string& libraryPath);
 };
 
 #endif // IMPORTERMESH_H

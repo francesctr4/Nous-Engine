@@ -1,9 +1,7 @@
 #pragma once
 
 #include <ResourceManager/Core/IImporter.h>
-#include <EngineCore/EngineExport.h>
-
-struct NOUS_ENGINE_API ImporterVideo : IResourceImporter
+struct ImporterVideo : IResourceImporter
 {
     bool Import(const MetaFileData& metaFileData) override;
     bool Save(const MetaFileData& metaFileData, ResourceBase*& inResource) override;

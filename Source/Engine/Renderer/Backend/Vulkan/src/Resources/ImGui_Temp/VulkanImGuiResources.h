@@ -2,29 +2,27 @@
 #define VULKANIMGUIRESOURCES_H
 
 #include "VulkanTypes.inl"
-#include <EngineCore/EngineExport.h>
-
 namespace NOUS_ImGuiVulkanResources
 {
-	NOUS_ENGINE_API void CreateImGuiVulkanResources(VulkanContext* vkContext);
-	NOUS_ENGINE_API void DestroyImGuiVulkanResources(VulkanContext* vkContext);
+	void CreateImGuiVulkanResources(VulkanContext* vkContext);
+	void DestroyImGuiVulkanResources(VulkanContext* vkContext);
 
-	NOUS_ENGINE_API void RecreateImGuiVulkanResources(VulkanContext* vkContext);
-
-	// ----------------------------------------------------------------------------------- //
-
-	NOUS_ENGINE_API void CreateImGuiDescriptorPool(VulkanContext* vkContext);
-	NOUS_ENGINE_API void CreateViewportTextureSampler(VulkanContext* vkContext, VkSampler* sampler);
-
-	NOUS_ENGINE_API void CreateViewportImages(VulkanContext* vkContext);
-	NOUS_ENGINE_API void CreateViewportDepthResources(VulkanContext* vkContext);
-
-	NOUS_ENGINE_API void CreatePickResources(VulkanContext* vkContext);
-	NOUS_ENGINE_API void DestroyPickResources(VulkanContext* vkContext);
+	void RecreateImGuiVulkanResources(VulkanContext* vkContext);
 
 	// ----------------------------------------------------------------------------------- //
 
-	NOUS_ENGINE_API unsigned long long GetViewportTexture(VkDescriptorSet descriptorSet);
+	void CreateImGuiDescriptorPool(VulkanContext* vkContext);
+	void CreateViewportTextureSampler(VulkanContext* vkContext, VkSampler* sampler);
+
+	void CreateViewportImages(VulkanContext* vkContext);
+	void CreateViewportDepthResources(VulkanContext* vkContext);
+
+	void CreatePickResources(VulkanContext* vkContext);
+	void DestroyPickResources(VulkanContext* vkContext);
+
+	// ----------------------------------------------------------------------------------- //
+
+	unsigned long long GetViewportTexture(VkDescriptorSet descriptorSet);
 
 }
 

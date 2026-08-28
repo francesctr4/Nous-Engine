@@ -4,9 +4,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <MemoryManager/FreeList.h>
-#include <EngineCore/EngineExport.h>
-
-class NOUS_ENGINE_API DynamicAllocator
+class DynamicAllocator
 {
 public:
     static uint64 GetMemoryRequirement(uint64 totalSize);

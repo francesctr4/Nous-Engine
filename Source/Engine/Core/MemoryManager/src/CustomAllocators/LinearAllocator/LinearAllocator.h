@@ -3,9 +3,7 @@
 
 #include <cstddef>
 #include <EngineCore/Globals.h>
-#include <EngineCore/EngineExport.h>
-
-class NOUS_ENGINE_API LinearAllocator
+class LinearAllocator
 {
 public:
 

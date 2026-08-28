@@ -5,12 +5,10 @@
 #include <string>
 #include <unordered_map>
 
-#include <EngineCore/EngineExport.h>
-
 // Polls registered files for modification and fires a callback when a change is detected.
 // Designed for editor-side hot reload: call Poll() once per frame.
 // Thread-safety: not thread-safe — call from a single thread only.
-class NOUS_ENGINE_API FileWatcher
+class FileWatcher
 {
 public:
     using Callback = std::function<void(const std::string& path)>;

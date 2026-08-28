@@ -1,8 +1,6 @@
 #pragma once
 
 #include <EngineCore/Globals.h>
-#include <EngineCore/EngineExport.h>
-
 #include <string>
 
 // ---------------------------------------------------------------------------
@@ -25,4 +23,4 @@ struct VideoProbeInfo
     bool        hasAudioTrack = false;
 };
 
-NOUS_ENGINE_API bool ProbeVideoFile(const std::string& libraryPath, VideoProbeInfo& outInfo);
+bool ProbeVideoFile(const std::string& libraryPath, VideoProbeInfo& outInfo);

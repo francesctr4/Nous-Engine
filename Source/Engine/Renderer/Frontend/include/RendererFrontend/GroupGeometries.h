@@ -1,6 +1,5 @@
 #pragma once
 
-#include <EngineCore/EngineExport.h>
 #include <Renderer/RendererTypes.h>
 
 #include <vector>
@@ -13,6 +12,6 @@ struct GroupedGeometries
 
 // Groups a flat geometry list into instanced batches sorted by (material, mesh).
 // baseInstance: SSBO index offset for this pass — 0 for the scene pass, c_maxInstances for game.
-NOUS_ENGINE_API GroupedGeometries GroupGeometries(
+GroupedGeometries GroupGeometries(
     const std::vector<GeometryRenderData>& geometries,
     uint32_t baseInstance = 0);

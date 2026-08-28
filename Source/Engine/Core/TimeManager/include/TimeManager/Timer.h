@@ -1,7 +1,6 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include <EngineCore/EngineExport.h>
 #include <chrono>
 
 enum class TimerState : uint8_t
@@ -15,21 +14,21 @@ class Timer
 {
 public:
 
-	NOUS_ENGINE_API Timer();
-	NOUS_ENGINE_API virtual ~Timer();
+	Timer();
+	virtual ~Timer();
 
-	NOUS_ENGINE_API void Start();
-	NOUS_ENGINE_API void Resume();
-	NOUS_ENGINE_API void Pause();
-	NOUS_ENGINE_API void Stop();
+	void Start();
+	void Resume();
+	void Pause();
+	void Stop();
 
-	NOUS_ENGINE_API void StepFrame(float dt);
-	NOUS_ENGINE_API void SetTimeScale(float scale);
+	void StepFrame(float dt);
+	void SetTimeScale(float scale);
 
-	NOUS_ENGINE_API float ReadMS() const;
-	NOUS_ENGINE_API float ReadSec() const;
+	float ReadMS() const;
+	float ReadSec() const;
 
-	NOUS_ENGINE_API TimerState GetState() const;
+	TimerState GetState() const;
 
 private:
 

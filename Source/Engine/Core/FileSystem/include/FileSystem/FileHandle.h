@@ -2,8 +2,6 @@
 #define FILEHANDLE_H
 
 #include <EngineCore/Globals.h>
-#include <EngineCore/EngineExport.h>
-
 #include <string>
 #include <memory>
 #include <fstream>
@@ -17,7 +15,7 @@ enum class FileMode : int8_t
 	READ_AND_WRITE
 };
 
-class NOUS_ENGINE_API FileHandle
+class FileHandle
 {
 public:
 
