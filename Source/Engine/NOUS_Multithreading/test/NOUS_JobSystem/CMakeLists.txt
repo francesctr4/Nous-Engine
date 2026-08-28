@@ -2,10 +2,10 @@
 # NOUS_Job - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_NOUS_JobSystem")
+set(TEST_NAME "t_NOUS_Multithreading_NOUS_JobSystem")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_NOUS_JobSystem.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

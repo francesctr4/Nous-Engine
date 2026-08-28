@@ -1,7 +1,7 @@
 set(TEST_NAME "t_Logger")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_Logger.cpp
 )
 
 find_package(GTest CONFIG REQUIRED)

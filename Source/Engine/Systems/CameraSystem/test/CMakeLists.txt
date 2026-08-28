@@ -1,7 +1,7 @@
-set(TEST_NAME "t_Camera")
+set(TEST_NAME "t_CameraSystem_Camera")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_Camera.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

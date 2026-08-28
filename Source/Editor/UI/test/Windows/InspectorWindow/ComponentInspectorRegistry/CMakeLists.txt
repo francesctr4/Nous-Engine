@@ -1,7 +1,7 @@
-set(TEST_NAME "t_InspectorRegistry")
+set(TEST_NAME "t_EditorUI_InspectorRegistry")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_InspectorRegistry.cpp
 )
 
 find_package(GTest CONFIG REQUIRED)

@@ -4,10 +4,10 @@ find_package(GTest CONFIG REQUIRED)
 # ECS_private: VideoPlayhead.h is implementation, and this is the documented
 # opt-in for testing it. VideoPlayhead.cpp lives in ECS, so the objects come
 # from there; nothing else in the engine is touched.
-set(TEST_NAME "t_VideoPlayhead")
+set(TEST_NAME "t_ECS_VideoPlayhead")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_VideoPlayhead.cpp
 )
 
 target_link_libraries(${TEST_NAME}
@@ -33,10 +33,10 @@ add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
 )
 
 # t_CVideoPlayer -- component defaults / serialization / ECS integration.
-set(TEST_NAME "t_CVideoPlayer")
+set(TEST_NAME "t_ECS_CVideoPlayer")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_CVideoPlayer.cpp
 )
 
 # Links the static libraries this test actually uses, not NousEngine::Engine.

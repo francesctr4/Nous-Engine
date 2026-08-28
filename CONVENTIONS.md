@@ -160,7 +160,27 @@ namespace nous::math { ... }
 | Source | `PascalCase.cpp` | `ModuleResourceManager.cpp` |
 | Inline / template impl | `PascalCase.inl` | `ScriptRegistry.inl` |
 | Test file | `t_PascalCase.cpp` | `t_ShaderCompiler.cpp` |
+| Test target | `t_<OwningTarget>_<Unit>` | `t_ShaderSystem_ShaderCompiler` |
 | Interface header | `iPascalCase.h` | `iRendererBackend.h` |
+
+> **Test targets are namespaced by their owning target; test FILES are not.**
+> The CMake target is `t_<OwningTarget>_<Unit>` (`t_ECS_CMesh`,
+> `t_ResourceManager_HotReloader`) so that `ctest -R t_ECS_` selects a subsystem
+> and the ~72 test binaries sort by owner. The source file keeps its short name
+> (`t_CMesh.cpp`) — it already sits inside that target's `test/` tree, so the
+> prefix would only be repeated. `<OwningTarget>` is the **CMake target** name,
+> not the folder: `Renderer/Frontend/` is `RendererFrontend`, `Editor/UI/` is
+> `EditorUI`, `Editor/GameExporter/` compiles into `ModuleEditor`.
+>
+> `<Unit>` is the source file's stem for a single-source target, and the
+> containing folder for a target that bundles several sources covering one unit
+> (`t_ResourceManager_ResourceMesh` = `t_ImporterMesh.cpp` + `t_ResourceMesh.cpp`
+> + `t_SubMeshCache.cpp`). Where unit and owner would repeat, the name collapses:
+> `t_FileSystem`, not `t_FileSystem_FileSystem`.
+>
+> Consequence worth knowing: a leaf that wrote `add_executable(${TEST_NAME}
+> ${TEST_NAME}.cpp)` can no longer do so, because the target name is no longer the
+> filename. Name the source literally.
 
 > **Interface naming:** the *type* keeps the capital-`I` prefix (`struct IRendererBackend`), but the *filename* uses a lowercase `i` (`iRendererBackend.h`) — stacked capitals like `IImporter.h` read poorly. Existing headers still use a capital `I`; migrate them to lowercase only when you touch them, don't mass-rename.
 
@@ -289,7 +309,7 @@ Each converted target also declares two include-dir-only `INTERFACE` handles:
   get it transitively and never name it. Add it to the engine DLL's PUBLIC link list too.
 - `<Target>_private` — the implementation dir. **Only tests may link this**, and only to
   cover deliberately dependency-free policy code. It exists so such a test needs no engine
-  objects at all: `t_GainDsp` links gtest plus this handle and nothing else.
+  objects at all: `t_AudioSystem_GainDsp` links gtest plus this handle and nothing else.
 
 Unconverted targets keep the old `unit/include|src|test` layout and `Engine/`-rooted
 includes; `${CMAKE_SOURCE_DIR}/Source` stays on the include path until the last one is

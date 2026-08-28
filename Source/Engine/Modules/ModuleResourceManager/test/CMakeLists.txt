@@ -1,6 +1,6 @@
 set(TEST_NAME "t_ModuleResourceManager")
 
-add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} t_ModuleResourceManager.cpp)
 
 find_package(GTest CONFIG REQUIRED)
 

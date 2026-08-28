@@ -2,7 +2,7 @@
 # VideoFrameQueue - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_VideoFrameQueue")
+set(TEST_NAME "t_VideoSystem_VideoFrameQueue")
 
 add_executable(${TEST_NAME}
         t_VideoFrameQueue.cpp

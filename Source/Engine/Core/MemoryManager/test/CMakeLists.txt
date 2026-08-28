@@ -5,7 +5,7 @@ add_subdirectory(CustomAllocators)
 set(TEST_NAME "t_MemoryManager")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_MemoryManager.cpp
 )
 
 find_package(GTest CONFIG REQUIRED)

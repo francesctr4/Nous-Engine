@@ -2,10 +2,10 @@
 # NOUS_Job - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_ShaderReflection")
+set(TEST_NAME "t_ShaderSystem_ShaderReflection")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_ShaderReflection.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

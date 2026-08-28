@@ -1,9 +1,9 @@
 find_package(GTest CONFIG REQUIRED)
 
-set(TEST_NAME "t_Scene")
+set(TEST_NAME "t_ECS_Scene")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_Scene.cpp
 )
 
 # Links the static libraries this test actually uses, not NousEngine::Engine.

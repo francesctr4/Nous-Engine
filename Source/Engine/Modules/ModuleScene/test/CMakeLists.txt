@@ -2,10 +2,10 @@
 # ModuleScene - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_BuildModelHierarchy")
+set(TEST_NAME "t_ModuleScene_BuildModelHierarchy")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_BuildModelHierarchy.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

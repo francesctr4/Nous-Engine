@@ -1,7 +1,7 @@
-set(TEST_NAME "t_MathUtils")
+set(TEST_NAME "t_Utils_MathUtils")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_MathUtils.cpp
 )
 
 find_package(GTest CONFIG REQUIRED)

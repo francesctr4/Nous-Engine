@@ -2,7 +2,7 @@
 # ResourceMaterial - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_ResourceMaterial")
+set(TEST_NAME "t_ResourceManager_ResourceMaterial")
 
 add_executable(${TEST_NAME}
         t_ImporterMaterial.cpp

@@ -6,10 +6,10 @@ find_package(GTest CONFIG REQUIRED)
 include(GoogleTest)
 
 # ── t_ShaderLoader ────────────────────────────────────────────────────────────
-set(TEST_NAME "t_ShaderLoader")
+set(TEST_NAME "t_ShaderSystem_ShaderLoader")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_ShaderLoader.cpp
 )
 
 target_link_libraries(${TEST_NAME}
@@ -34,10 +34,10 @@ add_test(NAME ${TEST_NAME}
 )
 
 # ── t_ShaderHotReload ─────────────────────────────────────────────────────────
-set(HOT_RELOAD_TEST_NAME "t_ShaderHotReload")
+set(HOT_RELOAD_TEST_NAME "t_ShaderSystem_ShaderHotReload")
 
 add_executable(${HOT_RELOAD_TEST_NAME}
-        ${HOT_RELOAD_TEST_NAME}.cpp
+        t_ShaderHotReload.cpp
 )
 
 target_link_libraries(${HOT_RELOAD_TEST_NAME}

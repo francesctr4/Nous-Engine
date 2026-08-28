@@ -2,7 +2,7 @@
 # AudioExtract - Unit Tests (pure policy helpers)
 # ===========================================
 
-set(TEST_NAME "t_AudioExtractPolicy")
+set(TEST_NAME "t_VideoSystem_AudioExtractPolicy")
 
 add_executable(${TEST_NAME}
         t_AudioExtractPolicy.cpp

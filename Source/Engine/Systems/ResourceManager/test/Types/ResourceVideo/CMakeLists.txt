@@ -2,7 +2,7 @@
 # ResourceVideo - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_ResourceVideo")
+set(TEST_NAME "t_ResourceManager_ResourceVideo")
 
 add_executable(${TEST_NAME}
         t_ResourceVideo.cpp

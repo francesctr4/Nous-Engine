@@ -5,7 +5,7 @@
 set(TEST_NAME "t_PrefabManager")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_PrefabManager.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

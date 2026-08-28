@@ -1,9 +1,9 @@
 find_package(GTest CONFIG REQUIRED)
 
-set(TEST_NAME "t_CPrefab")
+set(TEST_NAME "t_ECS_CPrefab")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_CPrefab.cpp
 )
 
 # Links the static libraries this test actually uses, not NousEngine::Engine.

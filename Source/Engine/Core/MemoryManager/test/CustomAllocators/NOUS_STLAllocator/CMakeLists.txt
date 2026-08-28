@@ -1,7 +1,7 @@
-set(TEST_NAME "t_NOUS_STLAllocator")
+set(TEST_NAME "t_MemoryManager_NOUS_STLAllocator")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_NOUS_STLAllocator.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

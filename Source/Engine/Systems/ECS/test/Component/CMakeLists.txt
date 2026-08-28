@@ -3,10 +3,10 @@ add_subdirectory(Types)
 find_package(GTest CONFIG REQUIRED)
 find_package(parson CONFIG REQUIRED)
 
-set(TEST_NAME "t_ComponentList")
+set(TEST_NAME "t_ECS_ComponentList")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_ComponentList.cpp
 )
 
 # Links the static libraries this test actually uses, not NousEngine::Engine.

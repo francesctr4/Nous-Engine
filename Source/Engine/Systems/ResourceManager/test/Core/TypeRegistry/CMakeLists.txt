@@ -1,6 +1,6 @@
-set(TEST_NAME "t_TypeRegistry")
+set(TEST_NAME "t_ResourceManager_TypeRegistry")
 
-add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} t_TypeRegistry.cpp)
 
 find_package(GTest CONFIG REQUIRED)
 

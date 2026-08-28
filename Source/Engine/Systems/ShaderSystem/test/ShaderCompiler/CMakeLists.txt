@@ -2,10 +2,10 @@
 # NOUS_Job - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_ShaderCompiler")
+set(TEST_NAME "t_ShaderSystem_ShaderCompiler")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_ShaderCompiler.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

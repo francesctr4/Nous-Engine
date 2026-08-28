@@ -1,7 +1,7 @@
-set(TEST_NAME "t_JsonFile")
+set(TEST_NAME "t_Utils_JsonFile")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_JsonFile.cpp
 )
 
 find_package(GTest CONFIG REQUIRED)

@@ -1,7 +1,7 @@
-set(TEST_NAME "t_FileHandle")
+set(TEST_NAME "t_FileSystem_FileHandle")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_FileHandle.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

@@ -2,7 +2,7 @@
 # ResourceMesh - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_ResourceMesh")
+set(TEST_NAME "t_ResourceManager_ResourceMesh")
 
 add_executable(${TEST_NAME}
         t_ImporterMesh.cpp

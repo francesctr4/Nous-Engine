@@ -1,7 +1,7 @@
-set(TEST_NAME "t_FreeList")
+set(TEST_NAME "t_MemoryManager_FreeList")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_FreeList.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

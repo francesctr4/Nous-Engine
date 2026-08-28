@@ -2,7 +2,7 @@
 # Nous Engine - Scripting Tests
 # ==============================
 
-set(TEST_NAME "t_ScriptManager")
+set(TEST_NAME "t_Scripting_ScriptManager")
 
 # -----------------------------------------------------------------------
 # Bake the compiler path and MSVC lib dirs into the test binary so it can
@@ -50,7 +50,7 @@ configure_file(
 )
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_ScriptManager.cpp
 )
 
 target_include_directories(${TEST_NAME} PRIVATE

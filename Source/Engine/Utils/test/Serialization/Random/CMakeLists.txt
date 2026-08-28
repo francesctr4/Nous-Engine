@@ -1,7 +1,7 @@
-set(TEST_NAME "t_Random")
+set(TEST_NAME "t_Utils_Random")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_Random.cpp
 )
 
 find_package(GTest CONFIG REQUIRED)

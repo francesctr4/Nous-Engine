@@ -2,10 +2,10 @@
 # NOUS_Job - Unit Tests
 # ===========================================
 
-set(TEST_NAME "t_NOUS_ThreadPool")
+set(TEST_NAME "t_NOUS_Multithreading_NOUS_ThreadPool")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_NOUS_ThreadPool.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

@@ -1,7 +1,7 @@
-set(TEST_NAME "t_GameExporter")
+set(TEST_NAME "t_ModuleEditor_GameExporter")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_GameExporter.cpp
 )
 
 find_package(GTest CONFIG REQUIRED)

@@ -1,9 +1,9 @@
 find_package(GTest CONFIG REQUIRED)
 
-set(TEST_NAME "t_CMaterial")
+set(TEST_NAME "t_ECS_CMaterial")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_CMaterial.cpp
 )
 
 # Links the static libraries this test actually uses, not NousEngine::Engine.

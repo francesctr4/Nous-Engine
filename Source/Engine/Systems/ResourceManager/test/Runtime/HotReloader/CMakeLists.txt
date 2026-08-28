@@ -1,6 +1,6 @@
-set(TEST_NAME "t_HotReloader")
+set(TEST_NAME "t_ResourceManager_HotReloader")
 
-add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} t_HotReloader.cpp)
 
 find_package(GTest CONFIG REQUIRED)
 

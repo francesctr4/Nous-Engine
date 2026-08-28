@@ -1,6 +1,6 @@
-set(TEST_NAME "t_ScenePreloader")
+set(TEST_NAME "t_ResourceManager_ScenePreloader")
 
-add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} t_ScenePreloader.cpp)
 
 find_package(GTest CONFIG REQUIRED)
 

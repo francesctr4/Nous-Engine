@@ -1,7 +1,7 @@
-set(TEST_NAME "t_ImportPipeline")
+set(TEST_NAME "t_ResourceManager_ImportPipeline")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_ImportPipeline.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

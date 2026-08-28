@@ -1,7 +1,7 @@
-set(TEST_NAME "t_Event")
+set(TEST_NAME "t_EventSystem_Event")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_Event.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

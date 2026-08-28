@@ -1,7 +1,7 @@
-set(TEST_NAME "t_DynamicAllocator")
+set(TEST_NAME "t_MemoryManager_DynamicAllocator")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_DynamicAllocator.cpp
 )
 
 # These must match the packages found in your main Nous Engine build

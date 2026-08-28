@@ -1,7 +1,7 @@
-set(TEST_NAME "t_AudioGraphLinearize")
+set(TEST_NAME "t_EditorUI_AudioGraphLinearize")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_AudioGraphLinearize.cpp
 )
 
 find_package(GTest CONFIG REQUIRED)

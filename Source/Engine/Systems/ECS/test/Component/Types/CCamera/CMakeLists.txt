@@ -1,7 +1,7 @@
-set(TEST_NAME "t_CCamera")
+set(TEST_NAME "t_ECS_CCamera")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_CCamera.cpp
 )
 
 find_package(GTest CONFIG REQUIRED)

@@ -1,10 +1,10 @@
 find_package(GTest CONFIG REQUIRED)
 find_package(parson CONFIG REQUIRED)
 
-set(TEST_NAME "t_CLight")
+set(TEST_NAME "t_ECS_CLight")
 
 add_executable(${TEST_NAME}
-        ${TEST_NAME}.cpp
+        t_CLight.cpp
 )
 
 # Links the static libraries this test actually uses, not NousEngine::Engine.

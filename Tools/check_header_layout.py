@@ -131,7 +131,7 @@ LAYER_RULES = [
         "forbidden": {p for p in CONVERTED if p.startswith("Module")},
         # A test may name the concrete type it drives; documented in .claude/CLAUDE.md.
         "allow_paths": ("Engine/Systems/ResourceManager/test/Runtime/ScenePreloader/",),
-        "allow_targets": {"t_ScenePreloader"},
+        "allow_targets": {"t_ResourceManager_ScenePreloader"},
         "why": "Modules owns Systems/Renderer/Scripting; the reverse edge is a cycle. "
                "Cross through an interface that lives in the CONSUMER's layer "
                "(ISceneHost, IAudioBroker, IRenderWindow, IScriptInput, ...).",
