@@ -29,7 +29,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Functions")
 
 include(GlobalSettings)
 include(Sanitizers)   # must precede add_subdirectory(Source): applies global compile/link flags
-include(Coverage)     # same reason: instrumentation must reach every translation unit
 include(ProfilingOptions)
 include(UnitTests)
 include(Messages)

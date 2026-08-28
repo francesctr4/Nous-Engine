@@ -86,8 +86,9 @@ endif()
 # left to right and never revisits one, so a symbol first needed from that last
 # FileSystem object is unresolvable.
 #
-# Normally invisible: the reference comes from the NOUS_NEW_ARRAY<char> COMDAT
+# Usually invisible: the reference comes from the NOUS_NEW_ARRAY<char> COMDAT
 # template instantiation in FileHandle.cpp, which an ordinary build discards as
-# unused. --coverage instruments and KEEPS it, which is how the coverage build
-# found a fragility every other Linux config had been getting away with.
+# unused. Any flag that keeps such sections alive (instrumentation, sanitizers,
+# a different inlining decision) makes it a hard link error on Linux. Found
+# 2026-08-29 while building with gcov instrumentation.
 set_target_properties(${CLASS_NAME} PROPERTIES LINK_INTERFACE_MULTIPLICITY 3)
