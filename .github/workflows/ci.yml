@@ -129,7 +129,12 @@ jobs:
       # cases statically, in seconds, without a build. See CONVENTIONS.md,
       # "Target Layout". Windows-only because the check reads CMakeLists and
       # #include lines: it is platform-independent, so one runner is enough.
-      - name: Check header layout declarations
+      #
+      # It also enforces LAYER direction, which the build cannot: a target now
+      # compiles only what it declares, but nothing stops it from DECLARING an
+      # upward edge (Systems -> Modules, Editor -> VulkanBackend). Those rules
+      # were convention + grep until the link graph became honest enough to check.
+      - name: Check header layout and layer direction
         if: runner.os == 'Windows'
         run: python Tools/check_header_layout.py
 

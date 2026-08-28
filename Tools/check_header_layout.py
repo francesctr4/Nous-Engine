@@ -114,6 +114,40 @@ ENGINE_UMBRELLAS = {"NousEngine", "Nous-Engine", "NousEngine::Engine",
 # Target roots of every converted target: the include dir with "/include" removed.
 CONVERTED_ROOTS = [d[: -len("/include")] for d in CONVERTED.values()]
 
+# Forbidden dependency edges -- the layering rules that were convention + grep.
+#
+# Removing the global Source/ root made a target compile only what it DECLARES,
+# which closed the "any header can include any header" hole. It did NOT stop a
+# target from declaring an upward edge, so direction still needs a check -- but now
+# there is an honest link graph to check it against, which there was not before.
+#
+# Each rule is judged where the offending file/target LIVES, on its DIRECT includes
+# and its own link declarations. A requirement arriving transitively through a legal
+# dependency is that dependency's problem and is reported there, not here.
+LAYER_RULES = [
+    {
+        "name": "Modules",
+        "from": ("Engine/Systems/", "Engine/Renderer/", "Engine/Scripting/"),
+        "forbidden": {p for p in CONVERTED if p.startswith("Module")},
+        # A test may name the concrete type it drives; documented in .claude/CLAUDE.md.
+        "allow_paths": ("Engine/Systems/ResourceManager/test/Runtime/ScenePreloader/",),
+        "allow_targets": {"t_ScenePreloader"},
+        "why": "Modules owns Systems/Renderer/Scripting; the reverse edge is a cycle. "
+               "Cross through an interface that lives in the CONSUMER's layer "
+               "(ISceneHost, IAudioBroker, IRenderWindow, IScriptInput, ...).",
+    },
+    {
+        "name": "EditorBackend",
+        "from": ("Editor/",),
+        "forbidden": {"RendererBackend", "VulkanBackend"},
+        "allow_paths": (),
+        "allow_targets": set(),
+        "why": "The editor reaches the renderer backend only through "
+               "IEditorRenderBridge (Renderer/iEditorRenderBridge.h). "
+               "VulkanBackend.h has exactly one includer: RendererBackendFactory.cpp.",
+    },
+]
+
 # Dirs published by a <Target>_test_headers handle: shared test doubles that are
 # neither API nor implementation. Not in CONVERTED (nothing outside test/ may link
 # them), but they MUST be resolvable, or the closure of a test double is invisible
@@ -347,6 +381,45 @@ def private_headers_in_public(tree):
     return findings
 
 
+def layer_violations(tree):
+    """Forbidden edges, checked on direct includes AND on link declarations.
+
+    Both halves are needed. The include half catches a file that names a layer it
+    must not; the link half catches a CMakeLists that grants itself the edge --
+    which is now the only way such an include could compile at all, and is exactly
+    what removing the global Source/ root did NOT prevent.
+    """
+    findings = []
+    for rule in LAYER_RULES:
+        forbidden = rule["forbidden"]
+
+        for path in sorted(tree.text):
+            if not path.startswith(rule["from"]):
+                continue
+            if path.startswith(rule["allow_paths"]):
+                continue
+            for spec in INCLUDE_RE.findall(tree.text[path]):
+                prefix = spec.split("/")[0]
+                if prefix not in forbidden:
+                    continue
+                resolved = tree._resolve(spec, path)
+                if resolved and resolved.startswith(CONVERTED[prefix] + "/"):
+                    findings.append((rule, "include", path, spec))
+
+        for owner, names in sorted(tree.targets.items()):
+            if not owner.startswith(rule["from"]) or owner.startswith(rule["allow_paths"]):
+                continue
+            for name in names:
+                if name in rule["allow_targets"]:
+                    continue
+                edges = tree.links.get(name, {})
+                for dep in sorted(edges.get("PUBLIC", set()) | edges.get("PRIVATE", set())):
+                    base = dep.removesuffix("_headers").removesuffix("_private")
+                    if base in forbidden:
+                        findings.append((rule, "link", owner, f"{name} -> {dep}"))
+    return findings
+
+
 def audit(tree):
     """Return (missing_link, private_leak) findings."""
     required = {}                    # target dir -> set of prefixes needed
@@ -402,9 +475,10 @@ def main():
     tree = Tree(SOURCE_DIR)
     missing, leaks = audit(tree)
     privates = private_headers_in_public(tree)
+    layers = layer_violations(tree)
 
     if args.quiet:
-        return 1 if (missing or leaks or privates) else 0
+        return 1 if (missing or leaks or privates or layers) else 0
 
     if args.list:
         print(f"Converted targets ({len(CONVERTED)}):")
@@ -439,7 +513,15 @@ def main():
                   "to include/, or hide it behind a pimpl/forward declaration first")
         print()
 
-    total = len(missing) + len(leaks) + len(privates)
+    if layers:
+        print("LAYER - a forbidden dependency edge:")
+        for rule, kind, where, detail in layers:
+            print(f"  [{rule['name']}] Source/{where}")
+            print(f"      {kind}: {detail}")
+            print(f"      -> {rule['why']}")
+        print()
+
+    total = len(missing) + len(leaks) + len(privates) + len(layers)
     print(f"{total} finding(s); {len(tree.text)} files, {len(tree.targets)} target dirs scanned.")
     return 1 if total else 0
 
