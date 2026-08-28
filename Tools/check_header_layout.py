@@ -67,6 +67,8 @@ SOURCE_DIR = ROOT_DIR / "Source"
 # Keep in step with CONVENTIONS.md and the engine DLL's PUBLIC link list in
 # Source/Engine/CMakeLists.txt.
 CONVERTED = {
+    "EngineCore":          "Engine/EngineCore/include",
+    "Core":                "Engine/Core/include",
     "Logger":              "Engine/Core/Logger/include",
     "MemoryManager":       "Engine/Core/MemoryManager/include",
     "FileSystem":          "Engine/Core/FileSystem/include",
@@ -182,7 +184,12 @@ class Tree:
                 target = expand(match.group(1))
                 scope = "PUBLIC" if match.group(2) in ("PUBLIC", "INTERFACE") else "PRIVATE"
                 entry = self.links.setdefault(target, {"PUBLIC": set(), "PRIVATE": set()})
-                entry[scope].update(NAME_RE.findall(match.group(3)))
+                # expand() the dependency list too, not just the target name. Without
+                # it "${CLASS_NAME}_headers" tokenises to {CLASS_NAME, _headers} and
+                # the edge is lost -- so nothing could ever propagate THROUGH a
+                # _headers handle. Invisible until EngineCore, the first dependency
+                # that every target re-exports via its own _headers.
+                entry[scope].update(NAME_RE.findall(expand(match.group(3))))
 
     @staticmethod
     def _setting(body, key):
@@ -193,10 +200,14 @@ class Tree:
     def _resolve(self, spec, current):
         """Map an #include spec to a file in the tree, or None if external."""
         prefix = spec.split("/")[0]
+        candidates = []
         if prefix in CONVERTED:
-            candidate = posix(Path(CONVERTED[prefix]) / spec)
-            return candidate if candidate in self.text else None
-        candidates = [posix(Path(spec)), posix(Path(current).parent / spec)]
+            # NOT an early return: a converted prefix can be shadowed by a target's
+            # own private folder of the same name. VulkanBackend has src/Core/, which
+            # collides with the Core target's prefix, so "Core/Device/VulkanDevice.h"
+            # must still fall through to the src/ candidates below.
+            candidates.append(posix(Path(CONVERTED[prefix]) / spec))
+        candidates += [posix(Path(spec)), posix(Path(current).parent / spec)]
         # A converted target puts its own src/ on the include path (PRIVATE), so a
         # quoted include from anywhere in that target can resolve there. Without
         # this the PRIVATE_HEADER check silently passes: the offending include
@@ -223,9 +234,12 @@ class Tree:
         found = set()
         for spec in INCLUDE_RE.findall(self.text[path]):
             prefix = spec.split("/")[0]
-            if prefix in CONVERTED:
-                found.add(prefix)
             resolved = self._resolve(spec, path)
+            # Require the include to actually land in the converted target's dir.
+            # Matching on the prefix alone reports a target's own shadowing folder
+            # (VulkanBackend's src/Core/) as a dependency on the Core target.
+            if prefix in CONVERTED and resolved and resolved.startswith(CONVERTED[prefix] + "/"):
+                found.add(prefix)
             if resolved and resolved.endswith(HEADER_SUFFIXES):
                 found |= self.needs(resolved, stack + (path,))
         self._needs[path] = found
@@ -243,9 +257,10 @@ class Tree:
         if path in stack or prefix not in self.needs(path):
             return None
         for spec in INCLUDE_RE.findall(self.text[path]):
-            if spec.split("/")[0] == prefix:
-                return [path, spec]
             resolved = self._resolve(spec, path)
+            if (spec.split("/")[0] == prefix and resolved
+                    and resolved.startswith(CONVERTED[prefix] + "/")):
+                return [path, spec]
             if resolved and resolved.endswith(HEADER_SUFFIXES):
                 tail = self.chain_to(resolved, prefix, stack + (path,))
                 if tail:

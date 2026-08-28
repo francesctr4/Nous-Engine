@@ -2,7 +2,7 @@
 
 #include <FileSystem/FileHandle.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 #include <filesystem>
 #include <string>

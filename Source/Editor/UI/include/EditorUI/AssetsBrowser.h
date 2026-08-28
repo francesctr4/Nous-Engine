@@ -2,7 +2,7 @@
 
 #include <EditorUI/IEditorWindow.h>
 #include <Utils/Math/MathUtils.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 #include <atomic>
 #include <string>

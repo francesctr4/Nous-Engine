@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 class NOUS_ENGINE_API Camera
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <ResourceManager/Core/IImporter.h>
 
 // Scene importer — scenes have no runtime resource object (no `ResourceScene`

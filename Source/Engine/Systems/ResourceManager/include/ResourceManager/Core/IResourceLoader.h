@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 #include <cstdint>
 #include <string>

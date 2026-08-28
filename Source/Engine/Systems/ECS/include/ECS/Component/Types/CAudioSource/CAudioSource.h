@@ -4,7 +4,7 @@
 #include <ECS/Component/Types/CAudioSource/AudioVoice.h>
 #include <AudioSystem/AudioTypes.h>
 #include <AudioSystem/EffectChainHandle.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 #include <cstdint>
 

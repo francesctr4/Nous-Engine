@@ -35,17 +35,17 @@ namespace
     // In a dev build (CLion), the exe is in Build/.../bin/ but Library/ lives at the project root (cwd).
     std::filesystem::path ResolveLibraryDir(const std::filesystem::path& engineDir)
     {
-        // EngineCore/GameBin/GameApp only exists in a proper engine delivery (InstallEngine).
+        // EngineSDK/GameBin/GameApp only exists in a proper engine delivery (InstallEngine).
         // In dev builds CMake copies Shaders to bin/Library/ but not the full content,
         // so checking for Shaders/ gives a false positive — use GameApp as the indicator instead.
         const std::string gameExeName = "GameApp" + std::string(GameExporterPlatform::GetExeExtension());
-        if (std::filesystem::exists(engineDir / "EngineCore" / "GameBin" / gameExeName))
+        if (std::filesystem::exists(engineDir / "EngineSDK" / "GameBin" / gameExeName))
             return engineDir / "Library";
         return std::filesystem::current_path() / "Library";
     }
 
     // game_config.json source resolution:
-    // - Delivery: EngineCore/GameBin/game_config.json (paired with GameApp template,
+    // - Delivery: EngineSDK/GameBin/game_config.json (paired with GameApp template,
     //   outside Library/ so it survives the user wiping Library/)
     // - Dev build (CLion): bin/Library/Settings/game_config.json — the GameConfig CMake
     //   target copies Source/Game/game_config.json there so direct GameApp dev runs find
@@ -54,7 +54,7 @@ namespace
     // - Last-resort: source tree, only valid when launched from the project root.
     std::filesystem::path ResolveGameConfigSource(const std::filesystem::path& engineDir)
     {
-        const auto deliveryCfg = engineDir / "EngineCore" / "GameBin" / "game_config.json";
+        const auto deliveryCfg = engineDir / "EngineSDK" / "GameBin" / "game_config.json";
         if (std::filesystem::exists(deliveryCfg))
             return deliveryCfg;
         const auto devCfg = engineDir / "Library" / "Settings" / "game_config.json";
@@ -320,11 +320,11 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
 
 #ifdef _WIN32
         const std::string scriptPath =
-            (engineDir / "EngineCore" / "Scripts" / "RebuildScripts.bat").string();
+            (engineDir / "EngineSDK" / "Scripts" / "RebuildScripts.bat").string();
         const std::string cmd = "\"" + scriptPath + "\" " + buildMode;
 #else
         const std::string scriptPath =
-            (engineDir / "EngineCore" / "Scripts" / "RebuildScripts.sh").string();
+            (engineDir / "EngineSDK" / "Scripts" / "RebuildScripts.sh").string();
         const std::string cmd = "bash \"" + scriptPath + "\" " + buildMode + " 2>&1";
 #endif
         const bool ok = LaunchAndCapture(cmd,
@@ -353,9 +353,9 @@ void GameExporter::RunPipeline(const GameExportConfig& config)
     {
         const std::string gameExeName = "GameApp" + std::string(GameExporterPlatform::GetExeExtension());
         PostLog("[INFO] Copying " + gameExeName + "...");
-        // Engine delivery: EngineCore/GameBin/<gameExeName>
+        // Engine delivery: EngineSDK/GameBin/<gameExeName>
         // Dev build: <gameExeName> sits next to EditorApp in bin/
-        const auto deliveryPath = engineDir / "EngineCore" / "GameBin" / gameExeName;
+        const auto deliveryPath = engineDir / "EngineSDK" / "GameBin" / gameExeName;
         const auto devPath      = engineDir / gameExeName;
         const auto src = std::filesystem::exists(deliveryPath) ? deliveryPath : devPath;
         const auto dst = outputDir / gameExeName;

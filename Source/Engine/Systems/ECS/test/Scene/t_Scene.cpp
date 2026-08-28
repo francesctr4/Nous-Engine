@@ -6,7 +6,7 @@
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 class t_Scene : public ::testing::Test
 {

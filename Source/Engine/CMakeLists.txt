@@ -15,6 +15,7 @@ find_package(EnTT CONFIG REQUIRED)
 # ==============================
 # Engine Modules
 # ==============================
+add_subdirectory(EngineCore)
 add_subdirectory(Core)
 add_subdirectory(Modules)
 add_subdirectory(Scripting)
@@ -27,7 +28,7 @@ add_subdirectory(Systems)
 # NousEngine DLL (Shared Library)
 # ==============================
 
-add_library(${PROJECT_NAME} SHARED EngineExport.h MainEngine.cpp)
+add_library(${PROJECT_NAME} SHARED MainEngine.cpp)
 add_library(NousEngine::Engine ALIAS ${PROJECT_NAME})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
@@ -53,6 +54,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         #
         # Add one line per converted target. When the list is complete, the global
         # Source/ root can be dropped and enforcement becomes engine-wide.
+        EngineCore_headers
+        Core_headers
         AudioSystem_headers
         FileSystem_headers
         EventSystem_headers

@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <MemoryManager/FreeList.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 class NOUS_ENGINE_API DynamicAllocator
 {

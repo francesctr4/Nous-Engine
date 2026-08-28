@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 // Polls registered files for modification and fires a callback when a change is detected.
 // Designed for editor-side hot reload: call Poll() once per frame.

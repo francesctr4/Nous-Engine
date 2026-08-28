@@ -3,7 +3,7 @@
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
 #include <AudioSystem/AudioGraph/AudioEffectRegistry.h>
 
-#include "Engine/Core/Globals.h"               // down_cast
+#include <EngineCore/Globals.h>               // down_cast
 #include <FileSystem/FileSystem.h>
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>

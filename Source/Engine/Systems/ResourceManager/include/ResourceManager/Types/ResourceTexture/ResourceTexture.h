@@ -1,7 +1,7 @@
 #ifndef RESOURCETEXTURE_H
 #define RESOURCETEXTURE_H
 
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <vector>
 

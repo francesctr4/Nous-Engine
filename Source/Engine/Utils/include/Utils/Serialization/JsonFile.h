@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <Utils/Serialization/JsonObject.h>
 #include <string_view>
 

@@ -1,6 +1,4 @@
-#ifndef NOUS_ENGINE_SYSTEM_MANAGER_H
-#define NOUS_ENGINE_SYSTEM_MANAGER_H
-
+#pragma once
 #include <memory>
 #include <vector>
 #include <string>
@@ -33,4 +31,3 @@ private:
 
 };
 
-#endif // NOUS_ENGINE_SYSTEM_MANAGER_H

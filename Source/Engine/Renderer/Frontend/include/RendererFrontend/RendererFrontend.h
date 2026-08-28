@@ -6,7 +6,7 @@
 #include <RendererFrontend/DynamicTextureCache.h>
 #include <Renderer/IGPUResourceFactory.h>
 #include <ShaderSystem/ShaderLoader/ShaderLoaderTypes.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 #include <array>
 #include <atomic>

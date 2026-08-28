@@ -4,7 +4,7 @@
 #include "VulkanTypes.inl"
 #include <Logger/Asserts.h>
 #include <Logger/Logger.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 /**
  * Returns the string representation of result.

@@ -5,7 +5,7 @@
 #include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <Renderer/IGPUResourceFactory.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 std::vector<std::pair<ResourceType, ResourceBase*>> BuiltinResources::Create()
 {

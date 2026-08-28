@@ -8,7 +8,7 @@
 #
 # THIS TARGET IS UNLIKE EVERY OTHER ONE: its public headers are also shipped as a
 # user-facing SDK. Runtime/CMakeLists.txt copies include/Scripting/** verbatim into
-#   <bin>/EngineCore/Scripts/SDK/include/Scripting/**
+#   <bin>/EngineSDK/Scripts/SDK/include/Scripting/**
 # and RebuildScripts.{bat,sh}.in re-syncs them on every hot-reload compile, so the
 # include prefix below is what every user script in Assets/ says -- and what
 # Internal/ScriptTemplate.inl generates into each NEW script. Changing it means
@@ -28,6 +28,11 @@
 
 add_library(Scripting_headers INTERFACE)
 target_include_directories(Scripting_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# EngineCore (Globals.h / EngineExport.h / UpdateStatus.h) is named by this
+# target's PUBLIC headers, so it rides on the _headers handle: consumers of
+# those headers need the dir too. It is header-only, so this adds no linkage.
+target_link_libraries(Scripting_headers INTERFACE EngineCore_headers)
 
 # An _headers handle carries the header-level deps of the API it exposes:
 # ScriptManager.h holds a NOUS_Vector, which routes through NOUS_STLAllocator.

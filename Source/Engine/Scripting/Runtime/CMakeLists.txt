@@ -5,7 +5,7 @@
 # Directory layout (next to the engine executable):
 #
 #   <bin>/Library/Scripts/Scripts.dll   ← BUILD OUTPUT (user-deletable; regenerable)
-#   <bin>/EngineCore/Scripts/           ← BUILD TOOLING (must survive Library deletion)
+#   <bin>/EngineSDK/Scripts/           ← BUILD TOOLING (must survive Library deletion)
 #
 # Since the header-layout conversion the SDK include tree is a VERBATIM COPY of
 # Scripting/include/, so a user script includes exactly what an engine TU does:
@@ -21,7 +21,7 @@
 # with everything else and there's nothing left to rebuild from.
 
 set(SCRIPTS_OUTPUT_DIR   "${CMAKE_BINARY_DIR}/bin/Library/Scripts")
-set(SCRIPTS_TOOLING_DIR  "${CMAKE_BINARY_DIR}/bin/EngineCore/Scripts")
+set(SCRIPTS_TOOLING_DIR  "${CMAKE_BINARY_DIR}/bin/EngineSDK/Scripts")
 set(SCRIPTS_SRC_DIR      "${CMAKE_SOURCE_DIR}/Assets")
 
 file(MAKE_DIRECTORY "${SCRIPTS_OUTPUT_DIR}")

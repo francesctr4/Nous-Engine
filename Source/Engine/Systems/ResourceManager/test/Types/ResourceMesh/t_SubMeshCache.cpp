@@ -5,7 +5,7 @@
 #include <ResourceManager/Core/ResourceQueue.h>
 #include <ResourceManager/Core/ResourceTable.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <Utils/Math/Vertex.inl>
 
 #include <cstdint>

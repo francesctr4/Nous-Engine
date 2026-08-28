@@ -1,8 +1,8 @@
 #ifndef ASSERTS_H
 #define ASSERTS_H
 
-#include "Engine/Core/Globals.h"
-#include "Engine/EngineExport.h"
+#include <EngineCore/Globals.h>
+#include <EngineCore/EngineExport.h>
 
 // Disable assertions by commenting out the below line.
 #define NOUS_ASSERTIONS_ENABLED

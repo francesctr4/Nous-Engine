@@ -7,7 +7,7 @@
 #include <vector>
 #include <mutex>
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <Utils/DataStructures/NOUS_Vector.h>
 #include <Scripting/iScriptRegistry.h>
 

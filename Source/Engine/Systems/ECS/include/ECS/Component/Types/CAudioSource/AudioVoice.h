@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AudioSystem/SoundHandle.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 class IAudioBroker;
 

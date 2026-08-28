@@ -18,7 +18,7 @@
 #include <ModuleBase/Module.h>
 #include <EventSystem/IEventListener.h>
 #include <FileWatcher/FileWatcher.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <Renderer/RendererTypes.h>
 
 #include <unordered_map>

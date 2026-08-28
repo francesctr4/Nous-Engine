@@ -5,7 +5,7 @@ REM ============================================================
 REM Nous Engine - RebuildScripts.bat (SDK-only, no engine source)
 REM
 REM Layout (relative to this script):
-REM   %~dp0 .................... <exe_dir>\EngineCore\Scripts\  (tooling)
+REM   %~dp0 .................... <exe_dir>\EngineSDK\Scripts\  (tooling)
 REM   %~dp0\SDK\ ............... script SDK headers + EngineAPI.cpp
 REM   %~dp0\..\..\Library\Scripts\Scripts.dll ...... build output
 REM
@@ -49,7 +49,7 @@ if errorlevel 1 (
 )
 
 REM -----------------------------
-REM 2) Resolve dirs (tooling lives in EngineCore\Scripts, output in Library\Scripts)
+REM 2) Resolve dirs (tooling lives in EngineSDK\Scripts, output in Library\Scripts)
 REM -----------------------------
 REM Normalize all paths up front using %%~fI to expand any ".." segments.
 REM This is required so that "if not exist" checks work correctly.
@@ -95,7 +95,7 @@ echo %EXE_DIR_FWD% | findstr /I "Release" >nul && set BUILD_MODE=Release
 echo [INFO] BUILD_MODE           = %BUILD_MODE%
 
 REM -----------------------------
-REM 3) SDK paths (required) — live next to this bat in EngineCore\Scripts\SDK
+REM 3) SDK paths (required) — live next to this bat in EngineSDK\Scripts\SDK
 REM -----------------------------
 set SDK_DIR=%SCRIPTS_TOOLING_DIR%\SDK
 set SDK_INCLUDE=%SDK_DIR%\include

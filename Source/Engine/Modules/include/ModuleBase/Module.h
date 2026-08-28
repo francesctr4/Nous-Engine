@@ -1,8 +1,8 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include "Engine/Core/UpdateStatus.h"
-#include "Engine/EngineExport.h"
+#include <EngineCore/UpdateStatus.h>
+#include <EngineCore/EngineExport.h>
 
 // Forward Declarations
 class EventSystem;

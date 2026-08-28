@@ -6,7 +6,7 @@
 #include <FakeComponentServices.h>
 #include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <Utils/Serialization/JsonObject.h>
 
 // CVideoPlayer reaches the decoder through the ComponentServices seam, so these

@@ -6,7 +6,7 @@
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Core/TypeRegistry.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 
 #include <filesystem>

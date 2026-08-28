@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <Renderer/RendererTypes.h>
 
 #include <vector>

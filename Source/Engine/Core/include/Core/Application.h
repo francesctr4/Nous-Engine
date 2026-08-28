@@ -1,8 +1,6 @@
-#ifndef APPLICATION_H
-#define APPLICATION_H
-
-#include "Engine/EngineExport.h"
-#include "Engine/Core/UpdateStatus.h"
+#pragma once
+#include <EngineCore/EngineExport.h>
+#include <EngineCore/UpdateStatus.h>
 
 #include <vector>
 
@@ -98,4 +96,3 @@ private:
 	mutable char  titleBuffer[256] = {};
 };
 
-#endif // APPLICATION_H

@@ -5,7 +5,7 @@
 #include <ResourceManager/Core/MetaFileData.h>
 #include <ResourceManager/Core/TypeRegistry.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 #include <chrono>
 #include <filesystem>

@@ -298,7 +298,7 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
     UnloadScriptLibrary();
 
 #ifdef _WIN32
-    const std::wstring batPath = (GetExeDir() / "EngineCore" / "Scripts" / "RebuildScripts.bat").wstring();
+    const std::wstring batPath = (GetExeDir() / "EngineSDK" / "Scripts" / "RebuildScripts.bat").wstring();
     std::wstring cmd;
 #ifdef _DEBUG
     cmd = batPath + L" Debug";
@@ -396,7 +396,7 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
         case BuildFailureCause::SdkHeadersMissing:
         case BuildFailureCause::SdkEngineApiMissing:
             NOUS_ERROR("Cause: The packaged Script SDK is incomplete (engine deployment issue).");
-            NOUS_ERROR("       Verify that the 'EngineCore/Scripts/SDK' folder exists next to the executable");
+            NOUS_ERROR("       Verify that the 'EngineSDK/Scripts/SDK' folder exists next to the executable");
             NOUS_ERROR("       and contains the SDK headers and 'src/EngineAPI.cpp'.");
             break;
 
@@ -419,7 +419,7 @@ bool ScriptManager::ReloadScriptLibrary(const std::string& dllPath)
 
     NOUS_INFO("Scripts recompiled successfully!");
 #else
-    const std::string shPath = (GetExeDir() / "EngineCore" / "Scripts" / "RebuildScripts.sh").string();
+    const std::string shPath = (GetExeDir() / "EngineSDK" / "Scripts" / "RebuildScripts.sh").string();
 #ifdef _DEBUG
     const std::string cmd = "bash \"" + shPath + "\" Debug 2>&1";
 #else
@@ -617,7 +617,7 @@ void ScriptManager::RecompileScripts()
 
 bool ScriptManager::GenerateScript(const std::string& className, const std::string& directory)
 {
-    const std::string templatePath = (GetExeDir() / "EngineCore" / "Scripts" / "ScriptTemplate.inl").string();
+    const std::string templatePath = (GetExeDir() / "EngineSDK" / "Scripts" / "ScriptTemplate.inl").string();
     const std::string outputPath = (std::filesystem::path(directory) / (className + ".cpp")).string();
 
     // Read the template file

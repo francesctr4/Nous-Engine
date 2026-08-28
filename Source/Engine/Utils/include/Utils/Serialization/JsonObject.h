@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <string>

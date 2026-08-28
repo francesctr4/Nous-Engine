@@ -5,7 +5,7 @@
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 #include <set>
 #include <string>

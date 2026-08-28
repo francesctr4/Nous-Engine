@@ -10,9 +10,11 @@ add_subdirectory(ShaderSystem)
 add_subdirectory(AudioSystem)
 add_subdirectory(VideoSystem)
 
+# SystemManager is genuinely private: its only includer is its own .cpp, so this
+# target publishes no headers at all and gets no include/ dir.
 add_library(Systems STATIC
-        SystemManager.cpp
-        SystemManager.h
+        src/SystemManager.cpp
+        src/SystemManager.h
 )
 
 set_target_properties(Systems PROPERTIES
@@ -21,8 +23,9 @@ set_target_properties(Systems PROPERTIES
         CXX_EXTENSIONS OFF
 )
 
-target_include_directories(Systems PUBLIC
-        ${CMAKE_SOURCE_DIR}/Source
+target_include_directories(Systems
+        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, removed with the last conversion
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_compile_definitions(Systems PRIVATE

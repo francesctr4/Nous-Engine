@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test types

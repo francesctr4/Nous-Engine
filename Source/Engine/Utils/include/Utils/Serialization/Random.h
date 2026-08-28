@@ -1,7 +1,7 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <cstdint>
 
 namespace Random

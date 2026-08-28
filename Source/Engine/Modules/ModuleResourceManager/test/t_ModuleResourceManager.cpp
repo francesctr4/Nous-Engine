@@ -5,7 +5,7 @@
 #include <EventSystem/EventSystem.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Core/TypeRegistry.h>
 

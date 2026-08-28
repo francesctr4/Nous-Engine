@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 // Advance a video playhead by dt (seconds). Non-looping: clamps to [0, durationSec].
 // Looping: wraps into [0, durationSec) (a wrap past the end resumes from the start).

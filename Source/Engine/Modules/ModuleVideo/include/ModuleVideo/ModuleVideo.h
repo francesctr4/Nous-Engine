@@ -2,8 +2,8 @@
 
 #include <ModuleBase/Module.h>
 #include <EventSystem/IEventListener.h>
-#include "Engine/Core/Globals.h"
-#include "Engine/EngineExport.h"
+#include <EngineCore/Globals.h>
+#include <EngineCore/EngineExport.h>
 #include <VideoSystem/VideoFrame.h>
 #include <VideoSystem/VideoHandle.h>
 #include <VideoSystem/iVideoBroker.h>

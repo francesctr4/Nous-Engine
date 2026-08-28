@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <ECS/ECSInternalComponents.h>
 
 #include <entt/entt.hpp>

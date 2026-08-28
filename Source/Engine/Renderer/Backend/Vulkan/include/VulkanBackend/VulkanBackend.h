@@ -3,8 +3,8 @@
 
 #include <RendererBackend/iRendererBackend.h>
 #include <Renderer/iEditorRenderBridge.h>
-#include "Engine/EngineExport.h"
-#include "Engine/Core/Globals.h"
+#include <EngineCore/EngineExport.h>
+#include <EngineCore/Globals.h>
 
 class ResourceMesh;
 class ResourceMaterial;

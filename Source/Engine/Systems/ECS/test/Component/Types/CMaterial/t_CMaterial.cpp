@@ -5,7 +5,7 @@
 #include <ECS/Component/Types/CMaterial/CMaterial.h>
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <Utils/Serialization/JsonObject.h>
 
 class t_CMaterial : public ::testing::Test

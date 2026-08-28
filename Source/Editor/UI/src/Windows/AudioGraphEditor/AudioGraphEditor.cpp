@@ -1,7 +1,7 @@
 #include <EditorUI/AudioGraphEditor.h>
 
 #include <EditorCore/EditorContext.h>
-#include "Engine/Core/Globals.h"   // down_cast
+#include <EngineCore/Globals.h>   // down_cast
 #include <Logger/Logger.h>
 #include <ModuleAudio/ModuleAudio.h>
 #include <ModuleResourceManager/ModuleResourceManager.h>

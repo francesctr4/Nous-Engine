@@ -1,8 +1,8 @@
 #pragma once
 
 #include <FileWatcher/FileWatcher.h>
-#include "Engine/Core/Globals.h"
-#include "Engine/EngineExport.h"
+#include <EngineCore/Globals.h>
+#include <EngineCore/EngineExport.h>
 #include <ResourceManager/Types/ResourceType.h>
 
 #include <atomic>

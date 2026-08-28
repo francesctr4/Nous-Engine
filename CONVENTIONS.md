@@ -260,8 +260,9 @@ foundation — `Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` �
 `Systems/` — `VideoSystem`, `ShaderSystem`, `CameraSystem`, `ECS`, `ResourceManager`,
 `PrefabManager` — all four `Renderer/` targets, and the rest of the foundation —
 `EventSystem`, `FileWatcher`, `TimeManager`, `Utils` (2026-08-27); all of `Modules/`
-all of `Editor/` and `Scripting` (2026-08-28). Remaining: `Core` itself
-(`Application`). Converted targets use:
+all of `Editor/`, `Scripting`, and finally `EngineCore` + `Core` + `SystemManager`
+(2026-08-28). **All targets are converted**; the remaining step is dropping the
+global `${CMAKE_SOURCE_DIR}/Source` include root. Converted targets use:
 
 ```
 Systems/AudioSystem/

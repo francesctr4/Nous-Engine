@@ -2,9 +2,9 @@
 #define MODULEINPUT_H
 
 #include <ModuleBase/Module.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <EventSystem/IEventListener.h>
-#include "Engine/Core/Input/IInputReader.h"
+#include <EngineCore/IInputReader.h>
 #include <Scripting/iScriptInput.h>
 
 constexpr int32 MAX_KEYBOARD_KEYS = 300;

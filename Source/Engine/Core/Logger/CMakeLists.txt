@@ -17,6 +17,11 @@ set(CLASS_NAME "Logger")
 add_library(${CLASS_NAME}_headers INTERFACE)
 target_include_directories(${CLASS_NAME}_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# EngineCore (Globals.h / EngineExport.h / UpdateStatus.h) is named by this
+# target's PUBLIC headers, so it rides on the _headers handle: consumers of
+# those headers need the dir too. It is header-only, so this adds no linkage.
+target_link_libraries(${CLASS_NAME}_headers INTERFACE EngineCore_headers)
+
 # An _headers handle must carry the header-level dependencies of the API it
 # exposes, not just its own include dir: Asserts.h is public and includes
 # <NOUS_Multithreading/NOUS_Multithreading.h>, so anyone given Logger's API dir

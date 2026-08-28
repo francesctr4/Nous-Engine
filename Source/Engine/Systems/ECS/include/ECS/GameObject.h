@@ -2,7 +2,7 @@
 
 #include <Logger/Asserts.h>
 #include <ECS/Component/Component.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 #include <entt/entt.hpp>
 #include <string>

@@ -1,7 +1,7 @@
 #ifndef VULKANDEVICE_H
 #define VULKANDEVICE_H
 
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include "VulkanTypes.inl"
 
 #include <optional>

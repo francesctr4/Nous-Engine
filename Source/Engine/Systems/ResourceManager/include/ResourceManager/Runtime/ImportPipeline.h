@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <string>
 #include <string_view>

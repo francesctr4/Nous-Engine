@@ -1,6 +1,4 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
-
+#pragma once
 #include <cstdint>
 #include <cassert>
 #include <stdexcept>
@@ -109,4 +107,3 @@ auto down_cast(Source ptr)
     return static_cast<Target>(ptr);
 }
 
-#endif // GLOBALS_H

@@ -1,7 +1,7 @@
 #ifndef RESOURCEMESH_H
 #define RESOURCEMESH_H
 
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <Utils/Math/Vertex.inl>
 

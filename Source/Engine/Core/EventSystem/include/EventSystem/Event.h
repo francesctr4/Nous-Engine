@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_EVENT_H
 #define NOUS_ENGINE_EVENT_H
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <cstdint>
 #include <cstring>
 

@@ -2,7 +2,7 @@
 
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <ShaderSystem/ShaderTypes.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 // =============================================================================
 // Constructor

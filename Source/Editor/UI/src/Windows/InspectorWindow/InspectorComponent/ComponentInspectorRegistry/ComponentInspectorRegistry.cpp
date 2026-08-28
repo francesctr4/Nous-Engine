@@ -4,7 +4,7 @@
 #include "Windows/InspectorWindow/InspectorComponent/InspectorCMaterial/InspectorCMaterial.h"
 #include "Windows/InspectorWindow/InspectorComponent/InspectorCScript/InspectorCScript.h"
 
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <ModuleResourceManager/ModuleResourceManager.h>
 #include <ECS/Component/Component.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>

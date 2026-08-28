@@ -1,7 +1,7 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <chrono>
 
 enum class TimerState : uint8_t

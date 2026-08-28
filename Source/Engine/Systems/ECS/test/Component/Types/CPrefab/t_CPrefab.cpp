@@ -4,7 +4,7 @@
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 class t_CPrefab : public ::testing::Test
 {

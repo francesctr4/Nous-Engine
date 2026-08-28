@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Core/Globals.h"
-#include "Engine/Core/Input/IInputReader.h"
+#include <EngineCore/Globals.h>
+#include <EngineCore/IInputReader.h>
 
 // -----------------------------------------------------------------------------
 // Input, as seen from inside Scripting/.

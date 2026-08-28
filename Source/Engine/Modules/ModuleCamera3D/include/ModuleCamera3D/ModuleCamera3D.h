@@ -3,7 +3,7 @@
 
 #include <ModuleBase/Module.h>
 #include <EventSystem/IEventListener.h>
-#include "Engine/Core/Input/IInputReader.h"
+#include <EngineCore/IInputReader.h>
 
 #include <glm/glm.hpp>
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ResourceManager/Core/IImporter.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 #include <string>
 

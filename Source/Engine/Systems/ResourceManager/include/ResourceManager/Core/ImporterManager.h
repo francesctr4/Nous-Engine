@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IImporterManager.h"
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 class ResourceBase;
 enum class ResourceType : int8_t;

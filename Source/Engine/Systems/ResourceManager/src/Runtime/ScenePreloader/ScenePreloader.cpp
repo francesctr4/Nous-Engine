@@ -2,7 +2,7 @@
 
 #include <ResourceManager/Core/IResourceLoader.h>
 #include <Logger/Logger.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>

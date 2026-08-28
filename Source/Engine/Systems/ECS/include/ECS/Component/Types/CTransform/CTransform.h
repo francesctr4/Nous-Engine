@@ -3,7 +3,7 @@
 #include <ECS/Component/Component.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 class CTransform : public Component {
 public:

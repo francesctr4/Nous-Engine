@@ -4,7 +4,7 @@
 #include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 #include <ResourceManager/Core/MetaFileData.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 #include <cstdint>
 #include <filesystem>

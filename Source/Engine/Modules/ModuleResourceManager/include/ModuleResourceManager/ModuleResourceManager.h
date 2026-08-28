@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ModuleBase/Module.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <EventSystem/IEventListener.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Core/ResourceQueue.h>

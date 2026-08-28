@@ -2,7 +2,7 @@
 
 #include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 // =====================================================
 // Tests — ResourceMaterial

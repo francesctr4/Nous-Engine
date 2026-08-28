@@ -6,7 +6,7 @@
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 #include <glm/glm.hpp>
 #include <cmath>

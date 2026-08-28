@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 class IScript;
 

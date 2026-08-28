@@ -1,7 +1,7 @@
 #ifndef VULKANTYPES_INL
 #define VULKANTYPES_INL
 
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <Renderer/RendererTypes.h>
 
 #include <vulkan/vulkan.h>

@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_RESOURCE_SHADER_H
 #define NOUS_ENGINE_RESOURCE_SHADER_H
 
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ShaderSystem/ShaderTypes.h>
 #include <ShaderSystem/ShaderReflection/ShaderReflectionTypes.h>

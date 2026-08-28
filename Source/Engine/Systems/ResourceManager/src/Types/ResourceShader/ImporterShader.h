@@ -2,7 +2,7 @@
 #define NOUS_ENGINE_IMPORTER_SHADER_H
 
 #include <ResourceManager/Core/IImporter.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 struct NOUS_ENGINE_API ImporterShader : IResourceImporter
 {

@@ -18,6 +18,11 @@
 add_library(ModuleBase_headers INTERFACE)
 target_include_directories(ModuleBase_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# EngineCore (Globals.h / EngineExport.h / UpdateStatus.h) is named by this
+# target's PUBLIC headers, so it rides on the _headers handle: consumers of
+# those headers need the dir too. It is header-only, so this adds no linkage.
+target_link_libraries(ModuleBase_headers INTERFACE EngineCore_headers)
+
 add_library(ModuleBase_private INTERFACE)
 target_include_directories(ModuleBase_private INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 

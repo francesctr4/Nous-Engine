@@ -1,7 +1,5 @@
-#ifndef NOUS_IINPUTREADER_H
-#define NOUS_IINPUTREADER_H
-
-#include "Engine/Core/Globals.h"
+#pragma once
+#include <EngineCore/Globals.h>
 
 enum class KeyState : uint8_t
 {
@@ -24,4 +22,3 @@ public:
     virtual int32 GetMouseZ() const = 0;
 };
 
-#endif // NOUS_IINPUTREADER_H

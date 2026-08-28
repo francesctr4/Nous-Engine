@@ -3,7 +3,7 @@
 #include <FakeComponentServices.h>
 #include <ECS/Scene/Scene.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 class t_FakeComponentServices : public ::testing::Test
 {

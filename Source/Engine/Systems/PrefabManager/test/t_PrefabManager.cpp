@@ -7,7 +7,7 @@
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/Component/Types/CCamera/CCamera.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 
 #include <Utils/Serialization/JsonFile.h>
 #include <Utils/Serialization/JsonObject.h>

@@ -3,7 +3,7 @@
 
 #include <EventSystem/Event.h>
 #include <EventSystem/IEventListener.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 #include <unordered_map>
 #include <vector>

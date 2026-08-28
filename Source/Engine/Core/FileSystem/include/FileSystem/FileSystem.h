@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <string>
 
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 namespace nous::engine::filesystem
 {

@@ -1,8 +1,8 @@
 #ifndef FILEHANDLE_H
 #define FILEHANDLE_H
 
-#include "Engine/Core/Globals.h"
-#include "Engine/EngineExport.h"
+#include <EngineCore/Globals.h>
+#include <EngineCore/EngineExport.h>
 
 #include <string>
 #include <memory>

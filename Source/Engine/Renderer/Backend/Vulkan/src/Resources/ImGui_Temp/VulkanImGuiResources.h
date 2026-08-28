@@ -2,7 +2,7 @@
 #define VULKANIMGUIRESOURCES_H
 
 #include "VulkanTypes.inl"
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 namespace NOUS_ImGuiVulkanResources
 {

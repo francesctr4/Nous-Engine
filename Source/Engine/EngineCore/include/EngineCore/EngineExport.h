@@ -1,6 +1,4 @@
-#ifndef NOUS_ENGINE_EXPORT_H
-#define NOUS_ENGINE_EXPORT_H
-
+#pragma once
 #ifdef _WIN32
 #ifdef NOUS_ENGINE_EXPORTS
 #define NOUS_ENGINE_API __declspec(dllexport)
@@ -11,4 +9,3 @@
 #define NOUS_ENGINE_API
 #endif
 
-#endif // NOUS_ENGINE_EXPORT_H

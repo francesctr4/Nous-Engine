@@ -3,7 +3,7 @@
 #include <ECS/Component/Component.h>
 #include <VideoSystem/VideoFrame.h>
 #include <VideoSystem/VideoHandle.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 
 #include <string>
 

@@ -8,7 +8,7 @@
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <Utils/Serialization/JsonObject.h>
 
 // CAudioSource reaches the audio engine through the ComponentServices seam, so

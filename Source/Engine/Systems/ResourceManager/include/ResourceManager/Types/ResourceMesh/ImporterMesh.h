@@ -2,7 +2,7 @@
 #define IMPORTERMESH_H
 
 #include <ResourceManager/Core/IImporter.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <Utils/Math/Vertex.inl>
 
 #include <glm/glm.hpp>

@@ -71,6 +71,11 @@ set_target_properties(ImGuiColorTextEdit PROPERTIES
 add_library(EditorUI_headers INTERFACE)
 target_include_directories(EditorUI_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# EngineCore (Globals.h / EngineExport.h / UpdateStatus.h) is named by this
+# target's PUBLIC headers, so it rides on the _headers handle: consumers of
+# those headers need the dir too. It is header-only, so this adds no linkage.
+target_link_libraries(EditorUI_headers INTERFACE EngineCore_headers)
+
 # An _headers handle must carry the header-level deps of the API it exposes.
 # TextEditorWindow.h includes <TextEditor.h>, so anyone handed EditorUI's API dir
 # alone -- ModuleEditor.cpp constructs every window -- needs this dir too. It used

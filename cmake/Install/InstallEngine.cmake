@@ -37,11 +37,11 @@ install(TARGETS Nous-Engine Nous-Editor
 )
 
 # GameApp.exe — pre-built game stub used by the in-engine Build pipeline.
-# Installed to EngineCore/GameBin/ (NOT inside Library/) so it survives the user
+# Installed to EngineSDK/GameBin/ (NOT inside Library/) so it survives the user
 # wiping Library/. Without this split, deleting Library/ takes GameApp with it
 # and the next exported build has no executable to copy.
 install(TARGETS GameApp
-        RUNTIME DESTINATION EngineCore/GameBin
+        RUNTIME DESTINATION EngineSDK/GameBin
         COMPONENT InstallEngine
 )
 
@@ -52,11 +52,11 @@ install(TARGETS Scripts
 )
 
 # Script build tooling — RebuildScripts.bat/sh, ScriptTemplate.inl, SDK/ headers+src.
-# Installed to EngineCore/Scripts/ (NOT inside Library/) so it survives the user
+# Installed to EngineSDK/Scripts/ (NOT inside Library/) so it survives the user
 # wiping Library/. Without this split, deleting Library/ takes the bat + SDK with
 # it and the engine has no way to regenerate Scripts.dll on next launch.
-install(DIRECTORY "${CMAKE_BINARY_DIR}/bin/EngineCore/Scripts/"
-        DESTINATION EngineCore/Scripts
+install(DIRECTORY "${CMAKE_BINARY_DIR}/bin/EngineSDK/Scripts/"
+        DESTINATION EngineSDK/Scripts
         COMPONENT InstallEngine
         PATTERN "*.pdb"    EXCLUDE   # Windows debug symbols
         PATTERN "*.exp"    EXCLUDE   # Windows export file
@@ -88,11 +88,11 @@ install(DIRECTORY "${CMAKE_SOURCE_DIR}/Assets/"
 
 # Game configuration template — read by the in-engine Build pipeline as the source
 # game_config.json to copy (and patch) into the exported game's Library/Settings/.
-# Paired with the GameApp template under EngineCore/GameBin/ so it survives the user
+# Paired with the GameApp template under EngineSDK/GameBin/ so it survives the user
 # wiping Library/. Otherwise the next exported build has no startup-scene config and
 # the game falls back to the hardcoded default scene.
 install(FILES "${CMAKE_SOURCE_DIR}/Source/Game/game_config.json"
-        DESTINATION EngineCore/GameBin
+        DESTINATION EngineSDK/GameBin
         COMPONENT InstallEngine
 )
 

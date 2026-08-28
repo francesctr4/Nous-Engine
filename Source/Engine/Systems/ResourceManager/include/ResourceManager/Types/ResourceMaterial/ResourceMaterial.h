@@ -1,7 +1,7 @@
 #ifndef RESOURCEMATERIAL_H
 #define RESOURCEMATERIAL_H
 
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <Renderer/RendererTypes.h>
 #include <ShaderSystem/ShaderReflection/ShaderReflectionTypes.h>

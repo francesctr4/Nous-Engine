@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Engine/Core/Globals.h"
+#include <EngineCore/Globals.h>
 #include <MemoryManager/MemoryManager.h>
-#include "Engine/EngineExport.h"
+#include <EngineCore/EngineExport.h>
 #include <ResourceManager/Core/IImporter.h>
 #include <ResourceManager/Core/ResourceBase.h>
 

@@ -3,7 +3,7 @@
 # Nous Engine - RebuildScripts.sh (SDK-only, no engine source)
 #
 # Layout (relative to this script):
-#   $SCRIPT_DIR ............. <exe_dir>/EngineCore/Scripts/  (tooling)
+#   $SCRIPT_DIR ............. <exe_dir>/EngineSDK/Scripts/  (tooling)
 #   $SCRIPT_DIR/SDK/ ........ script SDK headers + EngineAPI.cpp
 #   $SCRIPT_DIR/../../Library/Scripts/Scripts.{so,dylib} ..... build output
 #
@@ -37,7 +37,7 @@ fi
 echo "[INFO] CXX_COMPILER          = $CXX_COMPILER"
 
 # -----------------------------
-# 2) Resolve paths (tooling lives in EngineCore/Scripts, output in Library/Scripts)
+# 2) Resolve paths (tooling lives in EngineSDK/Scripts, output in Library/Scripts)
 # -----------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_TOOLING_DIR="$SCRIPT_DIR"
@@ -77,7 +77,7 @@ fi
 echo "[INFO] BUILD_MODE            = $BUILD_MODE"
 
 # -----------------------------
-# 3) SDK paths (required) — live next to this script in EngineCore/Scripts/SDK
+# 3) SDK paths (required) — live next to this script in EngineSDK/Scripts/SDK
 # -----------------------------
 SDK_DIR="$SCRIPTS_TOOLING_DIR/SDK"
 SDK_INCLUDE="$SDK_DIR/include"

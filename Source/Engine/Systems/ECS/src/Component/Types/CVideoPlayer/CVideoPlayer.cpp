@@ -1,6 +1,6 @@
 #include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
 
-#include "Engine/Core/Globals.h"                 // down_cast
+#include <EngineCore/Globals.h>                 // down_cast
 #include <FileSystem/FileSystem.h>   // GetFilename
 #include <ECS/ComponentServices.h>
 #include <ECS/Scene/iSceneHost.h>
