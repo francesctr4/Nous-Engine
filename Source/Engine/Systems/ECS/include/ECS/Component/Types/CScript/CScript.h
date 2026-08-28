@@ -8,6 +8,7 @@
 #include <map>
 
 #include <EngineCore/EngineExport.h>
+#include <cstddef>
 
 class IScript;
 

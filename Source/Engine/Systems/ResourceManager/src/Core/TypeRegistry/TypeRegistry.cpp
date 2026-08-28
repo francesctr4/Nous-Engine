@@ -4,6 +4,7 @@
 #include <Logger/Logger.h>
 
 #include <algorithm>
+#include <cstddef>
 
 namespace
 {

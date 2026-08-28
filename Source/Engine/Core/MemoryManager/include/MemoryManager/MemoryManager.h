@@ -9,6 +9,7 @@
 #include <EngineCore/EngineExport.h>
 #include <MemoryManager/MemoryTag.h>
 #include <cstdint>
+#include <cstddef>
 
 // Memory size literals. Moved here from Globals.h: every caller is either passing
 // one to InitializeMemory or formatting a byte count, so MemoryManager is where

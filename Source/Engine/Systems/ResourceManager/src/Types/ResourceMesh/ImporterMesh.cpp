@@ -31,6 +31,7 @@
 #include <filesystem>
 #include <unordered_set>
 #include <unordered_map>
+#include <cstddef>
 
 // ─── Binary format ────────────────────────────────────────────────────────────
 // V1 (legacy): uint64_t vertexCount | Vertex3D[] | uint64_t indexCount | uint32_t[]

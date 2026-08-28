@@ -3,6 +3,7 @@
 #include "VideoFrameQueue/VideoFrameQueue.h"
 
 #include <vector>
+#include <cstddef>
 
 // ---------------- SelectNewestFrameIndex ----------------
 

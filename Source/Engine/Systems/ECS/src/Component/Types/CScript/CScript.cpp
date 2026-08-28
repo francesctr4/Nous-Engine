@@ -13,6 +13,7 @@
 #include <Utils/Serialization/JsonObject.h>
 #include <Utils/Serialization/JsonArray.h>
 #include <algorithm>
+#include <cstddef>
 
 // ---------------------------------------------------------------------------
 // Destructor

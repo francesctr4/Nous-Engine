@@ -21,6 +21,7 @@
 #include <MemoryManager/MemoryManager.h>
 #include <Logger/Logger.h>
 #include <RendererFrontend/IEditorOverlay.h>
+#include <cstddef>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_FRONTEND;
 

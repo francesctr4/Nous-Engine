@@ -16,6 +16,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
 #include <libswscale/swscale.h>
+#include <cstddef>
 }
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_VIDEOSYSTEM;

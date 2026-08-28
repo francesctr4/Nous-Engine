@@ -1,4 +1,5 @@
 #include <ResourceManager/Core/ResourceQueue.h>
+#include <cstddef>
 
 void ResourceQueue::Push(ResourceType type, ResourceBase* resource)
 {

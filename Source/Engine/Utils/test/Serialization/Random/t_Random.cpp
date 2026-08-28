@@ -3,6 +3,7 @@
 #include <Utils/Serialization/Random.h>
 
 #include <unordered_set>
+#include <cstddef>
 
 // =============================================================================
 // Generate

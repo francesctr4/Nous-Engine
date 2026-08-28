@@ -6,6 +6,7 @@
 #include <mutex>
 #include <utility>
 #include <vector>
+#include <cstddef>
 
 class ResourceBase;
 

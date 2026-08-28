@@ -7,6 +7,7 @@
 #include <Logger/Logger.h>
 #include <Renderer/iRenderWindow.h>
 #include <algorithm>  // Required for std::clamp
+#include <limits>
 
 bool NOUS_VulkanSwapChain::CreateSwapChain(VulkanContext* vkContext, uint32_t width, uint32_t height, VulkanSwapChain* swapChain)
 {

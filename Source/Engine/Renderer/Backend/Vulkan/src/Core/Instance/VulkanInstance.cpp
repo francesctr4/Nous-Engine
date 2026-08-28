@@ -7,6 +7,8 @@
 #include "SDL3/SDL_vulkan.h"
 
 #include <Renderer/iRenderWindow.h>
+#include <cstddef>
+#include <cstring>
 
 bool NOUS_VulkanInstance::CreateInstance(VulkanContext* vkContext)
 {

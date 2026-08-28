@@ -2,6 +2,7 @@
 #include <Utils/Serialization/JsonObject.h>
 
 #include <parson.h>
+#include <cstddef>
 
 // --- Lifecycle ---
 

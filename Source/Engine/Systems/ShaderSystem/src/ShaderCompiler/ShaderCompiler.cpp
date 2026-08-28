@@ -8,6 +8,7 @@ constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_SHADERSYSTEM;
 #include <fstream>
 #include <string>
 #include <vector>
+#include <cstddef>
 
 namespace
 {

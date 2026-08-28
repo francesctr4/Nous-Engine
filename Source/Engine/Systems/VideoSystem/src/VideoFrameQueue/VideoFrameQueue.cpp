@@ -1,6 +1,7 @@
 #include "VideoFrameQueue/VideoFrameQueue.h"
 
 #include <algorithm>
+#include <cstddef>
 
 int SelectNewestFrameIndex(const double* ptsSeconds, uint32_t count, double playheadSec)
 {

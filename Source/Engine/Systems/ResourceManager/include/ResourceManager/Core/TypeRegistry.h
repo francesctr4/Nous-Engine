@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <vector>
 #include <cstdint>
+#include <cstddef>
 
 class IGPUResourceFactory;
 

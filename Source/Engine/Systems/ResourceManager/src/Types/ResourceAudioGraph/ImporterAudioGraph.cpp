@@ -11,6 +11,7 @@
 #include <Utils/Serialization/JsonObject.h>
 #include <Utils/Serialization/JsonArray.h>
 #include <ResourceManager/Core/MetaFileData.h>
+#include <cstddef>
 
 namespace ae = nous::audio;
 

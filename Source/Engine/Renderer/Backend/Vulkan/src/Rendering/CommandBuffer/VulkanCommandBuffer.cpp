@@ -3,6 +3,7 @@
 
 #include <MemoryManager/MemoryManager.h>
 #include "VulkanMultithreading.h"
+#include <cstddef>
 
 bool NOUS_VulkanCommandBuffer::CreateCommandBuffers(VulkanContext* vkContext)
 {

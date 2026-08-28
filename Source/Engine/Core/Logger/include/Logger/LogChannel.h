@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <array>
 #include <utility>
+#include <cstddef>
 
 // ------------------------------------------------------------------------------------------------
 // LOG CHANNEL LIST

@@ -11,6 +11,7 @@
 #include <algorithm>
 
 #include <Utils/Math/Vertex.inl>
+#include <cstddef>
 
 // ─────────────────────────────── Module helpers ───────────────────────────────
 

@@ -4,6 +4,7 @@
 
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
+#include <cstddef>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MULTITHREADING;
 

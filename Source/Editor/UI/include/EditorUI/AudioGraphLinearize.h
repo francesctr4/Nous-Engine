@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
+#include <cstddef>
 
 // Pure, runtime-free linearization of an editor graph into an ordered effect chain.
 // Operates on plain node/link descriptors (no imgui-node-editor types) so it is
