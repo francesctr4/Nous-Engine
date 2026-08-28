@@ -128,9 +128,6 @@ set_target_properties(Scripts PROPERTIES
 )
 
 # Include engine headers + source scripts dir
-# Deliberately NOT ${CMAKE_SOURCE_DIR}/Source: the hot-reload compile line only
-# passes /I<SDK_INCLUDE>, so giving this target the whole engine tree would let a
-# script build here and fail on hot-reload. Same surface, both paths.
 target_include_directories(Scripts PUBLIC
         "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/include"
         "${SCRIPTS_SRC_DIR}"

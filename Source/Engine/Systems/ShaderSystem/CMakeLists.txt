@@ -13,8 +13,6 @@
 # here -- only the <ShaderSystem/...> prefix and the two handles. That is an
 # honest outcome, not an oversight: this target really is all API. The check was
 # a grep for includers outside the target, same as everywhere else.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 set(CLASS_NAME "ShaderSystem")
@@ -46,7 +44,6 @@ set_target_properties(${CLASS_NAME} PROPERTIES
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

@@ -9,8 +9,6 @@ set(CLASS_NAME "ModuleScene")
 # Both headers are public. SceneRenderData.h has ONE includer outside this
 # target (ModuleRenderer3D.cpp), which does not decide it -- ModuleScene.h,
 # the public header, includes it too, so it is API either way.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 add_library(${CLASS_NAME}_headers INTERFACE)
@@ -34,7 +32,6 @@ target_sources(${CLASS_NAME} PRIVATE
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

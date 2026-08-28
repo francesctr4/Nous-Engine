@@ -15,8 +15,6 @@ set(CLASS_NAME "EventSystem")
 # include/ is flat: Event was a sub-unit dir holding exactly one public header,
 # so <EventSystem/Event.h> beats <EventSystem/Event/Event.h>. src/ and test/
 # keep the sub-unit dir and its CMakeLists.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 add_library(${CLASS_NAME}_headers INTERFACE)
@@ -49,7 +47,6 @@ set_target_properties(${CLASS_NAME} PROPERTIES
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

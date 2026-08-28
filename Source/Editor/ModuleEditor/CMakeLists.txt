@@ -9,8 +9,6 @@ set(CLASS_NAME "ModuleEditor")
 # GameExporter.h lives here too, though its source sits in Editor/GameExporter/:
 # that folder is a target_sources() leaf of THIS target, and a target owns exactly
 # one include tree.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 add_library(${CLASS_NAME}_headers INTERFACE)
@@ -34,7 +32,6 @@ target_sources(${CLASS_NAME} PRIVATE
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

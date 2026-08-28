@@ -17,8 +17,6 @@
 #     per-leaf CMakeLists.txt marks the unit boundary.
 #   * DataStructures/ and Math/ are header-only, so they have no src/ leaf at
 #     all; their public headers are listed in the block below with the rest.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 add_library(Utils_headers INTERFACE)
@@ -59,7 +57,6 @@ set_target_properties(Utils PROPERTIES
 )
 
 target_include_directories(Utils
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

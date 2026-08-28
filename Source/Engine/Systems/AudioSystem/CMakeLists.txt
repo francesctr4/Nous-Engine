@@ -13,12 +13,6 @@ set(CLASS_NAME "AudioSystem")
 # compile firewall keeping miniaudio out of the module layer". Before this, that
 # was a sentence in a document. Now the miniaudio headers live under src/ and
 # simply do not resolve from outside, so the build system enforces it.
-#
-# NOTE: ${CMAKE_SOURCE_DIR}/Source is still PUBLIC below. That is deliberate and
-# temporary — the rest of the engine has not been converted yet, so this target
-# still reaches its own dependencies (Core/Logger, ResourceManager, ...) by the
-# old Source-rooted paths. It comes out when the last target is converted; that
-# removal is the moment enforcement becomes global.
 # ==============================================================================
 
 # Two include-dir-only handles. They carry no objects and no link dependencies,
@@ -64,7 +58,6 @@ set_target_properties(${CLASS_NAME} PROPERTIES
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

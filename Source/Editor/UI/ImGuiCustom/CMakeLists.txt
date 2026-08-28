@@ -8,8 +8,6 @@ set(CLASS_NAME "ImGuiCustom")
 #
 # One header, and it is public: EditorUI's windows and ModuleEditor.cpp both draw
 # with it. No private headers today.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 add_library(${CLASS_NAME}_headers INTERFACE)
@@ -27,7 +25,6 @@ target_sources(${CLASS_NAME} PRIVATE
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

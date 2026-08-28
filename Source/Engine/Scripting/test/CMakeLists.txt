@@ -54,7 +54,6 @@ add_executable(${TEST_NAME}
 )
 
 target_include_directories(${TEST_NAME} PRIVATE
-        ${CMAKE_SOURCE_DIR}/Source
         "${CMAKE_CURRENT_BINARY_DIR}"   # for TestCompilerInfo.h
 )
 

@@ -43,7 +43,6 @@ set_target_properties(ModuleBase PROPERTIES
 target_compile_definitions(ModuleBase PRIVATE NOUS_ENGINE_EXPORTS)
 
 target_include_directories(ModuleBase
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, until the last target converts
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

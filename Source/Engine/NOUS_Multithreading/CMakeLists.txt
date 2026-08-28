@@ -11,8 +11,6 @@
 # / the facade has consumers outside this target (the job system alone has 19).
 # There is no private header today; src/ and the _private handle exist so the
 # shape matches every other converted target.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 set(CLASS_NAME "NOUS_Multithreading")
@@ -47,7 +45,6 @@ set_target_properties(${CLASS_NAME} PROPERTIES
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

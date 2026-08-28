@@ -11,11 +11,6 @@ add_executable(${TEST_NAME}
         ${TEST_NAME}.cpp
 )
 
-target_include_directories(${TEST_NAME}
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/Source
-)
-
 # Links gtest plus one include-dir handle and NO engine target: the header under
 # test is dependency-free policy (a generation/id pair per binding). This is the
 # shape every unit test should aim for -- see t_GainDsp and t_AudioBusMath.

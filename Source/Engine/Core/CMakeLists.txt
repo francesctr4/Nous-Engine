@@ -37,7 +37,6 @@ set_target_properties(Core PROPERTIES
 )
 
 target_include_directories(Core
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, removed with the last conversion
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

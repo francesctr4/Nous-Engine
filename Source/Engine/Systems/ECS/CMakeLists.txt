@@ -28,8 +28,6 @@
 # and test/. Adding a component is a recurring workflow, so a component's files
 # stay one identically-named folder in each of the three trees -- the checklist
 # is "the three CFoo folders". Same reasoning as ResourceManager's Types/.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================
 
 set(CLASS_NAME "ECS")
@@ -84,7 +82,6 @@ set_target_properties(${CLASS_NAME} PROPERTIES
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

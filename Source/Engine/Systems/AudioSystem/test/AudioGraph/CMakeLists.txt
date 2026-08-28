@@ -1,6 +1,5 @@
 # These two tests cover deliberately dependency-free code, and their link lines
 # say so: gtest plus an include-dir handle, no engine objects at all. Before the
-# include/src split they reached everything through ${CMAKE_SOURCE_DIR}/Source.
 find_package(GTest CONFIG REQUIRED)
 include(GoogleTest)
 

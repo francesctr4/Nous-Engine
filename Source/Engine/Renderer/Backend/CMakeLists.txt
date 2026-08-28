@@ -35,7 +35,6 @@ set_target_properties(${CLASS_NAME} PROPERTIES
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

@@ -13,8 +13,6 @@ set(CLASS_NAME "CameraSystem")
 #
 # Single-unit target, so include/ is flat and there is no sub-unit CMakeLists.
 # Camera.h is the whole API: 16 call sites outside this target include it.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 add_library(${CLASS_NAME}_headers INTERFACE)
@@ -43,7 +41,6 @@ set_target_properties(${CLASS_NAME} PROPERTIES
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

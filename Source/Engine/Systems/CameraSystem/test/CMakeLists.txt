@@ -7,7 +7,6 @@ add_executable(${TEST_NAME}
 target_include_directories(${TEST_NAME}
         PRIVATE
         ../include
-        ${CMAKE_SOURCE_DIR}/Source
 )
 
 # These must match the packages found in your main Nous Engine build

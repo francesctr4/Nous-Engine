@@ -16,8 +16,6 @@ set(CLASS_NAME "TimeManager")
 # include/ is flat: Timer was a sub-unit dir holding exactly one public header,
 # so <TimeManager/Timer.h> beats <TimeManager/Timer/Timer.h>. src/ and test/
 # keep the sub-unit dir and its CMakeLists.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 add_library(${CLASS_NAME}_headers INTERFACE)
@@ -49,7 +47,6 @@ set_target_properties(${CLASS_NAME} PROPERTIES
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

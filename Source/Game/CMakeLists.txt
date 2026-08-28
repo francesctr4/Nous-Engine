@@ -48,10 +48,6 @@ if(WIN32)
     )
 endif()
 
-target_include_directories(GameApp PRIVATE
-        ${CMAKE_SOURCE_DIR}/Source
-)
-
 # Track game_config.json as an explicit dependency so it is copied to bin/Library/Settings/
 # whenever it changes, even without a C++ recompile.  GameApp depends on the GameConfig target,
 # ensuring the copy always runs before the executable is launched.

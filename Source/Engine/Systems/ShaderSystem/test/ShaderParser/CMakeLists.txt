@@ -8,11 +8,6 @@ add_executable(${TEST_NAME}
         ${TEST_NAME}.cpp
 )
 
-target_include_directories(${TEST_NAME}
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/Source
-)
-
 # These must match the packages found in your main Nous Engine build
 find_package(GTest CONFIG REQUIRED)
 

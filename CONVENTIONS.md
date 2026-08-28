@@ -261,8 +261,9 @@ foundation — `Logger`, `MemoryManager`, `FileSystem`, `NOUS_Multithreading` �
 `PrefabManager` — all four `Renderer/` targets, and the rest of the foundation —
 `EventSystem`, `FileWatcher`, `TimeManager`, `Utils` (2026-08-27); all of `Modules/`
 all of `Editor/`, `Scripting`, and finally `EngineCore` + `Core` + `SystemManager`
-(2026-08-28). **All targets are converted**; the remaining step is dropping the
-global `${CMAKE_SOURCE_DIR}/Source` include root. Converted targets use:
+(2026-08-28). **The migration is complete**: every target is converted and the
+global `${CMAKE_SOURCE_DIR}/Source` include root has been removed, so a header
+outside a target's declared dependencies no longer compiles. Targets use:
 
 ```
 Systems/AudioSystem/

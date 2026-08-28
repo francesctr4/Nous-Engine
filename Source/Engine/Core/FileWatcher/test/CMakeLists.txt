@@ -6,11 +6,6 @@ add_executable(${TEST_NAME}
 
 find_package(GTest CONFIG REQUIRED)
 
-target_include_directories(${TEST_NAME}
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/Source
-)
-
 target_link_libraries(${TEST_NAME}
         PRIVATE
         NousEngine::Engine

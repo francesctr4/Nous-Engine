@@ -12,11 +12,6 @@ add_executable(${TEST_NAME}
         ${TEST_NAME}.cpp
 )
 
-target_include_directories(${TEST_NAME}
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/Source
-)
-
 target_link_libraries(${TEST_NAME}
         PRIVATE
         ShaderSystem
@@ -43,11 +38,6 @@ set(HOT_RELOAD_TEST_NAME "t_ShaderHotReload")
 
 add_executable(${HOT_RELOAD_TEST_NAME}
         ${HOT_RELOAD_TEST_NAME}.cpp
-)
-
-target_include_directories(${HOT_RELOAD_TEST_NAME}
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/Source
 )
 
 target_link_libraries(${HOT_RELOAD_TEST_NAME}

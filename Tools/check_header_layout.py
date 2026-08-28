@@ -12,7 +12,8 @@ The public/private header migration (CONVENTIONS.md, "Target Layout") moves each
 target's API to include/<Target>/**, exposed only through a <Target>_headers
 INTERFACE handle. A converted header therefore STOPS resolving through the
 global ${CMAKE_SOURCE_DIR}/Source include root: <Logger/Logger.h> compiles only
-where Logger_headers is reachable.
+where Logger_headers is reachable. That root was REMOVED on 2026-08-28, so what
+this script models is no longer a prediction -- it is the build.
 
 That is the point of the migration, but it means every conversion can silently
 break a consumer that had been getting the header for free. Two checks catch it:

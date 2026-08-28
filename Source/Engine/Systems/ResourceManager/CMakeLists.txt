@@ -25,8 +25,6 @@
 # ResourceX folders". Core/ and Runtime/ units are one-off; a folder per unit
 # there would only produce HotReloader/HotReloader.h. Do not "tidy" this into
 # symmetry.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================
 
 set(CLASS_NAME "ResourceManager")
@@ -83,7 +81,6 @@ set_target_properties(${CLASS_NAME} PROPERTIES
 )
 
 target_include_directories(${CLASS_NAME}
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

@@ -4,11 +4,6 @@ add_executable(${TEST_NAME}
         ${TEST_NAME}.cpp
 )
 
-target_include_directories(${TEST_NAME}
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/Source
-)
-
 find_package(GTest CONFIG REQUIRED)
 find_package(parson CONFIG REQUIRED)
 

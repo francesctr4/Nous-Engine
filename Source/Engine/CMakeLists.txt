@@ -34,9 +34,6 @@ add_library(NousEngine::Engine ALIAS ${PROJECT_NAME})
 target_compile_definitions(${PROJECT_NAME} PRIVATE NOUS_ENGINE_EXPORTS)
 
 # Include directories
-target_include_directories(${PROJECT_NAME}
-        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Source
-)
 
 # Link engine modules + dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -45,15 +42,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
         # ---- Converted-target header dirs --------------------------------------
         # Everything else is linked PRIVATE below, so the DLL propagates nothing
-        # and downstream targets (EditorApp, GameApp, the component tests) have
-        # been resolving engine headers purely through the global Source/ include
-        # root. As each target moves to the include/<Target>/ layout, its
-        # header-only INTERFACE handle is added here — that is what keeps the DLL's
-        # own public API (ModuleAudio.h, CAudioSource.h, ... all name AudioSystem
-        # types) resolvable once the global root goes away.
+        # of its own. The global ${CMAKE_SOURCE_DIR}/Source include root is GONE
+        # as of 2026-08-28, which makes this list load-bearing rather than
+        # belt-and-braces: it is now the ONLY way downstream targets (EditorApp,
+        # GameApp, the ~60 tests) resolve the DLL's own public API, whose headers
+        # name types from every one of these targets.
         #
-        # Add one line per converted target. When the list is complete, the global
-        # Source/ root can be dropped and enforcement becomes engine-wide.
+        # One line per engine target with a public include/ dir. Miss one and the
+        # break shows up in a consumer, not here.
         EngineCore_headers
         Core_headers
         AudioSystem_headers

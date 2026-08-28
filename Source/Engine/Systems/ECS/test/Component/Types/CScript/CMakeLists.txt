@@ -1,7 +1,7 @@
 # t_CScript — Awake/Start lifecycle across the two host orderings (editor vs game)
 set(TEST_NAME "t_CScript")
 add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
-target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source)
+
 find_package(GTest CONFIG REQUIRED)
 # Scripting_headers: the test subclasses IScript and IScriptRegistry to observe the
 # lifecycle. Headers only — no script DLL is involved.

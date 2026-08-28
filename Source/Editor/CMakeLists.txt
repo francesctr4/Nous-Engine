@@ -111,6 +111,3 @@ set_target_properties(EditorApp PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-target_include_directories(EditorApp PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Source
-)

@@ -22,8 +22,6 @@
 # Every header here is public -- the nine <Domain>Bindings.h look private by
 # includer count (nothing outside names them) and are not: ScriptBindings.h
 # includes all nine, and ScriptBindings.h is what user scripts include.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 add_library(Scripting_headers INTERFACE)
@@ -75,7 +73,6 @@ if(NOUS_BUILD_TESTS)
 endif()
 
 target_include_directories(Scripting
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

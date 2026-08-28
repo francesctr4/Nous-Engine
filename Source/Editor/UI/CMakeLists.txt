@@ -64,8 +64,6 @@ set_target_properties(ImGuiColorTextEdit PROPERTIES
 # AudioGraphLinearize.h is the counter-example and stays PUBLIC: it too has no
 # external includer, but AudioGraphEditor.h includes it, and a header reached
 # THROUGH a public header is public whatever the includer count says.
-#
-# ${CMAKE_SOURCE_DIR}/Source stays PUBLIC until the last target is converted.
 # ==============================================================================
 
 add_library(EditorUI_headers INTERFACE)
@@ -119,7 +117,6 @@ set_target_properties(EditorUI PROPERTIES
 )
 
 target_include_directories(EditorUI
-        PUBLIC  ${CMAKE_SOURCE_DIR}/Source          # temporary, see note above
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_include_directories(EditorUI SYSTEM PUBLIC
