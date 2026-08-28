@@ -9,6 +9,12 @@
 #
 # Prints a per-file table and one overall percentage, and writes an HTML report
 # when genhtml is available.
+#
+# MAINTENANCE NOTE: keep every comment OUTSIDE the backslash-continued commands
+# below. A '#' on a continued line is joined into the command before tokenisation
+# and silently discards the rest of the arguments -- that is exactly how this
+# script once ended up invoking geninfo with no --ignore-errors at all, turning a
+# harmless libstdc++ debug-info warning into a fatal error.
 set -euo pipefail
 
 BUILD_DIR="${1:-Build/Coverage-Linux}"
@@ -48,16 +54,24 @@ if [[ "${CXX:-}" == *clang* ]] && command -v llvm-cov >/dev/null; then
     GCOV_TOOL=(--gcov-tool "${OUT_DIR}/llvm-gcov.sh")
 fi
 
-# --ignore-errors keeps one unreadable .gcda from aborting the whole run: a test
-# that crashed mid-write leaves exactly that behind.
+# What each ignored class is for:
+#   mismatch  GCC 16 debug-info quirks in libstdc++ headers. lcov 2.x makes these
+#             fatal, and they say nothing about this engine's code.
+#   gcov      one unreadable .gcda (a test that crashed mid-write) must not abort
+#             the whole run.
+#   source    generated or third-party sources lcov cannot locate.
+#   empty     targets that produced no data at all.
+#   unused    an --extract/--remove pattern that matched nothing.
+#   negative  safety net only. The real fix is -fprofile-update=atomic in
+#             Coverage.cmake; if this fires, a threaded test wrote a counter
+#             non-atomically and that file's numbers are understated.
+IGNORE=mismatch,gcov,source,empty,unused,negative
+
 lcov --capture \
      --directory "${BUILD_DIR}" \
      --output-file "${OUT_DIR}/raw.info" \
      "${BRANCH_RC[@]}" "${GCOV_TOOL[@]}" \
-     # 'negative' is a safety net only: the real fix is -fprofile-update=atomic in
-     # Coverage.cmake. If this ever fires, a threaded test wrote a counter
-     # non-atomically and that file's numbers are understated.
-     --ignore-errors mismatch,gcov,source,empty,negative \
+     --ignore-errors "${IGNORE}" \
      >/dev/null
 
 # Keep only this engine's own sources. Everything else -- vcpkg headers, the STL,
@@ -65,22 +79,22 @@ lcov --capture \
 # themselves.
 lcov --extract "${OUT_DIR}/raw.info" "${REPO_ROOT}/Source/Engine/*" \
      --output-file "${OUT_DIR}/engine.info" \
-     --ignore-errors empty,unused \
+     --ignore-errors "${IGNORE}" \
      >/dev/null
 
 lcov --remove "${OUT_DIR}/engine.info" "*/test/*" "*/ThirdParty/*" \
      --output-file "${OUT_DIR}/engine.info" \
-     --ignore-errors empty,unused \
+     --ignore-errors "${IGNORE}" \
      >/dev/null
 
 echo
 echo "=== Nous Engine line coverage (Source/Engine, tests excluded) ==="
-lcov --list "${OUT_DIR}/engine.info" --ignore-errors empty
+lcov --list "${OUT_DIR}/engine.info" --ignore-errors "${IGNORE}"
 
 if command -v genhtml >/dev/null; then
     genhtml "${OUT_DIR}/engine.info" \
             --output-directory "${OUT_DIR}/html" \
-            --ignore-errors source,empty \
+            --ignore-errors "${IGNORE}" \
             >/dev/null
     echo
     echo "HTML report: ${OUT_DIR}/html/index.html"
