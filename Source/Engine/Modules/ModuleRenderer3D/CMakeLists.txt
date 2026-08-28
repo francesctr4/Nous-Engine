@@ -53,11 +53,10 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         Logger
         MemoryManager
         ModuleCamera3D
-        ModuleResourceManager
         ModuleScene
         ModuleWindow
         RendererFrontend
-        ResourceManager
+        ResourceManager   # IResourceGpuSync / IResourceLoader; the module itself is no longer named
         Utils
         glm::glm
         Scripting_headers

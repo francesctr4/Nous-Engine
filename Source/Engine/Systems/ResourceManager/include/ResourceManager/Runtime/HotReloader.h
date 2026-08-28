@@ -2,6 +2,7 @@
 
 #include <FileWatcher/FileWatcher.h>
 #include <EngineCore/EngineExport.h>
+#include <ResourceManager/Core/ResourceUpload.h>
 #include <ResourceManager/Types/ResourceType.h>
 
 #include <atomic>
@@ -30,11 +31,10 @@ namespace nous::engine::multithreading { class NOUS_JobSystem; }
 class HotReloader
 {
 public:
-    struct ReadyUpload
-    {
-        uint32_t       uid  = 0;
-        ResourceType type = ResourceType::UNKNOWN;
-    };
+    // Moved to <ResourceManager/Core/ResourceUpload.h> so IResourceGpuSync can
+    // name it without including this header. The alias keeps every existing
+    // HotReloader::ReadyUpload call site (and t_HotReloader) compiling unchanged.
+    using ReadyUpload = ResourceUpload;
 
     NOUS_ENGINE_API HotReloader(IImporterDispatcher* importerManager,
                                 const TypeRegistry& typeRegistry,

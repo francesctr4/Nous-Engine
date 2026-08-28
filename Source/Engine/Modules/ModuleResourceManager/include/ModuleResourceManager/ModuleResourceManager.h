@@ -12,6 +12,7 @@
 #include <ResourceManager/Runtime/ScenePreloader.h>
 #include <ResourceManager/Types/ResourceMesh/SubMeshCache.h>
 #include <ResourceManager/Core/IResourceLoader.h>
+#include <ResourceManager/Core/IResourceGpuSync.h>
 #include <Renderer/iRenderResourceProvider.h>
 
 #include <future>
@@ -31,7 +32,7 @@ class ResourceMaterial;
 class ResourceShader;
 
 class ModuleResourceManager : public Module, public IEventListener, public IResourceLoader,
-                              public IRenderResourceProvider
+                              public IRenderResourceProvider, public IResourceGpuSync
 {
 public:
 
@@ -56,7 +57,6 @@ public:
 	// ------------------------------------------------------------------------ //
 
 	NOUS_ENGINE_API bool ImportFile(const std::string& path) override;
-	NOUS_ENGINE_API bool ImportDirectory(const std::string& directory);
 
 	// Rebuilds Library/Scenes/scene_manifest.json from current scene .meta files.
 	// Called after a single-scene save so GAME mode sees it without a full rescan.
@@ -70,7 +70,6 @@ public:
 	// .meta sidecars are preserved so UIDs remain stable.
 	NOUS_ENGINE_API void RegenerateLibrary();
 
-	NOUS_ENGINE_API bool ResourceExists(uint32_t uid) const;
 	NOUS_ENGINE_API ResourceBase* CreateResource(const std::string& assetsPath) override;
 
 	// GAME mode variant: load directly from a known library path without reading a .meta file.
@@ -100,35 +99,42 @@ public:
 
 	// Takes and clears the pending upload queue — called by Renderer::PreUpdate/Start.
 	// Each entry is a resource that has been Deserialized and needs GPU Upload.
-	NOUS_ENGINE_API std::vector<std::pair<ResourceType, ResourceBase*>> TakePendingUploads();
+	NOUS_ENGINE_API std::vector<std::pair<ResourceType, ResourceBase*>> TakePendingUploads() override;
 
 	// Takes and clears the pending release queue — called by Renderer::PreUpdate.
 	// Each entry is a resource whose ref count hit 0 and needs GPU Release + CPU Evict.
-	NOUS_ENGINE_API std::vector<std::pair<ResourceType, ResourceBase*>> TakePendingReleases();
+	NOUS_ENGINE_API std::vector<std::pair<ResourceType, ResourceBase*>> TakePendingReleases() override;
 
 	// Called by Renderer after GPU Release: evicts CPU data and deletes the resource object.
 	// Returns true if the resource was evicted, false if it was re-acquired (and re-queued for upload).
-	NOUS_ENGINE_API bool EvictResource(ResourceType type, ResourceBase* resource);
+	NOUS_ENGINE_API bool EvictResource(ResourceType type, ResourceBase* resource) override;
 
-	// Wire-compatible with HotReloader::ReadyUpload — kept as a using-alias so
-	// ModuleRenderer3D and tests that destructure `[uid, type]` need no change.
+	// Both names now resolve to the same ResourceUpload struct that
+	// IResourceGpuSync returns. Kept as an alias so existing call sites and tests
+	// that destructure `[uid, type]` need no change.
 	using PendingAssetUpload = HotReloader::ReadyUpload;
 
 	// Hot reload — takes and clears the queue of reimported resources awaiting GPU upload.
 	// Called by ModuleRenderer3D::PreUpdate() each frame.
-	NOUS_ENGINE_API std::vector<PendingAssetUpload> TakeReadyAssetUploads();
+	NOUS_ENGINE_API std::vector<PendingAssetUpload> TakeReadyAssetUploads() override;
 
 	// Call once (from Application) when running in game/standalone mode to suppress
 	// asset watching, which is editor-only.
 	NOUS_ENGINE_API void SetGameMode() noexcept;
 
 	// Dispatches an async reimport job for a tracked asset path.
-	// Public to allow direct testing; normally called only by the FileWatcher callback.
-	NOUS_ENGINE_API void DispatchReimportJob(const std::string& normalizedPath);
+	//
+	// Deliberately public but NOT exported: no shipping caller exists (the
+	// FileWatcher callback drives HotReloader directly). It stays reachable so
+	// t_ModuleResourceManager can verify the module-level wiring that
+	// t_HotReloader cannot see -- that LoadResourceIntoSlot registers a path in
+	// HotReloader's path->UID map and EvictResource removes it again. Tests
+	// compile with NOUS_ENGINE_STATIC, so they need no export marker.
+	void DispatchReimportJob(const std::string& normalizedPath);
 
 	// Synchronous full teardown — caller must pass the GPU factory so GPU handles can
 	// be freed before Vulkan is shut down.  Only called from ModuleRenderer3D::CleanUp().
-	NOUS_ENGINE_API void ClearResources(IGPUResourceFactory* gpu);
+	NOUS_ENGINE_API void ClearResources(IGPUResourceFactory* gpu) override;
 
     // Fallback resources. GetDefaultMaterial satisfies both IResourceLoader and
     // IRenderResourceProvider; the textures are IRenderResourceProvider only.
@@ -149,11 +155,11 @@ public:
     // Use for read-only access (e.g. Inspector UI) where the caller does not own the resource.
     // Do NOT call UnloadResource on the returned pointer.
     // Returns nullptr if the resource is not currently loaded.
-    NOUS_ENGINE_API ResourceBase* GetLoadedResource(uint32_t uid);
+    NOUS_ENGINE_API ResourceBase* GetLoadedResource(uint32_t uid) override;
 
     // Returns the injected importer manager — used by ModuleRenderer3D to call
     // Upload/Release through the IImporterManager interface.
-    NOUS_ENGINE_API IImporterManager* GetImporterManager() const;
+    [[nodiscard]] NOUS_ENGINE_API IImporterManager* GetImporterManager() const override;
 
     // Read-only access to the resource type registry (injected at construction).
     // Used by editor UI windows that hold this module via the editor context.

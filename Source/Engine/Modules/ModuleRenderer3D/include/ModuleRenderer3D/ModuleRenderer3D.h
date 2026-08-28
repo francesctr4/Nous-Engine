@@ -32,10 +32,20 @@ struct SceneRenderData;
 class RendererFrontend;
 class ResourceBase;
 class IGPUResourceFactory;
+class IImporterManager;
+
+// The three faces of the resource system this module uses. It deliberately does
+// NOT keep a ModuleResourceManager*: that handle exposes ~22 methods, most of
+// them asset-pipeline concerns (ScanAndImportAssets, RegenerateLibrary,
+// GetTypeRegistry, the scene manifest) that have no meaning inside a render
+// loop. Application does the upcast at construction, so the concrete module is
+// not named anywhere in this target -- one Modules/ -> Modules/ edge fewer.
+class IResourceGpuSync;
+class IResourceLoader;
+class IRenderResourceProvider;
 
 // Dependency Injection
 class ModuleCamera3D;
-class ModuleResourceManager;
 class ModuleScene;
 class ModuleWindow;
 
@@ -48,7 +58,9 @@ public:
 	explicit ModuleRenderer3D(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 		ModuleWindow* moduleWindow,
 		ModuleCamera3D* moduleCamera3D,
-		ModuleResourceManager* moduleResourceManager,
+		IResourceGpuSync* resourceGpuSync,
+		IResourceLoader* resourceLoader,
+		IRenderResourceProvider* resourceProvider,
 		ModuleScene* moduleScene
 		);
 	~ModuleRenderer3D() override;
@@ -117,8 +129,14 @@ private:
 	// Dependency Injection
 	ModuleWindow* mModuleWindow;
 	ModuleCamera3D* mModuleCamera3D;
-	ModuleResourceManager* mModuleResourceManager;
 	ModuleScene* mModuleScene;
+
+	// In practice all three are the same ModuleResourceManager, upcast by
+	// Application; each names only the slice this module needs. See the note by
+	// the forward declarations above.
+	IResourceGpuSync*        mResourceGpuSync = nullptr;  // per-frame upload/release queues
+	IResourceLoader*         mResourceLoader  = nullptr;  // built-in shader + material loads
+	IRenderResourceProvider* mResourceProvider = nullptr; // fallback textures/materials
 
 	// World-space AABBs computed each frame in the bounding-box loop.
 	// Keyed by GameObject ID; consumed by BuildRenderPacket for frustum culling.

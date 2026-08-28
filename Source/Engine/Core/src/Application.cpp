@@ -112,8 +112,14 @@ Application::Application(const bool isGameMode)
 
     // 7. RENDERER — depends on WINDOW (surface), CAMERA (view/proj), RESOURCE MANAGER (GPU resources), SCENE (render data).
     //    Must be last because RESOURCE MANAGER and SCENE must already exist.
+    //    The resource manager goes in three times on purpose: ModuleRenderer3D
+    //    takes IResourceGpuSync + IResourceLoader + IRenderResourceProvider, not
+    //    the module, so the upcast happens here (the composition root already
+    //    knows the concrete type) instead of inside the render module.
     listModules.push_back(renderer        = NOUS_NEW<ModuleRenderer3D>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem, window, camera, resourceManager, scene));
+        eventSystem, jobSystem, window, camera,
+        resourceManager, resourceManager, resourceManager,   // narrowed to 3 interfaces
+        scene));
 
     // Assemble the component service seam — what lets Systems/ reach engine services
     // without depending on Modules/. See ComponentServices.h. Each module upcasts to

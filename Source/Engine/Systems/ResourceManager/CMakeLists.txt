@@ -49,9 +49,11 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Core/IImporterManager.h
         include/${CLASS_NAME}/Core/ImporterManager.h
         include/${CLASS_NAME}/Core/IResourceLoader.h
+        include/${CLASS_NAME}/Core/IResourceGpuSync.h
         include/${CLASS_NAME}/Core/MetaFileData.h
         include/${CLASS_NAME}/Core/ResourceBase.h
         include/${CLASS_NAME}/Core/ResourceQueue.h
+        include/${CLASS_NAME}/Core/ResourceUpload.h
         include/${CLASS_NAME}/Core/ResourceTable.h
         include/${CLASS_NAME}/Core/TypeRegistry.h
 

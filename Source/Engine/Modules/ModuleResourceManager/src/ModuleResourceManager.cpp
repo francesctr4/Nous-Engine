@@ -78,11 +78,6 @@ void ModuleResourceManager::RegenerateLibrary()
 	m_importPipeline.ScanAndImportAssets(canParallelize);
 }
 
-bool ModuleResourceManager::ImportDirectory(const std::string& directory)
-{
-	return m_importPipeline.ImportDirectory(directory);
-}
-
 bool ModuleResourceManager::Start()
 {
 	NOUS_INFO("Queuing built-in textures and default material for GPU upload...");
@@ -185,11 +180,6 @@ void ModuleResourceManager::DeleteResource(ResourceBase*& resource)
 	// NOTE: m_table erasure is intentionally NOT here.
 	// EvictResource removes the entry under the table lock before calling DeleteResource,
 	// so the map is clean before we reach this point.
-}
-
-bool ModuleResourceManager::ResourceExists(const uint32_t uid) const
-{
-	return m_table.Contains(uid);
 }
 
 void ModuleResourceManager::UpdateResourcePath(const uint32_t uid, const std::string& newAssetsPath)

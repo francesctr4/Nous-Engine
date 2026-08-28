@@ -7,7 +7,9 @@
 #include <ModuleWindow/ModuleWindow.h>
 #include <ModuleCamera3D/ModuleCamera3D.h>
 #include <ModuleScene/ModuleScene.h>
-#include <ModuleResourceManager/ModuleResourceManager.h>
+#include <ResourceManager/Core/IResourceGpuSync.h>
+#include <ResourceManager/Core/IResourceLoader.h>
+#include <Renderer/iRenderResourceProvider.h>
 
 #include <RendererFrontend/RendererFrontend.h>
 
@@ -47,9 +49,13 @@ constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_RENDERER3D
 
 ModuleRenderer3D::ModuleRenderer3D(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 	ModuleWindow* moduleWindow, ModuleCamera3D* moduleCamera,
-	ModuleResourceManager* moduleResourceManager, ModuleScene* moduleScene) :
+	IResourceGpuSync* resourceGpuSync, IResourceLoader* resourceLoader,
+	IRenderResourceProvider* resourceProvider, ModuleScene* moduleScene) :
 		Module(eventSystem, jobSystem), mModuleWindow(moduleWindow), mModuleCamera3D(moduleCamera),
-		mModuleResourceManager(moduleResourceManager), mModuleScene(moduleScene)
+		mModuleScene(moduleScene),
+		mResourceGpuSync(resourceGpuSync),
+		mResourceLoader(resourceLoader),
+		mResourceProvider(resourceProvider)
 {
 	eventSystem->Subscribe(EventType::WINDOW_RESIZED, this);
 	eventSystem->Subscribe(EventType::WINDOW_MINIMIZED, this);
@@ -90,7 +96,7 @@ bool ModuleRenderer3D::Awake()
 {
 	mRendererFrontend->SetBackendType(RendererBackendType::VULKAN);
 
-	mRendererFrontend->InjectDependencies(mModuleWindow, eventSystem, JobSystem, mModuleResourceManager);
+	mRendererFrontend->InjectDependencies(mModuleWindow, eventSystem, JobSystem, mResourceProvider);
 
 	if (!mRendererFrontend->Initialize(mRendererFrontend->GetBackendType()))
 	{
@@ -119,12 +125,12 @@ bool ModuleRenderer3D::Start()
 		// EDITOR mode: load via asset path (reads .meta to resolve UID).
 		// The shader manifest is written by ImportPipeline at the end of
 		// ScanAndImportAssets, so no manifest write is needed here.
-		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
-		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
-		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
-		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
-		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
-		mModuleResourceManager->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
+		mResourceLoader->CreateResource("Assets/Shaders/BuiltIn.MaterialShader.glsl");
+		mResourceLoader->CreateResource("Assets/Shaders/BuiltIn.BackgroundShader.glsl");
+		mResourceLoader->CreateResource("Assets/Shaders/BuiltIn.PickShader.glsl");
+		mResourceLoader->CreateResource("Assets/Shaders/BuiltIn.OutlineShader.glsl");
+		mResourceLoader->CreateResource("Assets/Shaders/BuiltIn.GridShader.glsl");
+		mResourceLoader->CreateResource("Assets/Shaders/BuiltIn.BoundingBoxShader.glsl");
 	}
 
 	// Drain the initial upload queue — includes the default texture/material (queued
@@ -133,9 +139,9 @@ bool ModuleRenderer3D::Start()
 	//
 	// Materials depend on shader instance pools, but shaders are queued AFTER the
 	// default material. Collect failed materials and retry after the full drain.
-	IImporterManager* importer = mModuleResourceManager->GetImporterManager();
+	IImporterManager* importer = mResourceGpuSync->GetImporterManager();
 	std::vector<std::pair<ResourceType, ResourceBase*>> deferredUploads;
-	for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
+	for (auto& [type, resource] : mResourceGpuSync->TakePendingUploads())
 	{
 		if (!importer->Upload(type, resource, mRendererFrontend))
 			deferredUploads.emplace_back(type, resource);
@@ -158,16 +164,16 @@ bool ModuleRenderer3D::Start()
 	// GAME pass update then hits a descriptor already recorded in the SCENE command
 	// buffer, triggering a validation error. The unique identity key is GetUID(),
 	// assigned in ModuleResourceManager::Start() (INVALID_ID - 1..4).
-	ResourceTexture* defaultTex = mModuleResourceManager->GetDefaultTexture();
+	ResourceTexture* defaultTex = mResourceProvider->GetDefaultTexture();
 	if (defaultTex)
 		defaultTex->generation = 0;
-	ResourceTexture* whiteTex = mModuleResourceManager->GetWhiteTexture();
+	ResourceTexture* whiteTex = mResourceProvider->GetWhiteTexture();
 	if (whiteTex)
 		whiteTex->generation = 0;
-	ResourceTexture* blackTex = mModuleResourceManager->GetBlackTexture();
+	ResourceTexture* blackTex = mResourceProvider->GetBlackTexture();
 	if (blackTex)
 		blackTex->generation = 0;
-	ResourceTexture* flatNormalTex = mModuleResourceManager->GetFlatNormalTexture();
+	ResourceTexture* flatNormalTex = mResourceProvider->GetFlatNormalTexture();
 	if (flatNormalTex)
 		flatNormalTex->generation = 0;
 
@@ -204,7 +210,7 @@ bool ModuleRenderer3D::Start()
 
 void ModuleRenderer3D::FlushPendingAssetUploads()
 {
-	auto uploads = mModuleResourceManager->TakeReadyAssetUploads();
+	auto uploads = mResourceGpuSync->TakeReadyAssetUploads();
 	if (uploads.empty()) return;
 
 	// Drain all in-flight GPU frames before destroying any resources.
@@ -213,10 +219,10 @@ void ModuleRenderer3D::FlushPendingAssetUploads()
 	// use-after-free validation errors and VK_ERROR_DEVICE_LOST on the second reload.
 	mRendererFrontend->WaitForGPUIdle();
 
-	IImporterManager* importer = mModuleResourceManager->GetImporterManager();
+	IImporterManager* importer = mResourceGpuSync->GetImporterManager();
 	for (auto& [uid, type] : uploads)
 	{
-		ResourceBase* resource = mModuleResourceManager->GetLoadedResource(uid);
+		ResourceBase* resource = mResourceGpuSync->GetLoadedResource(uid);
 		if (!resource) continue;
 
 		// Save the generation BEFORE Deserialize — it resets texture generation to 0,
@@ -280,12 +286,12 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 	// Without this ordering, a reslot that fires in the same frame the target shader
 	// is first uploaded would see the shader as not-GPU_READY and fall back to vsBase's
 	// instance pool — causing a NULL descriptor-set error on the first draw call.
-	IImporterManager* importer = mModuleResourceManager->GetImporterManager();
+	IImporterManager* importer = mResourceGpuSync->GetImporterManager();
 	{
 #ifdef _PROFILING
 		ZoneScopedN("GPU Uploads");
 #endif
-		for (auto& [type, resource] : mModuleResourceManager->TakePendingUploads())
+		for (auto& [type, resource] : mResourceGpuSync->TakePendingUploads())
 		{
 			if (!importer->Upload(type, resource, mRendererFrontend))
 				NOUS_ERROR("ModuleRenderer3D::PreUpdate() — failed to upload resource '%s'.", resource->GetName().c_str());
@@ -327,12 +333,12 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 #ifdef _PROFILING
 		ZoneScopedN("GPU Resource Release");
 #endif
-		for (auto& [type, resource] : mModuleResourceManager->TakePendingReleases())
+		for (auto& [type, resource] : mResourceGpuSync->TakePendingReleases())
 		{
 			if (resource->GetReferenceCount() > 0) continue; // re-acquired since queuing; skip
 			importer->Release(type, resource, mRendererFrontend);
 			resource->SetState(ResourceState::CPU_READY);
-			mModuleResourceManager->EvictResource(type, resource);
+			mResourceGpuSync->EvictResource(type, resource);
 		}
 	}
 
@@ -377,7 +383,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	// scene loads (registry race).
 	if (!isLoadingScene && sceneData.registry)
 	{
-		ResourceMaterial* defaultMat = mModuleResourceManager->GetDefaultMaterial();
+		ResourceMaterial* defaultMat = mResourceProvider->GetDefaultMaterial();
 		auto videoView = sceneData.registry->view<CVideoPlayer>();
 		for (auto [entity, player] : videoView.each())
 		{
@@ -722,7 +728,7 @@ bool ModuleRenderer3D::CleanUp()
     // Safe because ReleaseFrameResources() already freed the CBs/FBs that
     // referenced these objects, and the scene has been cleared above so no
     // component still holds a reference to any Resource.
-    mModuleResourceManager->ClearResources(mRendererFrontend);
+    mResourceGpuSync->ClearResources(mRendererFrontend);
 
     // Tear down the remaining Vulkan infrastructure (buffers, sync objects,
     // renderpasses, swapchain, device).
@@ -803,7 +809,7 @@ void ModuleRenderer3D::LoadShadersFromManifest()
 		if (uid == 0 || libPath.empty())
 		{ NOUS_ERROR_C(CURRENT_CHANNEL, "shader_manifest.json: invalid data for '%s'.", key); return; }
 
-		mModuleResourceManager->CreateResourceFromLibrary(
+		mResourceLoader->CreateResourceFromLibrary(
 			uid, ResourceType::SHADER, nous::engine::filesystem::GetFilename(assetPath), assetPath, libPath);
 	};
 

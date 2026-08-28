@@ -107,7 +107,7 @@ protected:
 
 TEST_F(t_ModuleResourceManager, ResourceDoesNotExistInitially)
 {
-    EXPECT_FALSE(rm->ResourceExists(9999));
+    EXPECT_EQ(rm->GetLoadedResource(9999), nullptr);
 }
 
 TEST_F(t_ModuleResourceManager, AwakeCallsImporterInit)
@@ -122,7 +122,7 @@ TEST_F(t_ModuleResourceManager, CreateResourceFromLibraryRegistersResource)
     ResourceBase* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "testMesh",
                                                   "Assets/test.fbx", "Library/Meshes/42.nmesh");
     ASSERT_NE(res, nullptr);
-    EXPECT_TRUE(rm->ResourceExists(uid));
+    EXPECT_NE(rm->GetLoadedResource(uid), nullptr);
 }
 
 TEST_F(t_ModuleResourceManager, CreateResourceFromLibraryInitialRefCountIsOne)
@@ -220,7 +220,7 @@ TEST_F(t_ModuleResourceManager, EvictResourceRemovesFromMap)
     bool evicted = rm->EvictResource(ResourceType::MESH, res);
 
     EXPECT_TRUE(evicted);
-    EXPECT_FALSE(rm->ResourceExists(uid));
+    EXPECT_EQ(rm->GetLoadedResource(uid), nullptr);
 }
 
 TEST_F(t_ModuleResourceManager, UnloadResourceReturnsFalseForUnknownUID)
@@ -243,7 +243,7 @@ TEST_F(t_ModuleResourceManager, EvictResourceReQueuesUploadWhenReacquired)
     bool evicted = rm->EvictResource(ResourceType::MESH, res);
 
     EXPECT_FALSE(evicted);                             // should NOT delete — resource is live again
-    EXPECT_TRUE(rm->ResourceExists(uid));              // still in map
+    EXPECT_NE(rm->GetLoadedResource(uid), nullptr);              // still in map
     EXPECT_EQ(rm->TakePendingUploads().size(), 1u);   // re-queued for GPU upload
 }
 
@@ -255,7 +255,7 @@ TEST_F(t_ModuleResourceManager, DeserializeFailureReturnsNullAndDoesNotRegister)
     ResourceBase* res = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
 
     EXPECT_EQ(res, nullptr);
-    EXPECT_FALSE(rm->ResourceExists(uid));
+    EXPECT_EQ(rm->GetLoadedResource(uid), nullptr);
     EXPECT_TRUE(rm->GetResourcesMap().empty());
 }
 
@@ -299,13 +299,13 @@ TEST_F(t_ModuleResourceManager, DeserializeFailureDoesNotBlockSubsequentLoadOfSa
     mockImporter.deserializeResult = false;
     ResourceBase* failed = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
     EXPECT_EQ(failed, nullptr);
-    EXPECT_FALSE(rm->ResourceExists(uid));
+    EXPECT_EQ(rm->GetLoadedResource(uid), nullptr);
 
     // Second attempt with the same UID must succeed without being blocked by the previous failure.
     mockImporter.deserializeResult = true;
     ResourceBase* success = rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
     EXPECT_NE(success, nullptr);
-    EXPECT_TRUE(rm->ResourceExists(uid));
+    EXPECT_NE(rm->GetLoadedResource(uid), nullptr);
 }
 
 // =====================================================
