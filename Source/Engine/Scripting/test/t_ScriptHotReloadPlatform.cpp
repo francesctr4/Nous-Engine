@@ -15,6 +15,21 @@
 #endif
 
 // ============================================================
+// What this covers -- and what it does NOT.
+//
+// This file tests the OPERATING SYSTEM MECHANISM that script hot-reload rests
+// on, not the ScriptManager class. It deliberately links gtest and nothing else:
+// compile a .cpp with the host compiler, load it (LoadLibrary / dlopen), resolve
+// a symbol, call it, unload, edit, recompile, reload. Those are the assumptions
+// the whole feature depends on and they are worth pinning per-platform.
+//
+// It was previously named t_ScriptManager, which made the suite look as though
+// ScriptManager (652 lines, 16 public methods including ReloadScriptLibrary and
+// the Windows shadow-copy) was covered. It is not -- see t_Scripting_ScriptManager
+// for that. Renamed 2026-08-29 so a coverage audit reads the truth.
+// ============================================================
+
+// ============================================================
 // Platform helpers
 // ============================================================
 
@@ -152,7 +167,7 @@ bool CompileSharedLib(const std::string& srcPath, const std::string& outPath)
 // Test fixture
 // ============================================================
 
-class t_ScriptManager : public ::testing::Test
+class t_ScriptHotReloadPlatform : public ::testing::Test
 {
 protected:
     std::filesystem::path tmpDir;
@@ -215,14 +230,14 @@ protected:
 // Tests
 // ============================================================
 
-TEST_F(t_ScriptManager, LoadNonExistentLibrary)
+TEST_F(t_ScriptHotReloadPlatform, LoadNonExistentLibrary)
 {
     // No compiler needed — just verifies the loader returns null gracefully.
     void* handle = LoadLib("/nonexistent/path/Scripts.so");
     EXPECT_EQ(handle, nullptr);
 }
 
-TEST_F(t_ScriptManager, CompileLoadCallUnload)
+TEST_F(t_ScriptHotReloadPlatform, CompileLoadCallUnload)
 {
     RequireCompiler();
 
@@ -243,7 +258,7 @@ TEST_F(t_ScriptManager, CompileLoadCallUnload)
     UnloadLib(handle);
 }
 
-TEST_F(t_ScriptManager, ReloadCycle)
+TEST_F(t_ScriptHotReloadPlatform, ReloadCycle)
 {
     RequireCompiler();
 
@@ -269,7 +284,7 @@ TEST_F(t_ScriptManager, ReloadCycle)
     UnloadLib(h2);
 }
 
-TEST_F(t_ScriptManager, InvalidSourceFails)
+TEST_F(t_ScriptHotReloadPlatform, InvalidSourceFails)
 {
     RequireCompiler();
 
@@ -288,7 +303,7 @@ TEST_F(t_ScriptManager, InvalidSourceFails)
         << "Broken source should fail to compile";
 }
 
-TEST_F(t_ScriptManager, HotReloadWithCodeChange)
+TEST_F(t_ScriptHotReloadPlatform, HotReloadWithCodeChange)
 {
     RequireCompiler();
 
@@ -318,7 +333,7 @@ TEST_F(t_ScriptManager, HotReloadWithCodeChange)
     UnloadLib(h2);
 }
 
-TEST_F(t_ScriptManager, FileUnlockedAfterUnload)
+TEST_F(t_ScriptHotReloadPlatform, FileUnlockedAfterUnload)
 {
     RequireCompiler();
 
@@ -338,7 +353,7 @@ TEST_F(t_ScriptManager, FileUnlockedAfterUnload)
         << "DLL file still locked after UnloadLib — hot-reload would fail: " << ec.message();
 }
 
-TEST_F(t_ScriptManager, SymbolNotFound)
+TEST_F(t_ScriptHotReloadPlatform, SymbolNotFound)
 {
     RequireCompiler();
 
@@ -358,7 +373,7 @@ TEST_F(t_ScriptManager, SymbolNotFound)
     UnloadLib(handle);
 }
 
-TEST_F(t_ScriptManager, CompileToNonexistentDirectory)
+TEST_F(t_ScriptHotReloadPlatform, CompileToNonexistentDirectory)
 {
     RequireCompiler();
 
@@ -372,7 +387,7 @@ TEST_F(t_ScriptManager, CompileToNonexistentDirectory)
         << "Compiling to a nonexistent output directory should fail";
 }
 
-TEST_F(t_ScriptManager, MultipleExports)
+TEST_F(t_ScriptHotReloadPlatform, MultipleExports)
 {
     RequireCompiler();
 
@@ -401,7 +416,7 @@ TEST_F(t_ScriptManager, MultipleExports)
     UnloadLib(handle);
 }
 
-TEST_F(t_ScriptManager, ConcurrentLoads)
+TEST_F(t_ScriptHotReloadPlatform, ConcurrentLoads)
 {
     RequireCompiler();
 

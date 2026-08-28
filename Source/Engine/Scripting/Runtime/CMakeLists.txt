@@ -54,6 +54,11 @@ else()
             "${CMAKE_SOURCE_DIR}/Source/Engine/Scripting/Runtime/RebuildScripts.sh.in"
             "${SCRIPTS_TOOLING_DIR}/RebuildScripts.sh"
             @ONLY
+            # LF explicitly: configure_file preserves the input's line endings,
+            # and the .in is edited on Windows. A CRLF shebang fails on Linux as
+            # "/usr/bin/env bash^M: bad interpreter", an obscure way to discover
+            # that script hot-reload is broken.
+            NEWLINE_STYLE LF
     )
     # Ensure the script is executable after configuration
     file(CHMOD "${SCRIPTS_TOOLING_DIR}/RebuildScripts.sh"

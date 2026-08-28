@@ -142,8 +142,23 @@ TEST(JsonArray, Remove) {
 
 // --- JsonFile round-trip ---
 
+// Scratch files go under the OS temp dir, not the working directory. CI runs
+// ctest --parallel, so two suites writing a same-named file into bin/ would race;
+// a per-suite temp dir removes the class of failure rather than the instance.
+namespace
+{
+    std::string ScratchPath(const std::string& name)
+    {
+        const std::filesystem::path dir =
+            std::filesystem::temp_directory_path() / "nous_t_jsonfile";
+        std::filesystem::create_directories(dir);
+        return (dir / name).string();
+    }
+}
+
+
 TEST(JsonFile, SaveAndLoadScalars) {
-    const std::string path = "test_scalars.json";
+    const std::string path = ScratchPath("test_scalars.json");
     {
         JsonObject obj;
         obj.Set("n", 42);
@@ -159,7 +174,7 @@ TEST(JsonFile, SaveAndLoadScalars) {
 }
 
 TEST(JsonFile, SaveAndLoadGLM) {
-    const std::string path = "test_glm.json";
+    const std::string path = ScratchPath("test_glm.json");
     {
         JsonObject obj;
         obj.Set("pos", glm::vec3(1.f, 2.f, 3.f));
@@ -175,7 +190,7 @@ TEST(JsonFile, SaveAndLoadGLM) {
 }
 
 TEST(JsonFile, SaveAndLoadNestedArray) {
-    const std::string path = "test_nested.json";
+    const std::string path = ScratchPath("test_nested.json");
     {
         JsonObject root;
         JsonArray items;
@@ -195,7 +210,7 @@ TEST(JsonFile, SaveAndLoadNestedArray) {
 }
 
 TEST(JsonFile, LoadFromMissingFileReturnsEmpty) {
-    const JsonObject obj = JsonFile::LoadFromFile("does_not_exist.json");
+    const JsonObject obj = JsonFile::LoadFromFile(ScratchPath("does_not_exist.json"));
     EXPECT_TRUE(obj.IsEmpty());
 }
 

@@ -2,7 +2,7 @@
 # Nous Engine - Scripting Tests
 # ==============================
 
-set(TEST_NAME "t_Scripting_ScriptManager")
+set(TEST_NAME "t_Scripting_ScriptHotReloadPlatform")
 
 # -----------------------------------------------------------------------
 # Bake the compiler path and MSVC lib dirs into the test binary so it can
@@ -50,7 +50,7 @@ configure_file(
 )
 
 add_executable(${TEST_NAME}
-        t_ScriptManager.cpp
+        t_ScriptHotReloadPlatform.cpp
 )
 
 target_include_directories(${TEST_NAME} PRIVATE
@@ -81,3 +81,8 @@ add_test(NAME ${TEST_NAME}
         COMMAND ${TEST_NAME}
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+# ScriptManager's own tests live in their own directory: the auditor attributes
+# includes per directory, so two targets with different link lines cannot share
+# one (this test deliberately links no engine code, that one links the class).
+add_subdirectory(ScriptManager)

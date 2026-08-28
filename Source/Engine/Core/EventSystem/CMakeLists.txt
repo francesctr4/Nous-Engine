@@ -61,4 +61,5 @@ target_link_libraries(${CLASS_NAME} PRIVATE Logger)
 
 if (NOUS_BUILD_TESTS)
     add_subdirectory(test/Event)
+    add_subdirectory(test/EventSystem)
 endif()

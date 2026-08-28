@@ -110,6 +110,22 @@
       }
     },
     {
+      "name": "Coverage-Linux",
+      "displayName": "Coverage-Linux (gcov line coverage)",
+      "inherits": "debug-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+        "NOUS_BUILD_TESTS": "ON",
+        "NOUS_COVERAGE": "ON"
+      }
+    },
+    {
       "name": "ASan-Linux",
       "displayName": "ASan-Linux (address+undefined)",
       "inherits": "debug-base",

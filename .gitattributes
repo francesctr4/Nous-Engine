@@ -1,0 +1,13 @@
+# Shell scripts must keep LF endings even when checked out on Windows.
+#
+# The repo is developed on Windows (core.autocrlf converts on checkout) but
+# Tools/Coverage/report.sh and the RebuildScripts.sh template are executed on
+# Linux/macOS. A CRLF shebang fails as:
+#     bash: /usr/bin/env bash^M: bad interpreter: No such file or directory
+# which is a confusing way to find out about line endings.
+*.sh     text eol=lf
+*.sh.in  text eol=lf
+*.bash   text eol=lf
+
+# CMake and source files keep the platform default; the tree is predominantly
+# CRLF today and normalising it would be a whole-repo diff for no benefit.

@@ -61,3 +61,8 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         glm::glm
         Scripting_headers
 )
+
+
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()

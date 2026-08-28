@@ -1,4 +1,6 @@
 #include <VulkanBackend/VulkanBackend.h>
+
+#include "Core/FrameSyncPolicy.h"
 #include <EngineCore/AppConfig.h>
 #include <EngineCore/InvalidID.h>
 #include <EngineCore/Casts.h>
@@ -956,7 +958,12 @@ FrameResult VulkanBackend::BeginFrame(float dt)
                 VK_NULL_HANDLE,
                 &vkContext->imageIndex);
 
-        if (acquireRes == VK_ERROR_OUT_OF_DATE_KHR)
+        // The acquire/present asymmetry lives in Core/FrameSyncPolicy.h so it can be
+        // unit-tested without a device (t_VulkanBackend_FrameSyncPolicy).
+        const auto acquireAction = nous::engine::renderer::vulkan::ClassifyAcquireResult(
+                acquireRes, VkResultIsSuccess(acquireRes));
+
+        if (acquireAction == nous::engine::renderer::vulkan::FrameAction::RecreateAndSkip)
         {
             // Acquire FAILED: no image was acquired and imageAvailableSemaphores[currentFrame]
             // was NOT signaled. Safe to schedule recreation and skip now.
@@ -971,7 +978,7 @@ FrameResult VulkanBackend::BeginFrame(float dt)
         // on this frame slot would then try to signal an already-signaled semaphore). Instead we
         // render and present this frame normally; the suboptimal-on-present path in EndFrame (or a
         // resize) drives recreation, which leaves the semaphore correctly consumed by the submit.
-        if (acquireRes != VK_SUBOPTIMAL_KHR && !VkResultIsSuccess(acquireRes))
+        if (acquireAction == nous::engine::renderer::vulkan::FrameAction::Fail)
         {
             NOUS_FATAL_C(CURRENT_CHANNEL, "Failed to acquire next image index: %s", VkResultMessage(acquireRes, true).c_str());
             return FrameResult::ERROR;
@@ -1090,7 +1097,10 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
             vkContext->queueCompleteSemaphores[vkContext->imageIndex],
             vkContext->imageIndex);
 
-    if (presentRes == VK_ERROR_OUT_OF_DATE_KHR || presentRes == VK_SUBOPTIMAL_KHR)
+    const auto presentAction = nous::engine::renderer::vulkan::ClassifyPresentResult(
+            presentRes, VkResultIsSuccess(presentRes));
+
+    if (presentAction == nous::engine::renderer::vulkan::FrameAction::RecreateAndSkip)
     {
         // Trigger recreation path and skip this frame; not fatal.
         vkContext->recreatingSwapchain = true;
@@ -1099,7 +1109,7 @@ FrameResult VulkanBackend::EndFrame(float /*dt*/)
         return FrameResult::SKIPPED;
     }
 
-    if (!VkResultIsSuccess(presentRes))
+    if (presentAction == nous::engine::renderer::vulkan::FrameAction::Fail)
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "Queue present failed: %s", VkResultMessage(presentRes, true).c_str());
         return FrameResult::ERROR;
@@ -1673,9 +1683,8 @@ void VulkanBackend::UploadInstanceMatrices(const glm::mat4* matrices,
 {
     if (count == 0 || !matrices) return;
     const uint32_t capacity  = 2 * c_maxInstances;
-    const uint32_t safeCount = (instanceOffset < capacity)
-                             ? std::min(count, capacity - instanceOffset)
-                             : 0;
+    const uint32_t safeCount = nous::engine::renderer::vulkan::ClampInstanceWriteCount(
+            count, instanceOffset, capacity);
     if (safeCount == 0) return;
 
     // Select the SSBO ring slot by swapchain image index, matching the static binding
@@ -1683,7 +1692,7 @@ void VulkanBackend::UploadInstanceMatrices(const glm::mat4* matrices,
     // the buffer the draw reads identical to the one we write — unlike indexing by a CPU frame
     // counter, which desyncs from imageIndex after a swapchain recreate (currentFrame resets to 0
     // while the frame counter keeps advancing) and made meshes read stale matrices post-resize.
-    const uint32_t slot = vkContext->imageIndex % 3;
+    const uint32_t slot = nous::engine::renderer::vulkan::ChooseInstanceSSBOSlot(vkContext->imageIndex);
     auto* base = static_cast<glm::mat4*>(vkContext->instanceSSBOMapped[slot]);
     std::memcpy(base + instanceOffset, matrices, safeCount * sizeof(glm::mat4));
 }

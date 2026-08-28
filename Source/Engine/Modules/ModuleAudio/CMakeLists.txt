@@ -50,3 +50,7 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         MemoryManager
         ResourceManager
 )
+
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()

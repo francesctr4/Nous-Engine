@@ -166,8 +166,14 @@ COMMENT_RE = re.compile(r"#[^\n]*")
 ADD_LIB_RE = re.compile(
     r"add_library\(\s*(\$\{CLASS_NAME\}|\$\{PROJECT_NAME\}|[A-Za-z0-9_:.-]+)"
     r"\s+(?:STATIC|SHARED|INTERFACE|MODULE)")
+# Any ${VAR}, not just ${TEST_NAME}: a directory that declares a SECOND test
+# target has to use a different variable for it (two targets sharing one variable
+# are indistinguishable), and with the narrower pattern those targets were
+# invisible -- their sources got attributed to the first target in the directory,
+# which reported that target as missing links it never needed. Hit by
+# ShaderReflection, ShaderLoader, AudioGraph and Scripting.
 ADD_EXE_RE = re.compile(
-    r"add_executable\(\s*(\$\{TEST_NAME\}|\$\{PROJECT_NAME\}|[A-Za-z0-9_:.-]+)")
+    r"add_executable\(\s*(\$\{\w+\}|[A-Za-z0-9_:.-]+)")
 LINK_RE = re.compile(
     r"target_link_libraries\(\s*([^\s)]+)\s+(PUBLIC|PRIVATE|INTERFACE)"
     r"((?:[^()]|\([^()]*\))*)\)")

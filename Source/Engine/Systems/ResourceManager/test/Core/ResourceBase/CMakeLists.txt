@@ -1,8 +1,6 @@
-set(TEST_NAME "t_ResourceManager_ResourceAudioGraph")
+set(TEST_NAME "t_ResourceManager_ResourceBase")
 
-add_executable(${TEST_NAME}
-        t_ResourceAudioGraph.cpp
-)
+add_executable(${TEST_NAME} t_ResourceBase.cpp)
 
 find_package(GTest CONFIG REQUIRED)
 
@@ -11,7 +9,6 @@ target_link_libraries(${TEST_NAME}
         # Narrow link: the static libraries this test actually uses, not the
         # NousEngine::Engine umbrella. See EngineCore/EngineExport.h.
         ResourceManager
-        Utils              # the added tests build .nafx JSON by hand
         GTest::gtest
         GTest::gtest_main
 )
@@ -20,11 +17,12 @@ target_link_libraries(${TEST_NAME}
 # dllimport nor dllexport. See EngineCore/EngineExport.h.
 target_compile_definitions(${TEST_NAME} PRIVATE NOUS_ENGINE_STATIC)
 
+include(GoogleTest)
+
 set_target_properties(${TEST_NAME} PROPERTIES
         VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-add_test(NAME ${TEST_NAME}
-        COMMAND ${TEST_NAME}
+add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )

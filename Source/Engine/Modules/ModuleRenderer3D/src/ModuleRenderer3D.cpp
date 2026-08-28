@@ -1,4 +1,6 @@
 #include <ModuleRenderer3D/ModuleRenderer3D.h>
+
+#include "RenderPacketPolicy.h"
 #include <EngineCore/InvalidID.h>
 
 #include <glm/glm.hpp>
@@ -850,7 +852,12 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	bool hasSceneFrustum = false;
 	bool hasGameFrustum  = false;
 
-	if (m_renderMode == RenderMode::EDITOR && packet->editorCamera)
+	// The frustum-selection, visibility and light-packing rules live in
+	// RenderPacketPolicy.h so they can be unit-tested without a registry or a
+	// camera (t_ModuleRenderer3D_RenderPacketPolicy).
+	const bool isEditorMode = (m_renderMode == RenderMode::EDITOR);
+
+	if (nous::engine::renderer::ShouldBuildSceneFrustum(isEditorMode, packet->editorCamera != nullptr))
 	{
 		const glm::mat4 vp = packet->editorCamera->GetProjectionMatrix()
 		                   * packet->editorCamera->GetViewMatrix();
@@ -859,7 +866,8 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	}
 	// Game frustum: always active in EDITOR (per-frame preview culling);
 	// opt-in via frustumCullingEnabled in GAME mode.
-	if (packet->gameCamera && (m_renderMode == RenderMode::EDITOR || frustumCullingEnabled))
+	if (nous::engine::renderer::ShouldBuildGameFrustum(isEditorMode, packet->gameCamera != nullptr,
+	                                              frustumCullingEnabled))
 	{
 		const glm::mat4 vp = packet->gameCamera->GetProjectionMatrix()
 		                   * packet->gameCamera->GetViewMatrix();
@@ -892,31 +900,36 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 		// Scene pass (editor camera frustum culling).
 		if (m_renderMode == RenderMode::EDITOR)
 		{
-			const bool passesScene = !hasSceneFrustum || [&]{
-				const auto it = mMeshAABBCache.find(data.objectUID);
-				return it == mMeshAABBCache.end()
-				    || FrustumCulling::IsAABBVisible(sceneFrustum, it->second.first, it->second.second);
-			}();
+			// `hasSceneFrustum &&` keeps IsAABBVisible short-circuited: without it the
+			// AABB test would run for every mesh every frame even with culling off.
+			const auto sceneIt      = mMeshAABBCache.find(data.objectUID);
+			const bool sceneMeasured = sceneIt != mMeshAABBCache.end();
+			const bool passesScene   = nous::engine::renderer::IsGeometryVisible(
+				hasSceneFrustum, sceneMeasured,
+				hasSceneFrustum && sceneMeasured
+					&& FrustumCulling::IsAABBVisible(sceneFrustum, sceneIt->second.first, sceneIt->second.second));
 			if (passesScene)
 				packet->geometries.emplace_back(data);
 
 			// Game pass (game camera frustum culling).
-			const bool passesGame = !hasGameFrustum || [&]{
-				const auto it = mMeshAABBCache.find(data.objectUID);
-				return it == mMeshAABBCache.end()
-				    || FrustumCulling::IsAABBVisible(gameFrustum, it->second.first, it->second.second);
-			}();
+			const auto gameIt       = mMeshAABBCache.find(data.objectUID);
+			const bool gameMeasured = gameIt != mMeshAABBCache.end();
+			const bool passesGame   = nous::engine::renderer::IsGeometryVisible(
+				hasGameFrustum, gameMeasured,
+				hasGameFrustum && gameMeasured
+					&& FrustumCulling::IsAABBVisible(gameFrustum, gameIt->second.first, gameIt->second.second));
 			if (passesGame)
 				packet->gameGeometries.emplace_back(data);
 		}
 		else
 		{
 			// GAME mode: single pass — cull against game camera.
-			const bool passesGame = !hasGameFrustum || [&]{
-				const auto it = mMeshAABBCache.find(data.objectUID);
-				return it == mMeshAABBCache.end()
-				    || FrustumCulling::IsAABBVisible(gameFrustum, it->second.first, it->second.second);
-			}();
+			const auto gameIt       = mMeshAABBCache.find(data.objectUID);
+			const bool gameMeasured = gameIt != mMeshAABBCache.end();
+			const bool passesGame   = nous::engine::renderer::IsGeometryVisible(
+				hasGameFrustum, gameMeasured,
+				hasGameFrustum && gameMeasured
+					&& FrustumCulling::IsAABBVisible(gameFrustum, gameIt->second.first, gameIt->second.second));
 			if (passesGame)
 				packet->geometries.emplace_back(data);
 		}
@@ -928,12 +941,12 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 	{
 		if (light.type == LightType::Directional)
 		{
-			if (!packet->hasDirectionalLight)
+			if (nous::engine::renderer::CanAcceptDirectionalLight(packet->hasDirectionalLight))
 			{
-				const glm::vec3 forward = glm::normalize(
-					transform.orientation * glm::vec3(0.f, -1.f, 0.f));
-				packet->directionalLight.direction = glm::vec4(forward, 0.f);
-				packet->directionalLight.color     = glm::vec4(light.color, light.intensity);
+				packet->directionalLight.direction =
+					glm::vec4(nous::engine::renderer::LightForward(transform.orientation), 0.f);
+				packet->directionalLight.color     =
+					nous::engine::renderer::PackLightColor(light.color, light.intensity);
 				packet->hasDirectionalLight        = true;
 			}
 			else
@@ -944,11 +957,11 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 		}
 		else if (light.type == LightType::Point)
 		{
-			if (packet->activePointLightCount < c_maxPointLights)
+			if (nous::engine::renderer::CanAcceptLight(packet->activePointLightCount, c_maxPointLights))
 			{
 				PointLight& pl = packet->pointLights[packet->activePointLightCount++];
-				pl.position    = glm::vec4(transform.position, light.range);
-				pl.color       = glm::vec4(light.color, light.intensity);
+				pl.position    = nous::engine::renderer::PackLightPosition(transform.position, light.range);
+				pl.color       = nous::engine::renderer::PackLightColor(light.color, light.intensity);
 			}
 			else
 			{
@@ -960,18 +973,13 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 		}
 		else if (light.type == LightType::Spot)
 		{
-			if (packet->activeSpotLightCount < c_maxSpotLights)
+			if (nous::engine::renderer::CanAcceptLight(packet->activeSpotLightCount, c_maxSpotLights))
 			{
-				const glm::vec3 forward = glm::normalize(
-					transform.orientation * glm::vec3(0.f, -1.f, 0.f));
 				SpotLight& sl      = packet->spotLights[packet->activeSpotLightCount++];
-				sl.position        = glm::vec4(transform.position, light.range);
-				sl.direction       = glm::vec4(forward, 0.f);
-				sl.color           = glm::vec4(light.color, light.intensity);
-				sl.angles          = glm::vec4(
-					std::cos(glm::radians(light.innerAngle)),
-					std::cos(glm::radians(light.outerAngle)),
-					0.f, 0.f);
+				sl.position        = nous::engine::renderer::PackLightPosition(transform.position, light.range);
+				sl.direction       = glm::vec4(nous::engine::renderer::LightForward(transform.orientation), 0.f);
+				sl.color           = nous::engine::renderer::PackLightColor(light.color, light.intensity);
+				sl.angles          = nous::engine::renderer::PackSpotAngles(light.innerAngle, light.outerAngle);
 			}
 			else
 			{
