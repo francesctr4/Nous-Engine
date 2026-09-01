@@ -1,7 +1,7 @@
 #ifndef NOUS_ENGINE_SHADER_REFLECTION_H
 #define NOUS_ENGINE_SHADER_REFLECTION_H
 
-#include "ShaderReflectionTypes.h"
+#include <ShaderSystem/ShaderReflection/ShaderReflectionTypes.h>
 #include <ShaderSystem/ShaderTypes.h>
 
 namespace nous::engine::shader_system
@@ -10,7 +10,7 @@ namespace nous::engine::shader_system
 
     // ShaderReflection.h — añadir
     PipelineReflectionResult MergeReflections(
-        const std::vector<ShaderReflectionResult>& stages);
+        const std::vector<ReflectionData>& stages);
 }
 
 #endif //NOUS_ENGINE_SHADER_REFLECTION_H

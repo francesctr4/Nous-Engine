@@ -2537,20 +2537,17 @@ bool VulkanBackend::ReloadShader(ResourceShader* shader) noexcept
     const ShaderCompilerConfig config;
     ShaderLoadResult loadResult = nous::engine::shader_system::LoadShaderFromFile(assetPath, config);
 
-    if (!loadResult.success)
+    if (!loadResult.has_value())
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Compile failed for '%s': %s",
-                     assetPath.c_str(), loadResult.errorMessage.c_str());
-        if (loadResult.shader)
-            NOUS_DELETE(loadResult.shader, MemoryTag::RESOURCE_SHADER);
+                     assetPath.c_str(), loadResult.error().c_str());
         return false;   // old GPU pipeline left intact
     }
 
     // ── 2. Swap CPU data on the primary ResourceShader ────────────────────────
-    shader->stagesData = std::move(loadResult.shader->stagesData);
-    shader->reflection = std::move(loadResult.shader->reflection);
+    shader->stagesData = std::move(loadResult->stagesData);
+    shader->reflection = std::move(loadResult->reflection);
     shader->generation++;
-    NOUS_DELETE(loadResult.shader, MemoryTag::RESOURCE_SHADER);
 
     // ── 3. GPU swap ───────────────────────────────────────────────────────────
     return ApplyCompiledShader(shader);

@@ -129,7 +129,7 @@ static uint32_t GetArrayCount(const SpvReflectBlockVariable& m)
 }
 
 PipelineReflectionResult nous::engine::shader_system::MergeReflections(
-    const std::vector<ShaderReflectionResult>& stages)
+    const std::vector<ReflectionData>& stages)
 {
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Merging reflection from %zu stage(s)", stages.size());
 
@@ -186,22 +186,19 @@ ShaderReflectionResult nous::engine::shader_system::ReflectSpirV(const ShaderSou
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Reflecting SPIR-V for '%s' (%zu words)",
                  source.virtualPath.c_str(), source.spirvBinary.size());
 
-    ShaderReflectionResult out{};
-    out.success = false;
+    ReflectionData data{};
 
     if (source.spirvBinary.empty())
     {
-        out.errorMessage = "ReflectSpirv: SPIR-V is empty.";
         NOUS_ERROR_C(CURRENT_CHANNEL, "SPIR-V binary is empty for '%s'", source.virtualPath.c_str());
-        return out;
+        return std::unexpected("ReflectSpirv: SPIR-V is empty.");
     }
 
     const uint32_t stageMask = ToStageMask(source.stage);
     if (stageMask == 0)
     {
-        out.errorMessage = "ReflectSpirv: Unsupported/unknown ShaderStage for stageMask mapping.";
         NOUS_ERROR_C(CURRENT_CHANNEL, "Unsupported shader stage for '%s'", source.virtualPath.c_str());
-        return out;
+        return std::unexpected("ReflectSpirv: Unsupported/unknown ShaderStage for stageMask mapping.");
     }
 
     SpvReflectShaderModule module{};
@@ -213,9 +210,8 @@ ShaderReflectionResult nous::engine::shader_system::ReflectSpirV(const ShaderSou
 
     if (r != SPV_REFLECT_RESULT_SUCCESS)
     {
-        out.errorMessage = "ReflectSpirv: Failed to create reflection module.";
         NOUS_ERROR_C(CURRENT_CHANNEL, "spirv-reflect module creation failed for '%s'", source.virtualPath.c_str());
-        return out;
+        return std::unexpected("ReflectSpirv: Failed to create reflection module.");
     }
 
     // --- Descriptor bindings ---
@@ -225,7 +221,7 @@ ShaderReflectionResult nous::engine::shader_system::ReflectSpirV(const ShaderSou
     std::vector<SpvReflectDescriptorBinding*> bindings(bindingCount);
     spvReflectEnumerateDescriptorBindings(&module, &bindingCount, bindings.data());
 
-    out.bindings.reserve(bindingCount);
+    data.bindings.reserve(bindingCount);
     for (SpvReflectDescriptorBinding* b : bindings)
     {
         if (!b) continue;
@@ -264,7 +260,7 @@ ShaderReflectionResult nous::engine::shader_system::ReflectSpirV(const ShaderSou
             }
         }
 
-        out.bindings.push_back(std::move(rb));
+        data.bindings.push_back(std::move(rb));
     }
 
     // --- Push constants ---
@@ -274,7 +270,7 @@ ShaderReflectionResult nous::engine::shader_system::ReflectSpirV(const ShaderSou
     std::vector<SpvReflectBlockVariable*> pcs(pcCount);
     spvReflectEnumeratePushConstantBlocks(&module, &pcCount, pcs.data());
 
-    out.pushConstants.reserve(pcCount);
+    data.pushConstants.reserve(pcCount);
     for (SpvReflectBlockVariable* pc : pcs)
     {
         if (!pc) continue;
@@ -299,7 +295,7 @@ ShaderReflectionResult nous::engine::shader_system::ReflectSpirV(const ShaderSou
             rpc.members.push_back(std::move(rm));
         }
 
-        out.pushConstants.push_back(std::move(rpc));
+        data.pushConstants.push_back(std::move(rpc));
     }
 
     // --- Vertex inputs (meaningful mostly for Vertex stage) ---
@@ -312,7 +308,7 @@ ShaderReflectionResult nous::engine::shader_system::ReflectSpirV(const ShaderSou
 
     if (source.stage == ShaderStage::Vertex)
     {
-        out.vertexInputs.reserve(inputCount);
+        data.vertexInputs.reserve(inputCount);
 
         for (SpvReflectInterfaceVariable* v : inputs)
         {
@@ -340,7 +336,7 @@ ShaderReflectionResult nous::engine::shader_system::ReflectSpirV(const ShaderSou
             // Scalar kind (float/int/uint/bool)
             in.scalarType = ToScalarType(v->type_description);
 
-            out.vertexInputs.push_back(std::move(in));
+            data.vertexInputs.push_back(std::move(in));
         }
     }
 
@@ -368,16 +364,15 @@ ShaderReflectionResult nous::engine::shader_system::ReflectSpirV(const ShaderSou
                 comps = v->type_description->traits.numeric.vector.component_count;
             ro.components = static_cast<uint8_t>(comps);
 
-            out.fragmentOutputs.push_back(std::move(ro));
+            data.fragmentOutputs.push_back(std::move(ro));
         }
     }
 
     spvReflectDestroyShaderModule(&module);
 
-    out.success = true;
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Reflected '%s': %zu binding(s), %zu push constant(s), %zu vertex input(s), %zu fragment output(s)",
                  source.virtualPath.c_str(),
-                 out.bindings.size(), out.pushConstants.size(),
-                 out.vertexInputs.size(), out.fragmentOutputs.size());
-    return out;
+                 data.bindings.size(), data.pushConstants.size(),
+                 data.vertexInputs.size(), data.fragmentOutputs.size());
+    return data;
 }

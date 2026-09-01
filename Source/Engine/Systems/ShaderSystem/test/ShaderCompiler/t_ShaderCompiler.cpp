@@ -57,30 +57,29 @@ protected:
 TEST_F(t_ShaderCompiler, ValidVertexGlsl_ReturnsSuccess)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, config, "test.vert");
-    EXPECT_TRUE(result.success);
-    EXPECT_TRUE(result.errorMessage.empty());
+    EXPECT_TRUE(result.has_value());
 }
 
 TEST_F(t_ShaderCompiler, ValidVertexGlsl_StageIsVertex)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, config, "test.vert");
-    ASSERT_TRUE(result.success);
-    EXPECT_EQ(result.shaderSource.stage, ShaderStage::Vertex);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->stage, ShaderStage::Vertex);
 }
 
 TEST_F(t_ShaderCompiler, ValidVertexGlsl_SpirVBinaryIsNonEmpty)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, config, "test.vert");
-    ASSERT_TRUE(result.success);
-    EXPECT_FALSE(result.shaderSource.spirvBinary.empty());
+    ASSERT_TRUE(result.has_value());
+    EXPECT_FALSE(result->spirvBinary.empty());
 }
 
 TEST_F(t_ShaderCompiler, ValidVertexGlsl_GlslSourceIsPreserved)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, config, "test.vert");
-    ASSERT_TRUE(result.success);
-    EXPECT_FALSE(result.shaderSource.glslSource.empty());
-    EXPECT_NE(result.shaderSource.glslSource.find("aPos"), std::string::npos);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_FALSE(result->glslSource.empty());
+    EXPECT_NE(result->glslSource.find("aPos"), std::string::npos);
 }
 
 // =====================================================
@@ -90,22 +89,21 @@ TEST_F(t_ShaderCompiler, ValidVertexGlsl_GlslSourceIsPreserved)
 TEST_F(t_ShaderCompiler, ValidFragmentGlsl_ReturnsSuccess)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalFrag, ShaderStage::Fragment, config, "test.frag");
-    EXPECT_TRUE(result.success);
-    EXPECT_TRUE(result.errorMessage.empty());
+    EXPECT_TRUE(result.has_value());
 }
 
 TEST_F(t_ShaderCompiler, ValidFragmentGlsl_StageIsFragment)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalFrag, ShaderStage::Fragment, config, "test.frag");
-    ASSERT_TRUE(result.success);
-    EXPECT_EQ(result.shaderSource.stage, ShaderStage::Fragment);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->stage, ShaderStage::Fragment);
 }
 
 TEST_F(t_ShaderCompiler, ValidFragmentGlsl_SpirVBinaryIsNonEmpty)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalFrag, ShaderStage::Fragment, config, "test.frag");
-    ASSERT_TRUE(result.success);
-    EXPECT_FALSE(result.shaderSource.spirvBinary.empty());
+    ASSERT_TRUE(result.has_value());
+    EXPECT_FALSE(result->spirvBinary.empty());
 }
 
 // =====================================================
@@ -115,15 +113,15 @@ TEST_F(t_ShaderCompiler, ValidFragmentGlsl_SpirVBinaryIsNonEmpty)
 TEST_F(t_ShaderCompiler, ComputeShader_ReturnsSuccess)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalCompute, ShaderStage::Compute, config, "test.comp");
-    EXPECT_TRUE(result.success);
-    EXPECT_EQ(result.shaderSource.stage, ShaderStage::Compute);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->stage, ShaderStage::Compute);
 }
 
 TEST_F(t_ShaderCompiler, ComputeShader_SpirVBinaryIsNonEmpty)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalCompute, ShaderStage::Compute, config, "test.comp");
-    ASSERT_TRUE(result.success);
-    EXPECT_FALSE(result.shaderSource.spirvBinary.empty());
+    ASSERT_TRUE(result.has_value());
+    EXPECT_FALSE(result->spirvBinary.empty());
 }
 
 // =====================================================
@@ -133,27 +131,20 @@ TEST_F(t_ShaderCompiler, ComputeShader_SpirVBinaryIsNonEmpty)
 TEST_F(t_ShaderCompiler, InvalidGlsl_ReturnsFailure)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kInvalidGlsl, ShaderStage::Vertex, config, "invalid.vert");
-    EXPECT_FALSE(result.success);
+    EXPECT_FALSE(result.has_value());
 }
 
 TEST_F(t_ShaderCompiler, InvalidGlsl_ErrorMessageIsNotEmpty)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kInvalidGlsl, ShaderStage::Vertex, config, "invalid.vert");
-    ASSERT_FALSE(result.success);
-    EXPECT_FALSE(result.errorMessage.empty());
-}
-
-TEST_F(t_ShaderCompiler, InvalidGlsl_SpirVBinaryIsEmpty)
-{
-    ShaderCompileResult result = CompileGlslStringToSpirv(kInvalidGlsl, ShaderStage::Vertex, config, "invalid.vert");
-    ASSERT_FALSE(result.success);
-    EXPECT_TRUE(result.shaderSource.spirvBinary.empty());
+    ASSERT_FALSE(result.has_value());
+    EXPECT_FALSE(result.error().empty());
 }
 
 TEST_F(t_ShaderCompiler, EmptySource_ReturnsFailure)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv("", ShaderStage::Vertex, config, "empty.vert");
-    EXPECT_FALSE(result.success);
+    EXPECT_FALSE(result.has_value());
 }
 
 // =====================================================
@@ -164,32 +155,32 @@ TEST_F(t_ShaderCompiler, SpirVOutput_HasValidMagicNumber)
 {
     // SPIR-V magic number is always 0x07230203
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, config, "test.vert");
-    ASSERT_TRUE(result.success);
-    ASSERT_GE(result.shaderSource.spirvBinary.size(), 1u);
-    EXPECT_EQ(result.shaderSource.spirvBinary[0], 0x07230203u);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_GE(result->spirvBinary.size(), 1u);
+    EXPECT_EQ(result->spirvBinary[0], 0x07230203u);
 }
 
 TEST_F(t_ShaderCompiler, VirtualPath_IsStoredInShaderSource)
 {
     const std::string path = "Assets/Shaders/MyShader.vert";
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, config, path);
-    ASSERT_TRUE(result.success);
-    EXPECT_EQ(result.shaderSource.virtualPath, path);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->virtualPath, path);
 }
 
 TEST_F(t_ShaderCompiler, ShaderSource_IsValid_AfterSuccessfulCompile)
 {
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, config, "test.vert");
-    ASSERT_TRUE(result.success);
-    EXPECT_TRUE(result.shaderSource.IsValid());
+    ASSERT_TRUE(result.has_value());
+    EXPECT_TRUE(result->IsValid());
 }
 
 TEST_F(t_ShaderCompiler, TwoCompilations_ProduceSameBinaryForSameInput)
 {
     ShaderCompileResult r1 = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, config, "test.vert");
     ShaderCompileResult r2 = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, config, "test.vert");
-    ASSERT_TRUE(r1.success && r2.success);
-    EXPECT_EQ(r1.shaderSource.spirvBinary, r2.shaderSource.spirvBinary);
+    ASSERT_TRUE(r1.has_value() && r2.has_value());
+    EXPECT_EQ(r1->spirvBinary, r2->spirvBinary);
 }
 
 // =====================================================
@@ -201,8 +192,8 @@ TEST_F(t_ShaderCompiler, OptimizationLevelPerformance_CompilesSuccessfully)
     ShaderCompilerConfig perfConfig = config;
     perfConfig.optimization = ShaderOptimizationLevel::Performance;
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, perfConfig, "test.vert");
-    EXPECT_TRUE(result.success);
-    EXPECT_FALSE(result.shaderSource.spirvBinary.empty());
+    ASSERT_TRUE(result.has_value());
+    EXPECT_FALSE(result->spirvBinary.empty());
 }
 
 TEST_F(t_ShaderCompiler, OptimizationLevelSize_CompilesSuccessfully)
@@ -210,8 +201,8 @@ TEST_F(t_ShaderCompiler, OptimizationLevelSize_CompilesSuccessfully)
     ShaderCompilerConfig sizeConfig = config;
     sizeConfig.optimization = ShaderOptimizationLevel::Size;
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, sizeConfig, "test.vert");
-    EXPECT_TRUE(result.success);
-    EXPECT_FALSE(result.shaderSource.spirvBinary.empty());
+    ASSERT_TRUE(result.has_value());
+    EXPECT_FALSE(result->spirvBinary.empty());
 }
 
 TEST_F(t_ShaderCompiler, WarningsAsErrors_CleanGlsl_DoesNotFail)
@@ -219,5 +210,5 @@ TEST_F(t_ShaderCompiler, WarningsAsErrors_CleanGlsl_DoesNotFail)
     ShaderCompilerConfig strictConfig = config;
     strictConfig.warningsAsErrors = true;
     ShaderCompileResult result = CompileGlslStringToSpirv(kMinimalVert, ShaderStage::Vertex, strictConfig, "test.vert");
-    EXPECT_TRUE(result.success);
+    EXPECT_TRUE(result.has_value());
 }

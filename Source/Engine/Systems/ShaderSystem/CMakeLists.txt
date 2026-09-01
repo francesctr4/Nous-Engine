@@ -55,13 +55,13 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         unofficial::spirv-reflect
 )
 
-# ResourceManager closes a cycle: ResourceShader lives there, the compiler and
-# reflection live here.
+# No ResourceManager edge: ShaderSystem names no resource type. LoadShaderFromFile
+# returns a CompiledShaderData value, not a temporary ResourceShader, so the
+# AudioSystem <-> ResourceManager <-> ShaderSystem <-> VideoSystem cycle is broken here.
 target_link_libraries(${CLASS_NAME} PRIVATE
         FileSystem
         Logger
         MemoryManager
-        ResourceManager
         Utils
 )
 

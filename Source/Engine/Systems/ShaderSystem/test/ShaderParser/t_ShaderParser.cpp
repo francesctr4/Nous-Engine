@@ -28,9 +28,8 @@ protected:
 TEST_F(t_ShaderParser, EmptySource_ReturnFailure)
 {
     ParseResult result = ParseShaderStages("");
-    EXPECT_FALSE(result.success);
-    EXPECT_FALSE(result.errorMessage.empty());
-    EXPECT_TRUE(result.stages.empty());
+    ASSERT_FALSE(result.has_value());
+    EXPECT_FALSE(result.error().empty());
 }
 
 TEST_F(t_ShaderParser, NoPragmaDirectives_ReturnFailure)
@@ -39,24 +38,24 @@ TEST_F(t_ShaderParser, NoPragmaDirectives_ReturnFailure)
         "#version 450\n"
         "void main() {}\n";
     ParseResult result = ParseShaderStages(source);
-    EXPECT_FALSE(result.success);
-    EXPECT_FALSE(result.errorMessage.empty());
-    EXPECT_TRUE(result.stages.empty());
+    ASSERT_FALSE(result.has_value());
+    EXPECT_FALSE(result.error().empty());
 }
 
 TEST_F(t_ShaderParser, UnknownStageName_ReturnFailure)
 {
     const std::string source = "#pragma stage badstage\nvoid main() {}\n";
     ParseResult result = ParseShaderStages(source);
-    EXPECT_FALSE(result.success);
-    EXPECT_FALSE(result.errorMessage.empty());
+    ASSERT_FALSE(result.has_value());
+    EXPECT_FALSE(result.error().empty());
 }
 
 TEST_F(t_ShaderParser, UnknownStageName_ErrorMessageContainsStageName)
 {
     const std::string source = "#pragma stage myCustomStage\nvoid main() {}\n";
     ParseResult result = ParseShaderStages(source);
-    EXPECT_NE(result.errorMessage.find("myCustomStage"), std::string::npos);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_NE(result.error().find("myCustomStage"), std::string::npos);
 }
 
 // =====================================================
@@ -67,44 +66,44 @@ TEST_F(t_ShaderParser, SingleVertexStage_ReturnSuccess)
 {
     const std::string source = "#pragma stage vertex\n" + kVertBody;
     ParseResult result = ParseShaderStages(source);
-    EXPECT_TRUE(result.success);
-    EXPECT_TRUE(result.errorMessage.empty());
+    ASSERT_TRUE(result.has_value());
 }
 
 TEST_F(t_ShaderParser, SingleVertexStage_ReturnOneStage)
 {
     const std::string source = "#pragma stage vertex\n" + kVertBody;
     ParseResult result = ParseShaderStages(source);
-    ASSERT_EQ(result.stages.size(), 1u);
-    EXPECT_EQ(result.stages[0].stage, ShaderStage::Vertex);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 1u);
+    EXPECT_EQ((*result)[0].stage, ShaderStage::Vertex);
 }
 
 TEST_F(t_ShaderParser, SingleFragmentStage_ReturnSuccess)
 {
     const std::string source = "#pragma stage fragment\n" + kFragBody;
     ParseResult result = ParseShaderStages(source);
-    EXPECT_TRUE(result.success);
-    ASSERT_EQ(result.stages.size(), 1u);
-    EXPECT_EQ(result.stages[0].stage, ShaderStage::Fragment);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 1u);
+    EXPECT_EQ((*result)[0].stage, ShaderStage::Fragment);
 }
 
 TEST_F(t_ShaderParser, SingleStage_SourceContentIsExtracted)
 {
     const std::string source = "#pragma stage fragment\nvoid frag() {}\n";
     ParseResult result = ParseShaderStages(source);
-    ASSERT_TRUE(result.success);
-    ASSERT_EQ(result.stages.size(), 1u);
-    EXPECT_FALSE(result.stages[0].glslSource.empty());
-    EXPECT_NE(result.stages[0].glslSource.find("void frag()"), std::string::npos);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 1u);
+    EXPECT_FALSE((*result)[0].glslSource.empty());
+    EXPECT_NE((*result)[0].glslSource.find("void frag()"), std::string::npos);
 }
 
 TEST_F(t_ShaderParser, SingleStage_SourceDoesNotContainPragmaLine)
 {
     const std::string source = "#pragma stage vertex\nvoid main() {}\n";
     ParseResult result = ParseShaderStages(source);
-    ASSERT_TRUE(result.success);
-    ASSERT_EQ(result.stages.size(), 1u);
-    EXPECT_EQ(result.stages[0].glslSource.find("#pragma stage"), std::string::npos);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 1u);
+    EXPECT_EQ((*result)[0].glslSource.find("#pragma stage"), std::string::npos);
 }
 
 TEST_F(t_ShaderParser, SingleStageWithNothingAfterPragma_ReturnSuccess)
@@ -112,9 +111,9 @@ TEST_F(t_ShaderParser, SingleStageWithNothingAfterPragma_ReturnSuccess)
     // Just the pragma directive, no stage body -- should still succeed
     const std::string source = "#pragma stage vertex\n";
     ParseResult result = ParseShaderStages(source);
-    EXPECT_TRUE(result.success);
-    ASSERT_EQ(result.stages.size(), 1u);
-    EXPECT_EQ(result.stages[0].stage, ShaderStage::Vertex);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 1u);
+    EXPECT_EQ((*result)[0].stage, ShaderStage::Vertex);
 }
 
 // =====================================================
@@ -127,8 +126,8 @@ TEST_F(t_ShaderParser, VertexAndFragment_ReturnTwoStages)
         "#pragma stage vertex\n" + kVertBody +
         "#pragma stage fragment\n" + kFragBody;
     ParseResult result = ParseShaderStages(source);
-    EXPECT_TRUE(result.success);
-    EXPECT_EQ(result.stages.size(), 2u);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->size(), 2u);
 }
 
 TEST_F(t_ShaderParser, VertexAndFragment_StageTypesAreCorrect)
@@ -137,9 +136,10 @@ TEST_F(t_ShaderParser, VertexAndFragment_StageTypesAreCorrect)
         "#pragma stage vertex\n" + kVertBody +
         "#pragma stage fragment\n" + kFragBody;
     ParseResult result = ParseShaderStages(source);
-    ASSERT_EQ(result.stages.size(), 2u);
-    EXPECT_EQ(result.stages[0].stage, ShaderStage::Vertex);
-    EXPECT_EQ(result.stages[1].stage, ShaderStage::Fragment);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 2u);
+    EXPECT_EQ((*result)[0].stage, ShaderStage::Vertex);
+    EXPECT_EQ((*result)[1].stage, ShaderStage::Fragment);
 }
 
 TEST_F(t_ShaderParser, MultiStage_LastStageSourceContainsExpectedCode)
@@ -149,9 +149,9 @@ TEST_F(t_ShaderParser, MultiStage_LastStageSourceContainsExpectedCode)
         "#pragma stage vertex\n" + kVertBody +
         "#pragma stage fragment\nvoid frag() {}\n";
     ParseResult result = ParseShaderStages(source);
-    ASSERT_TRUE(result.success);
-    ASSERT_EQ(result.stages.size(), 2u);
-    EXPECT_NE(result.stages[1].glslSource.find("void frag()"), std::string::npos);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 2u);
+    EXPECT_NE((*result)[1].glslSource.find("void frag()"), std::string::npos);
 }
 
 TEST_F(t_ShaderParser, MultiStage_FirstStageSourceDoesNotContainNextPragma)
@@ -162,9 +162,9 @@ TEST_F(t_ShaderParser, MultiStage_FirstStageSourceDoesNotContainNextPragma)
         "#pragma stage vertex\nvoid vert() {}\n"
         "#pragma stage fragment\nvoid frag() {}\n";
     ParseResult result = ParseShaderStages(source);
-    ASSERT_TRUE(result.success);
-    ASSERT_EQ(result.stages.size(), 2u);
-    EXPECT_EQ(result.stages[0].glslSource.find("#pragma stage"), std::string::npos);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 2u);
+    EXPECT_EQ((*result)[0].glslSource.find("#pragma stage"), std::string::npos);
 }
 
 TEST_F(t_ShaderParser, ThreeStages_ReturnCorrectCount)
@@ -174,8 +174,8 @@ TEST_F(t_ShaderParser, ThreeStages_ReturnCorrectCount)
         "#pragma stage geometry\nvoid main() {}\n"
         "#pragma stage fragment\nvoid main() {}\n";
     ParseResult result = ParseShaderStages(source);
-    EXPECT_TRUE(result.success);
-    EXPECT_EQ(result.stages.size(), 3u);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->size(), 3u);
 }
 
 TEST_F(t_ShaderParser, ThreeStages_TypeOrderIsPreserved)
@@ -185,10 +185,11 @@ TEST_F(t_ShaderParser, ThreeStages_TypeOrderIsPreserved)
         "#pragma stage geometry\nvoid main() {}\n"
         "#pragma stage fragment\nvoid main() {}\n";
     ParseResult result = ParseShaderStages(source);
-    ASSERT_EQ(result.stages.size(), 3u);
-    EXPECT_EQ(result.stages[0].stage, ShaderStage::Vertex);
-    EXPECT_EQ(result.stages[1].stage, ShaderStage::Geometry);
-    EXPECT_EQ(result.stages[2].stage, ShaderStage::Fragment);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 3u);
+    EXPECT_EQ((*result)[0].stage, ShaderStage::Vertex);
+    EXPECT_EQ((*result)[1].stage, ShaderStage::Geometry);
+    EXPECT_EQ((*result)[2].stage, ShaderStage::Fragment);
 }
 
 // =====================================================
@@ -210,9 +211,9 @@ TEST_F(t_ShaderParser, AllValidStageNames_AreRecognized)
     {
         const std::string source = "#pragma stage " + name + "\nvoid main() {}\n";
         ParseResult result = ParseShaderStages(source);
-        EXPECT_TRUE(result.success)         << "Stage '" << name << "' should be recognized";
-        ASSERT_EQ(result.stages.size(), 1u) << "Stage '" << name << "' should produce 1 stage";
-        EXPECT_EQ(result.stages[0].stage, expectedStage) << "Stage type mismatch for '" << name << "'";
+        ASSERT_TRUE(result.has_value())     << "Stage '" << name << "' should be recognized";
+        ASSERT_EQ(result->size(), 1u) << "Stage '" << name << "' should produce 1 stage";
+        EXPECT_EQ((*result)[0].stage, expectedStage) << "Stage type mismatch for '" << name << "'";
     }
 }
 
@@ -225,9 +226,9 @@ TEST_F(t_ShaderParser, WindowsLineEndings_CRLF_DoNotCorruptStageName)
     // \r\n line endings should not leave \r in the parsed stage name
     const std::string source = "#pragma stage vertex\r\nvoid main() {}\r\n";
     ParseResult result = ParseShaderStages(source);
-    EXPECT_TRUE(result.success);
-    ASSERT_EQ(result.stages.size(), 1u);
-    EXPECT_EQ(result.stages[0].stage, ShaderStage::Vertex);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->size(), 1u);
+    EXPECT_EQ((*result)[0].stage, ShaderStage::Vertex);
 }
 
 TEST_F(t_ShaderParser, StageNamesAreCaseSensitive_WrongCaseIsUnknown)
@@ -235,7 +236,7 @@ TEST_F(t_ShaderParser, StageNamesAreCaseSensitive_WrongCaseIsUnknown)
     // "Vertex" (capital V) should not be recognized
     const std::string source = "#pragma stage Vertex\nvoid main() {}\n";
     ParseResult result = ParseShaderStages(source);
-    EXPECT_FALSE(result.success);
+    ASSERT_FALSE(result.has_value());
 }
 
 TEST_F(t_ShaderParser, MultipleUnknownStages_FailsOnFirstUnknown)
@@ -245,6 +246,6 @@ TEST_F(t_ShaderParser, MultipleUnknownStages_FailsOnFirstUnknown)
         "#pragma stage bad1\nvoid a() {}\n"
         "#pragma stage bad2\nvoid b() {}\n";
     ParseResult result = ParseShaderStages(source);
-    EXPECT_FALSE(result.success);
-    EXPECT_NE(result.errorMessage.find("bad1"), std::string::npos);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_NE(result.error().find("bad1"), std::string::npos);
 }

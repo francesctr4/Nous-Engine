@@ -62,6 +62,15 @@ public:
     T& operator[](size_t i) { return internal_[i]; }
     const T& operator[](size_t i) const { return internal_[i]; }
 
+    T* data() { return internal_.data(); }
+    const T* data() const { return internal_.data(); }
+
+    void resize(size_t count) { internal_.resize(count); }
+    void reserve(size_t count) { internal_.reserve(count); }
+
+    template<typename InputIt>
+    void assign(InputIt first, InputIt last) { internal_.assign(first, last); }
+
     iterator begin() { return internal_.begin(); }
     iterator end() { return internal_.end(); }
 

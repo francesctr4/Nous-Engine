@@ -1,6 +1,7 @@
 #ifndef NOUS_ENGINE_SHADER_PARSER_H
 #define NOUS_ENGINE_SHADER_PARSER_H
 
+#include <expected>
 #include <string>
 #include <vector>
 
@@ -8,14 +9,9 @@
 
 namespace nous::engine::shader_system
 {
-    // Extrae las stages de un archivo .glsl unificado.
-    // Devuelve error en result.errorMessage si no encuentra ninguna stage.
-    struct ParseResult
-    {
-        bool success = false;
-        std::string errorMessage;
-        std::vector<RawStage> stages;
-    };
+    // Extracts the stages from a unified .glsl file.
+    // On failure the error holds a human-readable message.
+    using ParseResult = std::expected<std::vector<RawStage>, std::string>;
 
     ParseResult ParseShaderStages(const std::string& fullSource);
 }

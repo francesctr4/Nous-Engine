@@ -18,6 +18,10 @@ target_include_directories(${CLASS_NAME}_headers INTERFACE ${CMAKE_CURRENT_SOURC
 # those headers need the dir too. It is header-only, so this adds no linkage.
 target_link_libraries(${CLASS_NAME}_headers INTERFACE EngineCore_headers)
 
+# ReadAllBytes() returns NOUS_Vector<char>, named in the public FileHandle.h,
+# so consumers of this header need the Utils include dir too.
+target_link_libraries(${CLASS_NAME}_headers INTERFACE Utils_headers)
+
 add_library(${CLASS_NAME}_private INTERFACE)
 target_include_directories(${CLASS_NAME}_private INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 

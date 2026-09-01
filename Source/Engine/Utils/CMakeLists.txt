@@ -78,6 +78,7 @@ target_link_libraries(Utils PRIVATE
 )
 
 if (NOUS_BUILD_TESTS)
+    add_subdirectory(test/DataStructures)
     add_subdirectory(test/Math)
     add_subdirectory(test/Serialization/JsonFile)
     add_subdirectory(test/Serialization/JsonObject)

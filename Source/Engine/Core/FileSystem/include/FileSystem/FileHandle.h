@@ -1,10 +1,14 @@
 #ifndef FILEHANDLE_H
 #define FILEHANDLE_H
 
+#include <Utils/DataStructures/NOUS_Vector.h>
+
 #include <string>
 #include <memory>
 #include <fstream>
 #include <cstdint>
+#include <optional>
+#include <span>
 
 enum class FileMode : int8_t
 {
@@ -25,13 +29,13 @@ public:
 	bool Open(const std::string& filePath, FileMode mode, bool isBinary);
 	void Close();
 
-	bool ReadBytes(uint64_t dataSize, char* outReadData, uint64_t* outBytesRead);
-	bool ReadAllBytes(char** outBytes, uint64_t* outBytesRead);
-	
+	std::optional<uint64_t> ReadBytes(std::span<char> outBuffer);
+	std::optional<NOUS_Vector<char>> ReadAllBytes();
+
 	bool ReadLine(std::string& outLine);
 	bool WriteLine(const std::string& line);
-	 
-	bool Write(uint64_t dataSize, const void* data, uint64_t* outBytesWritten);
+
+	std::optional<uint64_t> Write(std::span<const std::byte> data);
 
 	// ---------------------------------------------------------------------------- //
 

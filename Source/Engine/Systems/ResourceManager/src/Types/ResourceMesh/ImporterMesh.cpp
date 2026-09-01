@@ -29,9 +29,24 @@
 #include "assimp/material.h"
 
 #include <filesystem>
+#include <span>
 #include <unordered_set>
 #include <unordered_map>
 #include <cstddef>
+
+// Reinterprets a trivially-copyable object or contiguous container as a
+// writable byte span for FileHandle::ReadBytes.
+template<typename T>
+static std::span<char> AsWritableCharSpan(T& object)
+{
+    return std::span(reinterpret_cast<char*>(&object), sizeof(T));
+}
+
+template<typename T>
+static std::span<char> AsWritableCharSpan(std::vector<T>& values)
+{
+    return std::span(reinterpret_cast<char*>(values.data()), values.size() * sizeof(T));
+}
 
 // ─── Binary format ────────────────────────────────────────────────────────────
 // V1 (legacy): uint64_t vertexCount | Vertex3D[] | uint64_t indexCount | uint32_t[]
@@ -179,15 +194,15 @@ static void CollectSubMeshData(aiNode* node, const aiScene* scene,
 
 static bool WriteU32(FileHandle& fh, uint32_t v)
 {
-    uint64_t w = 0; return fh.Write(4, &v, &w);
+    return fh.Write(std::as_bytes(std::span(&v, 1))).has_value();
 }
 static bool WriteU64(FileHandle& fh, uint64_t v)
 {
-    uint64_t w = 0; return fh.Write(8, &v, &w);
+    return fh.Write(std::as_bytes(std::span(&v, 1))).has_value();
 }
 static bool WriteBytes(FileHandle& fh, const void* data, uint64_t size)
 {
-    uint64_t w = 0; return fh.Write(size, data, &w);
+    return fh.Write(std::as_bytes(std::span(reinterpret_cast<const std::byte*>(data), size))).has_value();
 }
 
 // Write a V3 multi-submesh binary from a pre-collected vector of SubMeshData.
@@ -252,10 +267,8 @@ static std::vector<SubMeshData> ParseMeshBinary(const std::string& libraryPath)
         return result;
     }
 
-    uint64_t bytesRead = 0;
-
     uint32_t header4 = 0;
-    if (!fh.ReadBytes(4, reinterpret_cast<char*>(&header4), &bytesRead))
+    if (!fh.ReadBytes(AsWritableCharSpan(header4)).has_value())
         return result;
 
     const bool isV3 = (header4 == MESH_BINARY_MAGIC_V3);
@@ -265,19 +278,19 @@ static std::vector<SubMeshData> ParseMeshBinary(const std::string& libraryPath)
     {
         // V1 format: single flat mesh — wrap in one SubMeshData
         uint32_t header4High = 0;
-        fh.ReadBytes(4, reinterpret_cast<char*>(&header4High), &bytesRead);
+        fh.ReadBytes(AsWritableCharSpan(header4High));
         const uint64_t vCount = header4 | (static_cast<uint64_t>(header4High) << 32);
 
         SubMeshData sub;
         sub.name           = "Mesh";
         sub.localTransform = glm::mat4(1.0f);
         sub.vertices.resize(vCount);
-        fh.ReadBytes(vCount * sizeof(Vertex3D), reinterpret_cast<char*>(sub.vertices.data()), &bytesRead);
+        fh.ReadBytes(AsWritableCharSpan(sub.vertices));
 
         uint64_t iCount = 0;
-        fh.ReadBytes(sizeof(iCount), reinterpret_cast<char*>(&iCount), &bytesRead);
+        fh.ReadBytes(AsWritableCharSpan(iCount));
         sub.indices.resize(iCount);
-        fh.ReadBytes(iCount * sizeof(uint32_t), reinterpret_cast<char*>(sub.indices.data()), &bytesRead);
+        fh.ReadBytes(AsWritableCharSpan(sub.indices));
 
         fh.Close();
         result.emplace_back(std::move(sub));
@@ -286,7 +299,7 @@ static std::vector<SubMeshData> ParseMeshBinary(const std::string& libraryPath)
 
     // V2 / V3 format
     uint32_t submeshCount = 0;
-    if (!fh.ReadBytes(4, reinterpret_cast<char*>(&submeshCount), &bytesRead))
+    if (!fh.ReadBytes(AsWritableCharSpan(submeshCount)).has_value())
         return result;
 
     result.reserve(submeshCount);
@@ -296,35 +309,35 @@ static std::vector<SubMeshData> ParseMeshBinary(const std::string& libraryPath)
         SubMeshData sub;
 
         uint64_t nameLen = 0;
-        fh.ReadBytes(sizeof(nameLen), reinterpret_cast<char*>(&nameLen), &bytesRead);
+        fh.ReadBytes(AsWritableCharSpan(nameLen));
         if (nameLen > 0)
         {
             sub.name.resize(nameLen);
-            fh.ReadBytes(nameLen, sub.name.data(), &bytesRead);
+            fh.ReadBytes(std::span(sub.name.data(), nameLen));
         }
 
-        fh.ReadBytes(16 * sizeof(float), reinterpret_cast<char*>(&sub.localTransform[0][0]), &bytesRead);
+        fh.ReadBytes(std::span(reinterpret_cast<char*>(&sub.localTransform[0][0]), 16 * sizeof(float)));
 
         if (isV3)
         {
             uint64_t matPathLen = 0;
-            fh.ReadBytes(sizeof(matPathLen), reinterpret_cast<char*>(&matPathLen), &bytesRead);
+            fh.ReadBytes(AsWritableCharSpan(matPathLen));
             if (matPathLen > 0)
             {
                 sub.materialAssetPath.resize(matPathLen);
-                fh.ReadBytes(matPathLen, sub.materialAssetPath.data(), &bytesRead);
+                fh.ReadBytes(std::span(sub.materialAssetPath.data(), matPathLen));
             }
         }
 
         uint64_t vCount = 0;
-        fh.ReadBytes(sizeof(vCount), reinterpret_cast<char*>(&vCount), &bytesRead);
+        fh.ReadBytes(AsWritableCharSpan(vCount));
         sub.vertices.resize(vCount);
-        fh.ReadBytes(vCount * sizeof(Vertex3D), reinterpret_cast<char*>(sub.vertices.data()), &bytesRead);
+        fh.ReadBytes(AsWritableCharSpan(sub.vertices));
 
         uint64_t iCount = 0;
-        fh.ReadBytes(sizeof(iCount), reinterpret_cast<char*>(&iCount), &bytesRead);
+        fh.ReadBytes(AsWritableCharSpan(iCount));
         sub.indices.resize(iCount);
-        fh.ReadBytes(iCount * sizeof(uint32_t), reinterpret_cast<char*>(sub.indices.data()), &bytesRead);
+        fh.ReadBytes(AsWritableCharSpan(sub.indices));
 
         result.emplace_back(std::move(sub));
     }
@@ -458,8 +471,7 @@ static std::vector<std::string> ExtractTexturesAndMaterials(const aiScene* scene
                             NOUS_WARN("ImporterMesh: failed to write embedded texture '%s'.", finalAssetPath.c_str());
                             continue;
                         }
-                        uint64_t written = 0;
-                        fh.Write(aiTex->mWidth, aiTex->pcData, &written);
+                        fh.Write(std::span(reinterpret_cast<const std::byte*>(aiTex->pcData), aiTex->mWidth));
                         fh.Close();
                     }
                 }

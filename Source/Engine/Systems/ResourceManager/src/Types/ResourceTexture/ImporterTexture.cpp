@@ -46,9 +46,8 @@ bool ImporterTexture::Deserialize(const std::string& libraryPath, ResourceBase* 
         return false;
     }
 
-    char* fileBuffer = nullptr;
-    uint64_t fileSize = 0;
-    if (!fileHandle.ReadAllBytes(&fileBuffer, &fileSize) || !fileBuffer || fileSize == 0)
+    std::optional<NOUS_Vector<char>> fileBuffer = fileHandle.ReadAllBytes();
+    if (!fileBuffer.has_value())
     {
         NOUS_WARN("ImporterTexture::Deserialize() failed to read file '%s'", libraryPath.c_str());
         fileHandle.Close();
@@ -57,13 +56,12 @@ bool ImporterTexture::Deserialize(const std::string& libraryPath, ResourceBase* 
 
     int width, height, channels;
     uint8_t* data = stbi_load_from_memory(
-        reinterpret_cast<const stbi_uc*>(fileBuffer),
-        static_cast<int>(fileSize),
+        reinterpret_cast<const stbi_uc*>(fileBuffer->data()),
+        static_cast<int>(fileBuffer->size()),
         &width, &height, &channels,
         requiredChannelCount
     );
 
-    NOUS_DELETE_ARRAY(fileBuffer, static_cast<uint64_t>(fileSize), MemoryTag::FILE);
     fileHandle.Close();
 
     if (!data)

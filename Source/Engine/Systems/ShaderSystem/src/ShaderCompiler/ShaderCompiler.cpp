@@ -132,29 +132,24 @@ namespace nous::engine::shader_system
     ShaderCompileResult CompileGlslStringToSpirv(std::string_view glsl, const ShaderStage stage,
     const ShaderCompilerConfig &config, const std::string_view virtualPath)
     {
-        ShaderCompileResult out{};
-        out.success = false;
+        ShaderSource source;
+        source.virtualPath = virtualPath;
+        source.stage = stage;
+        source.entryPoint = config.entryPoint;
+        source.glslSource.assign(glsl.begin(), glsl.end());
 
-        // Build ShaderSource inside the result (as you requested)
-        out.shaderSource.virtualPath = virtualPath;
-        out.shaderSource.stage = stage;
-        out.shaderSource.entryPoint = config.entryPoint;
-        out.shaderSource.glslSource.assign(glsl.begin(), glsl.end());
-
-        NOUS_DEBUG_C(CURRENT_CHANNEL, "Compiling stage from '%s'", out.shaderSource.virtualPath.c_str());
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Compiling stage from '%s'", source.virtualPath.c_str());
 
         if (glsl.empty())
         {
-            NOUS_ERROR_C(CURRENT_CHANNEL, "GLSL source is empty for '%s'", out.shaderSource.virtualPath.c_str());
-            out.errorMessage = "ShaderCompiler: GLSL source is empty.";
-            return out;
+            NOUS_ERROR_C(CURRENT_CHANNEL, "GLSL source is empty for '%s'", source.virtualPath.c_str());
+            return std::unexpected("ShaderCompiler: GLSL source is empty.");
         }
 
         if (stage == ShaderStage::Unknown)
         {
-            NOUS_ERROR_C(CURRENT_CHANNEL, "ShaderStage is Unknown for '%s'", out.shaderSource.virtualPath.c_str());
-            out.errorMessage = "ShaderCompiler: ShaderStage is Unknown.";
-            return out;
+            NOUS_ERROR_C(CURRENT_CHANNEL, "ShaderStage is Unknown for '%s'", source.virtualPath.c_str());
+            return std::unexpected("ShaderCompiler: ShaderStage is Unknown.");
         }
 
         const shaderc::Compiler compiler;
@@ -176,37 +171,32 @@ namespace nous::engine::shader_system
 
         const shaderc::SpvCompilationResult result =
                 compiler.CompileGlslToSpv(
-                    out.shaderSource.glslSource,                 // must be std::string
+                    source.glslSource,                 // must be std::string
                     kind,
-                    out.shaderSource.virtualPath.c_str(),
-                    out.shaderSource.entryPoint.c_str(),
+                    source.virtualPath.c_str(),
+                    source.entryPoint.c_str(),
                     options
                 );
 
-        out.errorMessage = result.GetErrorMessage();
-
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
+            std::string errorMessage = result.GetErrorMessage();
             NOUS_ERROR_C(CURRENT_CHANNEL, "Compilation failed for '%s': %s",
-                         out.shaderSource.virtualPath.c_str(), out.errorMessage.c_str());
-            out.success = false;
-            return out;
+                         source.virtualPath.c_str(), errorMessage.c_str());
+            return std::unexpected(std::move(errorMessage));
         }
 
-        out.shaderSource.spirvBinary.assign(result.cbegin(), result.cend());
-        out.success = !out.shaderSource.spirvBinary.empty();
+        source.spirvBinary.assign(result.cbegin(), result.cend());
 
-        if (!out.success && out.errorMessage.empty())
+        if (source.spirvBinary.empty())
         {
-            out.errorMessage = "ShaderCompiler: compilation succeeded but SPIR-V output is empty (unexpected).";
-            NOUS_WARN_C(CURRENT_CHANNEL, "SPIR-V output is empty for '%s'", out.shaderSource.virtualPath.c_str());
-        }
-        else
-        {
-            NOUS_DEBUG_C(CURRENT_CHANNEL, "Stage compiled '%s' -> %zu words",
-                         out.shaderSource.virtualPath.c_str(), out.shaderSource.spirvBinary.size());
+            NOUS_WARN_C(CURRENT_CHANNEL, "SPIR-V output is empty for '%s'", source.virtualPath.c_str());
+            return std::unexpected("ShaderCompiler: compilation succeeded but SPIR-V output is empty (unexpected).");
         }
 
-        return out;
+        NOUS_DEBUG_C(CURRENT_CHANNEL, "Stage compiled '%s' -> %zu words",
+                     source.virtualPath.c_str(), source.spirvBinary.size());
+
+        return source;
     }
 }

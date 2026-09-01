@@ -3,8 +3,9 @@
 #include <MemoryManager/MemoryManager.h>
 #include <ShaderSystem/ShaderLoader/ShaderLoader.h>
 #include <ShaderSystem/ShaderLoader/ShaderLoaderTypes.h>
-#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <ShaderSystem/ShaderCompiler/ShaderCompilerTypes.h>
+
+#include <string>
 
 using namespace nous::engine::shader_system;
 
@@ -112,6 +113,12 @@ THIS IS NOT VALID GLSL ;;;
         cfg.warningsAsErrors  = false;
         return cfg;
     }
+
+    // Renders the error of a failed result for a gtest message; empty on success.
+    std::string ErrorOf(const ShaderLoadResult& r)
+    {
+        return r.has_value() ? std::string{} : r.error();
+    }
 }
 
 // =====================================================
@@ -142,94 +149,61 @@ protected:
 TEST_F(t_ShaderLoader, UnifiedVertFrag_ReturnsSuccess)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
-    EXPECT_TRUE(result.success);
-    EXPECT_TRUE(result.errorMessage.empty());
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
-}
-
-TEST_F(t_ShaderLoader, UnifiedVertFrag_ShaderIsNotNull)
-{
-    ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
-    ASSERT_TRUE(result.success);
-    EXPECT_NE(result.shader, nullptr);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    EXPECT_TRUE(result.has_value()) << ErrorOf(result);
 }
 
 TEST_F(t_ShaderLoader, UnifiedVertFrag_HasTwoStages)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
-    ASSERT_TRUE(result.success);
-    ASSERT_NE(result.shader, nullptr);
-    EXPECT_EQ(result.shader->stagesData.size(), 2u);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    EXPECT_EQ(result->stagesData.size(), 2u);
 }
 
 TEST_F(t_ShaderLoader, UnifiedVertFrag_FirstStageIsVertex)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
-    ASSERT_TRUE(result.success);
-    ASSERT_NE(result.shader, nullptr);
-    ASSERT_EQ(result.shader->stagesData.size(), 2u);
-    EXPECT_EQ(result.shader->stagesData[0].stage, ShaderStage::Vertex);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    ASSERT_EQ(result->stagesData.size(), 2u);
+    EXPECT_EQ(result->stagesData[0].stage, ShaderStage::Vertex);
 }
 
 TEST_F(t_ShaderLoader, UnifiedVertFrag_SecondStageIsFragment)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
-    ASSERT_TRUE(result.success);
-    ASSERT_NE(result.shader, nullptr);
-    ASSERT_EQ(result.shader->stagesData.size(), 2u);
-    EXPECT_EQ(result.shader->stagesData[1].stage, ShaderStage::Fragment);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    ASSERT_EQ(result->stagesData.size(), 2u);
+    EXPECT_EQ(result->stagesData[1].stage, ShaderStage::Fragment);
 }
 
 TEST_F(t_ShaderLoader, UnifiedVertFrag_EachStageHasSpirVBinary)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
-    ASSERT_TRUE(result.success);
-    ASSERT_NE(result.shader, nullptr);
-    for (const ShaderSource& src : result.shader->stagesData)
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    for (const ShaderSource& src : result->stagesData)
     {
         EXPECT_FALSE(src.spirvBinary.empty()) << "Stage " << (int)src.stage << " has empty SPIR-V";
     }
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
 }
 
 TEST_F(t_ShaderLoader, UnifiedVertFrag_ReflectionHasTwoDescriptorSets)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
-    ASSERT_TRUE(result.success);
-    ASSERT_NE(result.shader, nullptr);
-    EXPECT_EQ(result.shader->reflection.descriptorSets.size(), 2u);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    EXPECT_EQ(result->reflection.descriptorSets.size(), 2u);
 }
 
 TEST_F(t_ShaderLoader, UnifiedVertFrag_ReflectionHasVertexInputs)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
-    ASSERT_TRUE(result.success);
-    ASSERT_NE(result.shader, nullptr);
-    EXPECT_GE(result.shader->reflection.vertexInputs.size(), 1u);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    EXPECT_GE(result->reflection.vertexInputs.size(), 1u);
 }
 
 TEST_F(t_ShaderLoader, UnifiedVertFrag_ReflectionHasFragmentOutput)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
-    ASSERT_TRUE(result.success);
-    ASSERT_NE(result.shader, nullptr);
-    EXPECT_GE(result.shader->reflection.fragmentOutputs.size(), 1u);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
-}
-
-TEST_F(t_ShaderLoader, UnifiedVertFrag_SourcePathIsDebugName)
-{
-    const std::string debugName = "MockShader";
-    ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, debugName, config);
-    ASSERT_TRUE(result.success);
-    EXPECT_EQ(result.sourcePath, debugName);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    EXPECT_GE(result->reflection.fragmentOutputs.size(), 1u);
 }
 
 // =====================================================
@@ -239,17 +213,14 @@ TEST_F(t_ShaderLoader, UnifiedVertFrag_SourcePathIsDebugName)
 TEST_F(t_ShaderLoader, SingleVertexStage_ReturnsSuccess)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertOnly, "VertOnly", config);
-    EXPECT_TRUE(result.success);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    EXPECT_TRUE(result.has_value()) << ErrorOf(result);
 }
 
 TEST_F(t_ShaderLoader, SingleVertexStage_HasOneStage)
 {
     ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertOnly, "VertOnly", config);
-    ASSERT_TRUE(result.success);
-    ASSERT_NE(result.shader, nullptr);
-    EXPECT_EQ(result.shader->stagesData.size(), 1u);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    EXPECT_EQ(result->stagesData.size(), 1u);
 }
 
 // =====================================================
@@ -259,36 +230,66 @@ TEST_F(t_ShaderLoader, SingleVertexStage_HasOneStage)
 TEST_F(t_ShaderLoader, NoPragmaDirectives_ReturnsFailure)
 {
     ShaderLoadResult result = LoadShaderFromSource(kNoPragmaSource, "NoPragma", config);
-    EXPECT_FALSE(result.success);
-    EXPECT_EQ(result.shader, nullptr);
+    EXPECT_FALSE(result.has_value());
 }
 
 TEST_F(t_ShaderLoader, NoPragmaDirectives_ErrorMessageIsNotEmpty)
 {
     ShaderLoadResult result = LoadShaderFromSource(kNoPragmaSource, "NoPragma", config);
-    EXPECT_FALSE(result.success);
-    EXPECT_FALSE(result.errorMessage.empty());
+    ASSERT_FALSE(result.has_value());
+    EXPECT_FALSE(result.error().empty());
 }
 
 TEST_F(t_ShaderLoader, EmptySource_ReturnsFailure)
 {
     ShaderLoadResult result = LoadShaderFromSource("", "Empty", config);
-    EXPECT_FALSE(result.success);
-    EXPECT_EQ(result.shader, nullptr);
+    EXPECT_FALSE(result.has_value());
 }
 
 TEST_F(t_ShaderLoader, InvalidGlsl_ReturnsFailure)
 {
     ShaderLoadResult result = LoadShaderFromSource(kInvalidGlslSource, "Invalid", config);
-    EXPECT_FALSE(result.success);
-    EXPECT_EQ(result.shader, nullptr);
+    EXPECT_FALSE(result.has_value());
 }
 
 TEST_F(t_ShaderLoader, InvalidGlsl_ErrorMessageIsNotEmpty)
 {
     ShaderLoadResult result = LoadShaderFromSource(kInvalidGlslSource, "Invalid", config);
-    ASSERT_FALSE(result.success);
-    EXPECT_FALSE(result.errorMessage.empty());
+    ASSERT_FALSE(result.has_value());
+    EXPECT_FALSE(result.error().empty());
+}
+
+TEST_F(t_ShaderLoader, LoadShaderFromSource_Success_LeaksNothing)
+{
+    const auto before = nous::engine::memory::GetMemoryStats();
+
+    {
+        ShaderLoadResult result = LoadShaderFromSource(kUnifiedVertFrag, "MockShader", config);
+        ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+        EXPECT_GT(result->stagesData.size(), 0u);
+    }   // result destroyed here - nothing left for a caller to hand-free
+
+    const auto after = nous::engine::memory::GetMemoryStats();
+    EXPECT_EQ(after.totalAllocations, before.totalAllocations)
+        << "A shader load must not leak. Under the old raw-pointer ShaderLoadResult "
+           "this depended on every caller remembering to NOUS_DELETE result.shader.";
+}
+
+TEST_F(t_ShaderLoader, LoadShaderFromSource_Failure_LeaksNothing)
+{
+    const auto before = nous::engine::memory::GetMemoryStats();
+
+    {
+        ShaderLoadResult result = LoadShaderFromSource(
+            "this is not a shader and has no #pragma stage directives", "bad.glsl", config);
+
+        ASSERT_FALSE(result.has_value());
+        EXPECT_FALSE(result.error().empty());
+    }
+
+    const auto after = nous::engine::memory::GetMemoryStats();
+    EXPECT_EQ(after.totalAllocations, before.totalAllocations)
+        << "A failed shader load must not leak.";
 }
 
 // =====================================================
@@ -298,15 +299,14 @@ TEST_F(t_ShaderLoader, InvalidGlsl_ErrorMessageIsNotEmpty)
 TEST_F(t_ShaderLoader, LoadFromFile_NonexistentPath_ReturnsFailure)
 {
     ShaderLoadResult result = LoadShaderFromFile("nonexistent/path/shader.glsl", config);
-    EXPECT_FALSE(result.success);
-    EXPECT_EQ(result.shader, nullptr);
+    EXPECT_FALSE(result.has_value());
 }
 
 TEST_F(t_ShaderLoader, LoadFromFile_NonexistentPath_ErrorMessageIsNotEmpty)
 {
     ShaderLoadResult result = LoadShaderFromFile("nonexistent/path/shader.glsl", config);
-    ASSERT_FALSE(result.success);
-    EXPECT_FALSE(result.errorMessage.empty());
+    ASSERT_FALSE(result.has_value());
+    EXPECT_FALSE(result.error().empty());
 }
 
 // =====================================================
@@ -316,59 +316,48 @@ TEST_F(t_ShaderLoader, LoadFromFile_NonexistentPath_ErrorMessageIsNotEmpty)
 TEST_F(t_ShaderLoader, AllStages_ReturnsSuccess)
 {
     ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
-    EXPECT_TRUE(result.success) << result.errorMessage;
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    EXPECT_TRUE(result.has_value()) << ErrorOf(result);
 }
 
 TEST_F(t_ShaderLoader, AllStages_HasFiveStages)
 {
     ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
-    ASSERT_TRUE(result.success) << result.errorMessage;
-    ASSERT_NE(result.shader, nullptr);
-    EXPECT_EQ(result.shader->stagesData.size(), 5u);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    EXPECT_EQ(result->stagesData.size(), 5u);
 }
 
 TEST_F(t_ShaderLoader, AllStages_StageOrderIsCorrect)
 {
     ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
-    ASSERT_TRUE(result.success) << result.errorMessage;
-    ASSERT_NE(result.shader, nullptr);
-    ASSERT_EQ(result.shader->stagesData.size(), 5u);
-    EXPECT_EQ(result.shader->stagesData[0].stage, ShaderStage::Vertex);
-    EXPECT_EQ(result.shader->stagesData[1].stage, ShaderStage::TessControl);
-    EXPECT_EQ(result.shader->stagesData[2].stage, ShaderStage::TessEvaluation);
-    EXPECT_EQ(result.shader->stagesData[3].stage, ShaderStage::Geometry);
-    EXPECT_EQ(result.shader->stagesData[4].stage, ShaderStage::Fragment);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    ASSERT_EQ(result->stagesData.size(), 5u);
+    EXPECT_EQ(result->stagesData[0].stage, ShaderStage::Vertex);
+    EXPECT_EQ(result->stagesData[1].stage, ShaderStage::TessControl);
+    EXPECT_EQ(result->stagesData[2].stage, ShaderStage::TessEvaluation);
+    EXPECT_EQ(result->stagesData[3].stage, ShaderStage::Geometry);
+    EXPECT_EQ(result->stagesData[4].stage, ShaderStage::Fragment);
 }
 
 TEST_F(t_ShaderLoader, AllStages_EachStageHasSpirVBinary)
 {
     ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
-    ASSERT_TRUE(result.success) << result.errorMessage;
-    ASSERT_NE(result.shader, nullptr);
-    for (const ShaderSource& src : result.shader->stagesData)
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    for (const ShaderSource& src : result->stagesData)
     {
         EXPECT_FALSE(src.spirvBinary.empty()) << "Stage " << (int)src.stage << " has empty SPIR-V";
     }
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
 }
 
 TEST_F(t_ShaderLoader, AllStages_ReflectionHasVertexInputs)
 {
     ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
-    ASSERT_TRUE(result.success) << result.errorMessage;
-    ASSERT_NE(result.shader, nullptr);
-    EXPECT_GE(result.shader->reflection.vertexInputs.size(), 0u);    // no user-defined inputs in minimal vert
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    EXPECT_GE(result->reflection.vertexInputs.size(), 0u);    // no user-defined inputs in minimal vert
 }
 
 TEST_F(t_ShaderLoader, AllStages_ReflectionHasFragmentOutput)
 {
     ShaderLoadResult result = LoadShaderFromSource(kAllStages, "AllStages", config);
-    ASSERT_TRUE(result.success) << result.errorMessage;
-    ASSERT_NE(result.shader, nullptr);
-    EXPECT_EQ(result.shader->reflection.fragmentOutputs.size(), 1u);
-    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_TRUE(result.has_value()) << ErrorOf(result);
+    EXPECT_EQ(result->reflection.fragmentOutputs.size(), 1u);
 }

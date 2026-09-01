@@ -15,7 +15,6 @@ add_executable(${TEST_NAME}
 target_link_libraries(${TEST_NAME}
         PRIVATE
         ShaderSystem
-        ResourceManager
         MemoryManager
         FileSystem
         Logger
@@ -43,7 +42,6 @@ add_executable(${HOT_RELOAD_TEST_NAME}
 target_link_libraries(${HOT_RELOAD_TEST_NAME}
         PRIVATE
         ShaderSystem
-        ResourceManager
         MemoryManager
         FileSystem
         Logger

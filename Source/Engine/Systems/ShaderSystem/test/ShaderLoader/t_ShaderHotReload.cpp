@@ -3,8 +3,10 @@
 #include <MemoryManager/MemoryManager.h>
 #include <ShaderSystem/ShaderLoader/ShaderLoader.h>
 #include <ShaderSystem/ShaderLoader/ShaderLoaderTypes.h>
-#include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <ShaderSystem/ShaderCompiler/ShaderCompilerTypes.h>
+
+#include <cstdint>
+#include <vector>
 
 using namespace nous::engine::shader_system;
 
@@ -75,11 +77,8 @@ TEST_F(t_ShaderHotReload, SuccessfulReload_BothVersionsSucceed)
     ShaderLoadResult v1 = LoadShaderFromSource(kShaderV1, "TestShader.glsl", cfg);
     ShaderLoadResult v2 = LoadShaderFromSource(kShaderV2, "TestShader.glsl", cfg);
 
-    EXPECT_TRUE(v1.success);
-    EXPECT_TRUE(v2.success);
-
-    if (v1.shader) NOUS_DELETE(v1.shader, MemoryTag::RESOURCE_SHADER);
-    if (v2.shader) NOUS_DELETE(v2.shader, MemoryTag::RESOURCE_SHADER);
+    EXPECT_TRUE(v1.has_value());
+    EXPECT_TRUE(v2.has_value());
 }
 
 TEST_F(t_ShaderHotReload, SuccessfulReload_FragmentSpirVDiffers)
@@ -90,21 +89,16 @@ TEST_F(t_ShaderHotReload, SuccessfulReload_FragmentSpirVDiffers)
     ShaderLoadResult v1 = LoadShaderFromSource(kShaderV1, "TestShader.glsl", cfg);
     ShaderLoadResult v2 = LoadShaderFromSource(kShaderV2, "TestShader.glsl", cfg);
 
-    ASSERT_TRUE(v1.success);
-    ASSERT_TRUE(v2.success);
-    ASSERT_NE(v1.shader, nullptr);
-    ASSERT_NE(v2.shader, nullptr);
-    ASSERT_EQ(v1.shader->stagesData.size(), 2u);
-    ASSERT_EQ(v2.shader->stagesData.size(), 2u);
+    ASSERT_TRUE(v1.has_value());
+    ASSERT_TRUE(v2.has_value());
+    ASSERT_EQ(v1->stagesData.size(), 2u);
+    ASSERT_EQ(v2->stagesData.size(), 2u);
 
     // Fragment is stage index 1 (vert=0, frag=1 after parser ordering)
-    const auto& spirvV1Frag = v1.shader->stagesData[1].spirvBinary;
-    const auto& spirvV2Frag = v2.shader->stagesData[1].spirvBinary;
+    const auto& spirvV1Frag = v1->stagesData[1].spirvBinary;
+    const auto& spirvV2Frag = v2->stagesData[1].spirvBinary;
     EXPECT_NE(spirvV1Frag, spirvV2Frag)
         << "SPIR-V must differ after reloading a shader with a different colour constant.";
-
-    NOUS_DELETE(v1.shader, MemoryTag::RESOURCE_SHADER);
-    NOUS_DELETE(v2.shader, MemoryTag::RESOURCE_SHADER);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,16 +108,15 @@ TEST_F(t_ShaderHotReload, SuccessfulReload_FragmentSpirVDiffers)
 TEST_F(t_ShaderHotReload, FailedReload_ReturnsFalse)
 {
     ShaderLoadResult bad = LoadShaderFromSource(kShaderBroken, "Broken.glsl", MakeConfig());
-    EXPECT_FALSE(bad.success);
-    if (bad.shader) NOUS_DELETE(bad.shader, MemoryTag::RESOURCE_SHADER);
+    EXPECT_FALSE(bad.has_value());
 }
 
 TEST_F(t_ShaderHotReload, FailedReload_ErrorMessageIsNonEmpty)
 {
     ShaderLoadResult bad = LoadShaderFromSource(kShaderBroken, "Broken.glsl", MakeConfig());
-    EXPECT_FALSE(bad.errorMessage.empty())
-        << "A compile failure must populate errorMessage with shaderc diagnostics.";
-    if (bad.shader) NOUS_DELETE(bad.shader, MemoryTag::RESOURCE_SHADER);
+    ASSERT_FALSE(bad.has_value());
+    EXPECT_FALSE(bad.error().empty())
+        << "A compile failure must carry the shaderc diagnostics as its error.";
 }
 
 TEST_F(t_ShaderHotReload, FailedReload_OriginalSpirVUntouched)
@@ -132,27 +125,22 @@ TEST_F(t_ShaderHotReload, FailedReload_OriginalSpirVUntouched)
     // on failure we do NOT swap stagesData, so the in-flight ResourceShader is safe.
     const auto cfg = MakeConfig();
     ShaderLoadResult original = LoadShaderFromSource(kShaderV1, "TestShader.glsl", cfg);
-    ASSERT_TRUE(original.success);
-    ASSERT_NE(original.shader, nullptr);
+    ASSERT_TRUE(original.has_value());
 
     // Save a copy of the original SPIR-V
-    const std::vector<uint32_t> savedSpirV = original.shader->stagesData[0].spirvBinary;
+    const std::vector<uint32_t> savedSpirV = original->stagesData[0].spirvBinary;
 
     // Attempt a broken reload
     ShaderLoadResult bad = LoadShaderFromSource(kShaderBroken, "TestShader.glsl", cfg);
-    EXPECT_FALSE(bad.success);
+    EXPECT_FALSE(bad.has_value());
 
     // Simulate the backend: only swap on success — original data is untouched
-    if (bad.success)
+    if (bad.has_value())
     {
-        original.shader->stagesData = std::move(bad.shader->stagesData);
-        original.shader->reflection = std::move(bad.shader->reflection);
+        original->stagesData = std::move(bad->stagesData);
+        original->reflection = std::move(bad->reflection);
     }
 
-    EXPECT_EQ(original.shader->stagesData[0].spirvBinary, savedSpirV)
+    EXPECT_EQ(original->stagesData[0].spirvBinary, savedSpirV)
         << "Original SPIR-V must remain unchanged after a failed reload.";
-
-    NOUS_DELETE(original.shader, MemoryTag::RESOURCE_SHADER);
-    if (bad.shader) NOUS_DELETE(bad.shader, MemoryTag::RESOURCE_SHADER);
 }
-

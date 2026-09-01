@@ -491,13 +491,12 @@ void RendererFrontend::FlushCompletedReloads()
     for (auto& pending : toApply)
     {
         ResourceShader* shader = pending.shader;
-        ShaderLoadResult& result = pending.compileResult;
+        CompiledShaderData& data = *pending.compileResult;
 
-        // Move compiled CPU data into the live shader and free the temporary one.
-        shader->stagesData = std::move(result.shader->stagesData);
-        shader->reflection = std::move(result.shader->reflection);
+        // Move compiled CPU data into the live shader.
+        shader->stagesData = std::move(data.stagesData);
+        shader->reflection = std::move(data.reflection);
         shader->generation++;
-        NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
 
         // GPU swap (vkDeviceWaitIdle + Destroy + Create).
         if (mBackend->ApplyCompiledShader(shader))
@@ -564,16 +563,14 @@ void RendererFrontend::DispatchCompileJob(const std::string& path, ResourceShade
             std::lock_guard lock(m_swapQueueMutex);
             m_inFlightPaths.erase(path);
 
-            if (result.success)
+            if (result.has_value())
             {
                 m_readySwaps.push_back({ shader, std::move(result) });
             }
             else
             {
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[RendererFrontend::DispatchCompileJob] Compile failed for '%s': %s",
-                             path.c_str(), result.errorMessage.c_str());
-                if (result.shader)
-                    NOUS_DELETE(result.shader, MemoryTag::RESOURCE_SHADER);
+                             path.c_str(), result.error().c_str());
             }
         }
 

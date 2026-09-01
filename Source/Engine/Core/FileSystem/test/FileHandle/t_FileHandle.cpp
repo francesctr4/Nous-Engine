@@ -2,8 +2,11 @@
 
 #include <FileSystem/FileHandle.h>
 #include <MemoryManager/MemoryManager.h>
+#include <Utils/DataStructures/NOUS_Vector.h>
 
 #include <filesystem>
+#include <optional>
+#include <span>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -73,24 +76,52 @@ TEST_F(t_FileHandle, WriteAndReadAllBytes_Roundtrip)
     {
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
-        uint64_t written = 0;
-        ASSERT_TRUE(fh.Write(payload.size(), payload.data(), &written));
-        EXPECT_EQ(written, payload.size());
+        const std::optional<uint64_t> written = fh.Write(std::as_bytes(std::span(payload)));
+        ASSERT_TRUE(written.has_value());
+        EXPECT_EQ(*written, payload.size());
         fh.Close();
     }
 
     {
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
-        char*  buffer    = nullptr;
-        uint64_t bytesRead = 0;
-        ASSERT_TRUE(fh.ReadAllBytes(&buffer, &bytesRead));
-        ASSERT_NE(buffer, nullptr);
-        EXPECT_EQ(bytesRead, payload.size());
-        EXPECT_EQ(std::string(buffer, bytesRead), payload);
-        NOUS_DELETE_ARRAY(buffer, bytesRead, MemoryTag::FILE);
+
+        std::optional<NOUS_Vector<char>> buffer = fh.ReadAllBytes();
+
+        ASSERT_TRUE(buffer.has_value());
+        EXPECT_EQ(buffer->size(), payload.size());
+        EXPECT_EQ(std::string(buffer->data(), buffer->size()), payload);
         fh.Close();
     }
+}
+
+TEST_F(t_FileHandle, ReadAllBytes_OnClosedHandle_ReturnsNullopt)
+{
+    FileHandle fh;
+    EXPECT_FALSE(fh.ReadAllBytes().has_value());
+}
+
+TEST_F(t_FileHandle, ReadAllBytes_OnEmptyFile_ReturnsNullopt)
+{
+    {
+        FileHandle fh;
+        ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
+        fh.Close();
+    }
+
+    FileHandle fh;
+    ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
+    // Preserves today's behavior: the "file is empty" guard rejects before allocating.
+    EXPECT_FALSE(fh.ReadAllBytes().has_value());
+    fh.Close();
+}
+
+TEST_F(t_FileHandle, ReadAllBytes_OnWriteOnlyHandle_ReturnsNullopt)
+{
+    FileHandle fh;
+    ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
+    EXPECT_FALSE(fh.ReadAllBytes().has_value());
+    fh.Close();
 }
 
 TEST_F(t_FileHandle, ReadBytes_ReadsSubset)
@@ -100,21 +131,121 @@ TEST_F(t_FileHandle, ReadBytes_ReadsSubset)
     {
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
-        uint64_t w = 0;
-        fh.Write(payload.size(), payload.data(), &w);
+        fh.Write(std::as_bytes(std::span(payload)));
         fh.Close();
     }
 
     {
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
-        char   buf[4]    = {};
-        uint64_t bytesRead = 0;
-        ASSERT_TRUE(fh.ReadBytes(4, buf, &bytesRead));
-        EXPECT_EQ(bytesRead, 4u);
+        char buf[4] = {};
+        const std::optional<uint64_t> bytesRead = fh.ReadBytes(std::span(buf));
+        ASSERT_TRUE(bytesRead.has_value());
+        EXPECT_EQ(*bytesRead, 4u);
         EXPECT_EQ(std::string(buf, 4), "ABCD");
         fh.Close();
     }
+}
+
+TEST_F(t_FileHandle, ReadBytes_ReadsRequestedSubset)
+{
+    const std::string payload = "ABCDEFGH";
+
+    {
+        FileHandle fh;
+        ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
+        ASSERT_TRUE(fh.Write(std::as_bytes(std::span(payload))).has_value());
+        fh.Close();
+    }
+
+    FileHandle fh;
+    ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
+
+    char dst[4] = {};
+    const std::optional<uint64_t> read = fh.ReadBytes(std::span(dst));
+
+    ASSERT_TRUE(read.has_value());
+    EXPECT_EQ(*read, 4u);
+    EXPECT_EQ(std::string(dst, 4), "ABCD");
+    fh.Close();
+}
+
+TEST_F(t_FileHandle, ReadBytes_AtEndOfFile_ReturnsNullopt)
+{
+    const std::string payload = "AB";
+
+    {
+        FileHandle fh;
+        ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
+        ASSERT_TRUE(fh.Write(std::as_bytes(std::span(payload))).has_value());
+        fh.Close();
+    }
+
+    FileHandle fh;
+    ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
+
+    char drain[2] = {};
+    ASSERT_TRUE(fh.ReadBytes(std::span(drain)).has_value());
+
+    // Zero bytes transferred must be nullopt, NOT a present optional holding 0.
+    // ImporterMesh.cpp:258 and :289 branch on this; treating it as success
+    // would silently accept truncated .nmesh files.
+    char past[2] = {};
+    EXPECT_FALSE(fh.ReadBytes(std::span(past)).has_value());
+    fh.Close();
+}
+
+TEST_F(t_FileHandle, ReadBytes_ShortRead_ReturnsActualCount)
+{
+    const std::string payload = "ABC";
+
+    {
+        FileHandle fh;
+        ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
+        ASSERT_TRUE(fh.Write(std::as_bytes(std::span(payload))).has_value());
+        fh.Close();
+    }
+
+    FileHandle fh;
+    ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
+
+    char dst[8] = {};
+    const std::optional<uint64_t> read = fh.ReadBytes(std::span(dst));
+
+    // Fewer bytes than requested is a warning, not a failure.
+    ASSERT_TRUE(read.has_value());
+    EXPECT_EQ(*read, 3u);
+    fh.Close();
+}
+
+TEST_F(t_FileHandle, Write_ReturnsBytesWritten)
+{
+    const std::string payload = "written";
+
+    FileHandle fh;
+    ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
+
+    const std::optional<uint64_t> written = fh.Write(std::as_bytes(std::span(payload)));
+
+    ASSERT_TRUE(written.has_value());
+    EXPECT_EQ(*written, payload.size());
+    fh.Close();
+}
+
+TEST_F(t_FileHandle, Write_EmptySpan_DoesNotReportFailure)
+{
+    // Unlike ReadBytes, a zero-byte Write is not a failure — the old
+    // `Write` only ever gated on fileStream->fail(), never on the byte
+    // count. ImporterMesh.cpp writes a 0-byte embedded texture in the
+    // degenerate case and must not see that as an error.
+    FileHandle fh;
+    ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
+
+    const std::span<const std::byte> empty;
+    const std::optional<uint64_t> written = fh.Write(empty);
+
+    EXPECT_TRUE(written.has_value());
+    fh.Close();
 }
 
 // =============================================================================
@@ -172,21 +303,20 @@ TEST_F(t_FileHandle, BinaryWrite_PreservesExactBytes)
     {
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::WRITE, true));
-        uint64_t w = 0;
-        fh.Write(sizeof(bytes), bytes, &w);
+        fh.Write(std::as_bytes(std::span(bytes)));
         fh.Close();
     }
 
     {
         FileHandle fh;
         ASSERT_TRUE(fh.Open(m_path, FileMode::READ, true));
-        char*  buf   = nullptr;
-        uint64_t bread = 0;
-        ASSERT_TRUE(fh.ReadAllBytes(&buf, &bread));
-        ASSERT_EQ(bread, sizeof(bytes));
+
+        std::optional<NOUS_Vector<char>> buffer = fh.ReadAllBytes();
+
+        ASSERT_TRUE(buffer.has_value());
+        ASSERT_EQ(buffer->size(), sizeof(bytes));
         for (int i = 0; i < static_cast<int>(sizeof(bytes)); ++i)
-            EXPECT_EQ(static_cast<uint8_t>(buf[i]), bytes[i]) << "Byte " << i;
-        NOUS_DELETE_ARRAY(buf, bread, MemoryTag::FILE);
+            EXPECT_EQ(static_cast<uint8_t>((*buffer)[i]), bytes[i]) << "Byte " << i;
         fh.Close();
     }
 }

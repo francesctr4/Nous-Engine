@@ -22,7 +22,7 @@ nous::engine::shader_system::ParseResult nous::engine::shader_system::ParseShade
 {
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Parsing shader stages (%zu bytes)", fullSource.size());
 
-    ParseResult result;
+    std::vector<RawStage> stages;
 
     constexpr std::string_view token = "#pragma stage ";
 
@@ -34,7 +34,7 @@ nous::engine::shader_system::ParseResult nous::engine::shader_system::ParseShade
     };
     std::vector<StageEntry> stagePositions;
 
-    // Encontrar todas las líneas "#pragma stage <name>"
+    // Find all "#pragma stage <name>" lines
     size_t pos = 0;
     while ((pos = fullSource.find(token, pos)) != std::string::npos)
     {
@@ -48,9 +48,8 @@ nous::engine::shader_system::ParseResult nous::engine::shader_system::ParseShade
         const ShaderStage stage = ParseStageName(stageName);
         if (stage == ShaderStage::Unknown)
         {
-            result.errorMessage = "ParseShaderStages: unknown stage '" + stageName + "'";
             NOUS_ERROR_C(CURRENT_CHANNEL, "Unknown stage directive: '%s'", stageName.c_str());
-            return result;
+            return std::unexpected("ParseShaderStages: unknown stage '" + stageName + "'");
         }
 
         stagePositions.push_back({ stage, pos, lineEnd + 1 });
@@ -59,12 +58,11 @@ nous::engine::shader_system::ParseResult nous::engine::shader_system::ParseShade
 
     if (stagePositions.empty())
     {
-        result.errorMessage = "ParseShaderStages: no '#pragma stage' directives found.";
         NOUS_ERROR_C(CURRENT_CHANNEL, "No '#pragma stage' directives found in shader source");
-        return result;
+        return std::unexpected("ParseShaderStages: no '#pragma stage' directives found.");
     }
 
-    // Extraer el texto de cada stage (de su inicio hasta el siguiente pragma)
+    // Extract the text of each stage (from its start to the next pragma)
     for (size_t i = 0; i < stagePositions.size(); ++i)
     {
         const size_t start = stagePositions[i].contentStart;
@@ -75,10 +73,9 @@ nous::engine::shader_system::ParseResult nous::engine::shader_system::ParseShade
         RawStage raw;
         raw.stage      = stagePositions[i].stage;
         raw.glslSource = fullSource.substr(start, end - start);
-        result.stages.push_back(std::move(raw));
+        stages.push_back(std::move(raw));
     }
 
-    result.success = true;
-    NOUS_DEBUG_C(CURRENT_CHANNEL, "Parsed %zu stage(s)", result.stages.size());
-    return result;
+    NOUS_DEBUG_C(CURRENT_CHANNEL, "Parsed %zu stage(s)", stages.size());
+    return stages;
 }

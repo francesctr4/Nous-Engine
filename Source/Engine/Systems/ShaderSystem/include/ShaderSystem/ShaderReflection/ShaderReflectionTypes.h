@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_SHADER_REFLECTION_TYPES_H
 
 #include <cstdint>
+#include <expected>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -117,16 +118,16 @@ struct ReflectedOutput
     ScalarType scalarType = ScalarType::Unknown;
 };
 
-struct ShaderReflectionResult
+// The four reflected interface tables produced by a single shader stage.
+struct ReflectionData
 {
-    bool success = false;
-    std::string errorMessage;
-
     std::vector<ReflectedBinding> bindings;
     std::vector<ReflectedPushConstant> pushConstants;
     std::vector<ReflectedInput> vertexInputs;
     std::vector<ReflectedOutput> fragmentOutputs;
 };
+
+using ShaderReflectionResult = std::expected<ReflectionData, std::string>;
 
 struct PipelineReflectionResult
 {

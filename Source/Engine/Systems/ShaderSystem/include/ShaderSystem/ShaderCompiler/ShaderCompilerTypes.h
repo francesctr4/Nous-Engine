@@ -2,6 +2,7 @@
 #define NOUS_ENGINE_SHADER_COMPILER_TYPES_H
 
 #include <cstdint>
+#include <expected>
 #include <string>
 
 #include <ShaderSystem/ShaderTypes.h>
@@ -25,12 +26,6 @@ struct ShaderCompilerConfig
     std::string entryPoint = "main";
 };
 
-struct ShaderCompileResult
-{
-    bool success;
-    std::string errorMessage;
-
-    ShaderSource shaderSource;
-};
+using ShaderCompileResult = std::expected<ShaderSource, std::string>;
 
 #endif //NOUS_ENGINE_SHADER_COMPILER_TYPES_H

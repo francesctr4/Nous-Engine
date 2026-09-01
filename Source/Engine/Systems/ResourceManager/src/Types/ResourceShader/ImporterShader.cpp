@@ -20,6 +20,8 @@
 
 #include <filesystem>
 #include <cstring>
+#include <optional>
+#include <span>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -74,9 +76,8 @@ static bool ReadShaderSource(const std::string& assetsPath, std::string& outSour
         return false;
     }
 
-    char*  rawSource = nullptr;
-    uint64_t bytesRead = 0;
-    if (!glslFile.ReadAllBytes(&rawSource, &bytesRead))
+    std::optional<NOUS_Vector<char>> rawSource = glslFile.ReadAllBytes();
+    if (!rawSource.has_value())
     {
         NOUS_ERROR("[ImporterShader] Failed to read '%s'.", assetsPath.c_str());
         glslFile.Close();
@@ -84,8 +85,7 @@ static bool ReadShaderSource(const std::string& assetsPath, std::string& outSour
     }
     glslFile.Close();
 
-    outSource.assign(rawSource, bytesRead);
-    NOUS_DELETE(rawSource, MemoryTag::FILE);
+    outSource.assign(rawSource->data(), rawSource->size());
     return true;
 }
 
@@ -94,7 +94,7 @@ static bool ReadShaderSource(const std::string& assetsPath, std::string& outSour
 // Optimization is PERFORMANCE by default. The optimizer may strip unused vertex inputs from
 // the SPIR-V, but vertex buffer stride and attribute offsets are derived from the actual
 // Vertex3D struct layout (not from reflection), so this is safe.
-static bool CompileShaderStages(const nous::engine::shader_system::ParseResult& parsed,
+static bool CompileShaderStages(const std::vector<RawStage>& stages,
                                  const std::string& shaderDir,
                                  const std::string& assetsPath,
                                  std::vector<ShaderSource>& outCompiledSources)
@@ -102,7 +102,7 @@ static bool CompileShaderStages(const nous::engine::shader_system::ParseResult& 
     const ShaderCompilerConfig compilerConfig{};
     bool ret = true;
 
-    for (const RawStage& raw : parsed.stages)
+    for (const RawStage& raw : stages)
     {
         const char* stageName = StageToFilename(raw.stage);
         if (!stageName)
@@ -114,16 +114,15 @@ static bool CompileShaderStages(const nous::engine::shader_system::ParseResult& 
         ShaderCompileResult compiled = nous::engine::shader_system::CompileGlslStringToSpirv(
             raw.glslSource, raw.stage, compilerConfig, assetsPath);
 
-        if (!compiled.success)
+        if (!compiled.has_value())
         {
             NOUS_ERROR("[ImporterShader] Compile failed for stage '%s': %s",
-                       stageName, compiled.errorMessage.c_str());
+                       stageName, compiled.error().c_str());
             ret = false;
             continue;
         }
 
-        const std::string spvPath   = (std::filesystem::path(shaderDir) / stageName).replace_extension(".spv").string();
-        const uint64_t      byteSize  = compiled.shaderSource.spirvBinary.size() * sizeof(uint32_t);
+        const std::string spvPath = (std::filesystem::path(shaderDir) / stageName).replace_extension(".spv").string();
 
         FileHandle spvFile;
         if (!spvFile.Open(spvPath, FileMode::WRITE, true))
@@ -133,8 +132,9 @@ static bool CompileShaderStages(const nous::engine::shader_system::ParseResult& 
             continue;
         }
 
-        uint64_t bytesWritten = 0;
-        if (!spvFile.Write(byteSize, compiled.shaderSource.spirvBinary.data(), &bytesWritten))
+        const std::optional<uint64_t> bytesWritten =
+            spvFile.Write(std::as_bytes(std::span(compiled->spirvBinary)));
+        if (!bytesWritten.has_value())
         {
             NOUS_ERROR("[ImporterShader] Failed to write SPIR-V for stage '%s'.", stageName);
             ret = false;
@@ -142,9 +142,9 @@ static bool CompileShaderStages(const nous::engine::shader_system::ParseResult& 
         spvFile.Close();
 
         NOUS_INFO("[ImporterShader] Saved stage '%s' -> '%s' (%llu bytes)",
-                  stageName, spvPath.c_str(), bytesWritten);
+                  stageName, spvPath.c_str(), bytesWritten.value_or(0));
 
-        outCompiledSources.push_back(std::move(compiled.shaderSource));
+        outCompiledSources.push_back(std::move(*compiled));
     }
 
     return ret;
@@ -154,18 +154,20 @@ static bool CompileShaderStages(const nous::engine::shader_system::ParseResult& 
 static void ReflectAndSerialize(const std::vector<ShaderSource>& compiledSources,
                                  const std::string& shaderDir)
 {
-    std::vector<ShaderReflectionResult> reflections;
+    std::vector<ReflectionData> reflections;
     reflections.reserve(compiledSources.size());
 
     for (const ShaderSource& src : compiledSources)
     {
         ShaderReflectionResult reflected = nous::engine::shader_system::ReflectSpirV(src);
-        if (!reflected.success)
+        if (!reflected.has_value())
         {
             NOUS_WARN("[ImporterShader] Reflection failed for a stage: %s",
-                      reflected.errorMessage.c_str());
+                      reflected.error().c_str());
+            reflections.push_back(ReflectionData{});
+            continue;
         }
-        reflections.push_back(std::move(reflected));
+        reflections.push_back(std::move(*reflected));
     }
 
     PipelineReflectionResult pipeline = nous::engine::shader_system::MergeReflections(reflections);
@@ -197,10 +199,10 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, ResourceBase*& inRes
         return false;
 
     nous::engine::shader_system::ParseResult parsed = nous::engine::shader_system::ParseShaderStages(source);
-    if (!parsed.success)
+    if (!parsed.has_value())
     {
         NOUS_ERROR("[ImporterShader] Parse failed for '%s': %s",
-                   metaFileData.assetsPath.c_str(), parsed.errorMessage.c_str());
+                   metaFileData.assetsPath.c_str(), parsed.error().c_str());
         return false;
     }
 
@@ -212,7 +214,7 @@ bool ImporterShader::Save(const MetaFileData& metaFileData, ResourceBase*& inRes
     }
 
     std::vector<ShaderSource> compiledSources;
-    if (!CompileShaderStages(parsed, shaderDir, metaFileData.assetsPath, compiledSources))
+    if (!CompileShaderStages(*parsed, shaderDir, metaFileData.assetsPath, compiledSources))
         return false;
 
     ReflectAndSerialize(compiledSources, shaderDir);
@@ -254,9 +256,8 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, ResourceBase* o
             return false;
         }
 
-        char*  rawBytes  = nullptr;
-        uint64_t bytesRead = 0;
-        if (!file.ReadAllBytes(&rawBytes, &bytesRead))
+        std::optional<NOUS_Vector<char>> rawBytes = file.ReadAllBytes();
+        if (!rawBytes.has_value())
         {
             NOUS_ERROR("[ImporterShader] Failed to read '%s'.", entry.path().string().c_str());
             file.Close();
@@ -266,9 +267,8 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, ResourceBase* o
 
         ShaderSource src;
         src.stage = stage;
-        src.spirvBinary.resize(bytesRead / sizeof(uint32_t));
-        std::memcpy(src.spirvBinary.data(), rawBytes, bytesRead);
-        NOUS_DELETE(rawBytes, MemoryTag::FILE);
+        src.spirvBinary.resize(rawBytes->size() / sizeof(uint32_t));
+        std::memcpy(src.spirvBinary.data(), rawBytes->data(), rawBytes->size());
 
         shader->stagesData.push_back(std::move(src));
     }
@@ -286,17 +286,19 @@ bool ImporterShader::Deserialize(const std::string& libraryPath, ResourceBase* o
     {
         NOUS_WARN("[ImporterShader] reflection.json missing or invalid, reflecting from SPIR-V.");
 
-        std::vector<ShaderReflectionResult> reflections;
+        std::vector<ReflectionData> reflections;
         reflections.reserve(shader->stagesData.size());
         for (const ShaderSource& src : shader->stagesData)
         {
             ShaderReflectionResult reflected = nous::engine::shader_system::ReflectSpirV(src);
-            if (!reflected.success)
+            if (!reflected.has_value())
             {
                 NOUS_WARN("[ImporterShader] Reflection failed for stage: %s",
-                          reflected.errorMessage.c_str());
+                          reflected.error().c_str());
+                reflections.push_back(ReflectionData{});
+                continue;
             }
-            reflections.push_back(std::move(reflected));
+            reflections.push_back(std::move(*reflected));
         }
         shader->reflection = nous::engine::shader_system::MergeReflections(reflections);
     }

@@ -80,109 +80,97 @@ void FileHandle::Close()
     fileStream.reset();
 }
 
-bool FileHandle::ReadBytes(uint64_t dataSize, char* outReadData, uint64_t* outBytesRead)
+std::optional<uint64_t> FileHandle::ReadBytes(std::span<char> outBuffer)
 {
     // Check if the file is open and valid
     if (!IsOpen())
     {
         NOUS_ERROR("Attempted to read bytes from a closed or invalid file.");
-        return false;
+        return std::nullopt;
     }
 
     // Ensure the file is open in read mode
     if (mode != FileMode::READ && mode != FileMode::READ_AND_WRITE)
     {
         NOUS_ERROR("File is not opened in read mode.");
-        return false;
-    }
-
-    // Check if the output buffer is valid
-    if (!outReadData || !outBytesRead)
-    {
-        NOUS_ERROR("Invalid output buffer or bytes read pointer.");
-        return false;
+        return std::nullopt;
     }
 
     // Ensure the stream is in a good state
     if (!fileStream->good())
     {
         NOUS_ERROR("File stream is not in a good state for reading.");
-        return false;
+        return std::nullopt;
     }
 
     // Attempt to read the specified number of bytes
-    fileStream->read(outReadData, dataSize);
+    fileStream->read(outBuffer.data(), static_cast<std::streamsize>(outBuffer.size()));
 
     // Check how many bytes were actually read
-    *outBytesRead = static_cast<uint64_t>(fileStream->gcount());
+    const uint64_t bytesRead = static_cast<uint64_t>(fileStream->gcount());
 
-    // Log an error if fewer bytes were read than requested
-    if (*outBytesRead < dataSize)
+    // Log a warning if fewer bytes were read than requested
+    if (bytesRead < outBuffer.size())
     {
-        NOUS_WARN("Only %llu out of %llu bytes were read from the file.", *outBytesRead, dataSize);
+        NOUS_WARN("Only %llu out of %llu bytes were read from the file.",
+                  bytesRead, static_cast<uint64_t>(outBuffer.size()));
     }
 
-    // Return true if at least some bytes were successfully read
-    return (*outBytesRead > 0);
+    // Zero bytes is failure, matching the old `return (*outBytesRead > 0);`
+    if (bytesRead == 0)
+        return std::nullopt;
+
+    return bytesRead;
 }
 
-bool FileHandle::ReadAllBytes(char** outBytes, uint64_t* outBytesRead)
+std::optional<NOUS_Vector<char>> FileHandle::ReadAllBytes()
 {
     // Check if the file is open and valid
     if (!IsOpen())
     {
         NOUS_ERROR("Attempted to read all bytes from a closed or invalid file.");
-        return false;
+        return std::nullopt;
     }
 
     // Ensure the file is open in read mode
     if (mode != FileMode::READ && mode != FileMode::READ_AND_WRITE)
     {
         NOUS_ERROR("File is not opened in read mode.");
-        return false;
-    }
-
-    // Check if the output pointers are valid
-    if (!outBytes || !outBytesRead)
-    {
-        NOUS_ERROR("Invalid output pointers provided.");
-        return false;
+        return std::nullopt;
     }
 
     // Move to the end of the file to determine its size
     fileStream->seekg(0, std::ios::end);
-    std::streampos fileSize = fileStream->tellg();
+    const std::streampos fileSize = fileStream->tellg();
 
     if (fileSize <= 0)
     {
         NOUS_ERROR("Failed to determine the file size or the file is empty.");
-        return false;
+        return std::nullopt;
     }
 
-    // Allocate memory for the file content
-    *outBytes = NOUS_NEW_ARRAY<char>(static_cast<uint64_t>(fileSize), MemoryTag::FILE);
-
-    if (!(*outBytes))
-    {
-        NOUS_ERROR("Failed to allocate memory for reading file contents.");
-        return false;
-    }
+    NOUS_Vector<char> buffer(MemoryTag::FILE);
+    buffer.resize(static_cast<size_t>(fileSize));
 
     // Read the file content
     fileStream->seekg(0, std::ios::beg);
-    fileStream->read(*outBytes, fileSize);
+    fileStream->read(buffer.data(), fileSize);
 
-    // Check how many bytes were actually read
-    *outBytesRead = static_cast<uint64_t>(fileStream->gcount());
+    const uint64_t bytesRead = static_cast<uint64_t>(fileStream->gcount());
 
     // Validate if the entire file was read
-    if (*outBytesRead != static_cast<uint64_t>(fileSize))
+    if (bytesRead != static_cast<uint64_t>(fileSize))
     {
-        NOUS_WARN("Only %llu out of %llu bytes were read from the file.", *outBytesRead, static_cast<uint64_t>(fileSize));
+        NOUS_WARN("Only %llu out of %llu bytes were read from the file.",
+                  bytesRead, static_cast<uint64_t>(fileSize));
     }
 
-    // Return true if at least some bytes were successfully read
-    return (*outBytesRead > 0);
+    if (bytesRead == 0)
+        return std::nullopt;
+
+    // Size down to what was actually read, so length and buffer cannot disagree.
+    buffer.resize(static_cast<size_t>(bytesRead));
+    return buffer;
 }
 
 bool FileHandle::ReadLine(std::string& outLine)
@@ -256,46 +244,43 @@ bool FileHandle::WriteLine(const std::string& line)
     return true;
 }
 
-bool FileHandle::Write(uint64_t dataSize, const void* data, uint64_t* outBytesWritten)
+std::optional<uint64_t> FileHandle::Write(std::span<const std::byte> data)
 {
     // Check if the file is open and valid
     if (!IsOpen())
     {
         NOUS_ERROR("Attempted to write data to a closed or invalid file.");
-        return false;
+        return std::nullopt;
     }
 
     // Ensure the file is open in write mode
     if (mode != FileMode::WRITE && mode != FileMode::READ_AND_WRITE)
     {
         NOUS_ERROR("File is not opened in write mode.");
-        return false;
+        return std::nullopt;
     }
 
     // Ensure the stream is in a good state
     if (!fileStream->good())
     {
         NOUS_ERROR("File stream is not in a good state for writing data.");
-        return false;
+        return std::nullopt;
     }
 
     // Write the data to the file
-    fileStream->write(static_cast<const char*>(data), dataSize);
+    fileStream->write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
 
     // Check how many bytes were actually written
-    if (outBytesWritten)
-    {
-        *outBytesWritten = static_cast<uint64_t>(fileStream->tellp());
-    }
+    const uint64_t bytesWritten = static_cast<uint64_t>(fileStream->tellp());
 
     // Check for write failures
     if (fileStream->fail())
     {
         NOUS_ERROR("Failed to write data to the file.");
-        return false;
+        return std::nullopt;
     }
 
-    return true;
+    return bytesWritten;
 }
 
 // --------------------------------------------------------------------------------------------------------------- //
