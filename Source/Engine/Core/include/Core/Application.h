@@ -1,4 +1,5 @@
 #pragma once
+
 #include <EngineCore/EngineExport.h>
 #include <EngineCore/UpdateStatus.h>
 
@@ -9,16 +10,22 @@ struct Event;
 class EventSystem;
 class Timer;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
-
 class Module;
+
 class ModuleWindow;
 class ModuleInput;
 class ModuleCamera3D;
 class ModuleResourceManager;
-class ModuleScene;
-class ModuleRenderer3D;
 class ModuleAudio;
 class ModuleVideo;
+class ModuleUI;
+class ModuleAI;
+class ModuleAnimation;
+class ModulePhysics;
+class ModuleParticles;
+class ModuleScene;
+class ModuleRenderer3D;
+
 class IImporterManager;
 class TypeRegistry;
 
@@ -53,10 +60,16 @@ public:
     NOUS_ENGINE_API ModuleInput*                          GetInput()           const;
     NOUS_ENGINE_API ModuleCamera3D*                       GetCamera()          const;
     NOUS_ENGINE_API ModuleResourceManager*                GetResourceManager() const;
-    NOUS_ENGINE_API ModuleScene*                          GetScene()           const;
-    NOUS_ENGINE_API ModuleRenderer3D*                     GetRenderer()        const;
 	NOUS_ENGINE_API ModuleAudio*                          GetAudio()           const;
 	NOUS_ENGINE_API ModuleVideo*                          GetVideo()           const;
+	NOUS_ENGINE_API ModuleUI*                             GetUI()              const;
+	NOUS_ENGINE_API ModuleAI*							  GetAI()              const;
+	NOUS_ENGINE_API ModuleAnimation*					  GetAnimation()       const;
+	NOUS_ENGINE_API ModulePhysics*						  GetPhysics()         const;
+	NOUS_ENGINE_API ModuleParticles*					  GetParticles()       const;
+    NOUS_ENGINE_API ModuleScene*                          GetScene()           const;
+    NOUS_ENGINE_API ModuleRenderer3D*                     GetRenderer()        const;
+
 
 	// ------------- MULTITHREADING ------------- //
     NOUS_ENGINE_API nous::engine::multithreading::NOUS_JobSystem*  GetJobSystem()       const;
@@ -71,10 +84,17 @@ private:
 	ModuleInput*           input;
 	ModuleCamera3D*        camera;
 	ModuleResourceManager* resourceManager;
-	ModuleScene*           scene;
-	ModuleRenderer3D*      renderer;
 	ModuleAudio*           audio;
 	ModuleVideo*           video;
+	ModuleUI*			   ui;
+	ModuleAI*			   ai;
+	ModuleAnimation*	   animation;
+	ModulePhysics*		   physics;
+	ModuleParticles*	   particles;
+	ModuleScene*           scene;
+	ModuleRenderer3D*      renderer;
+
+	// ------------------------------------------------------------
 
 	bool m_isGameMode;
 

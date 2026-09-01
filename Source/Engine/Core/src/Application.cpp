@@ -1,16 +1,23 @@
 #include <Core/Application.h>
 #include <EngineCore/AppConfig.h>
+
+#include <ResourceManager/Core/ImporterManager.h>
+#include <ResourceManager/Core/TypeRegistry.h>
+#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
+
 #include <ModuleWindow/ModuleWindow.h>
 #include <ModuleInput/ModuleInput.h>
 #include <ModuleCamera3D/ModuleCamera3D.h>
 #include <ModuleResourceManager/ModuleResourceManager.h>
-#include <ResourceManager/Core/ImporterManager.h>
-#include <ResourceManager/Core/TypeRegistry.h>
-#include <ModuleScene/ModuleScene.h>
-#include <ModuleRenderer3D/ModuleRenderer3D.h>
 #include <ModuleAudio/ModuleAudio.h>
 #include <ModuleVideo/ModuleVideo.h>
-#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
+#include <ModuleUI/ModuleUI.h>
+#include <ModuleAI/ModuleAI.h>
+#include <ModuleAnimation/ModuleAnimation.h>
+#include <ModulePhysics/ModulePhysics.h>
+#include <ModuleParticles/ModuleParticles.h>
+#include <ModuleScene/ModuleScene.h>
+#include <ModuleRenderer3D/ModuleRenderer3D.h>
 
 #include <MemoryManager/MemoryManager.h>
 
@@ -102,6 +109,24 @@ Application::Application(const bool isGameMode)
     // releases its decoder handle through ModuleVideo during scene teardown, exactly as
     // CAudioSource relies on ModuleAudio still being alive.
     listModules.push_back(video           = NOUS_NEW<ModuleVideo>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem));
+
+    // PLACEHOLDERS — skeleton modules, no behaviour and no module dependencies yet.
+    // Constructed BEFORE SCENE for the same reason AUDIO and VIDEO are: whatever
+    // component eventually reaches into them during scene teardown needs them alive.
+    listModules.push_back(ui              = NOUS_NEW<ModuleUI>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem));
+
+    listModules.push_back(ai              = NOUS_NEW<ModuleAI>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem));
+
+    listModules.push_back(animation       = NOUS_NEW<ModuleAnimation>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem));
+
+    listModules.push_back(physics         = NOUS_NEW<ModulePhysics>(MemoryTag::APPLICATION,
+        eventSystem, jobSystem));
+
+    listModules.push_back(particles       = NOUS_NEW<ModuleParticles>(MemoryTag::APPLICATION,
         eventSystem, jobSystem));
 
     // 6. SCENE — depends on INPUT (simulation controls), RESOURCE MANAGER (asset
@@ -587,16 +612,22 @@ void Application::BroadcastEvent(const Event &event) const
     eventSystem->Broadcast(event);
 }
 
-EventSystem*           Application::GetEventSystem()     const { return eventSystem; }
+EventSystem*            Application::GetEventSystem()       const { return eventSystem; }
 
-ModuleWindow*          Application::GetWindow()          const { return window; }
-ModuleInput*           Application::GetInput()           const { return input; }
-ModuleCamera3D*        Application::GetCamera()          const { return camera; }
-ModuleResourceManager* Application::GetResourceManager() const { return resourceManager; }
-ModuleScene*           Application::GetScene()           const { return scene; }
-ModuleRenderer3D*      Application::GetRenderer()        const { return renderer; }
-ModuleAudio*           Application::GetAudio()           const { return audio; }
-ModuleVideo*           Application::GetVideo()           const { return video; }
+ModuleWindow*           Application::GetWindow()            const { return window; }
+ModuleInput*            Application::GetInput()             const { return input; }
+ModuleCamera3D*         Application::GetCamera()            const { return camera; }
+ModuleResourceManager*  Application::GetResourceManager()   const { return resourceManager; }
+ModuleAudio*            Application::GetAudio()             const { return audio; }
+ModuleVideo*            Application::GetVideo()             const { return video; }
+ModuleUI*			    Application::GetUI()                const { return ui; }
+ModuleAI*			    Application::GetAI()                const { return ai; }
+ModuleAnimation*	    Application::GetAnimation()         const { return animation; }
+ModulePhysics*		    Application::GetPhysics()           const { return physics; }
+ModuleParticles*	    Application::GetParticles()         const { return particles; }
+ModuleScene*            Application::GetScene()             const { return scene; }
+ModuleRenderer3D*       Application::GetRenderer()          const { return renderer; }
+
 
 nous::engine::multithreading::NOUS_JobSystem* Application::GetJobSystem() const { return jobSystem; }
 

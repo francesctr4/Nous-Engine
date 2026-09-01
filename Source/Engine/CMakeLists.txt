@@ -72,8 +72,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         RendererFrontend_headers
         RendererBackend_headers
         VulkanBackend_headers
+        AnimationSystem_headers
         ModuleBase_headers
         ModuleAudio_headers
+        ModuleUI_headers
+        ModuleAI_headers
+        ModuleAnimation_headers
+        ModulePhysics_headers
+        ModuleParticles_headers
         ModuleCamera3D_headers
         ModuleInput_headers
         ModuleRenderer3D_headers

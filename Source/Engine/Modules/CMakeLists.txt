@@ -48,14 +48,19 @@ target_include_directories(ModuleBase
 
 target_link_libraries(ModuleBase PUBLIC ModuleBase_headers)
 
-add_subdirectory(ModuleCamera3D)
-add_subdirectory(ModuleInput)
-add_subdirectory(ModuleRenderer3D)
-add_subdirectory(ModuleResourceManager)
-add_subdirectory(ModuleScene)
 add_subdirectory(ModuleWindow)
+add_subdirectory(ModuleInput)
+add_subdirectory(ModuleCamera3D)
+add_subdirectory(ModuleResourceManager)
 add_subdirectory(ModuleAudio)
 add_subdirectory(ModuleVideo)
+add_subdirectory(ModuleUI)
+add_subdirectory(ModuleAI)
+add_subdirectory(ModuleAnimation)
+add_subdirectory(ModulePhysics)
+add_subdirectory(ModuleParticles)
+add_subdirectory(ModuleScene)
+add_subdirectory(ModuleRenderer3D)
 
 # Pure aggregate: no sources of its own, just a convenient handle on "all modules".
 # INTERFACE rather than STATIC because it compiles nothing -- which also means the
@@ -69,12 +74,17 @@ add_library(Modules INTERFACE)
 
 target_link_libraries(Modules INTERFACE
         ModuleBase
-        ModuleCamera3D
-        ModuleInput
-        ModuleRenderer3D
-        ModuleResourceManager
-        ModuleScene
         ModuleWindow
+        ModuleInput
+        ModuleCamera3D
+        ModuleResourceManager
         ModuleAudio
         ModuleVideo
+        ModuleUI
+        ModuleAI
+        ModuleAnimation
+        ModulePhysics
+        ModuleParticles
+        ModuleScene
+        ModuleRenderer3D
 )
