@@ -573,7 +573,11 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
     }
 
     // 2. Load the full submesh hierarchy from the library binary.
-    const auto submeshes = ImporterMesh::LoadHierarchy(metaData.libraryPath);
+    // Info only -- names, transforms and material paths. This used to be
+    // LoadHierarchy, which deserialized every vertex of every submesh, and then the
+    // per-submesh loop below had SubMeshCache do exactly the same thing again, once
+    // per submesh, in parallel. Nothing here ever touched the geometry.
+    const auto submeshes = ImporterMesh::LoadSubmeshInfo(metaData.libraryPath);
     if (submeshes.empty())
     {
         NOUS_ERROR("[SpawnMeshAsHierarchy] No submeshes in '%s'.", metaData.libraryPath.c_str());
@@ -622,7 +626,7 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
 
     for (int32_t i = 0; i < submeshCount; ++i)
     {
-        const SubMeshData& sub = submeshes[static_cast<size_t>(i)];
+        const SubMeshInfo& sub = submeshes[static_cast<size_t>(i)];
 
         if (!meshResources[i])
         {

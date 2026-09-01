@@ -97,6 +97,11 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         Renderer          # IGPUResourceFactory / RendererTypes in public headers
         AudioSystem_headers  # ResourceAudioGraph.h names AudioGraphDesc
         Utils_headers     # ResourceMesh.h / ImporterMesh.h include <Utils/Math/Vertex.inl>
+        AnimationSystem   # SkeletonBuild.h / ClipBuild.h expose SkeletonData +
+                          # AnimClipData BY VALUE, and SkeletonBuild.cpp calls
+                          # RebuildLookup, so this is needed in both halves.
+                          # AnimationSystem links only glm, so no cycle: the edge
+                          # runs ResourceManager -> AnimationSystem and stops.
 )
 
 # AudioSystem + VideoSystem close cycles: the Resource* types live here, the
@@ -112,6 +117,7 @@ target_link_libraries(${CLASS_NAME} PRIVATE
 )
 
 add_subdirectory(src/Core)
+add_subdirectory(src/Import)
 add_subdirectory(src/Runtime)
 add_subdirectory(src/Types)
 

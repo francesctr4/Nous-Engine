@@ -37,6 +37,20 @@ public:
 
 	std::optional<uint64_t> Write(std::span<const std::byte> data);
 
+	// Moves the read cursor to an absolute byte offset.
+	//
+	// Required by any binary format carrying an offset directory: without it such a
+	// format has to be read from the front, which is exactly what the directory
+	// exists to avoid. The mesh library binary (V4) is the first user -- it reads
+	// one submesh out of N without touching the other N-1.
+	//
+	// Clears EOF before seeking, so a handle that already hit the end stays usable.
+	// Returns false if the file is not open for reading or the seek fails.
+	bool Seek(uint64_t offset);
+
+	// Total size in bytes. Cheap: seeks to the end and restores the cursor.
+	std::optional<uint64_t> Size();
+
 	// ---------------------------------------------------------------------------- //
 
 	void SetPath(const std::string& filePath);

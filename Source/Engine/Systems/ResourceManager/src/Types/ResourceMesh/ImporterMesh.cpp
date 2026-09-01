@@ -3,36 +3,32 @@
 #include <EngineCore/Casts.h>
 #include <FileSystem/FileHandle.h>
 
-#include <map>
-
+#include <ResourceManager/Import/ModelParser/ModelParser.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
 #include <ResourceManager/Core/MetaFileData.h>
 
 #include <MemoryManager/MemoryManager.h>
 
 #include <Renderer/IGPUResourceFactory.h>
-#include <ResourceManager/Core/IResourceLoader.h>
-#include <ResourceManager/Types/ResourceMaterial/ResourceMaterial.h>
-#include <ResourceManager/Types/ResourceTexture/ResourceTexture.h>
 
 #include <Logger/Logger.h>
 
-#include <Utils/Serialization/JsonFile.h>
-#include <Utils/Serialization/JsonObject.h>
-#include <Utils/Serialization/JsonArray.h>
-
-// Assimp
-#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace)
-#include "assimp/scene.h"
-#include "assimp/cimport.h"
-#include "assimp/postprocess.h"
-#include "assimp/material.h"
-
-#include <filesystem>
-#include <span>
-#include <unordered_set>
-#include <unordered_map>
+// No assimp here any more. This TU used to define ASSIMP_LOAD_FLAGS and include
+// four assimp headers; all of that moved to ModelParser.cpp, which is now the
+// engine's only assimp translation unit. The JSON, filesystem and hash-container
+// includes went with the material fan-out that needed them.
 #include <cstddef>
+#include <span>
+#include <string>
+#include <utility>
+#include <vector>
+
+// ImporterMesh itself is still a global-namespace type (the whole importer family
+// is); the model pre-pass is namespaced like the rest of the new code. Pulling in
+// just the two names keeps that boundary visible rather than dragging the whole
+// namespace into a global-scope TU.
+using nous::engine::resource_manager::ModelImportData;
+using nous::engine::resource_manager::ParseModel;
 
 // Reinterprets a trivially-copyable object or contiguous container as a
 // writable byte span for FileHandle::ReadBytes.
@@ -49,295 +45,257 @@ static std::span<char> AsWritableCharSpan(std::vector<T>& values)
 }
 
 // ─── Binary format ────────────────────────────────────────────────────────────
-// V1 (legacy): uint64_t vertexCount | Vertex3D[] | uint64_t indexCount | uint32_t[]
-// V2 (legacy): uint32_t magic | uint32_t submeshCount | N×(nameLen:u64, name:chars,
-//              localTransform:16×float, vertexCount:u64, Vertex3D[],
-//              indexCount:u64, uint32_t[])
-// V3 (current): same as V2 plus a per-submesh material reference inserted between
-//               localTransform and vertexCount:
-//               ... localTransform:16×float, matPathLen:u64, matPath:chars,
-//               vertexCount:u64, Vertex3D[], ...
-static constexpr uint32_t MESH_BINARY_MAGIC_V2 = 0xFA7C0DE1u;
-static constexpr uint32_t MESH_BINARY_MAGIC_V3 = 0xFA7C0DE2u;
+//
+//   magic:u32
+//   submeshCount:u32
+//   N × (blobOffset:u64, blobLength:u64)        <- directory, absolute offsets
+//   N × blob
+//
+// blob:
+//   nameLen:u64, name:chars
+//   localTransform:16×float                     (column-major, GLM convention)
+//   matPathLen:u64, matPath:chars               (empty => default material)
+//   vertexCount:u64, Vertex3D[]
+//   indexCount:u64, uint32_t[]
+//
+// THE DIRECTORY is why the format changed. Reading one submesh out of N used to
+// mean parsing the whole file, and the spawn path did that N+1 times — once in
+// SpawnMeshAsHierarchy, then once per submesh inside SubMeshCache, concurrently —
+// so an O(N) result cost O(N²) bytes. Absolute blob offsets turn that into one
+// small directory read plus one seek per submesh.
+//
+// Vertex3D also gained boneIDs/boneWeights (locations 7/8) in the same change.
+//
+// THERE IS NO BACKWARD COMPATIBILITY, deliberately. Library/ is a derived cache
+// and Assets/ is the source of truth, so a binary written by an older engine is
+// rejected with a message rather than parsed by a second code path. Bump the magic
+// whenever the layout changes and delete Library/ to regenerate.
+static constexpr uint32_t MESH_BINARY_MAGIC = 0xFA7C0DE3u;
 
-// ─── Assimp helpers ───────────────────────────────────────────────────────────
+// ─── Writing ──────────────────────────────────────────────────────────────────
+//
+// Blobs are serialized into memory first so their lengths — and therefore the
+// directory — are known before anything reaches disk. FileHandle has no
+// write-seek, and the vertex data is already in memory anyway.
 
-static glm::mat4 AiToGlm(const aiMatrix4x4& m)
+static void AppendU32(std::vector<std::byte>& out, uint32_t v)
 {
-    // Assimp is row-major; GLM is column-major.
-    return glm::mat4(
-        m.a1, m.b1, m.c1, m.d1,   // column 0
-        m.a2, m.b2, m.c2, m.d2,   // column 1
-        m.a3, m.b3, m.c3, m.d3,   // column 2
-        m.a4, m.b4, m.c4, m.d4    // column 3
-    );
+    const auto* p = reinterpret_cast<const std::byte*>(&v);
+    out.insert(out.end(), p, p + sizeof(v));
 }
 
-// Weld smooth normals per position for the outline pass.
-// For each vertex, accumulates and averages the face normals of all vertices that
-// share the same position, then normalizes the result into smoothNormal.
-static void WeldSmoothNormals(SubMeshData& out, size_t startIdx)
+static void AppendU64(std::vector<std::byte>& out, uint64_t v)
 {
-    struct Vec3Less {
-        bool operator()(const glm::vec3& a, const glm::vec3& b) const {
-            if (a.x != b.x) return a.x < b.x;
-            if (a.y != b.y) return a.y < b.y;
-            return a.z < b.z;
-        }
-    };
-    std::map<glm::vec3, std::pair<glm::vec3, uint32_t>, Vec3Less> accum;
-    for (size_t i = startIdx; i < out.vertices.size(); ++i) {
-        auto& [sum, cnt] = accum[out.vertices[i].position];
-        sum += out.vertices[i].normal;
-        ++cnt;
-    }
-    for (size_t i = startIdx; i < out.vertices.size(); ++i) {
-        const auto& [sum, cnt] = accum[out.vertices[i].position];
-        out.vertices[i].smoothNormal = glm::normalize(sum / static_cast<float>(cnt));
-    }
+    const auto* p = reinterpret_cast<const std::byte*>(&v);
+    out.insert(out.end(), p, p + sizeof(v));
 }
 
-// Fill one SubMeshData from an aiMesh.  smoothNormals are welded per position.
-// materialPaths is indexed by aiMaterial index; the .nmat path for this aiMesh
-// is looked up via mesh->mMaterialIndex and stamped into out.materialAssetPath.
-// Pass an empty vector to skip material wiring (legacy / save path).
-static void ExtractSubMesh(aiMesh* mesh, const glm::mat4& transform,
-                            const std::string& name,
-                            const std::vector<std::string>& materialPaths,
-                            SubMeshData& out)
+static void AppendBytes(std::vector<std::byte>& out, const void* data, uint64_t size)
 {
-    out.name           = name;
-    out.localTransform = transform;
-
-    if (mesh->mMaterialIndex < materialPaths.size())
-        out.materialAssetPath = materialPaths[mesh->mMaterialIndex];
-
-    const size_t startIdx = out.vertices.size();
-
-    for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
-    {
-        Vertex3D vertex;
-
-        vertex.position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
-        vertex.normal   = { mesh->mNormals[i].x,  mesh->mNormals[i].y,  mesh->mNormals[i].z  };
-
-        vertex.color = mesh->HasVertexColors(0)
-            ? glm::vec3(mesh->mColors[0][i].r, mesh->mColors[0][i].g, mesh->mColors[0][i].b)
-            : glm::vec3(1.0f);
-
-        vertex.texCoord = mesh->HasTextureCoords(0)
-            ? glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y)
-            : glm::vec2(0.0f);
-
-        vertex.smoothNormal = { 0.0f, 0.0f, 0.0f }; // computed below
-
-        if (mesh->HasTangentsAndBitangents())
-        {
-            const glm::vec3 t = { mesh->mTangents[i].x,   mesh->mTangents[i].y,   mesh->mTangents[i].z   };
-            const glm::vec3 b = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
-            const float sign  = (glm::dot(glm::cross(vertex.normal, t), b) < 0.0f) ? -1.0f : 1.0f;
-            vertex.tangent    = glm::vec4(t, sign);
-        }
-        else
-        {
-            vertex.tangent = { 1.0f, 0.0f, 0.0f, 1.0f };
-        }
-
-        vertex.texCoord2 = mesh->HasTextureCoords(1)
-            ? glm::vec2(mesh->mTextureCoords[1][i].x, mesh->mTextureCoords[1][i].y)
-            : glm::vec2(0.0f);
-
-        out.vertices.emplace_back(vertex);
-    }
-
-    WeldSmoothNormals(out, startIdx);
-
-    if (mesh->HasFaces())
-    {
-        for (uint32_t i = 0; i < mesh->mNumFaces; ++i)
-        {
-            const aiFace& face = mesh->mFaces[i];
-            for (uint32_t j = 0; j < face.mNumIndices; ++j)
-                out.indices.push_back(static_cast<uint32_t>(face.mIndices[j]));
-        }
-    }
+    const auto* p = static_cast<const std::byte*>(data);
+    out.insert(out.end(), p, p + size);
 }
 
-// Recursively traverse nodes, accumulating the world transform.
-// Each (node, meshIndex) pair becomes one SubMeshData.
-// materialPaths is indexed by aiMaterial index and forwarded to ExtractSubMesh.
-static void CollectSubMeshData(aiNode* node, const aiScene* scene,
-                                const glm::mat4& parentTransform,
-                                const std::vector<std::string>& materialPaths,
-                                std::vector<SubMeshData>& outSubmeshes)
+static void AppendString(std::vector<std::byte>& out, const std::string& s)
 {
-    const glm::mat4 nodeTransform = parentTransform * AiToGlm(node->mTransformation);
-
-    for (uint32_t i = 0; i < node->mNumMeshes; ++i)
-    {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-
-        std::string name = mesh->mName.length > 0
-            ? std::string(mesh->mName.C_Str())
-            : (std::string(node->mName.C_Str()) + "_" + std::to_string(i));
-
-        SubMeshData sub;
-        ExtractSubMesh(mesh, nodeTransform, name, materialPaths, sub);
-        outSubmeshes.emplace_back(std::move(sub));
-    }
-
-    for (uint32_t i = 0; i < node->mNumChildren; ++i)
-        CollectSubMeshData(node->mChildren[i], scene, nodeTransform, materialPaths, outSubmeshes);
+    AppendU64(out, s.size());
+    if (!s.empty()) AppendBytes(out, s.data(), s.size());
 }
 
-// ─── Write helpers ────────────────────────────────────────────────────────────
+static void SerializeSubmesh(const SubMeshData& sub, std::vector<std::byte>& out)
+{
+    AppendString(out, sub.name);
+    AppendBytes (out, &sub.localTransform[0][0], 16 * sizeof(float));
+    AppendString(out, sub.materialAssetPath);
 
-static bool WriteU32(FileHandle& fh, uint32_t v)
-{
-    return fh.Write(std::as_bytes(std::span(&v, 1))).has_value();
-}
-static bool WriteU64(FileHandle& fh, uint64_t v)
-{
-    return fh.Write(std::as_bytes(std::span(&v, 1))).has_value();
-}
-static bool WriteBytes(FileHandle& fh, const void* data, uint64_t size)
-{
-    return fh.Write(std::as_bytes(std::span(reinterpret_cast<const std::byte*>(data), size))).has_value();
+    AppendU64(out, sub.vertices.size());
+    if (!sub.vertices.empty())
+        AppendBytes(out, sub.vertices.data(), sub.vertices.size() * sizeof(Vertex3D));
+
+    AppendU64(out, sub.indices.size());
+    if (!sub.indices.empty())
+        AppendBytes(out, sub.indices.data(), sub.indices.size() * sizeof(uint32_t));
 }
 
-// Write a V3 multi-submesh binary from a pre-collected vector of SubMeshData.
 static bool SaveSubmeshes(const MetaFileData& metaFileData,
                           const std::vector<SubMeshData>& submeshes)
 {
+    const auto count = static_cast<uint32_t>(submeshes.size());
+
+    // magic + count + N × (offset, length)
+    const uint64_t headerSize =
+        sizeof(uint32_t) * 2 + static_cast<uint64_t>(count) * (sizeof(uint64_t) * 2);
+
+    std::vector<std::byte> blobs;
+    std::vector<uint64_t>  offsets(count);
+    std::vector<uint64_t>  lengths(count);
+
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        const uint64_t begin = blobs.size();
+        SerializeSubmesh(submeshes[i], blobs);
+
+        offsets[i] = headerSize + begin;
+        lengths[i] = blobs.size() - begin;
+    }
+
+    std::vector<std::byte> file;
+    file.reserve(headerSize + blobs.size());
+
+    AppendU32(file, MESH_BINARY_MAGIC);
+    AppendU32(file, count);
+
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        AppendU64(file, offsets[i]);
+        AppendU64(file, lengths[i]);
+    }
+
+    file.insert(file.end(), blobs.begin(), blobs.end());
+
     FileHandle fh;
     if (!fh.Open(metaFileData.libraryPath, FileMode::WRITE, true))
         return false;
 
-    bool ok = true;
-    ok &= WriteU32(fh, MESH_BINARY_MAGIC_V3);
-    ok &= WriteU32(fh, static_cast<uint32_t>(submeshes.size()));
-
-    for (const auto& sub : submeshes)
-    {
-        // Name
-        const uint64_t nameLen = sub.name.size();
-        ok &= WriteU64(fh, nameLen);
-        if (nameLen > 0)
-            ok &= WriteBytes(fh, sub.name.data(), nameLen);
-
-        // Local transform (16 floats, column-major)
-        ok &= WriteBytes(fh, &sub.localTransform[0][0], 16 * sizeof(float));
-
-        // Material asset path (V3+ only; empty string is valid → falls back to
-        // default material at spawn time).
-        const uint64_t matPathLen = sub.materialAssetPath.size();
-        ok &= WriteU64(fh, matPathLen);
-        if (matPathLen > 0)
-            ok &= WriteBytes(fh, sub.materialAssetPath.data(), matPathLen);
-
-        // Vertices
-        const uint64_t vCount = sub.vertices.size();
-        ok &= WriteU64(fh, vCount);
-        if (vCount > 0)
-            ok &= WriteBytes(fh, sub.vertices.data(), vCount * sizeof(Vertex3D));
-
-        // Indices
-        const uint64_t iCount = sub.indices.size();
-        ok &= WriteU64(fh, iCount);
-        if (iCount > 0)
-            ok &= WriteBytes(fh, sub.indices.data(), iCount * sizeof(uint32_t));
-    }
-
+    const bool ok = fh.Write(std::span<const std::byte>(file)).has_value();
     fh.Close();
+
     return ok;
 }
 
-// ─── Binary parser ────────────────────────────────────────────────────────────
-// Shared by Deserialize (which merges submeshes) and LoadHierarchy (which keeps them separate).
-// Returns one SubMeshData per logical submesh; empty on open/read failure.
+// ─── Reading ──────────────────────────────────────────────────────────────────
 
+namespace
+{
+    struct BlobHeader
+    {
+        std::string name;
+        glm::mat4   localTransform{ 1.0f };
+        std::string materialAssetPath;
+    };
+
+    bool ReadU32(FileHandle& fh, uint32_t& out)
+    {
+        return fh.ReadBytes(AsWritableCharSpan(out)).has_value();
+    }
+
+    bool ReadU64(FileHandle& fh, uint64_t& out)
+    {
+        return fh.ReadBytes(AsWritableCharSpan(out)).has_value();
+    }
+
+    bool ReadString(FileHandle& fh, std::string& out)
+    {
+        uint64_t length = 0;
+        if (!ReadU64(fh, length)) return false;
+
+        out.clear();
+        if (length == 0) return true;
+
+        out.resize(length);
+        return fh.ReadBytes(std::span(out.data(), length)).has_value();
+    }
+
+    // Reads the leading fields of a blob, leaving the cursor on the vertex count.
+    bool ReadBlobHeader(FileHandle& fh, BlobHeader& out)
+    {
+        if (!ReadString(fh, out.name)) return false;
+
+        if (!fh.ReadBytes(std::span(reinterpret_cast<char*>(&out.localTransform[0][0]),
+                                    16 * sizeof(float))).has_value())
+            return false;
+
+        return ReadString(fh, out.materialAssetPath);
+    }
+
+    bool ReadBlobGeometry(FileHandle& fh, SubMeshData& out)
+    {
+        uint64_t vCount = 0;
+        if (!ReadU64(fh, vCount)) return false;
+
+        out.vertices.resize(vCount);
+        if (vCount > 0 && !fh.ReadBytes(AsWritableCharSpan(out.vertices)).has_value())
+            return false;
+
+        uint64_t iCount = 0;
+        if (!ReadU64(fh, iCount)) return false;
+
+        out.indices.resize(iCount);
+        if (iCount > 0 && !fh.ReadBytes(AsWritableCharSpan(out.indices)).has_value())
+            return false;
+
+        return true;
+    }
+
+    // Opens the file and consumes magic + count. A wrong magic is an outdated or
+    // corrupt binary; both mean "reimport", so both get the same message.
+    bool OpenAndReadHeader(const std::string& libraryPath, const char* caller,
+                           FileHandle& fh, uint32_t& outCount)
+    {
+        if (!fh.Open(libraryPath, FileMode::READ, true))
+        {
+            NOUS_ERROR("%s: failed to open '%s'", caller, libraryPath.c_str());
+            return false;
+        }
+
+        uint32_t magic = 0;
+        if (!ReadU32(fh, magic)) return false;
+
+        if (magic != MESH_BINARY_MAGIC)
+        {
+            NOUS_ERROR("%s: '%s' is not a current mesh binary (magic 0x%08X, expected 0x%08X). "
+                       "Delete Library/ and reimport the asset.",
+                       caller, libraryPath.c_str(), magic, MESH_BINARY_MAGIC);
+            return false;
+        }
+
+        return ReadU32(fh, outCount);
+    }
+
+    // Directory entries are (absolute offset, length).
+    bool ReadDirectory(FileHandle& fh, uint32_t count,
+                       std::vector<std::pair<uint64_t, uint64_t>>& out)
+    {
+        out.resize(count);
+
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            if (!ReadU64(fh, out[i].first) || !ReadU64(fh, out[i].second)) return false;
+        }
+
+        return true;
+    }
+}
+
+// Full parse: every submesh, geometry included. Only Deserialize wants this — it
+// merges them all into one ResourceMesh.
 static std::vector<SubMeshData> ParseMeshBinary(const std::string& libraryPath)
 {
     std::vector<SubMeshData> result;
 
     FileHandle fh;
-    if (!fh.Open(libraryPath, FileMode::READ, true))
-    {
-        NOUS_ERROR("ParseMeshBinary: failed to open '%s'", libraryPath.c_str());
-        return result;
-    }
+    uint32_t   submeshCount = 0;
 
-    uint32_t header4 = 0;
-    if (!fh.ReadBytes(AsWritableCharSpan(header4)).has_value())
-        return result;
+    if (!OpenAndReadHeader(libraryPath, "ParseMeshBinary", fh, submeshCount)) return result;
 
-    const bool isV3 = (header4 == MESH_BINARY_MAGIC_V3);
-    const bool isV2 = (header4 == MESH_BINARY_MAGIC_V2);
-
-    if (!isV2 && !isV3)
-    {
-        // V1 format: single flat mesh — wrap in one SubMeshData
-        uint32_t header4High = 0;
-        fh.ReadBytes(AsWritableCharSpan(header4High));
-        const uint64_t vCount = header4 | (static_cast<uint64_t>(header4High) << 32);
-
-        SubMeshData sub;
-        sub.name           = "Mesh";
-        sub.localTransform = glm::mat4(1.0f);
-        sub.vertices.resize(vCount);
-        fh.ReadBytes(AsWritableCharSpan(sub.vertices));
-
-        uint64_t iCount = 0;
-        fh.ReadBytes(AsWritableCharSpan(iCount));
-        sub.indices.resize(iCount);
-        fh.ReadBytes(AsWritableCharSpan(sub.indices));
-
-        fh.Close();
-        result.emplace_back(std::move(sub));
-        return result;
-    }
-
-    // V2 / V3 format
-    uint32_t submeshCount = 0;
-    if (!fh.ReadBytes(AsWritableCharSpan(submeshCount)).has_value())
-        return result;
+    // The directory is read past, not used: a full parse walks every blob in order
+    // anyway, so seeking per blob would only add syscalls.
+    std::vector<std::pair<uint64_t, uint64_t>> directory;
+    if (!ReadDirectory(fh, submeshCount, directory)) return result;
 
     result.reserve(submeshCount);
 
     for (uint32_t s = 0; s < submeshCount; ++s)
     {
+        BlobHeader header;
+        if (!ReadBlobHeader(fh, header)) break;
+
         SubMeshData sub;
+        sub.name              = std::move(header.name);
+        sub.localTransform    = header.localTransform;
+        sub.materialAssetPath = std::move(header.materialAssetPath);
 
-        uint64_t nameLen = 0;
-        fh.ReadBytes(AsWritableCharSpan(nameLen));
-        if (nameLen > 0)
-        {
-            sub.name.resize(nameLen);
-            fh.ReadBytes(std::span(sub.name.data(), nameLen));
-        }
-
-        fh.ReadBytes(std::span(reinterpret_cast<char*>(&sub.localTransform[0][0]), 16 * sizeof(float)));
-
-        if (isV3)
-        {
-            uint64_t matPathLen = 0;
-            fh.ReadBytes(AsWritableCharSpan(matPathLen));
-            if (matPathLen > 0)
-            {
-                sub.materialAssetPath.resize(matPathLen);
-                fh.ReadBytes(std::span(sub.materialAssetPath.data(), matPathLen));
-            }
-        }
-
-        uint64_t vCount = 0;
-        fh.ReadBytes(AsWritableCharSpan(vCount));
-        sub.vertices.resize(vCount);
-        fh.ReadBytes(AsWritableCharSpan(sub.vertices));
-
-        uint64_t iCount = 0;
-        fh.ReadBytes(AsWritableCharSpan(iCount));
-        sub.indices.resize(iCount);
-        fh.ReadBytes(AsWritableCharSpan(sub.indices));
+        if (!ReadBlobGeometry(fh, sub)) break;
 
         result.emplace_back(std::move(sub));
     }
@@ -348,281 +306,122 @@ static std::vector<SubMeshData> ParseMeshBinary(const std::string& libraryPath)
 
 // ─── Importer interface ───────────────────────────────────────────────────────
 
-// Map an assimp texture type to a sampler name in ForwardBlinnPhong.glsl.
-// Returns nullptr for slots the shader does not consume — those textures are still
-// imported (so they appear in AssetsBrowser) but are not wired into the .nmat.
-static const char* AssimpTypeToSamplerName(aiTextureType type)
+bool ImporterMesh::SaveModel(const MetaFileData& metaFileData, const ModelImportData& model)
 {
-    switch (type)
-    {
-        case aiTextureType_DIFFUSE:
-        case aiTextureType_BASE_COLOR:        return "diffuseSampler";
-        case aiTextureType_NORMALS:
-        case aiTextureType_NORMAL_CAMERA:     return "normalSampler";
-        case aiTextureType_SPECULAR:          return "specularSampler";
-        case aiTextureType_SHININESS:         return "shininessSampler";
-        case aiTextureType_AMBIENT_OCCLUSION:
-        case aiTextureType_LIGHTMAP:          return "aoSampler";
-        case aiTextureType_EMISSIVE:
-        case aiTextureType_EMISSION_COLOR:    return "emissiveSampler";
-        default:                              return nullptr;
-    }
-}
-
-// Replace characters that would be awkward in a filename. Keeps alnum, dash, dot,
-// underscore. Everything else becomes '_'.
-static std::string SanitizeFilenamePart(const std::string& in)
-{
-    std::string out;
-    out.reserve(in.size());
-    for (char c : in)
-    {
-        const bool ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') ||
-                        (c >= 'A' && c <= 'Z') || c == '-' || c == '_' || c == '.';
-        out.push_back(ok ? c : '_');
-    }
-    if (out.empty()) out = "Material";
-    return out;
-}
-
-// Walk every material's texture slots, import each referenced image, and emit a
-// sibling .nmat per material wiring those textures into ForwardBlinnPhong sampler
-// slots. Two texture-reference flavors handled:
-//   - External path (typical for .gltf/.fbx/.obj): resolve relative to the model's
-//     directory; if the sibling file exists, hand it to ImportFile (idempotent).
-//   - Embedded "*N" reference (typical for .glb): pull the bytes out of
-//     scene->mTextures[N] and write them next to the model with a generated name,
-//     then ImportFile that. Uncompressed (raw RGBA) embeds are rare and would need
-//     stb_image_write to round-trip to PNG — skipped here with a warning.
-// Existing .nmat files are never overwritten — re-importing the model preserves
-// any tweaks the user made in the Inspector.
-// Returns a vector indexed by aiMaterial index, where each entry is the Assets/-
-// relative path of the generated .nmat (or empty if no material file was emitted —
-// e.g. all texture slots were empty or referenced missing files). The caller uses
-// this to stamp per-submesh materialAssetPath via aiMesh::mMaterialIndex.
-static std::vector<std::string> ExtractTexturesAndMaterials(const aiScene* scene,
-                                        const std::string& modelAssetPath,
-                                        IResourceLoader* rm)
-{
-    std::vector<std::string> materialPaths;
-    if (!rm || !scene || scene->mNumMaterials == 0) return materialPaths;
-
-    materialPaths.assign(scene->mNumMaterials, std::string{});
-
-    namespace fs = std::filesystem;
-    const fs::path    modelPath(modelAssetPath);
-    const fs::path    modelDir  = modelPath.parent_path();
-    const std::string modelStem = modelPath.stem().string();
-
-    constexpr const char* k_DefaultShaderPath = "Assets/Shaders/ForwardBlinnPhong.glsl";
-
-    std::unordered_set<std::string> seenTextures;
-    std::unordered_set<std::string> usedMatFilenames;
-
-    for (uint32_t m = 0; m < scene->mNumMaterials; ++m)
-    {
-        aiMaterial* mat = scene->mMaterials[m];
-        if (!mat) continue;
-
-        // First sampler→asset_path wins (multiple assimp types can map to the
-        // same shader sampler; e.g. BASE_COLOR + DIFFUSE both → diffuseSampler).
-        std::unordered_map<std::string, std::string> samplerToAssetPath;
-
-        for (int t = aiTextureType_NONE + 1; t < aiTextureType_UNKNOWN; ++t)
-        {
-            const auto     type  = static_cast<aiTextureType>(t);
-            const uint32_t count = mat->GetTextureCount(type);
-
-            for (uint32_t i = 0; i < count; ++i)
-            {
-                aiString aiTexPath;
-                if (mat->GetTexture(type, i, &aiTexPath) != aiReturn_SUCCESS)
-                    continue;
-
-                const std::string ref = aiTexPath.C_Str();
-                if (ref.empty()) continue;
-
-                std::string finalAssetPath;
-
-                if (ref[0] == '*')
-                {
-                    const int idx = std::atoi(ref.c_str() + 1);
-                    if (idx < 0 || static_cast<uint32_t>(idx) >= scene->mNumTextures) continue;
-                    const aiTexture* aiTex = scene->mTextures[idx];
-                    if (!aiTex) continue;
-
-                    if (aiTex->mHeight != 0)
-                    {
-                        NOUS_WARN("ImporterMesh: skipping uncompressed embedded texture in '%s' (slot %d/%d) — RGBA-to-PNG conversion not implemented.",
-                            modelAssetPath.c_str(), t, i);
-                        continue;
-                    }
-
-                    const std::string ext  = aiTex->achFormatHint[0] ? (std::string(".") + aiTex->achFormatHint) : std::string(".png");
-                    const std::string name = modelStem + "_mat" + std::to_string(m) + "_tex" + std::to_string(t) + "_" + std::to_string(i) + ext;
-                    const fs::path    out  = modelDir / name;
-                    finalAssetPath = out.generic_string();
-
-                    if (!fs::exists(out))
-                    {
-                        FileHandle fh;
-                        if (!fh.Open(finalAssetPath, FileMode::WRITE, true))
-                        {
-                            NOUS_WARN("ImporterMesh: failed to write embedded texture '%s'.", finalAssetPath.c_str());
-                            continue;
-                        }
-                        fh.Write(std::span(reinterpret_cast<const std::byte*>(aiTex->pcData), aiTex->mWidth));
-                        fh.Close();
-                    }
-                }
-                else
-                {
-                    fs::path texFsPath(ref);
-                    if (texFsPath.is_relative())
-                        texFsPath = modelDir / texFsPath;
-                    finalAssetPath = texFsPath.generic_string();
-
-                    if (!fs::exists(texFsPath))
-                    {
-                        NOUS_WARN("ImporterMesh: referenced texture not found, skipping: '%s'.", finalAssetPath.c_str());
-                        continue;
-                    }
-                }
-
-                if (seenTextures.insert(finalAssetPath).second)
-                    rm->ImportFile(finalAssetPath);
-
-                if (const char* samplerName = AssimpTypeToSamplerName(type))
-                {
-                    auto [it, inserted] = samplerToAssetPath.try_emplace(samplerName, finalAssetPath);
-                    (void)it;
-                    (void)inserted;
-                }
-            }
-        }
-
-        // Resolve a per-material filename. Assimp materials are not guaranteed to
-        // have unique names within a scene, so we disambiguate with the index.
-        aiString matNameAi;
-        mat->Get(AI_MATKEY_NAME, matNameAi);
-        std::string matName = (matNameAi.length > 0) ? std::string(matNameAi.C_Str())
-                                                     : ("Material_" + std::to_string(m));
-        std::string filenameStem = modelStem + "_" + SanitizeFilenamePart(matName);
-        if (!usedMatFilenames.insert(filenameStem).second)
-            filenameStem += "_" + std::to_string(m);
-
-        const std::string matAssetPath = (modelDir / (filenameStem + ".nmat")).generic_string();
-
-        // Always record the path so submeshes can resolve to this material, even if
-        // we don't (re)write the .nmat below — e.g. a pre-existing user-edited file.
-        materialPaths[m] = matAssetPath;
-
-        // Skip — never overwrite a user-edited material.
-        if (fs::exists(matAssetPath)) continue;
-
-        // Build defaults matching ForwardBlinnPhong's InstanceUBO layout (mirrors
-        // ImporterMaterial::CreateNewMaterialFile so the Inspector sees the same
-        // defaults the user would get from the "Create Material" menu).
-        auto makeVec4Uniform = [](const char* name, double x, double y, double z, double w) -> JsonObject
-        {
-            JsonObject entry;
-            entry.Set("name", name);
-            entry.Set("type", "vec4");
-            JsonArray valArr;
-            valArr.Append(x); valArr.Append(y); valArr.Append(z); valArr.Append(w);
-            entry.Set("value", std::move(valArr));
-            return entry;
-        };
-        auto makeFloatUniform = [](const char* name, double value) -> JsonObject
-        {
-            JsonObject entry;
-            entry.Set("name", name);
-            entry.Set("type", "float");
-            JsonArray valArr;
-            valArr.Append(value);
-            entry.Set("value", std::move(valArr));
-            return entry;
-        };
-
-        JsonArray uniArr;
-        uniArr.Append(makeVec4Uniform ("diffuseColor",      1.0, 1.0, 1.0, 1.0));
-        uniArr.Append(makeVec4Uniform ("emissiveColor",     1.0, 1.0, 1.0, 1.0));
-        uniArr.Append(makeFloatUniform("aoIntensity",       1.0));
-        uniArr.Append(makeFloatUniform("normalStrength",    1.0));
-        uniArr.Append(makeFloatUniform("specularIntensity", 1.0));
-        uniArr.Append(makeFloatUniform("shininessScale",    1.0));
-
-        JsonArray texMapsArr;
-        for (const auto& [samplerName, assetPath] : samplerToAssetPath)
-        {
-            JsonObject entry;
-            entry.Set("name",       samplerName);
-            entry.Set("asset_path", assetPath);
-            texMapsArr.Append(std::move(entry));
-        }
-
-        JsonObject root;
-        root.Set("uniforms",          std::move(uniArr));
-        root.Set("texture_maps",      std::move(texMapsArr));
-        root.Set("shader_asset_path", k_DefaultShaderPath);
-
-        if (!JsonFile::SaveToFile(root, matAssetPath))
-        {
-            NOUS_WARN("ImporterMesh: failed to write generated material '%s'.", matAssetPath.c_str());
-            continue;
-        }
-
-        rm->ImportFile(matAssetPath);
-        NOUS_INFO("ImporterMesh: generated material '%s' (%zu texture slot(s)).",
-                  matAssetPath.c_str(), samplerToAssetPath.size());
-    }
-
-    return materialPaths;
-}
-
-bool ImporterMesh::Import(const MetaFileData& metaFileData)
-{
-    const aiScene* scene = aiImportFile(metaFileData.assetsPath.c_str(), ASSIMP_LOAD_FLAGS);
-
-    if (!scene || !scene->HasMeshes())
-    {
-        NOUS_ERROR("Failed to load 3D Model: %s", metaFileData.assetsPath.c_str());
-        return false;
-    }
-
-    // Pull textures referenced by the model into Assets/ + Library/ so they appear
-    // in AssetsBrowser, and emit one sibling .nmat per assimp material wired to
-    // ForwardBlinnPhong. Existing .nmat files are skipped (user edits preserved).
-    // The returned vector maps aiMaterial index → .nmat asset path; threaded into
-    // CollectSubMeshData so each SubMeshData carries the path of its material.
-    //
-    // Gated to .gltf / .glb only: glTF has a well-defined PBR material spec so
-    // assimp's reported texture slots are reliable. FBX/OBJ/DAE slot mapping is
-    // inconsistent across DCC tools and tends to spam wrong slots, so submeshes
-    // from those formats fall back to the default material at spawn time.
-    std::string ext = std::filesystem::path(metaFileData.assetsPath).extension().string();
-    for (char& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-
-    std::vector<std::string> materialPaths;
-    if (ext == ".gltf" || ext == ".glb")
-        materialPaths = ExtractTexturesAndMaterials(scene, metaFileData.assetsPath, m_resources);
-
-    std::vector<SubMeshData> submeshes;
-    CollectSubMeshData(scene->mRootNode, scene, glm::mat4(1.0f), materialPaths, submeshes);
-    aiReleaseImport(scene);
-
-    if (submeshes.empty())
+    if (model.submeshes.empty())
     {
         NOUS_ERROR("No submeshes found in: %s", metaFileData.assetsPath.c_str());
         return false;
     }
 
-    return SaveSubmeshes(metaFileData, submeshes);
+    return SaveSubmeshes(metaFileData, model.submeshes);
+}
+
+// ─── LoadHierarchy ────────────────────────────────────────────────────────────
+
+std::vector<SubMeshData> ImporterMesh::LoadHierarchy(const std::string& libraryPath)
+{
+    return ParseMeshBinary(libraryPath);
+}
+
+// ─── Targeted readers ─────────────────────────────────────────────────────────
+// The point of the directory: reach one submesh without touching the others.
+
+std::vector<SubMeshInfo> ImporterMesh::LoadSubmeshInfo(const std::string& libraryPath)
+{
+    std::vector<SubMeshInfo> result;
+
+    FileHandle fh;
+    uint32_t   submeshCount = 0;
+
+    if (!OpenAndReadHeader(libraryPath, "LoadSubmeshInfo", fh, submeshCount)) return result;
+
+    std::vector<std::pair<uint64_t, uint64_t>> directory;
+    if (!ReadDirectory(fh, submeshCount, directory)) return result;
+
+    result.reserve(submeshCount);
+
+    for (uint32_t s = 0; s < submeshCount; ++s)
+    {
+        // Seek to the blob and read only its header. The vertex and index arrays
+        // that follow are never touched.
+        if (!fh.Seek(directory[s].first)) break;
+
+        BlobHeader header;
+        if (!ReadBlobHeader(fh, header)) break;
+
+        result.push_back({ std::move(header.name), header.localTransform,
+                           std::move(header.materialAssetPath) });
+    }
+
+    fh.Close();
+    return result;
+}
+
+bool ImporterMesh::LoadSubmesh(const std::string& libraryPath, int32_t submeshIndex,
+                               SubMeshData& out)
+{
+    if (submeshIndex < 0) return false;
+
+    FileHandle fh;
+    uint32_t   submeshCount = 0;
+
+    if (!OpenAndReadHeader(libraryPath, "LoadSubmesh", fh, submeshCount)) return false;
+
+    if (static_cast<uint32_t>(submeshIndex) >= submeshCount)
+    {
+        NOUS_ERROR("LoadSubmesh: index %d out of range (count=%u) for '%s'",
+                   submeshIndex, submeshCount, libraryPath.c_str());
+        return false;
+    }
+
+    std::vector<std::pair<uint64_t, uint64_t>> directory;
+    if (!ReadDirectory(fh, submeshCount, directory)) return false;
+
+    if (!fh.Seek(directory[static_cast<size_t>(submeshIndex)].first)) return false;
+
+    BlobHeader header;
+    if (!ReadBlobHeader(fh, header)) return false;
+
+    out.name              = std::move(header.name);
+    out.localTransform    = header.localTransform;
+    out.materialAssetPath = std::move(header.materialAssetPath);
+
+    const bool ok = ReadBlobGeometry(fh, out);
+
+    fh.Close();
+    return ok;
+}
+
+bool ImporterMesh::Import(const MetaFileData& metaFileData)
+{
+    // This importer no longer parses anything. The whole Assimp side -- scene
+    // traversal, the material/texture fan-out, and now skeleton and clip
+    // extraction -- lives in ModelParser, the engine's only assimp translation
+    // unit. What is left here is serialization, which is what a mesh importer
+    // should have been doing all along.
+    //
+    // INTERIM: the parse still happens under a mesh-level name, so this call
+    // discards model.skeleton and model.clips. It moves up into ImportPipeline
+    // together with ImporterSkeleton and ImporterAnimation (spec step 6), at which
+    // point the pipeline parses once and hands each importer its slice via
+    // SaveModel above. This function then goes away.
+    auto model = ParseModel(metaFileData.assetsPath, m_resources);
+
+    if (!model)
+    {
+        NOUS_ERROR("Failed to load 3D Model: %s", model.error().c_str());
+        return false;
+    }
+
+    return SaveModel(metaFileData, *model);
 }
 
 bool ImporterMesh::Save(const MetaFileData& metaFileData, ResourceBase*& inResource)
 {
-    // Legacy path: convert a ResourceMesh into a single-submesh V2 binary.
+    // Writes a runtime-built ResourceMesh back out as a one-submesh binary. Used
+    // for meshes that never came from a model file (procedural geometry), which is
+    // why the transform is identity and there is no material reference.
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
 
     SubMeshData sub;
@@ -696,11 +495,4 @@ void ImporterMesh::Evict(ResourceBase* inResource)
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
     mesh->vertices.clear();
     mesh->indices.clear();
-}
-
-// ─── LoadHierarchy ────────────────────────────────────────────────────────────
-
-std::vector<SubMeshData> ImporterMesh::LoadHierarchy(const std::string& libraryPath)
-{
-    return ParseMeshBinary(libraryPath);
 }
