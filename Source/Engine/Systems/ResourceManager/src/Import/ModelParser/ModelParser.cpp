@@ -340,6 +340,32 @@ namespace nous::engine::resource_manager
             return offsets;
         }
 
+        // Every node name that any animation channel drives.
+        //
+        // This is the only signal a bone-free model offers about which nodes are
+        // joints: an anim-only export contains no aiMesh, so it contains no aiBone
+        // and no offset matrices, and a walk of the hierarchy alone cannot tell a
+        // joint from any other node. ApplyAnimatedFallback consumes this, and
+        // ignores it entirely when real bones exist.
+        std::unordered_set<std::string> CollectAnimatedNodeNames(const aiScene* scene)
+        {
+            std::unordered_set<std::string> names;
+
+            for (uint32_t a = 0; a < scene->mNumAnimations; ++a)
+            {
+                const aiAnimation* animation = scene->mAnimations[a];
+                if (!animation) continue;
+
+                for (uint32_t c = 0; c < animation->mNumChannels; ++c)
+                {
+                    if (const aiNodeAnim* channel = animation->mChannels[c])
+                        names.insert(channel->mNodeName.C_Str());
+                }
+            }
+
+            return names;
+        }
+
         // Depth-first walk producing the flat array BuildSkeleton expects. DFS
         // emits a parent before all of its children, which IS the topological
         // order BuildSkeleton validates — so there is no sort here and nothing to
@@ -731,10 +757,23 @@ namespace nous::engine::resource_manager
             // the mesh side sees only bones carrying weights while the skeleton side
             // walks every joint, the two orderings disagree, and fingers animate the
             // spine. One function deriving both cannot disagree with itself.
-            if (const auto boneOffsets = CollectBoneOffsets(scene, assetsPath); !boneOffsets.empty())
+            const auto boneOffsets   = CollectBoneOffsets(scene, assetsPath);
+            const auto animatedNames = CollectAnimatedNodeNames(scene);
+
+            // The gate is WIDENED, not removed: an anim-only export (Mixamo
+            // "without skin") has no aiMesh, therefore no aiBone and no offsets at
+            // all, yet its node hierarchy is a complete rig. A static prop has
+            // neither bones nor channels and must not pay for a hierarchy walk plus
+            // a BuildSkeleton call that prunes every node it just collected.
+            if (!boneOffsets.empty() || !animatedNames.empty())
             {
                 std::vector<RawBoneNode> nodes;
                 CollectRawNodes(scene->mRootNode, -1, boneOffsets, nodes);
+
+                // Bones win. This is a no-op the moment any node carries weights, so
+                // a skinned rig that also animates a geometry node does not gain an
+                // extra "bone" with a derived offset -- see SkeletonBuild.h.
+                ApplyAnimatedFallback(nodes, animatedNames);
 
                 auto skeleton = BuildSkeleton(nodes);
                 if (!skeleton)
@@ -748,7 +787,7 @@ namespace nous::engine::resource_manager
                 // Every bone named by a mesh should have matched a node. A miss
                 // means the rig references a joint that is not in the hierarchy,
                 // which produces a mesh bound to bones that will never animate.
-                if (data.skeleton.BoneCount() < boneOffsets.size())
+                if (!boneOffsets.empty() && data.skeleton.BoneCount() < boneOffsets.size())
                 {
                     NOUS_WARN("ModelParser: '%s' declares %zu bone(s) but only %zu matched a node "
                               "in the hierarchy — the rest cannot be animated.",
