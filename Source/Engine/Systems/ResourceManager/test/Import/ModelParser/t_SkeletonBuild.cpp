@@ -274,3 +274,85 @@ TEST(t_SkeletonBuild, NoBonesAtAllYieldsAnEmptySkeleton)
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(result->BoneCount(), 0u);
 }
+
+// ─── ApplyAnimatedFallback ────────────────────────────────────────────────────
+//
+// An anim-only FBX (Mixamo "without skin") has no aiMesh, therefore no aiBone and
+// no offset matrices at all -- animation channels are the only signal about which
+// nodes are joints. These cover that fallback and, just as importantly, the gate
+// that stops it touching a rig which already has real bones.
+
+namespace
+{
+    // Root -> A -> B, plus an unrelated sibling "Prop" under Root.
+    std::vector<RawBoneNode> BonelessHierarchy()
+    {
+        return {
+            Node("Root", -1, false),
+            Node("A",     0, false, { 0.0f, 2.0f, 0.0f }),
+            Node("B",     1, false),
+            Node("Prop",  0, false),
+        };
+    }
+}
+
+TEST(t_SkeletonBuild, AnimatedFallbackMarksChannelNamedNodesWhenNoBonesExist)
+{
+    auto nodes = BonelessHierarchy();
+    ApplyAnimatedFallback(nodes, { "A", "B" });
+
+    EXPECT_FALSE(nodes[0].isAnimated);
+    EXPECT_TRUE (nodes[1].isAnimated);
+    EXPECT_TRUE (nodes[2].isAnimated);
+    EXPECT_FALSE(nodes[3].isAnimated);
+}
+
+TEST(t_SkeletonBuild, AnimatedNodesAreKeptAlongWithTheirAncestors)
+{
+    auto nodes = BonelessHierarchy();
+    ApplyAnimatedFallback(nodes, { "B" });
+
+    const auto result = BuildSkeleton(nodes);
+    ASSERT_TRUE(result.has_value());
+
+    // Root and A survive as ancestors of B; Prop is pruned.
+    EXPECT_EQ(result->names, (std::vector<std::string>{ "Root", "A", "B" }));
+    EXPECT_EQ(result->parents, (std::vector<int>{ -1, 0, 1 }));
+    EXPECT_TRUE(result->IsConsistent());
+    EXPECT_TRUE(result->IsTopologicallySorted());
+}
+
+// THE ONE THAT PROTECTS EVERY SKINNED IMPORT THAT WORKS TODAY.
+//
+// Applied unconditionally, the fallback would promote an animated non-bone node --
+// root motion on a geometry node, a prop parented to a hand, an exporter helper --
+// into an extra "bone" with a derived, non-authoritative offset. That silently
+// changes rigs that import correctly, and breaks the property that a skinned FBX
+// and its anim-only sibling produce identical bone-name lists.
+TEST(t_SkeletonBuild, AnimatedFallbackIsIgnoredEntirelyWhenAnyBoneExists)
+{
+    auto nodes = BonelessHierarchy();
+    nodes[1].isBone = true;                     // "A" carries weights
+    ApplyAnimatedFallback(nodes, { "Prop" });   // an animated NON-bone node
+
+    EXPECT_FALSE(nodes[3].isAnimated);
+
+    const auto result = BuildSkeleton(nodes);
+    ASSERT_TRUE(result.has_value());
+
+    EXPECT_EQ(result->names, (std::vector<std::string>{ "Root", "A" }));
+}
+
+TEST(t_SkeletonBuild, AnimatedNonBonesGetDerivedOffsets)
+{
+    auto nodes = BonelessHierarchy();
+    ApplyAnimatedFallback(nodes, { "A" });
+
+    const auto result = BuildSkeleton(nodes);
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->BoneCount(), 2u);
+
+    // No aiBone offset exists, so "A" gets inverse(globalBind) -- here just the
+    // inverse of its own local bind, since Root is identity.
+    ExpectMatNear(result->offsets[1], glm::inverse(nodes[1].localBind.ToMatrix()));
+}

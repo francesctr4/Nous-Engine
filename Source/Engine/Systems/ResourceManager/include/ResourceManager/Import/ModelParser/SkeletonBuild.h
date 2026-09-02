@@ -7,6 +7,7 @@
 
 #include <expected>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 // Pure half of the model pre-pass: turning a raw node hierarchy into a
@@ -39,6 +40,16 @@ namespace nous::engine::resource_manager
         // parent chain.
         bool      isBone = false;
         glm::mat4 offset{ 1.0f };     // aiBone::mOffsetMatrix; ignored when !isBone
+
+        // True when an animation channel drives this node. Set ONLY by
+        // ApplyAnimatedFallback below, never by the aiScene walk directly -- see the
+        // gate documented there.
+        //
+        // This is the only signal a bone-free model offers about which nodes are
+        // joints. An anim-only export (Mixamo "without skin") contains no aiMesh, so
+        // it contains no aiBone and no offset matrices at all, yet its node
+        // hierarchy is a complete rig.
+        bool isAnimated = false;
     };
 
     // Prunes, renumbers and validates.
@@ -61,4 +72,20 @@ namespace nous::engine::resource_manager
     // naming at import time: "which node" is the whole diagnostic.
     [[nodiscard]] std::expected<animation_system::SkeletonData, std::string>
     BuildSkeleton(const std::vector<RawBoneNode>& nodes);
+
+    // Marks nodes named by an animation channel as skeleton members -- but ONLY when
+    // the hierarchy contains no real bone at all. THAT GATE IS LOAD-BEARING.
+    //
+    // Applied unconditionally, this promotes any animated non-bone node -- root
+    // motion on a geometry node, a prop parented to a hand, an exporter's helper --
+    // into an extra "bone" carrying a derived, non-authoritative offset. It would
+    // silently change skeletons that import correctly today, and it would break the
+    // property that a skinned FBX and its anim-only sibling yield identical bone-name
+    // lists, which is what name-based clip binding rests on.
+    //
+    // So: bones win. This is a fallback for the case where there is nothing else,
+    // not an additional source of joints. Pinned by
+    // t_SkeletonBuild.AnimatedFallbackIsIgnoredEntirelyWhenAnyBoneExists.
+    void ApplyAnimatedFallback(std::vector<RawBoneNode>& nodes,
+                               const std::unordered_set<std::string>& animatedNames);
 }

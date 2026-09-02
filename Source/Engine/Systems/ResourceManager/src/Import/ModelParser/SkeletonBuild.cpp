@@ -1,10 +1,25 @@
 #include <ResourceManager/Import/ModelParser/SkeletonBuild.h>
 
+#include <algorithm>
 #include <format>
 
 namespace nous::engine::resource_manager
 {
     using animation_system::SkeletonData;
+
+    void ApplyAnimatedFallback(std::vector<RawBoneNode>& nodes,
+                               const std::unordered_set<std::string>& animatedNames)
+    {
+        // Bones win outright. See the header for why this gate exists rather than
+        // simply OR-ing the two signals together.
+        const bool hasAnyBone = std::ranges::any_of(nodes,
+            [](const RawBoneNode& node) { return node.isBone; });
+
+        if (hasAnyBone) return;
+
+        for (RawBoneNode& node : nodes)
+            node.isAnimated = animatedNames.contains(node.name);
+    }
 
     std::expected<SkeletonData, std::string> BuildSkeleton(const std::vector<RawBoneNode>& nodes)
     {
@@ -33,7 +48,10 @@ namespace nous::engine::resource_manager
         // parent, so walking backwards means a node is visited only after every
         // descendant that could have marked it already has.
         std::vector<bool> keep(count, false);
-        for (size_t i = 0; i < count; ++i) keep[i] = nodes[i].isBone;
+
+        // isAnimated only ever survives ApplyAnimatedFallback's "no bones exist"
+        // gate, so this OR cannot add a joint to a rig that already has real bones.
+        for (size_t i = 0; i < count; ++i) keep[i] = nodes[i].isBone || nodes[i].isAnimated;
 
         for (size_t i = count; i-- > 0; )
         {
