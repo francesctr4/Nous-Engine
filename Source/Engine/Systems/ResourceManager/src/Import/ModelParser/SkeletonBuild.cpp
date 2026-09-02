@@ -19,6 +19,26 @@ namespace nous::engine::resource_manager
 
         for (RawBoneNode& node : nodes)
             node.isAnimated = animatedNames.contains(node.name);
+
+        // Then propagate DOWN to descendants. BuildSkeleton already keeps ancestors
+        // of a kept node, so between the two the skeleton becomes the whole subtree
+        // SPANNED by the animated nodes rather than just the animated nodes.
+        //
+        // Without this, every joint a clip does not drive is pruned -- and a rig has
+        // plenty. Mixamo's anim-only export animates 52 of its 65 joints; the other
+        // 13 are the "_End" leaf terminators (HeadTop_End, LeftHandThumb4, ...),
+        // which exist in the hierarchy but never move on their own. Dropping them
+        // yields a 53-bone skeleton for a rig the very same file describes as 65,
+        // and the skinned sibling's skeleton would then disagree with it.
+        //
+        // One forward pass suffices because the array is DFS-ordered (parents[i] < i),
+        // so a parent is always finalized before its children are visited.
+        for (size_t i = 0; i < nodes.size(); ++i)
+        {
+            const int parent = nodes[i].parent;
+            if (parent >= 0 && nodes[static_cast<size_t>(parent)].isAnimated)
+                nodes[i].isAnimated = true;
+        }
     }
 
     std::expected<SkeletonData, std::string> BuildSkeleton(const std::vector<RawBoneNode>& nodes)

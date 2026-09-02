@@ -350,9 +350,31 @@ TEST(t_SkeletonBuild, AnimatedNonBonesGetDerivedOffsets)
 
     const auto result = BuildSkeleton(nodes);
     ASSERT_TRUE(result.has_value());
-    ASSERT_EQ(result->BoneCount(), 2u);
+
+    // Root (ancestor), A (animated), B (descendant of A). Prop is neither.
+    ASSERT_EQ(result->BoneCount(), 3u);
 
     // No aiBone offset exists, so "A" gets inverse(globalBind) -- here just the
     // inverse of its own local bind, since Root is identity.
     ExpectMatNear(result->offsets[1], glm::inverse(nodes[1].localBind.ToMatrix()));
+}
+
+// A clip does not drive every joint in its rig. Mixamo's anim-only export animates
+// 52 of its 65 joints -- the other 13 are "_End" leaf terminators that exist in the
+// hierarchy but never move. Keeping only the driven ones produced a 53-bone skeleton
+// for a rig the same file describes as 65, disagreeing with the skinned sibling.
+TEST(t_SkeletonBuild, AnimatedFallbackKeepsUndrivenDescendants)
+{
+    auto nodes = BonelessHierarchy();
+    nodes.push_back(Node("B_End", 2, false));   // leaf under B, never animated
+
+    ApplyAnimatedFallback(nodes, { "A" });
+
+    EXPECT_TRUE(nodes[2].isAnimated);   // B     — descendant of A
+    EXPECT_TRUE(nodes[4].isAnimated);   // B_End — descendant of B
+    EXPECT_FALSE(nodes[3].isAnimated);  // Prop  — a sibling branch, still excluded
+
+    const auto result = BuildSkeleton(nodes);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->names, (std::vector<std::string>{ "Root", "A", "B", "B_End" }));
 }

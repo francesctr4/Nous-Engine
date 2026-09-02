@@ -33,6 +33,7 @@
                            aiProcess_LimitBoneWeights)
 #include "assimp/anim.h"
 #include "assimp/cimport.h"
+#include "assimp/config.h"
 #include "assimp/material.h"
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
@@ -724,7 +725,32 @@ namespace nous::engine::resource_manager
     std::expected<ModelImportData, std::string> ParseModel(const std::string& assetsPath,
                                                            IResourceLoader* resources)
     {
-        const aiScene* scene = aiImportFile(assetsPath.c_str(), ASSIMP_LOAD_FLAGS);
+        // IMPORT_FBX_PRESERVE_PIVOTS = false is REQUIRED, not a tuning knob.
+        //
+        // Assimp's FBX reader otherwise splits every node's transform into a chain
+        // of synthetic nodes named "<Bone>_$AssimpFbx$_Translation", "_Rotation",
+        // "_Scaling", ... and points the animation channels at THOSE. Measured on
+        // Mixamo's 65-bone rig, with pivots preserved:
+        //
+        //   RumbaDancing_WithSkin.fbx    -> 219 bones   (65 real + their pivot chains,
+        //                                                kept as ancestors of a bone)
+        //   RumbaDancing_WithoutSkin.fbx -> 171 bones   (the pivot nodes the 53
+        //                                                channels actually target)
+        //
+        // The same rig, imported as two different skeletons -- which destroys the
+        // property that clip binding relies on, namely that a skinned model and its
+        // anim-only sibling produce identical bone-name lists. It also means every
+        // "bone" in the palette is a fragment of a transform rather than a joint.
+        //
+        // With pivots collapsed, assimp bakes those transforms into the node itself:
+        // 65 nodes, 65 names, channels targeting real bone names, both files equal.
+        aiPropertyStore* props = aiCreatePropertyStore();
+        aiSetImportPropertyInteger(props, AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0);
+
+        const aiScene* scene = aiImportFileExWithProperties(assetsPath.c_str(),
+                                                            ASSIMP_LOAD_FLAGS,
+                                                            nullptr, props);
+        aiReleasePropertyStore(props);
 
         if (!scene)
         {

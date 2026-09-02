@@ -73,8 +73,16 @@ namespace nous::engine::resource_manager
     [[nodiscard]] std::expected<animation_system::SkeletonData, std::string>
     BuildSkeleton(const std::vector<RawBoneNode>& nodes);
 
-    // Marks nodes named by an animation channel as skeleton members -- but ONLY when
-    // the hierarchy contains no real bone at all. THAT GATE IS LOAD-BEARING.
+    // Marks nodes named by an animation channel as skeleton members, PLUS all of
+    // their descendants -- but ONLY when the hierarchy contains no real bone at all.
+    // THAT GATE IS LOAD-BEARING.
+    //
+    // Descendants are included because BuildSkeleton already keeps ancestors, so the
+    // two together make the skeleton the whole subtree SPANNED by the animated
+    // nodes. A clip does not drive every joint in its rig -- Mixamo's anim-only
+    // export animates 52 of 65, the rest being "_End" leaf terminators -- and
+    // keeping only the driven ones produces a skeleton missing joints the file
+    // plainly contains.
     //
     // Applied unconditionally, this promotes any animated non-bone node -- root
     // motion on a geometry node, a prop parented to a hand, an exporter's helper --
