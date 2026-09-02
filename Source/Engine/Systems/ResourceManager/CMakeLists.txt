@@ -63,6 +63,8 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Runtime/ScenePreloader.h
 
         include/${CLASS_NAME}/Types/ResourceType.h
+        include/${CLASS_NAME}/Types/ResourceAnimation/ResourceAnimation.h
+        include/${CLASS_NAME}/Types/ResourceAnimation/ImporterAnimation.h
         include/${CLASS_NAME}/Types/ResourceAudio/ResourceAudio.h
         include/${CLASS_NAME}/Types/ResourceAudioGraph/ResourceAudioGraph.h
         include/${CLASS_NAME}/Types/ResourceAudioGraph/ImporterAudioGraph.h

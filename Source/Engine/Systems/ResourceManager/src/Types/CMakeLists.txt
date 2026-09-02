@@ -6,6 +6,7 @@ target_sources(ResourceManager PRIVATE
         RegisterResourceTypes.cpp
 )
 
+add_subdirectory(ResourceAnimation)
 add_subdirectory(ResourceAudio)
 add_subdirectory(ResourceAudioGraph)
 add_subdirectory(ResourceMaterial)

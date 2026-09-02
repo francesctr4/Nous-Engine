@@ -16,6 +16,7 @@
 #include "Types/ResourceScene/ImporterScene.h"
 #include <ResourceManager/Types/ResourceAudioGraph/ImporterAudioGraph.h>
 #include <ResourceManager/Types/ResourceSkeleton/ImporterSkeleton.h>
+#include <ResourceManager/Types/ResourceAnimation/ImporterAnimation.h>
 
 // Resources
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
@@ -26,6 +27,7 @@
 #include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
+#include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
 
 namespace
 {
@@ -48,6 +50,7 @@ namespace
     // skeleton by NAME at runtime, never through a stored pointer -- so these
     // priorities are inert too, ordered after audio graph for readability.
     constexpr int k_PrioSkeleton   = 8;
+    constexpr int k_PrioAnimation  = 9;
 }
 
 void RegisterResourceTypes(TypeRegistry& registry)
@@ -228,6 +231,28 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceSkeleton>(MemoryTag::RESOURCE_SKELETON, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_SKELETON); };
         d.display.color[0] = 0.95f; d.display.color[1] = 0.75f; d.display.color[2] = 0.20f; d.display.color[3] = 1.0f;
+        registry.Register(std::move(d));
+    }
+
+    // ---------- ANIMATION ----------
+    //
+    // One resource per clip, not one per model: a model with four takes yields four
+    // .nanim siblings, each individually selectable and draggable. The stub records
+    // which source model and which clip name it came from.
+    {
+        TypeDescriptor d;
+        d.type = ResourceType::ANIMATION;
+        d.name = "Animation";
+        d.libraryFolder = "Library/Animations/";
+        d.libraryFixedExtension = "nanim";
+        d.sourceExtensions = { "nanim" };
+        d.libExtPolicy = LibraryExtPolicy::FIXED;
+        d.memoryTag = MemoryTag::RESOURCE_ANIMATION;
+        d.cleanupPriority = k_PrioAnimation;
+        d.SetImporter<ImporterAnimation>();
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceAnimation>(MemoryTag::RESOURCE_ANIMATION, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_ANIMATION); };
+        d.display.color[0] = 0.95f; d.display.color[1] = 0.40f; d.display.color[2] = 0.35f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }
 }
