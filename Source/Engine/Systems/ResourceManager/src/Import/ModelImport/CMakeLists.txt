@@ -11,4 +11,5 @@ set(CLASS_NAME "ModelImport")
 # half, and t_ResourceManager_ModelAssetPlan drives it directly.
 target_sources(ResourceManager PRIVATE
         ModelAssetPlan.cpp
+        ModelImport.cpp
 )

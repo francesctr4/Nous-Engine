@@ -45,7 +45,10 @@ ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, nous::eng
     : Module(eventSystem, jobSystem)
     , mImporterManager(importerManager)
     , mTypeRegistry(&typeRegistry)
-    , m_importPipeline(importerManager, typeRegistry, jobSystem)
+    // `this` as the IResourceLoader: the pipeline forwards it to ParseModel for the
+    // glTF material/texture fan-out. Safe in a member-init list because the pipeline
+    // only stores the pointer -- it is not dereferenced until an import runs.
+    , m_importPipeline(importerManager, typeRegistry, jobSystem, this)
     , m_scenePreloader(this)
     , m_hotReloader(importerManager, typeRegistry, jobSystem)
     , m_subMeshCache(m_table, m_pendingUploads)

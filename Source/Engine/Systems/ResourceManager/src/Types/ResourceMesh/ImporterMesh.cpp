@@ -401,11 +401,11 @@ bool ImporterMesh::Import(const MetaFileData& metaFileData)
     // unit. What is left here is serialization, which is what a mesh importer
     // should have been doing all along.
     //
-    // INTERIM: the parse still happens under a mesh-level name, so this call
-    // discards model.skeleton and model.clips. It moves up into ImportPipeline
-    // together with ImporterSkeleton and ImporterAnimation (spec step 6), at which
-    // point the pipeline parses once and hands each importer its slice via
-    // SaveModel above. This function then goes away.
+    // This is now the FALLBACK path, and it DISCARDS model.skeleton and model.clips.
+    // The normal route is ImportPipeline::Dispatch -> ImportModel, which parses once
+    // and hands each importer its slice (SaveModel above, plus SaveSkeleton and
+    // SaveClip). Anything reaching this function either is not a model file at all
+    // (a .nmesh written back out from procedural geometry) or bypassed Dispatch.
     auto model = ParseModel(metaFileData.assetsPath, m_resources);
 
     if (!model)
