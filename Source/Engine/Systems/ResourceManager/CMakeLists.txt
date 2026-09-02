@@ -72,6 +72,8 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Types/ResourceMesh/ImporterMesh.h
         include/${CLASS_NAME}/Types/ResourceMesh/SubMeshCache.h
         include/${CLASS_NAME}/Types/ResourceShader/ResourceShader.h
+        include/${CLASS_NAME}/Types/ResourceSkeleton/ResourceSkeleton.h
+        include/${CLASS_NAME}/Types/ResourceSkeleton/ImporterSkeleton.h
         include/${CLASS_NAME}/Types/ResourceTexture/ResourceTexture.h
         include/${CLASS_NAME}/Types/ResourceVideo/ResourceVideo.h
 )

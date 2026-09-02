@@ -15,6 +15,7 @@
 #include "Types/ResourceVideo/ImporterVideo.h"
 #include "Types/ResourceScene/ImporterScene.h"
 #include <ResourceManager/Types/ResourceAudioGraph/ImporterAudioGraph.h>
+#include <ResourceManager/Types/ResourceSkeleton/ImporterSkeleton.h>
 
 // Resources
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
@@ -24,6 +25,7 @@
 #include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 #include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
+#include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 
 namespace
 {
@@ -42,6 +44,10 @@ namespace
     // AudioGraph owns no peer-resource pointers (effects are self-contained), so
     // its cleanup priority is inert; ordered after scene for readability.
     constexpr int k_PrioAudioGraph = 7;
+    // Skeletons and clips own no peer-resource pointers -- a clip binds to a
+    // skeleton by NAME at runtime, never through a stored pointer -- so these
+    // priorities are inert too, ordered after audio graph for readability.
+    constexpr int k_PrioSkeleton   = 8;
 }
 
 void RegisterResourceTypes(TypeRegistry& registry)
@@ -200,6 +206,28 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceAudioGraph>(MemoryTag::RESOURCE_AUDIO, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_AUDIO); };
         d.display.color[0] = 0.20f; d.display.color[1] = 0.85f; d.display.color[2] = 0.85f; d.display.color[3] = 1.0f;
+        registry.Register(std::move(d));
+    }
+
+    // ---------- SKELETON ----------
+    //
+    // The .nskel asset is a small JSON stub naming the model it came from; the rig
+    // itself lives in Library/Skeletons/<uid>.nskel as a binary. Same split as
+    // .nmat: light stub in Assets/, heavy data in Library/.
+    {
+        TypeDescriptor d;
+        d.type = ResourceType::SKELETON;
+        d.name = "Skeleton";
+        d.libraryFolder = "Library/Skeletons/";
+        d.libraryFixedExtension = "nskel";
+        d.sourceExtensions = { "nskel" };
+        d.libExtPolicy = LibraryExtPolicy::FIXED;
+        d.memoryTag = MemoryTag::RESOURCE_SKELETON;
+        d.cleanupPriority = k_PrioSkeleton;
+        d.SetImporter<ImporterSkeleton>();
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceSkeleton>(MemoryTag::RESOURCE_SKELETON, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_SKELETON); };
+        d.display.color[0] = 0.95f; d.display.color[1] = 0.75f; d.display.color[2] = 0.20f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }
 }

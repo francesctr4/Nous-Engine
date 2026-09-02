@@ -16,6 +16,8 @@ enum class ResourceType : int8_t
     SCENE,
     VIDEO,
     AUDIO_GRAPH,
+    SKELETON,
+    ANIMATION,
 
     ALL_TYPES
 };
