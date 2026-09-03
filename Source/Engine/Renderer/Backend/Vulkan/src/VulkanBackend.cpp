@@ -616,6 +616,35 @@ bool VulkanBackend::Initialize()
         }
     }
 
+    // ── Create bone line wireframe vertex buffer ─────────────────────────────
+    // A unit segment, origin -> +Y. Every skeleton bone is one instance of it,
+    // scaled to the bone's length and rotated onto its direction, so there is no
+    // geometry to generate here — just the two endpoints.
+    {
+        Vertex3D vBase{}, vTip{};
+        vBase.position = { 0.0f, 0.0f, 0.0f };
+        vTip.position  = { 0.0f, 1.0f, 0.0f };
+        const std::vector<Vertex3D> lineVerts{ vBase, vTip };
+
+        vkContext->boneLineVertexCount = static_cast<uint32_t>(lineVerts.size());
+        const uint64_t bufSize = lineVerts.size() * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufSize,
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->boneLineVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create bone line vertex buffer.");
+        }
+        else
+        {
+            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->boneLineVertexBuffer,
+                0, bufSize, 0, lineVerts.data());
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Bone line vertex buffer created (%u vertices).",
+                vkContext->boneLineVertexCount);
+        }
+    }
+
     // ── Create camera frustum wireframe vertex buffer (dynamic, host-visible) ─
     // Capacity: 8 frustums × 24 vertices (12 edges × 2 endpoints per frustum).
     {
@@ -782,6 +811,13 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->spotLightConeVertexBuffer);
         vkContext->spotLightConeVertexBuffer.handle = VK_NULL_HANDLE;
         vkContext->spotLightConeVertexCount = 0;
+    }
+
+    if (vkContext->boneLineVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->boneLineVertexBuffer);
+        vkContext->boneLineVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->boneLineVertexCount = 0;
     }
 
     // Destroy instance SSBOs.
@@ -3229,6 +3265,23 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
         case WireframeMesh::Cone:
             vertexBuffer = &vkContext->spotLightConeVertexBuffer;
             vertexCount  = vkContext->spotLightConeVertexCount;
+            break;
+        case WireframeMesh::Line:
+            vertexBuffer = &vkContext->boneLineVertexBuffer;
+            vertexCount  = vkContext->boneLineVertexCount;
+            // Thickest of the family: a bone is a single segment with no enclosing
+            // shape to read it against, so at 1.5 a 65-joint rig renders as hairline
+            // scratches. Clamped to 1.0 below when the device lacks wideLines.
+            lineWidth    = 5.0f;
+            break;
+        case WireframeMesh::Joint:
+            // Deliberately the SAME buffer as Sphere -- a joint marker IS a unit
+            // sphere. The separate enum value buys a separate instance vector, not
+            // separate geometry, so joint markers and point-light markers can both
+            // be on screen without one builder overwriting the other's instances.
+            vertexBuffer = &vkContext->pointLightSphereVertexBuffer;
+            vertexCount  = vkContext->pointLightSphereVertexCount;
+            lineWidth    = 2.0f;
             break;
         default:
             return true;

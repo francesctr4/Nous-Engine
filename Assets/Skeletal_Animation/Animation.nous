@@ -1,0 +1,90 @@
+{
+    "name": "Animation",
+    "version": 0.10000000000000001,
+    "GameObjects": [
+        {
+            "uid": 2200853431,
+            "name": "GameObject",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -53.68914794921875,
+                        3.5461454391479492,
+                        0.15039069950580597
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAnimator",
+                    "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
+                    "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
+                    "skeletonUID": 3484759968,
+                    "clipAssetPath": "Assets\/Skeletal_Animation\/Dancing@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/3454383273.nanim",
+                    "clipUID": 3454383273,
+                    "speed": 1,
+                    "loop": true
+                }
+            ]
+        },
+        {
+            "uid": 3943995899,
+            "name": "GameObject2",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        59.646213531494141,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAnimator",
+                    "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
+                    "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
+                    "skeletonUID": 3484759968,
+                    "clipAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/1723749905.nanim",
+                    "clipUID": 1723749905,
+                    "speed": 1,
+                    "loop": true
+                }
+            ]
+        }
+    ]
+}

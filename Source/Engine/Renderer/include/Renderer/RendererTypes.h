@@ -187,6 +187,14 @@ struct CameraFrustumData
  *   Sphere  — point-light position markers and range spheres
  *   Pyramid — directional-light direction indicators
  *   Cone    — spot-light marker and full-angle cones
+ *   Line    — skeleton bones (a unit segment, scaled and oriented per instance)
+ *   Joint   — skeleton joint markers
+ *
+ * NOTE: a value identifies an INSTANCE CHANNEL, and two channels may share the
+ * same geometry. Joint and Sphere both draw the unit sphere; they are separate
+ * values because RendererFrontend keeps exactly one instance vector per value and
+ * SetWireframeInstances REPLACES it, so joints and point-light markers sharing a
+ * value would mean two unrelated builders fighting over one vector.
  */
 enum class WireframeMesh : uint8_t
 {
@@ -194,6 +202,8 @@ enum class WireframeMesh : uint8_t
     Sphere,
     Pyramid,
     Cone,
+    Line,
+    Joint,
 
     COUNT
 };

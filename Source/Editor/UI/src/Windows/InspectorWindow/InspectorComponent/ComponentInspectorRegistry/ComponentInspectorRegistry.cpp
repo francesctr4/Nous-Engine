@@ -30,7 +30,10 @@
 #include <ECS/Component/Types/CAudioSource/CAudioSource.h>
 #include <ECS/Component/Types/CAudioListener/CAudioListener.h>
 #include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
+#include <ECS/Component/Types/CAnimator/CAnimator.h>
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
+#include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
+#include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
 #include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <VideoSystem/AudioExtract/AudioExtract.h>
@@ -562,6 +565,95 @@ static void DrawVideoPlayer(const InspectorCtx& ctx, Component* c)
     ImGui::Unindent();
 }
 
+static void DrawAnimator(const InspectorCtx& ctx, Component* c)
+{
+    auto* cAnimator = static_cast<CAnimator*>(c);
+    ModuleResourceManager* rm = ctx.rm;
+
+    if (!ImGui::CollapsingHeader("Animator", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ImGui::Indent();
+
+    // Returns the dropped asset's path when one matches `ext`, else empty. Same
+    // ASSETS_BROWSER_ITEMS walk the audio slots use, factored out because this
+    // component has two slots taking two different extensions.
+    const auto acceptDrop = [](const char* ext) -> std::string
+    {
+        std::string result;
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+            {
+                const auto* data = static_cast<const char*>(payload->Data);
+                const char* end = data + payload->DataSize;
+                while (data < end)
+                {
+                    std::string path(data);
+                    data += path.size() + 1;
+                    if (std::filesystem::path(path).extension().string() == ext)
+                    {
+                        result = std::move(path);
+                        break;
+                    }
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
+        return result;
+    };
+
+    // Skeleton slot — assignable by dragging a .nskel from the Assets Browser.
+    ImGui::Text("Skeleton:");
+    ImGui::SameLine();
+    ImGui::Button(cAnimator->skeleton ? cAnimator->skeleton->GetName().c_str() : "None",
+                  ImVec2(200.0f, 0.0f));
+    if (const std::string dropped = acceptDrop(".nskel"); !dropped.empty())
+    {
+        if (ResourceBase* r = rm->CreateResource(dropped))
+        {
+            if (cAnimator->skeleton)
+                rm->UnloadResource(cAnimator->skeleton->GetUID());
+            cAnimator->skeleton = down_cast<ResourceSkeleton*>(r);
+        }
+    }
+
+    // Clip slot — assignable by dragging a .nanim from the Assets Browser.
+    ImGui::Spacing();
+    ImGui::Text("Clip:");
+    ImGui::SameLine();
+    ImGui::Button(cAnimator->clip ? cAnimator->clip->GetName().c_str() : "None",
+                  ImVec2(200.0f, 0.0f));
+    if (const std::string dropped = acceptDrop(".nanim"); !dropped.empty())
+    {
+        if (ResourceBase* r = rm->CreateResource(dropped))
+        {
+            if (cAnimator->clip)
+                rm->UnloadResource(cAnimator->clip->GetUID());
+            cAnimator->clip = down_cast<ResourceAnimation*>(r);
+        }
+    }
+
+    ImGui::Spacing();
+    ImGui::DragFloat("Speed", &cAnimator->speed, 0.01f, -4.0f, 4.0f);
+    ImGui::Checkbox("Loop", &cAnimator->loop);
+
+    // What the bind actually produced. This is the readout that says WHY nothing
+    // is dancing: a clip binds to a skeleton by bone NAME, so a mismatched pair
+    // shows plausible counts here and still animates nothing.
+    ImGui::Spacing();
+    if (cAnimator->skeleton)
+        ImGui::Text("Bones: %zu", cAnimator->skeleton->skeleton.BoneCount());
+    if (cAnimator->clip)
+        ImGui::Text("Duration: %.2f s   Channels: %zu",
+                    cAnimator->clip->clip.duration,
+                    cAnimator->clip->clip.ChannelCount());
+    if (!cAnimator->IsBound())
+        ImGui::TextDisabled("Not bound — assign a skeleton and a clip.");
+
+    ImGui::Unindent();
+}
+
 static const ComponentUI k_ui[] = {
     {"CTransform", "Transform", false, &DrawTransform},
     {"CMesh",      "Mesh",      true,  &DrawMesh},
@@ -572,6 +664,7 @@ static const ComponentUI k_ui[] = {
     {"CAudioSource",    "Audio Source",    true,  &DrawAudioSource},
     {"CAudioListener",  "Audio Listener",  true,  &DrawAudioListener},
     {"CVideoPlayer",    "Video Player",    true,  &DrawVideoPlayer},
+    {"CAnimator",       "Animator",        true,  &DrawAnimator},
 };
 
 const ComponentUI* FindComponentUI(std::string_view typeName)

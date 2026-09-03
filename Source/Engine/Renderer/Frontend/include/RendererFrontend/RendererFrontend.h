@@ -188,6 +188,10 @@ public:
 	// computation in ModuleRenderer3D and the GPU draw calls entirely.
 	bool showBoundingBoxes = true;
 
+	// Toggle the skeleton bone-line overlay drawn for each CAnimator. Same deal:
+	// when false, ModuleRenderer3D skips the CPU build and emits no instances.
+	bool showSkeletons = true;
+
 	// ---------------------------------------------------------------------
 	// Camera Frustums
 	// ---------------------------------------------------------------------

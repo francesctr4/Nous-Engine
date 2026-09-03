@@ -5,6 +5,10 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+// glm::rotation lives in a gtx/ header. Repo convention: the define goes
+// immediately above the include and ONLY in a .cpp, never a header.
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
 #include <cmath>
 #include <ModuleWindow/ModuleWindow.h>
 #include <ModuleCamera3D/ModuleCamera3D.h>
@@ -23,7 +27,9 @@
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/Component/Types/CCamera/CCamera.h>
 #include <ECS/Component/Types/CLight/CLight.h>
+#include <ECS/Component/Types/CAnimator/CAnimator.h>
 #include <ECS/ECSInternalComponents.h>
+#include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 
 #include <MemoryManager/MemoryManager.h>
 #include <EventSystem/EventSystem.h>
@@ -375,6 +381,8 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Sphere, {});
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Pyramid, {});
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Cone, {});
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Line, {});
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Joint, {});
 		mRendererFrontend->SetCameraFrustums({});
 	}
 
@@ -676,6 +684,95 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Pyramid, dirLightDebugs);
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Cone, spotLightDebugs);
+	}
+
+	// ── Skeleton debug lines (one instanced segment per bone with a parent) ──────
+	//
+	// Built HERE rather than in an animation module on purpose: ModuleRenderer3D is
+	// allowed to know ECS components, so the lines never cross a Systems/ ->
+	// Modules/ edge. CAnimator keeps its pose internal and this is the only reader.
+	//
+	// CAnimator's globals are MODEL space, so each joint is composed with the
+	// owning object's world matrix before the segment is built.
+	if (m_renderMode == RenderMode::EDITOR && mRendererFrontend->showSkeletons && sceneData.registry)
+	{
+#ifdef _PROFILING
+		ZoneScopedN("BuildSkeletonDebugLines");
+#endif
+		std::vector<WireframeInstance> boneLines;
+		std::vector<WireframeInstance> jointMarkers;
+		std::vector<glm::vec3>         jointWorld;   // reused per animator
+
+		auto animView = sceneData.registry->view<CAnimator, CTransform>();
+		for (auto entity : animView)
+		{
+			const CAnimator&  animator = animView.get<CAnimator>(entity);
+			const auto&       globals  = animator.GetBoneGlobals();
+
+			if (globals.empty() || !animator.skeleton)
+				continue;
+
+			const auto& parents = animator.skeleton->skeleton.parents;
+			if (parents.size() != globals.size())
+				continue;   // slot swapped mid-frame; skip rather than index past the end
+
+			const glm::mat4& world = animView.get<CTransform>(entity).worldMatrix;
+
+			// Column 3 of a bone global IS its translation (w == 1), so this is the
+			// world-space joint position without building a vec4 or multiplying the
+			// whole matrix. Computed once here and read by both the segments and the
+			// joint markers.
+			jointWorld.clear();
+			jointWorld.reserve(globals.size());
+			for (const glm::mat4& g : globals)
+				jointWorld.emplace_back(glm::vec3(world * g[3]));
+
+			float    boneLengthTotal = 0.0f;
+			uint32_t boneLengthCount = 0;
+
+			for (size_t i = 0; i < globals.size(); ++i)
+			{
+				if (parents[i] < 0)
+					continue;   // root bone has no segment to draw
+
+				const glm::vec3& head = jointWorld[static_cast<size_t>(parents[i])];
+				const glm::vec3& tail = jointWorld[i];
+
+				const glm::vec3 delta  = tail - head;
+				const float     length = glm::length(delta);
+				if (length < 1e-6f)
+					continue;   // coincident joints — a _End terminator, or a bad bind
+
+				boneLengthTotal += length;
+				++boneLengthCount;
+
+				boneLines.emplace_back(
+					glm::translate(glm::mat4(1.0f), head) *
+					glm::mat4_cast(glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), delta / length)) *
+					glm::scale(glm::mat4(1.0f), glm::vec3(length)),
+					glm::vec4(0.2f, 1.0f, 0.4f, 1.0f));   // green
+			}
+
+			// Marker size is DERIVED from the rig's own mean bone length, never a
+			// constant: Mixamo exports are in centimetres (hips at y ~= 104) while a
+			// metres-authored model puts them at y ~= 1.04, so any fixed radius is
+			// invisible on one and swallows the rig on the other.
+			if (boneLengthCount == 0)
+				continue;
+
+			const float markerRadius = (boneLengthTotal / static_cast<float>(boneLengthCount)) * 0.12f;
+
+			for (const glm::vec3& joint : jointWorld)
+			{
+				jointMarkers.emplace_back(
+					glm::translate(glm::mat4(1.0f), joint) *
+					glm::scale(glm::mat4(1.0f), glm::vec3(markerRadius)),
+					glm::vec4(1.0f, 0.8f, 0.2f, 1.0f));   // amber
+			}
+		}
+
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Line,  boneLines);
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Joint, jointMarkers);
 	}
 
 	{

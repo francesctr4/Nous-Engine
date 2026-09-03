@@ -344,6 +344,13 @@ struct VulkanContext
     VulkanBuffer spotLightConeVertexBuffer{};
     uint32_t       spotLightConeVertexCount = 0;
 
+    // ── Bone line wireframe (static, shared by every skeleton bone) ──────────────
+    // A unit segment from the origin to +Y (2 endpoints). LINE_LIST. Each bone is
+    // one instance of this, scaled to the bone's length and rotated onto its
+    // direction — so the smallest of the wireframe meshes covers a whole rig.
+    VulkanBuffer boneLineVertexBuffer{};
+    uint32_t       boneLineVertexCount = 0;
+
     // ── Per-frame instance SSBO (model matrices for GPU instancing) ────────────
     // One buffer per frame-in-flight (triple-buffered). Persistently mapped.
     // Layout: mat4[c_maxInstances] — indexed by gl_InstanceIndex in the shader.
