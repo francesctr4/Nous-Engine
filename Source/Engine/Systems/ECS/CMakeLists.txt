@@ -62,6 +62,7 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Component/Component.h
         include/${CLASS_NAME}/Component/ComponentList.h
         include/${CLASS_NAME}/Component/Types/ComponentTypes.h
+        include/${CLASS_NAME}/Component/Types/CAnimator/CAnimator.h
         include/${CLASS_NAME}/Component/Types/CAudioSource/AudioVoice.h
         include/${CLASS_NAME}/Component/Types/CAudioListener/CAudioListener.h
         include/${CLASS_NAME}/Component/Types/CAudioSource/CAudioSource.h
@@ -96,6 +97,11 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         # CAudioSource.h / AudioVoice.h name SoundHandle, AudioBus and
         # IAudioBroker. Headers only: ECS links no AudioSystem objects.
         AudioSystem_headers
+        # CAnimator.h holds AnimInstance, AnimationBinding and Pose BY VALUE, so
+        # the API dir must propagate to anyone including it. Unlike AudioSystem
+        # (handles only), this target links real AnimationSystem objects too --
+        # see the PRIVATE list.
+        AnimationSystem_headers
         # CVideoPlayer.h names VideoFrame and VideoHandle in its public header,
         # so this one is PUBLIC too. Headers only: ECS links no VideoSystem
         # objects either.
@@ -106,6 +112,7 @@ target_link_libraries(${CLASS_NAME} PUBLIC
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE
+        AnimationSystem     # CAnimator.cpp: Advance / Sample / BuildGlobals / CreateBinding
         CameraSystem
         Scripting_headers   # CScript.cpp names IScriptRegistry
         FileSystem

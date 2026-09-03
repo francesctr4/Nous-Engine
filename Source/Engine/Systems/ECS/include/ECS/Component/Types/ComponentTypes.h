@@ -13,6 +13,7 @@
 #include <ECS/Component/Types/CAudioSource/CAudioSource.h>
 #include <ECS/Component/Types/CAudioListener/CAudioListener.h>
 #include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
+#include <ECS/Component/Types/CAnimator/CAnimator.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE single edit site for registering an ECS component type.
@@ -29,7 +30,8 @@ using ComponentTypes = ComponentList<
     CPrefab,
     CAudioSource,
     CAudioListener,
-    CVideoPlayer
+    CVideoPlayer,
+    CAnimator
 >;
 
 // Subset of ComponentTypes whose OnUpdate does real per-frame work. Scene::Update
@@ -42,5 +44,6 @@ using UpdatableComponentTypes = ComponentList<
     CLight,
     CAudioSource,
     CAudioListener,
-    CVideoPlayer
+    CVideoPlayer,
+    CAnimator
 >;

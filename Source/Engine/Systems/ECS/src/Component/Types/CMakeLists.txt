@@ -1,3 +1,4 @@
+add_subdirectory(CAnimator)
 add_subdirectory(CCamera)
 add_subdirectory(CLight)
 add_subdirectory(CMaterial)
