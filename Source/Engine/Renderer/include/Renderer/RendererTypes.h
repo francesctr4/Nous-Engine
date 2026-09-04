@@ -44,16 +44,38 @@ enum class FrameResult : uint8_t
 
 struct GeometryRenderData
 {
-    GeometryRenderData() : objectUID(0), model(1.0f), geometry(nullptr), material(nullptr), color(1.0f) {}
+    GeometryRenderData() : objectUID(0), model(1.0f), geometry(nullptr), material(nullptr), color(1.0f),
+                           palette(nullptr) {}
 
     uint32_t objectUID;
     glm::mat4 model;
     ResourceMesh* geometry;
     ResourceMaterial* material;
     glm::vec4 color;
+
+    // Borrowed bone palette for this frame, owned by the CAnimator on the owning
+    // GameObject's parent. Null means "not skinned".
+    //
+    // ModuleRenderer3D evaluates the full skinned test once — mesh->hasSkinning,
+    // an animator on the parent, and a non-empty palette — and sets this only when
+    // it passes. So GroupGeometries branches on the pointer ALONE and never names
+    // an ECS type, which is what keeps it a pure function and keeps ECS knowledge
+    // at the module layer. Valid for the frame only.
+    const std::vector<glm::mat4>* palette;
 };
 
 static constexpr uint32_t c_maxInstances = 4096;
+
+// Total bone matrices uploadable per pass. 4096 is roughly 62 Mixamo rigs (66 bones)
+// visible simultaneously; past it a character falls back to bind pose with a warning
+// rather than reading past the buffer.
+static constexpr uint32_t c_maxSkinnedBones = 4096;
+
+// Per-instance palette base meaning "this instance is not skinned". The shader
+// checks it BEFORE touching the palette buffer, which is what makes a rigged mesh
+// with no bound animator safe — its weights are non-zero, so a weights-only test
+// would index into a palette that was never uploaded.
+static constexpr uint32_t c_noSkinPalette = 0xFFFFFFFFu;
 
 struct InstancedBatch
 {

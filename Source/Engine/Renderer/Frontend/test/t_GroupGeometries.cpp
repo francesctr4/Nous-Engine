@@ -210,3 +210,134 @@ TEST(GroupGeometries, OverflowAtLimit_BatchInstanceCountReflectsCap)
     ASSERT_EQ(result.batches.size(), 1u);
     EXPECT_EQ(result.batches[0].instanceCount, c_maxInstances);
 }
+
+// =============================================================================
+// Bone palettes
+//
+// The palette is indexed PER INSTANCE (bases[gl_InstanceIndex]) rather than
+// selected per batch. That is the property the whole no-shader-variant approach
+// rests on, and TwoPosesOfTheSameMesh_StillBatchTogether is what pins it.
+// =============================================================================
+
+static std::vector<glm::mat4> MakePalette(size_t boneCount, float marker)
+{
+    std::vector<glm::mat4> p(boneCount, glm::mat4(1.0f));
+    if (!p.empty()) p[0][3][0] = marker;   // identifiable per-character value
+    return p;
+}
+
+TEST(GroupGeometries, UnskinnedGeometry_GetsTheNoSkinSentinel)
+{
+    const std::vector<GeometryRenderData> input = {
+        MakeGRD(MeshPtr(1), MatPtr(10))
+    };
+    const auto result = GroupGeometries(input);
+
+    ASSERT_EQ(result.paletteBases.size(), 1u);
+    EXPECT_EQ(result.paletteBases[0], c_noSkinPalette);
+    EXPECT_TRUE(result.palettes.empty());
+}
+
+// Bases must point at each character's own run inside the concatenated array, and
+// unskinned instances in between must not consume palette slots.
+TEST(GroupGeometries, MixedSkinnedAndStatic_BasesPointAtTheirOwnRun)
+{
+    const auto paletteA = MakePalette(3, 7.0f);
+    const auto paletteB = MakePalette(3, 9.0f);
+
+    std::vector<GeometryRenderData> input = {
+        MakeGRD(MeshPtr(1), MatPtr(10)),   // skinned A
+        MakeGRD(MeshPtr(2), MatPtr(10)),   // static
+        MakeGRD(MeshPtr(3), MatPtr(10)),   // skinned B
+    };
+    input[0].palette = &paletteA;
+    input[2].palette = &paletteB;
+
+    const auto result = GroupGeometries(input);
+
+    ASSERT_EQ(result.paletteBases.size(), 3u);
+    ASSERT_EQ(result.palettes.size(),     6u);
+
+    // Sorted by (material, mesh); all share a material, so mesh order 1,2,3 holds.
+    EXPECT_EQ(result.paletteBases[0], 0u);
+    EXPECT_EQ(result.paletteBases[1], c_noSkinPalette);
+    EXPECT_EQ(result.paletteBases[2], 3u);
+
+    EXPECT_FLOAT_EQ(result.palettes[result.paletteBases[0]][3][0], 7.0f);
+    EXPECT_FLOAT_EQ(result.palettes[result.paletteBases[2]][3][0], 9.0f);
+}
+
+// THE property that makes the no-variant approach work: two characters sharing a
+// mesh and material stay in ONE instanced draw despite different poses. A shader
+// variant would have had to split them.
+TEST(GroupGeometries, TwoPosesOfTheSameMesh_StillBatchTogether)
+{
+    const auto paletteA = MakePalette(2, 1.0f);
+    const auto paletteB = MakePalette(2, 2.0f);
+
+    std::vector<GeometryRenderData> input = {
+        MakeGRD(MeshPtr(1), MatPtr(10)),
+        MakeGRD(MeshPtr(1), MatPtr(10)),
+    };
+    input[0].palette = &paletteA;
+    input[1].palette = &paletteB;
+
+    const auto result = GroupGeometries(input);
+
+    ASSERT_EQ(result.batches.size(), 1u);
+    EXPECT_EQ(result.batches[0].instanceCount, 2u);
+
+    ASSERT_EQ(result.paletteBases.size(), 2u);
+    EXPECT_NE(result.paletteBases[0], result.paletteBases[1]);
+    EXPECT_NE(result.paletteBases[0], c_noSkinPalette);
+    EXPECT_NE(result.paletteBases[1], c_noSkinPalette);
+}
+
+TEST(GroupGeometries, BasePaletteSlot_OffsetsEveryBase)
+{
+    const auto palette = MakePalette(2, 1.0f);
+    std::vector<GeometryRenderData> input = { MakeGRD(MeshPtr(1), MatPtr(10)) };
+    input[0].palette = &palette;
+
+    const auto result = GroupGeometries(input, c_maxInstances, c_maxSkinnedBones);
+
+    ASSERT_EQ(result.paletteBases.size(), 1u);
+    EXPECT_EQ(result.paletteBases[0], c_maxSkinnedBones);
+    EXPECT_EQ(result.batches[0].firstInstance, c_maxInstances);
+}
+
+// Overflow degrades to bind pose, never to a read past the palette buffer.
+TEST(GroupGeometries, BoneOverflow_FallsBackToTheSentinel)
+{
+    const auto big   = MakePalette(c_maxSkinnedBones, 1.0f);
+    const auto small = MakePalette(4, 2.0f);
+
+    std::vector<GeometryRenderData> input = {
+        MakeGRD(MeshPtr(1), MatPtr(10)),
+        MakeGRD(MeshPtr(2), MatPtr(10)),
+    };
+    input[0].palette = &big;      // consumes the whole budget
+    input[1].palette = &small;    // no room left
+
+    const auto result = GroupGeometries(input);
+
+    ASSERT_EQ(result.paletteBases.size(), 2u);
+    EXPECT_EQ(result.paletteBases[0], 0u);
+    EXPECT_EQ(result.paletteBases[1], c_noSkinPalette);
+    EXPECT_LE(result.palettes.size(), static_cast<size_t>(c_maxSkinnedBones));
+}
+
+// An empty palette vector is CAnimator's "not usable" signal (a slot cleared, or a
+// failed build) and must never produce a zero-length run a shader could index into.
+TEST(GroupGeometries, EmptyPalette_TreatedAsUnskinned)
+{
+    const std::vector<glm::mat4> empty;
+    std::vector<GeometryRenderData> input = { MakeGRD(MeshPtr(1), MatPtr(10)) };
+    input[0].palette = &empty;
+
+    const auto result = GroupGeometries(input);
+
+    ASSERT_EQ(result.paletteBases.size(), 1u);
+    EXPECT_EQ(result.paletteBases[0], c_noSkinPalette);
+    EXPECT_TRUE(result.palettes.empty());
+}
