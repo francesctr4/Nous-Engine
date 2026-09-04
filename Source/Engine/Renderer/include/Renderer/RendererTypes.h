@@ -209,7 +209,7 @@ struct CameraFrustumData
  *   Sphere  — point-light position markers and range spheres
  *   Pyramid — directional-light direction indicators
  *   Cone    — spot-light marker and full-angle cones
- *   Line    — skeleton bones (a unit segment, scaled and oriented per instance)
+ *   Bone    — skeleton bones (a Maya-style tapered shard, oriented per instance)
  *   Joint   — skeleton joint markers
  *
  * NOTE: a value identifies an INSTANCE CHANNEL, and two channels may share the
@@ -224,7 +224,7 @@ enum class WireframeMesh : uint8_t
     Sphere,
     Pyramid,
     Cone,
-    Line,
+    Bone,
     Joint,
 
     COUNT

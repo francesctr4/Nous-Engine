@@ -655,32 +655,63 @@ bool VulkanBackend::Initialize()
         }
     }
 
-    // ── Create bone line wireframe vertex buffer ─────────────────────────────
-    // A unit segment, origin -> +Y. Every skeleton bone is one instance of it,
-    // scaled to the bone's length and rotated onto its direction, so there is no
-    // geometry to generate here — just the two endpoints.
+    // ── Create bone shard wireframe vertex buffer ────────────────────────────
+    // Maya's joint display: a tapered four-sided shard running the length of the
+    // bone. A point at the PARENT joint flares out to a square collar a short way
+    // along, then converges to a point at the CHILD joint — which is what makes a
+    // bone's direction readable at a glance, the thing a bare segment cannot do.
+    //
+    // Unit space is origin -> +Y with the collar at unit radius in X/Z. The
+    // instance transform scales Y by the bone's length and X/Z by the rig's marker
+    // radius INDEPENDENTLY, so shard thickness stays constant across the skeleton
+    // instead of making long bones fat. See the builder in ModuleRenderer3D.
     {
-        Vertex3D vBase{}, vTip{};
-        vBase.position = { 0.0f, 0.0f, 0.0f };
-        vTip.position  = { 0.0f, 1.0f, 0.0f };
-        const std::vector<Vertex3D> lineVerts{ vBase, vTip };
+        constexpr float k_CollarY = 0.12f;   // fraction of bone length
 
-        vkContext->boneLineVertexCount = static_cast<uint32_t>(lineVerts.size());
-        const uint64_t bufSize = lineVerts.size() * sizeof(Vertex3D);
+        const glm::vec3 base{ 0.0f, 0.0f, 0.0f };
+        const glm::vec3 tip { 0.0f, 1.0f, 0.0f };
+        const glm::vec3 collar[4] = {
+            {  1.0f, k_CollarY,  0.0f },
+            {  0.0f, k_CollarY,  1.0f },
+            { -1.0f, k_CollarY,  0.0f },
+            {  0.0f, k_CollarY, -1.0f },
+        };
+
+        std::vector<Vertex3D> shardVerts;
+        shardVerts.reserve(24);   // 12 edges × 2 endpoints, LINE_LIST
+
+        const auto edge = [&shardVerts](const glm::vec3& a, const glm::vec3& b)
+        {
+            Vertex3D va{}, vb{};
+            va.position = a;
+            vb.position = b;
+            shardVerts.push_back(va);
+            shardVerts.push_back(vb);
+        };
+
+        for (int i = 0; i < 4; ++i)
+        {
+            edge(base,      collar[i]);              // parent joint -> collar
+            edge(collar[i], tip);                    // collar -> child joint
+            edge(collar[i], collar[(i + 1) % 4]);    // collar ring
+        }
+
+        vkContext->boneShardVertexCount = static_cast<uint32_t>(shardVerts.size());
+        const uint64_t bufSize = shardVerts.size() * sizeof(Vertex3D);
 
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufSize,
             static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            true, &vkContext->boneLineVertexBuffer))
+            true, &vkContext->boneShardVertexBuffer))
         {
-            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create bone line vertex buffer.");
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create bone shard vertex buffer.");
         }
         else
         {
-            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->boneLineVertexBuffer,
-                0, bufSize, 0, lineVerts.data());
-            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Bone line vertex buffer created (%u vertices).",
-                vkContext->boneLineVertexCount);
+            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->boneShardVertexBuffer,
+                0, bufSize, 0, shardVerts.data());
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Bone shard vertex buffer created (%u vertices).",
+                vkContext->boneShardVertexCount);
         }
     }
 
@@ -852,11 +883,11 @@ void VulkanBackend::Shutdown() noexcept
         vkContext->spotLightConeVertexCount = 0;
     }
 
-    if (vkContext->boneLineVertexBuffer.handle != VK_NULL_HANDLE)
+    if (vkContext->boneShardVertexBuffer.handle != VK_NULL_HANDLE)
     {
-        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->boneLineVertexBuffer);
-        vkContext->boneLineVertexBuffer.handle = VK_NULL_HANDLE;
-        vkContext->boneLineVertexCount = 0;
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->boneShardVertexBuffer);
+        vkContext->boneShardVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->boneShardVertexCount = 0;
     }
 
     // Destroy instance + palette SSBOs.
@@ -3385,13 +3416,14 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
             vertexBuffer = &vkContext->spotLightConeVertexBuffer;
             vertexCount  = vkContext->spotLightConeVertexCount;
             break;
-        case WireframeMesh::Line:
-            vertexBuffer = &vkContext->boneLineVertexBuffer;
-            vertexCount  = vkContext->boneLineVertexCount;
-            // Thickest of the family: a bone is a single segment with no enclosing
-            // shape to read it against, so at 1.5 a 65-joint rig renders as hairline
-            // scratches. Clamped to 1.0 below when the device lacks wideLines.
-            lineWidth    = 5.0f;
+        case WireframeMesh::Bone:
+            vertexBuffer = &vkContext->boneShardVertexBuffer;
+            vertexCount  = vkContext->boneShardVertexCount;
+            // Thin on purpose. A bone used to be a single segment with no enclosing
+            // shape to read it against, which is why this was once 5.0; the shard IS
+            // that shape now, and heavy strokes just fill its outline in solid and
+            // hide the taper that makes bone direction readable.
+            lineWidth    = 4.0f;
             drawThroughGeometry = true;
             break;
         case WireframeMesh::Joint:

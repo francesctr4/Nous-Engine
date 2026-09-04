@@ -345,11 +345,13 @@ struct VulkanContext
     uint32_t       spotLightConeVertexCount = 0;
 
     // ── Bone line wireframe (static, shared by every skeleton bone) ──────────────
-    // A unit segment from the origin to +Y (2 endpoints). LINE_LIST. Each bone is
-    // one instance of this, scaled to the bone's length and rotated onto its
-    // direction — so the smallest of the wireframe meshes covers a whole rig.
-    VulkanBuffer boneLineVertexBuffer{};
-    uint32_t       boneLineVertexCount = 0;
+    // Maya-style bone shard: a point at the parent joint flaring to a square collar,
+    // then converging to a point at the child joint. 12 edges / 24 vertices,
+    // LINE_LIST, in unit space (origin -> +Y, collar at unit radius in X/Z). Each
+    // bone is one instance, scaled NON-uniformly — Y by the bone's length, X/Z by
+    // the rig's marker radius — so thickness stays constant across the skeleton.
+    VulkanBuffer boneShardVertexBuffer{};
+    uint32_t       boneShardVertexCount = 0;
 
     // ── Per-frame instance SSBO (model matrices for GPU instancing) ────────────
     // One buffer per frame-in-flight (triple-buffered). Persistently mapped.

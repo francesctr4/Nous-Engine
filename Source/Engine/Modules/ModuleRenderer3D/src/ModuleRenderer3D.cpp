@@ -381,7 +381,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Sphere, {});
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Pyramid, {});
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Cone, {});
-		mRendererFrontend->SetWireframeInstances(WireframeMesh::Line, {});
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Bone, {});
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Joint, {});
 		mRendererFrontend->SetCameraFrustums({});
 	}
@@ -697,11 +697,14 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 	if (m_renderMode == RenderMode::EDITOR && mRendererFrontend->showSkeletons && sceneData.registry)
 	{
 #ifdef _PROFILING
-		ZoneScopedN("BuildSkeletonDebugLines");
+		ZoneScopedN("BuildSkeletonDebugShards");
 #endif
-		std::vector<WireframeInstance> boneLines;
+		std::vector<WireframeInstance> boneShards;
 		std::vector<WireframeInstance> jointMarkers;
 		std::vector<glm::vec3>         jointWorld;   // reused per animator
+		std::vector<float>             boneLength;  // distance to parent, 0 for roots
+		std::vector<float>             jointScale;  // shortest bone touching each joint
+		std::vector<float>             jointRadius; // per-joint marker radius
 
 		auto animView = sceneData.registry->view<CAnimator, CTransform>();
 		for (auto entity : animView)
@@ -727,34 +730,35 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 			for (const glm::mat4& g : globals)
 				jointWorld.emplace_back(glm::vec3(world * g[3]));
 
+			// PASS 1 — measure the rig before drawing any of it.
+			//
+			// The shard's thickness is the rig's marker radius, which needs the MEAN
+			// bone length, which is only known once every bone has been visited. So
+			// measuring has to finish before emitting starts; a single fused loop
+			// would have to guess the radius for the bones it reached first.
+			// Each bone's length is kept so pass 2 does not recompute it.
 			float    boneLengthTotal = 0.0f;
 			uint32_t boneLengthCount = 0;
+
+			boneLength.assign(globals.size(), 0.0f);
 
 			for (size_t i = 0; i < globals.size(); ++i)
 			{
 				if (parents[i] < 0)
 					continue;   // root bone has no segment to draw
 
-				const glm::vec3& head = jointWorld[static_cast<size_t>(parents[i])];
-				const glm::vec3& tail = jointWorld[i];
-
-				const glm::vec3 delta  = tail - head;
-				const float     length = glm::length(delta);
+				const float length = glm::length(
+					jointWorld[i] - jointWorld[static_cast<size_t>(parents[i])]);
 				if (length < 1e-6f)
 					continue;   // coincident joints — a _End terminator, or a bad bind
 
+				boneLength[i]    = length;
 				boneLengthTotal += length;
 				++boneLengthCount;
-
-				boneLines.emplace_back(
-					glm::translate(glm::mat4(1.0f), head) *
-					glm::mat4_cast(glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), delta / length)) *
-					glm::scale(glm::mat4(1.0f), glm::vec3(length)),
-					glm::vec4(0.2f, 1.0f, 0.4f, 1.0f));   // green
 			}
 
-			// Marker size is DERIVED from the rig's own mean bone length, never a
-			// constant: Mixamo exports are in centimetres (hips at y ~= 104) while a
+			// Size is DERIVED from the rig's own mean bone length, never a constant:
+			// Mixamo exports are in centimetres (hips at y ~= 104) while a
 			// metres-authored model puts them at y ~= 1.04, so any fixed radius is
 			// invisible on one and swallows the rig on the other.
 			if (boneLengthCount == 0)
@@ -762,16 +766,85 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 			const float markerRadius = (boneLengthTotal / static_cast<float>(boneLengthCount)) * 0.12f;
 
-			for (const glm::vec3& joint : jointWorld)
+			// PASS 2 — per-joint radii, and the markers that use them directly.
+			//
+			// Size is PER JOINT, scaled by the SHORTEST bone touching that joint. A
+			// Mixamo hand packs ~20 finger joints into the space of one forearm, so
+			// rig-mean markers there overlap into a solid blob that hides the bones
+			// underneath — the densest part of the rig became the least readable,
+			// which is exactly backwards.
+			//
+			// "Shortest touching", not "the bone that arrives": a knuckle is the far
+			// end of the metacarpal spanning the whole palm AND the near end of a tiny
+			// finger bone. Sized by the arriving bone alone it swells to palm scale and
+			// swallows the fingers hanging off it. Every joint that reads as too big is
+			// this shape — wrist, elbow, knuckle — so each bone pulls its PARENT down
+			// as well as sizing its own joint. In uniform regions like the spine the
+			// arriving and leaving bones already match, so nothing moves.
+			jointScale.assign(globals.size(), 0.0f);
+
+			for (size_t i = 0; i < globals.size(); ++i)
 			{
+				const float length = boneLength[i];
+				if (length < 1e-6f)
+					continue;   // root, or a coincident-joint terminator
+
+				const size_t parent = static_cast<size_t>(parents[i]);
+
+				// 0 is the "unset" marker, so the first bone to reach a joint claims it
+				// outright and later ones can only shrink it.
+				jointScale[i]      = (jointScale[i]      < 1e-6f) ? length : glm::min(jointScale[i],      length);
+				jointScale[parent] = (jointScale[parent] < 1e-6f) ? length : glm::min(jointScale[parent], length);
+			}
+
+			// Clamped at both ends: the cap keeps a long spine bone from ballooning
+			// past the rig-wide look, and the floor keeps zero-length _End terminators
+			// visible instead of collapsing them to nothing.
+			jointRadius.assign(globals.size(), markerRadius);
+
+			for (size_t i = 0; i < jointWorld.size(); ++i)
+			{
+				const float ownRadius = (jointScale[i] > 1e-6f)
+					? jointScale[i] * 0.12f
+					: markerRadius;   // isolated joint — no bone at all to measure
+
+				jointRadius[i] = glm::clamp(ownRadius, markerRadius * 0.25f, markerRadius);
+
 				jointMarkers.emplace_back(
-					glm::translate(glm::mat4(1.0f), joint) *
-					glm::scale(glm::mat4(1.0f), glm::vec3(markerRadius)),
+					glm::translate(glm::mat4(1.0f), jointWorld[i]) *
+					glm::scale(glm::mat4(1.0f), glm::vec3(jointRadius[i])),
 					glm::vec4(1.0f, 0.8f, 0.2f, 1.0f));   // amber
+			}
+
+			// PASS 3 — emit the shards, sized to the joints they connect.
+			for (size_t i = 0; i < globals.size(); ++i)
+			{
+				const float length = boneLength[i];
+				if (length < 1e-6f)
+					continue;   // root, or a coincident-joint terminator
+
+				const size_t     parent = static_cast<size_t>(parents[i]);
+				const glm::vec3& head   = jointWorld[parent];
+				const glm::vec3& tail   = jointWorld[i];
+
+				// The collar takes the SMALLER of the two joints it spans, so a shard
+				// can never be wider than either sphere it connects. Taking only its
+				// own end lets a long bone hanging off a small joint flare out past it
+				// — which is the same "fat bones, tiny spheres" mismatch one level down.
+				const float collar = glm::min(jointRadius[i], jointRadius[parent]);
+
+				// NON-UNIFORM on purpose: Y spans the bone, X/Z carry the collar.
+				// Scaling uniformly by length would make a long thigh bone as fat as it
+				// is long while finger bones vanish.
+				boneShards.emplace_back(
+					glm::translate(glm::mat4(1.0f), head) *
+					glm::mat4_cast(glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), (tail - head) / length)) *
+					glm::scale(glm::mat4(1.0f), glm::vec3(collar, length, collar)),
+					glm::vec4(0.2f, 1.0f, 0.4f, 1.0f));   // green
 			}
 		}
 
-		mRendererFrontend->SetWireframeInstances(WireframeMesh::Line,  boneLines);
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Bone,  boneShards);
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Joint, jointMarkers);
 	}
 
