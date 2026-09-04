@@ -9,7 +9,9 @@
 #include <MemoryManager/MemoryManager.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
+#include <cmath>
 #include <vector>
 
 using nous::engine::animation_system::AnimChannel;
@@ -47,6 +49,53 @@ namespace
     }
 
     float TranslationX(const glm::mat4& m) { return m[3][0]; }
+
+    // A rig whose bind pose is NOT identity: Child sits 2 units above Root, and
+    // offsets are inverse(global bind) -- which is what an importer produces. So
+    // sampling the bind pose must give an identity palette. A rig with identity
+    // bind locals would pass that test for the wrong reason.
+    void MakeOffsetRig(ResourceSkeleton& rig)
+    {
+        auto& s = rig.skeleton;
+        s.names   = { "Root", "Child" };
+        s.parents = { -1, 0 };
+
+        Transform childBind;
+        childBind.position = glm::vec3(0.0f, 2.0f, 0.0f);
+        s.bindLocals = { Transform{}, childBind };
+
+        const glm::mat4 rootGlobal  = glm::mat4(1.0f);
+        const glm::mat4 childGlobal = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f));
+        s.offsets = { glm::inverse(rootGlobal), glm::inverse(childGlobal) };
+
+        s.RebuildLookup();
+    }
+
+    // A 1-second clip that holds `boneName` at the origin. Every other bone is
+    // undriven, so Sample() fills it from bindLocals -- giving a pose identical to
+    // the bind pose.
+    void MakeHoldAtBindClip(ResourceAnimation& anim, const char* boneName)
+    {
+        anim.clip.name     = "HoldAtBind";
+        anim.clip.duration = 1.0f;
+
+        AnimChannel ch;
+        ch.boneName  = boneName;
+        ch.posTimes  = { 0.0f, 1.0f };
+        ch.posValues = { glm::vec3(0.0f), glm::vec3(0.0f) };
+
+        anim.clip.channels = { ch };
+    }
+
+    bool IsIdentity(const glm::mat4& m)
+    {
+        const glm::mat4 identity(1.0f);
+        for (int c = 0; c < 4; ++c)
+            for (int r = 0; r < 4; ++r)
+                if (std::fabs(m[c][r] - identity[c][r]) > 1e-5f)
+                    return false;
+        return true;
+    }
 }
 
 class t_CAnimator : public ::testing::Test
@@ -212,4 +261,73 @@ TEST_F(t_CAnimator, SurvivesPoolRelocation)
         ASSERT_EQ(globals.size(), 2u);
         EXPECT_FLOAT_EQ(TranslationX(globals[1]), 5.0f);
     }
+}
+
+// =============================================================================
+// Bone palette
+//
+// The palette is what GPU skinning consumes: palette[b] takes a vertex from mesh
+// space into that bone's animated place, in MODEL space.
+// =============================================================================
+
+// THE property test. palette[b] = globals[b] * offsets[b], and at the bind pose
+// globals[b] == inverse(offsets[b]), so every matrix is identity. This is the same
+// invariant t_AnimationSystem_Palette pins, restated one layer up -- so a CAnimator
+// that wires BuildPalette wrongly fails here without a renderer in sight.
+TEST_F(t_CAnimator, BindPosePaletteIsIdentity)
+{
+    ResourceSkeleton  rig(1);   MakeOffsetRig(rig);
+    ResourceAnimation anim(2);  MakeHoldAtBindClip(anim, "Root");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clip     = &anim;
+
+    a.OnUpdate(0.5f);
+
+    ASSERT_TRUE(a.IsBound());
+    ASSERT_EQ(a.GetPalette().size(), 2u);
+    EXPECT_TRUE(IsIdentity(a.GetPalette()[0]));
+    EXPECT_TRUE(IsIdentity(a.GetPalette()[1]));
+}
+
+// A driven bone must leave identity, or the test above would also pass against a
+// palette that is never written at all.
+TEST_F(t_CAnimator, DrivenBoneLeavesIdentityInThePalette)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clip     = &anim;
+
+    a.OnUpdate(0.5f);
+
+    ASSERT_EQ(a.GetPalette().size(), 2u);
+    EXPECT_TRUE(IsIdentity(a.GetPalette()[0]));              // undriven root
+    EXPECT_FLOAT_EQ(TranslationX(a.GetPalette()[1]), 5.0f);  // Child, halfway
+}
+
+// The renderer's skinned-geometry predicate is `!GetPalette().empty()`. If a
+// cleared slot left the previous palette in place, every mesh bound to this
+// animator would keep deforming to a pose that no longer has a source.
+TEST_F(t_CAnimator, ClearingASlotEmptiesThePalette)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clip     = &anim;
+    a.OnUpdate(0.5f);
+    ASSERT_FALSE(a.GetPalette().empty());
+
+    a.clip = nullptr;
+    a.OnUpdate(0.5f);
+
+    EXPECT_TRUE(a.GetPalette().empty());
 }

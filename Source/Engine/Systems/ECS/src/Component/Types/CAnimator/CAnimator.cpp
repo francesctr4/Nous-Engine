@@ -35,6 +35,7 @@ void CAnimator::Rebind()
         m_binding = {};
         m_pose    = {};
         m_globals.clear();
+        m_palette.clear();
         m_instance.SetClip(nullptr, 0, nullptr);
         m_boundClip     = 0;
         m_boundSkeleton = 0;
@@ -52,6 +53,7 @@ void CAnimator::Rebind()
     m_pose.skeleton = m_boundSkeleton;
     m_pose.bones.assign(skeleton->skeleton.BoneCount(), anim::Transform{});
     m_globals.assign(skeleton->skeleton.BoneCount(), glm::mat4(1.0f));
+    m_palette.assign(skeleton->skeleton.BoneCount(), glm::mat4(1.0f));
 }
 
 // ---------------------------------------------------------------------------
@@ -85,7 +87,20 @@ void CAnimator::OnUpdate(const float deltaTime)
 
     anim::Advance(m_instance, deltaTime);
     anim::Sample(m_instance, skeleton->skeleton, m_boundSkeleton, m_pose);
-    anim::BuildGlobals(skeleton->skeleton, m_pose, m_globals);
+
+    // Guarded rather than fire-and-forget: on failure the globals are stale, and a
+    // palette built from them would deform the mesh to a pose that was never
+    // sampled. Clearing is what makes the renderer skip this animator instead --
+    // GetPalette().empty() is its skinned-geometry test.
+    //
+    // rootGlobalInverse is left at its identity default: `offsets` and `globals` are
+    // built in the same node space, so globals[b] * offsets[b] already maps mesh
+    // space to animated model space. See the note on BuildPalette in Palette.h.
+    if (!anim::BuildGlobals(skeleton->skeleton, m_pose, m_globals) ||
+        !anim::BuildPalette(skeleton->skeleton, m_globals, m_palette))
+    {
+        m_palette.clear();
+    }
 }
 
 // ---------------------------------------------------------------------------

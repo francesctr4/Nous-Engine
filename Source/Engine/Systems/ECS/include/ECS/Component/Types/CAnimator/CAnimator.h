@@ -59,6 +59,17 @@ public:
     [[nodiscard]] NOUS_ENGINE_API const std::vector<glm::mat4>& GetBoneGlobals() const
     { return m_globals; }
 
+    // The GPU skinning palette for the current pose: palette[b] takes a vertex from
+    // mesh space into that bone's animated place, in MODEL space. Composed with the
+    // owning GameObject's world matrix to reach world space.
+    //
+    // EMPTY MEANS "NOT USABLE", and the renderer's skinned-geometry test is exactly
+    // `!GetPalette().empty()`. So it is cleared whenever a slot is cleared or the
+    // build fails -- a stale palette would silently deform a mesh to a pose that no
+    // longer has a source, which reads as a skinning bug rather than a binding one.
+    [[nodiscard]] NOUS_ENGINE_API const std::vector<glm::mat4>& GetPalette() const
+    { return m_palette; }
+
     [[nodiscard]] NOUS_ENGINE_API bool IsBound() const
     { return m_boundClip != 0 && m_boundSkeleton != 0; }
 
@@ -71,6 +82,7 @@ private:
     nous::engine::animation_system::AnimationBinding m_binding;
     nous::engine::animation_system::Pose             m_pose;
     std::vector<glm::mat4>                           m_globals;
+    std::vector<glm::mat4>                           m_palette;
 
     // UIDs m_binding was built from; compared against the slots every frame, which
     // is what makes a slot change rebind without an explicit call from the editor.
