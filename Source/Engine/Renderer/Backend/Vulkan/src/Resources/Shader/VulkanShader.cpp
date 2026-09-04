@@ -617,6 +617,40 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
         return false;
     }
 
+    // ── 6a-2. Optional depth-off variant of the main pipeline ─────────────────
+    // Same state as `pipeline` with depth test AND depth write both disabled, so
+    // one shader can draw some instances occluded and others through geometry.
+    // The wireframe debug family uses it: bounding boxes and light gizmos keep
+    // their depth test while the skeleton draws through the character mesh.
+    //
+    // Disabling the WRITE matters as much as the test here. Unlike the outline
+    // variants below — whose base state already has depthWriteEnable == FALSE —
+    // the ordinary base state above writes depth. A pipeline that writes depth it
+    // never tested against would occlude whatever is drawn afterwards, which in
+    // the scene pass means the camera-frustum draw.
+    if (settings.createNoDepthVariant)
+    {
+        VkPipelineDepthStencilStateCreateInfo noDepthCI = depthCI;
+        noDepthCI.depthTestEnable  = VK_FALSE;
+        noDepthCI.depthWriteEnable = VK_FALSE;
+
+        pipelineCI.pDepthStencilState = &noDepthCI;
+
+        vs->noDepthPipeline.pipelineLayout = VK_NULL_HANDLE; // owned by vs->pipeline
+        result = vkCreateGraphicsPipelines(dev, VK_NULL_HANDLE, 1,
+            &pipelineCI, vkContext->allocator, &vs->noDepthPipeline.handle);
+
+        // Restore the depth-aware state for any pipeline built after this one.
+        pipelineCI.pDepthStencilState = &depthCI;
+
+        if (result != VK_SUCCESS)
+        {
+            NOUS_ERROR("[VulkanShader] Failed to create no-depth pipeline (%d).", result);
+            Destroy(vkContext, vs);
+            return false;
+        }
+    }
+
     // ── 6b. Extra outline pipelines (outline shaders only) ────────────────────
     // When createOutlinePipelines is true, `pipeline` above is the depth-aware
     // outline-draw pipeline.  We build three more variants here:
@@ -770,6 +804,11 @@ void NOUS_VulkanShader::Destroy(VulkanContext* vkContext, VulkanShader* vs)
 
     // Pipeline and layout
     // Extra outline pipelines: all share pipelineLayout with main pipeline — only destroy handles.
+    if (vs->noDepthPipeline.handle != VK_NULL_HANDLE)
+    {
+        vkDestroyPipeline(dev, vs->noDepthPipeline.handle, allocator);
+        vs->noDepthPipeline.handle = VK_NULL_HANDLE;
+    }
     if (vs->stencilWriteNoDepthPipeline.handle != VK_NULL_HANDLE)
     {
         vkDestroyPipeline(dev, vs->stencilWriteNoDepthPipeline.handle, allocator);
@@ -837,6 +876,17 @@ void NOUS_VulkanShader::BindStencilWriteNoDepthPipeline(VkCommandBuffer cmdBuffe
 {
     if (vs->stencilWriteNoDepthPipeline.handle != VK_NULL_HANDLE)
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->stencilWriteNoDepthPipeline.handle);
+}
+
+void NOUS_VulkanShader::BindNoDepthPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs)
+{
+    // Fall back to the depth-tested pipeline rather than binding nothing: a caller
+    // that forgot createNoDepthVariant gets an occluded overlay, not a command
+    // buffer with no pipeline bound at draw time.
+    const VkPipeline handle = vs->noDepthPipeline.handle != VK_NULL_HANDLE
+                                ? vs->noDepthPipeline.handle
+                                : vs->pipeline.handle;
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
 }
 
 void NOUS_VulkanShader::UpdateGlobal(VulkanContext* vkContext, VkCommandBuffer cmdBuffer,

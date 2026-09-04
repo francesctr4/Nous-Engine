@@ -45,6 +45,7 @@ struct VulkanShader : public IBackendShader
     VulkanPipeline                     stencilWritePipeline;        // Stencil-write pass — depth-aware  (outline only)
     VulkanPipeline                     outlineNoDepthPipeline;      // Outline-draw pass  — depth OFF    (outline only)
     VulkanPipeline                     stencilWriteNoDepthPipeline; // Stencil-write pass — depth OFF    (outline only)
+    VulkanPipeline                     noDepthPipeline;             // Same as `pipeline`, depth test + write OFF (opt-in)
     VulkanContext*                     vkContext = nullptr;
 
     // ── Global (set=0) resources ──────────────────────────────────────────────
@@ -73,6 +74,14 @@ struct VulkanShaderCreateInfo
     bool createOutlinePipelines = false; // also build stencil-write / outline pipeline variants
     bool useLineTopology        = false; // LINE_LIST topology instead of TRIANGLE_LIST
     bool noDepthTest            = false; // depth test + depth write both OFF (e.g. background)
+
+    // Build an ADDITIONAL depth-off pipeline (`noDepthPipeline`) alongside the
+    // normal depth-tested one, so a single shader can draw some of its instances
+    // occluded and others through geometry. Used by the wireframe debug family:
+    // bounding boxes and light gizmos stay depth-tested while the skeleton draws
+    // through the mesh. Differs from noDepthTest, which makes the ONLY pipeline
+    // depth-off.
+    bool createNoDepthVariant   = false;
 };
 
 // ── NOUS_VulkanShader namespace ───────────────────────────────────────────────
@@ -104,6 +113,14 @@ namespace NOUS_VulkanShader
 
     /** @brief Bind the stencil-write pipeline — depth OFF (outline shaders only). */
     void BindStencilWriteNoDepthPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs);
+
+    /**
+     * @brief Bind the depth-off variant of the main pipeline, so these instances
+     *        draw through geometry. Requires createNoDepthVariant; falls back to
+     *        the depth-tested pipeline when the variant was not built, which
+     *        degrades to an occluded overlay rather than an unbound pipeline.
+     */
+    void BindNoDepthPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs);
 
     /**
      * @brief Upload `data` (size bytes) to the global UBO for `imageIndex`,

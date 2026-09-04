@@ -2628,11 +2628,15 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     //    Uses LINE_LIST topology. Scene viewport only; no game renderpass clone needed.
     if (assetPath.find("BuiltIn.BoundingBoxShader") != std::string::npos)
     {
+        // createNoDepthVariant builds a second, depth-off pipeline on the same shader.
+        // The whole wireframe debug family shares this shader, and the skeleton
+        // channels (Line, Joint) draw through the character mesh while bounding boxes
+        // and light gizmos stay correctly occluded — see DrawWireframeMeshInstances.
         if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
-                                        {.useLineTopology = true}))
+                                        {.useLineTopology = true, .createNoDepthVariant = true}))
             return false;
         vkContext->builtInBoundingBoxShader = shader;
-        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BoundingBoxShader assigned to sceneRenderpass (LINE_LIST).");
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BoundingBoxShader assigned to sceneRenderpass (LINE_LIST, +no-depth variant).");
         return true;
     }
 
@@ -3352,9 +3356,16 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
         return true; // Shader not loaded yet — skip gracefully.
 
     // Map the mesh kind to its shared static vertex buffer + line width.
+    //
+    // drawThroughGeometry selects the shader's depth-off pipeline variant. Only the
+    // skeleton channels set it: a rig lives INSIDE the character mesh, so with depth
+    // testing on it is invisible exactly when it is most wanted. Bounding boxes and
+    // light gizmos stay depth-tested — they describe where something is in space,
+    // and floating them over everything would misreport that.
     const VulkanBuffer* vertexBuffer = nullptr;
     uint32_t vertexCount = 0;
     float  lineWidth   = 1.5f;
+    bool   drawThroughGeometry = false;
     switch (mesh)
     {
         case WireframeMesh::Cube:
@@ -3381,6 +3392,7 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
             // shape to read it against, so at 1.5 a 65-joint rig renders as hairline
             // scratches. Clamped to 1.0 below when the device lacks wideLines.
             lineWidth    = 5.0f;
+            drawThroughGeometry = true;
             break;
         case WireframeMesh::Joint:
             // Deliberately the SAME buffer as Sphere -- a joint marker IS a unit
@@ -3390,6 +3402,7 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
             vertexBuffer = &vkContext->pointLightSphereVertexBuffer;
             vertexCount  = vkContext->pointLightSphereVertexCount;
             lineWidth    = 2.0f;
+            drawThroughGeometry = true;
             break;
         default:
             return true;
@@ -3401,7 +3414,14 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
     const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
     const auto vs = down_cast<VulkanShader*>(rShader->internalData);
 
-    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+    // Both variants belong to the SAME VulkanShader, so they share one pipeline
+    // layout and one set of set=0 descriptor sets — which is why switching between
+    // them costs nothing and leaves the wireframeGlobalSetThisFrame logic below
+    // untouched. A second shader clone would have needed its own set=0 update.
+    if (drawThroughGeometry)
+        NOUS_VulkanShader::BindNoDepthPipeline(cmdBuf->handle, vs);
+    else
+        NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
 
     if (vkContext->wireframeGlobalSetThisFrame)
     {
