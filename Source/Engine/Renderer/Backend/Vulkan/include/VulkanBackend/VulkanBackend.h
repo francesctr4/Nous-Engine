@@ -50,9 +50,13 @@ public:
 
 	bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData) override;
 
-    void UploadInstanceMatrices(const glm::mat4* matrices,
-                                uint32_t count,
-                                uint32_t instanceOffset) override;
+    void UploadInstanceData(const glm::mat4* matrices,
+                            const uint32_t*  paletteBases,
+                            uint32_t         count,
+                            uint32_t         instanceOffset,
+                            const glm::mat4* palettes,
+                            uint32_t         boneCount,
+                            uint32_t         paletteOffset) override;
 
     bool DrawGeometryBatched(RenderpassType renderpassID,
                              const InstancedBatch& batch) override;

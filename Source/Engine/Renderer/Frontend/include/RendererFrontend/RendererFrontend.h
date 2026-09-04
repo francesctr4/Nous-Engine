@@ -249,7 +249,7 @@ private:
 	// Monotonic GPU frame counter — advanced after each successful EndFrame. Previously
 	// lived on the deleted RendererBackend wrapper. mutable so it can tick from const
 	// EndFrame(). Note: it is NOT the instance-SSBO ring index — that is chosen from the
-	// swapchain image index in UploadInstanceMatrices so it can't desync on resize.
+	// swapchain image index in UploadInstanceData so it can't desync on resize.
 	mutable uint64_t mFrameNumber = 0;
 
 	// Cached dependencies — applied to the backend after Create() inside Initialize()

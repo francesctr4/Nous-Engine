@@ -1,5 +1,5 @@
 // Covers Core/FrameSyncPolicy.h -- the frame-loop decisions extracted out of
-// VulkanBackend::BeginFrame / EndFrame / UploadInstanceMatrices.
+// VulkanBackend::BeginFrame / EndFrame / UploadInstanceData.
 //
 // These rules are the ones that have actually gone wrong in this engine, and
 // each of the three had to be diagnosed by running the editor and watching the

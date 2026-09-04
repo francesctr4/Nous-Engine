@@ -357,6 +357,16 @@ struct VulkanContext
     std::array<VulkanBuffer, 3> instanceSSBO{};
     std::array<void*, 3>        instanceSSBOMapped{};
 
+    // ── Per-frame skinning SSBOs ───────────────────────────────────────────────
+    // Parallel to instanceSSBO: one uint palette base per instance
+    // (c_noSkinPalette when unskinned) at set=0 binding 2, and every skinned
+    // instance's bone palette concatenated at binding 3. Same 3-slot ring, same
+    // scene/game split, same imageIndex % 3 selection rule.
+    std::array<VulkanBuffer, 3> paletteBaseSSBO{};
+    std::array<void*, 3>        paletteBaseSSBOMapped{};
+    std::array<VulkanBuffer, 3> paletteSSBO{};
+    std::array<void*, 3>        paletteSSBOMapped{};
+
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;
     std::mutex geometriesMutex;     // guards slot scan + ID assignment in CreateGeometry/DestroyGeometry

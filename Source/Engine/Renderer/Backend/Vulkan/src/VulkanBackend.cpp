@@ -352,6 +352,45 @@ bool VulkanBackend::Initialize()
         NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Instance SSBOs created (3 × %llu bytes, scene+game split).", (unsigned long long)ssboSize);
     }
 
+    // ── Palette SSBOs (per-frame, triple-buffered, persistently mapped) ─────────
+    // Same scene/game split as the instance SSBO: scene uses the first half of each,
+    // game the second, so a game-pass upload cannot overwrite scene data the GPU has
+    // not read yet.
+    {
+        const VkDeviceSize baseSize    = 2 * c_maxInstances    * sizeof(uint32_t);
+        const VkDeviceSize paletteSize = 2 * c_maxSkinnedBones * sizeof(glm::mat4);
+
+        for (uint32_t i = 0; i < 3; ++i)
+        {
+            if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, baseSize,
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    true, &vkContext->paletteBaseSSBO[i]))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[Initialize] Failed to create palette base SSBO %u.", i);
+                return false;
+            }
+            vkMapMemory(vkContext->device.logicalDevice,
+                        vkContext->paletteBaseSSBO[i].memory, 0, baseSize, 0,
+                        &vkContext->paletteBaseSSBOMapped[i]);
+
+            if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, paletteSize,
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    true, &vkContext->paletteSSBO[i]))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[Initialize] Failed to create palette SSBO %u.", i);
+                return false;
+            }
+            vkMapMemory(vkContext->device.logicalDevice,
+                        vkContext->paletteSSBO[i].memory, 0, paletteSize, 0,
+                        &vkContext->paletteSSBOMapped[i]);
+        }
+        NOUS_INFO_C(CURRENT_CHANNEL,
+            "[Initialize] Palette SSBOs created (3 × %llu + 3 × %llu bytes, scene+game split).",
+            (unsigned long long)baseSize, (unsigned long long)paletteSize);
+    }
+
     if (vkContext->renderMode == RenderMode::GAME)
     {
         // GAME mode: no editor-only vertex buffers needed.
@@ -820,7 +859,7 @@ void VulkanBackend::Shutdown() noexcept
         vkContext->boneLineVertexCount = 0;
     }
 
-    // Destroy instance SSBOs.
+    // Destroy instance + palette SSBOs.
     for (uint32_t i = 0; i < 3; ++i)
     {
         if (vkContext->instanceSSBO[i].handle != VK_NULL_HANDLE)
@@ -828,6 +867,18 @@ void VulkanBackend::Shutdown() noexcept
             vkUnmapMemory(vkContext->device.logicalDevice, vkContext->instanceSSBO[i].memory);
             vkContext->instanceSSBOMapped[i] = nullptr;
             NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->instanceSSBO[i]);
+        }
+        if (vkContext->paletteBaseSSBO[i].handle != VK_NULL_HANDLE)
+        {
+            vkUnmapMemory(vkContext->device.logicalDevice, vkContext->paletteBaseSSBO[i].memory);
+            vkContext->paletteBaseSSBOMapped[i] = nullptr;
+            NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->paletteBaseSSBO[i]);
+        }
+        if (vkContext->paletteSSBO[i].handle != VK_NULL_HANDLE)
+        {
+            vkUnmapMemory(vkContext->device.logicalDevice, vkContext->paletteSSBO[i].memory);
+            vkContext->paletteSSBOMapped[i] = nullptr;
+            NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->paletteSSBO[i]);
         }
     }
 
@@ -1713,24 +1764,53 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     return true;
 }
 
-void VulkanBackend::UploadInstanceMatrices(const glm::mat4* matrices,
-                                            uint32_t count,
-                                            uint32_t instanceOffset)
+void VulkanBackend::UploadInstanceData(const glm::mat4* matrices,
+                                        const uint32_t*  paletteBases,
+                                        uint32_t         count,
+                                        uint32_t         instanceOffset,
+                                        const glm::mat4* palettes,
+                                        uint32_t         boneCount,
+                                        uint32_t         paletteOffset)
 {
-    if (count == 0 || !matrices) return;
-    const uint32_t capacity  = 2 * c_maxInstances;
-    const uint32_t safeCount = nous::engine::renderer::vulkan::ClampInstanceWriteCount(
-            count, instanceOffset, capacity);
-    if (safeCount == 0) return;
-
-    // Select the SSBO ring slot by swapchain image index, matching the static binding
-    // globalDescriptorSets[i] -> instanceSSBO[i % 3] (WriteInstanceSSBODescriptor). This makes
+    // Select the ring slot by swapchain image index, matching the static binding
+    // globalDescriptorSets[i] -> ...SSBO[i % 3] (WriteGlobalStorageDescriptors). This makes
     // the buffer the draw reads identical to the one we write — unlike indexing by a CPU frame
     // counter, which desyncs from imageIndex after a swapchain recreate (currentFrame resets to 0
     // while the frame counter keeps advancing) and made meshes read stale matrices post-resize.
     const uint32_t slot = nous::engine::renderer::vulkan::ChooseInstanceSSBOSlot(vkContext->imageIndex);
-    auto* base = static_cast<glm::mat4*>(vkContext->instanceSSBOMapped[slot]);
-    std::memcpy(base + instanceOffset, matrices, safeCount * sizeof(glm::mat4));
+
+    if (count > 0 && matrices)
+    {
+        const uint32_t capacity  = 2 * c_maxInstances;
+        const uint32_t safeCount = nous::engine::renderer::vulkan::ClampInstanceWriteCount(
+                count, instanceOffset, capacity);
+        if (safeCount > 0)
+        {
+            auto* base = static_cast<glm::mat4*>(vkContext->instanceSSBOMapped[slot]);
+            std::memcpy(base + instanceOffset, matrices, safeCount * sizeof(glm::mat4));
+
+            // Bases are parallel to the matrices, so they share safeCount by
+            // construction — an instance whose matrix was clamped away must not
+            // keep a palette base pointing at live bone data.
+            if (paletteBases)
+            {
+                auto* bases = static_cast<uint32_t*>(vkContext->paletteBaseSSBOMapped[slot]);
+                std::memcpy(bases + instanceOffset, paletteBases, safeCount * sizeof(uint32_t));
+            }
+        }
+    }
+
+    if (boneCount > 0 && palettes)
+    {
+        const uint32_t paletteCapacity = 2 * c_maxSkinnedBones;
+        const uint32_t safeBones = nous::engine::renderer::vulkan::ClampInstanceWriteCount(
+                boneCount, paletteOffset, paletteCapacity);
+        if (safeBones > 0)
+        {
+            auto* bones = static_cast<glm::mat4*>(vkContext->paletteSSBOMapped[slot]);
+            std::memcpy(bones + paletteOffset, palettes, safeBones * sizeof(glm::mat4));
+        }
+    }
 }
 
 bool VulkanBackend::DrawGeometryBatched(RenderpassType renderpassID,
@@ -2326,50 +2406,78 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
 // ─────────────────────────────── Shaders ─────────────────────────────────
 
 // Returns true if this shader declares the per-frame instance SSBO at set=0 binding=1.
-static bool HasGlobalSSBOBinding(const ResourceShader* shader)
+// True when set=0 declares a storage buffer at `binding`. Per-binding rather than a
+// single "has the SSBO" flag because scenery shaders declare only a subset — and
+// writing a descriptor for a binding a shader does not have is a validation error.
+static bool HasGlobalStorageBinding(const ResourceShader* shader, uint32_t binding)
 {
     auto it = shader->reflection.descriptorSets.find(0);
     if (it == shader->reflection.descriptorSets.end()) return false;
     for (const auto& rb : it->second)
-        if (rb.binding == 1 && rb.type == DescriptorType::StorageBuffer)
+        if (rb.binding == binding && rb.type == DescriptorType::StorageBuffer)
             return true;
     return false;
 }
 
-// Writes the per-frame instance SSBO into set=0 binding=1 of every global descriptor set owned by vs.
+// Writes the three per-frame storage buffers into set=0 of every global descriptor
+// set owned by vs: binding 1 = instance matrices, 2 = per-instance palette bases,
+// 3 = bone palettes. Each is written only if the caller found it in reflection.
+//
 // Must be called after AllocateGlobalResources (which creates globalDescriptorSets)
-// AND after the instanceSSBO buffers are created.
-static void WriteInstanceSSBODescriptor(VulkanContext* vkContext, VulkanShader* vs)
+// AND after the SSBO buffers are created.
+static void WriteGlobalStorageDescriptors(VulkanContext* vkContext, VulkanShader* vs,
+                                          bool hasInstances, bool hasBases, bool hasPalette)
 {
-    const VkDeviceSize ssboSize = 2 * c_maxInstances * sizeof(glm::mat4);
-    const VkDevice     dev      = vkContext->device.logicalDevice;
-    const uint32_t     count    = static_cast<uint32_t>(vs->globalDescriptorSets.size());
+    const VkDeviceSize instanceSize = 2 * c_maxInstances    * sizeof(glm::mat4);
+    const VkDeviceSize baseSize     = 2 * c_maxInstances    * sizeof(uint32_t);
+    const VkDeviceSize paletteSize  = 2 * c_maxSkinnedBones * sizeof(glm::mat4);
+
+    const VkDevice dev   = vkContext->device.logicalDevice;
+    const uint32_t count = static_cast<uint32_t>(vs->globalDescriptorSets.size());
 
     for (uint32_t i = 0; i < count; ++i)
     {
-        VkDescriptorBufferInfo bufInfo{};
-        bufInfo.buffer = vkContext->instanceSSBO[i % 3].handle;
-        bufInfo.offset = 0;
-        bufInfo.range  = ssboSize;
+        VkDescriptorBufferInfo infos[3]{};
+        VkWriteDescriptorSet   writes[3]{};
+        uint32_t               n = 0;
 
-        VkWriteDescriptorSet write{};
-        write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet          = vs->globalDescriptorSets[i];
-        write.dstBinding      = 1;
-        write.dstArrayElement = 0;
-        write.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        write.descriptorCount = 1;
-        write.pBufferInfo     = &bufInfo;
+        const auto push = [&](uint32_t binding, VkBuffer buffer, VkDeviceSize range)
+        {
+            infos[n].buffer = buffer;
+            infos[n].offset = 0;
+            infos[n].range  = range;
 
-        vkUpdateDescriptorSets(dev, 1, &write, 0, nullptr);
+            writes[n].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writes[n].dstSet          = vs->globalDescriptorSets[i];
+            writes[n].dstBinding      = binding;
+            writes[n].dstArrayElement = 0;
+            writes[n].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writes[n].descriptorCount = 1;
+            writes[n].pBufferInfo     = &infos[n];
+            ++n;
+        };
+
+        if (hasInstances) push(1, vkContext->instanceSSBO[i % 3].handle,    instanceSize);
+        if (hasBases)     push(2, vkContext->paletteBaseSSBO[i % 3].handle, baseSize);
+        if (hasPalette)   push(3, vkContext->paletteSSBO[i % 3].handle,     paletteSize);
+
+        if (n > 0)
+            vkUpdateDescriptorSets(dev, n, writes, 0, nullptr);
     }
 }
 
-// Convenience: checks reflection for SSBO binding then writes if present.
-static void TryWriteInstanceSSBODescriptor(VulkanContext* vkContext, ResourceShader* shader)
+// Convenience: checks reflection per binding, then writes whatever is present.
+static void TryWriteGlobalStorageDescriptors(VulkanContext* vkContext, ResourceShader* shader)
 {
-    if (!shader || !shader->internalData || !HasGlobalSSBOBinding(shader)) return;
-    WriteInstanceSSBODescriptor(vkContext, down_cast<VulkanShader*>(shader->internalData));
+    if (!shader || !shader->internalData) return;
+
+    const bool hasInstances = HasGlobalStorageBinding(shader, 1);
+    const bool hasBases     = HasGlobalStorageBinding(shader, 2);
+    const bool hasPalette   = HasGlobalStorageBinding(shader, 3);
+    if (!hasInstances && !hasBases && !hasPalette) return;
+
+    WriteGlobalStorageDescriptors(vkContext, down_cast<VulkanShader*>(shader->internalData),
+                                  hasInstances, hasBases, hasPalette);
 }
 
 bool VulkanBackend::CreateShader(ResourceShader* shader)
@@ -2394,7 +2502,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
             if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader))
                 return false;
             vkContext->builtInGameShader = shader;
-            TryWriteInstanceSSBODescriptor(vkContext, shader);
+            TryWriteGlobalStorageDescriptors(vkContext, shader);
             NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to gameSwapchainRenderpass (GAME mode).");
         }
         else
@@ -2403,7 +2511,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
             if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader))
                 return false;
             vkContext->builtInMaterialShader = shader;
-            TryWriteInstanceSSBODescriptor(vkContext, shader);
+            TryWriteGlobalStorageDescriptors(vkContext, shader);
             NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to sceneRenderpass.");
 
             auto* gameShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
@@ -2418,7 +2526,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
             else
             {
                 vkContext->builtInGameShader = gameShader;
-                TryWriteInstanceSSBODescriptor(vkContext, gameShader);
+                TryWriteGlobalStorageDescriptors(vkContext, gameShader);
                 NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader clone assigned to gameRenderpass.");
             }
         }
@@ -2535,7 +2643,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         : &vkContext->sceneRenderpass;
     if (!NOUS_VulkanShader::Create(vkContext, targetRenderpass, shader))
         return false;
-    TryWriteInstanceSSBODescriptor(vkContext, shader);
+    TryWriteGlobalStorageDescriptors(vkContext, shader);
     return true;
 }
 
@@ -2640,7 +2748,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (GAME mode).");
                 return false;
             }
-            TryWriteInstanceSSBODescriptor(vkContext, shader);
+            TryWriteGlobalStorageDescriptors(vkContext, shader);
             reacquireMaterialInstances();
             NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] MaterialShader reloaded (GAME mode, gen=%u).", shader->generation);
             return true;
@@ -2652,7 +2760,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (scene).");
             return false;
         }
-        TryWriteInstanceSSBODescriptor(vkContext, shader);
+        TryWriteGlobalStorageDescriptors(vkContext, shader);
 
         // Game clone on gameRenderpass.
         if (vkContext->builtInGameShader)
@@ -2663,7 +2771,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             if (!recreate(vkContext->builtInGameShader, &vkContext->gameRenderpass))
                 NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader game clone.");
             else
-                TryWriteInstanceSSBODescriptor(vkContext, vkContext->builtInGameShader);
+                TryWriteGlobalStorageDescriptors(vkContext, vkContext->builtInGameShader);
         }
 
         // NOTE: builtInPickShader is NOT updated here. It is a separate independent shader
@@ -2777,7 +2885,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
         NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate shader '%s'.", assetPath.c_str());
         return false;
     }
-    TryWriteInstanceSSBODescriptor(vkContext, shader);
+    TryWriteGlobalStorageDescriptors(vkContext, shader);
 
     // Custom shaders own their own instance pool when used as poolOwnerShader for a
     // material (see CreateMaterial: it picks the custom shader's pool if it is

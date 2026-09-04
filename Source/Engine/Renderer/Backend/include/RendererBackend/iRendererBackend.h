@@ -78,13 +78,24 @@ struct IRendererBackend
             RenderpassType renderpassID,
             const GeometryRenderData& renderData) = 0;
 
-    // instanceOffset: index into the SSBO where writing starts.
-    // Scene pass uses offset 0; game pass uses offset c_maxInstances to avoid overwriting scene data.
-    // The target SSBO ring slot is chosen internally from the current swapchain image index,
-    // matching the static per-image descriptor binding (see WriteInstanceSSBODescriptor).
-    virtual void UploadInstanceMatrices(const glm::mat4* matrices,
-                                        uint32_t count,
-                                        uint32_t instanceOffset) = 0;
+    // Uploads one pass's per-instance data: model matrices, the parallel per-instance
+    // bone-palette bases, and the concatenated bone palettes themselves.
+    //
+    // instanceOffset: index into the instance/base SSBOs where writing starts —
+    //   0 for the scene pass, c_maxInstances for the game pass.
+    // paletteOffset:  index into the bone-palette SSBO —
+    //   0 for the scene pass, c_maxSkinnedBones for the game pass.
+    //
+    // The target SSBO ring slot is chosen internally from the current swapchain image
+    // index, matching the static per-image descriptor binding
+    // (see WriteGlobalStorageDescriptors).
+    virtual void UploadInstanceData(const glm::mat4* matrices,
+                                    const uint32_t*  paletteBases,
+                                    uint32_t         count,
+                                    uint32_t         instanceOffset,
+                                    const glm::mat4* palettes,
+                                    uint32_t         boneCount,
+                                    uint32_t         paletteOffset) = 0;
 
     [[nodiscard]] virtual bool DrawGeometryBatched(RenderpassType renderpassID,
                                                     const InstancedBatch& batch) = 0;
