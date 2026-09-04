@@ -457,17 +457,8 @@ bool ImporterMesh::Deserialize(const std::string& libraryPath, ResourceBase* out
             mesh->indices[prevI + i] = sub.indices[i] + static_cast<uint32_t>(prevV);
     }
 
-    // Compute local AABB once from the merged vertex set.
-    if (!mesh->vertices.empty())
-    {
-        mesh->localAABBMin = mesh->vertices[0].position;
-        mesh->localAABBMax = mesh->vertices[0].position;
-        for (const auto& v : mesh->vertices)
-        {
-            mesh->localAABBMin = glm::min(mesh->localAABBMin, v.position);
-            mesh->localAABBMax = glm::max(mesh->localAABBMax, v.position);
-        }
-    }
+    // Local AABB + hasSkinning, in one pass over the merged vertex set.
+    mesh->RecomputeDerivedData();
 
     return true;
 }

@@ -141,16 +141,10 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
     mesh->vertices = std::move(sub.vertices);
     mesh->indices.assign(sub.indices.begin(), sub.indices.end());
 
-    if (!mesh->vertices.empty())
-    {
-        mesh->localAABBMin = mesh->vertices[0].position;
-        mesh->localAABBMax = mesh->vertices[0].position;
-        for (const auto& v : mesh->vertices)
-        {
-            mesh->localAABBMin = glm::min(mesh->localAABBMin, v.position);
-            mesh->localAABBMax = glm::max(mesh->localAABBMax, v.position);
-        }
-    }
+    // Local AABB + hasSkinning. This is the path SpawnMeshAsHierarchy uses, so it
+    // produces the per-submesh ResourceMesh that ends up on each CMesh -- and
+    // therefore the one whose hasSkinning the renderer reads.
+    mesh->RecomputeDerivedData();
 
     mesh->SetState(ResourceState::CPU_READY);
 

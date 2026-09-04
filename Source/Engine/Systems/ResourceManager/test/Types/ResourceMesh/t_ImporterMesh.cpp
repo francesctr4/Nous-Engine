@@ -279,3 +279,97 @@ TEST_F(t_ImporterMesh, DeserializeMergesAllSubmeshesIntoSingleMesh)
     EXPECT_EQ(mesh.indices[3], 3u);
     EXPECT_EQ(mesh.indices[4], 4u);
 }
+
+// ─── ResourceMesh::RecomputeDerivedData ───────────────────────────────────────
+//
+// Everything derived from the vertex array lives in one pass: the local AABB and
+// hasSkinning. Two call sites (ImporterMesh::Deserialize and
+// SubMeshCache::BuildAndRegister) used to duplicate the AABB loop; folding them
+// here is what stops the skinning scan becoming a third copy.
+
+// Static geometry writes all-zero bone weights rather than using a second vertex
+// layout (see the Vertex3D note in CLAUDE.md), so all-zero IS the "no influence"
+// encoding -- and it is what tells the renderer to skip the skinning branch.
+TEST(ResourceMeshDerivedData, AllZeroWeights_IsNotSkinned)
+{
+    ResourceMesh mesh;
+    mesh.vertices.resize(3);
+    for (auto& v : mesh.vertices)
+    {
+        v.position    = glm::vec3(0.0f);
+        v.boneWeights = glm::vec4(0.0f);
+    }
+
+    mesh.RecomputeDerivedData();
+
+    EXPECT_FALSE(mesh.hasSkinning);
+}
+
+TEST(ResourceMeshDerivedData, AnyNonZeroWeight_IsSkinned)
+{
+    ResourceMesh mesh;
+    mesh.vertices.resize(3);
+    for (auto& v : mesh.vertices)
+    {
+        v.position    = glm::vec3(0.0f);
+        v.boneWeights = glm::vec4(0.0f);
+    }
+    mesh.vertices[2].boneWeights = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+
+    mesh.RecomputeDerivedData();
+
+    EXPECT_TRUE(mesh.hasSkinning);
+}
+
+// Pins that moving the AABB into RecomputeDerivedData did not change its result.
+TEST(ResourceMeshDerivedData, ComputesLocalAABB)
+{
+    ResourceMesh mesh;
+    mesh.vertices.resize(2);
+    mesh.vertices[0].position    = glm::vec3(-1.0f, 0.0f, 2.0f);
+    mesh.vertices[0].boneWeights = glm::vec4(0.0f);
+    mesh.vertices[1].position    = glm::vec3( 3.0f, 5.0f, -4.0f);
+    mesh.vertices[1].boneWeights = glm::vec4(0.0f);
+
+    mesh.RecomputeDerivedData();
+
+    EXPECT_FLOAT_EQ(mesh.localAABBMin.x, -1.0f);
+    EXPECT_FLOAT_EQ(mesh.localAABBMin.z, -4.0f);
+    EXPECT_FLOAT_EQ(mesh.localAABBMax.y,  5.0f);
+}
+
+// An empty mesh must not read vertices[0].
+TEST(ResourceMeshDerivedData, EmptyMesh_IsSafeAndNotSkinned)
+{
+    ResourceMesh mesh;
+    mesh.RecomputeDerivedData();
+    EXPECT_FALSE(mesh.hasSkinning);
+}
+
+// The round-trip that matters: a skinned mesh written and read back through the
+// real writer must come out flagged, since Deserialize is one of the two paths
+// that has to call RecomputeDerivedData.
+TEST_F(t_ImporterMesh, DeserializeFlagsASkinnedMesh)
+{
+    SubMeshData skinned = MakeSubmesh("Skinned", 3);
+    skinned.vertices[1].boneIDs     = glm::uvec4(0u, 1u, 0u, 0u);
+    skinned.vertices[1].boneWeights = glm::vec4(0.5f, 0.5f, 0.0f, 0.0f);
+    Write({ std::move(skinned) });
+
+    ResourceMesh mesh;
+    ImporterMesh importer;
+    ASSERT_TRUE(importer.Deserialize(m_testFilePath, &mesh));
+
+    EXPECT_TRUE(mesh.hasSkinning);
+}
+
+TEST_F(t_ImporterMesh, DeserializeLeavesAStaticMeshUnflagged)
+{
+    Write({ MakeSubmesh("Static", 3) });
+
+    ResourceMesh mesh;
+    ImporterMesh importer;
+    ASSERT_TRUE(importer.Deserialize(m_testFilePath, &mesh));
+
+    EXPECT_FALSE(mesh.hasSkinning);
+}

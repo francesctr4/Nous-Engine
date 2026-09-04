@@ -1,5 +1,4 @@
-#ifndef RESOURCEMESH_H
-#define RESOURCEMESH_H
+#pragma once
 
 #include <ResourceManager/Core/ResourceBase.h>
 #include <Utils/Math/Vertex.inl>
@@ -32,6 +31,18 @@ public:
 	// AABB cache pass — avoids iterating all vertices per frame.
 	glm::vec3 localAABBMin {0.f};
 	glm::vec3 localAABBMax {0.f};
-};
 
-#endif // RESOURCEMESH_H
+	// True when any vertex carries a non-zero bone weight — i.e. "is this mesh
+	// rigged". Derived at load, never serialized: the mesh binary is a derived
+	// cache, and adding a field would mean bumping the magic and regenerating all
+	// of Library/ for a value that costs one pass over vertices we just read.
+	//
+	// All-zero weights are the "no influence" encoding every static mesh writes,
+	// so the scan is exact rather than a heuristic.
+	bool hasSkinning {false};
+
+	// Recomputes everything derived from `vertices`: the local AABB and
+	// hasSkinning. Call after assigning vertices, from every path that builds a
+	// mesh. Safe on an empty mesh.
+	NOUS_ENGINE_API void RecomputeDerivedData();
+};
