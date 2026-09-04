@@ -6,6 +6,13 @@ layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec3 inColor;
 layout(location = 3) in vec2 inTexCoord;
 
+// Skinning inputs. These need NO C++ change: k_Vertex3DOffsets in VulkanShader.cpp
+// already carries locations 7 and 8, and vertex attributes are built from shader
+// reflection. Static geometry writes all-zero weights, so one Vertex3D and one
+// pipeline serve both skinned and unskinned meshes.
+layout(location = 7) in uvec4 inBoneIDs;
+layout(location = 8) in vec4  inBoneWeights;
+
 // Data Transfer Object
 layout(location = 0) out struct DataTransferObject
 {
@@ -36,12 +43,59 @@ layout(set = 0, binding = 1) readonly buffer InstanceData
     mat4 models[];
 } instanceData;
 
+// Per-instance bone-palette base, parallel to instanceData.models. NO_SKIN means
+// this instance is not skinned.
+layout(set = 0, binding = 2) readonly buffer PaletteBases
+{
+    uint bases[];
+} paletteBases;
+
+// Every skinned instance's bone palette, concatenated. Indexed as
+// bones[base + boneID], which is why two characters sharing a mesh and material
+// can stay in one instanced draw while holding different poses.
+layout(set = 0, binding = 3) readonly buffer BonePalette
+{
+    mat4 bones[];
+} bonePalette;
+
+const uint NO_SKIN = 0xFFFFFFFFu;
+
 void main()
 {
     outDTO.outColor = inColor;
     outDTO.texCoord = inTexCoord;
 
-    gl_Position = globalUBO.projection * globalUBO.view * instanceData.models[gl_InstanceIndex] * vec4(inPosition, 1.0);
+    vec4 position = vec4(inPosition, 1.0);
+
+    // Two guards, covering different failures.
+    //
+    // The SENTINEL covers a rigged mesh whose animator has not bound yet: its
+    // weights are non-zero, so a weights-only test would index into a palette that
+    // was never uploaded.
+    //
+    // The WEIGHT TEST covers an unweighted vertex inside a skinned mesh, which
+    // would otherwise accumulate a zero matrix and collapse to the origin.
+    //
+    // These are the same two rules AnimationSystem's SkinVertices implements, so
+    // the GPU path and the tested CPU reference agree by construction.
+    uint base = paletteBases.bases[gl_InstanceIndex];
+    if (base != NO_SKIN && dot(inBoneWeights, vec4(1.0)) > 0.0)
+    {
+        mat4 skin = inBoneWeights.x * bonePalette.bones[base + inBoneIDs.x]
+                  + inBoneWeights.y * bonePalette.bones[base + inBoneIDs.y]
+                  + inBoneWeights.z * bonePalette.bones[base + inBoneIDs.z]
+                  + inBoneWeights.w * bonePalette.bones[base + inBoneIDs.w];
+        position = skin * position;
+    }
+
+    // NOTE: normals are deliberately NOT skinned. inNormal is declared at location 1
+    // and never read -- this shader is unlit -- so skinning it would be dead code
+    // with no way to observe whether it is correct. It joins picking, the outline
+    // and the debug bounds in the "deformation-aware geometry" follow-up, together
+    // with a normal visualization that makes it verifiable.
+
+    gl_Position = globalUBO.projection * globalUBO.view
+                * instanceData.models[gl_InstanceIndex] * position;
 }
 
 // ------------------------------------------------------------------------------------------------------
