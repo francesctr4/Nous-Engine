@@ -991,6 +991,38 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 		data.model       = transform.worldMatrix;
 		data.geometry    = mesh.mesh;
 
+		// BuildModelHierarchyInto creates exactly one level -- a root GameObject with
+		// no mesh, one child per submesh -- so a skinned mesh's CAnimator is on its
+		// DIRECT parent. A single lookup, never a chain walk.
+		if (mesh.mesh->hasSkinning)
+		{
+			const auto* hierarchy = sceneData.registry->try_get<CHierarchy>(entity);
+			const auto* animator  = (hierarchy && hierarchy->parent != entt::null)
+				? sceneData.registry->try_get<CAnimator>(hierarchy->parent)
+				: nullptr;
+
+			// Both halves are load-bearing: a rigged mesh with no animator must render
+			// statically, and an animator that has not bound yet publishes an empty
+			// palette which must not be mistaken for a pose.
+			if (animator && !animator->GetPalette().empty())
+			{
+				data.palette = &animator->GetPalette();
+
+				// The palette already maps mesh space -> animated MODEL space, so the
+				// only transform left to apply is where the rig sits in the world --
+				// which is the ANIMATOR ROOT's world matrix, not this child's. Using
+				// the child's composes its FBX node transform a second time.
+				//
+				// Mixamo's submesh children are identity, so the wrong version looks
+				// correct and only breaks on a model authored with a real offset.
+				if (const auto* rootTransform =
+						sceneData.registry->try_get<CTransform>(hierarchy->parent))
+				{
+					data.model = rootTransform->worldMatrix;
+				}
+			}
+		}
+
 		if (const auto* mat = sceneData.registry->try_get<CMaterial>(entity))
 			data.material = mat->material;
 

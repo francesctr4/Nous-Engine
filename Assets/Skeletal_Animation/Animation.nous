@@ -85,6 +85,175 @@
                     "loop": true
                 }
             ]
+        },
+        {
+            "uid": 3849404792,
+            "name": "RumbaDancing_WithSkin.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAnimator",
+                    "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
+                    "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
+                    "skeletonUID": 408757248,
+                    "clipAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/1380512761.nanim",
+                    "clipUID": 1380512761,
+                    "speed": 1,
+                    "loop": true
+                }
+            ]
+        },
+        {
+            "uid": 2915032086,
+            "name": "Beta_Surface",
+            "parent": 3849404792,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx",
+                    "libraryPath": "Library\/Meshes\/1080715648.nmesh",
+                    "resourceUID": 132768734,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "",
+                    "libraryPath": "",
+                    "resourceUID": 0
+                }
+            ]
+        },
+        {
+            "uid": 2310863628,
+            "name": "Beta_Joints",
+            "parent": 3849404792,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx",
+                    "libraryPath": "Library\/Meshes\/1080715648.nmesh",
+                    "resourceUID": 3485537162,
+                    "submeshIndex": 1
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "",
+                    "libraryPath": "",
+                    "resourceUID": 0
+                }
+            ]
+        },
+        {
+            "uid": 4037900306,
+            "name": "Main Camera",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        90.484565734863281,
+                        187.09825134277344
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CCamera",
+                    "fov": 60,
+                    "nearPlane": 0.10000000149011612,
+                    "farPlane": 1000,
+                    "aspectRatio": 1.8879055976867676,
+                    "isMainCamera": true
+                }
+            ]
         }
     ]
 }
