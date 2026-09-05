@@ -103,6 +103,13 @@ struct InstancedBatch
     ResourceMaterial* material      = nullptr;
     uint32_t          firstInstance = 0;
     uint32_t          instanceCount = 0;
+
+    // True when ANY instance folded into this batch carries a usable palette. Drives
+    // the "this shader declares no bone palette" warning. ANY rather than ALL: two
+    // characters sharing a mesh and material collapse into one batch, and a batch
+    // holding one skinned instance needs the palette bindings regardless of what
+    // else is in it.
+    bool              hasSkinnedInstances = false;
 };
 
 enum class RenderpassType : uint8_t

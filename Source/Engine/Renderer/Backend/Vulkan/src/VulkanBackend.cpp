@@ -1315,6 +1315,9 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
         }
     }
 
+    // New pass: every shader's set=0 UBO is stale for it.
+    vkContext->globalUpdateStamp++;
+
     NOUS_VulkanCommandBuffer::CommandBufferReset(commandBuffer);
     NOUS_VulkanCommandBuffer::CommandBufferBegin(commandBuffer, false, false, false);
 
@@ -1524,6 +1527,15 @@ bool VulkanBackend::UpdateGlobalWorldState(
 #ifdef _PROFILING
     ZoneScopedN("UpdateGlobalWorldState");
 #endif
+    // Cache before the early-outs: the geometry loop needs this block even in the
+    // frames where the base shader is not ready.
+    const auto passIndex = static_cast<size_t>(renderpassID);
+    if (passIndex < vkContext->passGlobalUBO.size())
+    {
+        vkContext->passGlobalUBO[passIndex]      = globalUBO;
+        vkContext->passGlobalUBOValid[passIndex] = true;
+    }
+
     const ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
         ? vkContext->builtInGameShader
         : vkContext->builtInMaterialShader;
@@ -1536,6 +1548,13 @@ bool VulkanBackend::UpdateGlobalWorldState(
     NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
     NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
         renderpassID, vkContext->imageIndex, &globalUBO, sizeof(GlobalUBO));
+
+    // Claim the stamp for the base shader. It has just written -- and bound -- the very
+    // slot the geometry loop is about to reach, with the very block that was cached
+    // above. Without this the loop's first batch would see a stale stamp and update a
+    // set that is already bound in this recording command buffer, which invalidates it
+    // (UNASSIGNED-CoreValidation-DrawState-InvalidCommandBuffer-VkDescriptorSet).
+    vs->lastGlobalStamp = vkContext->globalUpdateStamp;
 
     return true;
 }
@@ -1910,6 +1929,50 @@ bool VulkanBackend::DrawGeometryBatched(RenderpassType renderpassID,
 
     // Bind pipeline.
     NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vsDraw);
+
+    // Each shader binds its OWN set=0, with its OWN pipeline layout. This is what makes
+    // a custom shader's set=0 layout its own business: it used to inherit whatever
+    // UpdateGlobalWorldState left bound, which is only valid while the layouts are
+    // identical -- and no custom shader matches MaterialShader's four bindings.
+    const auto     passIndex  = static_cast<size_t>(renderpassID);
+    const uint32_t globalSlot = NOUS_VulkanShader::GlobalSlot(
+        vsDraw, renderpassID, vkContext->imageIndex);
+
+    bool globalBound = false;
+
+    if (vsDraw->lastGlobalStamp != vkContext->globalUpdateStamp &&
+        passIndex < vkContext->passGlobalUBO.size() &&
+        vkContext->passGlobalUBOValid[passIndex])
+    {
+        // First draw with this shader in this pass: write the UBO (which also binds).
+        // Re-updating a set already bound in a recording command buffer invalidates
+        // the buffer, so this happens once per shader per pass and never per draw.
+        NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vsDraw,
+            renderpassID, vkContext->imageIndex,
+            &vkContext->passGlobalUBO[passIndex], sizeof(GlobalUBO));
+        vsDraw->lastGlobalStamp = vkContext->globalUpdateStamp;
+        globalBound = true;
+    }
+
+    // NOT an `else`: the branch above is also skipped when the pass has no cached UBO
+    // yet, and in that case set 0 still has to be bound or this draw reads whatever the
+    // previous shader left there. Rebinding per draw is required anyway -- another
+    // shader's draw in between replaces set 0.
+    if (!globalBound && globalSlot < vsDraw->globalDescriptorSets.size())
+    {
+        vkCmdBindDescriptorSets(commandBuffer->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vsDraw->pipeline.pipelineLayout, 0, 1,
+            &vsDraw->globalDescriptorSets[globalSlot], 0, nullptr);
+    }
+
+    if (batch.hasSkinnedInstances && !vsDraw->supportsSkinning && !vsDraw->warnedMissingSkinning)
+    {
+        vsDraw->warnedMissingSkinning = true;
+        NOUS_WARN_C(CURRENT_CHANNEL,
+            "[DrawGeometryBatched] Shader '%s' is drawing a skinned mesh but declares no bone "
+            "palette (set=0 bindings 2 and 3); the mesh renders in bind pose.",
+            drawShader->GetAssetsPath().c_str());
+    }
 
     // Resolve material (same fallback logic as DrawGeometry).
     ResourceMaterial* material = batch.material;
@@ -2549,10 +2612,18 @@ static void TryWriteGlobalStorageDescriptors(VulkanContext* vkContext, ResourceS
     const bool hasInstances = HasGlobalStorageBinding(shader, 1);
     const bool hasBases     = HasGlobalStorageBinding(shader, 2);
     const bool hasPalette   = HasGlobalStorageBinding(shader, 3);
+
+    auto* vs = down_cast<VulkanShader*>(shader->internalData);
+
+    // Recorded even when nothing is written, so a shader declaring no storage bindings
+    // at all still reports supportsSkinning == false rather than keeping a stale value
+    // from before a hot-reload.
+    vs->supportsSkinning      = hasPalette;
+    vs->warnedMissingSkinning = false;
+
     if (!hasInstances && !hasBases && !hasPalette) return;
 
-    WriteGlobalStorageDescriptors(vkContext, down_cast<VulkanShader*>(shader->internalData),
-                                  hasInstances, hasBases, hasPalette);
+    WriteGlobalStorageDescriptors(vkContext, vs, hasInstances, hasBases, hasPalette);
 }
 
 bool VulkanBackend::CreateShader(ResourceShader* shader)

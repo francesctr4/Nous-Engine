@@ -320,6 +320,20 @@ struct VulkanContext
     // inheritance note in iRendererBackend.h.
     bool wireframeGlobalSetThisFrame = false;
 
+    // ── Per-pass global world state ───────────────────────────────────────────
+    // UpdateGlobalWorldState is the only place the GlobalUBO block arrives, but the
+    // geometry loop needs it too now that each shader updates its OWN set=0. Cached
+    // per renderpass rather than passed down, so DrawGeometryBatched's signature --
+    // and IRendererBackend's -- stay unchanged.
+    std::array<GlobalUBO, c_renderpassCount> passGlobalUBO{};
+    std::array<bool,      c_renderpassCount> passGlobalUBOValid{};
+
+    // Monotonic stamp, bumped once per BeginRenderpass. A shader whose lastGlobalStamp
+    // differs needs its set=0 UBO written for this pass; one that matches only needs a
+    // rebind. Monotonic rather than a per-pass bool so scene and game passes in the
+    // same frame never collide.
+    uint32_t globalUpdateStamp = 1;
+
     // ── Bounding box unit-cube wireframe (static, shared for all boxes) ────────
     VulkanBuffer boundingBoxVertexBuffer{};
     uint32_t       boundingBoxVertexCount = 0;

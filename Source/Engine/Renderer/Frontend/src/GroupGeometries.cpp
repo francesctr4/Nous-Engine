@@ -49,19 +49,24 @@ GroupedGeometries GroupGeometries(
         result.matrices.push_back(grd->model);
         accepted.push_back(grd);
 
+        // Same test PackPalettes applies: a null or empty palette is "not skinned".
+        const bool skinned = grd->palette && !grd->palette->empty();
+
         if (!result.batches.empty() &&
             result.batches.back().geometry == grd->geometry &&
             result.batches.back().material == grd->material)
         {
             result.batches.back().instanceCount++;
+            result.batches.back().hasSkinnedInstances |= skinned;
         }
         else
         {
             InstancedBatch batch;
-            batch.geometry      = grd->geometry;
-            batch.material      = grd->material;
-            batch.firstInstance = ssboIndex;
-            batch.instanceCount = 1;
+            batch.geometry            = grd->geometry;
+            batch.material            = grd->material;
+            batch.firstInstance       = ssboIndex;
+            batch.instanceCount       = 1;
+            batch.hasSkinnedInstances = skinned;
             result.batches.push_back(batch);
         }
     }

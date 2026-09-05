@@ -341,3 +341,68 @@ TEST(GroupGeometries, EmptyPalette_TreatedAsUnskinned)
     EXPECT_EQ(result.paletteBases[0], c_noSkinPalette);
     EXPECT_TRUE(result.palettes.empty());
 }
+
+// =============================================================================
+// hasSkinnedInstances — drives the "this shader can't skin" warning
+// =============================================================================
+
+TEST(GroupGeometries, AllStaticInstances_BatchIsNotSkinned)
+{
+    const std::vector<GeometryRenderData> input = {
+        MakeGRD(MeshPtr(1), MatPtr(10)),
+        MakeGRD(MeshPtr(1), MatPtr(10)),
+    };
+    const auto result = GroupGeometries(input);
+
+    ASSERT_EQ(result.batches.size(), 1u);
+    EXPECT_FALSE(result.batches[0].hasSkinnedInstances);
+}
+
+TEST(GroupGeometries, SkinnedInstance_BatchIsSkinned)
+{
+    const std::vector<glm::mat4> palette(3, glm::mat4(1.0f));
+
+    std::vector<GeometryRenderData> input = { MakeGRD(MeshPtr(1), MatPtr(10)) };
+    input[0].palette = &palette;
+
+    const auto result = GroupGeometries(input);
+
+    ASSERT_EQ(result.batches.size(), 1u);
+    EXPECT_TRUE(result.batches[0].hasSkinnedInstances);
+}
+
+// ANY, not ALL. Instancing deliberately collapses differently-posed characters into
+// one batch, so a batch holding one skinned and one static instance still needs the
+// palette bindings — reporting false here would suppress the warning for exactly the
+// case that renders half the batch wrong.
+TEST(GroupGeometries, MixedSkinnedAndStaticInSameBatch_BatchIsSkinned)
+{
+    const std::vector<glm::mat4> palette(3, glm::mat4(1.0f));
+
+    std::vector<GeometryRenderData> input = {
+        MakeGRD(MeshPtr(1), MatPtr(10)),
+        MakeGRD(MeshPtr(1), MatPtr(10)),
+    };
+    input[1].palette = &palette;
+
+    const auto result = GroupGeometries(input);
+
+    ASSERT_EQ(result.batches.size(), 1u);
+    EXPECT_EQ(result.batches[0].instanceCount, 2u);
+    EXPECT_TRUE(result.batches[0].hasSkinnedInstances);
+}
+
+// An empty palette is CAnimator's "no usable pose" signal and must not count as
+// skinned, or a just-created animator makes every shader warn.
+TEST(GroupGeometries, EmptyPalette_BatchIsNotSkinned)
+{
+    const std::vector<glm::mat4> empty;
+
+    std::vector<GeometryRenderData> input = { MakeGRD(MeshPtr(1), MatPtr(10)) };
+    input[0].palette = &empty;
+
+    const auto result = GroupGeometries(input);
+
+    ASSERT_EQ(result.batches.size(), 1u);
+    EXPECT_FALSE(result.batches[0].hasSkinnedInstances);
+}

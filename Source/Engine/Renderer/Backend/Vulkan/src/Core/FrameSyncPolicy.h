@@ -28,9 +28,13 @@ namespace nous::engine::renderer::vulkan
     //
     // The slot MUST be derived from the swapchain image index, not from a CPU
     // frame counter. It has to match the static binding made once at shader
-    // create time -- globalDescriptorSets[i] -> instanceSSBO[i % kInstanceSSBORingSize]
-    // (WriteInstanceSSBODescriptor) -- so that the buffer a draw READS is the one
+    // create time -- GlobalSlot(vs, pass, image) -> instanceSSBO[image % kInstanceSSBORingSize]
+    // (WriteGlobalStorageDescriptors) -- so that the buffer a draw READS is the one
     // this frame WROTE.
+    //
+    // Note the ring follows the IMAGE, never the flat global slot. Global set=0
+    // resources are allocated per (renderpass, image), so a flat index encodes the
+    // pass too and `flatSlot % 3` would silently pick another pass's buffer.
     //
     // Why not a frame counter: RecreateSwapChain resets currentFrame to 0 while a
     // monotonic frame counter keeps advancing, so after any resize the write slot

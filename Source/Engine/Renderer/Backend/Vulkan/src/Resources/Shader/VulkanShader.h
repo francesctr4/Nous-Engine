@@ -64,6 +64,20 @@ struct VulkanShader : public IBackendShader
     uint32_t                     globalUBOStride  = 0; // bytes for the set=0 UBO (from reflection)
     uint32_t                     globalImageCount = 0; // swapchain images this shader was built for
 
+    // Last vkContext->globalUpdateStamp this shader's set=0 UBO was written for.
+    // 0 means "never", and the context counter starts at 1 so the first draw always
+    // updates.
+    uint32_t                     lastGlobalStamp = 0;
+
+    // True when set=0 declares the bone palette (binding 3). Derived once from
+    // reflection at create time; a shader without it renders skinned meshes in bind
+    // pose and warns once.
+    bool                         supportsSkinning = false;
+
+    // Set after that warning fires, so it is once per shader rather than once per
+    // frame -- a 60 Hz log flood is the same as no warning.
+    bool                         warnedMissingSkinning = false;
+
     // ── Instance (set=1) resources ────────────────────────────────────────────
     VkDescriptorPool             instancePool = VK_NULL_HANDLE;
     VulkanBuffer                 instanceUBOBuffer;      // shared; stride * MAX_INSTANCE_COUNT

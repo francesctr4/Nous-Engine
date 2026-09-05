@@ -58,7 +58,8 @@ TEST(t_FrameSyncPolicy, SlotIsAlwaysInsideTheRing)
 TEST(t_FrameSyncPolicy, SlotAgreesWithTheStaticDescriptorBinding)
 {
     // The binding made once at shader-create time is
-    // globalDescriptorSets[i] -> instanceSSBO[i % kInstanceSSBORingSize].
+    // GlobalSlot(vs, pass, image) -> instanceSSBO[image % kInstanceSSBORingSize]:
+    // the ring follows the IMAGE, not the flat per-(pass, image) global slot.
     // Written out independently here: the upload slot and the binding are two
     // pieces of code that must agree, and this is the assertion that they do.
     for (uint32_t i = 0; i < 16; ++i)
