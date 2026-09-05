@@ -54,7 +54,13 @@ static const std::unordered_map<std::string, FileType> extensionToFileType =
     {".mp4",    FileType::VIDEO},
     {".gif",    FileType::GIF},
 
-    {".nafx",   FileType::AUDIO_GRAPH}
+    {".nafx",   FileType::AUDIO_GRAPH},
+
+    // Sibling stubs emitted beside a model by ModelParser: one .nskel for the rig,
+    // one .nanim per clip. They share the model stem, so distinct icons are the
+    // only thing separating them at a glance in the browser.
+    {".nskel",  FileType::SKELETON},
+    {".nanim",  FileType::ANIMATION}
 };
 
 static const std::unordered_map<FileType, const char*> icon_type_glyphs =
@@ -75,6 +81,8 @@ static const std::unordered_map<FileType, const char*> icon_type_glyphs =
     {FileType::VIDEO,    "\xEF\x80\xBD"},   // U+F03D fa-video
     {FileType::GIF,      "\xEF\x80\x88"},   // U+F008 fa-film
     {FileType::AUDIO_GRAPH, "\xEF\x87\x9E"},// U+F1DE fa-sliders
+    {FileType::SKELETON,    "\xEF\x97\x97"},// U+F5D7 fa-bone
+    {FileType::ANIMATION,   "\xEF\x9C\x8C"},// U+F70C fa-running
 };
 
 static const std::unordered_map<FileType, uint32_t> icon_type_overlay_colors =
@@ -95,6 +103,8 @@ static const std::unordered_map<FileType, uint32_t> icon_type_overlay_colors =
     {FileType::VIDEO,    IM_COL32(153,  76, 237, 255)},   // purple — matches the Video registry asset color
     {FileType::GIF,      IM_COL32( 46, 204, 113, 255)},   // emerald — distinct from the purple .mp4 sibling
     {FileType::AUDIO_GRAPH, IM_COL32(51, 217, 217, 255)}, // cyan — matches the AUDIO_GRAPH registry asset color
+    {FileType::SKELETON,    IM_COL32(232, 220, 184, 255)}, // ivory: bone; distinct from META pure white
+    {FileType::ANIMATION,   IM_COL32(244, 114,  92, 255)}, // coral: distinct from its .nskel sibling and SCENE red
 };
 
 static void HelpMarker(const char* desc)
