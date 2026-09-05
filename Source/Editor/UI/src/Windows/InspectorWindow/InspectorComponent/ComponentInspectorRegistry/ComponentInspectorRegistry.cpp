@@ -263,8 +263,14 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
     // Clip slot — assignable by dragging a .wav/.ogg from the Assets Browser.
     ImGui::Text("Clip:");
     ImGui::SameLine();
-    ImGui::Button(cAudioSource->clip ? cAudioSource->clip->GetName().c_str() : "None",
-                  ImVec2(200.0f, 0.0f));
+    // The "##" suffix keeps the ImGui ID unique. ImGui derives a widget's ID from its
+    // LABEL, and an empty slot renders the literal text "None" -- so two empty slots in
+    // one component collide ("2 visible items with conflicting ID"), and so would two
+    // slots holding resources that happen to share a name. InspectorWindow's per-component
+    // PushID(c) scopes components against each other, not slots within one component.
+    std::string clipLabel = cAudioSource->clip ? cAudioSource->clip->GetName() : std::string("None");
+    clipLabel += "##audioClipSlot";
+    ImGui::Button(clipLabel.c_str(), ImVec2(200.0f, 0.0f));
     if (ImGui::BeginDragDropTarget())
     {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
@@ -305,8 +311,9 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
     ImGui::Spacing();
     ImGui::Text("Effect Graph:");
     ImGui::SameLine();
-    ImGui::Button(cAudioSource->effectGraph ? cAudioSource->effectGraph->GetName().c_str() : "None",
-                  ImVec2(200.0f, 0.0f));
+    std::string graphLabel = cAudioSource->effectGraph ? cAudioSource->effectGraph->GetName() : std::string("None");
+    graphLabel += "##audioEffectGraphSlot";
+    ImGui::Button(graphLabel.c_str(), ImVec2(200.0f, 0.0f));
     if (ImGui::BeginDragDropTarget())
     {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
@@ -606,8 +613,14 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
     // Skeleton slot — assignable by dragging a .nskel from the Assets Browser.
     ImGui::Text("Skeleton:");
     ImGui::SameLine();
-    ImGui::Button(cAnimator->skeleton ? cAnimator->skeleton->GetName().c_str() : "None",
-                  ImVec2(200.0f, 0.0f));
+    // The "##" suffix keeps the ImGui ID unique. ImGui derives a widget's ID from its
+    // LABEL, and an empty slot renders the literal text "None" -- so two empty slots in
+    // one component collide ("2 visible items with conflicting ID"), and so would two
+    // slots holding resources that happen to share a name. InspectorWindow's per-component
+    // PushID(c) scopes components against each other, not slots within one component.
+    std::string skeletonLabel = cAnimator->skeleton ? cAnimator->skeleton->GetName() : std::string("None");
+    skeletonLabel += "##animSkeletonSlot";
+    ImGui::Button(skeletonLabel.c_str(), ImVec2(200.0f, 0.0f));
     if (const std::string dropped = acceptDrop(".nskel"); !dropped.empty())
     {
         if (ResourceBase* r = rm->CreateResource(dropped))
@@ -622,8 +635,9 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
     ImGui::Spacing();
     ImGui::Text("Clip:");
     ImGui::SameLine();
-    ImGui::Button(cAnimator->clip ? cAnimator->clip->GetName().c_str() : "None",
-                  ImVec2(200.0f, 0.0f));
+    std::string animClipLabel = cAnimator->clip ? cAnimator->clip->GetName() : std::string("None");
+    animClipLabel += "##animClipSlot";
+    ImGui::Button(animClipLabel.c_str(), ImVec2(200.0f, 0.0f));
     if (const std::string dropped = acceptDrop(".nanim"); !dropped.empty())
     {
         if (ResourceBase* r = rm->CreateResource(dropped))
