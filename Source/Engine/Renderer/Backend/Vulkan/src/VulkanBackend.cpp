@@ -2626,12 +2626,53 @@ static void TryWriteGlobalStorageDescriptors(VulkanContext* vkContext, ResourceS
     WriteGlobalStorageDescriptors(vkContext, vs, hasInstances, hasBases, hasPalette);
 }
 
+// The ONE place a built-in shader's pipeline settings are declared.
+//
+// CreateShader and ReloadShader each dispatch on the same name substrings, and they used
+// to carry their OWN copy of the VulkanShaderCreateInfo. A mismatch between the two does
+// not fail -- the reload simply builds a lesser shader, with no error and no log.
+// BuiltIn.BoundingBoxShader's reload branch had silently lost createNoDepthVariant, which
+// turned the skeleton debug draw's draw-through off: BindNoDepthPipeline falls back to the
+// depth-tested pipeline, so the rig just started rendering inside the character mesh after
+// any Ctrl+R. Both paths now resolve through this table, so the two cannot disagree.
+//
+// The names are not prefixes of one another, so match order is irrelevant.
+struct BuiltInShaderSettings
+{
+    const char*            nameFragment;
+    VulkanShaderCreateInfo createInfo;
+};
+
+static constexpr BuiltInShaderSettings k_builtInShaderSettings[] = {
+    { "BuiltIn.MaterialShader",    {} },
+    { "BuiltIn.PickShader",        { .disableBlending        = true } },
+    { "BuiltIn.OutlineShader",     { .createOutlinePipelines = true } },
+    { "BuiltIn.GridShader",        { .useLineTopology        = true } },
+    { "BuiltIn.BackgroundShader",  { .noDepthTest            = true } },
+    { "BuiltIn.BoundingBoxShader", { .useLineTopology        = true,
+                                     .createNoDepthVariant   = true } },
+};
+
+// Defaults for a user shader, which declares no special pipeline state.
+[[nodiscard]] static VulkanShaderCreateInfo BuiltInSettingsFor(const std::string& assetPath)
+{
+    for (const auto& entry : k_builtInShaderSettings)
+        if (assetPath.find(entry.nameFragment) != std::string::npos)
+            return entry.createInfo;
+
+    return {};
+}
+
 bool VulkanBackend::CreateShader(ResourceShader* shader)
 {
     if (!shader)
         return false;
 
     const std::string assetPath = shader->GetAssetsPath();
+
+    // Pipeline settings come from k_builtInShaderSettings, never from a literal here --
+    // see the table's comment for what a divergence between create and reload costs.
+    const VulkanShaderCreateInfo settings = BuiltInSettingsFor(assetPath);
 
     // ── BuiltIn.MaterialShader → scene renderpass (primary) ───────────────────
     //    Also creates an internal clone for the game renderpass so both viewports
@@ -2645,7 +2686,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         if (vkContext->renderMode == RenderMode::GAME)
         {
             // GAME mode: compile directly against swapchain renderpass; no scene clone needed.
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader))
+            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader, settings))
                 return false;
             vkContext->builtInGameShader = shader;
             TryWriteGlobalStorageDescriptors(vkContext, shader);
@@ -2654,7 +2695,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         else
         {
             // EDITOR mode: primary → sceneRenderpass, clone → gameRenderpass.
-            if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader))
+            if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
                 return false;
             vkContext->builtInMaterialShader = shader;
             TryWriteGlobalStorageDescriptors(vkContext, shader);
@@ -2664,7 +2705,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
             gameShader->stagesData = shader->stagesData;
             gameShader->reflection = shader->reflection;
 
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, gameShader))
+            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, gameShader, settings))
             {
                 NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create game-renderpass variant; game viewport will be unavailable.");
                 NOUS_DELETE(gameShader, MemoryTag::RESOURCE_SHADER);
@@ -2688,7 +2729,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         pickShader->stagesData = shader->stagesData;
         pickShader->reflection = shader->reflection;
 
-        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->pickRenderpass, pickShader, {.disableBlending = true}))
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->pickRenderpass, pickShader, settings))
         {
             NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create BuiltIn.PickShader.");
             NOUS_DELETE(pickShader, MemoryTag::RESOURCE_SHADER);
@@ -2710,8 +2751,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     //    The outline effect is an editor-only feature; no game renderpass clone needed.
     if (assetPath.find("BuiltIn.OutlineShader") != std::string::npos)
     {
-        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
-                                        {.createOutlinePipelines = true}))
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
             return false;
         vkContext->builtInOutlineShader = shader;
 
@@ -2726,8 +2766,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     //    Uses LINE_LIST topology. No game renderpass clone needed.
     if (assetPath.find("BuiltIn.GridShader") != std::string::npos)
     {
-        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
-                                        {.useLineTopology = true}))
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
             return false;
         vkContext->builtInGridShader = shader;
         NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.GridShader assigned to sceneRenderpass (LINE_LIST).");
@@ -2745,8 +2784,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         if (vkContext->renderMode == RenderMode::GAME)
         {
             // GAME mode: compile directly against swapchain renderpass; no scene clone needed.
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader,
-                                            {.noDepthTest = true}))
+            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader, settings))
                 return false;
             vkContext->builtInGameBackgroundShader = shader;
             NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader assigned to gameSwapchainRenderpass (GAME mode).");
@@ -2754,8 +2792,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         else
         {
             // EDITOR mode: primary → sceneRenderpass, clone → gameRenderpass.
-            if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
-                                            {.noDepthTest = true}))
+            if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
                 return false;
             vkContext->builtInSceneBackgroundShader = shader;
             NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader assigned to sceneRenderpass.");
@@ -2764,8 +2801,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
             gameBackgroundShader->stagesData = shader->stagesData;
             gameBackgroundShader->reflection = shader->reflection;
 
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, gameBackgroundShader,
-                                            {.noDepthTest = true}))
+            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, gameBackgroundShader, settings))
             {
                 NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create game-renderpass background variant.");
                 NOUS_DELETE(gameBackgroundShader, MemoryTag::RESOURCE_SHADER);
@@ -2788,8 +2824,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         // The whole wireframe debug family shares this shader, and the skeleton
         // channels (Line, Joint) draw through the character mesh while bounding boxes
         // and light gizmos stay correctly occluded — see DrawWireframeMeshInstances.
-        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
-                                        {.useLineTopology = true, .createNoDepthVariant = true}))
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
             return false;
         vkContext->builtInBoundingBoxShader = shader;
         NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BoundingBoxShader assigned to sceneRenderpass (LINE_LIST, +no-depth variant).");
@@ -2801,7 +2836,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     VulkanRenderpass* targetRenderpass = vkContext->renderMode == RenderMode::GAME
         ? &vkContext->gameSwapchainRenderpass
         : &vkContext->sceneRenderpass;
-    if (!NOUS_VulkanShader::Create(vkContext, targetRenderpass, shader))
+    if (!NOUS_VulkanShader::Create(vkContext, targetRenderpass, shader, settings))
         return false;
     TryWriteGlobalStorageDescriptors(vkContext, shader);
     return true;
@@ -2864,14 +2899,21 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
 
     const std::string& assetPath = shader->GetAssetsPath();
 
+    // Same table CreateShader reads. Resolving here rather than writing a literal per
+    // branch is what makes a create/reload divergence impossible.
+    const VulkanShaderCreateInfo settings = BuiltInSettingsFor(assetPath);
+
     // ── GPU drain ─────────────────────────────────────────────────────────────
     // Called once here; covers all destroy/create work below.
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
     // Helper: destroys existing GPU data on `s` (if any) and recreates it.
     // GPU is already idle — vkDeviceWaitIdle was called above.
+    // No default argument for createInfo, deliberately: an omitted one silently built a
+    // lesser shader, which is exactly how BoundingBoxShader lost its no-depth variant.
+    // Every caller now names it, so forgetting is a compile error.
     auto recreate = [&](ResourceShader* s, VulkanRenderpass* rp,
-                        const VulkanShaderCreateInfo& settings = {}) -> bool
+                        const VulkanShaderCreateInfo& createInfo) -> bool
     {
         if (s->internalData)
         {
@@ -2879,7 +2921,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             NOUS_VulkanShader::Destroy(vkContext, oldVS);
             s->internalData = nullptr;
         }
-        return NOUS_VulkanShader::Create(vkContext, rp, s, settings);
+        return NOUS_VulkanShader::Create(vkContext, rp, s, createInfo);
     };
 
     // Helper: re-acquires descriptor-set instance slots for every loaded material.
@@ -2918,7 +2960,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     {
         if (vkContext->renderMode == RenderMode::GAME)
         {
-            if (!recreate(shader, &vkContext->gameSwapchainRenderpass))
+            if (!recreate(shader, &vkContext->gameSwapchainRenderpass, settings))
             {
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (GAME mode).");
                 return false;
@@ -2930,7 +2972,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
         }
 
         // EDITOR mode: primary on sceneRenderpass.
-        if (!recreate(shader, &vkContext->sceneRenderpass))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (scene).");
             return false;
@@ -2943,7 +2985,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             vkContext->builtInGameShader->stagesData = shader->stagesData;
             vkContext->builtInGameShader->reflection = shader->reflection;
             vkContext->builtInGameShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInGameShader, &vkContext->gameRenderpass))
+            if (!recreate(vkContext->builtInGameShader, &vkContext->gameRenderpass, settings))
                 NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader game clone.");
             else
                 TryWriteGlobalStorageDescriptors(vkContext, vkContext->builtInGameShader);
@@ -2970,7 +3012,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             vkContext->builtInPickShader->stagesData = shader->stagesData;
             vkContext->builtInPickShader->reflection = shader->reflection;
             vkContext->builtInPickShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInPickShader, &vkContext->pickRenderpass, {.disableBlending = true}))
+            if (!recreate(vkContext->builtInPickShader, &vkContext->pickRenderpass, settings))
             {
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate PickShader.");
                 return false;
@@ -2988,7 +3030,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     // ── BuiltIn.OutlineShader ─────────────────────────────────────────────────
     if (assetPath.find("BuiltIn.OutlineShader") != std::string::npos)
     {
-        if (!recreate(shader, &vkContext->sceneRenderpass, {.createOutlinePipelines = true}))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate OutlineShader.");
             return false;
@@ -3005,7 +3047,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     // ── BuiltIn.GridShader ────────────────────────────────────────────────────
     if (assetPath.find("BuiltIn.GridShader") != std::string::npos)
     {
-        if (!recreate(shader, &vkContext->sceneRenderpass, {.useLineTopology = true}))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate GridShader.");
             return false;
@@ -3019,7 +3061,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     {
         if (vkContext->renderMode == RenderMode::GAME)
         {
-            if (!recreate(shader, &vkContext->gameSwapchainRenderpass, {.noDepthTest = true}))
+            if (!recreate(shader, &vkContext->gameSwapchainRenderpass, settings))
             {
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader (GAME mode).");
                 return false;
@@ -3029,7 +3071,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
         }
 
         // EDITOR mode: primary on sceneRenderpass.
-        if (!recreate(shader, &vkContext->sceneRenderpass, {.noDepthTest = true}))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader (scene).");
             return false;
@@ -3041,7 +3083,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             vkContext->builtInGameBackgroundShader->stagesData = shader->stagesData;
             vkContext->builtInGameBackgroundShader->reflection = shader->reflection;
             vkContext->builtInGameBackgroundShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInGameBackgroundShader, &vkContext->gameRenderpass, {.noDepthTest = true}))
+            if (!recreate(vkContext->builtInGameBackgroundShader, &vkContext->gameRenderpass, settings))
                 NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader game clone.");
         }
 
@@ -3052,12 +3094,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     // ── BuiltIn.BoundingBoxShader ─────────────────────────────────────────────
     if (assetPath.find("BuiltIn.BoundingBoxShader") != std::string::npos)
     {
-        // createNoDepthVariant must MATCH CreateShader's flags. Dropping it here does not
-        // fail: BindNoDepthPipeline falls back to the depth-tested pipeline, so the skeleton
-        // Line/Joint channels silently start being occluded by the character mesh they live
-        // inside -- a reload turning a feature off with no error.
-        if (!recreate(shader, &vkContext->sceneRenderpass,
-                      {.useLineTopology = true, .createNoDepthVariant = true}))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BoundingBoxShader.");
             return false;
@@ -3070,7 +3107,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     VulkanRenderpass* reloadTargetRenderpass = vkContext->renderMode == RenderMode::GAME
         ? &vkContext->gameSwapchainRenderpass
         : &vkContext->sceneRenderpass;
-    if (!recreate(shader, reloadTargetRenderpass))
+    if (!recreate(shader, reloadTargetRenderpass, settings))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate shader '%s'.", assetPath.c_str());
         return false;
