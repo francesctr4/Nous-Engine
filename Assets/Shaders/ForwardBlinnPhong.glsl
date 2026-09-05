@@ -7,6 +7,8 @@ layout(location = 2) in vec3 inColor;
 layout(location = 3) in vec2 inTexCoord;
 // location 4 = smoothNormal (outline only, not used here)
 layout(location = 5) in vec4 inTangent; // xyz = tangent direction, w = bitangent handedness sign (±1)
+layout(location = 7) in uvec4 inBoneIDs;
+layout(location = 8) in vec4  inBoneWeights;
 
 layout(location = 0) out struct DataTransferObject
 {
@@ -41,10 +43,76 @@ layout(set = 0, binding = 1) readonly buffer InstanceData
     mat4 models[];
 } instanceData;
 
+// Optional capability: a shader that omits bindings 2 and 3 is valid, it just renders
+// skinned meshes in bind pose (and the backend warns once).
+layout(set = 0, binding = 2) readonly buffer PaletteBases
+{
+    uint bases[];
+} paletteBases;
+
+layout(set = 0, binding = 3) readonly buffer BonePalette
+{
+    mat4 bones[];
+} bonePalette;
+
+const uint NO_SKIN = 0xFFFFFFFFu;
+
+// Blends this vertex's bone matrices into `skin`, in MODEL space. Returns false -- and
+// leaves `skin` untouched -- when the vertex must not be skinned, so a static mesh pays
+// one branch and no matrix maths.
+//
+// The two guards cover DIFFERENT failures and both are load-bearing:
+//
+// The SENTINEL covers a rigged mesh whose animator has not bound yet: its weights are
+// non-zero, so a weights-only test would index into a palette that was never uploaded.
+//
+// The WEIGHT TEST covers an unweighted vertex inside a skinned mesh, which would
+// otherwise accumulate a zero matrix and collapse to the origin.
+//
+// These are the same two rules AnimationSystem's SkinVertices implements, so the GPU
+// path and the tested CPU reference agree by construction. Keep every copy of this
+// function identical: there is no #include in this shader pipeline, so it is duplicated
+// per shader rather than shared.
+bool GetSkinMatrix(out mat4 skin)
+{
+    uint base = paletteBases.bases[gl_InstanceIndex];
+    if (base == NO_SKIN || dot(inBoneWeights, vec4(1.0)) <= 0.0)
+        return false;
+
+    skin = inBoneWeights.x * bonePalette.bones[base + inBoneIDs.x]
+         + inBoneWeights.y * bonePalette.bones[base + inBoneIDs.y]
+         + inBoneWeights.z * bonePalette.bones[base + inBoneIDs.z]
+         + inBoneWeights.w * bonePalette.bones[base + inBoneIDs.w];
+    return true;
+}
+
 void main()
 {
-    mat4 model      = instanceData.models[gl_InstanceIndex];
-    vec4 worldPos   = model * vec4(inPosition, 1.0);
+    mat4 model = instanceData.models[gl_InstanceIndex];
+
+    vec3 position = inPosition;
+    vec3 normal   = inNormal;
+    vec3 tangent  = inTangent.xyz;
+
+    mat4 skin;
+    if (GetSkinMatrix(skin))
+    {
+        position = (skin * vec4(position, 1.0)).xyz;
+
+        // The TANGENT is skinned too, not just the normal. This shader samples normal
+        // maps through the TBN, so a bind-pose tangent with a skinned normal gives an
+        // orthogonal-looking but wrong basis, and mapped detail slides as the character
+        // moves. The bitangent needs nothing -- it is cross(N, T) * w, and the
+        // handedness sign is a property of the UVs, not the pose.
+        //
+        // mat3(skin) is correct for rigid and uniformly-scaled bones; a non-uniformly
+        // scaled bone would need the inverse transpose. No rig here uses one, and
+        // SkinVertices documents the identical caveat.
+        normal  = mat3(skin) * normal;
+        tangent = mat3(skin) * tangent;
+    }
+
+    vec4 worldPos   = model * vec4(position, 1.0);
     outDTO.outColor = inColor;
     outDTO.texCoord = inTexCoord;
     outDTO.fragPos  = worldPos.xyz;
@@ -52,9 +120,12 @@ void main()
     // Build world-space TBN.
     // The normal matrix (transpose of inverse) handles non-uniform scaling correctly.
     // Tangent is a direction vector and transforms with the model matrix directly.
+    //
+    // Skinning happens in MODEL space, so this model->world normal matrix is unchanged
+    // and simply receives skinned inputs.
     mat3 normalMat = mat3(transpose(inverse(model)));
-    vec3 N = normalize(normalMat * inNormal);
-    vec3 T = normalize(mat3(model) * inTangent.xyz);
+    vec3 N = normalize(normalMat * normal);
+    vec3 T = normalize(mat3(model) * tangent);
     // Gram-Schmidt re-orthogonalization: removes any drift from non-orthogonal transforms.
     T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T) * inTangent.w; // handedness sign flips B for mirrored UVs

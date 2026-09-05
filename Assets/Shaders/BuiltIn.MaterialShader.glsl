@@ -60,6 +60,35 @@ layout(set = 0, binding = 3) readonly buffer BonePalette
 
 const uint NO_SKIN = 0xFFFFFFFFu;
 
+// Blends this vertex's bone matrices into `skin`, in MODEL space. Returns false -- and
+// leaves `skin` untouched -- when the vertex must not be skinned, so a static mesh pays
+// one branch and no matrix maths.
+//
+// The two guards cover DIFFERENT failures and both are load-bearing:
+//
+// The SENTINEL covers a rigged mesh whose animator has not bound yet: its weights are
+// non-zero, so a weights-only test would index into a palette that was never uploaded.
+//
+// The WEIGHT TEST covers an unweighted vertex inside a skinned mesh, which would
+// otherwise accumulate a zero matrix and collapse to the origin.
+//
+// These are the same two rules AnimationSystem's SkinVertices implements, so the GPU
+// path and the tested CPU reference agree by construction. Keep every copy of this
+// function identical: there is no #include in this shader pipeline, so it is duplicated
+// per shader rather than shared.
+bool GetSkinMatrix(out mat4 skin)
+{
+    uint base = paletteBases.bases[gl_InstanceIndex];
+    if (base == NO_SKIN || dot(inBoneWeights, vec4(1.0)) <= 0.0)
+        return false;
+
+    skin = inBoneWeights.x * bonePalette.bones[base + inBoneIDs.x]
+         + inBoneWeights.y * bonePalette.bones[base + inBoneIDs.y]
+         + inBoneWeights.z * bonePalette.bones[base + inBoneIDs.z]
+         + inBoneWeights.w * bonePalette.bones[base + inBoneIDs.w];
+    return true;
+}
+
 void main()
 {
     outDTO.outColor = inColor;
@@ -68,24 +97,9 @@ void main()
     vec4 position = vec4(inPosition, 1.0);
     vec3 normal   = inNormal;
 
-    // Two guards, covering different failures.
-    //
-    // The SENTINEL covers a rigged mesh whose animator has not bound yet: its
-    // weights are non-zero, so a weights-only test would index into a palette that
-    // was never uploaded.
-    //
-    // The WEIGHT TEST covers an unweighted vertex inside a skinned mesh, which
-    // would otherwise accumulate a zero matrix and collapse to the origin.
-    //
-    // These are the same two rules AnimationSystem's SkinVertices implements, so
-    // the GPU path and the tested CPU reference agree by construction.
-    uint base = paletteBases.bases[gl_InstanceIndex];
-    if (base != NO_SKIN && dot(inBoneWeights, vec4(1.0)) > 0.0)
+    mat4 skin;
+    if (GetSkinMatrix(skin))
     {
-        mat4 skin = inBoneWeights.x * bonePalette.bones[base + inBoneIDs.x]
-                  + inBoneWeights.y * bonePalette.bones[base + inBoneIDs.y]
-                  + inBoneWeights.z * bonePalette.bones[base + inBoneIDs.z]
-                  + inBoneWeights.w * bonePalette.bones[base + inBoneIDs.w];
         position = skin * position;
 
         // Correct for rigid and uniformly-scaled bones; wrong for non-uniform bone
