@@ -166,9 +166,9 @@
                 },
                 {
                     "type": "CMaterial",
-                    "assetPath": "",
-                    "libraryPath": "",
-                    "resourceUID": 0
+                    "assetPath": "Assets\/Beta_Surface_material.nmat",
+                    "libraryPath": "Library\/Materials\/3739400661.nmat",
+                    "resourceUID": 3739400661
                 }
             ]
         },
@@ -210,9 +210,9 @@
                 },
                 {
                     "type": "CMaterial",
-                    "assetPath": "",
-                    "libraryPath": "",
-                    "resourceUID": 0
+                    "assetPath": "Assets\/Beta_Joints_material.nmat",
+                    "libraryPath": "Library\/Materials\/3693496418.nmat",
+                    "resourceUID": 3693496418
                 }
             ]
         },

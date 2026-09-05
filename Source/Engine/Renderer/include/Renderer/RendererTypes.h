@@ -87,6 +87,16 @@ static constexpr uint32_t c_paletteRegionOutline = 2 * c_maxSkinnedBones;
 static constexpr uint32_t c_paletteRegionPick    = 3 * c_maxSkinnedBones;
 static constexpr uint32_t c_paletteRegionCount   = 4;
 
+// 4096 segments — sized to the normals overlay's display budget, which is what
+// bounds this buffer in practice (see k_MaxNormalSegments in ModuleRenderer3D; a
+// static_assert there keeps the two in step). Deliberately NOT sized to what the
+// buffer could hold: at 20k segments the overlay is an unreadable mass of lines
+// that costs several MB of upload per frame to draw.
+//
+// Vertex3D rather than a leaner debug vertex so the shared bounding-box shader's
+// vertex input description applies unchanged.
+static constexpr uint32_t c_maxDebugLineVertices = 8192;
+
 struct InstancedBatch
 {
     ResourceMesh*     geometry      = nullptr;

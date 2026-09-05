@@ -329,6 +329,13 @@ struct VulkanContext
     VulkanBuffer frustumVertexBuffer{};
     uint32_t       frustumVertexCapacity = 0; // in vertices
 
+    // ── Debug line segments (dynamic, updated each frame) ──────────────────────
+    // Arbitrary world-space segments with no shared shape to instance -- normals
+    // today. The wireframe family cannot serve this: it draws one push-constant +
+    // draw call PER INSTANCE, which is ~60k draw calls for one character's normals.
+    VulkanBuffer debugLineVertexBuffer{};
+    uint32_t       debugLineVertexCapacity = 0; // in vertices
+
     // ── Point light debug sphere wireframe (static, shared for all lights) ─────
     // 3 great-circle rings (XY, XZ, YZ planes) as line lists; scaled per-draw.
     VulkanBuffer pointLightSphereVertexBuffer{};

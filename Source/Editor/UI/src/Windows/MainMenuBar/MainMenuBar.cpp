@@ -265,6 +265,12 @@ void MainMenuBar::DrawContent()
         if (ImGui::MenuItem("Bounding Boxes", nullptr, showBB))
             editorContext->GetRendererFrontend()->showBoundingBoxes = !showBB;
 
+        // Off by default and per-vertex on the SELECTED object only, so it is the
+        // one debug overlay worth turning on deliberately.
+        bool showNormals = editorContext->GetRendererFrontend()->showNormals;
+        if (ImGui::MenuItem("Normals", nullptr, showNormals))
+            editorContext->GetRendererFrontend()->showNormals = !showNormals;
+
         ImGui::EndMenu();
     }
 

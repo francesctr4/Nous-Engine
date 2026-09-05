@@ -48,6 +48,9 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         FileWatcher       # owns the shader hot-reload watcher
         Renderer
         EventSystem_headers   # <Module>.h implements IEventListener
+        # ModuleRenderer3D.h holds a vector<Vertex3D> by value for the normals
+        # overlay, and RendererTypes.h only forward-declares Vertex3D.
+        Utils_headers
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

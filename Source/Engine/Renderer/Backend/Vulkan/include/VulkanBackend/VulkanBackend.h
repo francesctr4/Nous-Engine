@@ -108,6 +108,12 @@ public:
 	                        const glm::mat4& view,
 	                        const std::vector<CameraFrustumData>& frustums) override;
 
+	bool DrawDebugLines(RenderpassType renderpassID,
+	                    const glm::mat4& projection,
+	                    const glm::mat4& view,
+	                    const std::vector<Vertex3D>& vertices,
+	                    const glm::vec4& color) override;
+
 	IEditorRenderBridge* GetEditorBridge() noexcept override { return this; }
 
 	// ─────────────────────────── IEditorRenderBridge ─────────────────────────

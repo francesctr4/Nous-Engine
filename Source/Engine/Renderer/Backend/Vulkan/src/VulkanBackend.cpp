@@ -741,6 +741,26 @@ bool VulkanBackend::Initialize()
         }
     }
 
+    // ── Create debug line vertex buffer (dynamic, host-visible) ───────────────
+    // Arbitrary world-space segments, rebuilt per frame — the normals overlay today.
+    {
+        constexpr uint64_t debugLineBufSize = c_maxDebugLineVertices * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, debugLineBufSize,
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->debugLineVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create debug line vertex buffer.");
+        }
+        else
+        {
+            vkContext->debugLineVertexCapacity = c_maxDebugLineVertices;
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Debug line vertex buffer created (capacity %u vertices).",
+                c_maxDebugLineVertices);
+        }
+    }
+
 	return ret;
 }
 
@@ -863,6 +883,14 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->frustumVertexBuffer);
         vkContext->frustumVertexBuffer.handle = VK_NULL_HANDLE;
         vkContext->frustumVertexCapacity = 0;
+    }
+
+    // Destroy the debug line vertex buffer.
+    if (vkContext->debugLineVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->debugLineVertexBuffer);
+        vkContext->debugLineVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->debugLineVertexCapacity = 0;
     }
 
     // Destroy the point light debug sphere vertex buffer (not managed by ResourceManager).
@@ -3651,6 +3679,88 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
 
         vkCmdDraw(cmdBuf->handle, 24, 1, i * 24, 0);
     }
+
+    return true;
+}
+
+bool VulkanBackend::DrawDebugLines(RenderpassType renderpassID,
+                                    const glm::mat4& projection,
+                                    const glm::mat4& view,
+                                    const std::vector<Vertex3D>& vertices,
+                                    const glm::vec4& color)
+{
+#ifdef _PROFILING
+    ZoneScopedN("DrawDebugLines");
+#endif
+    // Debug lines are scene-viewport only, like the frustums they follow.
+    if (renderpassID != RenderpassType::SCENE)
+        return true;
+
+    if (vertices.empty())
+        return true;
+
+    // Reuse the bounding box shader: same vertex format (Vertex3D.position), same
+    // GlobalUBO (projection + view), same push constants (model + color).
+    ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
+    if (!rShader || !rShader->internalData)
+        return true;
+
+    if (vkContext->debugLineVertexBuffer.handle == VK_NULL_HANDLE ||
+        vkContext->debugLineVertexCapacity == 0)
+        return true;
+
+    const auto totalVerts = static_cast<uint32_t>(vertices.size());
+    if (totalVerts > vkContext->debugLineVertexCapacity)
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "[DrawDebugLines] Vertex count (%u) exceeds buffer capacity (%u). Skipping.",
+            totalVerts, vkContext->debugLineVertexCapacity);
+        return true;
+    }
+
+    NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->debugLineVertexBuffer,
+        0, totalVerts * sizeof(Vertex3D), 0, vertices.data());
+
+    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    auto vs = down_cast<VulkanShader*>(rShader->internalData);
+
+    // Depth-off, like the skeleton channels: normals belong to a surface that is
+    // usually facing away or occluded, and an overlay you can only see head-on is
+    // not an inspection tool.
+    NOUS_VulkanShader::BindNoDepthPipeline(cmdBuf->handle, vs);
+
+    if (vkContext->wireframeGlobalSetThisFrame)
+    {
+        // A prior wireframe draw already called UpdateGlobal this frame, which bound
+        // set=0 into this command buffer. Updating it again would invalidate the CB —
+        // rebind only. Same projection/view.
+        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vs->pipeline.pipelineLayout, 0, 1,
+            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+    }
+    else
+    {
+        struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+            vkContext->imageIndex, &ubo, sizeof(ubo));
+        vkContext->wireframeGlobalSetThisFrame = true;
+    }
+
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->debugLineVertexBuffer.handle, &offset);
+
+    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
+
+    // model = identity: the segments are already in world space. ONE draw call for
+    // the whole batch, which is the entire reason this exists rather than another
+    // WireframeMesh channel.
+    struct DebugLinePushConstants { glm::mat4 model; glm::vec4 color; };
+    DebugLinePushConstants pc{ glm::mat4(1.0f), color };
+
+    vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(DebugLinePushConstants), &pc);
+
+    vkCmdDraw(cmdBuf->handle, totalVerts, 1, 0, 0);
 
     return true;
 }

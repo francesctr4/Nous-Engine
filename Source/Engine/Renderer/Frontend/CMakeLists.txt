@@ -60,6 +60,10 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         # this is headers only. Mis-scoped until the include/ split made it fail
         # to compile in ModuleEditor.
         ShaderSystem_headers
+        # RendererFrontend.h holds a vector<Vertex3D> by value for the debug-line
+        # overlay, and RendererTypes.h only forward-declares Vertex3D -- so the API
+        # dir has to propagate. Headers only.
+        Utils_headers
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE

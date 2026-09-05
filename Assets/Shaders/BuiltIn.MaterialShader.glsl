@@ -66,6 +66,7 @@ void main()
     outDTO.texCoord = inTexCoord;
 
     vec4 position = vec4(inPosition, 1.0);
+    vec3 normal   = inNormal;
 
     // Two guards, covering different failures.
     //
@@ -86,13 +87,16 @@ void main()
                   + inBoneWeights.z * bonePalette.bones[base + inBoneIDs.z]
                   + inBoneWeights.w * bonePalette.bones[base + inBoneIDs.w];
         position = skin * position;
-    }
 
-    // NOTE: normals are deliberately NOT skinned. inNormal is declared at location 1
-    // and never read -- this shader is unlit -- so skinning it would be dead code
-    // with no way to observe whether it is correct. It joins picking, the outline
-    // and the debug bounds in the "deformation-aware geometry" follow-up, together
-    // with a normal visualization that makes it verifiable.
+        // Correct for rigid and uniformly-scaled bones; wrong for non-uniform bone
+        // scale, which needs the inverse transpose. No rig here uses one, and
+        // SkinVertices documents the identical caveat.
+        //
+        // Still visually inert -- this shader is unlit and never reads the normal --
+        // but no longer UNVERIFIABLE: SkinVertices computes the same quantity on the
+        // CPU and the normals debug visualization displays it.
+        normal = normalize(mat3(skin) * normal);
+    }
 
     gl_Position = globalUBO.projection * globalUBO.view
                 * instanceData.models[gl_InstanceIndex] * position;

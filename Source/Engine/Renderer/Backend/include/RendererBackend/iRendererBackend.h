@@ -215,4 +215,24 @@ struct IRendererBackend
                                     const glm::mat4& projection,
                                     const glm::mat4& view,
                                     const std::vector<CameraFrustumData>& frustums) = 0;
+
+    /**
+     * @brief Draws arbitrary world-space line segments in a SINGLE draw call.
+     *        Only draws when renderpassID == SCENE (editor viewport).
+     *
+     * `vertices` is a LINE_LIST whose positions are already in world space, so the
+     * model push constant is identity. Silently skips a batch that exceeds the
+     * buffer capacity.
+     *
+     * Separate from DrawWireframeMeshInstances because that family issues one push
+     * constant and one draw call PER INSTANCE -- fine for a few dozen light gizmos,
+     * ~60k draw calls for one character's per-vertex normals. This follows
+     * DrawCameraFrustums instead: build the segments on the CPU, upload once, draw
+     * once. Shares the same backend-tracked set=0 update-once-per-frame behavior.
+     */
+    virtual bool DrawDebugLines(RenderpassType renderpassID,
+                                const glm::mat4& projection,
+                                const glm::mat4& view,
+                                const std::vector<Vertex3D>& vertices,
+                                const glm::vec4& color) = 0;
 };

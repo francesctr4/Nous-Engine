@@ -271,6 +271,12 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 				success &= mBackend->DrawCameraFrustums(
 					sceneRenderpass, sceneProj, sceneView, mCameraFrustums);
 			}
+
+			if (!mDebugLines.empty())
+			{
+				success &= mBackend->DrawDebugLines(sceneRenderpass, sceneProj, sceneView,
+					mDebugLines, glm::vec4(0.2f, 0.8f, 1.0f, 1.0f));   // cyan
+			}
 		});
 	}
 
@@ -646,6 +652,13 @@ void RendererFrontend::SetWireframeInstances(WireframeMesh mesh,
 void RendererFrontend::SetCameraFrustums(const std::vector<CameraFrustumData>& frustums)
 {
 	mCameraFrustums = frustums;
+}
+
+void RendererFrontend::SetDebugLines(const std::vector<Vertex3D>& vertices)
+{
+	// Assign, not move-from-caller: both this buffer and the caller's keep their
+	// capacity across frames, so a per-frame overlay allocates nothing after warmup.
+	mDebugLines = vertices;
 }
 
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)

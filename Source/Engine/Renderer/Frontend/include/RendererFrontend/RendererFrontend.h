@@ -7,6 +7,9 @@
 #include <Renderer/IGPUResourceFactory.h>
 #include <ShaderSystem/ShaderLoader/ShaderLoaderTypes.h>
 #include <EngineCore/EngineExport.h>
+// RendererTypes.h only forward-declares Vertex3D, and mDebugLines holds them BY
+// VALUE -- a vector member needs the complete type at destruction.
+#include <Utils/Math/Vertex.inl>
 
 #include <array>
 #include <atomic>
@@ -203,6 +206,20 @@ public:
 	NOUS_ENGINE_API void SetCameraFrustums(const std::vector<CameraFrustumData>& frustums);
 
 	// ---------------------------------------------------------------------
+	// Debug Lines
+	// ---------------------------------------------------------------------
+	/**
+	 * @brief Sets the world-space line segments drawn in the Scene View each frame
+	 *        (a LINE_LIST: two vertices per segment). REPLACES the previous set,
+	 *        like SetWireframeInstances; passing an empty vector disables the draw.
+	 */
+	NOUS_ENGINE_API void SetDebugLines(const std::vector<Vertex3D>& vertices);
+
+	// Toggle the per-vertex normals overlay. Off by default, unlike the other two:
+	// it is an inspection tool for one selected mesh, not an always-on gizmo.
+	bool showNormals = false;
+
+	// ---------------------------------------------------------------------
 	// Accessors
 	// ---------------------------------------------------------------------
 	NOUS_ENGINE_API void SetBackendType(RendererBackendType backendType) noexcept;
@@ -294,6 +311,9 @@ private:
 
 	// Camera frustums — populated each frame by SetCameraFrustums().
 	std::vector<CameraFrustumData> mCameraFrustums;
+
+	// World-space debug line segments — populated each frame by SetDebugLines().
+	std::vector<Vertex3D> mDebugLines;
 
 };
 

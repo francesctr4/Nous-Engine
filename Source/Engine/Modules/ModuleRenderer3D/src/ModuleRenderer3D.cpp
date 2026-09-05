@@ -32,6 +32,8 @@
 #include <ECS/ECSInternalComponents.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <AnimationSystem/Bounds.h>
+#include <AnimationSystem/Palette.h>
+#include <Utils/Math/Vertex.inl>
 
 #include <MemoryManager/MemoryManager.h>
 #include <EventSystem/EventSystem.h>
@@ -413,6 +415,7 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Bone, {});
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Joint, {});
 		mRendererFrontend->SetCameraFrustums({});
+		mRendererFrontend->SetDebugLines({});
 	}
 
 	// Video surfaces: hand each playing CVideoPlayer's latest frame to the renderer, which owns
@@ -925,6 +928,113 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Bone,  boneShards);
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Joint, jointMarkers);
+	}
+
+	// Normals visualization — SELECTED OBJECT ONLY. Per-vertex normals for every
+	// visible mesh would be hundreds of thousands of segments rebuilt per frame; one
+	// selected mesh is a fixed budget and is what you actually want while inspecting.
+	if (m_renderMode == RenderMode::EDITOR && !isLoadingScene &&
+	    mRendererFrontend->showNormals && sceneData.registry)
+	{
+#ifdef _PROFILING
+		ZoneScopedN("BuildNormalDebugLines");
+#endif
+		// Reused across frames: the overlay rebuilds every frame while enabled, and a
+		// fresh vector per frame is a multi-megabyte allocation each time.
+		m_normalLines.clear();
+
+		for (auto go : sceneData.selectedObjects)
+		{
+			auto* meshComp = go.TryGetComponent<CMesh>();
+			if (!meshComp || !meshComp->mesh || meshComp->mesh->vertices.empty())
+				continue;
+
+			const ResourceMesh& mesh = *meshComp->mesh;
+
+			GeometryRenderData data{};
+			if (auto* t = go.TryGetComponent<CTransform>()) data.model = t->worldMatrix;
+			ApplySkinningToGeometry(*sceneData.registry, go.GetEntity(), mesh, data);
+
+			// Length is DERIVED from the mesh's own bind extent, never a constant --
+			// the same centimetres-versus-metres problem that forced the joint-marker
+			// radius to be derived. A fixed length is invisible on a Mixamo character
+			// and swallows a metre-scale prop.
+			const glm::vec3 extent = mesh.localAABBMax - mesh.localAABBMin;
+			const float     length = glm::max(glm::max(extent.x, extent.y), extent.z) * 0.02f;
+
+			// Stride, not truncation. A truncated field shows normals on part of the
+			// mesh and none on the rest, which reads as "skinning failed over there".
+			//
+			// The budget is a DISPLAY budget, deliberately far below the vertex buffer's
+			// capacity. Striding at the buffer limit meant ~20k segments rebuilt, skinned
+			// and uploaded every frame -- several MB per frame, which costs more than it
+			// shows: at that density the overlay is a solid mass of lines anyway.
+			constexpr size_t k_MaxNormalSegments = 4096;
+			static_assert(k_MaxNormalSegments * 2 <= c_maxDebugLineVertices,
+				"Normal segments must fit the debug line buffer.");
+
+			const size_t capacity = k_MaxNormalSegments;
+			const size_t stride   = (mesh.vertices.size() + capacity - 1) / capacity;
+
+			const bool skinned = data.palette != nullptr;
+
+			const auto emit = [&](const glm::vec3& localPos, const glm::vec3& localNrm)
+			{
+				const glm::vec3 p = glm::vec3(data.model * glm::vec4(localPos, 1.0f));
+				const glm::vec3 n = glm::normalize(glm::mat3(data.model) * localNrm);
+
+				Vertex3D a{}, b{};
+				a.position = p;
+				b.position = p + n * length;
+				m_normalLines.push_back(a);
+				m_normalLines.push_back(b);
+			};
+
+			if (skinned)
+			{
+				// SkinVertices takes de-interleaved spans and deliberately does not
+				// name Vertex3D, to keep AnimationSystem dependency-free -- so scatter
+				// into reusable members rather than forking the tested maths here.
+				m_normalScratchPos.clear();
+				m_normalScratchNrm.clear();
+				m_normalScratchIDs.clear();
+				m_normalScratchWts.clear();
+
+				for (size_t i = 0; i < mesh.vertices.size(); i += stride)
+				{
+					const Vertex3D& v = mesh.vertices[i];
+					m_normalScratchPos.push_back(v.position);
+					m_normalScratchNrm.push_back(v.normal);
+					m_normalScratchIDs.push_back(v.boneIDs);
+					m_normalScratchWts.push_back(v.boneWeights);
+				}
+
+				m_normalScratchOutPos.assign(m_normalScratchPos.size(), glm::vec3(0.0f));
+				m_normalScratchOutNrm.assign(m_normalScratchPos.size(), glm::vec3(0.0f));
+
+				if (!nous::engine::animation_system::SkinVertices(
+						*data.palette, m_normalScratchPos, m_normalScratchNrm,
+						m_normalScratchIDs, m_normalScratchWts,
+						m_normalScratchOutPos, m_normalScratchOutNrm))
+					continue;
+
+				for (size_t i = 0; i < m_normalScratchOutPos.size(); ++i)
+					emit(m_normalScratchOutPos[i], m_normalScratchOutNrm[i]);
+			}
+			else
+			{
+				for (size_t i = 0; i < mesh.vertices.size(); i += stride)
+					emit(mesh.vertices[i].position, mesh.vertices[i].normal);
+			}
+		}
+
+		// By const ref, not moved: moving would hand away this buffer's capacity and
+		// leave the member empty, so the allocation would come back every frame.
+		mRendererFrontend->SetDebugLines(m_normalLines);
+	}
+	else if (m_renderMode == RenderMode::EDITOR && !isLoadingScene)
+	{
+		mRendererFrontend->SetDebugLines({});
 	}
 
 	{
