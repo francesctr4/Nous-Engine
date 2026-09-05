@@ -89,6 +89,20 @@ template<typename T, typename... Args>
 T& GameObject::AddComponent(Args&&... args) {
     static_assert(std::is_base_of_v<Component, T>, "T must inherit from Component");
     NOUS_ASSERT_MAIN_THREAD();
+
+    // emplace_or_replace DESTROYS an existing component of this type, and entt knows
+    // nothing about OnDestroy -- so a replace used to drop whatever the old component
+    // owned. Every component that holds a resource reference (CMesh, CMaterial,
+    // CAudioSource, CVideoPlayer, CAnimator) leaks one per replace.
+    //
+    // The path that hits this is PrefabManager::RefreshPrefabInstances, which
+    // re-deserializes a prefab ROOT's components in place on every scene load. A
+    // prefab-rooted CAnimator therefore acquired twice per load and was released once
+    // at Scene::Clear, so its skeleton and clip reference counts climbed by one per
+    // play/stop cycle and the resources could never evict.
+    if (T* existing = m_registry->try_get<T>(m_entity))
+        existing->OnDestroy();
+
     T& comp = m_registry->emplace_or_replace<T>(m_entity, std::forward<Args>(args)...);
     comp.m_entity   = m_entity;
     comp.m_registry = m_registry;

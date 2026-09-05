@@ -52,6 +52,14 @@ public:
     NOUS_ENGINE_API JsonObject Serialize()               const override;
     NOUS_ENGINE_API void       Deserialize(const JsonObject& obj)  override;
 
+    // Releases the skeleton and clip references, mirroring CMesh::OnDestroy. BOTH ways a
+    // slot is filled take a reference -- Deserialize through CreateResource /
+    // CreateResourceFromLibrary, and the Inspector's drag-drop through CreateResource --
+    // so without this every play/stop cycle deserializes the scene again and leaks one
+    // reference per slot per animator. The resources then never evict and the Resources
+    // window shows counts climbing by the number of animators using them.
+    NOUS_ENGINE_API void       OnDestroy()                         override;
+
     // MODEL-space bone globals for the current pose, parallel to the skeleton's
     // bone array. Empty until a successful bind + sample. Compose with the owning
     // GameObject's world matrix to reach world space -- which is what the Scene

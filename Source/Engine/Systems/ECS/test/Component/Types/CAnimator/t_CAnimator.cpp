@@ -331,3 +331,81 @@ TEST_F(t_CAnimator, ClearingASlotEmptiesThePalette)
 
     EXPECT_TRUE(a.GetPalette().empty());
 }
+
+// =============================================================================
+// Resource lifetime — OnDestroy must release what the slots hold
+// =============================================================================
+//
+// Both ways a slot is filled take a reference: Deserialize (CreateResource /
+// CreateResourceFromLibrary) and the Inspector's drag-drop (CreateResource, which
+// also releases the slot's previous occupant). Without the matching release at
+// destruction, every play/stop cycle deserializes the scene again and leaks one
+// reference per slot per animator, so the resources never evict.
+
+TEST_F(t_CAnimator, OnDestroyReleasesBothSlots)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+    rig.SetState(ResourceState::CPU_READY);
+    anim.SetState(ResourceState::CPU_READY);
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clip     = &anim;
+
+    a.OnDestroy();
+
+    ASSERT_EQ(fakes.resources.unloaded.size(), 2u);
+    EXPECT_EQ(fakes.resources.unloaded[0], 1u);
+    EXPECT_EQ(fakes.resources.unloaded[1], 2u);
+}
+
+// A slot the user never filled was never acquired, so releasing it would drive a
+// reference count negative -- and DecreaseReferenceCount asserts on the result.
+TEST_F(t_CAnimator, OnDestroyWithEmptySlotsReleasesNothing)
+{
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+
+    a.OnDestroy();
+
+    EXPECT_TRUE(fakes.resources.unloaded.empty());
+}
+
+// An UNLOADED resource never completed a load, mirroring CMesh::OnDestroy's guard.
+TEST_F(t_CAnimator, OnDestroySkipsUnloadedResources)
+{
+    ResourceSkeleton rig(1);  MakeTwoBoneRig(rig);   // state stays UNLOADED
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+
+    a.OnDestroy();
+
+    EXPECT_TRUE(fakes.resources.unloaded.empty());
+}
+
+// Re-adding a CAnimator over a live one is what PrefabManager::RefreshPrefabInstances
+// does to a prefab ROOT on every scene load. Without AddComponent firing OnDestroy for
+// the component it replaces, the old slots' references are dropped on the floor and the
+// skeleton/clip counts climb by one per play/stop cycle.
+TEST_F(t_CAnimator, ReAddingTheComponentReleasesTheReplacedSlots)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+    rig.SetState(ResourceState::CPU_READY);
+    anim.SetState(ResourceState::CPU_READY);
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& first = go.AddComponent<CAnimator>();
+    first.skeleton = &rig;
+    first.clip     = &anim;
+
+    go.AddComponent<CAnimator>();   // the prefab-refresh path
+
+    ASSERT_EQ(fakes.resources.unloaded.size(), 2u);
+    EXPECT_EQ(fakes.resources.unloaded[0], 1u);
+    EXPECT_EQ(fakes.resources.unloaded[1], 2u);
+}

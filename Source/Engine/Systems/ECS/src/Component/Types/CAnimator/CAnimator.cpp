@@ -135,6 +135,19 @@ JsonObject CAnimator::Serialize() const
     return root;
 }
 
+void CAnimator::OnDestroy()
+{
+    IResourceLoader* rm = Services().resources;
+    if (!rm)
+        return;   // headless scene -- nothing was ever acquired
+
+    if (skeleton && skeleton->IsLoaded())
+        rm->UnloadResource(skeleton->GetUID());
+
+    if (clip && clip->IsLoaded())
+        rm->UnloadResource(clip->GetUID());
+}
+
 void CAnimator::Deserialize(const JsonObject& obj)
 {
     speed = obj.GetFloat("speed", speed);
