@@ -52,6 +52,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         # break shows up in a consumer, not here.
         EngineCore_headers
         Core_headers
+        CrashHandler_headers
         AudioSystem_headers
         FileSystem_headers
         EventSystem_headers

@@ -1,4 +1,5 @@
 #include <Core/Application.h>
+#include <CrashHandler/CrashHandler.h>
 #include <EngineCore/AppConfig.h>
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
@@ -55,6 +56,11 @@ static GameConfig LoadGameConfig(const char* argv0)
 
 int main(int argc, char** argv)
 {
+    // Before everything, including the memory system. It matters more here than in
+    // the editor: a shipped game has no console.log (InitializeLogging(false) below),
+    // so on a player's machine the dump under Crashes/ is the only artifact.
+    nous::engine::crash::InstallCrashHandler("GameApp");
+
     StartLogTimer();
 
     nous::engine::memory::InitializeMemory(MiB(300));

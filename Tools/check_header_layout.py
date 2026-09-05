@@ -75,6 +75,7 @@ CONVERTED = {
     "FileSystem":          "Engine/Core/FileSystem/include",
     "EventSystem":         "Engine/Core/EventSystem/include",
     "FileWatcher":         "Engine/Core/FileWatcher/include",
+    "CrashHandler":        "Engine/Core/CrashHandler/include",
     "TimeManager":         "Engine/Core/TimeManager/include",
     "NOUS_Multithreading": "Engine/NOUS_Multithreading/include",
     "Utils":               "Engine/Utils/include",

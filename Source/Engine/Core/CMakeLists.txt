@@ -10,6 +10,7 @@
 # BOTTOM of the include graph while Application is at the TOP, so they moved to
 # the new header-only EngineCore target; see Source/Engine/EngineCore/CMakeLists.txt.
 
+add_subdirectory(CrashHandler)
 add_subdirectory(EventSystem)
 add_subdirectory(FileSystem)
 add_subdirectory(FileWatcher)
