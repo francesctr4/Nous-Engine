@@ -1,7 +1,9 @@
 #include <RendererFrontend/GroupGeometries.h>
+#include <Renderer/PackPalettes.h>
 #include <Logger/Logger.h>
 
 #include <algorithm>
+#include <span>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_RENDERER_FRONTEND;
 
@@ -23,6 +25,13 @@ GroupedGeometries GroupGeometries(
         return a->geometry < b->geometry;
     });
 
+    // The geometries that actually became instances, in emission order. Kept
+    // separately from `sorted` because entries are skipped (null mesh or material,
+    // instance limit), so `sorted` and `matrices` do not line up — packing bases
+    // from a prefix of `sorted` would hand an instance another object's palette.
+    std::vector<const GeometryRenderData*> accepted;
+    accepted.reserve(geometries.size());
+
     for (const GeometryRenderData* grd : sorted)
     {
         if (!grd->geometry || !grd->material) continue;
@@ -38,28 +47,7 @@ GroupedGeometries GroupGeometries(
         const uint32_t localIndex = static_cast<uint32_t>(result.matrices.size());
         const uint32_t ssboIndex  = baseInstance + localIndex;
         result.matrices.push_back(grd->model);
-
-        // Palette base for this instance. A null or empty palette is the "not
-        // skinned" case — and so is running out of bone budget, which degrades the
-        // character to bind pose instead of reading past the buffer.
-        uint32_t paletteBase = c_noSkinPalette;
-        if (grd->palette && !grd->palette->empty())
-        {
-            const size_t boneCount = grd->palette->size();
-            if (result.palettes.size() + boneCount <= c_maxSkinnedBones)
-            {
-                paletteBase = basePaletteSlot + static_cast<uint32_t>(result.palettes.size());
-                result.palettes.insert(result.palettes.end(),
-                                       grd->palette->begin(), grd->palette->end());
-            }
-            else
-            {
-                NOUS_WARN_C(CURRENT_CHANNEL,
-                    "Skinned bone limit (%u) reached — remaining characters in this pass render in bind pose.",
-                    c_maxSkinnedBones);
-            }
-        }
-        result.paletteBases.push_back(paletteBase);
+        accepted.push_back(grd);
 
         if (!result.batches.empty() &&
             result.batches.back().geometry == grd->geometry &&
@@ -77,6 +65,16 @@ GroupedGeometries GroupGeometries(
             result.batches.push_back(batch);
         }
     }
+
+    // Bases are packed from the SORTED, accepted list, so paletteBases[i] lines up
+    // with matrices[i] — and therefore with gl_InstanceIndex once firstInstance is
+    // applied.
+    PackedPalettes packed = PackPalettes(
+        std::span<const GeometryRenderData* const>(accepted.data(), accepted.size()),
+        basePaletteSlot);
+
+    result.paletteBases = std::move(packed.bases);
+    result.palettes     = std::move(packed.palettes);
 
     return result;
 }
