@@ -12,7 +12,7 @@ include(GoogleTest)
 # without the STATIC state a test TU would emit __imp_-prefixed references the
 # linker will not pull an archive member in to satisfy. See the three-state macro
 # note in .claude/CLAUDE.md -- LNK4217 is that failure in its warning form.
-foreach (ANIM_TEST Interpolate Sampling Blending Palette)
+foreach (ANIM_TEST Interpolate Sampling Blending Palette Bounds)
     set(TEST_NAME "t_AnimationSystem_${ANIM_TEST}")
 
     add_executable(${TEST_NAME} t_${ANIM_TEST}.cpp)

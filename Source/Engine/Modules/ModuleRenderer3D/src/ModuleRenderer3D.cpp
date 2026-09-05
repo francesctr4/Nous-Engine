@@ -31,6 +31,7 @@
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
 #include <ECS/ECSInternalComponents.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
+#include <AnimationSystem/Bounds.h>
 
 #include <MemoryManager/MemoryManager.h>
 #include <EventSystem/EventSystem.h>
@@ -511,19 +512,59 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 				glm::vec3 worldMin, worldMax;
 
+				// A skinned mesh's TRANSFORM never changes while it animates -- the pose
+				// moves, not the object -- so the m_worldDirty cache would freeze it on
+				// frame one's box and the character would pop out of view mid-animation.
+				// Skinned meshes recompute every frame instead.
+				const CAnimator* animator = nullptr;
+				if (meshComp.mesh->hasSkinning)
+				{
+					const auto* hierarchy = sceneData.registry->try_get<CHierarchy>(entity);
+					if (hierarchy && hierarchy->parent != entt::null)
+						animator = sceneData.registry->try_get<CAnimator>(hierarchy->parent);
+				}
+				const bool isSkinned = animator && !animator->GetPalette().empty();
+
+				// The box the corners are built from. For a skinned mesh both the extents
+				// and the placing matrix come from the pose, not the bind data.
+				glm::vec3 srcMin    = localMin;
+				glm::vec3 srcMax    = localMax;
+				glm::mat4 srcMatrix = worldMatrix;
+
+				if (isSkinned)
+				{
+					glm::vec3 skinnedMin, skinnedMax;
+					if (nous::engine::animation_system::ComputeSkinnedBounds(
+							meshComp.mesh->boneAABBMin, meshComp.mesh->boneAABBMax,
+							animator->GetPalette(), skinnedMin, skinnedMax))
+					{
+						srcMin = skinnedMin;
+						srcMax = skinnedMax;
+
+						// The palette outputs MODEL space, so the box is placed by the
+						// animator root's world matrix -- the same matrix the skinned
+						// draw uses, not this child's.
+						if (const auto* rootTransform = sceneData.registry->try_get<CTransform>(
+								sceneData.registry->get<CHierarchy>(entity).parent))
+						{
+							srcMatrix = rootTransform->worldMatrix;
+						}
+					}
+				}
+
 				// Only recompute the 8-corner AABB transform when the world matrix changed.
 				// Static objects reuse the cached result from the previous frame.
-				if (transform.m_worldDirty || mMeshAABBCache.find(id) == mMeshAABBCache.end())
+				if (isSkinned || transform.m_worldDirty || mMeshAABBCache.find(id) == mMeshAABBCache.end())
 				{
 					const glm::vec3 corners[8] = {
-						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMin.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMin.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMin.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMin.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMax.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMax.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMax.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMax.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMin.x, srcMin.y, srcMin.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMax.x, srcMin.y, srcMin.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMin.x, srcMax.y, srcMin.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMax.x, srcMax.y, srcMin.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMin.x, srcMin.y, srcMax.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMax.x, srcMin.y, srcMax.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMin.x, srcMax.y, srcMax.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMax.x, srcMax.y, srcMax.z, 1.0f)),
 					};
 
 					worldMin = corners[0];
@@ -547,9 +588,12 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 				// Editor-only: generate OBB and AABB overlay geometry.
 				if (m_renderMode == RenderMode::EDITOR && mRendererFrontend->showBoundingBoxes)
 				{
-					const glm::vec3 localCenter  = (localMin + localMax) * 0.5f;
-					const glm::vec3 localExtents = localMax - localMin;
-					glm::mat4 obbTransform = worldMatrix
+					// srcMin/srcMax/srcMatrix, not the bind-pose local box: for a skinned
+					// mesh these are the posed extents and the animator root's matrix, so
+					// the OBB follows the animation like the AABB does.
+					const glm::vec3 localCenter  = (srcMin + srcMax) * 0.5f;
+					const glm::vec3 localExtents = srcMax - srcMin;
+					glm::mat4 obbTransform = srcMatrix
 						* glm::translate(glm::mat4(1.0f), localCenter)
 						* glm::scale(glm::mat4(1.0f), localExtents);
 

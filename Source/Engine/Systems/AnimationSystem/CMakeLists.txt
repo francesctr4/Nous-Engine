@@ -44,6 +44,7 @@ add_library(${CLASS_NAME} STATIC
         src/Sampling.cpp
         src/Blending.cpp
         src/Palette.cpp
+        src/Bounds.cpp
 )
 
 target_sources(${CLASS_NAME} PRIVATE
@@ -57,6 +58,7 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Sampling.h
         include/${CLASS_NAME}/Blending.h
         include/${CLASS_NAME}/Palette.h
+        include/${CLASS_NAME}/Bounds.h
 )
 
 set_target_properties(${CLASS_NAME} PROPERTIES

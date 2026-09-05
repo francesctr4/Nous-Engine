@@ -41,8 +41,23 @@ public:
 	// so the scan is exact rather than a heuristic.
 	bool hasSkinning {false};
 
-	// Recomputes everything derived from `vertices`: the local AABB and
-	// hasSkinning. Call after assigning vertices, from every path that builds a
-	// mesh. Safe on an empty mesh.
+	// Per-bone bind-pose AABB: the box of the vertices each bone actually
+	// influences, indexed by bone ID, empty for an unrigged mesh. Derived at load
+	// like hasSkinning, never serialized.
+	//
+	// This is what makes the skinned bound usable. Transforming the WHOLE mesh box
+	// by every bone matrix is also provably safe, but a hand bone then drags a
+	// body-sized box out to the hand and the union ends up several times the
+	// character -- correct, and useless for culling. Each bone carrying only its own
+	// vertices keeps the union close to the real silhouette at the same cost.
+	//
+	// A bone with no influenced vertices keeps an INVERTED box (min > max) as its
+	// "no vertices" marker, so it can be skipped without a parallel flag array.
+	std::vector<glm::vec3> boneAABBMin;
+	std::vector<glm::vec3> boneAABBMax;
+
+	// Recomputes everything derived from `vertices`: the local AABB, hasSkinning
+	// and the per-bone AABBs. Call after assigning vertices, from every path that
+	// builds a mesh. Safe on an empty mesh.
 	NOUS_ENGINE_API void RecomputeDerivedData();
 };
