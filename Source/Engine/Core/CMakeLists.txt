@@ -65,3 +65,12 @@ target_link_libraries(Core PRIVATE
         Scripting
         SDL3::SDL3
 )
+
+# Application.cpp includes <tracy/Tracy.hpp> under _PROFILING. The vcpkg tracy
+# port installs its headers at include/tracy/tracy/Tracy.hpp, so that spelling
+# resolves ONLY through the include dir Tracy::TracyClient carries -- it is not
+# reachable from the vcpkg_installed/include root.
+if (ENABLE_PROFILING)
+    find_package(Tracy CONFIG REQUIRED)
+    target_link_libraries(Core PRIVATE Tracy::TracyClient)
+endif()
