@@ -48,6 +48,12 @@ public:
     float              speed    = 1.0f;      // negative plays backwards
     bool               loop     = true;
 
+    // Set once ApplySkinningToGeometry has reported a mesh whose rig does not match
+    // `skeleton`, so the warning is one per animator rather than one per mesh every
+    // frame. Mutable because the pairing reads the animator through a const registry.
+    // Cleared by Rebind(), so swapping the slot gives the next mistake its own warning.
+    mutable bool       warnedSkeletonMismatch = false;
+
     NOUS_ENGINE_API void       OnUpdate(float deltaTime) override;
     NOUS_ENGINE_API JsonObject Serialize()               const override;
     NOUS_ENGINE_API void       Deserialize(const JsonObject& obj)  override;

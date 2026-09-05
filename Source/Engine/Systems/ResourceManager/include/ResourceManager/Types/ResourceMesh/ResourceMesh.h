@@ -41,6 +41,12 @@ public:
 	// so the scan is exact rather than a heuristic.
 	bool hasSkinning {false};
 
+	// Hash of the bone NAMES of the skeleton this mesh was skinned against, 0 when the
+	// source model had no skeleton. Unlike hasSkinning this is NOT derived -- it comes
+	// from the mesh binary, because the vertices alone cannot say which rig they belong
+	// to. Compared against ResourceSkeleton::nameHash at the animator/mesh pairing.
+	uint64_t skeletonNameHash {0};
+
 	// Per-bone bind-pose AABB: the box of the vertices each bone actually
 	// influences, indexed by bone ID, empty for an unrigged mesh. Derived at load
 	// like hasSkinning, never serialized.

@@ -30,6 +30,11 @@ void CAnimator::Rebind()
     m_boundClip     = UIDOf(clip);
     m_boundSkeleton = UIDOf(skeleton);
 
+    // A slot changed, so any mesh/rig mismatch reported against the previous skeleton
+    // is stale. Without this, correcting one wrong .nskel and then dropping a second
+    // wrong one would warn about neither.
+    warnedSkeletonMismatch = false;
+
     if (!clip || !skeleton)
     {
         m_binding = {};

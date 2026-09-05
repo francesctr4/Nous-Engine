@@ -373,3 +373,56 @@ TEST_F(t_ImporterMesh, DeserializeLeavesAStaticMeshUnflagged)
 
     EXPECT_FALSE(mesh.hasSkinning);
 }
+
+// =============================================================================
+// skeletonNameHash — which rig a mesh is skinned to
+// =============================================================================
+//
+// Nothing else on disk pairs a mesh with a skeleton: CAnimator's slot is filled by
+// hand, so dropping the wrong .nskel is an ordinary mistake and the result is
+// geometry torn apart by bone indices that mean something else. The hash is what
+// lets the runtime refuse it. It travels in the blob HEADER, so both the
+// header-only and the full-geometry readers must carry it.
+
+TEST_F(t_ImporterMesh, RoundTripsSkeletonNameHash)
+{
+    SubMeshData sub = MakeSubmesh("Skinned", 2);
+    sub.skeletonNameHash = 0xDEADBEEFCAFEF00Dull;
+
+    Write({ sub });
+
+    const auto result = ImporterMesh::LoadHierarchy(m_testFilePath);
+
+    ASSERT_EQ(result.size(), 1u);
+    EXPECT_EQ(result[0].skeletonNameHash, 0xDEADBEEFCAFEF00Dull);
+}
+
+// LoadSubmesh is the reader SubMeshCache uses, and therefore the one that produces
+// the per-submesh ResourceMesh each CMesh ends up holding -- the exact object the
+// renderer's mismatch check reads. A hash carried by LoadHierarchy but dropped here
+// would make the check silently inert on the only path that matters.
+TEST_F(t_ImporterMesh, LoadSubmeshCarriesTheSkeletonNameHash)
+{
+    SubMeshData a = MakeSubmesh("A", 1);
+    SubMeshData b = MakeSubmesh("B", 1);
+    a.skeletonNameHash = 111ull;
+    b.skeletonNameHash = 222ull;
+
+    Write({ a, b });
+
+    SubMeshData out;
+    ASSERT_TRUE(ImporterMesh::LoadSubmesh(m_testFilePath, 1, out));
+    EXPECT_EQ(out.skeletonNameHash, 222ull);
+}
+
+// A model with no skeleton writes 0, which the runtime reads as "unknown rig" and
+// never as a mismatch.
+TEST_F(t_ImporterMesh, UnskinnedSubmeshHasZeroSkeletonNameHash)
+{
+    Write({ MakeSubmesh("Static", 1) });
+
+    const auto result = ImporterMesh::LoadHierarchy(m_testFilePath);
+
+    ASSERT_EQ(result.size(), 1u);
+    EXPECT_EQ(result[0].skeletonNameHash, 0ull);
+}

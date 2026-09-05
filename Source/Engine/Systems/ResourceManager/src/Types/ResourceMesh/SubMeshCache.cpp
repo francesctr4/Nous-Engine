@@ -140,6 +140,7 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
     // moves instead of copying.
     mesh->vertices = std::move(sub.vertices);
     mesh->indices.assign(sub.indices.begin(), sub.indices.end());
+    mesh->skeletonNameHash = sub.skeletonNameHash;
 
     // Local AABB + hasSkinning. This is the path SpawnMeshAsHierarchy uses, so it
     // produces the per-submesh ResourceMesh that ends up on each CMesh -- and

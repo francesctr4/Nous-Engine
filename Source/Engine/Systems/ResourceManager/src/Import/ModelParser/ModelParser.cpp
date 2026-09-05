@@ -2,6 +2,7 @@
 
 #include <ResourceManager/Import/ModelParser/ClipBuild.h>
 #include <ResourceManager/Import/ModelParser/SkeletonBuild.h>
+#include <ResourceManager/Types/ResourceSkeleton/ImporterSkeleton.h>  // HashBoneNames
 #include <ResourceManager/Core/IResourceLoader.h>
 
 #include <FileSystem/FileHandle.h>
@@ -255,6 +256,13 @@ namespace nous::engine::resource_manager
 
             WeldSmoothNormals(out, startIdx);
             ApplyBoneWeights(mesh, skeleton, startIdx, assetsPath, out);
+
+            // Stamp the rig identity so the runtime can refuse a mismatched .nskel.
+            // Taken from the skeleton this parse just built, which is why ParseModel
+            // must build the skeleton BEFORE the submeshes -- the same ordering the
+            // per-vertex bone indices already depend on.
+            if (skeleton.BoneCount() > 0)
+                out.skeletonNameHash = HashBoneNames(skeleton.names);
 
             if (mesh->HasFaces())
             {

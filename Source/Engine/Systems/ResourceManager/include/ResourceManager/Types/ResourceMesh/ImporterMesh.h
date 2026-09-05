@@ -21,6 +21,12 @@ struct SubMeshData
     std::vector<Vertex3D>  vertices;
     std::vector<uint32_t>  indices;
     std::string         materialAssetPath;
+
+    // Hash of the source model's bone NAMES, or 0 when the model has no skeleton.
+    // Serialized so a mesh can be checked against the .nskel a CAnimator was given:
+    // nothing else on disk or in memory says which rig a mesh is skinned to, and the
+    // wrong pairing produces silently garbled geometry rather than an error.
+    uint64_t            skeletonNameHash = 0;
 };
 
 // A submesh WITHOUT its geometry: everything the scene needs to build the

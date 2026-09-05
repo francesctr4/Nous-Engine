@@ -76,6 +76,34 @@ void ApplySkinningToGeometry(const entt::registry& registry, const entt::entity 
 	if (!animator || animator->GetPalette().empty())
 		return;
 
+	// Refuse a rig this mesh was not skinned against. Nothing else pairs the two --
+	// CAnimator's skeleton slot is filled by hand, so dropping the wrong .nskel is a
+	// normal mistake, and the result is geometry torn apart by bone indices that mean
+	// something else entirely. Skipping renders the BIND POSE instead, matching what a
+	// shader without the palette bindings does: wrong-but-legible plus one warning,
+	// never silent garbage.
+	//
+	// A zero hash on either side means "unknown rig", not "mismatch": a mesh binary
+	// written before this field existed is rejected by the magic, but a skeleton built
+	// by a test or a fallback path can legitimately have none.
+	if (animator->skeleton && animator->skeleton->nameHash != 0 && mesh.skeletonNameHash != 0
+	    && animator->skeleton->nameHash != mesh.skeletonNameHash)
+	{
+		if (!animator->warnedSkeletonMismatch)
+		{
+			animator->warnedSkeletonMismatch = true;
+			NOUS_WARN_C(CURRENT_CHANNEL,
+				"[Skinning] Mesh '%s' is skinned to a different rig than the skeleton '%s' "
+				"assigned to its CAnimator (bone-name hash %llu vs %llu); it renders in bind "
+				"pose. Assign the .nskel that came from the same model.",
+				mesh.GetName().c_str(),
+				animator->skeleton->GetName().c_str(),
+				static_cast<unsigned long long>(mesh.skeletonNameHash),
+				static_cast<unsigned long long>(animator->skeleton->nameHash));
+		}
+		return;
+	}
+
 	data.palette = &animator->GetPalette();
 
 	// The palette already maps mesh space -> animated MODEL space, so the only

@@ -55,6 +55,7 @@ static std::span<char> AsWritableCharSpan(std::vector<T>& values)
 //   nameLen:u64, name:chars
 //   localTransform:16×float                     (column-major, GLM convention)
 //   matPathLen:u64, matPath:chars               (empty => default material)
+//   skeletonNameHash:u64                        (0 => model had no skeleton)
 //   vertexCount:u64, Vertex3D[]
 //   indexCount:u64, uint32_t[]
 //
@@ -70,7 +71,7 @@ static std::span<char> AsWritableCharSpan(std::vector<T>& values)
 // and Assets/ is the source of truth, so a binary written by an older engine is
 // rejected with a message rather than parsed by a second code path. Bump the magic
 // whenever the layout changes and delete Library/ to regenerate.
-static constexpr uint32_t MESH_BINARY_MAGIC = 0xFA7C0DE3u;
+static constexpr uint32_t MESH_BINARY_MAGIC = 0xFA7C0DE4u;
 
 // ─── Writing ──────────────────────────────────────────────────────────────────
 //
@@ -107,6 +108,7 @@ static void SerializeSubmesh(const SubMeshData& sub, std::vector<std::byte>& out
     AppendString(out, sub.name);
     AppendBytes (out, &sub.localTransform[0][0], 16 * sizeof(float));
     AppendString(out, sub.materialAssetPath);
+    AppendU64   (out, sub.skeletonNameHash);
 
     AppendU64(out, sub.vertices.size());
     if (!sub.vertices.empty())
@@ -172,6 +174,7 @@ namespace
         std::string name;
         glm::mat4   localTransform{ 1.0f };
         std::string materialAssetPath;
+        uint64_t    skeletonNameHash = 0;
     };
 
     bool ReadU32(FileHandle& fh, uint32_t& out)
@@ -205,7 +208,9 @@ namespace
                                     16 * sizeof(float))).has_value())
             return false;
 
-        return ReadString(fh, out.materialAssetPath);
+        if (!ReadString(fh, out.materialAssetPath)) return false;
+
+        return ReadU64(fh, out.skeletonNameHash);
     }
 
     bool ReadBlobGeometry(FileHandle& fh, SubMeshData& out)
@@ -294,6 +299,7 @@ static std::vector<SubMeshData> ParseMeshBinary(const std::string& libraryPath)
         sub.name              = std::move(header.name);
         sub.localTransform    = header.localTransform;
         sub.materialAssetPath = std::move(header.materialAssetPath);
+        sub.skeletonNameHash  = header.skeletonNameHash;
 
         if (!ReadBlobGeometry(fh, sub)) break;
 
@@ -386,6 +392,7 @@ bool ImporterMesh::LoadSubmesh(const std::string& libraryPath, int32_t submeshIn
     out.name              = std::move(header.name);
     out.localTransform    = header.localTransform;
     out.materialAssetPath = std::move(header.materialAssetPath);
+    out.skeletonNameHash  = header.skeletonNameHash;
 
     const bool ok = ReadBlobGeometry(fh, out);
 
@@ -456,6 +463,11 @@ bool ImporterMesh::Deserialize(const std::string& libraryPath, ResourceBase* out
         for (size_t i = 0; i < sub.indices.size(); ++i)
             mesh->indices[prevI + i] = sub.indices[i] + static_cast<uint32_t>(prevV);
     }
+
+    // Every submesh here came from ONE model, so they share a rig; taking the first
+    // is exact rather than a guess. NOT derived from the vertices, so it cannot live
+    // in RecomputeDerivedData.
+    mesh->skeletonNameHash = submeshes.empty() ? 0 : submeshes.front().skeletonNameHash;
 
     // Local AABB + hasSkinning, in one pass over the merged vertex set.
     mesh->RecomputeDerivedData();
