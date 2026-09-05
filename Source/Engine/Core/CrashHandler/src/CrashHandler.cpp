@@ -231,6 +231,7 @@ namespace nous::engine::crash
 #include <csignal>
 #include <cstring>
 #include <cstdlib>
+#include <initializer_list>
 #include <execinfo.h>
 #include <sys/resource.h>
 #include <unistd.h>
