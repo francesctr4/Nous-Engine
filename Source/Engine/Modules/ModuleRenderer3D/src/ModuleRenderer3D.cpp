@@ -464,10 +464,17 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		std::vector<GeometryRenderData> outlinedGeometries;
 		for (auto go : sceneData.selectedObjects)
 		{
-			if (!go.HasComponent<CMesh>()) continue;
+			auto* m = go.TryGetComponent<CMesh>();
+			if (!m || !m->mesh) continue;
+
 			GeometryRenderData data{};
-			if (auto* t = go.TryGetComponent<CTransform>()) data.model    = t->worldMatrix;
-			if (auto* m = go.TryGetComponent<CMesh>())      data.geometry = m->mesh;
+			if (auto* t = go.TryGetComponent<CTransform>()) data.model = t->worldMatrix;
+			data.geometry = m->mesh;
+
+			// Without this the outline traces the BIND pose while the mesh deforms --
+			// a halo standing beside the character rather than around it.
+			ApplySkinningToGeometry(*sceneData.registry, go.GetEntity(), *m->mesh, data);
+
 			outlinedGeometries.push_back(data);
 		}
 		mRendererFrontend->SetOutlinedGeometries(outlinedGeometries);

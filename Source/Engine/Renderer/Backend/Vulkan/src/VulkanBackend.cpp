@@ -2603,6 +2603,10 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
                                         {.createOutlinePipelines = true}))
             return false;
         vkContext->builtInOutlineShader = shader;
+
+        // The outline shader now declares set=0 binding 3 for the bone palette.
+        TryWriteGlobalStorageDescriptors(vkContext, shader);
+
         NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.OutlineShader assigned to sceneRenderpass.");
         return true;
     }
@@ -2863,6 +2867,11 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate OutlineShader.");
             return false;
         }
+
+        // Reload rebuilt the descriptor pool, so the create-time palette write is
+        // gone with it and must be reissued.
+        TryWriteGlobalStorageDescriptors(vkContext, shader);
+
         NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] OutlineShader reloaded.");
         return true;
     }
@@ -3668,6 +3677,29 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
     const VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
     const auto vs = down_cast<VulkanShader*>(rOutlineShader->internalData);
 
+    // Pack this pass's palettes in the order BOTH loops below iterate.
+    std::vector<const GeometryRenderData*> ordered;
+    ordered.reserve(outlinedGeometries.size());
+    for (const auto& g : outlinedGeometries)
+        ordered.push_back(&g);
+
+    const PackedPalettes packed = PackPalettes(ordered, c_paletteRegionOutline);
+
+    // This pass runs inside the scene renderpass on the current image, so its ring
+    // slot follows imageIndex like every other per-frame upload -- unlike the pick
+    // pass, which always reads set 0.
+    if (!packed.palettes.empty())
+    {
+        const uint32_t slot = nous::engine::renderer::vulkan::ChooseInstanceSSBOSlot(vkContext->imageIndex);
+        if (vkContext->paletteSSBOMapped[slot])
+        {
+            auto* bones = static_cast<glm::mat4*>(vkContext->paletteSSBOMapped[slot]);
+            std::memcpy(bones + c_paletteRegionOutline,
+                        packed.palettes.data(),
+                        packed.palettes.size() * sizeof(glm::mat4));
+        }
+    }
+
     // Upload the outline global UBO: projection + view + outlineColor.
     const struct OutlineGlobalUBO { glm::mat4 projection; glm::mat4 view; glm::vec4 outlineColor; }
         globalUBO{ projection, view, settings.color };
@@ -3684,8 +3716,14 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
     NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
         vkContext->imageIndex, &globalUBO, sizeof(globalUBO));
 
+    // Advances once per geometry, BEFORE any skip, so it stays in lockstep with
+    // `packed.bases`, which was packed from the full list.
+    size_t stencilIndex = 0;
+
     for (const auto& renderData : outlinedGeometries)
     {
+        const size_t baseIndex = stencilIndex++;
+
         if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID) continue;
 
         const VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
@@ -3695,8 +3733,9 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
         struct OutlinePushConstant
         {
             glm::mat4 model;
-            float thickness;
-        } pc{.model = renderData.model, .thickness = 0.0f};
+            float     thickness;
+            uint32_t  paletteBase;
+        } pc{.model = renderData.model, .thickness = 0.0f, .paletteBase = packed.bases[baseIndex]};
 
         vkCmdPushConstants(
     commandBuffer->handle,
@@ -3732,8 +3771,13 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
     else
         NOUS_VulkanShader::BindOutlineNoDepthPipeline(commandBuffer->handle, vs);
 
+    // Same list, so the same lockstep rule as pass 1.
+    size_t outlineIndex = 0;
+
     for (const auto& renderData : outlinedGeometries)
     {
+        const size_t baseIndex = outlineIndex++;
+
         if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID) continue;
 
         const VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
@@ -3741,8 +3785,9 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
         struct OutlinePushConstant
         {
             glm::mat4 model;
-            float thickness;
-        } pc{.model = renderData.model, .thickness = settings.width};
+            float     thickness;
+            uint32_t  paletteBase;
+        } pc{.model = renderData.model, .thickness = settings.width, .paletteBase = packed.bases[baseIndex]};
 
         vkCmdPushConstants(
     commandBuffer->handle,
