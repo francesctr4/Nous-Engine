@@ -790,28 +790,10 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInMaterialShader pointer still set — ResourceManager may not have cleared resources.");
     vkContext->builtInMaterialShader = nullptr;
 
-    // In EDITOR mode, builtInGameBackgroundShader is a VulkanBackend-owned clone (not in
-    // ResourceManager). In GAME mode it is ResourceManager-owned and released by ClearResources().
-    if (vkContext->renderMode == RenderMode::EDITOR)
-    {
-        if (vkContext->builtInGameBackgroundShader)
-        {
-            if (vkContext->builtInGameBackgroundShader->internalData)
-            {
-                vkContext->builtInGameBackgroundShader->internalData->Destroy();
-                vkContext->builtInGameBackgroundShader->internalData = nullptr;
-            }
-            NOUS_DELETE(vkContext->builtInGameBackgroundShader, MemoryTag::RESOURCE_SHADER);
-            vkContext->builtInGameBackgroundShader = nullptr;
-        }
-    }
-    else
-    {
-        // GAME mode: ResourceManager-owned; guard against unexpected state.
-        if (vkContext->builtInGameBackgroundShader)
-            NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInGameBackgroundShader pointer still set — ResourceManager may not have cleared resources.");
-        vkContext->builtInGameBackgroundShader = nullptr;
-    }
+    // No backend-owned shader CLONES remain. builtInPickShader is still backend-owned,
+    // but it is a genuinely separate shader (BuiltIn.PickShader.glsl) targeting
+    // pickRenderpass, whose R8G8B8A8_UNORM format makes it render-pass INCOMPATIBLE with
+    // the scene pass -- so its pipeline really cannot be shared.
 
     // builtInPickShader is an internal clone for mouse picking, also owned by VulkanBackend.
     if (vkContext->builtInPickShader)
@@ -836,10 +818,10 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInGridShader pointer still set — ResourceManager may not have cleared resources.");
     vkContext->builtInGridShader = nullptr;
 
-    // builtInSceneBackgroundShader is ResourceManager-owned.
-    if (vkContext->builtInSceneBackgroundShader)
-        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInSceneBackgroundShader pointer still set — ResourceManager may not have cleared resources.");
-    vkContext->builtInSceneBackgroundShader = nullptr;
+    // builtInBackgroundShader is ResourceManager-owned.
+    if (vkContext->builtInBackgroundShader)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInBackgroundShader pointer still set — ResourceManager may not have cleared resources.");
+    vkContext->builtInBackgroundShader = nullptr;
 
     // Destroy the editor grid vertex buffer (not managed by ResourceManager).
     if (vkContext->gridVertexBuffer.handle != VK_NULL_HANDLE)
@@ -2717,46 +2699,23 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         return true;
     }
 
-    // ── BuiltIn.BackgroundShader → scene + game renderpass (viewport background) ─
-    //    Fullscreen gradient with depth test OFF. Also creates a game renderpass clone.
+    // ── BuiltIn.BackgroundShader → ONE shader, drawn in both viewports ────────
+    //    Fullscreen gradient with depth test OFF. No game clone: this shader declares
+    //    NO descriptor sets at all (a push constant and nothing else), so it never had
+    //    even the set=0 reason the material clone had -- only a pipeline built against
+    //    gameRenderpass, and the scene and game renderpasses are compatible.
     if (assetPath.find("BuiltIn.BackgroundShader") != std::string::npos)
     {
-        VulkanRenderpass* gameRenderpassTarget = vkContext->renderMode == RenderMode::GAME
+        VulkanRenderpass* target = vkContext->renderMode == RenderMode::GAME
             ? &vkContext->gameSwapchainRenderpass
-            : &vkContext->gameRenderpass;
+            : &vkContext->sceneRenderpass;
 
-        if (vkContext->renderMode == RenderMode::GAME)
-        {
-            // GAME mode: compile directly against swapchain renderpass; no scene clone needed.
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader, settings))
-                return false;
-            vkContext->builtInGameBackgroundShader = shader;
-            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader assigned to gameSwapchainRenderpass (GAME mode).");
-        }
-        else
-        {
-            // EDITOR mode: primary → sceneRenderpass, clone → gameRenderpass.
-            if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
-                return false;
-            vkContext->builtInSceneBackgroundShader = shader;
-            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader assigned to sceneRenderpass.");
+        if (!NOUS_VulkanShader::Create(vkContext, target, shader, settings))
+            return false;
 
-            auto* gameBackgroundShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
-            gameBackgroundShader->stagesData = shader->stagesData;
-            gameBackgroundShader->reflection = shader->reflection;
-
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, gameBackgroundShader, settings))
-            {
-                NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create game-renderpass background variant.");
-                NOUS_DELETE(gameBackgroundShader, MemoryTag::RESOURCE_SHADER);
-            }
-            else
-            {
-                vkContext->builtInGameBackgroundShader = gameBackgroundShader;
-                NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader clone assigned to gameRenderpass.");
-            }
-        }
-
+        vkContext->builtInBackgroundShader = shader;
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader assigned to %s.",
+                    vkContext->renderMode == RenderMode::GAME ? "gameSwapchainRenderpass" : "sceneRenderpass");
         return true;
     }
 
@@ -2795,10 +2754,9 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     if (shader == vkContext->builtInMaterialShader)         vkContext->builtInMaterialShader         = nullptr;
     if (shader == vkContext->builtInOutlineShader)          vkContext->builtInOutlineShader           = nullptr;
     if (shader == vkContext->builtInGridShader)             vkContext->builtInGridShader              = nullptr;
-    if (shader == vkContext->builtInSceneBackgroundShader)  vkContext->builtInSceneBackgroundShader   = nullptr;
+    if (shader == vkContext->builtInBackgroundShader)  vkContext->builtInBackgroundShader   = nullptr;
     if (shader == vkContext->builtInBoundingBoxShader)      vkContext->builtInBoundingBoxShader       = nullptr;
     // In GAME mode these are ResourceManager-owned and point directly to the shader being destroyed.
-    if (shader == vkContext->builtInGameBackgroundShader)   vkContext->builtInGameBackgroundShader   = nullptr;
 
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
@@ -3006,16 +2964,6 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader (scene).");
             return false;
-        }
-
-        // Game background clone on gameRenderpass.
-        if (vkContext->builtInGameBackgroundShader)
-        {
-            vkContext->builtInGameBackgroundShader->stagesData = shader->stagesData;
-            vkContext->builtInGameBackgroundShader->reflection = shader->reflection;
-            vkContext->builtInGameBackgroundShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInGameBackgroundShader, &vkContext->gameRenderpass, settings))
-                NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader game clone.");
         }
 
         NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] BackgroundShader reloaded (EDITOR mode).");
@@ -3444,12 +3392,10 @@ bool VulkanBackend::DrawBackground(const RenderpassType renderpassID,
 #ifdef _PROFILING
     ZoneScopedN("DrawBackground");
 #endif
-    // Select the shader for this renderpass.
-    const ResourceShader* rShader = nullptr;
-    if (renderpassID == RenderpassType::SCENE)
-        rShader = vkContext->builtInSceneBackgroundShader;
-    else if (renderpassID == RenderpassType::GAME)
-        rShader = vkContext->builtInGameBackgroundShader;
+    // One shader for both viewports -- see the no-clone note in CreateShader. The UI
+    // pass draws no background, so an unexpected renderpassID simply draws it anyway
+    // rather than silently skipping; DrawBackground is only called for SCENE and GAME.
+    const ResourceShader* rShader = vkContext->builtInBackgroundShader;
 
     if (!rShader || !rShader->internalData)
         return true; // Shader not loaded yet — skip gracefully.

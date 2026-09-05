@@ -306,8 +306,10 @@ struct VulkanContext
     class ResourceShader* builtInGridShader     = nullptr; // Scene renderpass only; ResourceManager-owned
 
     // ── Background gradient shader ─────────────────────────────────────────────
-    class ResourceShader* builtInSceneBackgroundShader = nullptr; // Scene renderpass; ResourceManager-owned
-    class ResourceShader* builtInGameBackgroundShader  = nullptr; // Game renderpass; VulkanBackend-owned clone
+    // ONE background shader for BOTH viewports. It declares no descriptor sets at all,
+    // so it never needed a per-viewport clone even before global set=0 resources became
+    // per (renderpass, image); the clone only ever existed for a gameRenderpass pipeline.
+    class ResourceShader* builtInBackgroundShader = nullptr; // ResourceManager-owned
 
     // ── Editor grid resources ──────────────────────────────────────────────────
     VulkanBuffer gridVertexBuffer{};
