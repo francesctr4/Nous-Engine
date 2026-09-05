@@ -112,6 +112,11 @@ enum class RenderpassType : uint8_t
     UI
 };
 
+// Number of RenderpassType values. Global set=0 resources are allocated per pass
+// per image, and the pass dimension is indexed by the enum value directly — no
+// mapping table to fall out of sync with the enum.
+static constexpr uint32_t c_renderpassCount = 3;
+
 // -----------------------------------------------------------------------------
 // Light data (std140-safe: all members use vec4/ivec4, no vec3)
 // -----------------------------------------------------------------------------

@@ -1535,7 +1535,7 @@ bool VulkanBackend::UpdateGlobalWorldState(
 
     NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
     NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
-        vkContext->imageIndex, &globalUBO, sizeof(GlobalUBO));
+        renderpassID, vkContext->imageIndex, &globalUBO, sizeof(GlobalUBO));
 
     return true;
 }
@@ -1836,7 +1836,8 @@ void VulkanBackend::UploadInstanceData(const glm::mat4* matrices,
                                         uint32_t         paletteOffset)
 {
     // Select the ring slot by swapchain image index, matching the static binding
-    // globalDescriptorSets[i] -> ...SSBO[i % 3] (WriteGlobalStorageDescriptors). This makes
+    // GlobalSlot(vs, pass, image) -> ...SSBO[image % 3] (WriteGlobalStorageDescriptors, which
+    // walks pass x image explicitly so the ring follows the IMAGE, not the flat slot). This makes
     // the buffer the draw reads identical to the one we write — unlike indexing by a CPU frame
     // counter, which desyncs from imageIndex after a swapchain recreate (currentFrame resets to 0
     // while the frame counter keeps advancing) and made meshes read stale matrices post-resize.
@@ -2495,37 +2496,48 @@ static void WriteGlobalStorageDescriptors(VulkanContext* vkContext, VulkanShader
     const VkDeviceSize baseSize     = 2 * c_maxInstances * sizeof(uint32_t);
     const VkDeviceSize paletteSize  = c_paletteRegionCount * c_maxSkinnedBones * sizeof(glm::mat4);
 
-    const VkDevice dev   = vkContext->device.logicalDevice;
-    const uint32_t count = static_cast<uint32_t>(vs->globalDescriptorSets.size());
+    const VkDevice dev = vkContext->device.logicalDevice;
 
-    for (uint32_t i = 0; i < count; ++i)
+    for (uint32_t pass = 0; pass < c_renderpassCount; ++pass)
     {
-        VkDescriptorBufferInfo infos[3]{};
-        VkWriteDescriptorSet   writes[3]{};
-        uint32_t               n = 0;
-
-        const auto push = [&](uint32_t binding, VkBuffer buffer, VkDeviceSize range)
+        for (uint32_t image = 0; image < vs->globalImageCount; ++image)
         {
-            infos[n].buffer = buffer;
-            infos[n].offset = 0;
-            infos[n].range  = range;
+            const uint32_t slot = NOUS_VulkanShader::GlobalSlot(
+                vs, static_cast<RenderpassType>(pass), image);
+            if (slot >= vs->globalDescriptorSets.size()) continue;
 
-            writes[n].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writes[n].dstSet          = vs->globalDescriptorSets[i];
-            writes[n].dstBinding      = binding;
-            writes[n].dstArrayElement = 0;
-            writes[n].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            writes[n].descriptorCount = 1;
-            writes[n].pBufferInfo     = &infos[n];
-            ++n;
-        };
+            VkDescriptorBufferInfo infos[3]{};
+            VkWriteDescriptorSet   writes[3]{};
+            uint32_t               n = 0;
 
-        if (hasInstances) push(1, vkContext->instanceSSBO[i % 3].handle,    instanceSize);
-        if (hasBases)     push(2, vkContext->paletteBaseSSBO[i % 3].handle, baseSize);
-        if (hasPalette)   push(3, vkContext->paletteSSBO[i % 3].handle,     paletteSize);
+            const auto push = [&](uint32_t binding, VkBuffer buffer, VkDeviceSize range)
+            {
+                infos[n].buffer = buffer;
+                infos[n].offset = 0;
+                infos[n].range  = range;
 
-        if (n > 0)
-            vkUpdateDescriptorSets(dev, n, writes, 0, nullptr);
+                writes[n].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writes[n].dstSet          = vs->globalDescriptorSets[slot];
+                writes[n].dstBinding      = binding;
+                writes[n].dstArrayElement = 0;
+                writes[n].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                writes[n].descriptorCount = 1;
+                writes[n].pBufferInfo     = &infos[n];
+                ++n;
+            };
+
+            // The ring slot follows the IMAGE, never the flat slot: the SSBOs are a
+            // 3-deep per-frame ring shared by all passes, exactly as UploadInstanceData
+            // writes them (ChooseInstanceSSBOSlot(imageIndex)).
+            const uint32_t ring = image % 3;
+
+            if (hasInstances) push(1, vkContext->instanceSSBO[ring].handle,    instanceSize);
+            if (hasBases)     push(2, vkContext->paletteBaseSSBO[ring].handle, baseSize);
+            if (hasPalette)   push(3, vkContext->paletteSSBO[ring].handle,     paletteSize);
+
+            if (n > 0)
+                vkUpdateDescriptorSets(dev, n, writes, 0, nullptr);
+        }
     }
 }
 
@@ -2805,12 +2817,27 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     auto reacquireMaterialInstances = [&]
     {
         if (!vkContext->resourceManager) return;
-        vkContext->resourceManager->ForEachMaterial([this](ResourceMaterial* mat)
+
+        const auto reacquire = [this](ResourceMaterial* mat)
         {
+            if (!mat) return;
             mat->internalID      = INVALID_ID;  // bypass the "already acquired" guard
             mat->poolOwnerShader = nullptr;      // let CreateMaterial re-derive the pool owner
             CreateMaterial(mat);
-        });
+        };
+
+        // The default material FIRST, and explicitly: it is a standalone BuiltinResources
+        // object that was never inserted into the resource table, so ForEachMaterial (which
+        // walks a table snapshot) cannot see it. Missing it does not merely leave it
+        // unrendered -- it keeps a slot index from the DESTROYED pool, which the loop below
+        // then hands to a real material, so the two alias one VkDescriptorSet. Both draw in
+        // the same command buffer, the second one's write invalidates the first one's bind
+        // (UNASSIGNED-CoreValidation-DrawState-InvalidCommandBuffer-VkDescriptorSet), and the
+        // visible result is a mesh wearing another object's material. It only surfaces once
+        // something draws with the fallback -- i.e. the frame a new mesh is dropped in.
+        reacquire(vkContext->resourceManager->GetDefaultMaterial());
+
+        vkContext->resourceManager->ForEachMaterial(reacquire);
     };
 
     // ── Recreate GPU resources (mirrors CreateShader path selection) ──────────
@@ -2954,7 +2981,12 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     // ── BuiltIn.BoundingBoxShader ─────────────────────────────────────────────
     if (assetPath.find("BuiltIn.BoundingBoxShader") != std::string::npos)
     {
-        if (!recreate(shader, &vkContext->sceneRenderpass, {.useLineTopology = true}))
+        // createNoDepthVariant must MATCH CreateShader's flags. Dropping it here does not
+        // fail: BindNoDepthPipeline falls back to the depth-tested pipeline, so the skeleton
+        // Line/Joint channels silently start being occluded by the character mesh they live
+        // inside -- a reload turning a feature off with no error.
+        if (!recreate(shader, &vkContext->sceneRenderpass,
+                      {.useLineTopology = true, .createNoDepthVariant = true}))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BoundingBoxShader.");
             return false;
@@ -3019,8 +3051,8 @@ uint32_t VulkanBackend::PickObjectAt(int32_t pixelX, int32_t pixelY,
 
     const PackedPalettes packed = PackPalettes(ordered, c_paletteRegionPick);
 
-    // SLOT 0, not imageIndex. UpdateGlobal below passes image index 0, so this draw
-    // reads globalDescriptorSets[0], which is statically wired to paletteSSBO[0].
+    // SLOT 0, not imageIndex. UpdateGlobal below passes (SCENE, image 0), so this draw
+    // reads GlobalSlot == 0, which is statically wired to paletteSSBO[0].
     // Using the current image's slot would read another frame's data, intermittently.
     // The vkDeviceWaitIdle above makes slot 0 safe to overwrite.
     if (!packed.palettes.empty() && vkContext->paletteSSBOMapped[0])
@@ -3065,7 +3097,10 @@ uint32_t VulkanBackend::PickObjectAt(int32_t pixelX, int32_t pixelY,
 
     // --- Update global UBO (projection + view) ---
     struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
-    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuffer.handle, pickVS, 0, &ubo, sizeof(ubo));
+    // SCENE, not a pass of its own: the pick pass reads image index 0, so keeping it on
+    // one fixed pass makes its slot stable and matches the palette written to ring slot 0.
+    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuffer.handle, pickVS,
+        RenderpassType::SCENE, 0, &ubo, sizeof(ubo));
 
     // --- Draw each geometry with objectUID push constant ---
     struct PickPushConstants
@@ -3339,7 +3374,7 @@ bool VulkanBackend::DrawGrid(const RenderpassType renderpassID,
 
     const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
     NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-        vkContext->imageIndex, &ubo, sizeof(ubo));
+        renderpassID, vkContext->imageIndex, &ubo, sizeof(ubo));
 
     // Push identity model matrix (grid lives at the world origin).
     constexpr glm::mat4 identity(1.0f);
@@ -3543,13 +3578,14 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
         // (same projection/view). See the set=0 inheritance note in iRendererBackend.h.
         vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
             vs->pipeline.pipelineLayout, 0, 1,
-            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+            &vs->globalDescriptorSets[NOUS_VulkanShader::GlobalSlot(
+                vs, renderpassID, vkContext->imageIndex)], 0, nullptr);
     }
     else
     {
         const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
         NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-            vkContext->imageIndex, &ubo, sizeof(ubo));
+            renderpassID, vkContext->imageIndex, &ubo, sizeof(ubo));
         vkContext->wireframeGlobalSetThisFrame = true;
     }
 
@@ -3651,14 +3687,15 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
         // projection/view matrices).
         vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
             vs->pipeline.pipelineLayout, 0, 1,
-            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+            &vs->globalDescriptorSets[NOUS_VulkanShader::GlobalSlot(
+                vs, renderpassID, vkContext->imageIndex)], 0, nullptr);
     }
     else
     {
         // First (or only) use of this shader this frame — full update.
         struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
         NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-            vkContext->imageIndex, &ubo, sizeof(ubo));
+            renderpassID, vkContext->imageIndex, &ubo, sizeof(ubo));
         vkContext->wireframeGlobalSetThisFrame = true;
     }
 
@@ -3735,13 +3772,14 @@ bool VulkanBackend::DrawDebugLines(RenderpassType renderpassID,
         // rebind only. Same projection/view.
         vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
             vs->pipeline.pipelineLayout, 0, 1,
-            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+            &vs->globalDescriptorSets[NOUS_VulkanShader::GlobalSlot(
+                vs, renderpassID, vkContext->imageIndex)], 0, nullptr);
     }
     else
     {
         struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
         NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-            vkContext->imageIndex, &ubo, sizeof(ubo));
+            renderpassID, vkContext->imageIndex, &ubo, sizeof(ubo));
         vkContext->wireframeGlobalSetThisFrame = true;
     }
 
@@ -3824,7 +3862,7 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
         NOUS_VulkanShader::BindStencilWriteNoDepthPipeline(commandBuffer->handle, vs);
 
     NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
-        vkContext->imageIndex, &globalUBO, sizeof(globalUBO));
+        renderpassID, vkContext->imageIndex, &globalUBO, sizeof(globalUBO));
 
     // Advances once per geometry, BEFORE any skip, so it stays in lockstep with
     // `packed.bases`, which was packed from the full list.

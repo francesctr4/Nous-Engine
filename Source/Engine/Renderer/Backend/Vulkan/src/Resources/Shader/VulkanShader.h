@@ -50,9 +50,19 @@ struct VulkanShader : public IBackendShader
 
     // ── Global (set=0) resources ──────────────────────────────────────────────
     VkDescriptorPool             globalPool = VK_NULL_HANDLE;
-    std::vector<VkDescriptorSet> globalDescriptorSets; // one per swapchain image
-    std::vector<VulkanBuffer>    globalUBOBuffers;      // one per swapchain image
-    uint32_t                     globalUBOStride = 0;  // bytes for the set=0 UBO (from reflection)
+
+    // Flat arrays of c_renderpassCount * globalImageCount entries, indexed through
+    // GlobalSlot(vs, pass, image). Per PASS as well as per image because a user
+    // shader is created ONCE but drawn in both the scene and game passes, which
+    // carry different view matrices -- one buffer per image means the game pass
+    // clobbers what the scene pass recorded. (The built-in material shader dodges
+    // this by having a whole cloned ResourceShader per viewport; custom shaders
+    // have no clone.)
+    std::vector<VkDescriptorSet> globalDescriptorSets;
+    std::vector<VulkanBuffer>    globalUBOBuffers;
+
+    uint32_t                     globalUBOStride  = 0; // bytes for the set=0 UBO (from reflection)
+    uint32_t                     globalImageCount = 0; // swapchain images this shader was built for
 
     // ── Instance (set=1) resources ────────────────────────────────────────────
     VkDescriptorPool             instancePool = VK_NULL_HANDLE;
@@ -123,11 +133,17 @@ namespace NOUS_VulkanShader
     void BindNoDepthPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs);
 
     /**
-     * @brief Upload `data` (size bytes) to the global UBO for `imageIndex`,
+     * @brief Flat index into globalDescriptorSets / globalUBOBuffers.
+     */
+    [[nodiscard]] uint32_t GlobalSlot(const VulkanShader* vs, RenderpassType renderpassID,
+                                      uint32_t imageIndex);
+
+    /**
+     * @brief Upload `data` (size bytes) to the global UBO for (renderpassID, imageIndex),
      *        update the descriptor, and bind descriptor set=0.
      */
     void UpdateGlobal(VulkanContext* vkContext, VkCommandBuffer cmdBuffer,
-                      VulkanShader* vs, uint32_t imageIndex,
+                      VulkanShader* vs, RenderpassType renderpassID, uint32_t imageIndex,
                       const void* data, uint64_t size);
 
     // ── Instance slot management ──────────────────────────────────────────────
