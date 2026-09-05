@@ -308,8 +308,8 @@ bool VulkanBackend::Initialize()
 
     // BuiltIn shaders are loaded via the ResourceManager in ModuleRenderer3D::Awake(),
     // which calls ImporterShader::Load → CreateShader → VulkanBackend::CreateShader.
-    // vkContext->builtInMaterialShader and builtInGameShader are assigned automatically
-    // when the built-in asset path is recognised there.
+    // vkContext->builtInMaterialShader and friends are assigned automatically when the
+    // built-in asset path is recognised there.
 
     // Create Vulkan Buffers
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Buffers...");
@@ -790,21 +790,10 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInMaterialShader pointer still set — ResourceManager may not have cleared resources.");
     vkContext->builtInMaterialShader = nullptr;
 
-    // In EDITOR mode, builtInGameShader is a VulkanBackend-owned clone (not in ResourceManager).
-    // In GAME mode, it is ResourceManager-owned and will be released by ClearResources().
+    // In EDITOR mode, builtInGameBackgroundShader is a VulkanBackend-owned clone (not in
+    // ResourceManager). In GAME mode it is ResourceManager-owned and released by ClearResources().
     if (vkContext->renderMode == RenderMode::EDITOR)
     {
-        if (vkContext->builtInGameShader)
-        {
-            if (vkContext->builtInGameShader->internalData)
-            {
-                vkContext->builtInGameShader->internalData->Destroy();
-                vkContext->builtInGameShader->internalData = nullptr;
-            }
-            NOUS_DELETE(vkContext->builtInGameShader, MemoryTag::RESOURCE_SHADER);
-            vkContext->builtInGameShader = nullptr;
-        }
-
         if (vkContext->builtInGameBackgroundShader)
         {
             if (vkContext->builtInGameBackgroundShader->internalData)
@@ -819,10 +808,6 @@ void VulkanBackend::Shutdown() noexcept
     else
     {
         // GAME mode: ResourceManager-owned; guard against unexpected state.
-        if (vkContext->builtInGameShader)
-            NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInGameShader pointer still set — ResourceManager may not have cleared resources.");
-        vkContext->builtInGameShader = nullptr;
-
         if (vkContext->builtInGameBackgroundShader)
             NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInGameBackgroundShader pointer still set — ResourceManager may not have cleared resources.");
         vkContext->builtInGameBackgroundShader = nullptr;
@@ -1360,8 +1345,9 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
 
     switch (renderpassID)
     {
+        // One shader for both viewports -- see the no-clone note in CreateShader.
         case RenderpassType::SCENE: TryBind(vkContext->builtInMaterialShader); break;
-        case RenderpassType::GAME:  TryBind(vkContext->builtInGameShader);     break;
+        case RenderpassType::GAME:  TryBind(vkContext->builtInMaterialShader); break;
         case RenderpassType::UI:    break; // ImGui uses its own imgui_impl_vulkan pipeline
     }
 
@@ -1536,9 +1522,7 @@ bool VulkanBackend::UpdateGlobalWorldState(
         vkContext->passGlobalUBOValid[passIndex] = true;
     }
 
-    const ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
-        ? vkContext->builtInGameShader
-        : vkContext->builtInMaterialShader;
+    const ResourceShader* rShader = vkContext->builtInMaterialShader;
 
     if (!rShader || !rShader->internalData) return false;
 
@@ -1611,9 +1595,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
         return true;
 
     // The base shader owns the instance pool and descriptor state.
-    ResourceShader* baseShader = (renderpassID == RenderpassType::GAME)
-        ? vkContext->builtInGameShader
-        : vkContext->builtInMaterialShader;
+    ResourceShader* baseShader = vkContext->builtInMaterialShader;
 
     if (!baseShader || !baseShader->internalData) return false;
 
@@ -1906,9 +1888,7 @@ bool VulkanBackend::DrawGeometryBatched(RenderpassType renderpassID,
         return true;
 
     // The base shader owns the instance pool and global descriptor sets.
-    ResourceShader* baseShader = (renderpassID == RenderpassType::GAME)
-        ? vkContext->builtInGameShader
-        : vkContext->builtInMaterialShader;
+    ResourceShader* baseShader = vkContext->builtInMaterialShader;
 
     if (!baseShader || !baseShader->internalData) return false;
 
@@ -2311,9 +2291,7 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
             poolOwner = material->shader;
     }
     if (!poolOwner)
-        poolOwner = vkContext->builtInMaterialShader
-                    ? vkContext->builtInMaterialShader
-                    : vkContext->builtInGameShader;
+        poolOwner = vkContext->builtInMaterialShader;
 
     if (!poolOwner || !poolOwner->internalData)
     {
@@ -2331,16 +2309,10 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
     material->internalID      = instanceID;
     material->poolOwnerShader = poolOwner;
 
-    // In EDITOR mode, also acquire a matching slot in the game shader clone so both
-    // pools stay in sync — but only for materials using the built-in shader.
-    // Custom-shader materials are drawn directly from their own pool in both renderpasses.
-    if (poolOwner == vkContext->builtInMaterialShader
-        && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
-    {
-        auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
-        uint32_t gameID = 0;
-        NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vsGame, &gameID);
-    }
+    // ONE instance slot, serving both viewports -- exactly how custom-shader materials
+    // have always worked. The built-in path used to mirror the slot into the game
+    // clone's pool and trust the two pools to hand back the SAME index, which nothing
+    // enforced; deleting the clone deletes that assumption with it.
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Material created (instance %u, pool: %s).",
                 material->internalID, poolOwner->GetName().c_str());
@@ -2369,15 +2341,6 @@ void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
     {
         auto* vs = down_cast<VulkanShader*>(material->poolOwnerShader->internalData);
         NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vs, material->internalID);
-    }
-
-    // Release game clone slot only for built-in shader materials (custom shaders share
-    // one pool between scene and game renderpasses — no clone slot to release).
-    if (material->poolOwnerShader == vkContext->builtInMaterialShader
-        && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
-    {
-        auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
-        NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vsGame, material->internalID);
     }
 
     material->internalID      = INVALID_ID;
@@ -2674,50 +2637,31 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     // see the table's comment for what a divergence between create and reload costs.
     const VulkanShaderCreateInfo settings = BuiltInSettingsFor(assetPath);
 
-    // ── BuiltIn.MaterialShader → scene renderpass (primary) ───────────────────
-    //    Also creates an internal clone for the game renderpass so both viewports
-    //    have independent global UBO buffers and descriptor sets.
+    // ── BuiltIn.MaterialShader → ONE shader, drawn in both viewports ──────────
+    //    There is no game-renderpass clone. It existed to give the game viewport its
+    //    own set=0 UBO + descriptor sets, which global resources being per (renderpass,
+    //    image) now provides on a single shader. Its second job -- a pipeline built
+    //    against gameRenderpass -- was never needed either: the scene and game
+    //    renderpasses are created with identical attachment formats and load ops, so
+    //    they are render-pass COMPATIBLE and one pipeline is valid in both.
+    //
+    //    Do NOT reintroduce the clone. If the two renderpasses ever diverge
+    //    structurally, the fix is a second pipeline on this shader (as the outline and
+    //    no-depth variants already are), not a second ResourceShader.
     if (assetPath.find("BuiltIn.MaterialShader") != std::string::npos)
     {
-        VulkanRenderpass* gameRenderpassTarget = vkContext->renderMode == RenderMode::GAME
+        // GAME mode has no sceneRenderpass; compile against the swapchain instead.
+        VulkanRenderpass* target = vkContext->renderMode == RenderMode::GAME
             ? &vkContext->gameSwapchainRenderpass
-            : &vkContext->gameRenderpass;
+            : &vkContext->sceneRenderpass;
 
-        if (vkContext->renderMode == RenderMode::GAME)
-        {
-            // GAME mode: compile directly against swapchain renderpass; no scene clone needed.
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader, settings))
-                return false;
-            vkContext->builtInGameShader = shader;
-            TryWriteGlobalStorageDescriptors(vkContext, shader);
-            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to gameSwapchainRenderpass (GAME mode).");
-        }
-        else
-        {
-            // EDITOR mode: primary → sceneRenderpass, clone → gameRenderpass.
-            if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
-                return false;
-            vkContext->builtInMaterialShader = shader;
-            TryWriteGlobalStorageDescriptors(vkContext, shader);
-            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to sceneRenderpass.");
+        if (!NOUS_VulkanShader::Create(vkContext, target, shader, settings))
+            return false;
 
-            auto* gameShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
-            gameShader->stagesData = shader->stagesData;
-            gameShader->reflection = shader->reflection;
-
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, gameShader, settings))
-            {
-                NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create game-renderpass variant; game viewport will be unavailable.");
-                NOUS_DELETE(gameShader, MemoryTag::RESOURCE_SHADER);
-            }
-            else
-            {
-                vkContext->builtInGameShader = gameShader;
-                TryWriteGlobalStorageDescriptors(vkContext, gameShader);
-                NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader clone assigned to gameRenderpass.");
-            }
-        }
-
+        vkContext->builtInMaterialShader = shader;
+        TryWriteGlobalStorageDescriptors(vkContext, shader);
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to %s.",
+                    vkContext->renderMode == RenderMode::GAME ? "gameSwapchainRenderpass" : "sceneRenderpass");
         return true;
     }
 
@@ -2854,7 +2798,6 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     if (shader == vkContext->builtInSceneBackgroundShader)  vkContext->builtInSceneBackgroundShader   = nullptr;
     if (shader == vkContext->builtInBoundingBoxShader)      vkContext->builtInBoundingBoxShader       = nullptr;
     // In GAME mode these are ResourceManager-owned and point directly to the shader being destroyed.
-    if (shader == vkContext->builtInGameShader)             vkContext->builtInGameShader             = nullptr;
     if (shader == vkContext->builtInGameBackgroundShader)   vkContext->builtInGameBackgroundShader   = nullptr;
 
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
@@ -2978,18 +2921,6 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             return false;
         }
         TryWriteGlobalStorageDescriptors(vkContext, shader);
-
-        // Game clone on gameRenderpass.
-        if (vkContext->builtInGameShader)
-        {
-            vkContext->builtInGameShader->stagesData = shader->stagesData;
-            vkContext->builtInGameShader->reflection = shader->reflection;
-            vkContext->builtInGameShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInGameShader, &vkContext->gameRenderpass, settings))
-                NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader game clone.");
-            else
-                TryWriteGlobalStorageDescriptors(vkContext, vkContext->builtInGameShader);
-        }
 
         // NOTE: builtInPickShader is NOT updated here. It is a separate independent shader
         // (BuiltIn.PickShader.glsl) that outputs object IDs for mouse picking — it is NOT

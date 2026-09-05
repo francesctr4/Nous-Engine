@@ -22,8 +22,8 @@ public:
 public:
 
     // Incremented each time the shader is hot-reloaded (GPU swap completed).
-    // Synced to backend-owned clones (e.g. builtInGameShader) after each reload
-    // so all consumers can detect that their pipeline is stale.
+    // Synced to backend-owned clones (e.g. builtInGameBackgroundShader) after each
+    // reload so all consumers can detect that their pipeline is stale.
     uint32_t generation;
 
     std::vector<ShaderSource> stagesData;

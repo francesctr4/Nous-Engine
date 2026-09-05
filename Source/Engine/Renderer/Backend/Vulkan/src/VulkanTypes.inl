@@ -296,8 +296,11 @@ struct VulkanContext
     // ── Built-in shaders via the ResourceShader / VulkanShader system ─────────
     // Loaded in Initialize(); destroyed in Shutdown().
     // internalData points to a heap-allocated VulkanShader.
+    // ONE material shader, drawn in BOTH viewports. There is deliberately no game
+    // clone: global set=0 resources are per (renderpass, image), and the scene and
+    // game renderpasses are render-pass compatible, so a single shader and a single
+    // pipeline serve both. See the note in VulkanBackend::CreateShader.
     class ResourceShader* builtInMaterialShader = nullptr;
-    class ResourceShader* builtInGameShader     = nullptr;
     class ResourceShader* builtInPickShader     = nullptr;
     class ResourceShader* builtInOutlineShader  = nullptr; // Scene renderpass only; ResourceManager-owned
     class ResourceShader* builtInGridShader     = nullptr; // Scene renderpass only; ResourceManager-owned
