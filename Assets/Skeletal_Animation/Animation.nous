@@ -10,7 +10,7 @@
                 {
                     "type": "CTransform",
                     "position": [
-                        -53.68914794921875,
+                        -109.71279907226562,
                         3.5461454391479492,
                         0.15039069950580597
                     ],
@@ -36,9 +36,9 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
                     "skeletonUID": 3484759968,
-                    "clipAssetPath": "Assets\/Skeletal_Animation\/Dancing@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/3454383273.nanim",
-                    "clipUID": 3454383273,
+                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
+                    "clipUID": 3875098274,
                     "speed": 1,
                     "loop": true
                 }
@@ -52,7 +52,7 @@
                 {
                     "type": "CTransform",
                     "position": [
-                        59.646213531494141,
+                        121.75506591796875,
                         0,
                         0
                     ],
@@ -78,9 +78,9 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
                     "skeletonUID": 3484759968,
-                    "clipAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/1723749905.nanim",
-                    "clipUID": 1723749905,
+                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
+                    "clipUID": 3875098274,
                     "speed": 1,
                     "loop": true
                 }
@@ -120,9 +120,9 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
                     "skeletonUID": 408757248,
-                    "clipAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/1380512761.nanim",
-                    "clipUID": 1380512761,
+                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
+                    "clipUID": 3875098274,
                     "speed": 1,
                     "loop": true
                 }
