@@ -177,6 +177,9 @@ target_link_libraries(EditorUI PRIVATE
         ModuleCamera3D_headers
         ModuleInput_headers
         ModuleResourceManager_headers
+        # SceneViewport.cpp builds the mouse-pick geometry list and needs the same
+        # mesh-to-animator pairing the scene builder uses.
+        ModuleRenderer3D_headers
         ModuleScene_headers
 )
 

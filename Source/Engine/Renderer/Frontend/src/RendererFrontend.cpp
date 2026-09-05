@@ -221,9 +221,9 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 #ifdef _PROFILING
 				ZoneScopedN("DrawGeometryBatched (Scene)");
 #endif
-				// Scene pass uses SSBO range [0, c_maxInstances) and palette range
-				// [0, c_maxSkinnedBones).
-				const GroupedGeometries grouped = GroupGeometries(packet->geometries, 0, 0);
+				// Scene pass uses SSBO range [0, c_maxInstances) and the scene palette region.
+				const GroupedGeometries grouped =
+					GroupGeometries(packet->geometries, 0, c_paletteRegionScene);
 				if (!grouped.matrices.empty())
 				{
 					mBackend->UploadInstanceData(
@@ -233,7 +233,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 						0,
 						grouped.palettes.data(),
 						static_cast<uint32_t>(grouped.palettes.size()),
-						0);
+						c_paletteRegionScene);
 				}
 				for (const auto& batch : grouped.batches)
 					success &= mBackend->DrawGeometryBatched(sceneRenderpass, batch);
@@ -298,11 +298,10 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 				const auto& gameList = (mRenderMode == RenderMode::EDITOR)
 				    ? packet->gameGeometries
 				    : packet->geometries;
-				// Game pass uses SSBO range [c_maxInstances, 2*c_maxInstances) and palette
-				// range [c_maxSkinnedBones, 2*c_maxSkinnedBones) to avoid overwriting scene
-				// data that the GPU hasn't consumed yet.
+				// Game pass uses SSBO range [c_maxInstances, 2*c_maxInstances) and the game
+				// palette region, to avoid overwriting scene data the GPU hasn't consumed yet.
 				const GroupedGeometries groupedGame =
-					GroupGeometries(gameList, c_maxInstances, c_maxSkinnedBones);
+					GroupGeometries(gameList, c_maxInstances, c_paletteRegionGame);
 				if (!groupedGame.matrices.empty())
 				{
 					mBackend->UploadInstanceData(
@@ -312,7 +311,7 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 						c_maxInstances,
 						groupedGame.palettes.data(),
 						static_cast<uint32_t>(groupedGame.palettes.size()),
-						c_maxSkinnedBones);
+						c_paletteRegionGame);
 				}
 				for (const auto& batch : groupedGame.batches)
 					success &= mBackend->DrawGeometryBatched(gameRenderpass, batch);

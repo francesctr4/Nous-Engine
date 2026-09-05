@@ -77,6 +77,16 @@ static constexpr uint32_t c_maxSkinnedBones = 4096;
 // would index into a palette that was never uploaded.
 static constexpr uint32_t c_noSkinPalette = 0xFFFFFFFFu;
 
+// The palette SSBO is divided into four fixed regions of c_maxSkinnedBones matrices.
+// Each pass packs independently: the scene pass orders by (material, mesh) while the
+// per-object pick and outline passes iterate natural order, so their bases cannot be
+// shared even though outlined objects are a subset of scene objects.
+static constexpr uint32_t c_paletteRegionScene   = 0;
+static constexpr uint32_t c_paletteRegionGame    = 1 * c_maxSkinnedBones;
+static constexpr uint32_t c_paletteRegionOutline = 2 * c_maxSkinnedBones;
+static constexpr uint32_t c_paletteRegionPick    = 3 * c_maxSkinnedBones;
+static constexpr uint32_t c_paletteRegionCount   = 4;
+
 struct InstancedBatch
 {
     ResourceMesh*     geometry      = nullptr;

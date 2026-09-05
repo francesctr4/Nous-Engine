@@ -15,6 +15,7 @@
 #include <ECS/Component/Types/CMesh/CMesh.h>
 #include <ModuleScene/ModuleScene.h>
 #include <ModuleInput/ModuleInput.h>
+#include <ModuleRenderer3D/SkinningPairing.h>
 #include <ECS/GameObject.h>
 #include <ECS/Scene/Scene.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
@@ -505,10 +506,11 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
                                 0, framebufferHeight - 1);
 
     // Build geometry list (same logic as ModuleRenderer3D::BuildRenderPacket)
-    if (!editorContext->GetScene()->activeScene)
+    Scene* activeScene = editorContext->GetScene()->activeScene;
+    if (!activeScene)
         return;
 
-    const auto gameObjects = editorContext->GetScene()->activeScene->GetGameObjectsSnapshot();
+    const auto gameObjects = activeScene->GetGameObjectsSnapshot();
     std::vector<GeometryRenderData> geometries;
     geometries.reserve(gameObjects.size());
 
@@ -522,8 +524,15 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
         if (auto const* transform = go.TryGetComponent<CTransform>())
             data.model = transform->worldMatrix;
 
-        if (auto* mesh = go.TryGetComponent<CMesh>())
-            data.geometry = mesh->mesh;
+        auto* mesh = go.TryGetComponent<CMesh>();
+        if (mesh) data.geometry = mesh->mesh;
+
+        // The pick shader skins from this palette, so without it a click tests the
+        // BIND pose of an animating character -- the mesh moves and the clickable
+        // silhouette stays behind. Shared with the scene builder rather than copied:
+        // this list already drifted from BuildRenderPacket once by being a hand-copy.
+        if (mesh && mesh->mesh)
+            ApplySkinningToGeometry(activeScene->GetRegistry(), go.GetEntity(), *mesh->mesh, data);
 
         geometries.emplace_back(data);
     }

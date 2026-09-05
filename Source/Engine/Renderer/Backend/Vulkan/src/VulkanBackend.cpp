@@ -4,6 +4,7 @@
 #include <EngineCore/AppConfig.h>
 #include <EngineCore/InvalidID.h>
 #include <EngineCore/Casts.h>
+#include <Renderer/PackPalettes.h>
 #include "VulkanTypes.inl"
 
 #include "Core/Device/VulkanDevice.h"
@@ -357,8 +358,11 @@ bool VulkanBackend::Initialize()
     // game the second, so a game-pass upload cannot overwrite scene data the GPU has
     // not read yet.
     {
-        const VkDeviceSize baseSize    = 2 * c_maxInstances    * sizeof(uint32_t);
-        const VkDeviceSize paletteSize = 2 * c_maxSkinnedBones * sizeof(glm::mat4);
+        const VkDeviceSize baseSize    = 2 * c_maxInstances * sizeof(uint32_t);
+        // Four palette regions, not two: the per-object pick and outline passes pack
+        // their own bases in their own iteration order, so they cannot share the
+        // scene pass's region.
+        const VkDeviceSize paletteSize = c_paletteRegionCount * c_maxSkinnedBones * sizeof(glm::mat4);
 
         for (uint32_t i = 0; i < 3; ++i)
         {
@@ -1833,7 +1837,7 @@ void VulkanBackend::UploadInstanceData(const glm::mat4* matrices,
 
     if (boneCount > 0 && palettes)
     {
-        const uint32_t paletteCapacity = 2 * c_maxSkinnedBones;
+        const uint32_t paletteCapacity = c_paletteRegionCount * c_maxSkinnedBones;
         const uint32_t safeBones = nous::engine::renderer::vulkan::ClampInstanceWriteCount(
                 boneCount, paletteOffset, paletteCapacity);
         if (safeBones > 0)
@@ -2459,9 +2463,9 @@ static bool HasGlobalStorageBinding(const ResourceShader* shader, uint32_t bindi
 static void WriteGlobalStorageDescriptors(VulkanContext* vkContext, VulkanShader* vs,
                                           bool hasInstances, bool hasBases, bool hasPalette)
 {
-    const VkDeviceSize instanceSize = 2 * c_maxInstances    * sizeof(glm::mat4);
-    const VkDeviceSize baseSize     = 2 * c_maxInstances    * sizeof(uint32_t);
-    const VkDeviceSize paletteSize  = 2 * c_maxSkinnedBones * sizeof(glm::mat4);
+    const VkDeviceSize instanceSize = 2 * c_maxInstances * sizeof(glm::mat4);
+    const VkDeviceSize baseSize     = 2 * c_maxInstances * sizeof(uint32_t);
+    const VkDeviceSize paletteSize  = c_paletteRegionCount * c_maxSkinnedBones * sizeof(glm::mat4);
 
     const VkDevice dev   = vkContext->device.logicalDevice;
     const uint32_t count = static_cast<uint32_t>(vs->globalDescriptorSets.size());
@@ -2581,6 +2585,12 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         }
 
         vkContext->builtInPickShader = pickShader;
+
+        // The pick shader now declares set=0 binding 3. Without this the layout entry
+        // exists (reflection builds it) but the descriptor is never written, so the
+        // draw reads an unbound buffer.
+        TryWriteGlobalStorageDescriptors(vkContext, pickShader);
+
         NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.PickShader assigned to pickRenderpass.");
         return true;
     }
@@ -2835,6 +2845,11 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate PickShader.");
                 return false;
             }
+
+            // Reload destroyed and rebuilt the descriptor pool, so the create-time
+            // write is gone with it — the palette binding must be written again or
+            // picking reads an unbound buffer after the first shader edit.
+            TryWriteGlobalStorageDescriptors(vkContext, vkContext->builtInPickShader);
         }
         NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] PickShader reloaded.");
         return true;
@@ -2959,6 +2974,26 @@ uint32_t VulkanBackend::PickObjectAt(int32_t pixelX, int32_t pixelY,
     // Wait for all GPU work to complete before using the pick resources.
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
+    // Pack this pass's palettes in the SAME order the draw loop below iterates.
+    std::vector<const GeometryRenderData*> ordered;
+    ordered.reserve(geometries.size());
+    for (const auto& geo : geometries)
+        ordered.push_back(&geo);
+
+    const PackedPalettes packed = PackPalettes(ordered, c_paletteRegionPick);
+
+    // SLOT 0, not imageIndex. UpdateGlobal below passes image index 0, so this draw
+    // reads globalDescriptorSets[0], which is statically wired to paletteSSBO[0].
+    // Using the current image's slot would read another frame's data, intermittently.
+    // The vkDeviceWaitIdle above makes slot 0 safe to overwrite.
+    if (!packed.palettes.empty() && vkContext->paletteSSBOMapped[0])
+    {
+        auto* bones = static_cast<glm::mat4*>(vkContext->paletteSSBOMapped[0]);
+        std::memcpy(bones + c_paletteRegionPick,
+                    packed.palettes.data(),
+                    packed.palettes.size() * sizeof(glm::mat4));
+    }
+
     // --- Allocate single-use command buffer ---
     VulkanCommandBuffer cmdBuffer{};
     VkCommandPool pool = vkContext->device.mainGraphicsCommandPool;
@@ -2999,19 +3034,28 @@ uint32_t VulkanBackend::PickObjectAt(int32_t pixelX, int32_t pixelY,
     struct PickPushConstants
     {
         glm::mat4 model;
-        uint32_t objectID;
+        uint32_t  objectID;
+        uint32_t  paletteBase;
     };
+
+    // Advances once per geometry, BEFORE any skip, so it stays in lockstep with
+    // `packed.bases` — which was packed from the full list. Advancing it only for
+    // drawn geometries would shift every later object onto another character's palette.
+    size_t index = 0;
 
     for (const auto& geo : geometries)
     {
+        const size_t baseIndex = index++;
+
         if (!geo.geometry || geo.geometry->internalID == INVALID_ID)
             continue;
 
         VulkanGeometryData* bufferData = &vkContext->geometries[geo.geometry->internalID];
 
         PickPushConstants pc{};
-        pc.model = geo.model;
-        pc.objectID = geo.objectUID;
+        pc.model       = geo.model;
+        pc.objectID    = geo.objectUID;
+        pc.paletteBase = packed.bases[baseIndex];
 
         vkCmdPushConstants(cmdBuffer.handle, pickVS->pipeline.pipelineLayout,
             VK_SHADER_STAGE_VERTEX_BIT,
