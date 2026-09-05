@@ -3,48 +3,6 @@
     "version": 0.10000000000000001,
     "GameObjects": [
         {
-            "uid": 2200853431,
-            "name": "GameObject",
-            "parent": 0,
-            "components": [
-                {
-                    "type": "CTransform",
-                    "position": [
-                        -109.71279907226562,
-                        3.5461454391479492,
-                        0.15039069950580597
-                    ],
-                    "orientation": [
-                        1,
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        -0,
-                        0
-                    ],
-                    "scale": [
-                        1,
-                        1,
-                        1
-                    ]
-                },
-                {
-                    "type": "CAnimator",
-                    "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
-                    "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
-                    "skeletonUID": 3484759968,
-                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
-                    "clipUID": 3875098274,
-                    "speed": 1,
-                    "loop": true
-                }
-            ]
-        },
-        {
             "uid": 3943995899,
             "name": "GameObject2",
             "parent": 0,
@@ -78,9 +36,9 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
                     "skeletonUID": 3484759968,
-                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
-                    "clipUID": 3875098274,
+                    "clipAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/1380512761.nanim",
+                    "clipUID": 1380512761,
                     "speed": 1,
                     "loop": true
                 }
@@ -114,6 +72,10 @@
                         1,
                         1
                     ]
+                },
+                {
+                    "type": "CPrefab",
+                    "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab"
                 },
                 {
                     "type": "CAnimator",
@@ -224,9 +186,9 @@
                 {
                     "type": "CTransform",
                     "position": [
-                        0,
+                        -87.209701538085938,
                         90.484565734863281,
-                        187.09825134277344
+                        271.72122192382812
                     ],
                     "orientation": [
                         1,
@@ -252,6 +214,230 @@
                     "farPlane": 1000,
                     "aspectRatio": 1.8879055976867676,
                     "isMainCamera": true
+                }
+            ]
+        },
+        {
+            "uid": 2797316622,
+            "name": "Cypher Walking",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -90.690765380859375,
+                        0,
+                        42.981666564941406
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CPrefab",
+                    "prefabSourcePath": "Assets\/Skeletal_Animation\/Cypher Walking.nprefab"
+                },
+                {
+                    "type": "CAnimator",
+                    "skeletonAssetPath": "Assets\/Meshes\/Unarmed Walk Forward (1).nskel",
+                    "skeletonLibraryPath": "Library\/Skeletons\/1988096775.nskel",
+                    "skeletonUID": 1988096775,
+                    "clipAssetPath": "Assets\/Meshes\/Unarmed Walk Forward (1)@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/2386521433.nanim",
+                    "clipUID": 2386521433,
+                    "speed": 1,
+                    "loop": true
+                }
+            ]
+        },
+        {
+            "uid": 589712603,
+            "name": "untitled1",
+            "parent": 2797316622,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -13.927215576171875,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Meshes\/Unarmed Walk Forward (1).fbx",
+                    "libraryPath": "Library\/Meshes\/1965395079.nmesh",
+                    "resourceUID": 1047014012,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Meshes\/untitled1_material.nmat",
+                    "libraryPath": "Library\/Materials\/1399175592.nmat",
+                    "resourceUID": 1399175592
+                }
+            ]
+        },
+        {
+            "uid": 4053445852,
+            "name": "RumbaDancing_WithSkin.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -159.28144836425781,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CPrefab",
+                    "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab"
+                },
+                {
+                    "type": "CAnimator",
+                    "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
+                    "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
+                    "skeletonUID": 408757248,
+                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
+                    "clipUID": 3875098274,
+                    "speed": 1,
+                    "loop": true
+                }
+            ]
+        },
+        {
+            "uid": 1597424233,
+            "name": "Beta_Surface",
+            "parent": 4053445852,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx",
+                    "libraryPath": "Library\/Meshes\/1080715648.nmesh",
+                    "resourceUID": 132768734,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Beta_Surface_material.nmat",
+                    "libraryPath": "Library\/Materials\/3739400661.nmat",
+                    "resourceUID": 3739400661
+                }
+            ]
+        },
+        {
+            "uid": 1610096603,
+            "name": "Beta_Joints",
+            "parent": 4053445852,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx",
+                    "libraryPath": "Library\/Meshes\/1080715648.nmesh",
+                    "resourceUID": 3485537162,
+                    "submeshIndex": 1
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Beta_Joints_material.nmat",
+                    "libraryPath": "Library\/Materials\/3693496418.nmat",
+                    "resourceUID": 3693496418
                 }
             ]
         }

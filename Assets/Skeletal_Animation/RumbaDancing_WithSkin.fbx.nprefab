@@ -1,0 +1,136 @@
+{
+    "name": "RumbaDancing_WithSkin.fbx",
+    "version": 1,
+    "GameObjects": [
+        {
+            "uid": 3849404792,
+            "name": "RumbaDancing_WithSkin.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAnimator",
+                    "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
+                    "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
+                    "skeletonUID": 408757248,
+                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
+                    "clipUID": 3875098274,
+                    "speed": 1,
+                    "loop": true
+                }
+            ]
+        },
+        {
+            "uid": 2915032086,
+            "name": "Beta_Surface",
+            "parent": 3849404792,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx",
+                    "libraryPath": "Library\/Meshes\/1080715648.nmesh",
+                    "resourceUID": 132768734,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Beta_Surface_material.nmat",
+                    "libraryPath": "Library\/Materials\/3739400661.nmat",
+                    "resourceUID": 3739400661
+                }
+            ]
+        },
+        {
+            "uid": 2310863628,
+            "name": "Beta_Joints",
+            "parent": 3849404792,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx",
+                    "libraryPath": "Library\/Meshes\/1080715648.nmesh",
+                    "resourceUID": 3485537162,
+                    "submeshIndex": 1
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Beta_Joints_material.nmat",
+                    "libraryPath": "Library\/Materials\/3693496418.nmat",
+                    "resourceUID": 3693496418
+                }
+            ]
+        }
+    ]
+}
