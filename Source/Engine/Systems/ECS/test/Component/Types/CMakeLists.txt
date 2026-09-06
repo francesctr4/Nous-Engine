@@ -1,6 +1,7 @@
 add_subdirectory(CAnimator)
 add_subdirectory(CAudioListener)
 add_subdirectory(CAudioSource)
+add_subdirectory(CBoneAttachment)
 add_subdirectory(CCamera)
 add_subdirectory(CLight)
 add_subdirectory(CMaterial)

@@ -66,6 +66,7 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Component/Types/CAudioSource/AudioVoice.h
         include/${CLASS_NAME}/Component/Types/CAudioListener/CAudioListener.h
         include/${CLASS_NAME}/Component/Types/CAudioSource/CAudioSource.h
+        include/${CLASS_NAME}/Component/Types/CBoneAttachment/CBoneAttachment.h
         include/${CLASS_NAME}/Component/Types/CCamera/CCamera.h
         include/${CLASS_NAME}/Component/Types/CLight/CLight.h
         include/${CLASS_NAME}/Component/Types/CMaterial/CMaterial.h

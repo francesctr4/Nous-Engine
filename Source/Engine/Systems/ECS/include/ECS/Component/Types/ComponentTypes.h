@@ -14,6 +14,7 @@
 #include <ECS/Component/Types/CAudioListener/CAudioListener.h>
 #include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
+#include <ECS/Component/Types/CBoneAttachment/CBoneAttachment.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE single edit site for registering an ECS component type.
@@ -31,7 +32,8 @@ using ComponentTypes = ComponentList<
     CAudioSource,
     CAudioListener,
     CVideoPlayer,
-    CAnimator
+    CAnimator,
+    CBoneAttachment
 >;
 
 // Subset of ComponentTypes whose OnUpdate does real per-frame work. Scene::Update

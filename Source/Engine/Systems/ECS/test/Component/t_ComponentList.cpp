@@ -100,10 +100,10 @@ TEST_F(t_ComponentList, ForEachType_VisitsEveryDeclaredType)
     ComponentTypes::ForEachType([&]<typename T>() { ++typeCount; });
 
     // CTransform, CMesh, CMaterial, CCamera, CLight, CScript, CPrefab, CAudioSource,
-    // CAudioListener, CVideoPlayer, CAnimator.
+    // CAudioListener, CVideoPlayer, CAnimator, CBoneAttachment.
     //
     // The literal is deliberate: it is a tripwire that makes registering a
     // component type a conscious two-line change. Deriving it from the list would
     // compare the fold to itself and assert nothing.
-    EXPECT_EQ(typeCount, 11);
+    EXPECT_EQ(typeCount, 12);
 }
