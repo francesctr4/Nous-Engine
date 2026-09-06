@@ -772,3 +772,78 @@ TEST_F(t_PrefabManager, UpdateFromPrefab_MissingSourceFile_DoesNotCrash)
     go.AddComponent<CPrefab>().prefabSourcePath = "does_not_exist.nprefab";
     EXPECT_NO_FATAL_FAILURE(PrefabManager::UpdateFromPrefab(go, scene));
 }
+
+// =============================================================================
+// ApplyToPrefab
+// =============================================================================
+
+TEST_F(t_PrefabManager, ApplyToPrefab_WritesUserAddedObjectsIntoTheAsset)
+{
+    const std::string path = SaveSimplePrefab("apply_add.nprefab", "Root");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    scene->CreateGameObject("Sword", &root);
+
+    PrefabManager::ApplyToPrefab(root, scene);
+
+    // A fresh instance of the same asset must now come with the sword.
+    GameObject second = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(second.IsValid());
+
+    bool foundSword = false;
+    for (GameObject child : second.GetChildren())
+        if (child.GetName() == "Sword") foundSword = true;
+
+    EXPECT_TRUE(foundSword);
+}
+
+TEST_F(t_PrefabManager, ApplyToPrefab_LinksTheObjectsItAdded)
+{
+    const std::string path = SaveSimplePrefab("apply_link.nprefab", "Root");
+
+    GameObject root  = PrefabManager::InstantiatePrefab(path, scene);
+    GameObject added = scene->CreateGameObject("Sword", &root);
+    ASSERT_FALSE(added.HasComponent<CPrefabLink>());
+
+    PrefabManager::ApplyToPrefab(root, scene);
+
+    ASSERT_TRUE(added.HasComponent<CPrefabLink>());
+    EXPECT_NE(added.GetComponent<CPrefabLink>().prefabObjectID, 0u);
+}
+
+TEST_F(t_PrefabManager, ApplyToPrefab_ClearsStaleAndRestampsTheHash)
+{
+    const std::string path = SaveSimplePrefab("apply_stale.nprefab", "Root");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    scene->CreateGameObject("Sword", &root);
+    root.GetComponent<CPrefab>().isStale = true;
+
+    PrefabManager::ApplyToPrefab(root, scene);
+
+    EXPECT_FALSE(root.GetComponent<CPrefab>().isStale);
+    EXPECT_EQ(root.GetComponent<CPrefab>().syncedHash, PrefabManager::HashPrefabFile(path));
+}
+
+// The other instance is now behind the asset, and nothing else would tell it so --
+// UpdatePrefabStaleFlags runs only on scene load.
+TEST_F(t_PrefabManager, ApplyToPrefab_MarksOtherInstancesOfTheSamePrefabStale)
+{
+    const std::string path = SaveSimplePrefab("apply_others.nprefab", "Root");
+
+    GameObject first  = PrefabManager::InstantiatePrefab(path, scene);
+    GameObject second = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_FALSE(second.GetComponent<CPrefab>().isStale);
+
+    scene->CreateGameObject("Sword", &first);
+    PrefabManager::ApplyToPrefab(first, scene);
+
+    EXPECT_TRUE(second.GetComponent<CPrefab>().isStale);
+    EXPECT_FALSE(first.GetComponent<CPrefab>().isStale);
+}
+
+TEST_F(t_PrefabManager, ApplyToPrefab_NoCPrefab_DoesNotCrash)
+{
+    GameObject go = scene->CreateGameObject("NoPrefab", nullptr);
+    EXPECT_NO_FATAL_FAILURE(PrefabManager::ApplyToPrefab(go, scene));
+}

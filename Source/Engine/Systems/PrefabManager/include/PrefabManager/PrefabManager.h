@@ -44,4 +44,12 @@ public:
     // An instance with no links at all predates this feature and is rebuilt once by
     // ReloadPrefabInstance, which establishes them.
     NOUS_ENGINE_API static void UpdateFromPrefab(GameObject instanceRoot, Scene* scene);
+
+    // Overwrites the instance's .nprefab with the instance's own subtree, so local
+    // additions become part of the prefab. Objects newly included gain a CPrefabLink,
+    // and other instances of the same prefab in this scene are marked stale.
+    //
+    // Nested prefab instances inside the subtree are FLATTENED into ordinary objects,
+    // because SavePrefab strips CPrefab. Preserving nesting is a separate feature.
+    NOUS_ENGINE_API static void ApplyToPrefab(GameObject instanceRoot, Scene* scene);
 };

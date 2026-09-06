@@ -611,3 +611,52 @@ void PrefabManager::UpdateFromPrefab(GameObject instanceRoot, Scene* scene)
     NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Updated instance '%s' from '%s'.",
         instanceRoot.GetName().c_str(), prefabPath.c_str());
 }
+
+// -----------------------------------------------------------------------------
+// ApplyToPrefab
+// -----------------------------------------------------------------------------
+void PrefabManager::ApplyToPrefab(GameObject instanceRoot, Scene* scene)
+{
+    if (!instanceRoot.IsValid()) return;
+
+    auto* cprefab = instanceRoot.TryGetComponent<CPrefab>();
+    if (!cprefab || cprefab->prefabSourcePath.empty())
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "[PrefabManager] ApplyToPrefab called on a GO that is not a prefab instance.");
+        return;
+    }
+
+    const std::string prefabPath = cprefab->prefabSourcePath;
+
+    // Everything in the subtree is about to become part of the prefab, so everything
+    // needs an identity in it. SavePrefab writes each object's scene UID as "uid",
+    // so that is the id the saved file will carry.
+    std::vector<GameObject> subtree;
+    CollectSubtree(instanceRoot, subtree);
+    for (GameObject& go : subtree)
+        if (!go.HasComponent<CPrefabLink>())
+            go.AddComponent<CPrefabLink>().prefabObjectID = go.GetID();
+
+    SavePrefab(instanceRoot, prefabPath);
+
+    cprefab->syncedHash = HashPrefabFile(prefabPath);
+    cprefab->isStale    = false;
+
+    // Every other instance of this prefab is now behind the asset. Nothing else would
+    // tell them: UpdatePrefabStaleFlags runs only on scene load.
+    if (scene)
+    {
+        auto& registry = scene->GetRegistry();
+        for (auto entity : registry.view<CPrefab>())
+        {
+            if (entity == instanceRoot.GetEntity()) continue;
+
+            CPrefab& other = registry.get<CPrefab>(entity);
+            if (other.prefabSourcePath == prefabPath)
+                other.isStale = true;
+        }
+    }
+
+    NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Applied instance '%s' to '%s'.",
+        instanceRoot.GetName().c_str(), prefabPath.c_str());
+}
