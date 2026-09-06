@@ -225,9 +225,13 @@ private:
 	std::string     m_snapshotPath     = "Library/_simulation_snapshot.nous";
 	std::string     m_currentScenePath;  // empty = unsaved; set by LoadScene/SaveScene
 
-	// After a scene is deserialized, re-instantiates any GO that carries a CPrefab
-	// component from its source .nprefab file, replacing stale inline children.
-	void RefreshPrefabInstances() const;
+	// Recomputes CPrefab::isStale for every instance in the active scene by hashing
+	// each one's .nprefab and comparing against the hash it was last synced to.
+	//
+	// It does NOT rebuild anything. The scene is the source of truth for an
+	// instance; asset changes are applied only when the user asks
+	// (PrefabManager::UpdateFromPrefab).
+	void UpdatePrefabStaleFlags() const;
 
 	// entt on_destroy<CEntityInfo> observer. Prunes the selection when any
 	// GameObject dies, so Scene never needs to know that selection exists — the

@@ -6,9 +6,13 @@
 #include <cstdint>
 #include <string>
 
-// CPrefab marks a GameObject as the root of an instantiated prefab.
-// It stores the path of the source .nprefab file so the scene can
-// auto-reload it on load (RefreshPrefabInstances).
+// CPrefab marks a GameObject as the root of an instantiated prefab and stores the
+// path of the source .nprefab.
+//
+// Loading a scene does NOT rebuild the instance from that file: the scene is the
+// source of truth, so per-instance modifications survive. ModuleScene::UpdatePrefabStaleFlags
+// only compares hashes to set isStale; the asset is applied on demand through
+// PrefabManager::UpdateFromPrefab.
 class CPrefab : public Component
 {
 public:

@@ -143,7 +143,7 @@ int main(int argc, char** argv)
                 // sim and never received Awake/Start.
                 //
                 // m_isLoadingScene is set before LoadSceneAsync returns and cleared
-                // inside the main-thread task, after Deserialize + RefreshPrefabInstances,
+                // inside the main-thread task, after Deserialize + UpdatePrefabStaleFlags,
                 // so it covers the whole handoff. It also self-clears when the scene
                 // path fails to resolve, so a bad startScene still reaches Update.
                 if (!sceneReady && !App->GetScene()->IsLoadingScene())

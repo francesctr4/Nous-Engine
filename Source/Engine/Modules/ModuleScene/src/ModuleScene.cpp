@@ -469,12 +469,13 @@ void ModuleScene::LoadScene(const std::string& path)
 		f.get();
 
 	activeScene->Deserialize(loadPath);
-	// Snapshot already captures the complete pre-play state of every entity,
-	// including prefab instances. Refreshing from disk would destroy and recreate
-	// prefab children from their .nprefab source files, resetting them to their
-	// initial (disk) state rather than the editor state at the time Play was pressed.
-	if (path != m_snapshotPath)
-		RefreshPrefabInstances();
+
+	// Unconditional, including for the play snapshot. This used to be skipped for the
+	// snapshot because refreshing DESTROYED and recreated prefab children from disk,
+	// resetting them to their initial state rather than the editor state at the moment
+	// Play was pressed. UpdatePrefabStaleFlags destroys nothing, so that hazard is gone
+	// and the snapshot should carry correct stale flags like any other load.
+	UpdatePrefabStaleFlags();
 
 	// Don't treat the simulation snapshot as the user's active scene — otherwise
 	// pressing Stop would make Save overwrite Library/_simulation_snapshot.nous.
@@ -526,13 +527,13 @@ void ModuleScene::LoadSceneAsync(const std::string& path)
 
 			// Scene graph construction mutates the registry, so it runs on the main
 			// thread. Resource lookups hit the cache filled by the preload above.
-			// RefreshPrefabInstances can be called inline here: the reason it used to
+			// UpdatePrefabStaleFlags destroys nothing, so the reason this step used to
 			// be deferred (DestroyGameObject → CMesh::OnDestroy → vkDeviceWaitIdle
-			// deadlocking from a worker) no longer applies on the main thread.
+			// deadlocking from a worker) no longer applies at all.
 			JobSystem->SubmitToMainThread([this, loadPath]
 				{
 					activeScene->Deserialize(loadPath);
-					RefreshPrefabInstances();
+					UpdatePrefabStaleFlags();
 					m_isLoadingScene = false;
 				}, "Apply scene");
 		}
@@ -737,31 +738,31 @@ bool ModuleScene::HasMainCamera() const
 }
 
 
-void ModuleScene::RefreshPrefabInstances() const
+void ModuleScene::UpdatePrefabStaleFlags() const
 {
     if (!activeScene) return;
 
-    // Phase 1: collect prefab roots from a view snapshot.
-    // We must NOT call ReloadPrefabInstance while iterating — reload destroys
-    // children that would also appear in the view, leaving dangling handles.
-    std::vector<GameObject> prefabRoots;
+    // No two-phase snapshot: nothing is destroyed here, so there are no dangling
+    // handles to avoid. The predecessor of this function rebuilt every instance from
+    // its .nprefab on every load, which is what made that dance necessary -- and what
+    // silently discarded every per-instance modification.
+    auto&  registry   = activeScene->GetRegistry();
+    size_t total      = 0;
+    size_t staleCount = 0;
+
+    for (auto entity : registry.view<CPrefab>())
     {
-        auto& registry = activeScene->GetRegistry();
-        for (auto entity : registry.view<CPrefab>())
-            prefabRoots.emplace_back(entity, &registry);
+        CPrefab& cprefab = registry.get<CPrefab>(entity);
+        ++total;
+
+        // 0 means the file could not be read. That is "cannot tell", not "changed" --
+        // a missing asset must not flag every instance stale.
+        const uint64_t current = PrefabManager::HashPrefabFile(cprefab.prefabSourcePath);
+        cprefab.isStale = (current != 0 && current != cprefab.syncedHash);
+
+        if (cprefab.isStale) ++staleCount;
     }
 
-    if (prefabRoots.empty())
-    {
-        NOUS_INFO("[Scene] RefreshPrefabInstances: no prefab instances found in scene.");
-        return;
-    }
-
-    NOUS_INFO("[Scene] RefreshPrefabInstances: refreshing %zu prefab instance(s).", prefabRoots.size());
-
-    // Phase 2: reload each root now that the snapshot is discarded.
-    for (auto root : prefabRoots)
-        PrefabManager::ReloadPrefabInstance(root, activeScene);
-
-    NOUS_INFO("[Scene] RefreshPrefabInstances: done.");
+    if (total > 0)
+        NOUS_INFO("[Scene] Prefab instances: %zu total, %zu out of date.", total, staleCount);
 }
