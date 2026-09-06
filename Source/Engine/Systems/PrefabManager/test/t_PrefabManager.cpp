@@ -4,6 +4,7 @@
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
+#include <ECS/Component/Types/CPrefabLink/CPrefabLink.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/Component/Types/CCamera/CCamera.h>
 #include <MemoryManager/MemoryManager.h>
@@ -67,6 +68,43 @@ TEST_F(t_CPrefab, Deserialize_MissingPath_DefaultsToEmpty)
     c.prefabSourcePath = "old_value";
     c.Deserialize(obj);
     EXPECT_TRUE(c.prefabSourcePath.empty());
+}
+
+// =============================================================================
+// CPrefabLink — Serialization
+//
+// The link is what distinguishes a prefab-OWNED object from a user addition, so
+// it has to round-trip through the scene file or every instance object looks
+// user-added after a reload.
+// =============================================================================
+
+class t_CPrefabLink : public ::testing::Test {};
+
+TEST_F(t_CPrefabLink, Serialize_WritesType)
+{
+    CPrefabLink c;
+    EXPECT_EQ(c.Serialize().GetString("type"), "CPrefabLink");
+}
+
+TEST_F(t_CPrefabLink, Serialize_RoundTripsTheObjectID)
+{
+    CPrefabLink c;
+    c.prefabObjectID = 4021969517u;   // near UINT32_MAX: a double round-trips this exactly
+
+    CPrefabLink restored;
+    restored.Deserialize(c.Serialize());
+
+    EXPECT_EQ(restored.prefabObjectID, 4021969517u);
+}
+
+TEST_F(t_CPrefabLink, Deserialize_MissingKeyYieldsZero)
+{
+    JsonObject obj;
+    CPrefabLink c;
+    c.prefabObjectID = 7u;
+    c.Deserialize(obj);
+
+    EXPECT_EQ(c.prefabObjectID, 0u);
 }
 
 // =============================================================================

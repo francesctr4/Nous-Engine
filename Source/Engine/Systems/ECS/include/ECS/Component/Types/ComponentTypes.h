@@ -10,6 +10,7 @@
 #include <ECS/Component/Types/CLight/CLight.h>
 #include <ECS/Component/Types/CScript/CScript.h>
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
+#include <ECS/Component/Types/CPrefabLink/CPrefabLink.h>
 #include <ECS/Component/Types/CAudioSource/CAudioSource.h>
 #include <ECS/Component/Types/CAudioListener/CAudioListener.h>
 #include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
@@ -29,6 +30,7 @@ using ComponentTypes = ComponentList<
     CLight,
     CScript,
     CPrefab,
+    CPrefabLink,
     CAudioSource,
     CAudioListener,
     CVideoPlayer,

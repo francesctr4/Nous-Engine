@@ -72,6 +72,7 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Component/Types/CMaterial/CMaterial.h
         include/${CLASS_NAME}/Component/Types/CMesh/CMesh.h
         include/${CLASS_NAME}/Component/Types/CPrefab/CPrefab.h
+        include/${CLASS_NAME}/Component/Types/CPrefabLink/CPrefabLink.h
         include/${CLASS_NAME}/Component/Types/CScript/CScript.h
         include/${CLASS_NAME}/Component/Types/CTransform/CTransform.h
         include/${CLASS_NAME}/Component/Types/CVideoPlayer/CVideoPlayer.h
