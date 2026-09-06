@@ -32,6 +32,9 @@
 #include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
 #include <ECS/Component/Types/CBoneAttachment/CBoneAttachment.h>
+#include <ECS/Component/Types/CPrefab/CPrefab.h>
+#include <ECS/Component/Types/CPrefabLink/CPrefabLink.h>
+#include <PrefabManager/PrefabManager.h>
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
@@ -749,6 +752,58 @@ static void DrawBoneAttachment(const InspectorCtx& ctx, Component* c)
     ImGui::Unindent();
 }
 
+static void DrawPrefab(const InspectorCtx& ctx, Component* c)
+{
+    auto* cprefab = static_cast<CPrefab*>(c);
+
+    if (!ImGui::CollapsingHeader("Prefab", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ImGui::Indent();
+
+    ImGui::TextDisabled("Source");
+    ImGui::TextWrapped("%s", cprefab->prefabSourcePath.c_str());
+    ImGui::Spacing();
+
+    // Three states, and the third is not a failure: an instance from a scene saved
+    // before prefab overrides has no links, and Update relinks it once.
+    const bool linked = ctx.go && ctx.go->HasComponent<CPrefabLink>();
+    if (!linked)
+        ImGui::TextWrapped("Not linked — Update will rebuild this instance once to link it.");
+    else if (cprefab->isStale)
+        ImGui::TextWrapped("Out of date — the prefab asset has changed since this instance was synced.");
+    else
+        ImGui::TextDisabled("In sync.");
+
+    ImGui::Spacing();
+
+    if (ImGui::Button("Update from Prefab"))
+        PrefabManager::UpdateFromPrefab(*ctx.go, ctx.scene);
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Apply to Prefab"))
+        PrefabManager::ApplyToPrefab(*ctx.go, ctx.scene);
+
+    ImGui::TextDisabled("Update overwrites objects the prefab owns; your additions are kept.");
+
+    ImGui::Unindent();
+}
+
+// Read-only: this is engine bookkeeping, and showing it is what makes "which objects
+// will Update overwrite?" answerable.
+static void DrawPrefabLink(const InspectorCtx&, Component* c)
+{
+    auto* link = static_cast<CPrefabLink*>(c);
+
+    if (!ImGui::CollapsingHeader("Prefab Link"))
+        return;
+
+    ImGui::Indent();
+    ImGui::TextDisabled("Owned by the prefab, object id %u.", link->prefabObjectID);
+    ImGui::Unindent();
+}
+
 static const ComponentUI k_ui[] = {
     {"CTransform", "Transform", false, &DrawTransform},
     {"CMesh",      "Mesh",      true,  &DrawMesh},
@@ -761,6 +816,11 @@ static const ComponentUI k_ui[] = {
     {"CVideoPlayer",    "Video Player",    true,  &DrawVideoPlayer},
     {"CAnimator",       "Animator",        true,  &DrawAnimator},
     {"CBoneAttachment", "Bone Attachment", true,  &DrawBoneAttachment},
+    // Neither is user-addable: CPrefab is attached by InstantiatePrefab, and a
+    // hand-added CPrefabLink would claim prefab ownership of an object the prefab
+    // has never heard of.
+    {"CPrefab",         "Prefab",          false, &DrawPrefab},
+    {"CPrefabLink",     "Prefab Link",     false, &DrawPrefabLink},
 };
 
 const ComponentUI* FindComponentUI(std::string_view typeName)
