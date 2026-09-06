@@ -597,3 +597,178 @@ TEST_F(t_PrefabManager, ReloadPrefabInstance_StaleComponentRemovedFromRoot)
     EXPECT_TRUE(instanceRoot.HasComponent<CTransform>());
     EXPECT_TRUE(instanceRoot.HasComponent<CPrefab>());
 }
+
+// =============================================================================
+// UpdateFromPrefab
+// =============================================================================
+
+TEST_F(t_PrefabManager, UpdateFromPrefab_RefreshesLinkedObjectsFromTheAsset)
+{
+    const std::string path = SaveSimplePrefab("upd_refresh.nprefab", "Root", true, "OriginalName");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_EQ(root.GetChildren().size(), 1u);
+    root.GetChildren()[0].SetName("LocallyRenamed");
+
+    PrefabManager::UpdateFromPrefab(root, scene);
+
+    ASSERT_EQ(root.GetChildren().size(), 1u);
+    EXPECT_EQ(root.GetChildren()[0].GetName(), "OriginalName");
+}
+
+// THE regression this feature exists for, at the Update level.
+TEST_F(t_PrefabManager, UpdateFromPrefab_KeepsUserAddedObjects)
+{
+    const std::string path = SaveSimplePrefab("upd_keep.nprefab", "Root", true, "Child");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    scene->CreateGameObject("UserAdded", &root);
+    ASSERT_EQ(root.GetChildren().size(), 2u);
+
+    PrefabManager::UpdateFromPrefab(root, scene);
+
+    bool foundUserAdded = false;
+    for (GameObject child : root.GetChildren())
+        if (child.GetName() == "UserAdded") foundUserAdded = true;
+
+    EXPECT_TRUE(foundUserAdded);
+}
+
+// Rule 5b in the spec, and the asymmetry most likely to be "simplified" away later:
+// components carry no link, so a component the asset does not declare is
+// indistinguishable from a user addition and must be kept. Note ReloadPrefabInstance
+// does the opposite (see ReloadPrefabInstance_StaleRootComponentsAreRemoved) -- that
+// is the hard-reset migration path, not the merge.
+TEST_F(t_PrefabManager, UpdateFromPrefab_KeepsAUserAddedComponentOnALinkedObject)
+{
+    const std::string path = SaveSimplePrefab("upd_keep_comp.nprefab", "Root");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    root.AddComponent<CCamera>();
+
+    PrefabManager::UpdateFromPrefab(root, scene);
+
+    EXPECT_TRUE(root.HasComponent<CCamera>());
+}
+
+TEST_F(t_PrefabManager, UpdateFromPrefab_CreatesObjectsTheAssetAdded)
+{
+    const std::string path = SaveSimplePrefab("upd_add.nprefab", "Root");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_EQ(root.GetChildren().size(), 0u);
+
+    // Rewrite the asset with an extra child, via a second throwaway hierarchy.
+    GameObject authoring = scene->CreateGameObject("Root", nullptr);
+    scene->CreateGameObject("AddedByAsset", &authoring);
+    PrefabManager::SavePrefab(authoring, path);
+
+    PrefabManager::UpdateFromPrefab(root, scene);
+
+    ASSERT_EQ(root.GetChildren().size(), 1u);
+    EXPECT_EQ(root.GetChildren()[0].GetName(), "AddedByAsset");
+    EXPECT_TRUE(root.GetChildren()[0].HasComponent<CPrefabLink>());
+}
+
+TEST_F(t_PrefabManager, UpdateFromPrefab_DestroysLinkedObjectsTheAssetRemoved)
+{
+    const std::string path = SaveSimplePrefab("upd_remove.nprefab", "Root", true, "WillBeRemoved");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_EQ(root.GetChildren().size(), 1u);
+
+    // Rewrite the asset without the child.
+    GameObject authoring = scene->CreateGameObject("Root", nullptr);
+    PrefabManager::SavePrefab(authoring, path);
+
+    PrefabManager::UpdateFromPrefab(root, scene);
+
+    EXPECT_EQ(root.GetChildren().size(), 0u);
+}
+
+// A user object hanging off a prefab object the asset has since deleted must be
+// rescued, not destroyed with its parent. Losing a user's work as a side effect of a
+// prefab edit is the outcome this whole feature exists to prevent.
+TEST_F(t_PrefabManager, UpdateFromPrefab_ReparentsUserOrphansToTheInstanceRoot)
+{
+    const std::string path = SaveSimplePrefab("upd_orphan.nprefab", "Root", true, "DoomedParent");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_EQ(root.GetChildren().size(), 1u);
+    GameObject doomed = root.GetChildren()[0];
+    scene->CreateGameObject("UserOrphan", &doomed);
+
+    GameObject authoring = scene->CreateGameObject("Root", nullptr);
+    PrefabManager::SavePrefab(authoring, path);
+
+    PrefabManager::UpdateFromPrefab(root, scene);
+
+    bool foundOrphan = false;
+    for (GameObject child : root.GetChildren())
+        if (child.IsValid() && child.GetName() == "UserOrphan") foundOrphan = true;
+
+    EXPECT_TRUE(foundOrphan);
+}
+
+TEST_F(t_PrefabManager, UpdateFromPrefab_PreservesTheRootTransform)
+{
+    const std::string path = SaveSimplePrefab("upd_transform.nprefab", "Root");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    root.GetComponent<CTransform>().SetPosition(glm::vec3(5.0f, 6.0f, 7.0f));
+
+    PrefabManager::UpdateFromPrefab(root, scene);
+
+    const glm::vec3 p = root.GetComponent<CTransform>().position;
+    EXPECT_FLOAT_EQ(p.x, 5.0f);
+    EXPECT_FLOAT_EQ(p.y, 6.0f);
+    EXPECT_FLOAT_EQ(p.z, 7.0f);
+}
+
+TEST_F(t_PrefabManager, UpdateFromPrefab_ClearsStaleAndRestampsTheHash)
+{
+    const std::string path = SaveSimplePrefab("upd_stale.nprefab", "Root");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    root.GetComponent<CPrefab>().syncedHash = 1u;   // pretend the asset moved on
+    root.GetComponent<CPrefab>().isStale    = true;
+
+    PrefabManager::UpdateFromPrefab(root, scene);
+
+    EXPECT_FALSE(root.GetComponent<CPrefab>().isStale);
+    EXPECT_EQ(root.GetComponent<CPrefab>().syncedHash, PrefabManager::HashPrefabFile(path));
+}
+
+// Migration: an instance from a scene saved before this feature has no links. The
+// first Update rebuilds it once, which establishes them.
+TEST_F(t_PrefabManager, UpdateFromPrefab_RelinksAnUnlinkedInstance)
+{
+    const std::string path = SaveSimplePrefab("upd_migrate.nprefab", "Root", true, "Child");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+
+    // Strip the bookkeeping to mimic a pre-feature scene.
+    root.RemoveComponent<CPrefabLink>();
+    for (GameObject child : root.GetChildren())
+        child.RemoveComponent<CPrefabLink>();
+    root.GetComponent<CPrefab>().syncedHash = 0;
+
+    PrefabManager::UpdateFromPrefab(root, scene);
+
+    ASSERT_TRUE(root.HasComponent<CPrefabLink>());
+    ASSERT_EQ(root.GetChildren().size(), 1u);
+    EXPECT_TRUE(root.GetChildren()[0].HasComponent<CPrefabLink>());
+}
+
+TEST_F(t_PrefabManager, UpdateFromPrefab_NoCPrefab_DoesNotCrash)
+{
+    GameObject go = scene->CreateGameObject("NoPrefab", nullptr);
+    EXPECT_NO_FATAL_FAILURE(PrefabManager::UpdateFromPrefab(go, scene));
+}
+
+TEST_F(t_PrefabManager, UpdateFromPrefab_MissingSourceFile_DoesNotCrash)
+{
+    GameObject go = scene->CreateGameObject("Orphan", nullptr);
+    go.AddComponent<CPrefab>().prefabSourcePath = "does_not_exist.nprefab";
+    EXPECT_NO_FATAL_FAILURE(PrefabManager::UpdateFromPrefab(go, scene));
+}

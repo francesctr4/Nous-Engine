@@ -34,4 +34,14 @@ public:
     // Hashing rather than comparing timestamps because this repo is shared through
     // git: a fresh clone rewrites mtimes and would mark every instance stale.
     NOUS_ENGINE_API static uint64_t HashPrefabFile(const std::string& path);
+
+    // Applies the .nprefab back onto an existing instance, MERGING rather than
+    // rebuilding: objects the prefab owns (those carrying CPrefabLink) are refreshed,
+    // created or destroyed to match the asset, while objects the user added are left
+    // untouched. Components the asset does not declare are also left untouched -- a
+    // component carries no link, so it is indistinguishable from a user addition.
+    //
+    // An instance with no links at all predates this feature and is rebuilt once by
+    // ReloadPrefabInstance, which establishes them.
+    NOUS_ENGINE_API static void UpdateFromPrefab(GameObject instanceRoot, Scene* scene);
 };
