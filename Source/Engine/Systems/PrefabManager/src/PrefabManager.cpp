@@ -4,6 +4,7 @@
 #include <ECS/GameObject.h>
 #include <ECS/Component/Component.h>
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
+#include <ECS/Component/Types/CPrefabLink/CPrefabLink.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/Component/Types/CMesh/CMesh.h>
 #include <ECS/Component/Types/CMaterial/CMaterial.h>
@@ -18,6 +19,7 @@
 #include <Utils/Serialization/JsonFile.h>
 #include <Utils/Serialization/JsonArray.h>
 #include <filesystem>
+#include <fstream>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
@@ -41,6 +43,36 @@ static void DeserializeComponentInto(GameObject& go, std::string_view typeName, 
 static void RemoveComponentByName(GameObject& go, const std::string& typeName)
 {
     ComponentTypes::RemoveByName(go, typeName);
+}
+
+// -----------------------------------------------------------------------------
+// HashPrefabFile
+// -----------------------------------------------------------------------------
+uint64_t PrefabManager::HashPrefabFile(const std::string& path)
+{
+    // Binary mode is required: text mode collapses CRLF on Windows, so the same
+    // file would hash differently across platforms.
+    std::ifstream file(path, std::ios::binary);
+    if (!file) return 0;
+
+    // Same constants as HashBoneNames (ImporterSkeleton.cpp).
+    constexpr uint64_t c_offsetBasis = 14695981039346656037ull;
+    constexpr uint64_t c_prime       = 1099511628211ull;
+
+    uint64_t hash = c_offsetBasis;
+
+    char buffer[4096];
+    while (file.read(buffer, sizeof(buffer)) || file.gcount() > 0)
+    {
+        const std::streamsize read = file.gcount();
+        for (std::streamsize i = 0; i < read; ++i)
+        {
+            hash ^= static_cast<uint64_t>(static_cast<unsigned char>(buffer[i]));
+            hash *= c_prime;
+        }
+    }
+
+    return hash;
 }
 
 // -----------------------------------------------------------------------------
@@ -89,7 +121,13 @@ void PrefabManager::SavePrefab(GameObject root, const std::string& filePath)
             for (int ci = 0; ci < origComps.Count(); ++ci)
             {
                 JsonObject compObj = origComps.GetObject(ci);
-                if (compObj.GetString("type") == "CPrefab") continue;
+
+                // The file IS the prefab definition, so neither the instance marker
+                // nor a link INTO the file means anything inside it.
+                const std::string compType = compObj.GetString("type");
+                if (compType == "CPrefab")     continue;
+                if (compType == "CPrefabLink") continue;
+
                 newComps.Append(std::move(compObj));
             }
             goObj.Set("components", std::move(newComps));
@@ -181,6 +219,10 @@ GameObject PrefabManager::InstantiatePrefab(const std::string& filePath, Scene* 
             }
         }
 
+        // Every object the prefab creates is prefab-OWNED. Anything the user adds
+        // later has no link, which is how Update tells them apart.
+        go.AddComponent<CPrefabLink>().prefabObjectID = prefabUID;
+
         prefabIDToGO[prefabUID] = go;
         entries.push_back({ go, prefabParent });
     }
@@ -226,6 +268,8 @@ GameObject PrefabManager::InstantiatePrefab(const std::string& filePath, Scene* 
     // Attach CPrefab to the root so the scene knows it's a prefab instance.
     auto& cprefab = prefabRoot.AddComponent<CPrefab>();
     cprefab.prefabSourcePath = filePath;
+    cprefab.syncedHash       = HashPrefabFile(filePath);
+    cprefab.isStale          = false;
 
     // Register all instantiated GOs into the scene.
     for (auto& entry : entries)
@@ -298,7 +342,9 @@ void PrefabManager::ReloadPrefabInstance(GameObject instanceRoot, Scene* scene)
         for (auto* comp : instanceRoot.GetAllComponents())
         {
             const std::string t(comp->GetType());
-            if (t == "CTransform" || t == "CPrefab" || t == "CScript") continue;
+            // CPrefabLink is engine bookkeeping, never present in the asset — it is
+            // re-stamped below, so removing it here would be churn.
+            if (t == "CTransform" || t == "CPrefab" || t == "CPrefabLink" || t == "CScript") continue;
             if (prefabRootTypes.find(t) == prefabRootTypes.end())
                 toRemove.push_back(t);
         }
@@ -352,6 +398,13 @@ void PrefabManager::ReloadPrefabInstance(GameObject instanceRoot, Scene* scene)
                     DeserializeComponentInto(instanceRoot, typeName, compObj);
                 }
             }
+
+            // The root is prefab-owned too. Assign rather than add, since a
+            // re-linked instance may already carry one.
+            if (auto* existing = instanceRoot.TryGetComponent<CPrefabLink>())
+                existing->prefabObjectID = prefabUID;
+            else
+                instanceRoot.AddComponent<CPrefabLink>().prefabObjectID = prefabUID;
         }
         else
         {
@@ -373,6 +426,8 @@ void PrefabManager::ReloadPrefabInstance(GameObject instanceRoot, Scene* scene)
                 }
             }
 
+            go.AddComponent<CPrefabLink>().prefabObjectID = prefabUID;
+
             prefabIDToGO[prefabUID] = go;
             entries.push_back({ go, prefabParent, prefabUID });
             scene->RegisterGameObject(go);
@@ -386,6 +441,9 @@ void PrefabManager::ReloadPrefabInstance(GameObject instanceRoot, Scene* scene)
         if (it != prefabIDToGO.end())
             it->second.AddChild(entry.go);
     }
+
+    cprefab->syncedHash = HashPrefabFile(prefabPath);
+    cprefab->isStale    = false;
 
     NOUS_INFO_C(CURRENT_CHANNEL, "[PrefabManager] Reloaded prefab instance '%s' from '%s' (%zu child(ren) rebuilt).",
         instanceRoot.GetName().c_str(), prefabPath.c_str(), entries.size());

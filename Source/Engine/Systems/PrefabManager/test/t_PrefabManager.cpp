@@ -70,6 +70,47 @@ TEST_F(t_CPrefab, Deserialize_MissingPath_DefaultsToEmpty)
     EXPECT_TRUE(c.prefabSourcePath.empty());
 }
 
+// THE serialization trap: parson stores JSON numbers as double, so a uint64 above
+// 2^53 does not round-trip. Stored as a number, the hash read back differs from the
+// hash written and EVERY instance reports stale forever -- with no error anywhere.
+TEST_F(t_CPrefab, Serialize_RoundTripsALargeSyncedHash)
+{
+    CPrefab c;
+    c.prefabSourcePath = "Assets/Prefabs/Test.nprefab";
+    c.syncedHash       = 14695981039346656037ull;   // > 2^53
+
+    CPrefab restored;
+    restored.Deserialize(c.Serialize());
+
+    EXPECT_EQ(restored.syncedHash, 14695981039346656037ull);
+}
+
+TEST_F(t_CPrefab, Deserialize_MissingSyncedHashYieldsZero)
+{
+    JsonObject obj;
+    obj.Set("prefabSourcePath", std::string("Assets/Prefabs/Foo.nprefab"));
+
+    CPrefab c;
+    c.syncedHash = 99u;
+    c.Deserialize(obj);
+
+    EXPECT_EQ(c.syncedHash, 0u);   // 0 == "never synced", the migration signal
+}
+
+// isStale is recomputed on every scene load, so persisting it would only let a
+// stale value contradict the file on disk.
+TEST_F(t_CPrefab, Serialize_DoesNotPersistIsStale)
+{
+    CPrefab c;
+    c.prefabSourcePath = "Assets/Prefabs/Test.nprefab";
+    c.isStale          = true;
+
+    CPrefab restored;
+    restored.Deserialize(c.Serialize());
+
+    EXPECT_FALSE(restored.isStale);
+}
+
 // =============================================================================
 // CPrefabLink — Serialization
 //
@@ -146,6 +187,33 @@ protected:
 
     Scene* scene = nullptr;
 };
+
+// =============================================================================
+// HashPrefabFile
+// =============================================================================
+
+TEST_F(t_PrefabManager, HashPrefabFile_MissingFileReturnsZero)
+{
+    EXPECT_EQ(PrefabManager::HashPrefabFile(TempFile("nope.nprefab")), 0u);
+}
+
+TEST_F(t_PrefabManager, HashPrefabFile_SameContentSameHash)
+{
+    const std::string a = SaveSimplePrefab("hash_a.nprefab", "Root");
+    const uint64_t first  = PrefabManager::HashPrefabFile(a);
+    const uint64_t second = PrefabManager::HashPrefabFile(a);
+
+    EXPECT_NE(first, 0u);
+    EXPECT_EQ(first, second);
+}
+
+TEST_F(t_PrefabManager, HashPrefabFile_DifferentContentDifferentHash)
+{
+    const std::string a = SaveSimplePrefab("hash_one.nprefab", "RootOne");
+    const std::string b = SaveSimplePrefab("hash_two.nprefab", "RootTwo", true, "ExtraChild");
+
+    EXPECT_NE(PrefabManager::HashPrefabFile(a), PrefabManager::HashPrefabFile(b));
+}
 
 // =============================================================================
 // SavePrefab
@@ -328,6 +396,97 @@ TEST_F(t_PrefabManager, InstantiatePrefab_NoParent_RootHasNoSceneParent)
     GameObject root = PrefabManager::InstantiatePrefab(path, scene);
     ASSERT_TRUE(root.IsValid());
     EXPECT_FALSE(root.GetParent().IsValid());
+}
+
+// =============================================================================
+// Link stamping — the invariant every later operation reads
+// =============================================================================
+
+TEST_F(t_PrefabManager, InstantiatePrefab_StampsLinksOnRootAndChildren)
+{
+    const std::string path = SaveSimplePrefab("stamp.nprefab", "Root", true, "Child");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(root.IsValid());
+    ASSERT_EQ(root.GetChildren().size(), 1u);
+
+    ASSERT_TRUE(root.HasComponent<CPrefabLink>());
+    EXPECT_NE(root.GetComponent<CPrefabLink>().prefabObjectID, 0u);
+
+    GameObject child = root.GetChildren()[0];
+    ASSERT_TRUE(child.HasComponent<CPrefabLink>());
+    EXPECT_NE(child.GetComponent<CPrefabLink>().prefabObjectID, 0u);
+    EXPECT_NE(child.GetComponent<CPrefabLink>().prefabObjectID,
+              root.GetComponent<CPrefabLink>().prefabObjectID);
+}
+
+TEST_F(t_PrefabManager, InstantiatePrefab_StampsSyncedHashMatchingTheAsset)
+{
+    const std::string path = SaveSimplePrefab("stamp_hash.nprefab", "Root");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(root.IsValid());
+
+    EXPECT_EQ(root.GetComponent<CPrefab>().syncedHash, PrefabManager::HashPrefabFile(path));
+}
+
+// Two instances of one prefab in one scene: the SECOND gets fresh random scene UIDs
+// for its children (CreateGameObjectDetached only honours a free preferred UID), so
+// their links -- not their UIDs -- are what still match the asset. This is the case
+// that makes CPrefabLink necessary rather than convenient.
+TEST_F(t_PrefabManager, InstantiatePrefab_TwoInstancesShareLinkIDsButNotSceneUIDs)
+{
+    const std::string path = SaveSimplePrefab("stamp_twice.nprefab", "Root", true, "Child");
+
+    GameObject first  = PrefabManager::InstantiatePrefab(path, scene);
+    GameObject second = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(first.IsValid());
+    ASSERT_TRUE(second.IsValid());
+
+    GameObject firstChild  = first.GetChildren()[0];
+    GameObject secondChild = second.GetChildren()[0];
+
+    EXPECT_EQ(firstChild.GetComponent<CPrefabLink>().prefabObjectID,
+              secondChild.GetComponent<CPrefabLink>().prefabObjectID);
+    EXPECT_NE(firstChild.GetID(), secondChild.GetID());
+}
+
+TEST_F(t_PrefabManager, ReloadPrefabInstance_StampsLinksAndHash)
+{
+    const std::string path = SaveSimplePrefab("reload_stamp.nprefab", "Root", true, "Child");
+
+    GameObject root = PrefabManager::InstantiatePrefab(path, scene);
+    ASSERT_TRUE(root.IsValid());
+
+    // Wipe the bookkeeping the way a pre-feature scene would have it.
+    root.RemoveComponent<CPrefabLink>();
+    root.GetComponent<CPrefab>().syncedHash = 0;
+
+    PrefabManager::ReloadPrefabInstance(root, scene);
+
+    ASSERT_TRUE(root.HasComponent<CPrefabLink>());
+    ASSERT_EQ(root.GetChildren().size(), 1u);
+    EXPECT_TRUE(root.GetChildren()[0].HasComponent<CPrefabLink>());
+    EXPECT_EQ(root.GetComponent<CPrefab>().syncedHash, PrefabManager::HashPrefabFile(path));
+}
+
+// The file IS the definition, so a link into it is meaningless -- exactly the reason
+// CPrefab is already stripped.
+TEST_F(t_PrefabManager, SavePrefab_StripsCPrefabLink)
+{
+    GameObject root = scene->CreateGameObject("Root", nullptr);
+    root.AddComponent<CPrefabLink>().prefabObjectID = 1234u;
+
+    const std::string path = TempFile("strip_link.nprefab");
+    PrefabManager::SavePrefab(root, path);
+
+    JsonObject fileRoot = JsonFile::LoadFromFile(path);
+    JsonArray  objects  = fileRoot.GetArray("GameObjects");
+    ASSERT_FALSE(objects.IsEmpty());
+
+    JsonArray comps = objects.GetObject(0).GetArray("components");
+    for (int i = 0; i < comps.Count(); ++i)
+        EXPECT_NE(comps.GetObject(i).GetString("type"), "CPrefabLink");
 }
 
 // =============================================================================

@@ -3,6 +3,7 @@
 #include <EngineCore/EngineExport.h>
 #include <ECS/GameObject.h>
 
+#include <cstdint>
 #include <string>
 
 class Scene;
@@ -25,4 +26,12 @@ public:
     // destroys all current children and re-instantiates them from the source .nprefab file.
     // The instanceRoot GO itself (and its CTransform) is preserved.
     NOUS_ENGINE_API static void ReloadPrefabInstance(GameObject instanceRoot, Scene* scene);
+
+    // FNV-1a over the file's bytes. Returns 0 when the file cannot be read, which
+    // callers must treat as "cannot tell" rather than as "changed" -- a missing
+    // prefab asset should not flag every instance stale.
+    //
+    // Hashing rather than comparing timestamps because this repo is shared through
+    // git: a fresh clone rewrites mtimes and would mark every instance stale.
+    NOUS_ENGINE_API static uint64_t HashPrefabFile(const std::string& path);
 };
