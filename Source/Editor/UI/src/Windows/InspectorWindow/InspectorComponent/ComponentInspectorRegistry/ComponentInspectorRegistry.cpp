@@ -31,6 +31,7 @@
 #include <ECS/Component/Types/CAudioListener/CAudioListener.h>
 #include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
+#include <ECS/Component/Types/CBoneAttachment/CBoneAttachment.h>
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
@@ -668,6 +669,86 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
     ImGui::Unindent();
 }
 
+static void DrawBoneAttachment(const InspectorCtx& ctx, Component* c)
+{
+    auto* attachment = static_cast<CBoneAttachment*>(c);
+
+    if (!ImGui::CollapsingHeader("Bone Attachment", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ImGui::Indent();
+
+    // The same nearest-ancestor walk ComputeParentWorld performs. Done in GameObject
+    // terms here because that is what the Inspector holds; the engine side works in
+    // entities. Both stop at the FIRST animator found.
+    CAnimator* animator = nullptr;
+    if (ctx.go)
+    {
+        for (GameObject p = ctx.go->GetParent(); p.IsValid(); p = p.GetParent())
+        {
+            if (CAnimator* found = p.TryGetComponent<CAnimator>())
+            {
+                animator = found;
+                break;
+            }
+        }
+    }
+
+    // The most likely user error by far is adding this component before parenting the
+    // prop. An empty combo with no explanation is the one genuinely confusing failure,
+    // so say what is missing instead.
+    if (!animator)
+    {
+        ImGui::TextWrapped("No Animator above this object. Parent it under a GameObject "
+                           "that has an Animator component.");
+        ImGui::Unindent();
+        return;
+    }
+    if (!animator->skeleton)
+    {
+        ImGui::TextWrapped("The Animator above this object has no skeleton assigned. "
+                           "Drop a .nskel into its Skeleton slot.");
+        ImGui::Unindent();
+        return;
+    }
+
+    const std::vector<std::string>& boneNames = animator->skeleton->skeleton.names;
+
+    std::vector<const char*> items;
+    items.reserve(boneNames.size() + 1);
+    items.push_back("(none)");
+    for (const std::string& name : boneNames)
+        items.push_back(name.c_str());
+
+    int current = 0;   // 0 is "(none)", so bone i sits at i + 1
+    for (std::size_t i = 0; i < boneNames.size(); ++i)
+    {
+        if (boneNames[i] == attachment->boneName)
+        {
+            current = static_cast<int>(i) + 1;
+            break;
+        }
+    }
+
+    if (ImGui::Combo("Bone", &current, items.data(), static_cast<int>(items.size())))
+    {
+        attachment->boneName = (current == 0) ? std::string{} : boneNames[current - 1];
+
+        // A new name gets its own warning; otherwise correcting one mistake and then
+        // making a second would warn about neither.
+        attachment->warnedUnresolved = false;
+    }
+
+    // A bone the rig does not have is not visible in the combo, which otherwise just
+    // shows "(none)" and looks like nothing is set.
+    if (!attachment->boneName.empty() && current == 0)
+        ImGui::TextWrapped("Bone '%s' is not in this skeleton.", attachment->boneName.c_str());
+
+    ImGui::TextDisabled("This object's Transform is its offset, in bone space.");
+
+    ImGui::Unindent();
+}
+
 static const ComponentUI k_ui[] = {
     {"CTransform", "Transform", false, &DrawTransform},
     {"CMesh",      "Mesh",      true,  &DrawMesh},
@@ -679,6 +760,7 @@ static const ComponentUI k_ui[] = {
     {"CAudioListener",  "Audio Listener",  true,  &DrawAudioListener},
     {"CVideoPlayer",    "Video Player",    true,  &DrawVideoPlayer},
     {"CAnimator",       "Animator",        true,  &DrawAnimator},
+    {"CBoneAttachment", "Bone Attachment", true,  &DrawBoneAttachment},
 };
 
 const ComponentUI* FindComponentUI(std::string_view typeName)

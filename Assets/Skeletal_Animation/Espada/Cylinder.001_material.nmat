@@ -1,0 +1,91 @@
+{
+    "uniforms": [
+        {
+            "name": "albedoColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "aoStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "emissiveColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "metallic",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "normalStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "roughness",
+            "type": "float",
+            "value": [
+                1
+            ]
+        }
+    ],
+    "texture_maps": [
+        {
+            "name": "albedoSampler",
+            "asset_path": "Assets\/Skeletal_Animation\/Espada\/Sword_Base_color.png",
+            "uid": 1960692854,
+            "library_path": "Library\/Textures\/1960692854.png"
+        },
+        {
+            "name": "metallicSampler",
+            "asset_path": "Assets\/Skeletal_Animation\/Espada\/Sword_Metallic.png",
+            "uid": 1187860890,
+            "library_path": "Library\/Textures\/1187860890.png"
+        },
+        {
+            "name": "normalSampler",
+            "asset_path": "Assets\/Skeletal_Animation\/Espada\/Sword_Normal_OpenGL.png",
+            "uid": 1909624154,
+            "library_path": "Library\/Textures\/1909624154.png"
+        },
+        {
+            "name": "roughnessSampler",
+            "asset_path": "Assets\/Skeletal_Animation\/Espada\/Sword_Roughness.png",
+            "uid": 989483729,
+            "library_path": "Library\/Textures\/989483729.png"
+        }
+    ],
+    "shader_uid": 1190405774,
+    "shader_asset_path": "Assets\/Shaders\/ForwardPBR.glsl",
+    "shader_library_path": "Library\/Shaders\/1190405774"
+}

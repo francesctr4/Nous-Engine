@@ -12,6 +12,7 @@
 #include <Renderer/iEditorRenderBridge.h>
 
 #include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CBoneAttachment/CBoneAttachment.h>
 #include <ECS/Component/Types/CMesh/CMesh.h>
 #include <ModuleScene/ModuleScene.h>
 #include <ModuleInput/ModuleInput.h>
@@ -409,13 +410,14 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
 
     if (count == 1)
     {
-        // Single-object path — factor out the parent's world transform to get local matrix.
+        // Single-object path — factor out the effective parent transform to get the
+        // local matrix. ComputeParentWorld is the SAME function Scene::UpdateWorldMatrices
+        // uses, so a bone attachment's drag decomposes into an offset in bone space
+        // rather than into garbage. It returns the plain parent world for an ordinary
+        // object and identity for a root, which is exactly what this used to compute.
         auto parentInverse = glm::mat4(1.0f);
-        if (GameObject parent = selected.GetParent(); parent.IsValid())
-        {
-            if (const CTransform* pt = parent.TryGetComponent<CTransform>())
-                parentInverse = glm::inverse(pt->worldMatrix);
-        }
+        if (Scene* scene = selected.GetScene())
+            parentInverse = glm::inverse(ComputeParentWorld(scene->GetRegistry(), selected.GetEntity()));
 
         const glm::mat4 newLocalMatrix = parentInverse * objectMatrix;
 

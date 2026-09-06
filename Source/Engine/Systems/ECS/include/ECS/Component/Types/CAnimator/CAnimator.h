@@ -22,10 +22,9 @@ class ResourceAnimation;
  * otherwise cost 66 entities per character, and every one of them would be
  * walked by Scene::UpdateWorldMatrices every frame.
  *
- * The consequence, accepted deliberately: there is no bone entity to parent a
- * prop to, so sockets/attachments have no mechanism. Deferred until after GPU
- * skinning lands, at which point the cost/benefit is judgeable against a
- * character that visibly moves.
+ * The consequence: there is no bone entity to parent a prop to. CBoneAttachment is
+ * the mechanism that makes that affordable -- it injects the bone's global into
+ * Scene::UpdateWorldMatrices for one object, instead of every joint costing an entity.
  *
  * The two resource slots are assigned by the user (Inspector drag-drop), NOT
  * inferred from a sibling CMesh: nothing on disk or in memory says a mesh is

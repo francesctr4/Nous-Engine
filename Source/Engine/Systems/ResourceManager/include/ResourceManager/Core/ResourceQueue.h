@@ -14,6 +14,10 @@ class ResourceBase;
 // handoffs in ModuleResourceManager: pending GPU uploads and pending GPU
 // releases. Producers (worker threads + main thread) push; the consumer
 // (renderer's PreUpdate) drains the whole queue with TakeAll() each frame.
+//
+// A RESOURCE APPEARS AT MOST ONCE: pushing one already queued is ignored. The
+// consumer deletes the resource while draining, so a duplicate entry would be a
+// use-after-free -- see the comment on Push.
 class ResourceQueue
 {
 public:
@@ -43,6 +47,9 @@ public:
     NOUS_ENGINE_API void Clear();
 
 private:
+    // Caller must hold m_mutex.
+    [[nodiscard]] bool ContainsUnlocked(const ResourceBase* resource) const;
+
     mutable std::mutex m_mutex;
     std::vector<Entry> m_entries;
 };

@@ -5,6 +5,7 @@
 #endif
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CBoneAttachment/CBoneAttachment.h>
 #include <ECS/Component/Types/CMesh/CMesh.h>
 #include <ECS/Component/Types/CMaterial/CMaterial.h>
 #include <ECS/Component/Types/CCamera/CCamera.h>
@@ -145,11 +146,25 @@ void Scene::Update(float deltaTime) {
 
 static void UpdateWorldMatrixRecursive(entt::entity entity, entt::registry& registry, bool parentWasDirty) {
     auto* t = registry.try_get<CTransform>(entity);
-    const bool isDirty = parentWasDirty || (t && t->m_localDirty);
+
+    // An attached prop rides a bone that moves while the prop's OWN transform never
+    // changes -- and neither does the character's, since animation moves the pose and
+    // not the object. So nothing would ever set m_localDirty and the cache would
+    // freeze the prop at frame one's bone position. Same reason skinned meshes bypass
+    // the m_worldDirty AABB cache.
+    const bool attached = registry.all_of<CBoneAttachment>(entity);
+    const bool isDirty  = parentWasDirty || attached || (t && t->m_localDirty);
 
     if (t) {
         if (isDirty) {
-            t->UpdateMatrix();
+            // ComputeParentWorld degrades to the plain parent world when the
+            // attachment does not resolve, so this branch is correct for an attached
+            // object in every state -- including one whose bone name is a typo.
+            if (attached)
+                t->worldMatrix = ComputeParentWorld(registry, entity) * t->GetLocalMatrix();
+            else
+                t->UpdateMatrix();
+
             t->m_localDirty = false;
             t->m_worldDirty = true;
         } else {

@@ -1,0 +1,169 @@
+{
+    "name": "Espada.fbx",
+    "version": 1,
+    "GameObjects": [
+        {
+            "uid": 4195459705,
+            "name": "Espada.fbx",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "uid": 3981635654,
+            "name": "Cube.005",
+            "parent": 4195459705,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.70710670948028564,
+                        -0.7071068286895752,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90.000007629394531,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        100,
+                        100,
+                        100
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Espada.fbx",
+                    "libraryPath": "Library\/Meshes\/525630795.nmesh",
+                    "resourceUID": 1282696470,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Cube.005_material.nmat",
+                    "libraryPath": "Library\/Materials\/2627690959.nmat",
+                    "resourceUID": 2627690959
+                }
+            ]
+        },
+        {
+            "uid": 1809814272,
+            "name": "Cylinder.001",
+            "parent": 4195459705,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.70710670948028564,
+                        -0.7071068286895752,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90.000007629394531,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        100,
+                        100,
+                        100
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Espada.fbx",
+                    "libraryPath": "Library\/Meshes\/525630795.nmesh",
+                    "resourceUID": 3716416077,
+                    "submeshIndex": 1
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Cylinder.001_material.nmat",
+                    "libraryPath": "Library\/Materials\/3545097630.nmat",
+                    "resourceUID": 3545097630
+                }
+            ]
+        },
+        {
+            "uid": 1505750710,
+            "name": "Cube.006",
+            "parent": 4195459705,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        -4.3753256797790527
+                    ],
+                    "orientation": [
+                        0.70710670948028564,
+                        -0.7071068286895752,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90.000007629394531,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        100,
+                        100,
+                        100
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Espada.fbx",
+                    "libraryPath": "Library\/Meshes\/525630795.nmesh",
+                    "resourceUID": 4021969517,
+                    "submeshIndex": 2
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Cube.006_material.nmat",
+                    "libraryPath": "Library\/Materials\/4243166001.nmat",
+                    "resourceUID": 4243166001
+                }
+            ]
+        }
+    ]
+}

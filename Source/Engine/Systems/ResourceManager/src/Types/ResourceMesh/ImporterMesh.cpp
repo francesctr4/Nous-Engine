@@ -488,7 +488,7 @@ void ImporterMesh::Release(ResourceBase* inResource, IGPUResourceFactory* gpu)
     ResourceMesh* mesh = down_cast<ResourceMesh*>(inResource);
     if (mesh->internalID != INVALID_ID)
     {
-        gpu->DestroyGeometry(mesh);
+        gpu->DestroyGeometry(mesh);,
         mesh->internalID = INVALID_ID;
     }
 }

@@ -735,6 +735,16 @@ void AssetsBrowser::DrawContent()
         }
         clipper.End();
 
+        // An empty directory gives LayoutLineCount == 0, so the clipper runs zero
+        // iterations and NOTHING is submitted after the SetCursorScreenPos above --
+        // which leaves ImGui's DC.IsSetPos set with CursorPos past CursorMaxPos, and
+        // EndChild then trips ErrorCheckUsingSetCursorPosToExtendParentBoundaries.
+        // Submitting an item closes that, and an empty folder gets a real empty state
+        // instead of a blank panel. (ImGui's own demo browser never has zero items,
+        // which is why the case is unhandled upstream.)
+        if (Items.empty())
+            ImGui::TextDisabled("This folder is empty.");
+
         // Flush deferred moves (accumulated during folder drop targets above)
         for (const auto& [src, destDir] : m_pendingMoves)
             MoveAsset(src, destDir);

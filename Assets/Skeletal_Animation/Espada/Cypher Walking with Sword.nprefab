@@ -1,0 +1,259 @@
+{
+    "name": "Cypher Walking",
+    "version": 1,
+    "GameObjects": [
+        {
+            "uid": 2797316622,
+            "name": "Cypher Walking",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -90.690765380859375,
+                        0,
+                        42.981666564941406
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAnimator",
+                    "skeletonAssetPath": "Assets\/Meshes\/Unarmed Walk Forward (1).nskel",
+                    "skeletonLibraryPath": "Library\/Skeletons\/1988096775.nskel",
+                    "skeletonUID": 1988096775,
+                    "clipAssetPath": "Assets\/Meshes\/Unarmed Walk Forward (1)@mixamo_com.nanim",
+                    "clipLibraryPath": "Library\/Animations\/2386521433.nanim",
+                    "clipUID": 2386521433,
+                    "speed": 1,
+                    "loop": true
+                }
+            ]
+        },
+        {
+            "uid": 2508117854,
+            "name": "untitled1",
+            "parent": 2797316622,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -13.927215576171875,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Meshes\/Unarmed Walk Forward (1).fbx",
+                    "libraryPath": "Library\/Meshes\/1965395079.nmesh",
+                    "resourceUID": 1047014012,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Meshes\/untitled1_material.nmat",
+                    "libraryPath": "Library\/Materials\/1399175592.nmat",
+                    "resourceUID": 1399175592
+                }
+            ]
+        },
+        {
+            "uid": 2594028970,
+            "name": "Espada.fbx",
+            "parent": 2797316622,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -44.079204559326172,
+                        14.074867248535156,
+                        -24.821111679077148
+                    ],
+                    "orientation": [
+                        0.66407036781311035,
+                        -0.22265444695949554,
+                        -0.19022849202156067,
+                        0.68793070316314697
+                    ],
+                    "rotation": [
+                        -33.934837341308594,
+                        3.0777733325958252,
+                        91.082862854003906
+                    ],
+                    "scale": [
+                        0.28654482960700989,
+                        0.28654706478118896,
+                        0.28654521703720093
+                    ]
+                },
+                {
+                    "type": "CBoneAttachment",
+                    "boneName": "mixamorig:LeftHand"
+                }
+            ]
+        },
+        {
+            "uid": 965004993,
+            "name": "Cube.005",
+            "parent": 2594028970,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.70710670948028564,
+                        -0.7071068286895752,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90.000007629394531,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        100,
+                        100,
+                        100
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Espada.fbx",
+                    "libraryPath": "Library\/Meshes\/525630795.nmesh",
+                    "resourceUID": 1282696470,
+                    "submeshIndex": 0
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Cube.005_material.nmat",
+                    "libraryPath": "Library\/Materials\/2627690959.nmat",
+                    "resourceUID": 2627690959
+                }
+            ]
+        },
+        {
+            "uid": 2473736934,
+            "name": "Cylinder.001",
+            "parent": 2594028970,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        0.70710670948028564,
+                        -0.7071068286895752,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90.000007629394531,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        100,
+                        100,
+                        100
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Espada.fbx",
+                    "libraryPath": "Library\/Meshes\/525630795.nmesh",
+                    "resourceUID": 3716416077,
+                    "submeshIndex": 1
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Cylinder.001_material.nmat",
+                    "libraryPath": "Library\/Materials\/3545097630.nmat",
+                    "resourceUID": 3545097630
+                }
+            ]
+        },
+        {
+            "uid": 2177077425,
+            "name": "Cube.006",
+            "parent": 2594028970,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        0,
+                        0,
+                        -4.3753256797790527
+                    ],
+                    "orientation": [
+                        0.70710670948028564,
+                        -0.7071068286895752,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        -90.000007629394531,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        100,
+                        100,
+                        100
+                    ]
+                },
+                {
+                    "type": "CMesh",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Espada.fbx",
+                    "libraryPath": "Library\/Meshes\/525630795.nmesh",
+                    "resourceUID": 4021969517,
+                    "submeshIndex": 2
+                },
+                {
+                    "type": "CMaterial",
+                    "assetPath": "Assets\/Skeletal_Animation\/Espada\/Cube.006_material.nmat",
+                    "libraryPath": "Library\/Materials\/4243166001.nmat",
+                    "resourceUID": 4243166001
+                }
+            ]
+        }
+    ]
+}
