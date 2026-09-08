@@ -10,6 +10,7 @@
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <ResourceManager/Types/ResourceType.h>
+#include <Utils/Serialization/JsonArray.h>
 #include <Utils/Serialization/JsonObject.h>
 
 #include <string>
@@ -25,9 +26,11 @@ namespace
 // Binding
 // ---------------------------------------------------------------------------
 
+const ResourceAnimation* CAnimator::CurrentClip() const { return m_playing; }
+
 void CAnimator::Rebind()
 {
-    m_boundClip     = UIDOf(clip);
+    m_boundClip     = UIDOf(m_playing);
     m_boundSkeleton = UIDOf(skeleton);
 
     // A slot changed, so any mesh/rig mismatch reported against the previous skeleton
@@ -35,7 +38,7 @@ void CAnimator::Rebind()
     // wrong one would warn about neither.
     warnedSkeletonMismatch = false;
 
-    if (!clip || !skeleton)
+    if (!m_playing || !skeleton)
     {
         m_binding = {};
         m_pose    = {};
@@ -47,10 +50,10 @@ void CAnimator::Rebind()
         return;
     }
 
-    m_binding = anim::CreateBinding(clip->clip, m_boundClip,
+    m_binding = anim::CreateBinding(m_playing->clip, m_boundClip,
                                     skeleton->skeleton, m_boundSkeleton);
 
-    m_instance.SetClip(&clip->clip, m_boundClip, &m_binding);
+    m_instance.SetClip(&m_playing->clip, m_boundClip, &m_binding);
 
     // Preallocate here rather than resizing per character per frame. Sample()
     // would size the pose itself, but only on its first call -- and the globals
@@ -67,6 +70,10 @@ void CAnimator::Rebind()
 
 void CAnimator::OnUpdate(const float deltaTime)
 {
+    // Task 3 of MVP-E replaces this with the fade state machine. For now the list
+    // simply plays its first entry, so the list is storage without new behaviour.
+    m_playing = clips.empty() ? nullptr : clips.front();
+
     // Authoring fields are live, so an Inspector edit applies on the next frame.
     m_instance.speed = speed;
     m_instance.loop  = loop;
@@ -75,7 +82,7 @@ void CAnimator::OnUpdate(const float deltaTime)
     // comparisons, and it covers every path that can change a slot -- Inspector
     // drop, Inspector clear, Deserialize, a resource going away -- with no
     // "remember to call Bind()" contract for a future call site to forget.
-    if (UIDOf(clip) != m_boundClip || UIDOf(skeleton) != m_boundSkeleton)
+    if (UIDOf(m_playing) != m_boundClip || UIDOf(skeleton) != m_boundSkeleton)
         Rebind();
 
     if (!IsBound())
@@ -128,12 +135,19 @@ JsonObject CAnimator::Serialize() const
         root.Set("skeletonUID",         static_cast<double>(skeleton->GetUID()));
     }
 
-    root.Set("clipAssetPath", clip ? clip->GetAssetsPath() : "");
-    if (clip)
+    JsonArray clipArr;
+    for (const ResourceAnimation* c : clips)
     {
-        root.Set("clipLibraryPath", clip->GetLibraryPath());
-        root.Set("clipUID",         static_cast<double>(clip->GetUID()));
+        if (!c)
+            continue;
+
+        JsonObject entry;
+        entry.Set("assetPath",   c->GetAssetsPath());
+        entry.Set("libraryPath", c->GetLibraryPath());
+        entry.Set("uid",         static_cast<double>(c->GetUID()));
+        clipArr.Append(std::move(entry));
     }
+    root.Set("clips", std::move(clipArr));
 
     root.Set("speed", speed);
     root.Set("loop",  loop);
@@ -149,8 +163,12 @@ void CAnimator::OnDestroy()
     if (skeleton && skeleton->IsLoaded())
         rm->UnloadResource(skeleton->GetUID());
 
-    if (clip && clip->IsLoaded())
-        rm->UnloadResource(clip->GetUID());
+    // Every clip, not just the playing one: AddComponent fires OnDestroy on the
+    // component it REPLACES, which PrefabManager does to a prefab root on every
+    // migration -- so releasing one would leak a reference per extra clip per load.
+    for (const ResourceAnimation* c : clips)
+        if (c && c->IsLoaded())
+            rm->UnloadResource(c->GetUID());
 }
 
 void CAnimator::Deserialize(const JsonObject& obj)
@@ -189,9 +207,30 @@ void CAnimator::Deserialize(const JsonObject& obj)
                                   ResourceType::SKELETON))
         skeleton = down_cast<ResourceSkeleton*>(r);
 
-    if (ResourceBase* r = resolve(obj.GetString("clipAssetPath"),
-                                  obj.GetString("clipLibraryPath"),
-                                  static_cast<uint32_t>(obj.GetDouble("clipUID", 0.0)),
-                                  ResourceType::ANIMATION))
-        clip = down_cast<ResourceAnimation*>(r);
+    clips.clear();
+
+    JsonArray clipArr = obj.GetArray("clips");
+    for (int i = 0; i < clipArr.Count(); ++i)
+    {
+        const JsonObject entry = clipArr.GetObject(i);
+        if (ResourceBase* r = resolve(entry.GetString("assetPath"),
+                                      entry.GetString("libraryPath"),
+                                      static_cast<uint32_t>(entry.GetDouble("uid", 0.0)),
+                                      ResourceType::ANIMATION))
+            clips.push_back(down_cast<ResourceAnimation*>(r));
+    }
+
+    // LEGACY, one deliberate compatibility path: a scene saved before MVP-E carries a
+    // single "clipAssetPath". The no-versioning rule is about Library/, a derived
+    // cache that regenerates; scenes are authored data that does not, and silently
+    // emptying every animator in them is not an acceptable cost. Delete once the
+    // project's scenes have been re-saved.
+    if (clips.empty())
+    {
+        if (ResourceBase* r = resolve(obj.GetString("clipAssetPath"),
+                                      obj.GetString("clipLibraryPath"),
+                                      static_cast<uint32_t>(obj.GetDouble("clipUID", 0.0)),
+                                      ResourceType::ANIMATION))
+            clips.push_back(down_cast<ResourceAnimation*>(r));
+    }
 }

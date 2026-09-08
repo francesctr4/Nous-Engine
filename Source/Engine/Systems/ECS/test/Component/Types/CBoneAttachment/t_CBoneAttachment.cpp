@@ -130,7 +130,7 @@ TEST_F(t_CBoneAttachment, ComposesParentWorldWithTheBoneGlobal)
     character.GetComponent<CTransform>().SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clip     = &anim;
+    animator.clips    = { &anim };
     animator.OnUpdate(0.5f);          // bone "Child" is now at x = 5
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
@@ -153,7 +153,7 @@ TEST_F(t_CBoneAttachment, WalksPastIntermediateAncestorsToTheAnimator)
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clip     = &anim;
+    animator.clips    = { &anim };
     animator.OnUpdate(0.5f);
 
     GameObject group = scene->CreateGameObject("Equipment", &character);
@@ -189,7 +189,7 @@ TEST_F(t_CBoneAttachment, UnknownBoneNameYieldsThePlainParentWorld)
     character.GetComponent<CTransform>().SetPosition(glm::vec3(7.0f, 0.0f, 0.0f));
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clip     = &anim;
+    animator.clips    = { &anim };
     animator.OnUpdate(0.5f);
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
@@ -229,7 +229,7 @@ TEST_F(t_CBoneAttachment, EmptyBoneNameYieldsThePlainParentWorld)
     character.GetComponent<CTransform>().SetPosition(glm::vec3(7.0f, 0.0f, 0.0f));
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clip     = &anim;
+    animator.clips    = { &anim };
     animator.OnUpdate(0.5f);
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
@@ -281,7 +281,7 @@ TEST_F(t_CBoneAttachment, AttachedPropFollowsTheAnimatedBone)
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clip     = &anim;
+    animator.clips    = { &anim };
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";
@@ -302,7 +302,7 @@ TEST_F(t_CBoneAttachment, TheOffsetComposesOnTopOfTheBone)
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clip     = &anim;
+    animator.clips    = { &anim };
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";
@@ -326,7 +326,7 @@ TEST_F(t_CBoneAttachment, GrandchildrenOfAnAttachedPropFollowIt)
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clip     = &anim;
+    animator.clips    = { &anim };
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";
@@ -356,7 +356,7 @@ TEST_F(t_CBoneAttachment, AttachedPropTracksTheBoneAcrossFramesWithNoTransformCh
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clip     = &anim;
+    animator.clips    = { &anim };
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";
@@ -383,12 +383,12 @@ TEST_F(t_CBoneAttachment, ReparentingUnderAnotherAnimatorReResolves)
     GameObject slow = scene->CreateGameObject("Slow");
     auto& slowAnimator = slow.AddComponent<CAnimator>();
     slowAnimator.skeleton = &rig;
-    slowAnimator.clip     = &slowAnim;
+    slowAnimator.clips    = { &slowAnim };
 
     GameObject fast = scene->CreateGameObject("Fast");
     auto& fastAnimator = fast.AddComponent<CAnimator>();
     fastAnimator.skeleton = &rig;
-    fastAnimator.clip     = &fastAnim;
+    fastAnimator.clips    = { &fastAnim };
 
     GameObject prop = scene->CreateGameObject("Sword", &slow);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";

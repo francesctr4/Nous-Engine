@@ -639,16 +639,21 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
     ImGui::Spacing();
     ImGui::Text("Clip:");
     ImGui::SameLine();
-    std::string animClipLabel = cAnimator->clip ? cAnimator->clip->GetName() : std::string("None");
+    ResourceAnimation* firstClip = cAnimator->clips.empty() ? nullptr : cAnimator->clips.front();
+    std::string animClipLabel = firstClip ? firstClip->GetName() : std::string("None");
     animClipLabel += "##animClipSlot";
     ImGui::Button(animClipLabel.c_str(), ImVec2(200.0f, 0.0f));
     if (const std::string dropped = acceptDrop(".nanim"); !dropped.empty())
     {
         if (ResourceBase* r = rm->CreateResource(dropped))
         {
-            if (cAnimator->clip)
-                rm->UnloadResource(cAnimator->clip->GetUID());
-            cAnimator->clip = down_cast<ResourceAnimation*>(r);
+            if (firstClip)
+                rm->UnloadResource(firstClip->GetUID());
+
+            if (cAnimator->clips.empty())
+                cAnimator->clips.push_back(down_cast<ResourceAnimation*>(r));
+            else
+                cAnimator->clips.front() = down_cast<ResourceAnimation*>(r);
         }
     }
 
@@ -662,10 +667,10 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
     ImGui::Spacing();
     if (cAnimator->skeleton)
         ImGui::Text("Bones: %zu", cAnimator->skeleton->skeleton.BoneCount());
-    if (cAnimator->clip)
+    if (const ResourceAnimation* current = cAnimator->CurrentClip())
         ImGui::Text("Duration: %.2f s   Channels: %zu",
-                    cAnimator->clip->clip.duration,
-                    cAnimator->clip->clip.ChannelCount());
+                    current->clip.duration,
+                    current->clip.ChannelCount());
     if (!cAnimator->IsBound())
         ImGui::TextDisabled("Not bound — assign a skeleton and a clip.");
 

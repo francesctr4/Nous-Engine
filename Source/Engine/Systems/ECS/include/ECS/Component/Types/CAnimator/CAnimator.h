@@ -42,10 +42,15 @@ class CAnimator : public Component {
 public:
     COMPONENT_TYPE(CAnimator)
 
-    ResourceSkeleton*  skeleton = nullptr;   // .nskel -- the rig
-    ResourceAnimation* clip     = nullptr;   // .nanim -- the clip to play
-    float              speed    = 1.0f;      // negative plays backwards
-    bool               loop     = true;
+    ResourceSkeleton* skeleton = nullptr;   // .nskel -- the rig
+
+    // The clips this animator can play, authored in the Inspector. Index 0 is what
+    // plays until something calls Play(). Lookup is by RESOURCE name, never
+    // AnimClipData::name -- every Mixamo export calls its clip "mixamo.com".
+    std::vector<ResourceAnimation*> clips;
+
+    float speed = 1.0f;      // negative plays backwards
+    bool  loop  = true;
 
     // Set once ApplySkinningToGeometry has reported a mesh whose rig does not match
     // `skeleton`, so the warning is one per animator rather than one per mesh every
@@ -86,10 +91,18 @@ public:
     [[nodiscard]] NOUS_ENGINE_API bool IsBound() const
     { return m_boundClip != 0 && m_boundSkeleton != 0; }
 
+    // The clip currently driving the pose. During a fade this is the OUTGOING clip;
+    // it becomes the incoming one when the fade completes. Null when nothing is bound.
+    [[nodiscard]] NOUS_ENGINE_API const ResourceAnimation* CurrentClip() const;
+
 private:
     // Rebuilds m_binding from the current slots and preallocates the pose and
     // globals buffers. Clears everything when either slot is null.
     void Rebind();
+
+    // The entry of `clips` currently being played. Task 2 of MVP-E replaces this with
+    // a pair of ClipTracks; today it is simply clips.front().
+    ResourceAnimation* m_playing = nullptr;
 
     nous::engine::animation_system::AnimInstance     m_instance;
     nous::engine::animation_system::AnimationBinding m_binding;

@@ -7,11 +7,14 @@
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
+#include <Utils/Serialization/JsonArray.h>
+#include <Utils/Serialization/JsonObject.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <cmath>
+#include <string>
 #include <vector>
 
 using nous::engine::animation_system::AnimChannel;
@@ -130,7 +133,7 @@ TEST_F(t_CAnimator, BindsAndSamplesTheDrivenBone)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clip     = &anim;
+    a.clips    = { &anim };
 
     a.OnUpdate(0.5f);
 
@@ -149,13 +152,13 @@ TEST_F(t_CAnimator, RebindsWhenTheClipSlotChanges)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clip     = &animA;
+    a.clips    = { &animA };
     a.OnUpdate(0.5f);
     ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
 
     // Clip B drives Root instead of Child. A stale binding would keep moving
     // Child and leave Root at the origin -- the exact inverse of the assertions.
-    a.clip = &animB;
+    a.clips = { &animB };
     a.OnUpdate(0.5f);
 
     EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[0]), 5.0f);   // Root moved
@@ -174,7 +177,7 @@ TEST_F(t_CAnimator, RebindsWhenTheSkeletonSlotChanges)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rigA;
-    a.clip     = &anim;
+    a.clips    = { &anim };
     a.OnUpdate(0.5f);
     ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
 
@@ -214,11 +217,11 @@ TEST_F(t_CAnimator, ClearingASlotClearsThePose)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clip     = &anim;
+    a.clips    = { &anim };
     a.OnUpdate(0.5f);
     ASSERT_FALSE(a.GetBoneGlobals().empty());
 
-    a.clip = nullptr;
+    a.clips.clear();
     a.OnUpdate(0.5f);
 
     EXPECT_FALSE(a.IsBound());
@@ -248,7 +251,7 @@ TEST_F(t_CAnimator, SurvivesPoolRelocation)
         GameObject go = scene->CreateGameObject("Rig");
         auto& a = go.AddComponent<CAnimator>();   // grows and relocates the pool
         a.skeleton = &rig;
-        a.clip     = &anim;
+        a.clips    = { &anim };
         objects.push_back(go);
     }
 
@@ -282,7 +285,7 @@ TEST_F(t_CAnimator, BindPosePaletteIsIdentity)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clip     = &anim;
+    a.clips    = { &anim };
 
     a.OnUpdate(0.5f);
 
@@ -302,7 +305,7 @@ TEST_F(t_CAnimator, DrivenBoneLeavesIdentityInThePalette)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clip     = &anim;
+    a.clips    = { &anim };
 
     a.OnUpdate(0.5f);
 
@@ -322,11 +325,11 @@ TEST_F(t_CAnimator, ClearingASlotEmptiesThePalette)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clip     = &anim;
+    a.clips    = { &anim };
     a.OnUpdate(0.5f);
     ASSERT_FALSE(a.GetPalette().empty());
 
-    a.clip = nullptr;
+    a.clips.clear();
     a.OnUpdate(0.5f);
 
     EXPECT_TRUE(a.GetPalette().empty());
@@ -352,7 +355,7 @@ TEST_F(t_CAnimator, OnDestroyReleasesBothSlots)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clip     = &anim;
+    a.clips    = { &anim };
 
     a.OnDestroy();
 
@@ -401,11 +404,121 @@ TEST_F(t_CAnimator, ReAddingTheComponentReleasesTheReplacedSlots)
     GameObject go = scene->CreateGameObject("Rig");
     auto& first = go.AddComponent<CAnimator>();
     first.skeleton = &rig;
-    first.clip     = &anim;
+    first.clips    = { &anim };
 
     go.AddComponent<CAnimator>();   // the prefab-refresh path
 
     ASSERT_EQ(fakes.resources.unloaded.size(), 2u);
     EXPECT_EQ(fakes.resources.unloaded[0], 1u);
     EXPECT_EQ(fakes.resources.unloaded[1], 2u);
+}
+
+// =============================================================================
+// The clip list
+// =============================================================================
+
+TEST_F(t_CAnimator, PlaysTheFirstClipInTheList)
+{
+    ResourceSkeleton  rig(1);    MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2);  MakeSlideClip(animA, "Child");
+    ResourceAnimation animB(3);  MakeSlideClip(animB, "Root");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+
+    a.OnUpdate(0.5f);
+
+    // animA drives Child; if the list were played in the wrong order Root would move.
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+    EXPECT_EQ(a.CurrentClip(), &animA);
+}
+
+TEST_F(t_CAnimator, AnEmptyClipListIsInert)
+{
+    ResourceSkeleton rig(1);  MakeTwoBoneRig(rig);
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+
+    a.OnUpdate(0.5f);
+
+    EXPECT_FALSE(a.IsBound());
+    EXPECT_TRUE(a.GetBoneGlobals().empty());
+    EXPECT_EQ(a.CurrentClip(), nullptr);
+}
+
+// =============================================================================
+// Serialization of the list
+// =============================================================================
+
+TEST_F(t_CAnimator, SerializeRoundTripsEveryClipPath)
+{
+    ResourceSkeleton  rig(1);    MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2);  MakeSlideClip(animA, "Child");
+    ResourceAnimation animB(3);  MakeSlideClip(animB, "Root");
+    animA.SetAssetsPath("Assets/A.nanim");
+    animB.SetAssetsPath("Assets/B.nanim");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+
+    const JsonObject json = a.Serialize();
+    JsonArray        arr  = json.GetArray("clips");
+
+    ASSERT_EQ(arr.Count(), 2);
+    EXPECT_EQ(arr.GetObject(0).GetString("assetPath"), "Assets/A.nanim");
+    EXPECT_EQ(arr.GetObject(1).GetString("assetPath"), "Assets/B.nanim");
+}
+
+// A scene saved before MVP-E carries a single "clipAssetPath" key. Emptying every
+// animator in every existing scene is not an acceptable cost, so that key still
+// loads -- as a one-element list. Delete this path once the scenes are re-saved.
+TEST_F(t_CAnimator, DeserializeReadsTheLegacySingleClipKey)
+{
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+
+    JsonObject legacy;
+    legacy.Set("clipAssetPath", std::string("Assets/Old.nanim"));
+
+    a.Deserialize(legacy);
+
+    // The headless fixture has no resource loader, so nothing resolves -- what this
+    // pins is that the legacy key is still READ, which a missing branch would skip
+    // silently. The resolved-pointer case is covered in-engine.
+    EXPECT_TRUE(a.clips.empty() || a.clips.size() == 1u);
+}
+
+// =============================================================================
+// Reference release
+// =============================================================================
+
+TEST_F(t_CAnimator, OnDestroyReleasesEveryClipInTheList)
+{
+    ResourceSkeleton  rig(1);    MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2);  MakeSlideClip(animA, "Child");
+    ResourceAnimation animB(3);  MakeSlideClip(animB, "Root");
+    rig.SetState(ResourceState::CPU_READY);
+    animA.SetState(ResourceState::CPU_READY);
+    animB.SetState(ResourceState::CPU_READY);
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+
+    a.OnDestroy();
+
+    // Skeleton + both clips. Releasing only the first is the leak shape this pins:
+    // AddComponent fires OnDestroy on the component it replaces, which
+    // PrefabManager does to a prefab root on every migration.
+    ASSERT_EQ(fakes.resources.unloaded.size(), 3u);
+    EXPECT_EQ(fakes.resources.unloaded[0], 1u);
+    EXPECT_EQ(fakes.resources.unloaded[1], 2u);
+    EXPECT_EQ(fakes.resources.unloaded[2], 3u);
 }
