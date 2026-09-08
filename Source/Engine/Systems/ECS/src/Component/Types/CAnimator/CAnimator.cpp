@@ -26,42 +26,31 @@ namespace
 // Binding
 // ---------------------------------------------------------------------------
 
-const ResourceAnimation* CAnimator::CurrentClip() const { return m_playing; }
+const ResourceAnimation* CAnimator::CurrentClip() const { return m_from.clip; }
 
-void CAnimator::Rebind()
+void CAnimator::RebindTrack(ClipTrack& track)
 {
-    m_boundClip     = UIDOf(m_playing);
-    m_boundSkeleton = UIDOf(skeleton);
+    track.boundClip = UIDOf(track.clip);
+    track.frozen    = false;
 
-    // A slot changed, so any mesh/rig mismatch reported against the previous skeleton
-    // is stale. Without this, correcting one wrong .nskel and then dropping a second
-    // wrong one would warn about neither.
-    warnedSkeletonMismatch = false;
-
-    if (!m_playing || !skeleton)
+    if (!track.clip || !skeleton)
     {
-        m_binding = {};
-        m_pose    = {};
-        m_globals.clear();
-        m_palette.clear();
-        m_instance.SetClip(nullptr, 0, nullptr);
-        m_boundClip     = 0;
-        m_boundSkeleton = 0;
+        track.binding = {};
+        track.pose    = {};
+        track.instance.SetClip(nullptr, 0, nullptr);
+        track.boundClip = 0;
         return;
     }
 
-    m_binding = anim::CreateBinding(m_playing->clip, m_boundClip,
-                                    skeleton->skeleton, m_boundSkeleton);
+    track.binding = anim::CreateBinding(track.clip->clip, track.boundClip,
+                                        skeleton->skeleton, m_boundSkeleton);
 
-    m_instance.SetClip(&m_playing->clip, m_boundClip, &m_binding);
+    track.instance.SetClip(&track.clip->clip, track.boundClip, &track.binding);
 
     // Preallocate here rather than resizing per character per frame. Sample()
-    // would size the pose itself, but only on its first call -- and the globals
-    // buffer it feeds has no such guarantee.
-    m_pose.skeleton = m_boundSkeleton;
-    m_pose.bones.assign(skeleton->skeleton.BoneCount(), anim::Transform{});
-    m_globals.assign(skeleton->skeleton.BoneCount(), glm::mat4(1.0f));
-    m_palette.assign(skeleton->skeleton.BoneCount(), glm::mat4(1.0f));
+    // would size the pose itself, but only on its first call.
+    track.pose.skeleton = m_boundSkeleton;
+    track.pose.bones.assign(skeleton->skeleton.BoneCount(), anim::Transform{});
 }
 
 // ---------------------------------------------------------------------------
@@ -70,35 +59,59 @@ void CAnimator::Rebind()
 
 void CAnimator::OnUpdate(const float deltaTime)
 {
-    // Task 3 of MVP-E replaces this with the fade state machine. For now the list
-    // simply plays its first entry, so the list is storage without new behaviour.
-    m_playing = clips.empty() ? nullptr : clips.front();
+    // Task 3 of MVP-E replaces this with Play()-driven selection. For now the list
+    // simply plays its first entry, so the two tracks change no behaviour.
+    m_from.clip = clips.empty() ? nullptr : clips.front();
 
-    // Authoring fields are live, so an Inspector edit applies on the next frame.
-    m_instance.speed = speed;
-    m_instance.loop  = loop;
+    // Rebind on a UID mismatch rather than on an explicit call. Integer comparisons,
+    // and they cover every path that can change a slot -- Inspector drop, Inspector
+    // clear, Deserialize, a resource going away -- with no "remember to call Bind()"
+    // contract for a future call site to forget.
+    const uint32_t skeletonUID = UIDOf(skeleton);
+    if (skeletonUID != m_boundSkeleton)
+    {
+        m_boundSkeleton = skeletonUID;
 
-    // Rebind on a UID mismatch rather than on an explicit call. Two integer
-    // comparisons, and it covers every path that can change a slot -- Inspector
-    // drop, Inspector clear, Deserialize, a resource going away -- with no
-    // "remember to call Bind()" contract for a future call site to forget.
-    if (UIDOf(m_playing) != m_boundClip || UIDOf(skeleton) != m_boundSkeleton)
-        Rebind();
+        // The rig changed, so any mesh/rig mismatch reported against the previous
+        // skeleton is stale. Without this, correcting one wrong .nskel and then
+        // dropping a second wrong one would warn about neither.
+        warnedSkeletonMismatch = false;
+
+        RebindTrack(m_from);
+        RebindTrack(m_to);
+    }
+
+    if (UIDOf(m_from.clip) != m_from.boundClip) RebindTrack(m_from);
+    if (UIDOf(m_to.clip)   != m_to.boundClip)   RebindTrack(m_to);
 
     if (!IsBound())
+    {
+        m_globals.clear();
+        m_palette.clear();
         return;
+    }
 
-    // LOAD-BEARING, and reassigned EVERY frame rather than once in Rebind().
+    // Authoring fields are live, so an Inspector edit applies on the next frame.
+    m_from.instance.speed = speed;
+    m_from.instance.loop  = loop;
+    m_to.instance.speed   = speed;
+    m_to.instance.loop    = loop;
+
+    // LOAD-BEARING, and reassigned EVERY frame for BOTH tracks rather than once in
+    // RebindTrack.
     //
-    // m_instance.binding points at m_binding, a member of THIS object, and EnTT
-    // relocates components by memcpy when a pool grows -- so a pointer stored once
-    // survives the move as a dangling read into vacated memory. One assignment per
-    // frame makes the self-reference self-healing at no meaningful cost. Do not
-    // "optimize" it back into Rebind(). Pinned by t_CAnimator.SurvivesPoolRelocation.
-    m_instance.binding = &m_binding;
+    // instance.binding points at a member of THIS object, and EnTT relocates
+    // components by memcpy when a pool grows -- so a pointer stored once survives the
+    // move as a dangling read into vacated memory. One assignment per frame makes the
+    // self-reference self-healing at no meaningful cost. Missing ONE track reproduces
+    // the bug on the interrupted-transition path only, which would look like
+    // "transitions break once the scene gets big enough" rather than a pointer bug.
+    m_from.instance.binding = &m_from.binding;
+    m_to.instance.binding   = &m_to.binding;
 
-    anim::Advance(m_instance, deltaTime);
-    anim::Sample(m_instance, skeleton->skeleton, m_boundSkeleton, m_pose);
+    anim::Advance(m_from.instance, deltaTime);
+    anim::Sample(m_from.instance, skeleton->skeleton, m_boundSkeleton, m_from.pose);
+    m_blended = m_from.pose;
 
     // Guarded rather than fire-and-forget: on failure the globals are stale, and a
     // palette built from them would deform the mesh to a pose that was never
@@ -108,7 +121,7 @@ void CAnimator::OnUpdate(const float deltaTime)
     // rootGlobalInverse is left at its identity default: `offsets` and `globals` are
     // built in the same node space, so globals[b] * offsets[b] already maps mesh
     // space to animated model space. See the note on BuildPalette in Palette.h.
-    if (!anim::BuildGlobals(skeleton->skeleton, m_pose, m_globals) ||
+    if (!anim::BuildGlobals(skeleton->skeleton, m_blended, m_globals) ||
         !anim::BuildPalette(skeleton->skeleton, m_globals, m_palette))
     {
         m_palette.clear();

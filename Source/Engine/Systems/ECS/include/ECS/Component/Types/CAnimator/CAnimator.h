@@ -55,7 +55,7 @@ public:
     // Set once ApplySkinningToGeometry has reported a mesh whose rig does not match
     // `skeleton`, so the warning is one per animator rather than one per mesh every
     // frame. Mutable because the pairing reads the animator through a const registry.
-    // Cleared by Rebind(), so swapping the slot gives the next mistake its own warning.
+    // Cleared on a skeleton swap, so the next mistake gets its own warning.
     mutable bool       warnedSkeletonMismatch = false;
 
     NOUS_ENGINE_API void       OnUpdate(float deltaTime) override;
@@ -89,29 +89,43 @@ public:
     { return m_palette; }
 
     [[nodiscard]] NOUS_ENGINE_API bool IsBound() const
-    { return m_boundClip != 0 && m_boundSkeleton != 0; }
+    { return m_from.boundClip != 0 && m_boundSkeleton != 0; }
 
     // The clip currently driving the pose. During a fade this is the OUTGOING clip;
     // it becomes the incoming one when the fade completes. Null when nothing is bound.
     [[nodiscard]] NOUS_ENGINE_API const ResourceAnimation* CurrentClip() const;
 
 private:
-    // Rebuilds m_binding from the current slots and preallocates the pose and
-    // globals buffers. Clears everything when either slot is null.
-    void Rebind();
+    // One playing clip plus everything needed to sample it. Two of these is the whole
+    // blend model -- a re-trigger folds the in-flight blend into m_from rather than
+    // adding a third track, so the animator is bounded at two under any input.
+    struct ClipTrack
+    {
+        ResourceAnimation*                               clip      = nullptr;
+        nous::engine::animation_system::AnimInstance     instance;
+        nous::engine::animation_system::AnimationBinding binding;
+        nous::engine::animation_system::Pose             pose;
 
-    // The entry of `clips` currently being played. Task 2 of MVP-E replaces this with
-    // a pair of ClipTracks; today it is simply clips.front().
-    ResourceAnimation* m_playing = nullptr;
+        // UID `binding` was built from; compared against `clip` every frame, which is
+        // what makes a slot change rebind without an explicit call from the editor.
+        uint32_t                                         boundClip = 0;
 
-    nous::engine::animation_system::AnimInstance     m_instance;
-    nous::engine::animation_system::AnimationBinding m_binding;
-    nous::engine::animation_system::Pose             m_pose;
-    std::vector<glm::mat4>                           m_globals;
-    std::vector<glm::mat4>                           m_palette;
+        // The pose is fixed: do not advance or sample it. Set only when a re-trigger
+        // captures an in-flight blend as the new source.
+        bool                                             frozen    = false;
+    };
 
-    // UIDs m_binding was built from; compared against the slots every frame, which
-    // is what makes a slot change rebind without an explicit call from the editor.
-    uint32_t m_boundClip     = 0;
+    // Rebuilds the track's binding from its clip and the animator's skeleton, and
+    // sizes its pose. Clears the track when either side is null.
+    void RebindTrack(ClipTrack& track);
+
+    ClipTrack                            m_from;
+    ClipTrack                            m_to;
+    nous::engine::animation_system::Pose m_blended;
+
+    std::vector<glm::mat4> m_globals;
+    std::vector<glm::mat4> m_palette;
+
+    // UID the tracks' bindings were built against, same compare-every-frame rule.
     uint32_t m_boundSkeleton = 0;
 };
