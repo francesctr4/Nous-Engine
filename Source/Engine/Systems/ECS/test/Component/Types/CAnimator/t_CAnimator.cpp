@@ -51,6 +51,22 @@ namespace
         anim.clip.channels = { ch };
     }
 
+    // Holds `boneName` at x for the whole clip. Two of these make blend weight
+    // directly readable: blending hold(0) and hold(10) at weight w gives x == 10w,
+    // with no dependence on how far either clip has advanced.
+    void MakeHoldClip(ResourceAnimation& anim, const char* boneName, float x)
+    {
+        anim.clip.name     = "Hold";
+        anim.clip.duration = 1.0f;
+
+        AnimChannel ch;
+        ch.boneName  = boneName;
+        ch.posTimes  = { 0.0f, 1.0f };
+        ch.posValues = { glm::vec3(x, 0.0f, 0.0f), glm::vec3(x, 0.0f, 0.0f) };
+
+        anim.clip.channels = { ch };
+    }
+
     float TranslationX(const glm::mat4& m) { return m[3][0]; }
 
     // A rig whose bind pose is NOT identity: Child sits 2 units above Root, and
@@ -521,4 +537,140 @@ TEST_F(t_CAnimator, OnDestroyReleasesEveryClipInTheList)
     EXPECT_EQ(fakes.resources.unloaded[0], 1u);
     EXPECT_EQ(fakes.resources.unloaded[1], 2u);
     EXPECT_EQ(fakes.resources.unloaded[2], 3u);
+}
+
+// =============================================================================
+// Play + cross-fade
+// =============================================================================
+
+TEST_F(t_CAnimator, PlayReturnsFalseForAnUnknownClipName)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);
+    animA.SetName("A");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA };
+    a.OnUpdate(0.0f);
+
+    EXPECT_FALSE(a.Play("NoSuchClip", 0.5f));
+    EXPECT_FALSE(a.IsFading());
+    EXPECT_EQ(a.CurrentClip(), &animA);
+}
+
+TEST_F(t_CAnimator, PlayWithZeroFadeSnaps)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.Play("B", 0.0f));
+    a.OnUpdate(0.0f);
+
+    EXPECT_FALSE(a.IsFading());
+    EXPECT_EQ(a.CurrentClip(), &animB);
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 10.0f);
+}
+
+// THE weight test. hold(0) -> hold(10) at half the fade duration must read 5: not 0
+// (blend never applied), not 10 (snapped), not something time-dependent.
+TEST_F(t_CAnimator, MidFadePoseLiesBetweenTheTwoClips)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+    a.OnUpdate(0.0f);
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 0.0f);
+
+    ASSERT_TRUE(a.Play("B", 1.0f));
+    a.OnUpdate(0.5f);
+
+    EXPECT_TRUE(a.IsFading());
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+}
+
+TEST_F(t_CAnimator, FadeCompletionMakesTheTargetCurrent)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.Play("B", 1.0f));
+    a.OnUpdate(0.5f);
+    a.OnUpdate(0.5f);   // weight reaches 1
+
+    EXPECT_FALSE(a.IsFading());
+    EXPECT_EQ(a.CurrentClip(), &animB);
+    // Blend is bit-exact at weight 1, so this is 10 exactly, not 10-ish.
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 10.0f);
+}
+
+// The renderer's skinned-geometry test is !GetPalette().empty(). A frame during a
+// fade that produced an empty palette would make the character vanish mid-transition.
+TEST_F(t_CAnimator, ThePaletteIsNeverEmptyDuringAFade)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.Play("B", 1.0f));
+    for (int i = 0; i < 10; ++i)
+    {
+        a.OnUpdate(0.1f);
+        EXPECT_FALSE(a.GetPalette().empty()) << "empty palette on fade step " << i;
+    }
+}
+
+// Lookup is by RESOURCE name, never AnimClipData::name -- every Mixamo export names
+// its clip "mixamo.com", so matching that would make every animation in a project
+// answer to one string. Both clips here share a clip name and differ by resource name.
+TEST_F(t_CAnimator, PlayMatchesTheResourceNameNotTheClipName)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);
+
+    animA.clip.name = "mixamo.com";   // identical clip names, the Mixamo case
+    animB.clip.name = "mixamo.com";
+    animA.SetName("Idle");            // distinct resource names
+    animB.SetName("Run");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.Play("Run", 0.0f));
+    a.OnUpdate(0.0f);
+    EXPECT_EQ(a.CurrentClip(), &animB);
+
+    ASSERT_TRUE(a.Play("Idle", 0.0f));
+    a.OnUpdate(0.0f);
+    EXPECT_EQ(a.CurrentClip(), &animA);
 }

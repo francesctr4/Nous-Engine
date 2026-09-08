@@ -1,5 +1,6 @@
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
 
+#include <AnimationSystem/Blending.h>
 #include <AnimationSystem/Palette.h>
 #include <AnimationSystem/Sampling.h>
 #include <EngineCore/Casts.h>
@@ -13,7 +14,10 @@
 #include <Utils/Serialization/JsonArray.h>
 #include <Utils/Serialization/JsonObject.h>
 
+#include <algorithm>
 #include <string>
+#include <string_view>
+#include <utility>
 
 namespace anim = nous::engine::animation_system;
 
@@ -27,6 +31,37 @@ namespace
 // ---------------------------------------------------------------------------
 
 const ResourceAnimation* CAnimator::CurrentClip() const { return m_from.clip; }
+
+bool CAnimator::Play(const std::string_view clipName, const float fadeSeconds)
+{
+    ResourceAnimation* target = nullptr;
+    for (ResourceAnimation* c : clips)
+        if (c && c->GetName() == clipName)   // RESOURCE name, not c->clip.name
+        {
+            target = c;
+            break;                            // first match wins on duplicates
+        }
+
+    if (!target)
+        return false;
+
+    if (fadeSeconds <= 0.0f)
+    {
+        m_from.clip = target;
+        RebindTrack(m_from);
+        m_to.clip = nullptr;
+        RebindTrack(m_to);
+        m_fadeElapsed  = 0.0f;
+        m_fadeDuration = 0.0f;
+        return true;
+    }
+
+    m_to.clip = target;
+    RebindTrack(m_to);
+    m_fadeElapsed  = 0.0f;
+    m_fadeDuration = fadeSeconds;
+    return true;
+}
 
 void CAnimator::RebindTrack(ClipTrack& track)
 {
@@ -59,9 +94,25 @@ void CAnimator::RebindTrack(ClipTrack& track)
 
 void CAnimator::OnUpdate(const float deltaTime)
 {
-    // Task 3 of MVP-E replaces this with Play()-driven selection. For now the list
-    // simply plays its first entry, so the two tracks change no behaviour.
-    m_from.clip = clips.empty() ? nullptr : clips.front();
+    // Play() owns which clip is current, but the authored LIST stays the source of
+    // truth: a clip the Inspector removed must stop driving the pose, and its
+    // ResourceAnimation is released the moment it leaves the list -- so a track left
+    // pointing at it would sample freed memory. Anything still in the list keeps
+    // playing, which is what makes Play() stick past the frame it was called on.
+    const auto inList = [this](const ResourceAnimation* c)
+    {
+        return c && std::find(clips.begin(), clips.end(), c) != clips.end();
+    };
+
+    if (!inList(m_from.clip))
+        m_from.clip = clips.empty() ? nullptr : clips.front();
+
+    if (!inList(m_to.clip))
+    {
+        m_to.clip      = nullptr;
+        m_fadeElapsed  = 0.0f;
+        m_fadeDuration = 0.0f;
+    }
 
     // Rebind on a UID mismatch rather than on an explicit call. Integer comparisons,
     // and they cover every path that can change a slot -- Inspector drop, Inspector
@@ -111,7 +162,43 @@ void CAnimator::OnUpdate(const float deltaTime)
 
     anim::Advance(m_from.instance, deltaTime);
     anim::Sample(m_from.instance, skeleton->skeleton, m_boundSkeleton, m_from.pose);
-    m_blended = m_from.pose;
+
+    if (m_fadeDuration > 0.0f && m_to.boundClip != 0)
+    {
+        anim::Advance(m_to.instance, deltaTime);
+        anim::Sample(m_to.instance, skeleton->skeleton, m_boundSkeleton, m_to.pose);
+
+        m_fadeElapsed += deltaTime;
+        const float weight = glm::clamp(m_fadeElapsed / m_fadeDuration, 0.0f, 1.0f);
+
+        bool blendFailed = false;
+        if (!anim::Blend(m_from.pose, m_to.pose, weight, m_blended))
+        {
+            // Reachable only with mismatched skeleton UIDs or bone counts, which the
+            // skeleton-swap cancel makes unreachable in practice; it stays as defence
+            // because Blend is [[nodiscard]] and the result must be consumed anyway.
+            // Snapping rather than asserting: an assert here would kill a shipped
+            // game over something recoverable.
+            m_blended   = m_to.pose;
+            blendFailed = true;
+        }
+
+        if (weight >= 1.0f || blendFailed)
+        {
+            // Blend is bit-exact at weight 1, so promoting introduces no pop. The move
+            // takes the pose and cursor vectors rather than copying them; it also
+            // invalidates m_from.instance.binding, which the next frame's
+            // unconditional re-point above repairs -- that is why it is per-frame.
+            m_from = std::move(m_to);
+            m_to   = ClipTrack{};
+            m_fadeElapsed  = 0.0f;
+            m_fadeDuration = 0.0f;
+        }
+    }
+    else
+    {
+        m_blended = m_from.pose;
+    }
 
     // Guarded rather than fire-and-forget: on failure the globals are stale, and a
     // palette built from them would deform the mesh to a pose that was never

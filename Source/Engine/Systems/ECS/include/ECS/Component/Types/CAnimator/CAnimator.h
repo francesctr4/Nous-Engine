@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 class ResourceSkeleton;
@@ -95,6 +96,16 @@ public:
     // it becomes the incoming one when the fade completes. Null when nothing is bound.
     [[nodiscard]] NOUS_ENGINE_API const ResourceAnimation* CurrentClip() const;
 
+    // Cross-fades to the clip in `clips` whose RESOURCE name matches, over
+    // fadeSeconds. Returns false and changes nothing when no clip matches.
+    //
+    // fadeSeconds <= 0 snaps. Calling this while a fade is already running folds the
+    // in-flight blend into the outgoing pose and starts a new fade from it, so the
+    // animator never holds more than two tracks no matter how often this is called.
+    NOUS_ENGINE_API bool Play(std::string_view clipName, float fadeSeconds);
+
+    [[nodiscard]] NOUS_ENGINE_API bool IsFading() const { return m_fadeDuration > 0.0f; }
+
 private:
     // One playing clip plus everything needed to sample it. Two of these is the whole
     // blend model -- a re-trigger folds the in-flight blend into m_from rather than
@@ -128,4 +139,7 @@ private:
 
     // UID the tracks' bindings were built against, same compare-every-frame rule.
     uint32_t m_boundSkeleton = 0;
+
+    float m_fadeElapsed  = 0.0f;
+    float m_fadeDuration = 0.0f;   // 0 == not fading
 };
