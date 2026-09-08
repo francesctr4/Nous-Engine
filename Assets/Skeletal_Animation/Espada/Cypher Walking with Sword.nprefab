@@ -36,11 +36,21 @@
                     "skeletonAssetPath": "Assets\/Meshes\/Unarmed Walk Forward (1).nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/1988096775.nskel",
                     "skeletonUID": 1988096775,
-                    "clipAssetPath": "Assets\/Meshes\/Unarmed Walk Forward (1)@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/2386521433.nanim",
-                    "clipUID": 2386521433,
+                    "clips": [
+                        {
+                            "assetPath": "Assets\/Meshes\/Unarmed Walk Forward (1)@mixamo_com.nanim",
+                            "libraryPath": "Library\/Animations\/2386521433.nanim",
+                            "uid": 2386521433
+                        },
+                        {
+                            "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
+                            "libraryPath": "Library\/Animations\/1380512761.nanim",
+                            "uid": 1380512761
+                        }
+                    ],
                     "speed": 1,
-                    "loop": true
+                    "loop": true,
+                    "fadeSeconds": 1
                 }
             ]
         },

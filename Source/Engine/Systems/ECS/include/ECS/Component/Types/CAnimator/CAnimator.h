@@ -53,6 +53,11 @@ public:
     float speed = 1.0f;      // negative plays backwards
     bool  loop  = true;
 
+    // Fade duration the Inspector's Play buttons use. Authoring convenience only --
+    // Play() takes its duration as a parameter, so a future script API and a future
+    // controller graph each supply their own.
+    float fadeSeconds = 0.2f;
+
     // Set once ApplySkinningToGeometry has reported a mesh whose rig does not match
     // `skeleton`, so the warning is one per animator rather than one per mesh every
     // frame. Mutable because the pairing reads the animator through a const registry.

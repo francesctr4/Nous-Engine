@@ -635,29 +635,57 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
         }
     }
 
-    // Clip slot — assignable by dragging a .nanim from the Assets Browser.
+    // Clip list — each row is a .nanim drop target plus the button that plays it.
     ImGui::Spacing();
-    ImGui::Text("Clip:");
-    ImGui::SameLine();
-    ResourceAnimation* firstClip = cAnimator->clips.empty() ? nullptr : cAnimator->clips.front();
-    std::string animClipLabel = firstClip ? firstClip->GetName() : std::string("None");
-    animClipLabel += "##animClipSlot";
-    ImGui::Button(animClipLabel.c_str(), ImVec2(200.0f, 0.0f));
-    if (const std::string dropped = acceptDrop(".nanim"); !dropped.empty())
-    {
-        if (ResourceBase* r = rm->CreateResource(dropped))
-        {
-            if (firstClip)
-                rm->UnloadResource(firstClip->GetUID());
+    ImGui::TextDisabled("Clips");
 
-            if (cAnimator->clips.empty())
-                cAnimator->clips.push_back(down_cast<ResourceAnimation*>(r));
-            else
-                cAnimator->clips.front() = down_cast<ResourceAnimation*>(r);
+    int removeIndex = -1;
+    for (int i = 0; i < static_cast<int>(cAnimator->clips.size()); ++i)
+    {
+        ImGui::PushID(i);
+
+        ResourceAnimation* c = cAnimator->clips[i];
+
+        // Play is the ONLY transition trigger in this MVP -- there are no script
+        // bindings yet -- so this button is how the feature gets used at all.
+        if (ImGui::Button("Play", ImVec2(50.0f, 0.0f)) && c)
+            cAnimator->Play(c->GetName(), cAnimator->fadeSeconds);
+
+        ImGui::SameLine();
+        std::string clipLabel = c ? c->GetName() : std::string("None");
+        clipLabel += "##animClipSlot";
+        ImGui::Button(clipLabel.c_str(), ImVec2(200.0f, 0.0f));
+        if (const std::string dropped = acceptDrop(".nanim"); !dropped.empty())
+        {
+            if (ResourceBase* r = rm->CreateResource(dropped))
+            {
+                if (c)
+                    rm->UnloadResource(c->GetUID());
+                cAnimator->clips[i] = down_cast<ResourceAnimation*>(r);
+            }
         }
+
+        ImGui::SameLine();
+        if (ImGui::Button("X", ImVec2(24.0f, 0.0f)))
+            removeIndex = i;
+
+        ImGui::PopID();
     }
 
+    // Erased outside the loop: erasing mid-iteration invalidates the index the drop
+    // target above still holds.
+    if (removeIndex >= 0)
+    {
+        if (ResourceAnimation* c = cAnimator->clips[removeIndex])
+            rm->UnloadResource(c->GetUID());
+        cAnimator->clips.erase(cAnimator->clips.begin() + removeIndex);
+    }
+
+    if (ImGui::Button("Add Clip Slot"))
+        cAnimator->clips.push_back(nullptr);
+
     ImGui::Spacing();
+    ImGui::DragFloat("Fade (s)", &cAnimator->fadeSeconds, 0.01f, 0.0f, 5.0f, "%.2f");
     ImGui::DragFloat("Speed", &cAnimator->speed, 0.01f, -4.0f, 4.0f);
     ImGui::Checkbox("Loop", &cAnimator->loop);
 
@@ -668,11 +696,15 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
     if (cAnimator->skeleton)
         ImGui::Text("Bones: %zu", cAnimator->skeleton->skeleton.BoneCount());
     if (const ResourceAnimation* current = cAnimator->CurrentClip())
+    {
         ImGui::Text("Duration: %.2f s   Channels: %zu",
                     current->clip.duration,
                     current->clip.ChannelCount());
+        ImGui::Text("Playing: %s%s", current->GetName().c_str(),
+                    cAnimator->IsFading() ? "  (fading)" : "");
+    }
     if (!cAnimator->IsBound())
-        ImGui::TextDisabled("Not bound — assign a skeleton and a clip.");
+        ImGui::TextDisabled("Not bound — assign a skeleton and at least one clip.");
 
     ImGui::Unindent();
 }

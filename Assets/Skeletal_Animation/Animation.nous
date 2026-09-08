@@ -36,11 +36,16 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
                     "skeletonUID": 3484759968,
-                    "clipAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/1380512761.nanim",
-                    "clipUID": 1380512761,
+                    "clips": [
+                        {
+                            "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
+                            "libraryPath": "Library\/Animations\/1380512761.nanim",
+                            "uid": 1380512761
+                        }
+                    ],
                     "speed": 1,
-                    "loop": true
+                    "loop": true,
+                    "fadeSeconds": 0.20000000298023224
                 }
             ]
         },
@@ -75,18 +80,24 @@
                 },
                 {
                     "type": "CPrefab",
-                    "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab"
+                    "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab",
+                    "syncedHash": "0000000000000000"
                 },
                 {
                     "type": "CAnimator",
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
                     "skeletonUID": 408757248,
-                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
-                    "clipUID": 3875098274,
+                    "clips": [
+                        {
+                            "assetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
+                            "libraryPath": "Library\/Animations\/3875098274.nanim",
+                            "uid": 3875098274
+                        }
+                    ],
                     "speed": 1,
-                    "loop": true
+                    "loop": true,
+                    "fadeSeconds": 0.20000000298023224
                 }
             ]
         },
@@ -248,18 +259,33 @@
                 },
                 {
                     "type": "CPrefab",
-                    "prefabSourcePath": "Assets\/Skeletal_Animation\/Espada\/Cypher Walking with Sword.nprefab"
+                    "prefabSourcePath": "Assets\/Skeletal_Animation\/Espada\/Cypher Walking with Sword.nprefab",
+                    "syncedHash": "e2a4cbb918e7d784"
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 2797316622
                 },
                 {
                     "type": "CAnimator",
                     "skeletonAssetPath": "Assets\/Meshes\/Unarmed Walk Forward (1).nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/1988096775.nskel",
                     "skeletonUID": 1988096775,
-                    "clipAssetPath": "Assets\/Meshes\/Unarmed Walk Forward (1)@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/2386521433.nanim",
-                    "clipUID": 2386521433,
+                    "clips": [
+                        {
+                            "assetPath": "Assets\/Meshes\/Unarmed Walk Forward (1)@mixamo_com.nanim",
+                            "libraryPath": "Library\/Animations\/2386521433.nanim",
+                            "uid": 2386521433
+                        },
+                        {
+                            "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
+                            "libraryPath": "Library\/Animations\/1380512761.nanim",
+                            "uid": 1380512761
+                        }
+                    ],
                     "speed": 1,
-                    "loop": true
+                    "loop": true,
+                    "fadeSeconds": 1
                 }
             ]
         },
@@ -304,6 +330,10 @@
                     "assetPath": "Assets\/Meshes\/untitled1_material.nmat",
                     "libraryPath": "Library\/Materials\/1399175592.nmat",
                     "resourceUID": 1399175592
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 2508117854
                 }
             ]
         },
@@ -335,6 +365,10 @@
                         0.28654706478118896,
                         0.28654521703720093
                     ]
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 2594028970
                 },
                 {
                     "type": "CBoneAttachment",
@@ -383,6 +417,10 @@
                     "assetPath": "Assets\/Skeletal_Animation\/Espada\/Cube.005_material.nmat",
                     "libraryPath": "Library\/Materials\/2627690959.nmat",
                     "resourceUID": 2627690959
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 965004993
                 }
             ]
         },
@@ -427,6 +465,10 @@
                     "assetPath": "Assets\/Skeletal_Animation\/Espada\/Cylinder.001_material.nmat",
                     "libraryPath": "Library\/Materials\/3545097630.nmat",
                     "resourceUID": 3545097630
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 2473736934
                 }
             ]
         },
@@ -471,6 +513,10 @@
                     "assetPath": "Assets\/Skeletal_Animation\/Espada\/Cube.006_material.nmat",
                     "libraryPath": "Library\/Materials\/4243166001.nmat",
                     "resourceUID": 4243166001
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 2177077425
                 }
             ]
         },
@@ -505,18 +551,24 @@
                 },
                 {
                     "type": "CPrefab",
-                    "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab"
+                    "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab",
+                    "syncedHash": "0000000000000000"
                 },
                 {
                     "type": "CAnimator",
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
                     "skeletonUID": 408757248,
-                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
-                    "clipUID": 3875098274,
+                    "clips": [
+                        {
+                            "assetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
+                            "libraryPath": "Library\/Animations\/3875098274.nanim",
+                            "uid": 3875098274
+                        }
+                    ],
                     "speed": 1,
-                    "loop": true
+                    "loop": true,
+                    "fadeSeconds": 0.20000000298023224
                 }
             ]
         },

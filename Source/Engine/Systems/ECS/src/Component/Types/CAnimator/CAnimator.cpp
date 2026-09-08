@@ -280,8 +280,9 @@ JsonObject CAnimator::Serialize() const
     }
     root.Set("clips", std::move(clipArr));
 
-    root.Set("speed", speed);
-    root.Set("loop",  loop);
+    root.Set("speed",       speed);
+    root.Set("loop",        loop);
+    root.Set("fadeSeconds", fadeSeconds);
     return root;
 }
 
@@ -304,8 +305,9 @@ void CAnimator::OnDestroy()
 
 void CAnimator::Deserialize(const JsonObject& obj)
 {
-    speed = obj.GetFloat("speed", speed);
-    loop  = obj.GetBool ("loop",  loop);
+    speed       = obj.GetFloat("speed",       speed);
+    loop        = obj.GetBool ("loop",        loop);
+    fadeSeconds = obj.GetFloat("fadeSeconds", fadeSeconds);
 
     IResourceLoader* rm = Services().resources;
     if (!rm)
