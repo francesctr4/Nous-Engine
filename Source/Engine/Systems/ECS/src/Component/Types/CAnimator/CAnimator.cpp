@@ -56,6 +56,24 @@ bool CAnimator::Play(const std::string_view clipName, const float fadeSeconds)
         return true;
     }
 
+    // A fade is already running: fold the CURRENT blended pose into the outgoing
+    // track and fade from there. That keeps the animator at exactly two tracks under
+    // arbitrary re-triggering, and it is why ClipTrack has `frozen` at all -- a
+    // frozen track is a pose with no clip advancing behind it.
+    //
+    // The alternatives were both rejected in the spec: queueing builds a backlog that
+    // plays out long after the input (reads as lag), and ignoring drops the
+    // "interrupt the walk with a hit reaction" case transitions exist for.
+    //
+    // RebindTrack clears `frozen`, so the capture must happen BEFORE rebinding the
+    // target -- and m_from must never be rebound on this path, since that would
+    // resample it and throw the captured pose away.
+    if (m_fadeDuration > 0.0f)
+    {
+        m_from.pose   = m_blended;
+        m_from.frozen = true;
+    }
+
     m_to.clip = target;
     RebindTrack(m_to);
     m_fadeElapsed  = 0.0f;
@@ -128,6 +146,14 @@ void CAnimator::OnUpdate(const float deltaTime)
         // dropping a second wrong one would warn about neither.
         warnedSkeletonMismatch = false;
 
+        // Cancel any fade: a frozen source pose belongs to the OLD skeleton and would
+        // fail ArePosesCompatible against a freshly sized target. Cancelling makes
+        // that unreachable by construction instead of leaning on the Blend guard.
+        m_fadeElapsed  = 0.0f;
+        m_fadeDuration = 0.0f;
+        m_to.clip      = nullptr;
+        m_from.frozen  = false;
+
         RebindTrack(m_from);
         RebindTrack(m_to);
     }
@@ -160,8 +186,13 @@ void CAnimator::OnUpdate(const float deltaTime)
     m_from.instance.binding = &m_from.binding;
     m_to.instance.binding   = &m_to.binding;
 
-    anim::Advance(m_from.instance, deltaTime);
-    anim::Sample(m_from.instance, skeleton->skeleton, m_boundSkeleton, m_from.pose);
+    // A frozen track holds a captured blend; advancing or sampling it would replace
+    // that pose with the clip's own, which is exactly what the capture avoided.
+    if (!m_from.frozen)
+    {
+        anim::Advance(m_from.instance, deltaTime);
+        anim::Sample(m_from.instance, skeleton->skeleton, m_boundSkeleton, m_from.pose);
+    }
 
     if (m_fadeDuration > 0.0f && m_to.boundClip != 0)
     {

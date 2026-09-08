@@ -674,3 +674,129 @@ TEST_F(t_CAnimator, PlayMatchesTheResourceNameNotTheClipName)
     a.OnUpdate(0.0f);
     EXPECT_EQ(a.CurrentClip(), &animA);
 }
+
+// =============================================================================
+// Interrupted transitions
+// =============================================================================
+
+// Re-triggering mid-fade must fold the CURRENT blended pose into the outgoing track
+// and fade from there. hold(0) -> hold(10) half-way is x = 5; interrupting toward
+// hold(20) and running half of the new fade must give 5 + (20-5)/2 = 12.5. A version
+// that discarded the partial blend would give 10, and one that queued would give 5.
+TEST_F(t_CAnimator, ReTriggerMidFadeBlendsFromThePartialPose)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
+    ResourceAnimation animC(4); MakeHoldClip(animC, "Child", 20.0f);  animC.SetName("C");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB, &animC };
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.Play("B", 1.0f));
+    a.OnUpdate(0.5f);
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+
+    ASSERT_TRUE(a.Play("C", 1.0f));
+    a.OnUpdate(0.5f);
+
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 12.5f);
+}
+
+// Mashing Play every frame must not accumulate work or drift -- the design bounds the
+// animator at two tracks precisely so this is safe.
+TEST_F(t_CAnimator, RepeatedReTriggerStaysBoundedAndFinishes)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+    a.OnUpdate(0.0f);
+
+    for (int i = 0; i < 50; ++i)
+    {
+        a.Play("B", 0.1f);
+        a.OnUpdate(0.05f);
+        EXPECT_FALSE(a.GetPalette().empty());
+    }
+
+    // Every re-trigger restarts the fade, so it never completes while mashing --
+    // but the pose must be converging on B, not stuck at A or oscillating.
+    EXPECT_GT(TranslationX(a.GetBoneGlobals()[1]), 0.0f);
+    EXPECT_LE(TranslationX(a.GetBoneGlobals()[1]), 10.0f);
+}
+
+// A frozen source pose belongs to the OLD skeleton, so it would fail ArePosesCompatible
+// against a freshly sized target pose. Cancelling the fade on a skeleton swap keeps
+// that unreachable by construction rather than relying on the Blend guard.
+TEST_F(t_CAnimator, SwappingTheSkeletonMidFadeCancelsTheFade)
+{
+    ResourceSkeleton  rigA(1);  MakeTwoBoneRig(rigA);
+    ResourceSkeleton  rigB(5);  MakeTwoBoneRig(rigB);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rigA;
+    a.clips    = { &animA, &animB };
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.Play("B", 1.0f));
+    a.OnUpdate(0.5f);
+    ASSERT_TRUE(a.IsFading());
+
+    a.skeleton = &rigB;
+    a.OnUpdate(0.0f);
+
+    EXPECT_FALSE(a.IsFading());
+    EXPECT_FALSE(a.GetPalette().empty());
+}
+
+// The relocation test from MVP-A, extended: two tracks means two self-pointers, and a
+// miss on the second corrupts only the interrupted-transition path -- which would look
+// like "transitions break once the scene gets big enough" rather than a pointer bug.
+TEST_F(t_CAnimator, FadingAnimatorsSurvivePoolRelocation)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
+
+    std::vector<GameObject> objects;
+    objects.reserve(256);
+
+    for (int i = 0; i < 256; ++i)
+    {
+        GameObject go = scene->CreateGameObject("Rig");
+        auto& a = go.AddComponent<CAnimator>();   // grows and relocates the pool
+        a.skeleton = &rig;
+        a.clips    = { &animA, &animB };
+        objects.push_back(go);
+    }
+
+    // Start every animator fading AFTER the pool has finished relocating, then keep
+    // stepping so the blend path runs on relocated components.
+    for (GameObject& go : objects)
+    {
+        auto& a = go.GetComponent<CAnimator>();
+        a.OnUpdate(0.0f);
+        ASSERT_TRUE(a.Play("B", 1.0f));
+    }
+
+    for (GameObject& go : objects)
+        go.GetComponent<CAnimator>().OnUpdate(0.5f);
+
+    for (GameObject& go : objects)
+    {
+        const auto& globals = go.GetComponent<CAnimator>().GetBoneGlobals();
+        ASSERT_EQ(globals.size(), 2u);
+        EXPECT_FLOAT_EQ(TranslationX(globals[1]), 5.0f);
+    }
+}
