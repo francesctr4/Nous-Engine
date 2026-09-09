@@ -2,6 +2,7 @@
 
 #include <ECS/Component/Component.h>
 #include <AnimationSystem/AnimInstance.h>
+#include <AnimationSystem/AnimParameters.h>
 #include <AnimationSystem/Binding.h>
 #include <AnimationSystem/Pose.h>
 #include <EngineCore/EngineExport.h>
@@ -58,6 +59,12 @@ public:
     // controller graph each supply their own.
     float fadeSeconds = 0.2f;
 
+    // Named values scripts write and the controller graph (MVP-F) reads. Runtime
+    // state, deliberately NOT serialized -- defaults belong in the controller asset
+    // once one exists. Survives script hot-reload, which recreates script instances
+    // but not components.
+    nous::engine::animation_system::AnimParameters parameters;
+
     // Set once ApplySkinningToGeometry has reported a mesh whose rig does not match
     // `skeleton`, so the warning is one per animator rather than one per mesh every
     // frame. Mutable because the pairing reads the animator through a const registry.
@@ -104,12 +111,27 @@ public:
     // Cross-fades to the clip in `clips` whose RESOURCE name matches, over
     // fadeSeconds. Returns false and changes nothing when no clip matches.
     //
+    // ARBITRATION, decided with the scripting API and to be honoured by the
+    // controller graph (MVP-F): the graph evaluates every frame; a direct Play wins
+    // for that frame and re-enters the graph at the named state. There is never a
+    // frame with two writers. With no graph, Play behaves exactly as below.
+    //
     // fadeSeconds <= 0 snaps. Calling this while a fade is already running folds the
     // in-flight blend into the outgoing pose and starts a new fade from it, so the
     // animator never holds more than two tracks no matter how often this is called.
     NOUS_ENGINE_API bool Play(std::string_view clipName, float fadeSeconds);
 
     [[nodiscard]] NOUS_ENGINE_API bool IsFading() const { return m_fadeDuration > 0.0f; }
+
+    // 0..1 through the CURRENT clip -- the one CurrentClip() names, which during a
+    // fade is the OUTGOING one. Returns 0 when unbound or the clip has no duration.
+    //
+    // The fade case is a known wart, accepted rather than fixed: the fix is a second
+    // query whose meaning changes once the controller graph lands, and normalized
+    // time is mostly a pre-graph idiom -- afterwards the idiom is a trigger plus a
+    // transition with exit time. Pinned by
+    // t_CAnimator.NormalizedTimeFollowsTheOutgoingClipDuringAFade.
+    [[nodiscard]] NOUS_ENGINE_API float GetNormalizedTime() const;
 
 private:
     // One playing clip plus everything needed to sample it. Two of these is the whole

@@ -32,6 +32,20 @@ namespace
 
 const ResourceAnimation* CAnimator::CurrentClip() const { return m_from.clip; }
 
+float CAnimator::GetNormalizedTime() const
+{
+    // Follows m_from -- the same track CurrentClip() reports -- so the two can never
+    // describe different clips.
+    if (!m_from.clip || m_from.boundClip == 0)
+        return 0.0f;
+
+    const float duration = m_from.clip->clip.duration;
+    if (duration <= 0.0f)
+        return 0.0f;   // a zero-duration clip has no meaningful progress
+
+    return m_from.instance.time / duration;
+}
+
 bool CAnimator::Play(const std::string_view clipName, const float fadeSeconds)
 {
     ResourceAnimation* target = nullptr;

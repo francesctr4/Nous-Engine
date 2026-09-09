@@ -800,3 +800,91 @@ TEST_F(t_CAnimator, FadingAnimatorsSurvivePoolRelocation)
         EXPECT_FLOAT_EQ(TranslationX(globals[1]), 5.0f);
     }
 }
+
+// =============================================================================
+// Normalized time
+// =============================================================================
+
+TEST_F(t_CAnimator, NormalizedTimeIsZeroWhenUnbound)
+{
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+
+    a.OnUpdate(0.5f);
+
+    EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.0f);
+}
+
+TEST_F(t_CAnimator, NormalizedTimeTracksTheClip)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");   // 1-second clip
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &anim };
+
+    a.OnUpdate(0.25f);
+    EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.25f);
+
+    a.OnUpdate(0.5f);
+    EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.75f);
+}
+
+// Pins the wart the spec accepted knowingly: CurrentClip() is the OUTGOING clip
+// during a fade, and normalized time follows the same clip for consistency. If
+// CurrentClip's meaning is ever changed, this test says so instead of the two
+// quietly disagreeing.
+TEST_F(t_CAnimator, NormalizedTimeFollowsTheOutgoingClipDuringAFade)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &animA, &animB };
+
+    a.OnUpdate(0.4f);                    // A is 0.4 into its 1-second clip
+    ASSERT_TRUE(a.Play("B", 1.0f));
+    a.OnUpdate(0.2f);                    // both advance by 0.2
+
+    ASSERT_TRUE(a.IsFading());
+    EXPECT_EQ(a.CurrentClip(), &animA);
+    EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.6f);   // A's progress, not B's 0.2
+}
+
+// =============================================================================
+// Parameters
+// =============================================================================
+
+TEST_F(t_CAnimator, ParametersRoundTripThroughTheComponent)
+{
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+
+    a.parameters.SetFloat("speed", 2.5f);
+    a.parameters.SetBool("isGrounded", true);
+    a.parameters.SetTrigger("jump");
+
+    EXPECT_FLOAT_EQ(a.parameters.GetFloat("speed"), 2.5f);
+    EXPECT_TRUE(a.parameters.GetBool("isGrounded"));
+    EXPECT_TRUE(a.parameters.IsTriggerSet("jump"));
+}
+
+// Parameters are runtime state, like AnimInstance::time. A saved speed reloading
+// into a stopped scene would be confusing, and defaults belong in MVP-F's
+// controller asset.
+TEST_F(t_CAnimator, ParametersAreNotSerialized)
+{
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.parameters.SetFloat("speed", 2.5f);
+
+    const JsonObject json = a.Serialize();
+
+    EXPECT_FLOAT_EQ(json.GetFloat("parameters", -1.0f), -1.0f);
+    EXPECT_EQ(json.GetArray("parameters").Count(), 0);
+}
