@@ -5,6 +5,7 @@
 #include <AnimationSystem/AnimParameters.h>
 #include <AnimationSystem/Binding.h>
 #include <AnimationSystem/Pose.h>
+#include <AnimationSystem/RootMotion.h>
 #include <EngineCore/EngineExport.h>
 
 #include <glm/glm.hpp>
@@ -15,6 +16,25 @@
 
 class ResourceSkeleton;
 class ResourceAnimation;
+
+/**
+ * @brief What happens to the travel baked into a clip's root bone.
+ *
+ * Baked is the DEFAULT so an existing scene renders exactly as it did before root
+ * motion existed: turning this on is opt-in per character.
+ *
+ * An in-place export produces a zero delta, so it behaves identically in all
+ * three modes -- which is why the engine needs no notion of "this clip is in
+ * place". The asymmetry that shapes the whole feature: a travelling clip can be
+ * turned into an in-place one exactly, by subtraction, but the reverse means
+ * inventing data the exporter discarded.
+ */
+enum class RootMotionMode
+{
+    Baked,     // travel stays in the pose; the object does not move. Today's behaviour.
+    Applied,   // travel is stripped from the pose and added to the object's transform.
+    InPlace,   // travel is stripped and discarded.
+};
 
 /**
  * @brief Plays one animation clip against one skeleton, into an internal pose.
@@ -58,6 +78,10 @@ public:
     // Play() takes its duration as a parameter, so a future script API and a future
     // controller graph each supply their own.
     float fadeSeconds = 0.2f;
+
+    // Authoring, unlike `parameters` -- serialized, because a character silently
+    // reverting to Baked on load would look like the feature failing.
+    RootMotionMode rootMotion = RootMotionMode::Baked;
 
     // Named values scripts write and the controller graph (MVP-F) reads. Runtime
     // state, deliberately NOT serialized -- defaults belong in the controller asset
@@ -133,6 +157,16 @@ public:
     // t_CAnimator.NormalizedTimeFollowsTheOutgoingClipDuringAFade.
     [[nodiscard]] NOUS_ENGINE_API float GetNormalizedTime() const;
 
+    // This frame's blended root motion, in the ANIMATION's space -- before the
+    // object's orientation and scale are applied. Zero in Baked mode.
+    //
+    // Exposed for a future physics integration or controller, which would consume
+    // this instead of letting the animator write the transform directly (Unity's
+    // OnAnimatorMove seam). Deliberately NOT on the script API: nothing needs it
+    // yet, and an unused published SDK surface is one that has to be kept.
+    [[nodiscard]] NOUS_ENGINE_API const nous::engine::animation_system::RootMotionDelta&
+    GetRootMotionDelta() const { return m_rootDelta; }
+
 private:
     // One playing clip plus everything needed to sample it. Two of these is the whole
     // blend model -- a re-trigger folds the in-flight blend into m_from rather than
@@ -151,6 +185,14 @@ private:
         // The pose is fixed: do not advance or sample it. Set only when a re-trigger
         // captures an in-flight blend as the new source.
         bool                                             frozen    = false;
+
+        // The root bone's transform as of the last sample, and its transform at the
+        // clip's start and end. The endpoints never change for a bound clip, so they
+        // are computed once in RebindTrack and make the loop-seam split pure
+        // arithmetic. All three are meaningless when binding.rootBone < 0.
+        nous::engine::animation_system::Transform previousRoot;
+        nous::engine::animation_system::Transform rootAtStart;
+        nous::engine::animation_system::Transform rootAtEnd;
     };
 
     // Rebuilds the track's binding from its clip and the animator's skeleton, and
@@ -169,4 +211,18 @@ private:
 
     float m_fadeElapsed  = 0.0f;
     float m_fadeDuration = 0.0f;   // 0 == not fading
+
+    nous::engine::animation_system::RootMotionDelta m_rootDelta;
+
+    // One warning per animator for Applied with no CTransform -- a real authoring
+    // mistake, unlike a zero delta, which correct in-place input produces every frame.
+    bool m_warnedNoTransform = false;
+
+    // Pulls one track's delta and takes the travel out of its pose. Returns a zero
+    // delta when the track has no root bone, is frozen, or the mode is Baked.
+    nous::engine::animation_system::RootMotionDelta
+    ExtractTrackRootMotion(ClipTrack& track, bool wrapped);
+
+    // Adds m_rootDelta to the owning GameObject's transform. Applied mode only.
+    void ApplyRootMotion();
 };

@@ -3,6 +3,7 @@
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
 #include <FakeComponentServices.h>
@@ -11,7 +12,9 @@
 #include <Utils/Serialization/JsonObject.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <cmath>
 #include <string>
@@ -887,4 +890,128 @@ TEST_F(t_CAnimator, ParametersAreNotSerialized)
 
     EXPECT_FLOAT_EQ(json.GetFloat("parameters", -1.0f), -1.0f);
     EXPECT_EQ(json.GetArray("parameters").Count(), 0);
+}
+
+// =============================================================================
+// Root motion
+// =============================================================================
+
+// Baked is the default so that every existing scene renders exactly as it did
+// before this feature: enabling root motion is opt-in per character.
+TEST_F(t_CAnimator, RootMotionDefaultsToBakedAndDoesNotMoveTheObject)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Root");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &anim };
+
+    ASSERT_EQ(a.rootMotion, RootMotionMode::Baked);
+
+    a.OnUpdate(0.5f);
+
+    EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, 0.0f);
+
+    // Baked leaves the travel in the pose, which is exactly today's behaviour.
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[0]), 5.0f);
+}
+
+TEST_F(t_CAnimator, AppliedMovesTheObjectAndTakesTheTravelOutOfThePose)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Root");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.clips      = { &anim };
+    a.rootMotion = RootMotionMode::Applied;
+
+    a.OnUpdate(0.5f);
+
+    EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, 5.0f);
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[0]), 0.0f);   // pinned at bind
+    EXPECT_FLOAT_EQ(a.GetRootMotionDelta().translation.x, 5.0f);
+}
+
+TEST_F(t_CAnimator, InPlaceStripsTheTravelAndLeavesTheObjectAlone)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Root");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.clips      = { &anim };
+    a.rootMotion = RootMotionMode::InPlace;
+
+    a.OnUpdate(0.5f);
+
+    EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, 0.0f);
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[0]), 0.0f);
+}
+
+// A character scaled to fix the Mixamo centimetres-versus-metres mismatch would
+// otherwise animate at one scale and travel at another, which reads as footskate.
+TEST_F(t_CAnimator, TheObjectScaleMultipliesTheDelta)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Root");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    go.GetComponent<CTransform>().SetScale(glm::vec3(2.0f));
+
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.clips      = { &anim };
+    a.rootMotion = RootMotionMode::Applied;
+
+    a.OnUpdate(0.5f);
+
+    EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, 10.0f);
+}
+
+// The delta is in the animation's own space, so it has to be rotated into the
+// object's before it becomes movement -- otherwise a character facing any
+// direction but the default walks sideways.
+TEST_F(t_CAnimator, TheObjectOrientationRotatesTheDelta)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Root");   // travels +X
+
+    GameObject go = scene->CreateGameObject("Rig");
+
+    // Yaw 90 degrees about +Y maps +X onto -Z.
+    go.GetComponent<CTransform>().SetOrientation(
+        glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)));
+
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.clips      = { &anim };
+    a.rootMotion = RootMotionMode::Applied;
+
+    a.OnUpdate(0.5f);
+
+    const CTransform& t = go.GetComponent<CTransform>();
+    EXPECT_NEAR(t.position.x,  0.0f, 1e-4f);
+    EXPECT_NEAR(t.position.z, -5.0f, 1e-4f);
+}
+
+// The mode is authoring, unlike the parameter blackboard -- it must survive a
+// save/load or a character silently reverts to Baked.
+TEST_F(t_CAnimator, RootMotionModeIsSerialized)
+{
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.rootMotion = RootMotionMode::Applied;
+
+    const JsonObject json = a.Serialize();
+
+    GameObject other = scene->CreateGameObject("Other");
+    auto& b = other.AddComponent<CAnimator>();
+    b.Deserialize(json);
+
+    EXPECT_EQ(b.rootMotion, RootMotionMode::Applied);
 }

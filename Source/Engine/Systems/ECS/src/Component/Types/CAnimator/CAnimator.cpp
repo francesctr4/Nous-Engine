@@ -3,9 +3,13 @@
 #include <AnimationSystem/Blending.h>
 #include <AnimationSystem/Palette.h>
 #include <AnimationSystem/Sampling.h>
+#include <AnimationSystem/RootMotion.h>
 #include <EngineCore/Casts.h>
+#include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/ComponentServices.h>
+#include <ECS/GameObject.h>
 #include <FileSystem/FileSystem.h>   // GetFilename
+#include <Logger/Logger.h>
 #include <ResourceManager/Core/IResourceLoader.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
@@ -13,6 +17,8 @@
 #include <ResourceManager/Types/ResourceType.h>
 #include <Utils/Serialization/JsonArray.h>
 #include <Utils/Serialization/JsonObject.h>
+
+#include <glm/gtc/quaternion.hpp>
 
 #include <algorithm>
 #include <string>
@@ -24,6 +30,26 @@ namespace anim = nous::engine::animation_system;
 namespace
 {
     uint32_t UIDOf(const ResourceBase* resource) { return resource ? resource->GetUID() : 0u; }
+
+    // Serialized as a STRING, like CLight's and CAudioSource's enums: the numeric
+    // value would silently change meaning if a mode were ever inserted mid-enum.
+    const char* RootMotionToString(const RootMotionMode m)
+    {
+        switch (m)
+        {
+            case RootMotionMode::Applied: return "Applied";
+            case RootMotionMode::InPlace: return "InPlace";
+            case RootMotionMode::Baked:   // fallthrough
+            default:                      return "Baked";
+        }
+    }
+
+    RootMotionMode RootMotionFromString(const std::string& s)
+    {
+        if (s == "Applied") return RootMotionMode::Applied;
+        if (s == "InPlace") return RootMotionMode::InPlace;
+        return RootMotionMode::Baked;   // also the pre-root-motion scene case
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +144,90 @@ void CAnimator::RebindTrack(ClipTrack& track)
     // would size the pose itself, but only on its first call.
     track.pose.skeleton = m_boundSkeleton;
     track.pose.bones.assign(skeleton->skeleton.BoneCount(), anim::Transform{});
+
+    // The root's transform at t=0 and t=duration, sampled once here so the
+    // loop-seam split costs nothing per frame. Sampling the whole skeleton twice
+    // is wasteful in the abstract and free in practice -- binding is rare, and
+    // reusing the tested sampler beats a bespoke single-channel path.
+    track.previousRoot = anim::Transform{};
+    track.rootAtStart  = anim::Transform{};
+    track.rootAtEnd    = anim::Transform{};
+
+    if (track.binding.rootBone >= 0)
+    {
+        anim::AnimInstance probe = track.instance;
+        probe.binding = &track.binding;
+
+        anim::Pose probePose;
+
+        probe.Seek(0.0f);
+        anim::Sample(probe, skeleton->skeleton, m_boundSkeleton, probePose);
+        track.rootAtStart = probePose.bones[track.binding.rootBone];
+
+        probe.Seek(track.clip->clip.duration);
+        anim::Sample(probe, skeleton->skeleton, m_boundSkeleton, probePose);
+        track.rootAtEnd = probePose.bones[track.binding.rootBone];
+
+        // The instance is at t=0 after a rebind, so the first frame's delta is
+        // measured from the clip's start rather than from a stale pose.
+        track.previousRoot = track.rootAtStart;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Root motion
+// ---------------------------------------------------------------------------
+
+anim::RootMotionDelta CAnimator::ExtractTrackRootMotion(ClipTrack& track, const bool wrapped)
+{
+    if (rootMotion == RootMotionMode::Baked) return {};
+    if (track.frozen || track.binding.rootBone < 0) return {};
+    if (static_cast<size_t>(track.binding.rootBone) >= track.pose.bones.size()) return {};
+
+    // BY VALUE, not by reference: StripRootMotion mutates this very bone, so a
+    // reference would be read back already stripped and every frame after the
+    // first would measure zero travel.
+    const anim::Transform current = track.pose.bones[track.binding.rootBone];
+
+    const anim::RootMotionDelta delta = anim::ComputeRootDelta(
+        track.previousRoot, current, track.rootAtStart, track.rootAtEnd, wrapped);
+
+    track.previousRoot = current;
+
+    anim::StripRootMotion(track.pose, track.binding.rootBone,
+                          skeleton->skeleton.bindLocals[track.binding.rootBone]);
+
+    return delta;
+}
+
+void CAnimator::ApplyRootMotion()
+{
+    if (m_rootDelta.translation == glm::vec3(0.0f) && m_rootDelta.yaw == 0.0f) return;
+
+    GameObject go = GetGameObject();
+    CTransform* transform = go.IsValid() ? go.TryGetComponent<CTransform>() : nullptr;
+
+    if (!transform)
+    {
+        if (!m_warnedNoTransform)
+        {
+            m_warnedNoTransform = true;
+            NOUS_WARN("[CAnimator] Root motion is Applied but the GameObject has no CTransform");
+        }
+        return;
+    }
+
+    // The delta is in the animation's space: rotate it into the object's and scale
+    // it, or a character that is turned walks sideways and a scaled one footskates.
+    // Through the setters, never the raw fields -- they are what mark the transform
+    // dirty for UpdateWorldMatrices.
+    transform->Translate(transform->orientation * (m_rootDelta.translation * transform->scale));
+
+    if (m_rootDelta.yaw != 0.0f)
+    {
+        const glm::quat yaw = glm::angleAxis(m_rootDelta.yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+        transform->SetOrientation(glm::normalize(transform->orientation * yaw));
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -179,6 +289,7 @@ void CAnimator::OnUpdate(const float deltaTime)
     {
         m_globals.clear();
         m_palette.clear();
+        m_rootDelta = {};
         return;
     }
 
@@ -200,21 +311,31 @@ void CAnimator::OnUpdate(const float deltaTime)
     m_from.instance.binding = &m_from.binding;
     m_to.instance.binding   = &m_to.binding;
 
+    anim::RootMotionDelta deltaFrom;
+    anim::RootMotionDelta deltaTo;
+
     // A frozen track holds a captured blend; advancing or sampling it would replace
     // that pose with the clip's own, which is exactly what the capture avoided.
     if (!m_from.frozen)
     {
-        anim::Advance(m_from.instance, deltaTime);
+        const bool wrapped = anim::Advance(m_from.instance, deltaTime);
         anim::Sample(m_from.instance, skeleton->skeleton, m_boundSkeleton, m_from.pose);
+        deltaFrom = ExtractTrackRootMotion(m_from, wrapped);
     }
 
     if (m_fadeDuration > 0.0f && m_to.boundClip != 0)
     {
-        anim::Advance(m_to.instance, deltaTime);
+        const bool wrapped = anim::Advance(m_to.instance, deltaTime);
         anim::Sample(m_to.instance, skeleton->skeleton, m_boundSkeleton, m_to.pose);
+        deltaTo = ExtractTrackRootMotion(m_to, wrapped);
 
         m_fadeElapsed += deltaTime;
         const float weight = glm::clamp(m_fadeElapsed / m_fadeDuration, 0.0f, 1.0f);
+
+        // Both poses are already stripped, so the blended pose carries no travel --
+        // which also removes the hip-slide the position sweep would otherwise put
+        // into the pose itself.
+        m_rootDelta = anim::BlendRootDelta(deltaFrom, deltaTo, weight);
 
         bool blendFailed = false;
         if (!anim::Blend(m_from.pose, m_to.pose, weight, m_blended))
@@ -242,8 +363,12 @@ void CAnimator::OnUpdate(const float deltaTime)
     }
     else
     {
-        m_blended = m_from.pose;
+        m_blended   = m_from.pose;
+        m_rootDelta = deltaFrom;
     }
+
+    if (rootMotion == RootMotionMode::Applied)
+        ApplyRootMotion();
 
     // Guarded rather than fire-and-forget: on failure the globals are stale, and a
     // palette built from them would deform the mesh to a pose that was never
@@ -297,6 +422,7 @@ JsonObject CAnimator::Serialize() const
     root.Set("speed",       speed);
     root.Set("loop",        loop);
     root.Set("fadeSeconds", fadeSeconds);
+    root.Set("rootMotion",  RootMotionToString(rootMotion));
     return root;
 }
 
@@ -322,6 +448,7 @@ void CAnimator::Deserialize(const JsonObject& obj)
     speed       = obj.GetFloat("speed",       speed);
     loop        = obj.GetBool ("loop",        loop);
     fadeSeconds = obj.GetFloat("fadeSeconds", fadeSeconds);
+    rootMotion  = RootMotionFromString(obj.GetString("rootMotion", "Baked"));
 
     IResourceLoader* rm = Services().resources;
     if (!rm)
