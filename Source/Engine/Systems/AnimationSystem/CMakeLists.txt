@@ -46,6 +46,7 @@ add_library(${CLASS_NAME} STATIC
         src/Palette.cpp
         src/Bounds.cpp
         src/AnimParameters.cpp
+        src/RootMotion.cpp
 )
 
 target_sources(${CLASS_NAME} PRIVATE
@@ -61,6 +62,7 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Palette.h
         include/${CLASS_NAME}/Bounds.h
         include/${CLASS_NAME}/AnimParameters.h
+        include/${CLASS_NAME}/RootMotion.h
 )
 
 set_target_properties(${CLASS_NAME} PROPERTIES
