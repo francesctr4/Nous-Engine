@@ -356,3 +356,66 @@ TEST(t_Sampling, InstanceWithNoClipIsFinished)
     const AnimInstance instance;
     EXPECT_TRUE(IsFinished(instance));
 }
+
+// =============================================================================
+// Wrap reporting
+// =============================================================================
+
+// Root motion needs to know the clip wrapped: at the seam the root snaps from the
+// end of its travel back to the start, and a delta computed across that reads as
+// one whole cycle backwards. Advance already detects this to reset its cursor --
+// it now says so.
+TEST(t_Sampling, AdvanceReportsALoopWrap)
+{
+    AnimClipData clip;
+    clip.duration = 1.0f;
+
+    AnimInstance instance;
+    instance.SetClip(&clip, kClipUID, nullptr);
+    instance.loop = true;
+
+    EXPECT_FALSE(Advance(instance, 0.5f));   // 0.0 -> 0.5, no wrap
+    EXPECT_TRUE (Advance(instance, 0.75f));  // 0.5 -> 1.25 -> wraps to 0.25
+    EXPECT_NEAR (instance.time, 0.25f, kEps);
+}
+
+TEST(t_Sampling, AdvanceReportsAWrapWhenPlayingBackwards)
+{
+    AnimClipData clip;
+    clip.duration = 1.0f;
+
+    AnimInstance instance;
+    instance.SetClip(&clip, kClipUID, nullptr);
+    instance.loop  = true;
+    instance.speed = -1.0f;
+
+    EXPECT_TRUE(Advance(instance, 0.5f));    // 0.0 -> -0.5 -> wraps to 0.5
+    EXPECT_NEAR(instance.time, 0.5f, kEps);
+}
+
+// A non-looping clip clamps at the end; it never wraps, so a clamped frame must
+// not be reported as one or the delta would be split across a seam that is not
+// there.
+TEST(t_Sampling, ANonLoopingClipNeverReportsAWrap)
+{
+    AnimClipData clip;
+    clip.duration = 1.0f;
+
+    AnimInstance instance;
+    instance.SetClip(&clip, kClipUID, nullptr);
+    instance.loop = false;
+
+    EXPECT_FALSE(Advance(instance, 5.0f));
+    EXPECT_FLOAT_EQ(instance.time, 1.0f);
+}
+
+TEST(t_Sampling, AZeroDurationClipNeverReportsAWrap)
+{
+    AnimClipData clip;
+    clip.duration = 0.0f;
+
+    AnimInstance instance;
+    instance.SetClip(&clip, kClipUID, nullptr);
+
+    EXPECT_FALSE(Advance(instance, 1.0f));
+}

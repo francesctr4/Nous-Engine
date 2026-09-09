@@ -1,6 +1,7 @@
 #include <AnimationSystem/Binding.h>
 
 #include <AnimationSystem/AnimClip.h>
+#include <AnimationSystem/RootMotion.h>
 #include <AnimationSystem/Skeleton.h>
 
 #include <unordered_map>   // std::erase_if(unordered_map) overload
@@ -23,6 +24,8 @@ namespace nous::engine::animation_system
             // a clip authored on a fuller rig than the one playing it is normal.
             binding.channelToBone[i] = skeleton.FindBone(clip.channels[i].boneName);
         }
+
+        binding.rootBone = ResolveRootBone(binding);
 
         return binding;
     }

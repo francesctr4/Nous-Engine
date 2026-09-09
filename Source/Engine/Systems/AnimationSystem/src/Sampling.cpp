@@ -65,9 +65,9 @@ namespace nous::engine::animation_system
         return { i, factor < 0.0f ? 0.0f : (factor > 1.0f ? 1.0f : factor) };
     }
 
-    void Advance(AnimInstance& instance, float dt)
+    bool Advance(AnimInstance& instance, float dt)
     {
-        if (!instance.clip) return;
+        if (!instance.clip) return false;
 
         const float duration = instance.clip->duration;
         instance.time += dt * instance.speed;
@@ -77,23 +77,30 @@ namespace nous::engine::animation_system
             // A single-pose clip. Anything else here divides by zero in fmod or
             // spins forever in a wrap loop.
             instance.time = 0.0f;
-            return;
+            return false;
         }
 
         if (instance.loop)
         {
+            // Checked before fmod folds it back into range -- afterwards there is
+            // nothing left to detect. Both ends count: a clip played backwards
+            // wraps through 0 just as one played forwards wraps through duration.
+            const bool wrapped = instance.time < 0.0f || instance.time >= duration;
+
             instance.time = std::fmod(instance.time, duration);
             if (instance.time < 0.0f) instance.time += duration;   // fmod keeps the sign
 
             // O(channels), not O(keys): the wrap is exactly the discontinuity the
             // cursor cannot walk through.
             instance.ResetCursor();
+
+            return wrapped;
         }
-        else
-        {
-            if (instance.time < 0.0f)          { instance.time = 0.0f;     instance.ResetCursor(); }
-            else if (instance.time > duration) { instance.time = duration; }
-        }
+
+        if (instance.time < 0.0f)          { instance.time = 0.0f;     instance.ResetCursor(); }
+        else if (instance.time > duration) { instance.time = duration; }
+
+        return false;
     }
 
     bool IsFinished(const AnimInstance& instance)

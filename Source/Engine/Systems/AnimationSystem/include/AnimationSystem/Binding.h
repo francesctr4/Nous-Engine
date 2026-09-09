@@ -22,6 +22,13 @@ namespace nous::engine::animation_system
         // skeleton does not have -- a normal, non-fatal case: clips get retargeted,
         // and exporters emit channels for helper nodes that never became bones.
         std::vector<int> channelToBone;
+
+        // The bone root motion is read from: the lowest index in channelToBone,
+        // or -1 when this clip drives nothing in this skeleton. Resolved here
+        // rather than per frame because it is a property of exactly this (clip,
+        // skeleton) pair, and this struct is already rebuilt whenever either
+        // changes -- so it cannot go stale.
+        int rootBone = -1;
     };
 
     // Fills channelToBone by name lookup. Cheap, but not free -- call it once and

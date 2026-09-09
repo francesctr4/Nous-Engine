@@ -11,11 +11,16 @@ namespace nous::engine::animation_system
 {
     // Advances instance.time by dt * speed and applies the loop policy.
     //
+    // RETURNS TRUE when the clip wrapped this frame. Root motion needs that: at
+    // the seam the root bone snaps from the end of its travel back to the start,
+    // so a delta computed straight across it is one whole cycle BACKWARDS. Only
+    // a looping clip wraps -- a non-looping one clamps, which is not a seam.
+    //
     // Looping wraps with fmod and resets the cursor, so a wrap is O(channels)
     // rather than O(keys). Non-looping clamps to [0, duration] and stops; ask
     // IsFinished() rather than comparing time yourself, because a clip with
     // duration 0 is finished immediately and the naive comparison says otherwise.
-    void Advance(AnimInstance& instance, float dt);
+    bool Advance(AnimInstance& instance, float dt);
 
     [[nodiscard]] bool IsFinished(const AnimInstance& instance);
 
