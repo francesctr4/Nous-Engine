@@ -686,6 +686,20 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
 
     ImGui::Spacing();
     ImGui::DragFloat("Fade (s)", &cAnimator->fadeSeconds, 0.01f, 0.0f, 5.0f, "%.2f");
+
+    // Order matches RootMotionMode's declaration -- the combo indexes the enum by
+    // value, the same contract CAudioSource's attenuation combo has.
+    static const char* const c_rootMotionNames[] = { "Baked", "Applied", "In Place" };
+
+    int rootMotionIndex = static_cast<int>(cAnimator->rootMotion);
+    if (ImGui::Combo("Root Motion", &rootMotionIndex, c_rootMotionNames, 3))
+        cAnimator->rootMotion = static_cast<RootMotionMode>(rootMotionIndex);
+
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Baked: travel stays in the pose (the character drifts).\n"
+                          "Applied: travel moves the GameObject.\n"
+                          "In Place: travel is discarded.");
+
     ImGui::DragFloat("Speed", &cAnimator->speed, 0.01f, -4.0f, 4.0f);
     ImGui::Checkbox("Loop", &cAnimator->loop);
 

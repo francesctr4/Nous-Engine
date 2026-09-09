@@ -43,7 +43,8 @@ namespace
 
     // The attached bone's MODEL-space global for the current pose, or nullptr when
     // anything along the way does not resolve. Warns at most once per component --
-    // this runs per attached object per frame, so a plain warning would be a flood.
+    // this runs per attached object per frame, so a plain warning would be a flood --
+    // and only for a failure the USER can act on. See `transient` below.
     const glm::mat4* ResolveBoneGlobal(const entt::registry& registry, entt::entity entity)
     {
         const auto* attachment = registry.try_get<CBoneAttachment>(entity);
@@ -51,6 +52,12 @@ namespace
             return nullptr;   // not an error: an unset slot is the default state
 
         const char* reason = "it has no ancestor with an Animator";
+
+        // Set for a failure that FIXES ITSELF next frame rather than one the user
+        // has to act on. Warning about those is a false positive: it names a
+        // condition that no longer holds by the time anyone reads the line, and it
+        // re-fires on every play/stop because Deserialize re-arms the warn-once.
+        bool transient = false;
 
         for (entt::entity a = ParentOf(registry, entity); a != entt::null; a = ParentOf(registry, a))
         {
@@ -79,14 +86,19 @@ namespace
             const std::vector<glm::mat4>& globals = animator->GetBoneGlobals();
             if (static_cast<std::size_t>(bone) >= globals.size())
             {
-                reason = "its Animator has not sampled a pose yet";
+                // ORDERING, not a mistake: on the first frame after a scene load this
+                // runs before CAnimator::OnUpdate has sampled anything, and the next
+                // frame attaches correctly. The prop falls back to plain parenting for
+                // that one frame, which is the documented degrade.
+                reason    = "its Animator has not sampled a pose yet";
+                transient = true;
                 break;
             }
 
             return &globals[bone];
         }
 
-        if (!attachment->warnedUnresolved)
+        if (!transient && !attachment->warnedUnresolved)
         {
             attachment->warnedUnresolved = true;
             NOUS_WARN("CBoneAttachment: cannot attach to bone '%s' because %s.",

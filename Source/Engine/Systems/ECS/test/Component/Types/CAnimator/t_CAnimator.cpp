@@ -72,6 +72,26 @@ namespace
 
     float TranslationX(const glm::mat4& m) { return m[3][0]; }
 
+    // A 1-second clip yawing `boneName` from 0 to 90 degrees about +Y. The only
+    // helper that produces a TURN, which is what separates Applied from InPlace:
+    // a clip with no rotation channel makes the two modes indistinguishable.
+    void MakeTurnClip(ResourceAnimation& anim, const char* boneName)
+    {
+        anim.clip.name     = "Turn";
+        anim.clip.duration = 1.0f;
+
+        AnimChannel ch;
+        ch.boneName  = boneName;
+        ch.rotTimes  = { 0.0f, 1.0f };
+        ch.rotValues = { glm::quat(1.0f, 0.0f, 0.0f, 0.0f),
+                         glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) };
+
+        anim.clip.channels = { ch };
+    }
+
+    // sin(yaw) of a Y-rotation matrix: the x component of its forward basis.
+    float ForwardX(const glm::mat4& m) { return m[2][0]; }
+
     // A rig whose bind pose is NOT identity: Child sits 2 units above Root, and
     // offsets are inverse(global bind) -- which is what an importer produces. So
     // sampling the bind pose must give an identity palette. A rig with identity
@@ -1014,4 +1034,51 @@ TEST_F(t_CAnimator, RootMotionModeIsSerialized)
     b.Deserialize(json);
 
     EXPECT_EQ(b.rootMotion, RootMotionMode::Applied);
+}
+
+// Applied must take the yaw OUT of the pose, because it is about to go onto the
+// GameObject -- leaving it in applies the turn twice, which drives the transform
+// backwards for any clip that turns more than 90 degrees.
+TEST_F(t_CAnimator, AppliedMovesTheTurnFromThePoseToTheTransform)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeTurnClip(anim, "Root");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.clips      = { &anim };
+    a.rootMotion = RootMotionMode::Applied;
+
+    a.OnUpdate(0.5f);   // 45 degrees in
+
+    EXPECT_NEAR(ForwardX(a.GetBoneGlobals()[0]), 0.0f, 1e-4f);   // pose no longer turns
+
+    const glm::vec3 forward = go.GetComponent<CTransform>().orientation
+                            * glm::vec3(0.0f, 0.0f, 1.0f);
+    EXPECT_NEAR(forward.x, std::sin(glm::quarter_pi<float>()), 1e-3f);
+}
+
+// InPlace DISCARDS the delta, so the yaw has nowhere to go and must stay in the
+// pose. Stripping it there is not "not travelling" -- it is deleting animation,
+// and a turning clip would face one direction forever. Mixamo's own In Place
+// export draws the line the same way: no root translation, rotation kept.
+TEST_F(t_CAnimator, InPlaceKeepsTheTurnInThePose)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeTurnClip(anim, "Root");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.clips      = { &anim };
+    a.rootMotion = RootMotionMode::InPlace;
+
+    a.OnUpdate(0.5f);
+
+    EXPECT_NEAR(ForwardX(a.GetBoneGlobals()[0]), std::sin(glm::quarter_pi<float>()), 1e-3f);
+
+    const glm::vec3 forward = go.GetComponent<CTransform>().orientation
+                            * glm::vec3(0.0f, 0.0f, 1.0f);
+    EXPECT_NEAR(forward.x, 0.0f, 1e-4f);   // the object itself never turns
 }

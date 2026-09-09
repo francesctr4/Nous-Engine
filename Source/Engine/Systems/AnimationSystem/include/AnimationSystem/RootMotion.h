@@ -38,6 +38,14 @@ namespace nous::engine::animation_system
     /**
      * @brief Travel between two root samples, correct across a loop seam.
      *
+     * THE TRANSLATION IS IN THE ROOT'S OWN FRAME at the previous sample, not in
+     * the clip's fixed frame. The consumer rotates it by the GameObject's
+     * orientation, which already carries every yaw this function has handed back
+     * -- so an un-de-rotated delta gets the clip's own turning applied twice. A
+     * clip that turns 180 degrees and then walks forward drives the transform
+     * exactly backwards while the pose walks forwards, and the two only agree
+     * again when the clip never turns.
+     *
      * `wrapped` says Advance() wrapped this frame. Without it the delta at the
      * seam is one whole cycle BACKWARDS, because the root snaps from the end of
      * its travel to the start -- the character teleports back exactly as far as it
@@ -60,8 +68,16 @@ namespace nous::engine::animation_system
      *
      * A rootBone outside the pose (including -1) is a no-op -- a clip that drives
      * nothing still reaches here.
+     *
+     * `stripYaw` is what separates the two consumers, and they genuinely differ.
+     * A mode that puts the delta ON the GameObject must take the yaw out of the
+     * pose, or the turn is applied twice. A mode that DISCARDS the delta must
+     * leave it in: the yaw is going nowhere, so removing it is not "not
+     * travelling", it is deleting animation -- a turning clip would then face one
+     * direction forever. Mixamo's own In Place export draws the line the same
+     * way, killing the root's horizontal translation and keeping its rotation.
      */
-    void StripRootMotion(Pose& pose, int rootBone, const Transform& bindLocal);
+    void StripRootMotion(Pose& pose, int rootBone, const Transform& bindLocal, bool stripYaw);
 
     /**
      * @brief Mixes two tracks' deltas by the cross-fade weight.

@@ -25,6 +25,11 @@ namespace nous::engine::animation_system
         }
 
         glm::vec3 Horizontal(const glm::vec3& v) { return glm::vec3(v.x, 0.0f, v.z); }
+
+        glm::vec3 RotateAboutUp(const glm::vec3& v, const float radians)
+        {
+            return glm::angleAxis(radians, c_up) * v;
+        }
     }
 
     float ExtractYaw(const glm::quat& rotation)
@@ -56,24 +61,44 @@ namespace nous::engine::animation_system
     {
         RootMotionDelta delta;
 
+        const float previousYaw = ExtractYaw(previous.rotation);
+
         if (!wrapped)
         {
-            delta.translation = Horizontal(current.position - previous.position);
-            delta.yaw = WrapAngle(ExtractYaw(current.rotation) - ExtractYaw(previous.rotation));
+            // DE-ROTATED into the root's own frame at the previous sample, and this
+            // is load-bearing. The caller rotates the delta by the GameObject's
+            // orientation, which already carries every yaw this function has handed
+            // back so far -- so a delta left in the clip's fixed frame gets the
+            // clip's own turning applied to it a SECOND time. A clip that turns 180
+            // degrees and then walks forward therefore drives the transform exactly
+            // backwards, while the pose walks forwards: the two disagree by the
+            // square of the turn.
+            delta.translation = RotateAboutUp(Horizontal(current.position - previous.position),
+                                              -previousYaw);
+            delta.yaw = WrapAngle(ExtractYaw(current.rotation) - previousYaw);
             return delta;
         }
 
         // Split the frame at the seam: previous -> end of clip, then start -> now.
-        delta.translation = Horizontal((clipEnd.position - previous.position) +
-                                       (current.position - clipStart.position));
+        // Each half is de-rotated by the yaw in force at ITS start.
+        const float yawFirst  = WrapAngle(ExtractYaw(clipEnd.rotation) - previousYaw);
+        const float yawSecond = WrapAngle(ExtractYaw(current.rotation) - ExtractYaw(clipStart.rotation));
 
-        delta.yaw = WrapAngle(ExtractYaw(clipEnd.rotation) - ExtractYaw(previous.rotation)) +
-                    WrapAngle(ExtractYaw(current.rotation) - ExtractYaw(clipStart.rotation));
+        const glm::vec3 first  = RotateAboutUp(Horizontal(clipEnd.position - previous.position),
+                                               -previousYaw);
+        const glm::vec3 second = RotateAboutUp(Horizontal(current.position - clipStart.position),
+                                               -ExtractYaw(clipStart.rotation));
+
+        // The second half happens after the first half's turn has been applied, so
+        // it is expressed relative to that, not to the frame the frame started in.
+        delta.translation = first + RotateAboutUp(second, yawFirst);
+        delta.yaw         = yawFirst + yawSecond;
 
         return delta;
     }
 
-    void StripRootMotion(Pose& pose, const int rootBone, const Transform& bindLocal)
+    void StripRootMotion(Pose& pose, const int rootBone, const Transform& bindLocal,
+                         const bool stripYaw)
     {
         if (rootBone < 0 || static_cast<size_t>(rootBone) >= pose.bones.size()) return;
 
@@ -81,6 +106,8 @@ namespace nous::engine::animation_system
 
         root.position.x = bindLocal.position.x;
         root.position.z = bindLocal.position.z;
+
+        if (!stripYaw) return;
 
         // Rotate the clip's yaw out and the bind's yaw in, leaving pitch and roll
         // untouched. Symmetric with the position rule above.

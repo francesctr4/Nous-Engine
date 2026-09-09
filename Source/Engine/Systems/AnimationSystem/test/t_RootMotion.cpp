@@ -142,6 +142,28 @@ TEST(t_RootMotion, ALoopWrapYieldsOneFrameForwardNotOneCycleBack)
     EXPECT_FLOAT_EQ(d.translation.x, 1.0f);
 }
 
+// The delta comes back in the ROOT'S OWN frame, because the consumer rotates it
+// by the GameObject's orientation -- which already carries every yaw previously
+// handed back. Left in the clip's fixed frame the turn is applied twice: a clip
+// that turns 180 degrees and then walks forward drives the transform exactly
+// backwards while the pose walks forwards. Found in-engine, not by these tests,
+// because a clip with no rotation channel makes the de-rotation a no-op.
+TEST(t_RootMotion, TranslationIsExpressedInTheRootsOwnFrame)
+{
+    Transform previous = Yawed(glm::pi<float>());          // turned to face backwards
+    Transform current  = Yawed(glm::pi<float>());
+    current.position   = glm::vec3(10.0f, 0.0f, 0.0f);     // and travelled +X in clip space
+
+    const RootMotionDelta d = ComputeRootDelta(previous, current,
+                                               Transform{}, Transform{}, false);
+
+    // Facing 180 degrees, so world +X is the root's own -X. Re-rotating by the
+    // object's orientation then reproduces the +X the pose actually walked.
+    EXPECT_NEAR(d.translation.x, -10.0f, 1e-3f);
+    EXPECT_NEAR(d.translation.z,   0.0f, 1e-3f);
+    EXPECT_NEAR(d.yaw,             0.0f, 1e-4f);
+}
+
 // Crossing the +/-pi seam must not read as a near-full-circle spin.
 TEST(t_RootMotion, YawDeltaTakesTheShortWayRoundTheSeam)
 {
@@ -166,7 +188,7 @@ TEST(t_RootMotion, StripMovesHorizontalToBindAndLeavesVertical)
 
     Transform bind = At(0.0f, 100.0f, 0.0f);
 
-    StripRootMotion(pose, 0, bind);
+    StripRootMotion(pose, 0, bind, true);
 
     EXPECT_FLOAT_EQ(pose.bones[0].position.x, 0.0f);
     EXPECT_FLOAT_EQ(pose.bones[0].position.z, 0.0f);
@@ -182,13 +204,34 @@ TEST(t_RootMotion, StripRemovesYawButKeepsPitchAndRoll)
     pose.bones[0].rotation = glm::angleAxis(0.8f, glm::vec3(0.0f, 1.0f, 0.0f))
                            * glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
 
-    StripRootMotion(pose, 0, Transform{});
+    StripRootMotion(pose, 0, Transform{}, true);
 
     EXPECT_NEAR(ExtractYaw(pose.bones[0].rotation), 0.0f, 1e-4f);
 
     // The pitch is still there: the forward vector still tilts off horizontal.
     const glm::vec3 forward = pose.bones[0].rotation * glm::vec3(0.0f, 0.0f, 1.0f);
     EXPECT_GT(std::abs(forward.y), 0.1f);
+}
+
+// The mode that DISCARDS the delta must keep the yaw in the pose. Stripping it
+// is not "not travelling" -- it is deleting animation, and a turning clip then
+// faces one direction forever while its legs cross over. Only the mode that puts
+// the yaw ON the GameObject may take it out, or the turn is applied twice.
+TEST(t_RootMotion, StripKeepsTheYawWhenAskedNotToStripIt)
+{
+    const float yaw = 0.8f;
+
+    Pose pose;
+    pose.bones.resize(1);
+    pose.bones[0] = At(7.0f, 0.0f, -3.0f);
+    pose.bones[0].rotation = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+
+    StripRootMotion(pose, 0, Transform{}, false);
+
+    // The travel is gone; the turn is not.
+    EXPECT_FLOAT_EQ(pose.bones[0].position.x, 0.0f);
+    EXPECT_FLOAT_EQ(pose.bones[0].position.z, 0.0f);
+    EXPECT_NEAR(ExtractYaw(pose.bones[0].rotation), yaw, 1e-4f);
 }
 
 // Out-of-range and "no root" must be no-ops rather than reads past the end: a
@@ -199,8 +242,8 @@ TEST(t_RootMotion, StripIsANoOpForAnInvalidRootIndex)
     pose.bones.resize(1);
     pose.bones[0] = At(5.0f, 0.0f, 5.0f);
 
-    StripRootMotion(pose, -1, Transform{});
-    StripRootMotion(pose, 7, Transform{});
+    StripRootMotion(pose, -1, Transform{}, true);
+    StripRootMotion(pose, 7, Transform{}, true);
 
     EXPECT_FLOAT_EQ(pose.bones[0].position.x, 5.0f);
 }

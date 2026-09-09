@@ -194,8 +194,13 @@ anim::RootMotionDelta CAnimator::ExtractTrackRootMotion(ClipTrack& track, const 
 
     track.previousRoot = current;
 
+    // Applied takes the yaw out of the pose because it is about to go onto the
+    // GameObject; InPlace keeps it, because a discarded yaw is not "not
+    // travelling" but deleted animation -- a turning clip would face one way
+    // forever. Same line Mixamo's own In Place export draws.
     anim::StripRootMotion(track.pose, track.binding.rootBone,
-                          skeleton->skeleton.bindLocals[track.binding.rootBone]);
+                          skeleton->skeleton.bindLocals[track.binding.rootBone],
+                          rootMotion == RootMotionMode::Applied);
 
     return delta;
 }
