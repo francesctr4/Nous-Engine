@@ -45,6 +45,7 @@ add_library(${CLASS_NAME} STATIC
         src/Blending.cpp
         src/Palette.cpp
         src/Bounds.cpp
+        src/AnimParameters.cpp
 )
 
 target_sources(${CLASS_NAME} PRIVATE
@@ -59,6 +60,7 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Blending.h
         include/${CLASS_NAME}/Palette.h
         include/${CLASS_NAME}/Bounds.h
+        include/${CLASS_NAME}/AnimParameters.h
 )
 
 set_target_properties(${CLASS_NAME} PROPERTIES
