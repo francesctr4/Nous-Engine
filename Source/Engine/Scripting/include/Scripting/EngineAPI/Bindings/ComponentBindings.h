@@ -8,6 +8,7 @@ struct ComponentAPI
     bool (*HasCamera) (uint32_t goId) = nullptr;
     bool (*HasMesh)   (uint32_t goId) = nullptr;
     bool (*HasScript) (uint32_t goId) = nullptr;
+    bool (*HasAnimator)(uint32_t goId) = nullptr;
 };
 
 class IScriptSceneHost;
