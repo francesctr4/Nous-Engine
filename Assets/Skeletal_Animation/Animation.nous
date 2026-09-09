@@ -258,9 +258,35 @@
                     ]
                 },
                 {
+                    "type": "CScript",
+                    "scripts": [
+                        "AnimatorDemo"
+                    ],
+                    "properties": {
+                        "AnimatorDemo": {
+                            "m_clipA": {
+                                "type": 4,
+                                "value": "RumbaDancing_WithSkin@mixamo_com"
+                            },
+                            "m_clipB": {
+                                "type": 4,
+                                "value": "Thriller Part 3@mixamo_com"
+                            },
+                            "m_clipC": {
+                                "type": 4,
+                                "value": "Unarmed Walk Forward (1)@mixamo_com"
+                            },
+                            "m_fade": {
+                                "type": 0,
+                                "value": 1
+                            }
+                        }
+                    }
+                },
+                {
                     "type": "CPrefab",
                     "prefabSourcePath": "Assets\/Skeletal_Animation\/Espada\/Cypher Walking with Sword.nprefab",
-                    "syncedHash": "e2a4cbb918e7d784"
+                    "syncedHash": "fc9e911294883dac"
                 },
                 {
                     "type": "CPrefabLink",
@@ -281,6 +307,11 @@
                             "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
                             "libraryPath": "Library\/Animations\/1380512761.nanim",
                             "uid": 1380512761
+                        },
+                        {
+                            "assetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
+                            "libraryPath": "Library\/Animations\/3875098274.nanim",
+                            "uid": 3875098274
                         }
                     ],
                     "speed": 1,
