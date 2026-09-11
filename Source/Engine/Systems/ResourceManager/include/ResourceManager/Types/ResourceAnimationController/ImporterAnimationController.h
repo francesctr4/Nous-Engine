@@ -39,4 +39,11 @@ struct ImporterAnimationController : IResourceImporter
 
     // Writes a minimal empty .nctrl at assetPath -- the editor's File > New.
     static NOUS_ENGINE_API bool CreateNewControllerFile(const std::string& assetPath);
+
+private:
+    // Acquires one ResourceAnimation per state from its authored clip slot and
+    // releases whatever the previous pass held. Split out of Deserialize because
+    // the release-after-acquire ordering it implements is the whole hazard, and it
+    // deserves to be readable on its own.
+    void ResolveClips(ResourceAnimationController* controller);
 };

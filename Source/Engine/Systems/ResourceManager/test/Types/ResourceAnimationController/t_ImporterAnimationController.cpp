@@ -1,10 +1,15 @@
 #include <ResourceManager/Types/ResourceAnimationController/ImporterAnimationController.h>
 #include <ResourceManager/Types/ResourceAnimationController/ResourceAnimationController.h>
+#include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
+#include <ResourceManager/Core/IResourceLoader.h>
 #include <MemoryManager/MemoryManager.h>
 
 #include <gtest/gtest.h>
 
+#include <map>
+#include <memory>
 #include <string>
+#include <vector>
 
 namespace anim = nous::engine::animation_system;
 
@@ -60,6 +65,94 @@ namespace
 
         g.defaultState = 0;
         return g;
+    }
+
+    // A ref-counting stand-in for ModuleResourceManager.
+    //
+    // A REAL manager is not an option here and that is structural, not laziness:
+    // ModuleResourceManager lives under Engine/Modules/, and nothing in Systems/
+    // may include Modules/ -- the rule check_header_layout.py enforces. IResourceLoader
+    // is precisely the seam that exists for this, so the fake implements it and
+    // moves real ResourceBase reference counts, which is what the invariant is about.
+    struct FakeClipLoader : IResourceLoader
+    {
+        std::map<uint32_t, std::unique_ptr<ResourceAnimation>> clips;
+
+        int creates = 0;
+        int unloads = 0;
+
+        ResourceAnimation& Add(const uint32_t uid, const std::string& assetPath)
+        {
+            auto clip = std::make_unique<ResourceAnimation>(uid);
+            clip->SetAssetsPath(assetPath);
+            clip->SetLibraryPath("Library/Animations/" + std::to_string(uid) + ".nanim");
+
+            ResourceAnimation& ref = *clip;
+            clips[uid] = std::move(clip);
+            return ref;
+        }
+
+        [[nodiscard]] uint32_t RefCount(const uint32_t uid) const
+        {
+            const auto it = clips.find(uid);
+            return it == clips.end() ? 0u : it->second->GetReferenceCount();
+        }
+
+        // Both acquire paths take a reference, exactly as the real manager does --
+        // which is what makes "the importer must give one back" testable at all.
+        ResourceBase* CreateResourceFromLibrary(const uint32_t uid, ResourceType, const std::string&,
+                                                const std::string&, const std::string&) override
+        {
+            const auto it = clips.find(uid);
+            if (it == clips.end()) return nullptr;
+
+            ++creates;
+            it->second->IncreaseReferenceCount();
+            return it->second.get();
+        }
+
+        ResourceBase* CreateResource(const std::string& assetsPath) override
+        {
+            for (auto& [uid, clip] : clips)
+                if (clip->GetAssetsPath() == assetsPath)
+                {
+                    ++creates;
+                    clip->IncreaseReferenceCount();
+                    return clip.get();
+                }
+
+            return nullptr;
+        }
+
+        bool UnloadResource(const uint32_t uid) override
+        {
+            const auto it = clips.find(uid);
+            if (it == clips.end()) return false;
+
+            ++unloads;
+            it->second->DecreaseReferenceCount();
+            return true;
+        }
+
+        ResourceMesh* RequestOrCreateSubMeshResource(const std::string&, int32_t) override
+        { return nullptr; }
+        ResourceMesh* RequestOrCreateSubMeshResourceFromLibrary(const std::string&, int32_t,
+                                                                const std::string&, uint32_t) override
+        { return nullptr; }
+        ResourceMaterial* GetDefaultMaterial() const override { return nullptr; }
+        bool ImportFile(const std::string&) override { return true; }
+    };
+
+    // A two-state controller whose clips are already enriched with uid + libraryPath,
+    // i.e. what a Library copy looks like after Save.
+    void WriteResolvableController(const std::string& path)
+    {
+        ResourceAnimationController c(1);
+        c.graph = SampleGraph();
+        c.clipSlots.push_back({ "Assets/Idle.nanim", "Library/Animations/11.nanim", 11u });
+        c.clipSlots.push_back({ "Assets/Run.nanim",  "Library/Animations/12.nanim", 12u });
+
+        ASSERT_TRUE(ImporterAnimationController::WriteControllerToFile(c, path));
     }
 }
 
@@ -248,4 +341,166 @@ TEST_F(ImporterAnimationControllerTest, DeserializingTwiceDoesNotAccumulateState
     EXPECT_EQ(3u, read.graph.parameters.size());
     EXPECT_EQ(2u, read.clipSlots.size());
     EXPECT_EQ(2u, read.editorPositions.size());
+}
+
+// ---------------------------------------------------------------------------
+// Clip references -- the hazard this feature is most likely to reintroduce
+// ---------------------------------------------------------------------------
+
+TEST_F(ImporterAnimationControllerTest, DeserializeAcquiresOneReferencePerResolvedClip)
+{
+    const std::string path = "t_AnimationController_refs.nctrl";
+    WriteResolvableController(path);
+
+    FakeClipLoader loader;
+    loader.Add(11u, "Assets/Idle.nanim");
+    loader.Add(12u, "Assets/Run.nanim");
+
+    ResourceAnimationController controller(2);
+    ImporterAnimationController importer;
+    importer.m_resources = &loader;
+
+    ASSERT_TRUE(importer.Deserialize(path, &controller));
+
+    ASSERT_EQ(2u, controller.clips.size());
+    ASSERT_NE(nullptr, controller.clips[0]);
+    ASSERT_NE(nullptr, controller.clips[1]);
+
+    EXPECT_EQ(1u, loader.RefCount(11u));
+    EXPECT_EQ(1u, loader.RefCount(12u));
+
+    // clipIndex is DERIVED here, never serialized -- a state is playable only once
+    // something actually resolved its clip.
+    EXPECT_EQ(0, controller.graph.states[0].clipIndex);
+    EXPECT_EQ(1, controller.graph.states[1].clipIndex);
+}
+
+TEST_F(ImporterAnimationControllerTest, ReDeserializingALiveControllerDoesNotChangeClipRefCounts)
+{
+    // THE test of this task. Deserialize is not called only on a fresh resource:
+    // the asset hot-reload path re-deserializes a LIVE controller in place, so each
+    // pass re-acquires every clip and must release what the slots already held.
+    //
+    // The `previous != clip` guard is the obvious version and leaks in exactly this
+    // case -- re-resolving finds the SAME clip resident and only increments, so a
+    // change-detecting release never fires and the count climbs by one per reload.
+    const std::string path = "t_AnimationController_refs.nctrl";
+    WriteResolvableController(path);
+
+    FakeClipLoader loader;
+    loader.Add(11u, "Assets/Idle.nanim");
+    loader.Add(12u, "Assets/Run.nanim");
+
+    ResourceAnimationController controller(2);
+    ImporterAnimationController importer;
+    importer.m_resources = &loader;
+
+    ASSERT_TRUE(importer.Deserialize(path, &controller));
+    const uint32_t afterFirst = loader.RefCount(11u);
+
+    ASSERT_TRUE(importer.Deserialize(path, &controller));
+    ASSERT_TRUE(importer.Deserialize(path, &controller));
+
+    EXPECT_EQ(afterFirst, loader.RefCount(11u)) << "a re-Deserialize leaked a reference per clip";
+    EXPECT_EQ(afterFirst, loader.RefCount(12u));
+
+    // Never zero in between, either: the release runs AFTER the acquire, so the
+    // count cannot dip and queue a spurious eviction. Three passes acquired three
+    // times and gave back the two the earlier passes held.
+    EXPECT_EQ(6, loader.creates);
+    EXPECT_EQ(4, loader.unloads);
+}
+
+TEST_F(ImporterAnimationControllerTest, EvictGivesBackEveryClipReference)
+{
+    const std::string path = "t_AnimationController_refs.nctrl";
+    WriteResolvableController(path);
+
+    FakeClipLoader loader;
+    loader.Add(11u, "Assets/Idle.nanim");
+    loader.Add(12u, "Assets/Run.nanim");
+
+    ResourceAnimationController controller(2);
+    ImporterAnimationController importer;
+    importer.m_resources = &loader;
+
+    ASSERT_TRUE(importer.Deserialize(path, &controller));
+    ASSERT_EQ(1u, loader.RefCount(11u));
+
+    importer.Evict(&controller);
+
+    EXPECT_EQ(0u, loader.RefCount(11u));
+    EXPECT_EQ(0u, loader.RefCount(12u));
+
+    for (const ResourceAnimation* clip : controller.clips)
+        EXPECT_EQ(nullptr, clip);
+
+    // A second Evict must be a no-op, not a double-release: the pointers were
+    // nulled, which is what stands between a double teardown and a count going
+    // negative.
+    importer.Evict(&controller);
+    EXPECT_EQ(2, loader.unloads);
+}
+
+TEST_F(ImporterAnimationControllerTest, AStateWhoseClipIsMissingStaysUnplayableWithoutDisturbingItsPeers)
+{
+    // One broken slot must cost that state, not the controller. The peer still
+    // resolves and still takes exactly one reference.
+    const std::string path = "t_AnimationController_refs.nctrl";
+    WriteResolvableController(path);
+
+    FakeClipLoader loader;
+    loader.Add(12u, "Assets/Run.nanim");   // 11 is deliberately absent
+
+    ResourceAnimationController controller(2);
+    ImporterAnimationController importer;
+    importer.m_resources = &loader;
+
+    ASSERT_TRUE(importer.Deserialize(path, &controller));
+
+    EXPECT_EQ(nullptr, controller.clips[0]);
+    EXPECT_EQ(-1, controller.graph.states[0].clipIndex);
+
+    ASSERT_NE(nullptr, controller.clips[1]);
+    EXPECT_EQ(1, controller.graph.states[1].clipIndex);
+    EXPECT_EQ(1u, loader.RefCount(12u));
+
+    // And the authored slot is still there to be repaired.
+    EXPECT_EQ("Assets/Idle.nanim", controller.clipSlots[0].assetPath);
+}
+
+TEST_F(ImporterAnimationControllerTest, ARemovedStateReleasesItsClipOnTheNextDeserialize)
+{
+    // The state count can change between passes -- the editor deletes a node and
+    // saves. A per-slot release keyed on index would silently strand the reference
+    // held by a state that no longer exists.
+    const std::string path = "t_AnimationController_refs.nctrl";
+    WriteResolvableController(path);
+
+    FakeClipLoader loader;
+    loader.Add(11u, "Assets/Idle.nanim");
+    loader.Add(12u, "Assets/Run.nanim");
+
+    ResourceAnimationController controller(2);
+    ImporterAnimationController importer;
+    importer.m_resources = &loader;
+
+    ASSERT_TRUE(importer.Deserialize(path, &controller));
+    ASSERT_EQ(1u, loader.RefCount(12u));
+
+    // Rewrite the asset with Run deleted, then re-read in place.
+    {
+        ResourceAnimationController shrunk(3);
+        shrunk.graph.states.push_back(controller.graph.states[0]);
+        shrunk.graph.states[0].clipIndex = -1;
+        shrunk.graph.defaultState = 0;
+        shrunk.clipSlots.push_back({ "Assets/Idle.nanim", "Library/Animations/11.nanim", 11u });
+        ASSERT_TRUE(ImporterAnimationController::WriteControllerToFile(shrunk, path));
+    }
+
+    ASSERT_TRUE(importer.Deserialize(path, &controller));
+
+    EXPECT_EQ(1u, controller.clips.size());
+    EXPECT_EQ(1u, loader.RefCount(11u));
+    EXPECT_EQ(0u, loader.RefCount(12u)) << "the deleted state's clip reference was stranded";
 }

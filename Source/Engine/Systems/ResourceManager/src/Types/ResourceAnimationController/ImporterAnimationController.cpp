@@ -4,6 +4,8 @@
 #include <ResourceManager/Types/ResourceAnimationController/ResourceAnimationController.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
 #include <ResourceManager/Core/MetaFileData.h>
+#include <ResourceManager/Core/IResourceLoader.h>
+#include <ResourceManager/Runtime/ImportPipeline.h>
 
 #include <AnimationSystem/AnimParameters.h>
 
@@ -108,10 +110,53 @@ bool ImporterAnimationController::Save(const MetaFileData& metaFileData, Resourc
 {
     NOUS_DELETE(inResource, MemoryTag::RESOURCE_ANIM_CONTROLLER);
 
-    // Verbatim copy for now. Task 5 replaces this with peer-UID injection: a
-    // controller references .nanim assets, and an exported game ships no Assets/,
-    // so the Library copy must carry each clip's libraryPath and uid.
-    return nous::engine::filesystem::CopyFile(metaFileData.assetsPath, metaFileData.libraryPath);
+    // NOT a verbatim copy, unlike ImporterAudioGraph: a controller references peer
+    // .nanim assets, so the Library copy is ENRICHED with each clip's uid and
+    // library path. An exported game ships no Assets/ and resolves clips from those
+    // two fields alone -- the authored assetPath is unreachable there.
+    JsonObject root = JsonFile::LoadFromFile(metaFileData.assetsPath);
+    if (root.IsEmpty())
+    {
+        NOUS_ERROR("ImporterAnimationController::Save() failed to load '%s'",
+                   metaFileData.assetsPath.c_str());
+        return false;
+    }
+
+    JsonArray statesArr = root.GetArray("states");
+    JsonArray enriched;
+
+    for (int i = 0; i < statesArr.Count(); ++i)
+    {
+        JsonObject s = statesArr.GetObject(i);
+
+        JsonObject clip = s.GetObject("clip");
+        const std::string clipAsset = clip.GetString("assetPath");
+
+        if (!clipAsset.empty())
+        {
+            MetaFileData clipMeta;
+            if (ImportPipeline::GetAssetMetaData(clipAsset, clipMeta))
+            {
+                clip.Set("uid", static_cast<double>(clipMeta.uid));
+                clip.Set("libraryPath", clipMeta.libraryPath);
+            }
+            else
+            {
+                // The clip asset is missing or not imported. Leave what was authored
+                // rather than blanking it: a broken reference the user can see and
+                // fix beats a slot that silently forgot what it pointed at.
+                NOUS_WARN("ImporterAnimationController::Save() -- clip '%s' has no .meta; "
+                          "leaving its authored slot unenriched.", clipAsset.c_str());
+            }
+            s.Set("clip", std::move(clip));
+        }
+
+        enriched.Append(std::move(s));
+    }
+
+    root.Set("states", std::move(enriched));
+
+    return JsonFile::SaveToFile(root, metaFileData.libraryPath);
 }
 
 bool ImporterAnimationController::Deserialize(const std::string& libraryPath, ResourceBase* resource)
@@ -249,13 +294,109 @@ bool ImporterAnimationController::Deserialize(const std::string& libraryPath, Re
     const std::string defaultName = root.GetString("defaultState");
     graph.defaultState = defaultName.empty() ? -1 : graph.FindState(defaultName);
 
+    ResolveClips(controller);
+
     return true;
 }
 
-void ImporterAnimationController::Evict(ResourceBase* /*resource*/)
+void ImporterAnimationController::ResolveClips(ResourceAnimationController* controller)
 {
-    // Task 5 releases the clip references acquired by Deserialize. Nothing is
-    // acquired yet, so there is nothing to give back.
+    IResourceLoader* rm = m_resources;
+    if (!rm)
+    {
+        // No resource system (unit tests, and the editor before injection). Every
+        // state is unplayable rather than pointing into an empty clips array.
+        for (as::ControllerState& state : controller->graph.states)
+            state.clipIndex = -1;
+        return;
+    }
+
+    // THE HAZARD, on the record because this exact bug has shipped twice in this
+    // tree: Deserialize is NOT called only on a fresh resource -- the asset
+    // hot-reload path re-deserializes a LIVE controller in place. Every pass
+    // re-acquires each clip, so every pass must give back what the slots already
+    // held, UNCONDITIONALLY and AFTER the acquire.
+    //
+    // Holding the old vector aside and draining it at the end makes both halves of
+    // that structural rather than per-slot:
+    //   - unconditional, because nothing here compares old against new. The
+    //     `previous != clip` guard is the obvious version and leaks in exactly the
+    //     common case: re-resolving finds the SAME clip resident and only
+    //     increments, so a change-detecting release never fires.
+    //   - after, because the drain cannot run until every acquire has. Releasing
+    //     first would let a count transiently hit 0 and queue a spurious eviction.
+    // It also survives a state being added or removed between passes, which a
+    // per-slot release keyed on index does not.
+    std::vector<ResourceAnimation*> previous;
+    previous.swap(controller->clips);
+
+    controller->clips.assign(controller->graph.states.size(), nullptr);
+
+    for (size_t i = 0; i < controller->graph.states.size(); ++i)
+    {
+        as::ControllerState&      state = controller->graph.states[i];
+        const ControllerClipSlot& slot  = controller->clipSlots[i];
+
+        ResourceAnimation* clip = nullptr;
+
+        if (!slot.libraryPath.empty() && slot.uid != 0)
+            clip = down_cast<ResourceAnimation*>(
+                rm->CreateResourceFromLibrary(slot.uid, ResourceType::ANIMATION,
+                                              nous::engine::filesystem::GetFilename(slot.assetPath),
+                                              slot.assetPath, slot.libraryPath));
+        else if (!slot.assetPath.empty())
+            clip = down_cast<ResourceAnimation*>(rm->CreateResource(slot.assetPath));
+
+        if (clip)
+        {
+            controller->clips[i] = clip;
+            state.clipIndex      = static_cast<int>(i);
+
+            NOUS_DEBUG("[RefTrace] +CLIP uid=%u refs=%u  (state '%s' of controller '%s' deserialized)",
+                       clip->GetUID(), clip->GetReferenceCount(),
+                       state.name.c_str(), controller->GetName().c_str());
+        }
+        else
+        {
+            state.clipIndex = -1;   // unplayable state, not an error
+
+            if (!slot.assetPath.empty())
+                NOUS_WARN("ImporterAnimationController: state '%s' clip '%s' could not be loaded.",
+                          state.name.c_str(), slot.assetPath.c_str());
+        }
+    }
+
+    for (ResourceAnimation* old : previous)
+    {
+        if (!old) continue;
+
+        NOUS_DEBUG("[RefTrace] -CLIP uid=%u refs=%u  (controller '%s' re-deserialized in place)",
+                   old->GetUID(), old->GetReferenceCount(), controller->GetName().c_str());
+        rm->UnloadResource(old->GetUID());
+    }
+}
+
+void ImporterAnimationController::Evict(ResourceBase* resource)
+{
+    ResourceAnimationController* controller = down_cast<ResourceAnimationController*>(resource);
+    if (!controller) return;
+
+    for (ResourceAnimation*& clip : controller->clips)
+    {
+        if (clip && m_resources)
+        {
+            NOUS_DEBUG("[RefTrace] -CLIP uid=%u refs=%u  (controller '%s' evicted)",
+                       clip->GetUID(), clip->GetReferenceCount(), controller->GetName().c_str());
+            m_resources->UnloadResource(clip->GetUID());
+        }
+
+        // Nulled even when there is no resource system, so a later pass cannot
+        // double-release a pointer this one already gave back.
+        clip = nullptr;
+    }
+
+    for (as::ControllerState& state : controller->graph.states)
+        state.clipIndex = -1;
 }
 
 bool ImporterAnimationController::Upload(ResourceBase* /*resource*/, IGPUResourceFactory* /*gpu*/)
