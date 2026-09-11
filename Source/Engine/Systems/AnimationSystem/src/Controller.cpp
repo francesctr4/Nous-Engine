@@ -84,27 +84,40 @@ namespace nous::engine::animation_system
         if (!graph.IsValidState(currentState))
             return {};
 
-        for (const ControllerTransition& t : graph.transitions)
+        // TWO PASSES, and the order is the design: Any State first, so "attack
+        // interrupts everything" is true by construction rather than by whichever
+        // link the user drew first. Within each pass, authored order decides.
+        for (const int pass : { ControllerGraph::c_anyState, currentState })
         {
-            if (t.fromState != currentState)
-                continue;
+            for (const ControllerTransition& t : graph.transitions)
+            {
+                if (t.fromState != pass)
+                    continue;
 
-            // A transition into a deleted state is skipped rather than followed:
-            // the editor can leave one behind, and an out-of-range index here
-            // would index the state array in CAnimator.
-            if (!graph.IsValidState(t.toState))
-                continue;
+                // An Any State transition never re-enters the state already
+                // current. Not a flag: re-entry is almost never wanted, and
+                // CrossFade() expresses an explicit restart. Note this is a SKIP,
+                // not a stop -- the pass must continue past it.
+                if (pass == ControllerGraph::c_anyState && t.toState == currentState)
+                    continue;
 
-            if (!ExitTimeReached(t, normalizedTime))
-                continue;
+                // A transition into a deleted state is skipped rather than followed:
+                // the editor can leave one behind, and an out-of-range index here
+                // would index the state array in CAnimator.
+                if (!graph.IsValidState(t.toState))
+                    continue;
 
-            if (!ConditionsSatisfied(graph, t, params))
-                continue;
+                if (!ExitTimeReached(t, normalizedTime))
+                    continue;
 
-            // FIRST SATISFIED WINS: consume and return, so exactly one transition
-            // fires and at most one trigger is spent per frame.
-            ConsumeMatchedTriggers(t, params);
-            return { true, t.toState, t.duration };
+                if (!ConditionsSatisfied(graph, t, params))
+                    continue;
+
+                // FIRST SATISFIED WINS: consume and return, so exactly one
+                // transition fires and at most one trigger is spent per frame.
+                ConsumeMatchedTriggers(t, params);
+                return { true, t.toState, t.duration };
+            }
         }
 
         return {};

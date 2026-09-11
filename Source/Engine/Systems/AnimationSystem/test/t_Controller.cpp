@@ -352,3 +352,134 @@ TEST(Controller, AnEmptyGraphFiresNothing)
 
     EXPECT_FALSE(anim::EvaluateController(g, 0, 0.0f, params).fired);
 }
+
+// ---------------------------------------------------------------------------
+// Any State
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    // Idle(0) -> Run(1) unconditional, plus Attack(2) reachable from Any State on
+    // a trigger. This is the demo's shape in miniature.
+    anim::ControllerGraph GraphWithAnyState()
+    {
+        anim::ControllerGraph g = TwoStateGraph();
+
+        anim::ControllerState attack;
+        attack.name = "Attack";
+        attack.clipIndex = 2;
+        g.states.push_back(attack);
+
+        anim::ControllerTransition anyToAttack;
+        anyToAttack.fromState = anim::ControllerGraph::c_anyState;
+        anyToAttack.toState = 2;
+        anyToAttack.duration = 0.1f;
+
+        anim::ControllerCondition trigger;
+        trigger.parameter = "attack";
+        trigger.comparator = anim::ConditionComparator::TriggerSet;
+        anyToAttack.conditions.push_back(trigger);
+
+        g.transitions.push_back(anyToAttack);
+        return g;
+    }
+}
+
+TEST(Controller, AnyStateFiresFromAnySourceState)
+{
+    anim::ControllerGraph g = GraphWithAnyState();
+
+    for (const int from : { 0, 1 })
+    {
+        anim::AnimParameters params;
+        params.SetTrigger("attack");
+
+        const anim::TransitionResult r = anim::EvaluateController(g, from, 0.0f, params);
+
+        EXPECT_TRUE(r.fired) << "from state " << from;
+        EXPECT_EQ(2, r.toState) << "from state " << from;
+        EXPECT_FLOAT_EQ(0.1f, r.duration);
+    }
+}
+
+TEST(Controller, AnyStateBeatsTheCurrentStatesOwnTransitions)
+{
+    anim::ControllerGraph g = GraphWithAnyState();
+
+    // Idle -> Run is unconditional and is listed FIRST in the vector. Any State
+    // must still win, or "attack interrupts everything" would depend on the order
+    // the editor happened to create links in.
+    anim::AnimParameters params;
+    params.SetTrigger("attack");
+
+    EXPECT_EQ(2, anim::EvaluateController(g, 0, 0.0f, params).toState);
+}
+
+TEST(Controller, AnyStateDoesNotReEnterTheCurrentState)
+{
+    anim::ControllerGraph g = GraphWithAnyState();
+
+    anim::AnimParameters params;
+    params.SetTrigger("attack");
+
+    // Already in Attack. Re-entering would restart the clip every frame the
+    // trigger is set -- the classic "attack stutters while the button is held".
+    EXPECT_FALSE(anim::EvaluateController(g, 2, 0.0f, params).fired);
+
+    // And the trigger is untouched, because nothing fired.
+    EXPECT_TRUE(params.IsTriggerSet("attack"));
+}
+
+TEST(Controller, AnyStateOrderIsHonouredAmongItsOwnTransitions)
+{
+    anim::ControllerGraph g = GraphWithAnyState();
+
+    anim::ControllerTransition anyToRun;
+    anyToRun.fromState = anim::ControllerGraph::c_anyState;
+    anyToRun.toState = 1;
+    g.transitions.push_back(anyToRun);   // unconditional, listed after anyToAttack
+
+    anim::AnimParameters params;
+    params.SetTrigger("attack");
+    EXPECT_EQ(2, anim::EvaluateController(g, 0, 0.0f, params).toState);
+
+    std::swap(g.transitions[1], g.transitions[2]);
+    EXPECT_EQ(1, anim::EvaluateController(g, 0, 0.0f, params).toState);
+}
+
+TEST(Controller, AnyStateRespectsExitTimeOnTheCurrentState)
+{
+    anim::ControllerGraph g = GraphWithAnyState();
+    g.transitions[1].hasExitTime = true;   // the Any State -> Attack transition
+    g.transitions[1].exitTime = 0.5f;
+
+    anim::AnimParameters params;
+    params.SetTrigger("attack");
+
+    // Exit time on an Any State transition measures the CURRENT state's progress,
+    // since that is the only clip playing.
+    EXPECT_FALSE(anim::EvaluateController(g, 1, 0.2f, params).fired);
+    EXPECT_TRUE (anim::EvaluateController(g, 1, 0.7f, params).fired);
+}
+
+TEST(Controller, AnUnusableAnyStateTransitionDoesNotBlockTheCurrentStatesOwn)
+{
+    // Both reasons an Any State transition can be passed over -- it targets the
+    // state already current, and it targets a state that was deleted -- must SKIP
+    // rather than end the Any State pass. Otherwise one stale link in the editor
+    // silently disables every transition authored below it, including the current
+    // state's own, which reads as "the graph stopped working".
+    anim::ControllerGraph g = GraphWithAnyState();
+
+    anim::ControllerTransition anyToNowhere;
+    anyToNowhere.fromState = anim::ControllerGraph::c_anyState;
+    anyToNowhere.toState = 47;                  // a state the editor deleted
+    g.transitions.insert(g.transitions.begin(), anyToNowhere);
+
+    anim::AnimParameters params;   // no trigger, so Any State -> Attack is unsatisfied
+
+    // Idle's own unconditional Idle -> Run must still be reached.
+    const anim::TransitionResult r = anim::EvaluateController(g, 0, 0.0f, params);
+    EXPECT_TRUE(r.fired);
+    EXPECT_EQ(1, r.toState);
+}
