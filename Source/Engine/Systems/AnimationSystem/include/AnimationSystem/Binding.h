@@ -36,8 +36,10 @@ namespace nous::engine::animation_system
     [[nodiscard]] AnimationBinding CreateBinding(const AnimClipData& clip, uint32_t clipUID,
                                                  const SkeletonData& skeleton, uint32_t skeletonUID);
 
-    // Keyed on (clip UID, skeleton UID). ModuleAnimation owns one; it lives neither
-    // in CAnimator nor in the resource, for two reasons that pull the same way:
+    // Keyed on (clip UID, skeleton UID). Nothing owns one yet -- CAnimator holds its
+    // own bindings inline, and a shared cache is one of the two triggers that would
+    // earn an animation module. It belongs neither in CAnimator nor in the resource,
+    // for two reasons that pull the same way:
     // twenty skeletons playing one walk cycle share a single binding, and the
     // resource layer has no business knowing which skeletons it might be paired
     // with. Invalidate on resource reload, which starts mattering once FBX

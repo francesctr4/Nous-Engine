@@ -13,7 +13,8 @@ namespace nous::engine::animation_system
     // One playing clip. CAnimator holds two (current + next) and cross-fades them.
     //
     // Neither pointer is owned: `clip` is storage inside a ResourceAnimation and
-    // `binding` is an entry in ModuleAnimation's BindingCache. Both outlive the
+    // `binding` is owned by whoever drives the instance -- today CAnimator's own
+    // m_binding member, a shared BindingCache entry once one exists. Both outlive the
     // instance under the normal lifetimes -- but a resource reload invalidates
     // both, which is exactly why the cache exposes InvalidateAnimation().
     struct AnimInstance

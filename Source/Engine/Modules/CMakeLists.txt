@@ -56,7 +56,6 @@ add_subdirectory(ModuleAudio)
 add_subdirectory(ModuleVideo)
 add_subdirectory(ModuleUI)
 add_subdirectory(ModuleAI)
-add_subdirectory(ModuleAnimation)
 add_subdirectory(ModulePhysics)
 add_subdirectory(ModuleParticles)
 add_subdirectory(ModuleScene)
@@ -82,7 +81,6 @@ target_link_libraries(Modules INTERFACE
         ModuleVideo
         ModuleUI
         ModuleAI
-        ModuleAnimation
         ModulePhysics
         ModuleParticles
         ModuleScene

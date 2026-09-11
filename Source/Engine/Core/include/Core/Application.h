@@ -20,7 +20,6 @@ class ModuleAudio;
 class ModuleVideo;
 class ModuleUI;
 class ModuleAI;
-class ModuleAnimation;
 class ModulePhysics;
 class ModuleParticles;
 class ModuleScene;
@@ -64,7 +63,6 @@ public:
 	NOUS_ENGINE_API ModuleVideo*                          GetVideo()           const;
 	NOUS_ENGINE_API ModuleUI*                             GetUI()              const;
 	NOUS_ENGINE_API ModuleAI*							  GetAI()              const;
-	NOUS_ENGINE_API ModuleAnimation*					  GetAnimation()       const;
 	NOUS_ENGINE_API ModulePhysics*						  GetPhysics()         const;
 	NOUS_ENGINE_API ModuleParticles*					  GetParticles()       const;
     NOUS_ENGINE_API ModuleScene*                          GetScene()           const;
@@ -88,7 +86,6 @@ private:
 	ModuleVideo*           video;
 	ModuleUI*			   ui;
 	ModuleAI*			   ai;
-	ModuleAnimation*	   animation;
 	ModulePhysics*		   physics;
 	ModuleParticles*	   particles;
 	ModuleScene*           scene;

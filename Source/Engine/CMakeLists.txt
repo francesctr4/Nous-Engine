@@ -78,7 +78,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         ModuleAudio_headers
         ModuleUI_headers
         ModuleAI_headers
-        ModuleAnimation_headers
         ModulePhysics_headers
         ModuleParticles_headers
         ModuleCamera3D_headers

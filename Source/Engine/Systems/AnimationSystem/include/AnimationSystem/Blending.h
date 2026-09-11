@@ -14,8 +14,8 @@ namespace nous::engine::animation_system
     // confident garbage -- the spec asks for an assert here, and this library
     // cannot assert without taking a dependency on Logger/Asserts and forfeiting
     // the zero-dependency property that makes it testable. A checked bool that
-    // callers must consume ([[nodiscard]]) buys the same protection; ModuleAnimation
-    // is where the engine-side NOUS_ASSERT on the return value belongs.
+    // callers must consume ([[nodiscard]]) buys the same protection; the engine-side
+    // caller (CAnimator) is where a NOUS_ASSERT on the return value belongs.
     //
     // `out` may alias neither a nor b.
     [[nodiscard]] bool Blend(const Pose& a, const Pose& b, float weight, Pose& out);

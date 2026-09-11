@@ -16,7 +16,8 @@ set(CLASS_NAME "AnimationSystem")
 # The layers above compose these types rather than inherit engine knowledge into
 # them: ResourceSkeleton will hold a SkeletonData by value, ResourceAnimation an
 # AnimClipData. If a future change here wants Logger or ResourceManager, that is
-# the signal the code belongs in ModuleAnimation or an importer instead.
+# the signal the code belongs in CAnimator, an importer, or a future animation
+# module instead.
 #
 # No NOUS_ENGINE_API markers: nothing in Source/Editor or Source/Game names these
 # types today. Add them (and only them) if the editor ever needs a pose directly.

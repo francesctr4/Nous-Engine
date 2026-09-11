@@ -96,7 +96,6 @@ CONVERTED = {
     "ModuleAudio":        "Engine/Modules/ModuleAudio/include",
     "ModuleUI":           "Engine/Modules/ModuleUI/include",
     "ModuleAI":           "Engine/Modules/ModuleAI/include",
-    "ModuleAnimation":    "Engine/Modules/ModuleAnimation/include",
     "ModulePhysics":      "Engine/Modules/ModulePhysics/include",
     "ModuleParticles":    "Engine/Modules/ModuleParticles/include",
     "ModuleCamera3D":     "Engine/Modules/ModuleCamera3D/include",

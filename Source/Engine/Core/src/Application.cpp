@@ -13,7 +13,6 @@
 #include <ModuleVideo/ModuleVideo.h>
 #include <ModuleUI/ModuleUI.h>
 #include <ModuleAI/ModuleAI.h>
-#include <ModuleAnimation/ModuleAnimation.h>
 #include <ModulePhysics/ModulePhysics.h>
 #include <ModuleParticles/ModuleParticles.h>
 #include <ModuleScene/ModuleScene.h>
@@ -118,9 +117,6 @@ Application::Application(const bool isGameMode)
         eventSystem, jobSystem));
 
     listModules.push_back(ai              = NOUS_NEW<ModuleAI>(MemoryTag::APPLICATION,
-        eventSystem, jobSystem));
-
-    listModules.push_back(animation       = NOUS_NEW<ModuleAnimation>(MemoryTag::APPLICATION,
         eventSystem, jobSystem));
 
     listModules.push_back(physics         = NOUS_NEW<ModulePhysics>(MemoryTag::APPLICATION,
@@ -622,7 +618,6 @@ ModuleAudio*            Application::GetAudio()             const { return audio
 ModuleVideo*            Application::GetVideo()             const { return video; }
 ModuleUI*			    Application::GetUI()                const { return ui; }
 ModuleAI*			    Application::GetAI()                const { return ai; }
-ModuleAnimation*	    Application::GetAnimation()         const { return animation; }
 ModulePhysics*		    Application::GetPhysics()           const { return physics; }
 ModuleParticles*	    Application::GetParticles()         const { return particles; }
 ModuleScene*            Application::GetScene()             const { return scene; }
