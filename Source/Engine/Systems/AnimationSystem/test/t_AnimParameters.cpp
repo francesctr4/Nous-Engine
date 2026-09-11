@@ -138,7 +138,7 @@ TEST(t_AnimParameters, ParametersAreIndependent)
     EXPECT_TRUE(p.GetBool("isGrounded"));
     EXPECT_TRUE(p.IsTriggerSet("jump"));
 
-    p.ConsumeTrigger("jump");
+    EXPECT_TRUE(p.ConsumeTrigger("jump"));
     EXPECT_FLOAT_EQ(p.GetFloat("speed"), 4.0f);   // untouched by the consume
     EXPECT_TRUE(p.GetBool("isGrounded"));
 }

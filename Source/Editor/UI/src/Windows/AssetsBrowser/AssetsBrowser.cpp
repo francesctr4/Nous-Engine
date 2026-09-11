@@ -3,8 +3,8 @@
 #include <EditorUI/TextEditorWindow.h>
 
 #include <algorithm>
-#include <cstdio>
 #include <format>
+#include <fstream>
 #include <cmath>
 #include <chrono>
 
@@ -861,10 +861,12 @@ void AssetsBrowser::DrawContent()
                     "    \"texture_maps\": []\n"
                     "}\n";
 
-                if (std::FILE* f = std::fopen(matPath.c_str(), "w"))
+                std::ofstream matFile(matPath);
+                matFile << defaultContent;
+                matFile.close();
+
+                if (matFile)
                 {
-                    std::fputs(defaultContent, f);
-                    std::fclose(f);
                     editorContext->GetResourceManager()->ImportFile(matPath);
                     NOUS_INFO("Created material: %s", matPath.c_str());
                     AddItemsFromDirectory(current_directory);
@@ -914,10 +916,12 @@ void AssetsBrowser::DrawContent()
             {
                 const std::string shaderPath = current_directory + "/" + shader_name_buffer + ".glsl";
 
-                if (std::FILE* f = std::fopen(shaderPath.c_str(), "w"))
+                std::ofstream shaderFile(shaderPath);
+                shaderFile << TextEditorWindow::k_DefaultShaderSource;
+                shaderFile.close();
+
+                if (shaderFile)
                 {
-                    std::fputs(TextEditorWindow::k_DefaultShaderSource, f);
-                    std::fclose(f);
                     editorContext->GetResourceManager()->ImportFile(shaderPath);
                     editorContext->WatchShaderFile(shaderPath);
                     NOUS_INFO("Created shader: %s", shaderPath.c_str());

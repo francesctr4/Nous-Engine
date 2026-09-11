@@ -132,7 +132,7 @@ TEST(ResourceQueue, PushAcceptsAResourceAgainAfterTakeAll)
     ResourceBase a;
 
     queue.Push(ResourceType::MESH, &a);
-    queue.TakeAll();
+    EXPECT_EQ(queue.TakeAll().size(), 1u);
     queue.Push(ResourceType::MESH, &a);
 
     EXPECT_EQ(queue.Size(), 1u);

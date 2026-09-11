@@ -15,6 +15,7 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <initializer_list>
@@ -428,8 +429,7 @@ void AudioGraphEditor::DrawNewAssetPopup()
     if (m_showNewAssetPopup)
     {
         ImGui::OpenPopup("New Audio Graph");
-        std::strncpy(m_newAssetName, "NewAudioGraph", sizeof(m_newAssetName) - 1);
-        m_newAssetName[sizeof(m_newAssetName) - 1] = '\0';
+        std::snprintf(m_newAssetName, sizeof(m_newAssetName), "%s", "NewAudioGraph");
         m_showNewAssetPopup = false;
     }
 

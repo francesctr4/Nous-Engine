@@ -12,6 +12,7 @@
 
 #include "imgui.h"
 
+#include <cstdio>
 #include <filesystem>
 #include <string>
 #include <format>
@@ -294,8 +295,7 @@ void HierarchyWindow::HandleGameObjectNodeContextMenu(GameObject obj)
     if (ImGui::MenuItem("Save As Prefab"))
     {
         m_prefabSaveTarget = obj;
-        strncpy(m_prefabNameBuffer, obj.GetName().c_str(), sizeof(m_prefabNameBuffer) - 1);
-        m_prefabNameBuffer[sizeof(m_prefabNameBuffer) - 1] = '\0';
+        std::snprintf(m_prefabNameBuffer, sizeof(m_prefabNameBuffer), "%s", obj.GetName().c_str());
         m_showSaveAsPrefabPopup = true;
     }
 
