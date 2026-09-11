@@ -17,6 +17,7 @@
 #include <ResourceManager/Types/ResourceAudioGraph/ImporterAudioGraph.h>
 #include <ResourceManager/Types/ResourceSkeleton/ImporterSkeleton.h>
 #include <ResourceManager/Types/ResourceAnimation/ImporterAnimation.h>
+#include <ResourceManager/Types/ResourceAnimationController/ImporterAnimationController.h>
 
 // Resources
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
@@ -28,6 +29,7 @@
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
+#include <ResourceManager/Types/ResourceAnimationController/ResourceAnimationController.h>
 
 namespace
 {
@@ -46,11 +48,17 @@ namespace
     // AudioGraph owns no peer-resource pointers (effects are self-contained), so
     // its cleanup priority is inert; ordered after scene for readability.
     constexpr int k_PrioAudioGraph = 7;
+    // The controller is the first ANIMATION-family type whose priority is NOT
+    // inert: it holds ResourceAnimation*, so it must be torn down BEFORE the clips
+    // it points at -- the same relationship material has with texture. Hence a
+    // lower number than k_PrioAnimation, and an evictAtShutdown that nulls the
+    // pointers inline.
+    constexpr int k_PrioAnimController = 8;
     // Skeletons and clips own no peer-resource pointers -- a clip binds to a
     // skeleton by NAME at runtime, never through a stored pointer -- so these
-    // priorities are inert too, ordered after audio graph for readability.
-    constexpr int k_PrioSkeleton   = 8;
-    constexpr int k_PrioAnimation  = 9;
+    // priorities are inert, ordered after the controller for readability.
+    constexpr int k_PrioSkeleton   = 9;
+    constexpr int k_PrioAnimation  = 10;
 }
 
 void RegisterResourceTypes(TypeRegistry& registry)
@@ -253,6 +261,38 @@ void RegisterResourceTypes(TypeRegistry& registry)
         d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceAnimation>(MemoryTag::RESOURCE_ANIMATION, uid); };
         d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_ANIMATION); };
         d.display.color[0] = 0.95f; d.display.color[1] = 0.40f; d.display.color[2] = 0.35f; d.display.color[3] = 1.0f;
+        registry.Register(std::move(d));
+    }
+
+    // ---------- ANIMATION CONTROLLER ----------
+    //
+    // Authored JSON in both halves: .nctrl is small, parsed once at load, and has
+    // no per-frame parse cost, so there is no binary format and no magic to bump.
+    // The Library copy is NOT the source verbatim -- it carries each state's clip
+    // uid and library path, because an exported game ships no Assets/.
+    {
+        TypeDescriptor d;
+        d.type = ResourceType::ANIMATION_CONTROLLER;
+        d.name = "Animation Controller";
+        d.libraryFolder = "Library/AnimationControllers/";
+        d.libraryFixedExtension = "nctrl";
+        d.sourceExtensions = { "nctrl" };
+        d.libExtPolicy = LibraryExtPolicy::FIXED;
+        d.memoryTag = MemoryTag::RESOURCE_ANIM_CONTROLLER;
+        d.cleanupPriority = k_PrioAnimController;
+        d.SetImporter<ImporterAnimationController>();
+        d.createFn = [](uint32_t uid) -> ResourceBase* { return NOUS_NEW<ResourceAnimationController>(MemoryTag::RESOURCE_ANIM_CONTROLLER, uid); };
+        d.destroyFn = [](ResourceBase* r) { NOUS_DELETE(r, MemoryTag::RESOURCE_ANIM_CONTROLLER); };
+        d.hotReloadable = true;
+        // Clip refs are still alive at this point (higher priority, destroyed
+        // later); null them inline rather than routing through Evict, which would
+        // recurse via UnloadResource into the half-torn-down resource manager.
+        d.evictAtShutdown = [](ResourceBase* r)
+        {
+            for (ResourceAnimation*& clip : down_cast<ResourceAnimationController*>(r)->clips)
+                clip = nullptr;
+        };
+        d.display.color[0] = 0.55f; d.display.color[1] = 0.45f; d.display.color[2] = 0.95f; d.display.color[3] = 1.0f;
         registry.Register(std::move(d));
     }
 }

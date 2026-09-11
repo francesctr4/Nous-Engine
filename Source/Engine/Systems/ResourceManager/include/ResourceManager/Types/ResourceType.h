@@ -18,6 +18,7 @@ enum class ResourceType : int8_t
     AUDIO_GRAPH,
     SKELETON,
     ANIMATION,
+    ANIMATION_CONTROLLER,
 
     ALL_TYPES
 };

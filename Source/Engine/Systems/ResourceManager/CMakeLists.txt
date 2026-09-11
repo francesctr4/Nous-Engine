@@ -65,6 +65,9 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Types/ResourceType.h
         include/${CLASS_NAME}/Types/ResourceAnimation/ResourceAnimation.h
         include/${CLASS_NAME}/Types/ResourceAnimation/ImporterAnimation.h
+
+        include/${CLASS_NAME}/Types/ResourceAnimationController/ResourceAnimationController.h
+        include/${CLASS_NAME}/Types/ResourceAnimationController/ImporterAnimationController.h
         include/${CLASS_NAME}/Types/ResourceAudio/ResourceAudio.h
         include/${CLASS_NAME}/Types/ResourceAudioGraph/ResourceAudioGraph.h
         include/${CLASS_NAME}/Types/ResourceAudioGraph/ImporterAudioGraph.h

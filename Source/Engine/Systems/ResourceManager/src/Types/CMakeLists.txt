@@ -7,6 +7,7 @@ target_sources(ResourceManager PRIVATE
 )
 
 add_subdirectory(ResourceAnimation)
+add_subdirectory(ResourceAnimationController)
 add_subdirectory(ResourceAudio)
 add_subdirectory(ResourceAudioGraph)
 add_subdirectory(ResourceMaterial)
