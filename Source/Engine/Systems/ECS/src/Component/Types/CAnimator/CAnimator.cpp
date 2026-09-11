@@ -13,6 +13,7 @@
 #include <ResourceManager/Core/IResourceLoader.h>
 #include <ResourceManager/Core/ResourceBase.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
+#include <ResourceManager/Types/ResourceAnimationController/ResourceAnimationController.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <ResourceManager/Types/ResourceType.h>
 #include <Utils/Serialization/JsonArray.h>
@@ -72,18 +73,31 @@ float CAnimator::GetNormalizedTime() const
     return m_from.instance.time / duration;
 }
 
-bool CAnimator::Play(const std::string_view clipName, const float fadeSeconds)
+ResourceAnimation* CAnimator::ClipForState(const int stateIndex) const
 {
-    ResourceAnimation* target = nullptr;
-    for (ResourceAnimation* c : clips)
-        if (c && c->GetName() == clipName)   // RESOURCE name, not c->clip.name
-        {
-            target = c;
-            break;                            // first match wins on duplicates
-        }
+    if (!controller || !controller->graph.IsValidState(stateIndex))
+        return nullptr;
 
-    if (!target)
-        return false;
+    // clipIndex, never the state index: the two coincide today because the importer
+    // fills one clip slot per state, but clipIndex is what the pure layer carries
+    // and it is -1 for any state whose clip did not resolve.
+    const int clipIndex = controller->graph.states[stateIndex].clipIndex;
+    if (clipIndex < 0 || static_cast<size_t>(clipIndex) >= controller->clips.size())
+        return nullptr;
+
+    return controller->clips[clipIndex];
+}
+
+void CAnimator::EnterState(const int stateIndex, const float fadeSeconds)
+{
+    // The destination becomes current IMMEDIATELY -- design §4. There is only ever
+    // one current state; the outgoing side is a pose, not a state. That is what
+    // makes exit time and conditions measure the INCOMING clip from the frame it is
+    // entered, which is the only reading under which "when the attack finishes"
+    // means the attack.
+    m_currentState = stateIndex;
+
+    ResourceAnimation* target = ClipForState(stateIndex);
 
     if (fadeSeconds <= 0.0f)
     {
@@ -93,17 +107,14 @@ bool CAnimator::Play(const std::string_view clipName, const float fadeSeconds)
         RebindTrack(m_to);
         m_fadeElapsed  = 0.0f;
         m_fadeDuration = 0.0f;
-        return true;
+        return;
     }
 
     // A fade is already running: fold the CURRENT blended pose into the outgoing
     // track and fade from there. That keeps the animator at exactly two tracks under
     // arbitrary re-triggering, and it is why ClipTrack has `frozen` at all -- a
-    // frozen track is a pose with no clip advancing behind it.
-    //
-    // The alternatives were both rejected in the spec: queueing builds a backlog that
-    // plays out long after the input (reads as lag), and ignoring drops the
-    // "interrupt the walk with a hit reaction" case transitions exist for.
+    // frozen track is a pose with no clip advancing behind it. The two-track ceiling
+    // IS the interruption model, deliberately, not a limitation being worked around.
     //
     // RebindTrack clears `frozen`, so the capture must happen BEFORE rebinding the
     // target -- and m_from must never be rebound on this path, since that would
@@ -118,7 +129,27 @@ bool CAnimator::Play(const std::string_view clipName, const float fadeSeconds)
     RebindTrack(m_to);
     m_fadeElapsed  = 0.0f;
     m_fadeDuration = fadeSeconds;
+}
+
+bool CAnimator::CrossFade(const std::string_view stateName, const float fadeSeconds)
+{
+    if (!controller)
+        return false;
+
+    const int target = controller->graph.FindState(stateName);
+    if (!controller->graph.IsValidState(target))
+        return false;
+
+    EnterState(target, fadeSeconds);
     return true;
+}
+
+std::string_view CAnimator::GetCurrentStateName() const
+{
+    if (!controller || !controller->graph.IsValidState(m_currentState))
+        return {};
+
+    return controller->graph.states[m_currentState].name;
 }
 
 void CAnimator::SeedPlaybackSettings(ClipTrack& track) const
@@ -249,25 +280,50 @@ void CAnimator::ApplyRootMotion()
 
 void CAnimator::OnUpdate(const float deltaTime)
 {
-    // Play() owns which clip is current, but the authored LIST stays the source of
-    // truth: a clip the Inspector removed must stop driving the pose, and its
-    // ResourceAnimation is released the moment it leaves the list -- so a track left
-    // pointing at it would sample freed memory. Anything still in the list keeps
-    // playing, which is what makes Play() stick past the frame it was called on.
-    const auto inList = [this](const ResourceAnimation* c)
+    // The CONTROLLER is now the source of truth for what may play -- the authored
+    // clip list it replaced is gone, and with it the per-frame reseeding that
+    // policed it. A clip leaving the graph is handled one level up: the controller
+    // releases it, and the bind below repoints both tracks.
+    const uint32_t controllerUID = UIDOf(controller);
+    if (controllerUID != m_boundController)
     {
-        return c && std::find(clips.begin(), clips.end(), c) != clips.end();
-    };
+        m_boundController = controllerUID;
+        m_boundGeneration = controller ? controller->generation : 0;
 
-    if (!inList(m_from.clip))
-        m_from.clip = clips.empty() ? nullptr : clips.front();
-
-    if (!inList(m_to.clip))
-    {
-        m_to.clip      = nullptr;
+        // A new graph invalidates any in-flight transition: the outgoing frozen pose
+        // belongs to a state that may not exist in this graph at all.
         m_fadeElapsed  = 0.0f;
         m_fadeDuration = 0.0f;
+        m_to.clip      = nullptr;
+        m_from.frozen  = false;
+
+        m_currentState = controller ? controller->graph.defaultState : -1;
+
+        // defaultState may not resolve -- a renamed or deleted state, or an asset
+        // that never named one. Falling back to the first state keeps the character
+        // animating and lets the editor report the problem, rather than presenting a
+        // bind-pose statue that looks like a broken rig.
+        if (controller && !controller->graph.IsValidState(m_currentState)
+                       && !controller->graph.states.empty())
+            m_currentState = 0;
+
+        m_from.clip = ClipForState(m_currentState);
+        RebindTrack(m_from);
+        RebindTrack(m_to);
     }
+
+    // When no transition is in flight, m_from IS the current state's clip -- RE-DERIVED
+    // every frame rather than remembered. This is what replaces the authored-list
+    // reseeding the clip vector needed, and it self-heals every path that can change
+    // what a state points at: the editor rebinding a state's clip, a clip that
+    // resolved after the controller did, a state whose clip was cleared. None of
+    // those change the controller's UID, so nothing else here would notice them.
+    //
+    // Only when NOT fading: mid-fade m_from is the OUTGOING pose and m_currentState
+    // is already the destination (design §4), so re-deriving there would overwrite
+    // the very thing the fade is blending away from.
+    if (m_fadeDuration <= 0.0f)
+        m_from.clip = ClipForState(m_currentState);
 
     // Rebind on a UID mismatch rather than on an explicit call. Integer comparisons,
     // and they cover every path that can change a slot -- Inspector drop, Inspector
@@ -420,19 +476,15 @@ JsonObject CAnimator::Serialize() const
         root.Set("skeletonUID",         static_cast<double>(skeleton->GetUID()));
     }
 
-    JsonArray clipArr;
-    for (const ResourceAnimation* c : clips)
+    // One slot, in the same three-field shape as the skeleton. The clip list that
+    // used to live here belongs to the controller's states now, so a scene carries
+    // no clip references of its own at all.
+    root.Set("controllerAssetPath", controller ? controller->GetAssetsPath() : "");
+    if (controller)
     {
-        if (!c)
-            continue;
-
-        JsonObject entry;
-        entry.Set("assetPath",   c->GetAssetsPath());
-        entry.Set("libraryPath", c->GetLibraryPath());
-        entry.Set("uid",         static_cast<double>(c->GetUID()));
-        clipArr.Append(std::move(entry));
+        root.Set("controllerLibraryPath", controller->GetLibraryPath());
+        root.Set("controllerUID",         static_cast<double>(controller->GetUID()));
     }
-    root.Set("clips", std::move(clipArr));
 
     // No "speed"/"loop" here -- they moved to ResourceAnimation::settings, which the
     // .nanim stub and the library binary carry. A scene that predates the move loses
@@ -453,12 +505,11 @@ void CAnimator::OnDestroy()
     if (skeleton && skeleton->IsLoaded())
         rm->UnloadResource(skeleton->GetUID());
 
-    // Every clip, not just the playing one: AddComponent fires OnDestroy on the
-    // component it REPLACES, which PrefabManager does to a prefab root on every
-    // migration -- so releasing one would leak a reference per extra clip per load.
-    for (const ResourceAnimation* c : clips)
-        if (c && c->IsLoaded())
-            rm->UnloadResource(c->GetUID());
+    // The controller only. Its OWN clip references are released by
+    // ImporterAnimationController::Evict when the controller itself evicts -- this
+    // component never acquired them and must not give back what it does not hold.
+    if (controller && controller->IsLoaded())
+        rm->UnloadResource(controller->GetUID());
 }
 
 void CAnimator::Deserialize(const JsonObject& obj)
@@ -498,30 +549,16 @@ void CAnimator::Deserialize(const JsonObject& obj)
                                   ResourceType::SKELETON))
         skeleton = down_cast<ResourceSkeleton*>(r);
 
-    clips.clear();
+    if (ResourceBase* r = resolve(obj.GetString("controllerAssetPath"),
+                                  obj.GetString("controllerLibraryPath"),
+                                  static_cast<uint32_t>(obj.GetDouble("controllerUID", 0.0)),
+                                  ResourceType::ANIMATION_CONTROLLER))
+        controller = down_cast<ResourceAnimationController*>(r);
 
-    JsonArray clipArr = obj.GetArray("clips");
-    for (int i = 0; i < clipArr.Count(); ++i)
-    {
-        const JsonObject entry = clipArr.GetObject(i);
-        if (ResourceBase* r = resolve(entry.GetString("assetPath"),
-                                      entry.GetString("libraryPath"),
-                                      static_cast<uint32_t>(entry.GetDouble("uid", 0.0)),
-                                      ResourceType::ANIMATION))
-            clips.push_back(down_cast<ResourceAnimation*>(r));
-    }
-
-    // LEGACY, one deliberate compatibility path: a scene saved before MVP-E carries a
-    // single "clipAssetPath". The no-versioning rule is about Library/, a derived
-    // cache that regenerates; scenes are authored data that does not, and silently
-    // emptying every animator in them is not an acceptable cost. Delete once the
-    // project's scenes have been re-saved.
-    if (clips.empty())
-    {
-        if (ResourceBase* r = resolve(obj.GetString("clipAssetPath"),
-                                      obj.GetString("clipLibraryPath"),
-                                      static_cast<uint32_t>(obj.GetDouble("clipUID", 0.0)),
-                                      ResourceType::ANIMATION))
-            clips.push_back(down_cast<ResourceAnimation*>(r));
-    }
+    // MVP-E's "clips" array and the pre-MVP-E "clipAssetPath" fallback are both GONE
+    // rather than migrated. That compatibility path existed to carry a per-animator
+    // clip list forward, and there is no longer any such list to carry it into: the
+    // clips belong to a controller asset that the scene cannot invent. An animator in
+    // an older scene loads with no controller and plays nothing until one is assigned,
+    // which is the honest outcome and is visible immediately.
 }

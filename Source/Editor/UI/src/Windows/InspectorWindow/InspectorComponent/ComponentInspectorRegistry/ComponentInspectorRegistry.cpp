@@ -39,6 +39,7 @@
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <ResourceManager/Types/ResourceAnimation/ImporterAnimation.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
+#include <ResourceManager/Types/ResourceAnimationController/ResourceAnimationController.h>
 #include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <VideoSystem/AudioExtract/AudioExtract.h>
@@ -636,92 +637,31 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
         }
     }
 
-    // Clip list — each row is a .nanim drop target plus the button that plays it.
+    // Controller slot. MVP-F Task 11 adds the derived state -> clip readout beneath
+    // it, the per-state Play buttons and the runtime state line; for now this is the
+    // one control that makes an animator playable at all.
+    //
+    // The per-clip Loop/Speed editors that used to live here go with it -- they
+    // belong on the derived state rows, since a clip is now reached through a state.
     ImGui::Spacing();
-    ImGui::TextDisabled("Clips");
+    ImGui::TextDisabled("Controller");
 
-    int removeIndex = -1;
-    for (int i = 0; i < static_cast<int>(cAnimator->clips.size()); ++i)
+    std::string controllerLabel = cAnimator->controller
+                                      ? cAnimator->controller->GetName()
+                                      : std::string("None");
+    controllerLabel += "##animControllerSlot";
+    ImGui::Button(controllerLabel.c_str(), ImVec2(200.0f, 0.0f));
+    if (const std::string dropped = acceptDrop(".nctrl"); !dropped.empty())
     {
-        ImGui::PushID(i);
-
-        ResourceAnimation* c = cAnimator->clips[i];
-
-        // Play is the ONLY transition trigger in this MVP -- there are no script
-        // bindings yet -- so this button is how the feature gets used at all.
-        if (ImGui::Button("Play", ImVec2(50.0f, 0.0f)) && c)
-            cAnimator->Play(c->GetName(), cAnimator->fadeSeconds);
-
-        ImGui::SameLine();
-        std::string clipLabel = c ? c->GetName() : std::string("None");
-        clipLabel += "##animClipSlot";
-        ImGui::Button(clipLabel.c_str(), ImVec2(200.0f, 0.0f));
-        if (const std::string dropped = acceptDrop(".nanim"); !dropped.empty())
+        if (ResourceBase* r = rm->CreateResource(dropped))
         {
-            if (ResourceBase* r = rm->CreateResource(dropped))
-            {
-                if (c)
-                    rm->UnloadResource(c->GetUID());
-                cAnimator->clips[i] = down_cast<ResourceAnimation*>(r);
-            }
+            // Acquire, then release what the slot held -- the same order the
+            // importer's clip slots follow, for the same reason.
+            if (cAnimator->controller)
+                rm->UnloadResource(cAnimator->controller->GetUID());
+            cAnimator->controller = down_cast<ResourceAnimationController*>(r);
         }
-
-        ImGui::SameLine();
-        if (ImGui::Button("X", ImVec2(24.0f, 0.0f)))
-            removeIndex = i;
-
-        // Loop and Speed are properties of the CLIP, not of the animator: an idle
-        // that must loop and an attack that must not routinely sit in this same
-        // list. Editing writes through to the .nanim stub AND the library binary,
-        // so the value survives both a scene reload and a Library/ nuke -- which is
-        // why these are the only Inspector controls here that touch disk.
-        if (c)
-        {
-            ImGui::Indent();
-
-            bool  clipLoop  = c->settings.loop;
-            float clipSpeed = c->settings.speed;
-            bool  commit    = false;
-
-            if (ImGui::Checkbox("Loop", &clipLoop))
-            {
-                c->settings.loop = clipLoop;
-                commit = true;
-            }
-
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(120.0f);
-
-            // The in-memory value follows the drag frame by frame, so the preview is
-            // live -- CAnimator reseeds both tracks from their clips every OnUpdate.
-            // The DISK write waits for the mouse to be released: DragFloat reports an
-            // edit on every frame it is held, and SaveSettings rewrites two files.
-            if (ImGui::DragFloat("Speed", &clipSpeed, 0.01f, -4.0f, 4.0f, "%.2f"))
-                c->settings.speed = clipSpeed;
-
-            if (ImGui::IsItemDeactivatedAfterEdit())
-                commit = true;
-
-            if (commit)
-                ImporterAnimation::SaveSettings(*c);
-
-            ImGui::Unindent();
-        }
-
-        ImGui::PopID();
     }
-
-    // Erased outside the loop: erasing mid-iteration invalidates the index the drop
-    // target above still holds.
-    if (removeIndex >= 0)
-    {
-        if (ResourceAnimation* c = cAnimator->clips[removeIndex])
-            rm->UnloadResource(c->GetUID());
-        cAnimator->clips.erase(cAnimator->clips.begin() + removeIndex);
-    }
-
-    if (ImGui::Button("Add Clip Slot"))
-        cAnimator->clips.push_back(nullptr);
 
     ImGui::Spacing();
     ImGui::DragFloat("Fade (s)", &cAnimator->fadeSeconds, 0.01f, 0.0f, 5.0f, "%.2f");

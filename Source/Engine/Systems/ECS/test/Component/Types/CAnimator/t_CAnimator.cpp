@@ -6,6 +6,7 @@
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
+#include <ResourceManager/Types/ResourceAnimationController/ResourceAnimationController.h>
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
 #include <Utils/Serialization/JsonArray.h>
@@ -25,6 +26,34 @@ using nous::engine::animation_system::Transform;
 
 namespace
 {
+    // The MVP-F stand-in for the deleted CAnimator::clips: a controller holding one
+    // state per clip, each state named after its clip's RESOURCE name and defaulting
+    // to the first. That naming is what lets every pre-MVP-F CrossFade("B", ...) in
+    // this file keep meaning what it meant.
+    //
+    // The controller's UID must be NON-ZERO for the animator to bind it: CAnimator
+    // compares UIDOf(controller) against m_boundController, which starts at 0, so a
+    // uid-0 controller reads as "same as nothing" and is never picked up. Real
+    // resources always carry one; only a hand-built test controller can trip this.
+    void SetClips(ResourceAnimationController& controller,
+                  std::initializer_list<ResourceAnimation*> clips)
+    {
+        controller.graph = {};
+        controller.clips.clear();
+
+        for (ResourceAnimation* clip : clips)
+        {
+            nous::engine::animation_system::ControllerState state;
+            state.name      = clip ? clip->GetName() : std::string();
+            state.clipIndex = static_cast<int>(controller.clips.size());
+
+            controller.graph.states.push_back(std::move(state));
+            controller.clips.push_back(clip);
+        }
+
+        controller.graph.defaultState = controller.graph.states.empty() ? -1 : 0;
+    }
+
     // Two bones: "Root" (index 0, no parent) and "Child" (index 1, parent 0).
     //
     // Bind locals are identity, so a bone the clip does not drive stays at the
@@ -172,7 +201,9 @@ TEST_F(t_CAnimator, BindsAndSamplesTheDrivenBone)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(901);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
 
     a.OnUpdate(0.5f);
 
@@ -191,13 +222,15 @@ TEST_F(t_CAnimator, RebindsWhenTheClipSlotChanges)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA };
+    ResourceAnimationController aCtrl(902);
+    SetClips(aCtrl, { &animA });
+    a.controller = &aCtrl;
     a.OnUpdate(0.5f);
     ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
 
     // Clip B drives Root instead of Child. A stale binding would keep moving
     // Child and leave Root at the origin -- the exact inverse of the assertions.
-    a.clips = { &animB };
+    SetClips(aCtrl, { &animB });
     a.OnUpdate(0.5f);
 
     EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[0]), 5.0f);   // Root moved
@@ -216,7 +249,9 @@ TEST_F(t_CAnimator, RebindsWhenTheSkeletonSlotChanges)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rigA;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(903);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.OnUpdate(0.5f);
     ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
 
@@ -256,11 +291,13 @@ TEST_F(t_CAnimator, ClearingASlotClearsThePose)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(904);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.OnUpdate(0.5f);
     ASSERT_FALSE(a.GetBoneGlobals().empty());
 
-    a.clips.clear();
+    SetClips(aCtrl, {});
     a.OnUpdate(0.5f);
 
     EXPECT_FALSE(a.IsBound());
@@ -282,6 +319,11 @@ TEST_F(t_CAnimator, SurvivesPoolRelocation)
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
     ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
 
+    // ONE controller for all 256, which is also the real-world shape: a controller
+    // asset is shared between every character that uses it, exactly as a clip is.
+    ResourceAnimationController aCtrl(905);
+    SetClips(aCtrl, { &anim });
+
     std::vector<GameObject> objects;
     objects.reserve(256);
 
@@ -289,8 +331,8 @@ TEST_F(t_CAnimator, SurvivesPoolRelocation)
     {
         GameObject go = scene->CreateGameObject("Rig");
         auto& a = go.AddComponent<CAnimator>();   // grows and relocates the pool
-        a.skeleton = &rig;
-        a.clips    = { &anim };
+        a.skeleton   = &rig;
+        a.controller = &aCtrl;
         objects.push_back(go);
     }
 
@@ -324,7 +366,9 @@ TEST_F(t_CAnimator, BindPosePaletteIsIdentity)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(906);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
 
     a.OnUpdate(0.5f);
 
@@ -344,7 +388,9 @@ TEST_F(t_CAnimator, DrivenBoneLeavesIdentityInThePalette)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(907);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
 
     a.OnUpdate(0.5f);
 
@@ -364,11 +410,13 @@ TEST_F(t_CAnimator, ClearingASlotEmptiesThePalette)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(908);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.OnUpdate(0.5f);
     ASSERT_FALSE(a.GetPalette().empty());
 
-    a.clips.clear();
+    SetClips(aCtrl, {});
     a.OnUpdate(0.5f);
 
     EXPECT_TRUE(a.GetPalette().empty());
@@ -394,13 +442,18 @@ TEST_F(t_CAnimator, OnDestroyReleasesBothSlots)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(909);
+    aCtrl.SetState(ResourceState::CPU_READY);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
 
     a.OnDestroy();
 
+    // The two slots the COMPONENT holds: skeleton and controller. The clip belongs
+    // to the controller -- see OnDestroyReleasesTheSkeletonAndControllerButNotTheClips.
     ASSERT_EQ(fakes.resources.unloaded.size(), 2u);
     EXPECT_EQ(fakes.resources.unloaded[0], 1u);
-    EXPECT_EQ(fakes.resources.unloaded[1], 2u);
+    EXPECT_EQ(fakes.resources.unloaded[1], 909u);
 }
 
 // A slot the user never filled was never acquired, so releasing it would drive a
@@ -443,20 +496,23 @@ TEST_F(t_CAnimator, ReAddingTheComponentReleasesTheReplacedSlots)
     GameObject go = scene->CreateGameObject("Rig");
     auto& first = go.AddComponent<CAnimator>();
     first.skeleton = &rig;
-    first.clips    = { &anim };
+    ResourceAnimationController firstCtrl(910);
+    firstCtrl.SetState(ResourceState::CPU_READY);
+    SetClips(firstCtrl, { &anim });
+    first.controller = &firstCtrl;
 
     go.AddComponent<CAnimator>();   // the prefab-refresh path
 
     ASSERT_EQ(fakes.resources.unloaded.size(), 2u);
     EXPECT_EQ(fakes.resources.unloaded[0], 1u);
-    EXPECT_EQ(fakes.resources.unloaded[1], 2u);
+    EXPECT_EQ(fakes.resources.unloaded[1], 910u);
 }
 
 // =============================================================================
-// The clip list
+// The controller slot
 // =============================================================================
 
-TEST_F(t_CAnimator, PlaysTheFirstClipInTheList)
+TEST_F(t_CAnimator, PlaysTheDefaultStateOnBind)
 {
     ResourceSkeleton  rig(1);    MakeTwoBoneRig(rig);
     ResourceAnimation animA(2);  MakeSlideClip(animA, "Child");
@@ -465,7 +521,9 @@ TEST_F(t_CAnimator, PlaysTheFirstClipInTheList)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(911);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
 
     a.OnUpdate(0.5f);
 
@@ -474,7 +532,7 @@ TEST_F(t_CAnimator, PlaysTheFirstClipInTheList)
     EXPECT_EQ(a.CurrentClip(), &animA);
 }
 
-TEST_F(t_CAnimator, AnEmptyClipListIsInert)
+TEST_F(t_CAnimator, AControllerWithNoStatesIsInert)
 {
     ResourceSkeleton rig(1);  MakeTwoBoneRig(rig);
 
@@ -493,7 +551,7 @@ TEST_F(t_CAnimator, AnEmptyClipListIsInert)
 // Serialization of the list
 // =============================================================================
 
-TEST_F(t_CAnimator, SerializeRoundTripsEveryClipPath)
+TEST_F(t_CAnimator, SerializeWritesTheControllerSlot)
 {
     ResourceSkeleton  rig(1);    MakeTwoBoneRig(rig);
     ResourceAnimation animA(2);  MakeSlideClip(animA, "Child");
@@ -504,40 +562,53 @@ TEST_F(t_CAnimator, SerializeRoundTripsEveryClipPath)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(912);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
+
+    aCtrl.SetAssetsPath("Assets/Locomotion.nctrl");
+    aCtrl.SetLibraryPath("Library/AnimationControllers/912.nctrl");
 
     const JsonObject json = a.Serialize();
-    JsonArray        arr  = json.GetArray("clips");
 
-    ASSERT_EQ(arr.Count(), 2);
-    EXPECT_EQ(arr.GetObject(0).GetString("assetPath"), "Assets/A.nanim");
-    EXPECT_EQ(arr.GetObject(1).GetString("assetPath"), "Assets/B.nanim");
+    // ONE slot, in the skeleton's three-field shape. The clip array is gone: a scene
+    // carries no clip references of its own any more, because the clips belong to
+    // the controller's states.
+    EXPECT_EQ(json.GetString("controllerAssetPath"), "Assets/Locomotion.nctrl");
+    EXPECT_EQ(json.GetString("controllerLibraryPath"), "Library/AnimationControllers/912.nctrl");
+    EXPECT_EQ(static_cast<uint32_t>(json.GetDouble("controllerUID", 0.0)), 912u);
+
+    EXPECT_EQ(json.GetArray("clips").Count(), 0);
 }
 
-// A scene saved before MVP-E carries a single "clipAssetPath" key. Emptying every
-// animator in every existing scene is not an acceptable cost, so that key still
-// loads -- as a one-element list. Delete this path once the scenes are re-saved.
-TEST_F(t_CAnimator, DeserializeReadsTheLegacySingleClipKey)
+// MVP-E's "clips" array and the pre-MVP-E "clipAssetPath" key are both GONE rather
+// than migrated, which is a deliberate break with the usual "scenes are authored
+// data" rule. There is no longer a per-animator clip list for either to load INTO:
+// the clips belong to a controller asset the scene cannot invent. An animator in an
+// older scene loads with no controller and plays nothing until one is assigned.
+TEST_F(t_CAnimator, DeserializeIgnoresTheRetiredClipKeysInsteadOfFailing)
 {
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
 
     JsonObject legacy;
     legacy.Set("clipAssetPath", std::string("Assets/Old.nanim"));
+    legacy.Set("fadeSeconds", 0.75f);
 
     a.Deserialize(legacy);
 
-    // The headless fixture has no resource loader, so nothing resolves -- what this
-    // pins is that the legacy key is still READ, which a missing branch would skip
-    // silently. The resolved-pointer case is covered in-engine.
-    EXPECT_TRUE(a.clips.empty() || a.clips.size() == 1u);
+    EXPECT_EQ(a.controller, nullptr);
+
+    // The rest of the component still loads -- an old scene degrades to "no
+    // controller", not to a component that failed to deserialize at all.
+    EXPECT_FLOAT_EQ(a.fadeSeconds, 0.75f);
 }
 
 // =============================================================================
 // Reference release
 // =============================================================================
 
-TEST_F(t_CAnimator, OnDestroyReleasesEveryClipInTheList)
+TEST_F(t_CAnimator, OnDestroyReleasesTheSkeletonAndControllerButNotTheClips)
 {
     ResourceSkeleton  rig(1);    MakeTwoBoneRig(rig);
     ResourceAnimation animA(2);  MakeSlideClip(animA, "Child");
@@ -549,24 +620,39 @@ TEST_F(t_CAnimator, OnDestroyReleasesEveryClipInTheList)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(913);
+    aCtrl.SetState(ResourceState::CPU_READY);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
 
     a.OnDestroy();
 
-    // Skeleton + both clips. Releasing only the first is the leak shape this pins:
-    // AddComponent fires OnDestroy on the component it replaces, which
-    // PrefabManager does to a prefab root on every migration.
-    ASSERT_EQ(fakes.resources.unloaded.size(), 3u);
-    EXPECT_EQ(fakes.resources.unloaded[0], 1u);
-    EXPECT_EQ(fakes.resources.unloaded[1], 2u);
-    EXPECT_EQ(fakes.resources.unloaded[2], 3u);
+    // The two slots this component actually acquired, and ONLY those. The clips are
+    // the CONTROLLER's references, taken by ImporterAnimationController::Deserialize
+    // and given back by its Evict -- releasing them here would be giving back
+    // something this component never took, which double-frees them once the
+    // controller evicts too.
+    //
+    // The symmetry that matters: a component releases exactly what it acquired.
+    // AddComponent fires OnDestroy on the component it REPLACES (PrefabManager does
+    // that to a prefab root on every scene load), so both an over-release and an
+    // under-release here compound once per load.
+    ASSERT_EQ(fakes.resources.unloaded.size(), 2u);
+    EXPECT_EQ(fakes.resources.unloaded[0], 1u);     // skeleton
+    EXPECT_EQ(fakes.resources.unloaded[1], 913u);   // controller
+
+    for (const uint32_t uid : fakes.resources.unloaded)
+    {
+        EXPECT_NE(uid, 2u) << "released a clip the controller owns";
+        EXPECT_NE(uid, 3u) << "released a clip the controller owns";
+    }
 }
 
 // =============================================================================
-// Play + cross-fade
+// CrossFade
 // =============================================================================
 
-TEST_F(t_CAnimator, PlayReturnsFalseForAnUnknownClipName)
+TEST_F(t_CAnimator, CrossFadeReturnsFalseForAnUnknownStateName)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
     ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);
@@ -575,15 +661,17 @@ TEST_F(t_CAnimator, PlayReturnsFalseForAnUnknownClipName)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA };
+    ResourceAnimationController aCtrl(914);
+    SetClips(aCtrl, { &animA });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
-    EXPECT_FALSE(a.Play("NoSuchClip", 0.5f));
+    EXPECT_FALSE(a.CrossFade("NoSuchClip", 0.5f));
     EXPECT_FALSE(a.IsFading());
     EXPECT_EQ(a.CurrentClip(), &animA);
 }
 
-TEST_F(t_CAnimator, PlayWithZeroFadeSnaps)
+TEST_F(t_CAnimator, CrossFadeWithZeroFadeSnaps)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
     ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
@@ -592,10 +680,12 @@ TEST_F(t_CAnimator, PlayWithZeroFadeSnaps)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(915);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
-    ASSERT_TRUE(a.Play("B", 0.0f));
+    ASSERT_TRUE(a.CrossFade("B", 0.0f));
     a.OnUpdate(0.0f);
 
     EXPECT_FALSE(a.IsFading());
@@ -614,11 +704,13 @@ TEST_F(t_CAnimator, MidFadePoseLiesBetweenTheTwoClips)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(916);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
     ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 0.0f);
 
-    ASSERT_TRUE(a.Play("B", 1.0f));
+    ASSERT_TRUE(a.CrossFade("B", 1.0f));
     a.OnUpdate(0.5f);
 
     EXPECT_TRUE(a.IsFading());
@@ -634,10 +726,12 @@ TEST_F(t_CAnimator, FadeCompletionMakesTheTargetCurrent)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(917);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
-    ASSERT_TRUE(a.Play("B", 1.0f));
+    ASSERT_TRUE(a.CrossFade("B", 1.0f));
     a.OnUpdate(0.5f);
     a.OnUpdate(0.5f);   // weight reaches 1
 
@@ -658,10 +752,12 @@ TEST_F(t_CAnimator, ThePaletteIsNeverEmptyDuringAFade)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(918);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
-    ASSERT_TRUE(a.Play("B", 1.0f));
+    ASSERT_TRUE(a.CrossFade("B", 1.0f));
     for (int i = 0; i < 10; ++i)
     {
         a.OnUpdate(0.1f);
@@ -672,7 +768,7 @@ TEST_F(t_CAnimator, ThePaletteIsNeverEmptyDuringAFade)
 // Lookup is by RESOURCE name, never AnimClipData::name -- every Mixamo export names
 // its clip "mixamo.com", so matching that would make every animation in a project
 // answer to one string. Both clips here share a clip name and differ by resource name.
-TEST_F(t_CAnimator, PlayMatchesTheResourceNameNotTheClipName)
+TEST_F(t_CAnimator, CrossFadeMatchesTheStateNameNotTheClipName)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
     ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);
@@ -686,14 +782,16 @@ TEST_F(t_CAnimator, PlayMatchesTheResourceNameNotTheClipName)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(919);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
-    ASSERT_TRUE(a.Play("Run", 0.0f));
+    ASSERT_TRUE(a.CrossFade("Run", 0.0f));
     a.OnUpdate(0.0f);
     EXPECT_EQ(a.CurrentClip(), &animB);
 
-    ASSERT_TRUE(a.Play("Idle", 0.0f));
+    ASSERT_TRUE(a.CrossFade("Idle", 0.0f));
     a.OnUpdate(0.0f);
     EXPECT_EQ(a.CurrentClip(), &animA);
 }
@@ -716,14 +814,16 @@ TEST_F(t_CAnimator, ReTriggerMidFadeBlendsFromThePartialPose)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB, &animC };
+    ResourceAnimationController aCtrl(920);
+    SetClips(aCtrl, { &animA, &animB, &animC });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
-    ASSERT_TRUE(a.Play("B", 1.0f));
+    ASSERT_TRUE(a.CrossFade("B", 1.0f));
     a.OnUpdate(0.5f);
     ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
 
-    ASSERT_TRUE(a.Play("C", 1.0f));
+    ASSERT_TRUE(a.CrossFade("C", 1.0f));
     a.OnUpdate(0.5f);
 
     EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 12.5f);
@@ -740,12 +840,14 @@ TEST_F(t_CAnimator, RepeatedReTriggerStaysBoundedAndFinishes)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(921);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
     for (int i = 0; i < 50; ++i)
     {
-        a.Play("B", 0.1f);
+        a.CrossFade("B", 0.1f);
         a.OnUpdate(0.05f);
         EXPECT_FALSE(a.GetPalette().empty());
     }
@@ -769,10 +871,12 @@ TEST_F(t_CAnimator, SwappingTheSkeletonMidFadeCancelsTheFade)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rigA;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(922);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
-    ASSERT_TRUE(a.Play("B", 1.0f));
+    ASSERT_TRUE(a.CrossFade("B", 1.0f));
     a.OnUpdate(0.5f);
     ASSERT_TRUE(a.IsFading());
 
@@ -792,6 +896,9 @@ TEST_F(t_CAnimator, FadingAnimatorsSurvivePoolRelocation)
     ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
     ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("B");
 
+    ResourceAnimationController aCtrl(923);
+    SetClips(aCtrl, { &animA, &animB });
+
     std::vector<GameObject> objects;
     objects.reserve(256);
 
@@ -799,8 +906,8 @@ TEST_F(t_CAnimator, FadingAnimatorsSurvivePoolRelocation)
     {
         GameObject go = scene->CreateGameObject("Rig");
         auto& a = go.AddComponent<CAnimator>();   // grows and relocates the pool
-        a.skeleton = &rig;
-        a.clips    = { &animA, &animB };
+        a.skeleton   = &rig;
+        a.controller = &aCtrl;
         objects.push_back(go);
     }
 
@@ -810,7 +917,7 @@ TEST_F(t_CAnimator, FadingAnimatorsSurvivePoolRelocation)
     {
         auto& a = go.GetComponent<CAnimator>();
         a.OnUpdate(0.0f);
-        ASSERT_TRUE(a.Play("B", 1.0f));
+        ASSERT_TRUE(a.CrossFade("B", 1.0f));
     }
 
     for (GameObject& go : objects)
@@ -846,7 +953,9 @@ TEST_F(t_CAnimator, NormalizedTimeTracksTheClip)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(924);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
 
     a.OnUpdate(0.25f);
     EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.25f);
@@ -868,10 +977,12 @@ TEST_F(t_CAnimator, NormalizedTimeFollowsTheOutgoingClipDuringAFade)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &animA, &animB };
+    ResourceAnimationController aCtrl(925);
+    SetClips(aCtrl, { &animA, &animB });
+    a.controller = &aCtrl;
 
     a.OnUpdate(0.4f);                    // A is 0.4 into its 1-second clip
-    ASSERT_TRUE(a.Play("B", 1.0f));
+    ASSERT_TRUE(a.CrossFade("B", 1.0f));
     a.OnUpdate(0.2f);                    // both advance by 0.2
 
     ASSERT_TRUE(a.IsFading());
@@ -926,7 +1037,9 @@ TEST_F(t_CAnimator, RootMotionDefaultsToBakedAndDoesNotMoveTheObject)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(926);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
 
     ASSERT_EQ(a.rootMotion, RootMotionMode::Baked);
 
@@ -946,7 +1059,9 @@ TEST_F(t_CAnimator, AppliedMovesTheObjectAndTakesTheTravelOutOfThePose)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton   = &rig;
-    a.clips      = { &anim };
+    ResourceAnimationController aCtrl(927);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.rootMotion = RootMotionMode::Applied;
 
     a.OnUpdate(0.5f);
@@ -964,7 +1079,9 @@ TEST_F(t_CAnimator, InPlaceStripsTheTravelAndLeavesTheObjectAlone)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton   = &rig;
-    a.clips      = { &anim };
+    ResourceAnimationController aCtrl(928);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.rootMotion = RootMotionMode::InPlace;
 
     a.OnUpdate(0.5f);
@@ -985,7 +1102,9 @@ TEST_F(t_CAnimator, TheObjectScaleMultipliesTheDelta)
 
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton   = &rig;
-    a.clips      = { &anim };
+    ResourceAnimationController aCtrl(929);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.rootMotion = RootMotionMode::Applied;
 
     a.OnUpdate(0.5f);
@@ -1009,7 +1128,9 @@ TEST_F(t_CAnimator, TheObjectOrientationRotatesTheDelta)
 
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton   = &rig;
-    a.clips      = { &anim };
+    ResourceAnimationController aCtrl(930);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.rootMotion = RootMotionMode::Applied;
 
     a.OnUpdate(0.5f);
@@ -1047,7 +1168,9 @@ TEST_F(t_CAnimator, AppliedMovesTheTurnFromThePoseToTheTransform)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton   = &rig;
-    a.clips      = { &anim };
+    ResourceAnimationController aCtrl(931);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.rootMotion = RootMotionMode::Applied;
 
     a.OnUpdate(0.5f);   // 45 degrees in
@@ -1071,7 +1194,9 @@ TEST_F(t_CAnimator, InPlaceKeepsTheTurnInThePose)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton   = &rig;
-    a.clips      = { &anim };
+    ResourceAnimationController aCtrl(932);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.rootMotion = RootMotionMode::InPlace;
 
     a.OnUpdate(0.5f);
@@ -1102,14 +1227,16 @@ TEST_F(t_CAnimator, TwoClipsWithDifferentLoopSettingsInOneAnimator)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &once, &cycle };
+    ResourceAnimationController aCtrl(933);
+    SetClips(aCtrl, { &once, &cycle });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);                 // binds the front clip, "Once"
 
     // 1.5s into a 1s slide. Not looping, so it clamps at the end.
     a.OnUpdate(1.5f);
     EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 10.0f);
 
-    ASSERT_TRUE(a.Play("Cycle", 0.0f));
+    ASSERT_TRUE(a.CrossFade("Cycle", 0.0f));
 
     // The same 1.5s against the looping clip wraps to 0.5s -- halfway along.
     a.OnUpdate(1.5f);
@@ -1125,7 +1252,9 @@ TEST_F(t_CAnimator, PerClipSpeedScalesHowFarTheClipAdvances)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &fast };
+    ResourceAnimationController aCtrl(934);
+    SetClips(aCtrl, { &fast });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
     a.OnUpdate(0.25f);   // 0.25s x 2 = 0.5s into a 1s slide
@@ -1143,7 +1272,9 @@ TEST_F(t_CAnimator, EditingAClipsSettingsReachesThePlayingInstance)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton = &rig;
-    a.clips    = { &anim };
+    ResourceAnimationController aCtrl(935);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.OnUpdate(0.0f);
 
     anim.settings.loop = false;
@@ -1165,7 +1296,9 @@ TEST_F(t_CAnimator, SpeedMultiplierScalesTheClipsAuthoredSpeed)
     GameObject go = scene->CreateGameObject("Rig");
     auto& a = go.AddComponent<CAnimator>();
     a.skeleton        = &rig;
-    a.clips           = { &anim };
+    ResourceAnimationController aCtrl(936);
+    SetClips(aCtrl, { &anim });
+    a.controller = &aCtrl;
     a.speedMultiplier = 0.5f;
     a.OnUpdate(0.0f);
 
@@ -1201,13 +1334,17 @@ TEST_F(t_CAnimator, TwoAnimatorsSharingAClipRetimeIndependently)
     GameObject slowGo = scene->CreateGameObject("Slow");
     auto& slow = slowGo.AddComponent<CAnimator>();
     slow.skeleton        = &rig;
-    slow.clips           = { &anim };
+    ResourceAnimationController slowCtrl(937);
+    SetClips(slowCtrl, { &anim });
+    slow.controller = &slowCtrl;
     slow.speedMultiplier = 0.5f;
 
     GameObject fastGo = scene->CreateGameObject("Fast");
     auto& fast = fastGo.AddComponent<CAnimator>();
     fast.skeleton = &rig;
-    fast.clips    = { &anim };
+    ResourceAnimationController fastCtrl(938);
+    SetClips(fastCtrl, { &anim });
+    fast.controller = &fastCtrl;
 
     slow.OnUpdate(0.0f);  slow.OnUpdate(0.5f);   // 0.25s in
     fast.OnUpdate(0.0f);  fast.OnUpdate(0.5f);   // 0.50s in

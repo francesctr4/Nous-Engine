@@ -16,6 +16,7 @@
 
 class ResourceSkeleton;
 class ResourceAnimation;
+class ResourceAnimationController;
 
 /**
  * @brief What happens to the travel baked into a clip's root bone.
@@ -66,10 +67,14 @@ public:
 
     ResourceSkeleton* skeleton = nullptr;   // .nskel -- the rig
 
-    // The clips this animator can play, authored in the Inspector. Index 0 is what
-    // plays until something calls Play(). Lookup is by RESOURCE name, never
-    // AnimClipData::name -- every Mixamo export calls its clip "mixamo.com".
-    std::vector<ResourceAnimation*> clips;
+    // The state machine. A character is `skeleton + controller` and nothing else;
+    // the clips live on the controller's states, not here.
+    //
+    // AN ANIMATOR WITH NO CONTROLLER PLAYS NOTHING, as Unity's does. There is
+    // deliberately no "just play the first clip" fallback -- it would make a missing
+    // controller look like a working animator with the wrong animation, which is
+    // harder to diagnose than a character standing still in bind pose.
+    ResourceAnimationController* controller = nullptr;
 
     // The AUTHORED `loop` and `speed` are PER CLIP and live on
     // ResourceAnimation::settings, not here. An animator holding an idle that must
@@ -154,18 +159,26 @@ public:
     // it becomes the incoming one when the fade completes. Null when nothing is bound.
     [[nodiscard]] NOUS_ENGINE_API const ResourceAnimation* CurrentClip() const;
 
-    // Cross-fades to the clip in `clips` whose RESOURCE name matches, over
-    // fadeSeconds. Returns false and changes nothing when no clip matches.
+    // Cross-fades to the named STATE of the controller's graph over fadeSeconds.
+    // Returns false and changes nothing when there is no controller or no state has
+    // that name.
     //
-    // ARBITRATION, decided with the scripting API and to be honoured by the
-    // controller graph (MVP-F): the graph evaluates every frame; a direct Play wins
-    // for that frame and re-enters the graph at the named state. There is never a
-    // frame with two writers. With no graph, Play behaves exactly as below.
+    // ARBITRATION (design §7): the graph evaluates every frame; a direct CrossFade
+    // WINS for that frame and re-enters the graph at the named state. There is never
+    // a frame with two writers. The suppression half of that rule arrives with graph
+    // evaluation itself in Task 7.
     //
     // fadeSeconds <= 0 snaps. Calling this while a fade is already running folds the
     // in-flight blend into the outgoing pose and starts a new fade from it, so the
     // animator never holds more than two tracks no matter how often this is called.
-    NOUS_ENGINE_API bool Play(std::string_view clipName, float fadeSeconds);
+    NOUS_ENGINE_API bool CrossFade(std::string_view stateName, float fadeSeconds);
+
+    // The graph's current state, or empty when there is no controller or the current
+    // state does not resolve. Used by the Inspector readout, the controller editor's
+    // active-state highlight, and the script API.
+    //
+    // NOT null-terminated -- it views the state's own name. Copy by length.
+    [[nodiscard]] NOUS_ENGINE_API std::string_view GetCurrentStateName() const;
 
     [[nodiscard]] NOUS_ENGINE_API bool IsFading() const { return m_fadeDuration > 0.0f; }
 
@@ -227,9 +240,29 @@ private:
     // the instance alone -- it has nothing to sample anyway.
     void SeedPlaybackSettings(ClipTrack& track) const;
 
+    // The ResourceAnimation a controller state plays, or null when there is no
+    // controller, the index does not resolve, or that state has no clip assigned.
+    [[nodiscard]] ResourceAnimation* ClipForState(int stateIndex) const;
+
+    // Makes `stateIndex` current and starts the fade into its clip. THE ONLY WRITER
+    // of m_currentState besides the controller bind -- CrossFade and (from Task 7)
+    // the graph both go through here, or the two paths drift.
+    void EnterState(int stateIndex, float fadeSeconds);
+
+    // ---- ONE LAYER'S RUNTIME ----
+    //
+    // These six are the complete state of one animation layer. Layers are out of
+    // scope, and the only thing keeping them cheap to add later is that this block
+    // can be wrapped in a struct MECHANICALLY rather than untangled -- a layer is
+    // one more instance of the same evaluator plus one more copy of exactly this.
+    // Keep them together and do not interleave unrelated members.
+    int                                  m_currentState = -1;
     ClipTrack                            m_from;
     ClipTrack                            m_to;
     nous::engine::animation_system::Pose m_blended;
+    float                                m_fadeElapsed  = 0.0f;
+    float                                m_fadeDuration = 0.0f;   // 0 == not fading
+    // ---- end layer runtime ----
 
     std::vector<glm::mat4> m_globals;
     std::vector<glm::mat4> m_palette;
@@ -237,8 +270,12 @@ private:
     // UID the tracks' bindings were built against, same compare-every-frame rule.
     uint32_t m_boundSkeleton = 0;
 
-    float m_fadeElapsed  = 0.0f;
-    float m_fadeDuration = 0.0f;   // 0 == not fading
+    // UID and generation the graph was last bound against. Compared every frame --
+    // the same compare-do-not-remember rule the skeleton slot uses, so every path
+    // that can swap a controller (Inspector drop, Deserialize, the resource going
+    // away, an editor re-save) is covered with no "remember to call Bind()" contract.
+    uint32_t m_boundController = 0;
+    uint32_t m_boundGeneration = 0;
 
     nous::engine::animation_system::RootMotionDelta m_rootDelta;
 

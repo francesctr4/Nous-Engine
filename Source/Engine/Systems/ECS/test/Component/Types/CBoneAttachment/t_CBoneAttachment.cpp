@@ -8,15 +8,43 @@
 #include <FakeComponentServices.h>
 #include <MemoryManager/MemoryManager.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
+#include <ResourceManager/Types/ResourceAnimationController/ResourceAnimationController.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 
 #include <glm/glm.hpp>
+
+#include <initializer_list>
+#include <string>
+#include <utility>
 
 using nous::engine::animation_system::AnimChannel;
 using nous::engine::animation_system::Transform;
 
 namespace
 {
+    // A controller holding one state per clip, named after the clip's resource name.
+    // These tests care only that the animator PLAYS something, so the graph is the
+    // thinnest thing that makes a clip reachable. The UID must be non-zero or the
+    // animator never binds it -- see the fuller note in t_CAnimator.cpp.
+    void SetClips(ResourceAnimationController& controller,
+                  std::initializer_list<ResourceAnimation*> clips)
+    {
+        controller.graph = {};
+        controller.clips.clear();
+
+        for (ResourceAnimation* clip : clips)
+        {
+            nous::engine::animation_system::ControllerState state;
+            state.name      = clip ? clip->GetName() : std::string();
+            state.clipIndex = static_cast<int>(controller.clips.size());
+
+            controller.graph.states.push_back(std::move(state));
+            controller.clips.push_back(clip);
+        }
+
+        controller.graph.defaultState = controller.graph.states.empty() ? -1 : 0;
+    }
+
     // Two bones: "Root" (index 0, no parent) and "Child" (index 1, parent 0).
     // Bind locals are identity, so any translation appearing in the globals
     // demonstrably came from the clip and not from the bind pose.
@@ -130,7 +158,9 @@ TEST_F(t_CBoneAttachment, ComposesParentWorldWithTheBoneGlobal)
     character.GetComponent<CTransform>().SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clips    = { &anim };
+    ResourceAnimationController animatorCtrl(901);
+    SetClips(animatorCtrl, { &anim });
+    animator.controller = &animatorCtrl;
     animator.OnUpdate(0.5f);          // bone "Child" is now at x = 5
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
@@ -153,7 +183,9 @@ TEST_F(t_CBoneAttachment, WalksPastIntermediateAncestorsToTheAnimator)
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clips    = { &anim };
+    ResourceAnimationController animatorCtrl(902);
+    SetClips(animatorCtrl, { &anim });
+    animator.controller = &animatorCtrl;
     animator.OnUpdate(0.5f);
 
     GameObject group = scene->CreateGameObject("Equipment", &character);
@@ -189,7 +221,9 @@ TEST_F(t_CBoneAttachment, UnknownBoneNameYieldsThePlainParentWorld)
     character.GetComponent<CTransform>().SetPosition(glm::vec3(7.0f, 0.0f, 0.0f));
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clips    = { &anim };
+    ResourceAnimationController animatorCtrl(903);
+    SetClips(animatorCtrl, { &anim });
+    animator.controller = &animatorCtrl;
     animator.OnUpdate(0.5f);
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
@@ -229,7 +263,9 @@ TEST_F(t_CBoneAttachment, EmptyBoneNameYieldsThePlainParentWorld)
     character.GetComponent<CTransform>().SetPosition(glm::vec3(7.0f, 0.0f, 0.0f));
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clips    = { &anim };
+    ResourceAnimationController animatorCtrl(904);
+    SetClips(animatorCtrl, { &anim });
+    animator.controller = &animatorCtrl;
     animator.OnUpdate(0.5f);
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
@@ -281,7 +317,9 @@ TEST_F(t_CBoneAttachment, AttachedPropFollowsTheAnimatedBone)
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clips    = { &anim };
+    ResourceAnimationController animatorCtrl(905);
+    SetClips(animatorCtrl, { &anim });
+    animator.controller = &animatorCtrl;
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";
@@ -302,7 +340,9 @@ TEST_F(t_CBoneAttachment, TheOffsetComposesOnTopOfTheBone)
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clips    = { &anim };
+    ResourceAnimationController animatorCtrl(906);
+    SetClips(animatorCtrl, { &anim });
+    animator.controller = &animatorCtrl;
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";
@@ -326,7 +366,9 @@ TEST_F(t_CBoneAttachment, GrandchildrenOfAnAttachedPropFollowIt)
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clips    = { &anim };
+    ResourceAnimationController animatorCtrl(907);
+    SetClips(animatorCtrl, { &anim });
+    animator.controller = &animatorCtrl;
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";
@@ -356,7 +398,9 @@ TEST_F(t_CBoneAttachment, AttachedPropTracksTheBoneAcrossFramesWithNoTransformCh
     GameObject character = scene->CreateGameObject("Character");
     auto& animator = character.AddComponent<CAnimator>();
     animator.skeleton = &rig;
-    animator.clips    = { &anim };
+    ResourceAnimationController animatorCtrl(908);
+    SetClips(animatorCtrl, { &anim });
+    animator.controller = &animatorCtrl;
 
     GameObject prop = scene->CreateGameObject("Sword", &character);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";
@@ -383,12 +427,16 @@ TEST_F(t_CBoneAttachment, ReparentingUnderAnotherAnimatorReResolves)
     GameObject slow = scene->CreateGameObject("Slow");
     auto& slowAnimator = slow.AddComponent<CAnimator>();
     slowAnimator.skeleton = &rig;
-    slowAnimator.clips    = { &slowAnim };
+    ResourceAnimationController slowAnimatorCtrl(909);
+    SetClips(slowAnimatorCtrl, { &slowAnim });
+    slowAnimator.controller = &slowAnimatorCtrl;
 
     GameObject fast = scene->CreateGameObject("Fast");
     auto& fastAnimator = fast.AddComponent<CAnimator>();
     fastAnimator.skeleton = &rig;
-    fastAnimator.clips    = { &fastAnim };
+    ResourceAnimationController fastAnimatorCtrl(910);
+    SetClips(fastAnimatorCtrl, { &fastAnim });
+    fastAnimator.controller = &fastAnimatorCtrl;
 
     GameObject prop = scene->CreateGameObject("Sword", &slow);
     prop.AddComponent<CBoneAttachment>().boneName = "Child";

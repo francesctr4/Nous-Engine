@@ -51,9 +51,13 @@ void SetupAnimatorBindings(AnimatorAPI& animator, IScriptSceneHost* sceneHost)
         if (CAnimator* a = GetAnimator(id); a && name) a->parameters.ResetTrigger(name);
     };
 
-    animator.Play = [](uint32_t id, const char* name, float fadeSeconds) -> bool {
-        CAnimator* a = GetAnimator(id);
-        return (a && name) ? a->Play(name, fadeSeconds) : false;
+    // MVP-F Task 10 replaces this whole slot with CrossFade(stateName, fade). It is
+    // inert for exactly one task: CAnimator::Play is gone with the clip list it
+    // searched, and CrossFade does not exist until Task 7. Returning false is the
+    // honest answer in the meantime -- a script asking for a clip by name cannot be
+    // served by a graph addressed by state name.
+    animator.Play = [](uint32_t, const char*, float) -> bool {
+        return false;
     };
 
     animator.IsFading = [](uint32_t id) -> bool {
