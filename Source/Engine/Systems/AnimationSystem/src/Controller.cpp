@@ -2,6 +2,31 @@
 
 #include <AnimationSystem/AnimParameters.h>
 
+namespace
+{
+    using namespace nous::engine::animation_system;
+
+    // Eats the triggers this transition matched. Called ONLY once a transition has
+    // been chosen -- which is the whole reason ConditionsSatisfied is pure. A
+    // trigger named by three transitions must not be spent by whichever was checked
+    // first, and one blocked on exit time must not spend it either.
+    void ConsumeMatchedTriggers(const ControllerTransition& transition,
+                                AnimParameters&             params)
+    {
+        for (const ControllerCondition& c : transition.conditions)
+            if (c.comparator == ConditionComparator::TriggerSet)
+                (void)params.ConsumeTrigger(c.parameter);
+    }
+
+    bool ExitTimeReached(const ControllerTransition& transition, const float normalizedTime)
+    {
+        if (!transition.hasExitTime)
+            return true;   // no threshold means nothing to wait for
+
+        return normalizedTime >= transition.exitTime;
+    }
+}
+
 namespace nous::engine::animation_system
 {
     int ControllerGraph::FindState(const std::string_view name) const
@@ -49,5 +74,39 @@ namespace nous::engine::animation_system
         }
 
         return true;   // an empty list is satisfied
+    }
+
+    TransitionResult EvaluateController(const ControllerGraph& graph,
+                                        const int              currentState,
+                                        const float            normalizedTime,
+                                        AnimParameters&        params)
+    {
+        if (!graph.IsValidState(currentState))
+            return {};
+
+        for (const ControllerTransition& t : graph.transitions)
+        {
+            if (t.fromState != currentState)
+                continue;
+
+            // A transition into a deleted state is skipped rather than followed:
+            // the editor can leave one behind, and an out-of-range index here
+            // would index the state array in CAnimator.
+            if (!graph.IsValidState(t.toState))
+                continue;
+
+            if (!ExitTimeReached(t, normalizedTime))
+                continue;
+
+            if (!ConditionsSatisfied(graph, t, params))
+                continue;
+
+            // FIRST SATISFIED WINS: consume and return, so exactly one transition
+            // fires and at most one trigger is spent per frame.
+            ConsumeMatchedTriggers(t, params);
+            return { true, t.toState, t.duration };
+        }
+
+        return {};
     }
 }

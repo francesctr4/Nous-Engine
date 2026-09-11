@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <utility>
 
 namespace anim = nous::engine::animation_system;
 
@@ -147,4 +148,207 @@ TEST(Controller, FindStateMatchesByNameAndReportsMissesAsMinusOne)
     EXPECT_FALSE(g.IsValidState(-1));
     EXPECT_FALSE(g.IsValidState(2));
     EXPECT_FALSE(g.IsValidState(anim::ControllerGraph::c_anyState));
+}
+
+// ---------------------------------------------------------------------------
+// EvaluateController -- the firing rule
+// ---------------------------------------------------------------------------
+
+TEST(Controller, AnUnconditionalTransitionFiresImmediately)
+{
+    anim::ControllerGraph g = TwoStateGraph();   // no conditions, no exit time
+    anim::AnimParameters params;
+
+    const anim::TransitionResult r = anim::EvaluateController(g, 0, 0.0f, params);
+
+    EXPECT_TRUE(r.fired);
+    EXPECT_EQ(1, r.toState);
+    EXPECT_FLOAT_EQ(0.2f, r.duration);
+}
+
+TEST(Controller, ExitTimeAloneFiresOnlyPastTheThreshold)
+{
+    anim::ControllerGraph g = TwoStateGraph();
+    g.transitions[0].hasExitTime = true;
+    g.transitions[0].exitTime = 0.8f;
+
+    anim::AnimParameters params;
+
+    EXPECT_FALSE(anim::EvaluateController(g, 0, 0.50f, params).fired);
+    EXPECT_TRUE (anim::EvaluateController(g, 0, 0.80f, params).fired);
+    EXPECT_TRUE (anim::EvaluateController(g, 0, 0.95f, params).fired);
+}
+
+TEST(Controller, ExitTimeAndConditionsMustBothHold)
+{
+    anim::ControllerGraph g = TwoStateGraph();
+    g.transitions[0].hasExitTime = true;
+    g.transitions[0].exitTime = 0.8f;
+    g.transitions[0].conditions.push_back(FloatGreater("speed", 0.1f));
+
+    anim::AnimParameters params;
+    params.SetFloat("speed", 0.0f);
+
+    // Past the threshold but the condition is false.
+    EXPECT_FALSE(anim::EvaluateController(g, 0, 0.9f, params).fired);
+
+    params.SetFloat("speed", 0.5f);
+
+    // Condition true but not yet past the threshold.
+    EXPECT_FALSE(anim::EvaluateController(g, 0, 0.5f, params).fired);
+
+    EXPECT_TRUE(anim::EvaluateController(g, 0, 0.9f, params).fired);
+}
+
+TEST(Controller, FiringConsumesTheTriggerItMatched)
+{
+    anim::ControllerGraph g = TwoStateGraph();
+
+    anim::ControllerCondition attack;
+    attack.parameter = "attack";
+    attack.comparator = anim::ConditionComparator::TriggerSet;
+    g.transitions[0].conditions.push_back(attack);
+
+    anim::AnimParameters params;
+    params.SetTrigger("attack");
+
+    EXPECT_TRUE(anim::EvaluateController(g, 0, 0.0f, params).fired);
+    EXPECT_FALSE(params.IsTriggerSet("attack"));
+
+    // And so the same transition does not fire again on the next frame.
+    EXPECT_FALSE(anim::EvaluateController(g, 0, 0.0f, params).fired);
+}
+
+TEST(Controller, ATransitionThatDoesNotFireLeavesItsTriggerSet)
+{
+    anim::ControllerGraph g = TwoStateGraph();
+
+    // Two conditions: the trigger is set, the float is not satisfied, so this
+    // transition must NOT fire and must NOT eat the trigger.
+    anim::ControllerCondition attack;
+    attack.parameter = "attack";
+    attack.comparator = anim::ConditionComparator::TriggerSet;
+    g.transitions[0].conditions.push_back(attack);
+    g.transitions[0].conditions.push_back(FloatGreater("speed", 10.0f));
+
+    anim::AnimParameters params;
+    params.SetTrigger("attack");
+    params.SetFloat("speed", 0.0f);
+
+    EXPECT_FALSE(anim::EvaluateController(g, 0, 0.0f, params).fired);
+    EXPECT_TRUE(params.IsTriggerSet("attack"));
+}
+
+TEST(Controller, ExitTimeBlockingATransitionDoesNotEatItsTrigger)
+{
+    // The exit-time gate runs BEFORE the conditions, but the trigger must survive
+    // either ordering. A trigger eaten by a transition that was blocked on timing
+    // would be a press the player made and the game silently dropped.
+    anim::ControllerGraph g = TwoStateGraph();
+    g.transitions[0].hasExitTime = true;
+    g.transitions[0].exitTime = 0.8f;
+
+    anim::ControllerCondition attack;
+    attack.parameter = "attack";
+    attack.comparator = anim::ConditionComparator::TriggerSet;
+    g.transitions[0].conditions.push_back(attack);
+
+    anim::AnimParameters params;
+    params.SetTrigger("attack");
+
+    EXPECT_FALSE(anim::EvaluateController(g, 0, 0.1f, params).fired);
+    EXPECT_TRUE(params.IsTriggerSet("attack"));
+
+    // Still there to be spent once the threshold is reached.
+    EXPECT_TRUE(anim::EvaluateController(g, 0, 0.9f, params).fired);
+    EXPECT_FALSE(params.IsTriggerSet("attack"));
+}
+
+TEST(Controller, FirstSatisfiedWinsAndReorderingChangesTheWinner)
+{
+    anim::ControllerGraph g = TwoStateGraph();
+
+    anim::ControllerState attack;
+    attack.name = "Attack";
+    attack.clipIndex = 2;
+    g.states.push_back(attack);   // index 2
+
+    anim::ControllerTransition toAttack;
+    toAttack.fromState = 0;
+    toAttack.toState = 2;
+    g.transitions.push_back(toAttack);   // both unconditional, Run listed first
+
+    anim::AnimParameters params;
+    EXPECT_EQ(1, anim::EvaluateController(g, 0, 0.0f, params).toState);
+
+    std::swap(g.transitions[0], g.transitions[1]);
+    EXPECT_EQ(2, anim::EvaluateController(g, 0, 0.0f, params).toState);
+}
+
+TEST(Controller, OnlyOneTriggerIsConsumedPerFrame)
+{
+    // Two satisfied transitions, each on its own trigger. Evaluation STOPS at the
+    // first fire, so the second trigger is still pending for the next frame --
+    // which is what keeps a queued input from being silently swallowed by a
+    // transition that never ran.
+    anim::ControllerGraph g = TwoStateGraph();
+
+    anim::ControllerState attack;
+    attack.name = "Attack";
+    attack.clipIndex = 2;
+    g.states.push_back(attack);
+
+    anim::ControllerCondition first;
+    first.parameter = "toRun";
+    first.comparator = anim::ConditionComparator::TriggerSet;
+    g.transitions[0].conditions.push_back(first);
+
+    anim::ControllerTransition toAttack;
+    toAttack.fromState = 0;
+    toAttack.toState = 2;
+    anim::ControllerCondition second;
+    second.parameter = "toAttack";
+    second.comparator = anim::ConditionComparator::TriggerSet;
+    toAttack.conditions.push_back(second);
+    g.transitions.push_back(toAttack);
+
+    anim::AnimParameters params;
+    params.SetTrigger("toRun");
+    params.SetTrigger("toAttack");
+
+    EXPECT_EQ(1, anim::EvaluateController(g, 0, 0.0f, params).toState);
+    EXPECT_FALSE(params.IsTriggerSet("toRun"));
+    EXPECT_TRUE(params.IsTriggerSet("toAttack"));
+}
+
+TEST(Controller, TransitionsFromOtherStatesAreIgnored)
+{
+    anim::ControllerGraph g = TwoStateGraph();   // the only transition is 0 -> 1
+
+    anim::AnimParameters params;
+
+    // Current state is 1; nothing leaves it.
+    EXPECT_FALSE(anim::EvaluateController(g, 1, 0.0f, params).fired);
+}
+
+TEST(Controller, AnInvalidCurrentStateOrTargetFiresNothing)
+{
+    anim::ControllerGraph g = TwoStateGraph();
+    anim::AnimParameters params;
+
+    EXPECT_FALSE(anim::EvaluateController(g, -1, 0.0f, params).fired);
+    EXPECT_FALSE(anim::EvaluateController(g, 99, 0.0f, params).fired);
+
+    // A transition pointing at a state that was deleted must be skipped, not
+    // followed into an out-of-range index.
+    g.transitions[0].toState = 47;
+    EXPECT_FALSE(anim::EvaluateController(g, 0, 0.0f, params).fired);
+}
+
+TEST(Controller, AnEmptyGraphFiresNothing)
+{
+    const anim::ControllerGraph g;
+    anim::AnimParameters params;
+
+    EXPECT_FALSE(anim::EvaluateController(g, 0, 0.0f, params).fired);
 }

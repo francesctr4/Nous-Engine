@@ -134,4 +134,34 @@ namespace nous::engine::animation_system
     [[nodiscard]] bool ConditionsSatisfied(const ControllerGraph&      graph,
                                            const ControllerTransition& transition,
                                            const AnimParameters&       params);
+
+    struct TransitionResult
+    {
+        bool  fired    = false;
+        int   toState  = -1;
+        float duration = 0.0f;
+    };
+
+    /**
+     * @brief Decide whether to leave `currentState` this frame, and for where.
+     *
+     * `normalizedTime` is 0..1 through the CURRENT state's clip. The current state
+     * is the DESTINATION from the instant a transition starts, so during a fade this
+     * is the INCOMING clip's progress -- which is what makes "when the attack
+     * finishes" measure the attack.
+     *
+     * Order: Any State transitions first, in authored order, then the current
+     * state's own, in authored order. FIRST SATISFIED WINS and evaluation stops --
+     * so exactly one transition fires and at most one trigger is consumed per frame.
+     *
+     * `params` is NON-CONST because firing consumes the triggers the winning
+     * transition matched. A transition that is merely evaluated -- including one
+     * blocked on exit time -- consumes nothing.
+     *
+     * Advances no time, touches no pose, names no resource.
+     */
+    [[nodiscard]] TransitionResult EvaluateController(const ControllerGraph& graph,
+                                                      int                    currentState,
+                                                      float                  normalizedTime,
+                                                      AnimParameters&        params);
 }
