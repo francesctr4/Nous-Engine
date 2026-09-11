@@ -1082,3 +1082,136 @@ TEST_F(t_CAnimator, InPlaceKeepsTheTurnInThePose)
                             * glm::vec3(0.0f, 0.0f, 1.0f);
     EXPECT_NEAR(forward.x, 0.0f, 1e-4f);   // the object itself never turns
 }
+
+// =============================================================================
+// Per-clip settings
+// =============================================================================
+
+// THE headline for per-clip settings, and the case a per-animator flag cannot
+// express at all: whichever value the animator held would apply to both clips.
+// An attack that must not loop beside an idle that must is exactly this shape.
+TEST_F(t_CAnimator, TwoClipsWithDifferentLoopSettingsInOneAnimator)
+{
+    ResourceSkeleton  rig(1);    MakeTwoBoneRig(rig);
+    ResourceAnimation once(2);   MakeSlideClip(once,  "Child");  once.SetName("Once");
+    ResourceAnimation cycle(3);  MakeSlideClip(cycle, "Child");  cycle.SetName("Cycle");
+
+    once.settings.loop  = false;
+    cycle.settings.loop = true;
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &once, &cycle };
+    a.OnUpdate(0.0f);                 // binds the front clip, "Once"
+
+    // 1.5s into a 1s slide. Not looping, so it clamps at the end.
+    a.OnUpdate(1.5f);
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 10.0f);
+
+    ASSERT_TRUE(a.Play("Cycle", 0.0f));
+
+    // The same 1.5s against the looping clip wraps to 0.5s -- halfway along.
+    a.OnUpdate(1.5f);
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+}
+
+TEST_F(t_CAnimator, PerClipSpeedScalesHowFarTheClipAdvances)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation fast(2);  MakeSlideClip(fast, "Child");
+    fast.settings.speed = 2.0f;
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &fast };
+    a.OnUpdate(0.0f);
+
+    a.OnUpdate(0.25f);   // 0.25s x 2 = 0.5s into a 1s slide
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+}
+
+// Editing the resource has to reach a clip that is ALREADY playing -- otherwise a
+// tick of the Inspector checkbox does nothing until the scene is reloaded. Seeding
+// only in RebindTrack would fail this, since nothing about the slot changed.
+TEST_F(t_CAnimator, EditingAClipsSettingsReachesThePlayingInstance)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton = &rig;
+    a.clips    = { &anim };
+    a.OnUpdate(0.0f);
+
+    anim.settings.loop = false;
+    a.OnUpdate(1.5f);
+
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 10.0f);
+}
+
+// The script API's lever. It MULTIPLIES the clip's authored speed rather than
+// replacing it, and it lives on the component rather than the resource: a script
+// writing into ResourceAnimation::settings would retime every other character
+// playing that same clip.
+TEST_F(t_CAnimator, SpeedMultiplierScalesTheClipsAuthoredSpeed)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+    anim.settings.speed = 2.0f;
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton        = &rig;
+    a.clips           = { &anim };
+    a.speedMultiplier = 0.5f;
+    a.OnUpdate(0.0f);
+
+    // 0.25s x 2.0 x 0.5 = 0.25s into a 1s slide. Ignoring the multiplier would give
+    // 0.5s and x = 5; ignoring the clip's own speed would give 0.125s and x = 1.25.
+    a.OnUpdate(0.25f);
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 2.5f);
+}
+
+// Serialized, unlike `parameters`, because it is AUTHORING: "this character moves
+// heavily" is a property of the character, and it is the only per-character speed
+// axis there is -- a controller asset is shared between characters exactly as a clip
+// is. Note this does NOT reintroduce the deleted CAnimator::speed, which was
+// absolute and therefore competed with each clip's own value.
+TEST_F(t_CAnimator, SpeedMultiplierSurvivesASceneRoundTrip)
+{
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.speedMultiplier = 0.5f;
+
+    CAnimator reloaded;
+    reloaded.Deserialize(a.Serialize());
+    EXPECT_FLOAT_EQ(reloaded.speedMultiplier, 0.5f);
+}
+
+// Two characters sharing one clip resource must be independently retimeable -- the
+// whole reason the multiplier is on the component and not on ResourceAnimation.
+TEST_F(t_CAnimator, TwoAnimatorsSharingAClipRetimeIndependently)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+
+    GameObject slowGo = scene->CreateGameObject("Slow");
+    auto& slow = slowGo.AddComponent<CAnimator>();
+    slow.skeleton        = &rig;
+    slow.clips           = { &anim };
+    slow.speedMultiplier = 0.5f;
+
+    GameObject fastGo = scene->CreateGameObject("Fast");
+    auto& fast = fastGo.AddComponent<CAnimator>();
+    fast.skeleton = &rig;
+    fast.clips    = { &anim };
+
+    slow.OnUpdate(0.0f);  slow.OnUpdate(0.5f);   // 0.25s in
+    fast.OnUpdate(0.0f);  fast.OnUpdate(0.5f);   // 0.50s in
+
+    EXPECT_FLOAT_EQ(TranslationX(slow.GetBoneGlobals()[1]), 2.5f);
+    EXPECT_FLOAT_EQ(TranslationX(fast.GetBoneGlobals()[1]), 5.0f);
+}

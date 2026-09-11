@@ -3,6 +3,8 @@
 #include <ResourceManager/Core/MetaFileData.h>
 #include <ResourceManager/Types/ResourceAnimation/ImporterAnimation.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
+#include <Utils/Serialization/JsonFile.h>
+#include <Utils/Serialization/JsonObject.h>
 
 #include <filesystem>
 #include <fstream>
@@ -66,7 +68,7 @@ TEST(t_ImporterAnimation, RoundTripsEveryTrackThroughTheRealWriter)
     const MetaFileData meta   = MetaFor("t_ImporterAnimation_roundtrip.nanim");
     const AnimClipData source = Clip();
 
-    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, source));
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, source, {}));
 
     ResourceAnimation loaded(meta.uid);
     ImporterAnimation importer;
@@ -94,7 +96,7 @@ TEST(t_ImporterAnimation, RoundTripsEveryTrackThroughTheRealWriter)
 TEST(t_ImporterAnimation, RotationComponentsSurviveInTheRightOrder)
 {
     const MetaFileData meta = MetaFor("t_ImporterAnimation_quat.nanim");
-    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip()));
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip(), {}));
 
     ResourceAnimation loaded(meta.uid);
     ImporterAnimation importer;
@@ -112,7 +114,7 @@ TEST(t_ImporterAnimation, RotationComponentsSurviveInTheRightOrder)
 TEST(t_ImporterAnimation, RoundTripsAChannelWithPositionKeysOnly)
 {
     const MetaFileData meta = MetaFor("t_ImporterAnimation_partial.nanim");
-    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip()));
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip(), {}));
 
     ResourceAnimation loaded(meta.uid);
     ImporterAnimation importer;
@@ -140,7 +142,7 @@ TEST(t_ImporterAnimation, RoundTripsAChannelWithPositionKeysOnly)
 TEST(t_ImporterAnimation, PreservesDurationExactly)
 {
     const MetaFileData meta = MetaFor("t_ImporterAnimation_duration.nanim");
-    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip()));
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip(), {}));
 
     ResourceAnimation loaded(meta.uid);
     ImporterAnimation importer;
@@ -171,7 +173,7 @@ TEST(t_ImporterAnimation, RejectsAForeignMagicRatherThanParsingIt)
 TEST(t_ImporterAnimation, RejectsATruncatedFile)
 {
     const MetaFileData meta = MetaFor("t_ImporterAnimation_truncated.nanim");
-    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip()));
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip(), {}));
 
     const auto full = std::filesystem::file_size(meta.libraryPath);
     std::filesystem::resize_file(meta.libraryPath, full / 2);
@@ -193,7 +195,7 @@ TEST(t_ImporterAnimation, WritesAClipWithNoChannels)
     empty.name     = "Take 001";
     empty.duration = 3.3333f;
 
-    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, empty));
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, empty, {}));
 
     ResourceAnimation loaded(meta.uid);
     ImporterAnimation importer;
@@ -201,6 +203,151 @@ TEST(t_ImporterAnimation, WritesAClipWithNoChannels)
 
     EXPECT_EQ(loaded.clip.name, "Take 001");
     EXPECT_EQ(loaded.clip.ChannelCount(), 0u);
+
+    std::filesystem::remove(meta.libraryPath);
+}
+
+// =============================================================================
+// Per-clip settings
+// =============================================================================
+
+TEST(t_ImporterAnimation, ANewClipLoopsAtNormalSpeed)
+{
+    const ResourceAnimation fresh(1);
+    EXPECT_TRUE(fresh.settings.loop);
+    EXPECT_FLOAT_EQ(fresh.settings.speed, 1.0f);
+}
+
+TEST(t_ImporterAnimation, RoundTripsPerClipSettings)
+{
+    const MetaFileData meta = MetaFor("t_ImporterAnimation_settings.nanim");
+
+    AnimationSettings authored;
+    authored.loop  = false;
+    authored.speed = 2.5f;
+
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip(), authored));
+
+    ResourceAnimation loaded(meta.uid);
+    ImporterAnimation importer;
+    ASSERT_TRUE(importer.Deserialize(meta.libraryPath, &loaded));
+
+    EXPECT_FALSE(loaded.settings.loop);
+    EXPECT_FLOAT_EQ(loaded.settings.speed, 2.5f);
+
+    // The settings sit between `duration` and `channelCount`, so a writer and reader
+    // that disagreed on their size would shift every channel that follows. Reading
+    // the first channel back is what makes that desync visible here rather than as a
+    // truncated-file error in an unrelated test.
+    ASSERT_EQ(loaded.clip.ChannelCount(), 2u);
+    EXPECT_EQ(loaded.clip.channels[0].boneName, "mixamorig:Hips");
+
+    std::filesystem::remove(meta.libraryPath);
+}
+
+// EnsureStub writes only "source" and "clip", so a stub that has never been edited
+// declares no settings at all. That is the shipping path, not a legacy one.
+TEST(t_ImporterAnimation, ReadsDefaultSettingsFromAStubThatDeclaresNone)
+{
+    const std::string stub = ScratchPath("t_ImporterAnimation_plain.nanim");
+    {
+        JsonObject json;
+        json.Set("source", "Assets/Rig.fbx");
+        json.Set("clip",   "mixamo.com");
+        ASSERT_TRUE(JsonFile::SaveToFile(json, stub));
+    }
+
+    const AnimationSettings settings = ImporterAnimation::ReadSettingsFromStub(stub);
+    EXPECT_TRUE(settings.loop);
+    EXPECT_FLOAT_EQ(settings.speed, 1.0f);
+
+    std::filesystem::remove(stub);
+}
+
+// The stub is the copy that survives a Library/ nuke, so the write-back must leave
+// the two fields the fallback re-parse depends on alone.
+TEST(t_ImporterAnimation, WritingSettingsToAStubKeepsItsSourceAndClipKeys)
+{
+    const std::string stub = ScratchPath("t_ImporterAnimation_stub.nanim");
+    {
+        JsonObject json;
+        json.Set("source", "Assets/Rig.fbx");
+        json.Set("clip",   "mixamo.com");
+        ASSERT_TRUE(JsonFile::SaveToFile(json, stub));
+    }
+
+    AnimationSettings edited;
+    edited.loop  = false;
+    edited.speed = 0.25f;
+    ASSERT_TRUE(ImporterAnimation::WriteSettingsToStub(stub, edited));
+
+    const JsonObject reloaded = JsonFile::LoadFromFile(stub);
+    EXPECT_EQ(reloaded.GetString("source"), "Assets/Rig.fbx");
+    EXPECT_EQ(reloaded.GetString("clip"),   "mixamo.com");
+
+    const AnimationSettings readBack = ImporterAnimation::ReadSettingsFromStub(stub);
+    EXPECT_FALSE(readBack.loop);
+    EXPECT_FLOAT_EQ(readBack.speed, 0.25f);
+
+    std::filesystem::remove(stub);
+}
+
+// The editor's entry point, and the reason it is one call: the two copies exist for
+// different readers (the stub survives a Library/ nuke, the binary is what a shipped
+// game reads), so writing one and not the other leaves them disagreeing until the
+// next re-import silently picks a winner.
+TEST(t_ImporterAnimation, SaveSettingsUpdatesBothTheStubAndTheBinary)
+{
+    const std::string stub    = ScratchPath("t_ImporterAnimation_both.nanim");
+    const std::string library = ScratchPath("t_ImporterAnimation_both_lib.nanim");
+    {
+        JsonObject json;
+        json.Set("source", "Assets/Rig.fbx");
+        json.Set("clip",   "mixamo.com");
+        ASSERT_TRUE(JsonFile::SaveToFile(json, stub));
+    }
+
+    ResourceAnimation animation(42);
+    animation.SetAssetsPath(stub);
+    animation.SetLibraryPath(library);
+    animation.clip           = Clip();
+    animation.settings.loop  = false;
+    animation.settings.speed = 1.75f;
+
+    ASSERT_TRUE(ImporterAnimation::SaveSettings(animation));
+
+    const AnimationSettings fromStub = ImporterAnimation::ReadSettingsFromStub(stub);
+    EXPECT_FALSE(fromStub.loop);
+    EXPECT_FLOAT_EQ(fromStub.speed, 1.75f);
+
+    ResourceAnimation loaded(42);
+    ImporterAnimation importer;
+    ASSERT_TRUE(importer.Deserialize(library, &loaded));
+    EXPECT_FALSE(loaded.settings.loop);
+    EXPECT_FLOAT_EQ(loaded.settings.speed, 1.75f);
+
+    std::filesystem::remove(stub);
+    std::filesystem::remove(library);
+}
+
+TEST(t_ImporterAnimation, SaveWritesTheResourcesOwnSettings)
+{
+    const MetaFileData meta = MetaFor("t_ImporterAnimation_save.nanim");
+
+    ResourceAnimation source(meta.uid);
+    source.clip           = Clip();
+    source.settings.loop  = false;
+    source.settings.speed = 3.0f;
+
+    ImporterAnimation importer;
+    ResourceBase* asBase = &source;
+    ASSERT_TRUE(importer.Save(meta, asBase));
+
+    ResourceAnimation loaded(meta.uid);
+    ASSERT_TRUE(importer.Deserialize(meta.libraryPath, &loaded));
+
+    EXPECT_FALSE(loaded.settings.loop);
+    EXPECT_FLOAT_EQ(loaded.settings.speed, 3.0f);
 
     std::filesystem::remove(meta.libraryPath);
 }

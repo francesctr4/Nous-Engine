@@ -71,8 +71,30 @@ public:
     // AnimClipData::name -- every Mixamo export calls its clip "mixamo.com".
     std::vector<ResourceAnimation*> clips;
 
-    float speed = 1.0f;      // negative plays backwards
-    bool  loop  = true;
+    // The AUTHORED `loop` and `speed` are PER CLIP and live on
+    // ResourceAnimation::settings, not here. An animator holding an idle that must
+    // loop and an attack that must not is the ordinary case, and one flag on the
+    // component cannot say both. OnUpdate seeds each track's AnimInstance from its
+    // own clip's settings every frame, so an Inspector edit is live.
+
+    // A runtime scale OVER that authored speed -- slow motion, or a run cycle
+    // following input. Unity's split: per-state speed on the asset, Animator.speed on
+    // the component. This is what the script API's SetSpeed/GetSpeed reach.
+    //
+    // It is here rather than on the resource because ResourceAnimation is SHARED:
+    // slowing one character by writing into the clip would retime every other
+    // character playing it. This is the ONLY per-character speed axis there is -- a
+    // controller asset (MVP-F) is shared between characters exactly as a clip is, so
+    // it cannot host one either.
+    //
+    // SERIALIZED, unlike `parameters`: "this character moves heavily" is authoring.
+    // That does not reintroduce the deleted CAnimator::speed, which was ABSOLUTE and
+    // so competed with each clip's own value; a multiplier composes with it and
+    // applies uniformly to every clip by design.
+    //
+    // Per-character AND per-clip variation is MVP-F's job: a controller state's speed
+    // driven by an AnimParameter. Do not grow a second multiplier here for it.
+    float speedMultiplier = 1.0f;
 
     // Fade duration the Inspector's Play buttons use. Authoring convenience only --
     // Play() takes its duration as a parameter, so a future script API and a future
@@ -198,6 +220,12 @@ private:
     // Rebuilds the track's binding from its clip and the animator's skeleton, and
     // sizes its pose. Clears the track when either side is null.
     void RebindTrack(ClipTrack& track);
+
+    // Pushes the track's clip's authored loop/speed onto its AnimInstance, scaling
+    // the speed by speedMultiplier. Called per frame for both tracks, so an Inspector
+    // edit to the resource reaches a clip that is already playing. A null clip leaves
+    // the instance alone -- it has nothing to sample anyway.
+    void SeedPlaybackSettings(ClipTrack& track) const;
 
     ClipTrack                            m_from;
     ClipTrack                            m_to;

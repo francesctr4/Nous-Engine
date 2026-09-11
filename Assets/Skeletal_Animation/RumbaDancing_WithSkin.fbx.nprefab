@@ -36,16 +36,21 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
                     "skeletonUID": 408757248,
-                    "clipAssetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
-                    "clipLibraryPath": "Library\/Animations\/3875098274.nanim",
-                    "clipUID": 3875098274,
-                    "speed": 1,
-                    "loop": true
+                    "clips": [
+                        {
+                            "assetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
+                            "libraryPath": "Library\/Animations\/3875098274.nanim",
+                            "uid": 3875098274
+                        }
+                    ],
+                    "fadeSeconds": 0.20000000298023224,
+                    "speedMultiplier": 1,
+                    "rootMotion": "Baked"
                 }
             ]
         },
         {
-            "uid": 2915032086,
+            "uid": 1866509879,
             "name": "Beta_Surface",
             "parent": 3849404792,
             "components": [
@@ -89,7 +94,7 @@
             ]
         },
         {
-            "uid": 2310863628,
+            "uid": 3476760889,
             "name": "Beta_Joints",
             "parent": 3849404792,
             "components": [

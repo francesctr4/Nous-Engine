@@ -121,6 +121,14 @@ bool CAnimator::Play(const std::string_view clipName, const float fadeSeconds)
     return true;
 }
 
+void CAnimator::SeedPlaybackSettings(ClipTrack& track) const
+{
+    if (!track.clip) return;
+
+    track.instance.loop  = track.clip->settings.loop;
+    track.instance.speed = track.clip->settings.speed * speedMultiplier;
+}
+
 void CAnimator::RebindTrack(ClipTrack& track)
 {
     track.boundClip = UIDOf(track.clip);
@@ -298,11 +306,13 @@ void CAnimator::OnUpdate(const float deltaTime)
         return;
     }
 
-    // Authoring fields are live, so an Inspector edit applies on the next frame.
-    m_from.instance.speed = speed;
-    m_from.instance.loop  = loop;
-    m_to.instance.speed   = speed;
-    m_to.instance.loop    = loop;
+    // Each track takes loop/speed from ITS OWN clip, which is the whole point of the
+    // settings living on the resource: during a cross-fade the two tracks routinely
+    // disagree. Pushed every frame rather than seeded in RebindTrack so an Inspector
+    // edit reaches a clip that is already playing -- nothing about the slot changes
+    // when the user ticks the checkbox, so RebindTrack would never run.
+    SeedPlaybackSettings(m_from);
+    SeedPlaybackSettings(m_to);
 
     // LOAD-BEARING, and reassigned EVERY frame for BOTH tracks rather than once in
     // RebindTrack.
@@ -424,9 +434,12 @@ JsonObject CAnimator::Serialize() const
     }
     root.Set("clips", std::move(clipArr));
 
-    root.Set("speed",       speed);
-    root.Set("loop",        loop);
-    root.Set("fadeSeconds", fadeSeconds);
+    // No "speed"/"loop" here -- they moved to ResourceAnimation::settings, which the
+    // .nanim stub and the library binary carry. A scene that predates the move loses
+    // whatever it had set; scenes are authored data, but a per-animator value has no
+    // per-clip destination to migrate INTO.
+    root.Set("fadeSeconds",     fadeSeconds);
+    root.Set("speedMultiplier", speedMultiplier);
     root.Set("rootMotion",  RootMotionToString(rootMotion));
     return root;
 }
@@ -450,9 +463,8 @@ void CAnimator::OnDestroy()
 
 void CAnimator::Deserialize(const JsonObject& obj)
 {
-    speed       = obj.GetFloat("speed",       speed);
-    loop        = obj.GetBool ("loop",        loop);
-    fadeSeconds = obj.GetFloat("fadeSeconds", fadeSeconds);
+    fadeSeconds     = obj.GetFloat("fadeSeconds",     fadeSeconds);
+    speedMultiplier = obj.GetFloat("speedMultiplier", speedMultiplier);
     rootMotion  = RootMotionFromString(obj.GetString("rootMotion", "Baked"));
 
     IResourceLoader* rm = Services().resources;

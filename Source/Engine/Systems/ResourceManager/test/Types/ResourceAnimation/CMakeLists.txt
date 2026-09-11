@@ -16,6 +16,7 @@ target_link_libraries(${TEST_NAME}
         # NousEngine::Engine umbrella. See EngineCore/EngineExport.h.
         ResourceManager
         AnimationSystem   # ResourceAnimation holds AnimClipData by value
+        Utils             # the .nanim stub is JSON: JsonFile / JsonObject
         GTest::gtest
         GTest::gtest_main
 )

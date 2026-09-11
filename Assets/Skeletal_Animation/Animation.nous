@@ -43,9 +43,9 @@
                             "uid": 1380512761
                         }
                     ],
-                    "speed": 1,
-                    "loop": true,
-                    "fadeSeconds": 0.20000000298023224
+                    "fadeSeconds": 0.20000000298023224,
+                    "speedMultiplier": 1,
+                    "rootMotion": "Baked"
                 }
             ]
         },
@@ -81,7 +81,11 @@
                 {
                     "type": "CPrefab",
                     "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab",
-                    "syncedHash": "0000000000000000"
+                    "syncedHash": "ecd17a6d7390e8ca"
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 4053445852
                 },
                 {
                     "type": "CAnimator",
@@ -95,14 +99,14 @@
                             "uid": 3875098274
                         }
                     ],
-                    "speed": 1,
-                    "loop": true,
-                    "fadeSeconds": 0.20000000298023224
+                    "fadeSeconds": 0.20000000298023224,
+                    "speedMultiplier": 1,
+                    "rootMotion": "Baked"
                 }
             ]
         },
         {
-            "uid": 2915032086,
+            "uid": 1866509879,
             "name": "Beta_Surface",
             "parent": 3849404792,
             "components": [
@@ -142,11 +146,15 @@
                     "assetPath": "Assets\/Beta_Surface_material.nmat",
                     "libraryPath": "Library\/Materials\/3739400661.nmat",
                     "resourceUID": 3739400661
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 1957431030
                 }
             ]
         },
         {
-            "uid": 2310863628,
+            "uid": 3476760889,
             "name": "Beta_Joints",
             "parent": 3849404792,
             "components": [
@@ -186,6 +194,10 @@
                     "assetPath": "Assets\/Beta_Joints_material.nmat",
                     "libraryPath": "Library\/Materials\/3693496418.nmat",
                     "resourceUID": 3693496418
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 2250380075
                 }
             ]
         },
@@ -286,7 +298,7 @@
                 {
                     "type": "CPrefab",
                     "prefabSourcePath": "Assets\/Skeletal_Animation\/Espada\/Cypher Walking with Sword.nprefab",
-                    "syncedHash": "fc9e911294883dac"
+                    "syncedHash": "ff06f02e7c5a9c6c"
                 },
                 {
                     "type": "CPrefabLink",
@@ -314,9 +326,9 @@
                             "uid": 3875098274
                         }
                     ],
-                    "speed": 1,
-                    "loop": true,
-                    "fadeSeconds": 1
+                    "fadeSeconds": 1,
+                    "speedMultiplier": 1,
+                    "rootMotion": "Baked"
                 }
             ]
         },
@@ -583,7 +595,11 @@
                 {
                     "type": "CPrefab",
                     "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab",
-                    "syncedHash": "0000000000000000"
+                    "syncedHash": "ecd17a6d7390e8ca"
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 3849404792
                 },
                 {
                     "type": "CAnimator",
@@ -597,14 +613,14 @@
                             "uid": 3875098274
                         }
                     ],
-                    "speed": 1,
-                    "loop": true,
-                    "fadeSeconds": 0.20000000298023224
+                    "fadeSeconds": 0.20000000298023224,
+                    "speedMultiplier": 1,
+                    "rootMotion": "Baked"
                 }
             ]
         },
         {
-            "uid": 1957431030,
+            "uid": 1486440403,
             "name": "Beta_Surface",
             "parent": 4053445852,
             "components": [
@@ -644,11 +660,15 @@
                     "assetPath": "Assets\/Beta_Surface_material.nmat",
                     "libraryPath": "Library\/Materials\/3739400661.nmat",
                     "resourceUID": 3739400661
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 1866509879
                 }
             ]
         },
         {
-            "uid": 2250380075,
+            "uid": 694690816,
             "name": "Beta_Joints",
             "parent": 4053445852,
             "components": [
@@ -688,6 +708,10 @@
                     "assetPath": "Assets\/Beta_Joints_material.nmat",
                     "libraryPath": "Library\/Materials\/3693496418.nmat",
                     "resourceUID": 3693496418
+                },
+                {
+                    "type": "CPrefabLink",
+                    "prefabObjectID": 3476760889
                 }
             ]
         }

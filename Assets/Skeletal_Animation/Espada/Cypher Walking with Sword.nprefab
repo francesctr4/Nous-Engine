@@ -79,9 +79,9 @@
                             "uid": 3875098274
                         }
                     ],
-                    "speed": 1,
-                    "loop": true,
-                    "fadeSeconds": 1
+                    "fadeSeconds": 1,
+                    "speedMultiplier": 1,
+                    "rootMotion": "Baked"
                 }
             ]
         },

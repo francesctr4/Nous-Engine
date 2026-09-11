@@ -36,6 +36,14 @@ struct AnimatorAPI
     // matching GetCurrentClip.
     float (*GetNormalizedTime)(uint32_t goId) = nullptr;
 
+    // A MULTIPLIER over each clip's own authored speed (1 = as authored, 0.5 = half,
+    // negative plays backwards), not an absolute rate -- so slow motion works without
+    // knowing what any clip was authored at. The authored value lives in the .nanim
+    // and is edited in the Inspector; this scales it for THIS animator only.
+    //
+    // Per CHARACTER, not per clip: two characters sharing one clip retime
+    // independently. The scene's authored value is the starting point; a script
+    // setting it overrides that for the session.
     void  (*SetSpeed)(uint32_t goId, float speed) = nullptr;
     float (*GetSpeed)(uint32_t goId) = nullptr;
 };

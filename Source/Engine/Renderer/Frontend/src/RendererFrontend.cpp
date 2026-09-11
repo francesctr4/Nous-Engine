@@ -426,6 +426,11 @@ void RendererFrontend::ReconcileDynamicSurfaces()
 	m_dynamicSurfaces.Reconcile(this);
 }
 
+void RendererFrontend::DropDynamicSurfacesForMaterial(const ResourceMaterial* material)
+{
+	m_dynamicSurfaces.DropForMaterial(this, material);
+}
+
 void RendererFrontend::DestroyDynamicSurfaces()
 {
 	m_dynamicSurfaces.DestroyAll(this);

@@ -18,9 +18,11 @@ using nous::engine::animation_system::AnimClipData;
 
 // ─── Binary format ────────────────────────────────────────────────────────────
 //
-//   magic:u32 = 'NANM'
+//   magic:u32 = 'NAN2'
 //   nameLen:u64, name:chars
 //   duration:f32                          (SECONDS -- ticks died at BuildClip)
+//   loop:u32                              (0/1 -- per-clip settings, see below)
+//   speed:f32
 //   channelCount:u32
 //   per channel:
 //     nameLen:u64, boneName:chars
@@ -37,9 +39,20 @@ using nous::engine::animation_system::AnimClipData;
 // The three tracks are counted independently because they ARE independent -- an
 // exporter routinely writes position keys and no scale keys.
 //
+// `loop`/`speed` are AUTHORING data, so they are also in the .nanim stub -- see
+// ReadSettingsFromStub. The binary carries its own copy because an exported game
+// ships Library/ and no Assets/, exactly as CAudioSource decodes from the library
+// path. They sit before channelCount rather than at the end so a reader can reach
+// them without walking the channels.
+//
 // ONE READ PATH. Any other magic is rejected outright rather than parsed; Library/
-// is a derived cache, so regeneration IS the migration.
-static constexpr uint32_t ANIMATION_BINARY_MAGIC = 0x4E414E4Du;
+// is a derived cache, so regeneration IS the migration. Was 'NANM' (0x4E414E4D)
+// before per-clip settings; bumped rather than versioned, so delete Library/.
+static constexpr uint32_t ANIMATION_BINARY_MAGIC = 0x4E414E32u;   // 'NAN2'
+
+// The stub's authoring keys. Absent means default -- EnsureStub writes neither.
+static constexpr const char* STUB_KEY_LOOP  = "loop";
+static constexpr const char* STUB_KEY_SPEED = "speed";
 
 namespace
 {
@@ -168,13 +181,16 @@ namespace
     }
 }
 
-bool ImporterAnimation::SaveClip(const MetaFileData& metaFileData, const AnimClipData& clip)
+bool ImporterAnimation::SaveClip(const MetaFileData& metaFileData, const AnimClipData& clip,
+                                 const AnimationSettings& settings)
 {
     std::vector<std::byte> file;
 
     AppendU32   (file, ANIMATION_BINARY_MAGIC);
     AppendString(file, clip.name);
     AppendF32   (file, clip.duration);
+    AppendU32   (file, settings.loop ? 1u : 0u);
+    AppendF32   (file, settings.speed);
     AppendU32   (file, static_cast<uint32_t>(clip.channels.size()));
 
     for (const AnimChannel& channel : clip.channels)
@@ -205,7 +221,8 @@ bool ImporterAnimation::Deserialize(const std::string& libraryPath, ResourceBase
 
     // Cleared up front so a rejected file leaves an empty clip rather than whatever
     // half-read state the failure happened to stop at.
-    target->clip = AnimClipData{};
+    target->clip     = AnimClipData{};
+    target->settings = AnimationSettings{};
 
     FileHandle fh;
     if (!fh.Open(libraryPath, FileMode::READ, true)) return false;
@@ -223,11 +240,17 @@ bool ImporterAnimation::Deserialize(const std::string& libraryPath, ResourceBase
     }
 
     AnimClipData clip;
+    AnimationSettings settings;
+    uint32_t loopFlag     = 1;
     uint32_t channelCount = 0;
 
     bool ok = ReadString(fh, clip.name)
            && ReadF32   (fh, clip.duration)
+           && ReadU32   (fh, loopFlag)
+           && ReadF32   (fh, settings.speed)
            && ReadU32   (fh, channelCount);
+
+    settings.loop = loopFlag != 0;
 
     if (ok)
     {
@@ -253,9 +276,61 @@ bool ImporterAnimation::Deserialize(const std::string& libraryPath, ResourceBase
         return false;
     }
 
-    target->clip = std::move(clip);
+    target->clip     = std::move(clip);
+    target->settings = settings;
 
     return true;
+}
+
+AnimationSettings ImporterAnimation::ReadSettingsFromStub(const std::string& stubPath)
+{
+    const JsonObject stub = JsonFile::LoadFromFile(stubPath);
+
+    // Each Get* falls back to the struct's own default, so an unreadable stub and a
+    // stub declaring neither key produce the same thing -- which is what makes an
+    // unedited stub (the EnsureStub output) the common case rather than an error.
+    AnimationSettings settings;
+    settings.loop  = stub.GetBool (STUB_KEY_LOOP,  settings.loop);
+    settings.speed = stub.GetFloat(STUB_KEY_SPEED, settings.speed);
+    return settings;
+}
+
+bool ImporterAnimation::WriteSettingsToStub(const std::string& stubPath,
+                                            const AnimationSettings& settings)
+{
+    // Read-modify-write: "source" and "clip" are what the fallback Import() re-parse
+    // needs, and writing a fresh object would drop them.
+    JsonObject stub = JsonFile::LoadFromFile(stubPath);
+    stub.Set(STUB_KEY_LOOP,  settings.loop);
+    stub.Set(STUB_KEY_SPEED, settings.speed);
+
+    if (!JsonFile::SaveToFile(stub, stubPath))
+    {
+        NOUS_ERROR("ImporterAnimation: could not write settings to stub '%s'.",
+                   stubPath.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+bool ImporterAnimation::SaveSettings(ResourceAnimation& animation)
+{
+    const bool stubOk = WriteSettingsToStub(animation.GetAssetsPath(), animation.settings);
+
+    MetaFileData meta;
+    meta.uid          = animation.GetUID();
+    meta.name         = animation.GetName();
+    meta.resourceType = ResourceType::ANIMATION;
+    meta.assetsPath   = animation.GetAssetsPath();
+    meta.libraryPath  = animation.GetLibraryPath();
+
+    // Deliberately sequenced into locals rather than `a && b`: both writes must be
+    // attempted even when the first fails, or a read-only stub would also leave the
+    // binary stale.
+    const bool binaryOk = SaveClip(meta, animation.clip, animation.settings);
+
+    return stubOk && binaryOk;
 }
 
 bool ImporterAnimation::Import(const MetaFileData& metaFileData)
@@ -279,10 +354,14 @@ bool ImporterAnimation::Import(const MetaFileData& metaFileData)
         return false;
     }
 
+    // The stub is the only surviving record of the authored settings on this path --
+    // it is precisely the library binary that went missing.
+    const AnimationSettings settings = ReadSettingsFromStub(metaFileData.assetsPath);
+
     for (const AnimClipData& clip : model->clips)
     {
         if (clip.name == clipName)
-            return SaveClip(metaFileData, clip);
+            return SaveClip(metaFileData, clip, settings);
     }
 
     NOUS_ERROR("ImporterAnimation: '%s' no longer contains a clip named '%s'.",
@@ -292,12 +371,19 @@ bool ImporterAnimation::Import(const MetaFileData& metaFileData)
 
 bool ImporterAnimation::Save(const MetaFileData& metaFileData, ResourceBase*& inResource)
 {
-    return SaveClip(metaFileData, down_cast<ResourceAnimation*>(inResource)->clip);
+    const auto* animation = down_cast<ResourceAnimation*>(inResource);
+    return SaveClip(metaFileData, animation->clip, animation->settings);
 }
 
 void ImporterAnimation::Evict(ResourceBase* resource)
 {
-    down_cast<ResourceAnimation*>(resource)->clip = AnimClipData{};
+    auto* animation = down_cast<ResourceAnimation*>(resource);
+
+    animation->clip = AnimClipData{};
+
+    // Settings go back to the default too: an evicted slot must not hand the next
+    // Deserialize a stale loop flag if that read fails partway.
+    animation->settings = AnimationSettings{};
 }
 
 bool ImporterAnimation::Upload(ResourceBase*, IGPUResourceFactory*) { return true; }

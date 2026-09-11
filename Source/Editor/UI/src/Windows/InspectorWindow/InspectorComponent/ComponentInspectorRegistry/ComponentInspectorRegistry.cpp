@@ -37,6 +37,7 @@
 #include <PrefabManager/PrefabManager.h>
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
+#include <ResourceManager/Types/ResourceAnimation/ImporterAnimation.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
 #include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
@@ -669,6 +670,44 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
         if (ImGui::Button("X", ImVec2(24.0f, 0.0f)))
             removeIndex = i;
 
+        // Loop and Speed are properties of the CLIP, not of the animator: an idle
+        // that must loop and an attack that must not routinely sit in this same
+        // list. Editing writes through to the .nanim stub AND the library binary,
+        // so the value survives both a scene reload and a Library/ nuke -- which is
+        // why these are the only Inspector controls here that touch disk.
+        if (c)
+        {
+            ImGui::Indent();
+
+            bool  clipLoop  = c->settings.loop;
+            float clipSpeed = c->settings.speed;
+            bool  commit    = false;
+
+            if (ImGui::Checkbox("Loop", &clipLoop))
+            {
+                c->settings.loop = clipLoop;
+                commit = true;
+            }
+
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(120.0f);
+
+            // The in-memory value follows the drag frame by frame, so the preview is
+            // live -- CAnimator reseeds both tracks from their clips every OnUpdate.
+            // The DISK write waits for the mouse to be released: DragFloat reports an
+            // edit on every frame it is held, and SaveSettings rewrites two files.
+            if (ImGui::DragFloat("Speed", &clipSpeed, 0.01f, -4.0f, 4.0f, "%.2f"))
+                c->settings.speed = clipSpeed;
+
+            if (ImGui::IsItemDeactivatedAfterEdit())
+                commit = true;
+
+            if (commit)
+                ImporterAnimation::SaveSettings(*c);
+
+            ImGui::Unindent();
+        }
+
         ImGui::PopID();
     }
 
@@ -687,6 +726,16 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
     ImGui::Spacing();
     ImGui::DragFloat("Fade (s)", &cAnimator->fadeSeconds, 0.01f, 0.0f, 5.0f, "%.2f");
 
+    // Per CHARACTER, so it lives on the component and in the scene -- unlike the
+    // per-clip Speed above, which is on the shared resource and written to the
+    // .nanim. Two characters playing one clip retime independently only through this.
+    ImGui::DragFloat("Speed Multiplier", &cAnimator->speedMultiplier, 0.01f, -4.0f, 4.0f, "%.2f");
+
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Scales every clip's own authored speed, for THIS character only.\n"
+                          "1 = as authored. The per-clip Speed above is shared by every\n"
+                          "character playing that clip.");
+
     // Order matches RootMotionMode's declaration -- the combo indexes the enum by
     // value, the same contract CAudioSource's attenuation combo has.
     static const char* const c_rootMotionNames[] = { "Baked", "Applied", "In Place" };
@@ -699,9 +748,6 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
         ImGui::SetTooltip("Baked: travel stays in the pose (the character drifts).\n"
                           "Applied: travel moves the GameObject.\n"
                           "In Place: travel is discarded.");
-
-    ImGui::DragFloat("Speed", &cAnimator->speed, 0.01f, -4.0f, 4.0f);
-    ImGui::Checkbox("Loop", &cAnimator->loop);
 
     // What the bind actually produced. This is the readout that says WHY nothing
     // is dancing: a clip binds to a skeleton by bone NAME, so a mismatched pair

@@ -82,11 +82,11 @@ void SetupAnimatorBindings(AnimatorAPI& animator, IScriptSceneHost* sceneHost)
     };
 
     animator.SetSpeed = [](uint32_t id, float speed) {
-        if (CAnimator* a = GetAnimator(id)) a->speed = speed;
+        if (CAnimator* a = GetAnimator(id)) a->speedMultiplier = speed;
     };
 
     animator.GetSpeed = [](uint32_t id) -> float {
         const CAnimator* a = GetAnimator(id);
-        return a ? a->speed : 0.0f;
+        return a ? a->speedMultiplier : 0.0f;
     };
 }

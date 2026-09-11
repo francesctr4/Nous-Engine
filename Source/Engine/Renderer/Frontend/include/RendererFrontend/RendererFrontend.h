@@ -92,6 +92,15 @@ public:
 	// removed). Call once after the per-object SubmitDynamicSurface() loop.
 	NOUS_ENGINE_API void ReconcileDynamicSurfaces();
 
+	// Drop any dynamic surface bound into `material`, restoring the slot texture it overwrote.
+	//
+	// MUST be called while the material is still alive, from the point that actually retires it
+	// (ModuleRenderer3D's pending-release loop). A surface holds a NON-OWNING ResourceMaterial*,
+	// and every other cleanup path here is keyed on frame state -- "is a scene loading", "was
+	// this UID submitted this frame" -- which has no defined ordering against the resource
+	// system's DEFERRED free. That race is what made Reconcile dereference a freed material.
+	NOUS_ENGINE_API void DropDynamicSurfacesForMaterial(const ResourceMaterial* material);
+
 	// Destroy every dynamic surface. Call after ReleaseFrameResources() and BEFORE the owning
 	// materials / scene are torn down (restores each surface's original slot texture first).
 	NOUS_ENGINE_API void DestroyDynamicSurfaces();

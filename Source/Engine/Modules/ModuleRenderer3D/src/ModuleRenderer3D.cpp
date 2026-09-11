@@ -2,6 +2,7 @@
 #include <ModuleRenderer3D/SkinningPairing.h>
 
 #include "RenderPacketPolicy.h"
+#include <EngineCore/Casts.h>        // down_cast — was arriving transitively via iRenderResourceProvider.h
 #include <EngineCore/InvalidID.h>
 
 #include <glm/glm.hpp>
@@ -403,6 +404,19 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 		for (auto& [type, resource] : mResourceGpuSync->TakePendingReleases())
 		{
 			if (resource->GetReferenceCount() > 0) continue; // re-acquired since queuing; skip
+
+			// A dynamic video surface holds a NON-OWNING ResourceMaterial* so it can restore
+			// the slot texture it overwrote. This is the only point with a defined ordering
+			// against the free: the material is retired HERE, and is still fully alive on
+			// this line. Doing it from PostUpdate's Reconcile instead keys the cleanup on
+			// frame state ("is a scene loading", "was this UID submitted"), which races the
+			// deferred release -- Reconcile then ran against a freed material and faulted
+			// inside textureMaps.find(). Covers every path that retires a material: scene
+			// clear, a mid-playback material swap, and eviction.
+			if (type == ResourceType::MATERIAL)
+				mRendererFrontend->DropDynamicSurfacesForMaterial(
+					down_cast<const ResourceMaterial*>(resource));
+
 			importer->Release(type, resource, mRendererFrontend);
 			resource->SetState(ResourceState::CPU_READY);
 			mResourceGpuSync->EvictResource(type, resource);
