@@ -38,6 +38,16 @@ namespace nous::engine::animation_system
         [[nodiscard]] bool IsTriggerSet(std::string_view name) const;
         [[nodiscard]] bool ConsumeTrigger(std::string_view name);
 
+        // Does this hold `name` at all, whatever its type?
+        //
+        // Absence is NOT expressible through the getters: each folds a missing name
+        // into the caller's fallback, so "absent" and "present and zero/false" are
+        // indistinguishable from outside -- and a sentinel fallback cannot separate
+        // them either, since a getter returns the fallback for a CROSS-TYPE entry too.
+        // Seeding a controller's declared defaults needs exactly that distinction: a
+        // default must fill an empty slot and must never overwrite what a script set.
+        [[nodiscard]] bool Contains(std::string_view name) const { return Find(name) != nullptr; }
+
         [[nodiscard]] size_t Count() const { return m_entries.size(); }
 
     private:

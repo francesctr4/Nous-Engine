@@ -96,6 +96,37 @@ ResourceAnimation* CAnimator::ClipForState(const int stateIndex) const
     return controller->clips[clipIndex];
 }
 
+void CAnimator::SeedDeclaredParameters()
+{
+    if (!controller) return;
+
+    for (const anim::ParameterDecl& decl : controller->graph.parameters)
+    {
+        // ABSENCE is the whole condition, and Contains is the only thing that can
+        // state it. A sentinel fallback cannot: every getter returns the fallback for
+        // a CROSS-TYPE entry as well as a missing one, so it cannot tell "not held"
+        // from "held as a Bool" -- and the obvious GetBool double-read with
+        // disagreeing fallbacks is exactly inverted, skipping the absent name it is
+        // meant to seed while overwriting a script's `false`.
+        if (parameters.Contains(decl.name))
+            continue;
+
+        switch (static_cast<anim::AnimParamType>(decl.type))
+        {
+            case anim::AnimParamType::Float:
+                parameters.SetFloat(decl.name, decl.defaultValue);
+                break;
+
+            case anim::AnimParamType::Bool:
+                parameters.SetBool(decl.name, decl.defaultValue != 0.0f);
+                break;
+
+            case anim::AnimParamType::Trigger:
+                break;   // a trigger has no default: it is set or it is not
+        }
+    }
+}
+
 RootMotionMode CAnimator::ResolveRootMotion(const int stateIndex) const
 {
     if (!controller || !controller->graph.IsValidState(stateIndex))
@@ -115,6 +146,10 @@ void CAnimator::EnterState(const int stateIndex, const float fadeSeconds)
     // entered, which is the only reading under which "when the attack finishes"
     // means the attack.
     m_currentState = stateIndex;
+
+    // Captured HERE, while the index still refers to the graph it was resolved in.
+    // Deriving it later is what a re-save breaks -- see the member's comment.
+    m_currentStateName.assign(GetCurrentStateName());
 
     ResourceAnimation* target = ClipForState(stateIndex);
 
@@ -379,9 +414,55 @@ void CAnimator::OnUpdate(const float deltaTime)
                        && !controller->graph.states.empty())
             m_currentState = 0;
 
-        m_from.clip = ClipForState(m_currentState);
+        m_currentStateName.assign(GetCurrentStateName());
+
+        m_from.clip       = ClipForState(m_currentState);
+        m_from.stateIndex = m_currentState;
+        m_from.mode       = ResolveRootMotion(m_currentState);
         RebindTrack(m_from);
         RebindTrack(m_to);
+
+        SeedDeclaredParameters();
+    }
+
+    // A generation bump means the asset was RE-SAVED underneath a live animator.
+    // Rebuilding without stopping the scene is most of this feature's value: tuning a
+    // transition's duration or exit time is only meaningful while it is playing.
+    //
+    // Not folded into the block above, because a re-save is not a slot change -- the
+    // controller UID is identical, so nothing there would notice it.
+    if (controller && controller->generation != m_boundGeneration)
+    {
+        m_boundGeneration = controller->generation;
+
+        // Preserved BY NAME, from the name REMEMBERED at enter. The index is
+        // meaningless across a re-save: inserting a state above this one shifts it,
+        // and reading states[m_currentState].name now would report whatever state has
+        // taken that index -- so reordering two states would swap the character
+        // between them with nothing to show it happened.
+        int restored = m_currentStateName.empty()
+                     ? -1
+                     : controller->graph.FindState(m_currentStateName);
+
+        // Same two-step fallback the bind path uses: the authored default, then the
+        // first state, so a renamed or deleted state leaves a character animating
+        // rather than presenting a bind-pose statue that looks like a broken rig.
+        if (!controller->graph.IsValidState(restored))
+            restored = controller->graph.defaultState;
+        if (!controller->graph.IsValidState(restored) && !controller->graph.states.empty())
+            restored = 0;
+
+        // An in-flight transition is cancelled rather than carried across: preserving
+        // it would mean reconciling two graphs' transition identities for one frame of
+        // visual continuity during an editor action.
+        m_fadeElapsed  = 0.0f;
+        m_fadeDuration = 0.0f;
+        m_to.clip      = nullptr;
+        m_from.frozen  = false;
+        RebindTrack(m_to);
+
+        EnterState(restored, 0.0f);
+        SeedDeclaredParameters();
     }
 
     // When no transition is in flight, m_from IS the current state's clip -- RE-DERIVED

@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 
 #include <cstdint>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -266,6 +267,12 @@ private:
     // leaves the instance alone; it has nothing to sample anyway.
     void SeedPlaybackSettings(ClipTrack& track) const;
 
+    // Gives every parameter the controller DECLARES a value, without disturbing one
+    // the animator already holds. Called on bind and on every re-save, so an animator
+    // has a coherent parameter state before any script runs -- and so a script's value
+    // survives the editor saving the asset underneath it.
+    void SeedDeclaredParameters();
+
     // The mode that actually governs `stateIndex`: the state's own, or the
     // component's when the state says Inherit. Also the component's for a state that
     // does not resolve, so an animator with no controller behaves as it always did.
@@ -294,6 +301,14 @@ private:
     // one more instance of the same evaluator plus one more copy of exactly this.
     // Keep them together and do not interleave unrelated members.
     int                                  m_currentState = -1;
+
+    // The NAME of m_currentState, remembered at enter rather than looked up. An index
+    // is only meaningful against the graph it was resolved in, and a re-save replaces
+    // that graph IN PLACE -- so by the time a generation bump is noticed, reading
+    // states[m_currentState].name gives whatever state now happens to sit at that
+    // index. Reordering two states would then move the character between them
+    // silently. This is what "preserve by name across a re-save" is preserved FROM.
+    std::string                          m_currentStateName;
     ClipTrack                            m_from;
     ClipTrack                            m_to;
     nous::engine::animation_system::Pose m_blended;

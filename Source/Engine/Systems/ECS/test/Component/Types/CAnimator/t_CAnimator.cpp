@@ -1217,6 +1217,161 @@ TEST_F(t_CAnimator, ParametersAreNotSerialized)
 }
 
 // =============================================================================
+// Live re-save (generation bump)
+// =============================================================================
+
+// Preserved BY NAME, never by index: a re-save that inserts a state above this one
+// shifts every index below it, so an index-preserving rebuild silently moves the
+// character into a different state. Resetting to the default state instead would make
+// the tuning loop useless -- adjusting a transition's duration is most of what the
+// controller editor is for, and it is only reachable while the scene plays.
+TEST_F(t_CAnimator, AGenerationBumpPreservesTheCurrentStateByName)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child",  0.0f);  animA.SetName("Idle");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("Run");
+
+    ResourceAnimationController aCtrl(950);
+    SetClips(aCtrl, { &animA, &animB });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.CrossFade("Run", 0.0f));
+    a.OnUpdate(0.0f);
+    ASSERT_EQ(a.GetCurrentStateName(), "Run");
+    ASSERT_EQ(a.CurrentClip(), &animB);
+
+    // The editor re-saves with the states in the opposite order: Run is now index 0.
+    SetClips(aCtrl, { &animB, &animA });
+    ++aCtrl.generation;
+    a.OnUpdate(0.0f);
+
+    EXPECT_EQ(a.GetCurrentStateName(), "Run");
+    EXPECT_EQ(a.CurrentClip(), &animB);
+}
+
+TEST_F(t_CAnimator, AGenerationBumpFallsBackToDefaultWhenTheStateIsGone)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child",  0.0f);  animA.SetName("Idle");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("Run");
+
+    ResourceAnimationController aCtrl(951);
+    SetClips(aCtrl, { &animA, &animB });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.CrossFade("Run", 0.0f));
+    a.OnUpdate(0.0f);
+    ASSERT_EQ(a.GetCurrentStateName(), "Run");
+
+    SetClips(aCtrl, { &animA });   // Run deleted
+    ++aCtrl.generation;
+    a.OnUpdate(0.0f);
+
+    EXPECT_EQ(a.GetCurrentStateName(), "Idle");
+    EXPECT_EQ(a.CurrentClip(), &animA);
+}
+
+// Preserving a transition across a re-save would mean reconciling two graphs'
+// transition identities for one frame of visual continuity during an editor action.
+// The rebuild lands on a whole state instead.
+TEST_F(t_CAnimator, AGenerationBumpCancelsAnInFlightTransition)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child",  0.0f);  animA.SetName("Idle");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("Run");
+
+    ResourceAnimationController aCtrl(952);
+    SetClips(aCtrl, { &animA, &animB });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.CrossFade("Run", 1.0f));
+    a.OnUpdate(0.5f);
+    ASSERT_TRUE(a.IsFading());
+
+    ++aCtrl.generation;
+    a.OnUpdate(0.0f);
+
+    EXPECT_FALSE(a.IsFading());
+    EXPECT_EQ(a.GetCurrentStateName(), "Run");    // landed on the destination
+    EXPECT_FALSE(a.GetPalette().empty());
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 10.0f);
+}
+
+// A script's value must survive an editor save, or every Ctrl+S resets the
+// character's behaviour mid-play. A NEWLY declared parameter still arrives at its
+// authored default, which is the other half of what makes the seeding worth having.
+TEST_F(t_CAnimator, AGenerationBumpPreservesParameterValuesAndSeedsOnlyNewDeclarations)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeHoldClip(anim, "Child", 0.0f);   anim.SetName("Idle");
+
+    ResourceAnimationController aCtrl(953);
+    SetClips(aCtrl, { &anim });
+    aCtrl.graph.parameters.push_back(
+        { "speed", static_cast<uint8_t>(nous::engine::animation_system::AnimParamType::Float), 1.0f });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.OnUpdate(0.0f);
+
+    EXPECT_FLOAT_EQ(a.parameters.GetFloat("speed"), 1.0f);   // seeded on bind
+
+    a.parameters.SetFloat("speed", 7.0f);                    // a script writes it
+
+    aCtrl.graph.parameters.push_back(
+        { "isGrounded", static_cast<uint8_t>(nous::engine::animation_system::AnimParamType::Bool), 1.0f });
+    ++aCtrl.generation;
+    a.OnUpdate(0.0f);
+
+    EXPECT_FLOAT_EQ(a.parameters.GetFloat("speed"), 7.0f);   // NOT reset to 1.0
+    EXPECT_TRUE(a.parameters.GetBool("isGrounded"));         // newly declared, seeded
+}
+
+// A declared default must fill an EMPTY slot and never overwrite what a script set --
+// including when the script set the type's own zero. That is the case every
+// absence-by-fallback trick gets wrong, and the reason AnimParameters::Contains exists.
+TEST_F(t_CAnimator, SeedingNeverOverwritesAScriptsFalse)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeHoldClip(anim, "Child", 0.0f);   anim.SetName("Idle");
+
+    ResourceAnimationController aCtrl(954);
+    SetClips(aCtrl, { &anim });
+    aCtrl.graph.parameters.push_back(
+        { "isGrounded", static_cast<uint8_t>(nous::engine::animation_system::AnimParamType::Bool), 1.0f });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.parameters.SetBool("isGrounded", false);   // the script spoke first
+    a.OnUpdate(0.0f);
+
+    EXPECT_FALSE(a.parameters.GetBool("isGrounded"));
+
+    ++aCtrl.generation;
+    a.OnUpdate(0.0f);
+    EXPECT_FALSE(a.parameters.GetBool("isGrounded"));
+}
+
+// =============================================================================
 // Per-state speed
 // =============================================================================
 

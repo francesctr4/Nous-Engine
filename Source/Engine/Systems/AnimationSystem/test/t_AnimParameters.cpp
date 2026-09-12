@@ -142,3 +142,33 @@ TEST(t_AnimParameters, ParametersAreIndependent)
     EXPECT_FLOAT_EQ(p.GetFloat("speed"), 4.0f);   // untouched by the consume
     EXPECT_TRUE(p.GetBool("isGrounded"));
 }
+
+// =============================================================================
+// Presence
+// =============================================================================
+
+// The distinction no getter can express: every one of them folds a missing name into
+// the caller's fallback, so "absent" and "present and legitimately zero" look
+// identical from outside. Seeding a controller's declared defaults turns on exactly
+// this -- a default fills an empty slot and must never overwrite a script's value.
+TEST(t_AnimParameters, ContainsDistinguishesAbsenceFromAZeroValue)
+{
+    AnimParameters p;
+
+    EXPECT_FALSE(p.Contains("speed"));
+
+    p.SetFloat("speed", 0.0f);
+    EXPECT_TRUE(p.Contains("speed"));     // present, and legitimately zero
+
+    p.SetBool("grounded", false);
+    EXPECT_TRUE(p.Contains("grounded"));
+
+    p.SetTrigger("jump");
+    EXPECT_TRUE(p.ConsumeTrigger("jump"));
+    EXPECT_TRUE(p.Contains("jump"));      // consumed, not removed
+
+    // A Get never creates an entry -- a script polling one every frame must not grow
+    // the store, and Contains must not start reporting a name nothing ever set.
+    (void)p.GetFloat("neverSet", 1.0f);
+    EXPECT_FALSE(p.Contains("neverSet"));
+}
