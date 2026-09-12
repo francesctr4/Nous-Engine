@@ -74,6 +74,14 @@ target_include_directories(EditorUI_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR
 # those headers need the dir too. It is header-only, so this adds no linkage.
 target_link_libraries(EditorUI_headers INTERFACE EngineCore_headers)
 
+# AnimationControllerBuild.h -- a PUBLIC header -- includes
+# <AnimationSystem/Controller.h> and holds ControllerState/ControllerTransition BY
+# VALUE, so anyone handed EditorUI's API dir alone needs that dir too. It does NOT
+# arrive through ECS_headers: that handle carries only EngineCore_headers, and
+# AnimationSystem_headers rides on the ECS archive target instead. Header-only, so
+# this adds no linkage.
+target_link_libraries(EditorUI_headers INTERFACE AnimationSystem_headers)
+
 # An _headers handle must carry the header-level deps of the API it exposes.
 # TextEditorWindow.h includes <TextEditor.h>, so anyone handed EditorUI's API dir
 # alone -- ModuleEditor.cpp constructs every window -- needs this dir too. It used
@@ -90,6 +98,7 @@ add_library(EditorUI STATIC
 
 target_sources(EditorUI PRIVATE
         include/EditorUI/IEditorWindow.h
+        include/EditorUI/AnimationControllerBuild.h
         include/EditorUI/AssetsBrowser.h
         include/EditorUI/AudioGraphEditor.h
         include/EditorUI/AudioGraphLinearize.h
@@ -197,6 +206,7 @@ target_link_libraries(EditorUI PUBLIC
 # Tests moved from the leaves to a top-level test/ mirroring src/, so EditorUI's
 # whole suite is visible in one place (see CONVENTIONS.md).
 if (NOUS_BUILD_TESTS)
+    add_subdirectory(test/Windows/AnimationControllerEditor)
     add_subdirectory(test/Windows/AudioGraphEditor)
     add_subdirectory(test/Windows/InspectorWindow/ComponentInspectorRegistry)
 endif()
