@@ -337,15 +337,22 @@ void ImporterAnimationController::ResolveClips(ResourceAnimationController* cont
         as::ControllerState&      state = controller->graph.states[i];
         const ControllerClipSlot& slot  = controller->clipSlots[i];
 
-        ResourceAnimation* clip = nullptr;
+        // The null is tested BEFORE the cast, and that order is load-bearing:
+        // down_cast asserts its result is non-null, and an unresolvable slot -- a
+        // .nanim the user deleted -- is the EXPECTED outcome this loop exists to
+        // tolerate, not a type error. Casting first aborts the process on the one
+        // path the `else` branch below is written to handle. The assert is live in
+        // every Debug preset, so it is not a release-only nicety.
+        ResourceBase* resolved = nullptr;
 
         if (!slot.libraryPath.empty() && slot.uid != 0)
-            clip = down_cast<ResourceAnimation*>(
-                rm->CreateResourceFromLibrary(slot.uid, ResourceType::ANIMATION,
-                                              nous::engine::filesystem::GetFilename(slot.assetPath),
-                                              slot.assetPath, slot.libraryPath));
+            resolved = rm->CreateResourceFromLibrary(slot.uid, ResourceType::ANIMATION,
+                                                     nous::engine::filesystem::GetFilename(slot.assetPath),
+                                                     slot.assetPath, slot.libraryPath);
         else if (!slot.assetPath.empty())
-            clip = down_cast<ResourceAnimation*>(rm->CreateResource(slot.assetPath));
+            resolved = rm->CreateResource(slot.assetPath);
+
+        ResourceAnimation* clip = resolved ? down_cast<ResourceAnimation*>(resolved) : nullptr;
 
         if (clip)
         {

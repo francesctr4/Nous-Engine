@@ -653,8 +653,12 @@ void ModuleScene::SpawnMeshAsHierarchy(const std::string& assetsPath) const
         ResourceMaterial* resolved = nullptr;
         if (!sub.materialAssetPath.empty())
         {
-            resolved = down_cast<ResourceMaterial*>(
-                mModuleResourceManager->CreateResource(sub.materialAssetPath));
+            // Null-checked BEFORE the cast: a missing/unloadable .nmat is the case
+            // the warning below exists for, but down_cast asserts on null, so
+            // casting first turns that handled fallback into an abort in every
+            // Debug build.
+            ResourceBase* base = mModuleResourceManager->CreateResource(sub.materialAssetPath);
+            resolved = base ? down_cast<ResourceMaterial*>(base) : nullptr;
             if (!resolved)
             {
                 NOUS_WARN("[SpawnMeshAsHierarchy] Material '%s' (submesh %d of '%s') "
