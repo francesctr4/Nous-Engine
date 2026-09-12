@@ -32,6 +32,15 @@ class ResourceAnimationController;
  */
 enum class RootMotionMode
 {
+    // FIRST, so 0 == Inherit and ControllerState::rootMotion's int default of 0 means
+    // "use the component's mode" with no conversion table between the pure layer's
+    // int and this enum.
+    //
+    // Only meaningful on a controller STATE. It is not a valid authored value on the
+    // component itself, and the Inspector does not offer it there; a component left on
+    // it produces no travel, exactly as Baked does.
+    Inherit,
+
     Baked,     // travel stays in the pose; the object does not move. Today's behaviour.
     Applied,   // travel is stripped from the pose and added to the object's transform.
     InPlace,   // travel is stripped and discarded.
@@ -196,7 +205,9 @@ public:
     [[nodiscard]] NOUS_ENGINE_API float GetNormalizedTime() const;
 
     // This frame's blended root motion, in the ANIMATION's space -- before the
-    // object's orientation and scale are applied. Zero in Baked mode.
+    // object's orientation and scale are applied. Non-zero ONLY for travel coming from
+    // a track resolved to Applied: Baked leaves the travel in the pose and InPlace
+    // discards it, so neither has anything to hand a transform.
     //
     // Exposed for a future physics integration or controller, which would consume
     // this instead of letting the animator write the transform directly (Unity's
@@ -224,6 +235,16 @@ private:
         // captures an in-flight blend as the new source.
         bool                                             frozen    = false;
 
+        // The controller state this track was entered from, and that state's RESOLVED
+        // root motion mode. Both are fixed at ENTER rather than read per frame,
+        // because a track belongs to the state that started it and during a cross-fade
+        // the two tracks routinely disagree -- which is exactly what lets the travel of
+        // an outgoing Applied state fade out against an incoming InPlace one.
+        //
+        // Baked by default, so a track that was never entered contributes no travel.
+        int                                              stateIndex = -1;
+        RootMotionMode                                   mode       = RootMotionMode::Baked;
+
         // The root bone's transform as of the last sample, and its transform at the
         // clip's start and end. The endpoints never change for a bound clip, so they
         // are computed once in RebindTrack and make the loop-seam split pure
@@ -237,11 +258,18 @@ private:
     // sizes its pose. Clears the track when either side is null.
     void RebindTrack(ClipTrack& track);
 
-    // Pushes the track's clip's authored loop/speed onto its AnimInstance, scaling
-    // the speed by speedMultiplier. Called per frame for both tracks, so an Inspector
-    // edit to the resource reaches a clip that is already playing. A null clip leaves
-    // the instance alone -- it has nothing to sample anyway.
+    // Pushes the track's clip's authored loop onto its AnimInstance, and composes its
+    // playback rate from FOUR factors: the clip's authored speed, the state's speed,
+    // the state's optional speed parameter, and the animator's speedMultiplier. Called
+    // per frame for both tracks, so an Inspector edit to the resource -- or a script
+    // writing the parameter -- reaches a clip that is already playing. A null clip
+    // leaves the instance alone; it has nothing to sample anyway.
     void SeedPlaybackSettings(ClipTrack& track) const;
+
+    // The mode that actually governs `stateIndex`: the state's own, or the
+    // component's when the state says Inherit. Also the component's for a state that
+    // does not resolve, so an animator with no controller behaves as it always did.
+    [[nodiscard]] RootMotionMode ResolveRootMotion(int stateIndex) const;
 
     // The ResourceAnimation a controller state plays, or null when there is no
     // controller, the index does not resolve, or that state has no clip assigned.

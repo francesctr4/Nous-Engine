@@ -39,6 +39,7 @@ namespace
     {
         switch (m)
         {
+            case RootMotionMode::Inherit: return "Inherit";
             case RootMotionMode::Applied: return "Applied";
             case RootMotionMode::InPlace: return "InPlace";
             case RootMotionMode::Baked:   // fallthrough
@@ -48,9 +49,13 @@ namespace
 
     RootMotionMode RootMotionFromString(const std::string& s)
     {
+        if (s == "Inherit") return RootMotionMode::Inherit;
         if (s == "Applied") return RootMotionMode::Applied;
         if (s == "InPlace") return RootMotionMode::InPlace;
-        return RootMotionMode::Baked;   // also the pre-root-motion scene case
+
+        // Baked, not Inherit, for anything unrecognised: a scene saved before Inherit
+        // existed has no such value to read and must keep behaving identically.
+        return RootMotionMode::Baked;
     }
 }
 
@@ -91,6 +96,17 @@ ResourceAnimation* CAnimator::ClipForState(const int stateIndex) const
     return controller->clips[clipIndex];
 }
 
+RootMotionMode CAnimator::ResolveRootMotion(const int stateIndex) const
+{
+    if (!controller || !controller->graph.IsValidState(stateIndex))
+        return rootMotion;
+
+    const auto stateMode =
+        static_cast<RootMotionMode>(controller->graph.states[stateIndex].rootMotion);
+
+    return stateMode == RootMotionMode::Inherit ? rootMotion : stateMode;
+}
+
 void CAnimator::EnterState(const int stateIndex, const float fadeSeconds)
 {
     // The destination becomes current IMMEDIATELY -- design §4. There is only ever
@@ -104,10 +120,16 @@ void CAnimator::EnterState(const int stateIndex, const float fadeSeconds)
 
     if (fadeSeconds <= 0.0f)
     {
-        m_from.clip = target;
+        m_from.clip       = target;
+        m_from.stateIndex = stateIndex;
+        m_from.mode       = ResolveRootMotion(stateIndex);
         RebindTrack(m_from);
-        m_to.clip = nullptr;
+
+        m_to.clip       = nullptr;
+        m_to.stateIndex = -1;
+        m_to.mode       = RootMotionMode::Baked;
         RebindTrack(m_to);
+
         m_fadeElapsed  = 0.0f;
         m_fadeDuration = 0.0f;
         return;
@@ -128,8 +150,11 @@ void CAnimator::EnterState(const int stateIndex, const float fadeSeconds)
         m_from.frozen = true;
     }
 
-    m_to.clip = target;
+    m_to.clip       = target;
+    m_to.stateIndex = stateIndex;
+    m_to.mode       = ResolveRootMotion(stateIndex);
     RebindTrack(m_to);
+
     m_fadeElapsed  = 0.0f;
     m_fadeDuration = fadeSeconds;
 }
@@ -164,8 +189,29 @@ void CAnimator::SeedPlaybackSettings(ClipTrack& track) const
 {
     if (!track.clip) return;
 
-    track.instance.loop  = track.clip->settings.loop;
-    track.instance.speed = track.clip->settings.speed * speedMultiplier;
+    track.instance.loop = track.clip->settings.loop;
+
+    // FOUR factors, and they are deliberately different axes rather than one setting
+    // fighting for the same job: the clip's authored speed is per clip for every
+    // character, the state's is per clip WITHIN this controller, the parameter makes
+    // that state's rate follow input, and the multiplier is per character for every
+    // clip. Nothing here overrides anything -- it is a product, so each axis composes.
+    float rate = track.clip->settings.speed * speedMultiplier;
+
+    if (controller && controller->graph.IsValidState(track.stateIndex))
+    {
+        const auto& state = controller->graph.states[track.stateIndex];
+        rate *= state.speed;
+
+        // Fallback 1.0f, NOT AnimParameters' own 0.0f default. The rate is a product,
+        // so reading zero for a parameter no script has written yet would freeze the
+        // character -- and an unset parameter is the normal state of a scene's first
+        // frames, not an error.
+        if (!state.speedParameter.empty())
+            rate *= parameters.GetFloat(state.speedParameter, 1.0f);
+    }
+
+    track.instance.speed = rate;
 }
 
 void CAnimator::RebindTrack(ClipTrack& track)
@@ -227,7 +273,14 @@ void CAnimator::RebindTrack(ClipTrack& track)
 
 anim::RootMotionDelta CAnimator::ExtractTrackRootMotion(ClipTrack& track, const bool wrapped)
 {
-    if (rootMotion == RootMotionMode::Baked) return {};
+    // The TRACK's resolved mode, never the component's: during a cross-fade the two
+    // tracks routinely disagree, and that disagreement is what makes the travel of an
+    // outgoing Applied state fade out against an incoming InPlace one instead of
+    // snapping off. Inherit is impossible here (ResolveRootMotion has already turned
+    // it into the component's mode) but is treated as "no travel" for safety.
+    if (track.mode != RootMotionMode::Applied && track.mode != RootMotionMode::InPlace)
+        return {};
+
     if (track.frozen || track.binding.rootBone < 0) return {};
     if (static_cast<size_t>(track.binding.rootBone) >= track.pose.bones.size()) return {};
 
@@ -247,7 +300,18 @@ anim::RootMotionDelta CAnimator::ExtractTrackRootMotion(ClipTrack& track, const 
     // forever. Same line Mixamo's own In Place export draws.
     anim::StripRootMotion(track.pose, track.binding.rootBone,
                           skeleton->skeleton.bindLocals[track.binding.rootBone],
-                          rootMotion == RootMotionMode::Applied);
+                          track.mode == RootMotionMode::Applied);
+
+    // ONLY Applied reports travel. InPlace strips it -- which is the work above -- and
+    // then DISCARDS it, which is this line: the delta exists to reach the transform,
+    // and an InPlace track has nothing to say to it.
+    //
+    // Load-bearing now that ApplyRootMotion has no mode gate of its own. The per-track
+    // mode is the only thing deciding whether an object moves, so a non-zero delta
+    // from an InPlace track would move it -- and because the modes resolve per track,
+    // that reads as "InPlace works on this character but not that one".
+    if (track.mode != RootMotionMode::Applied)
+        return {};
 
     return delta;
 }
@@ -331,7 +395,18 @@ void CAnimator::OnUpdate(const float deltaTime)
     // is already the destination (design §4), so re-deriving there would overwrite
     // the very thing the fade is blending away from.
     if (m_fadeDuration <= 0.0f)
-        m_from.clip = ClipForState(m_currentState);
+    {
+        m_from.clip       = ClipForState(m_currentState);
+        m_from.stateIndex = m_currentState;
+
+        // Re-resolved here as well as at enter, which does NOT contradict the mode
+        // being fixed per track: the guard above means m_from IS the current state, so
+        // there is no second track to disagree with. It is what makes an edit to the
+        // state's mode -- or to the component's -- reach a character that is already
+        // standing in that state, and it covers the controller-bind path, which
+        // reaches m_from without going through EnterState.
+        m_from.mode = ResolveRootMotion(m_currentState);
+    }
 
     // Rebind on a UID mismatch rather than on an explicit call. Integer comparisons,
     // and they cover every path that can change a slot -- Inspector drop, Inspector
@@ -471,8 +546,17 @@ void CAnimator::OnUpdate(const float deltaTime)
         m_rootDelta = deltaFrom;
     }
 
-    if (rootMotion == RootMotionMode::Applied)
-        ApplyRootMotion();
+    // NO mode gate here, and that is load-bearing. ExtractTrackRootMotion already
+    // returns a zero delta for every track whose resolved mode is not Applied, so the
+    // per-track modes are the only thing deciding -- a Baked character, an InPlace
+    // state and an unbound track all produce nothing by construction.
+    //
+    // Gating on the component's mode would make a per-state Applied unreachable, which
+    // is the feature; gating on m_currentState would apply nothing during a fade OUT
+    // of Applied, because the current state is the DESTINATION from the instant the
+    // transition starts -- so travel would snap off on the transition's first frame
+    // instead of fading out across it (design §5).
+    ApplyRootMotion();
 
     // Guarded rather than fire-and-forget: on failure the globals are stale, and a
     // palette built from them would deform the mesh to a pose that was never

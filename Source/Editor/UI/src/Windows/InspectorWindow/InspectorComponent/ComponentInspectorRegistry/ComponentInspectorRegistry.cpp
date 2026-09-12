@@ -676,13 +676,18 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
                           "1 = as authored. The per-clip Speed above is shared by every\n"
                           "character playing that clip.");
 
-    // Order matches RootMotionMode's declaration -- the combo indexes the enum by
-    // value, the same contract CAudioSource's attenuation combo has.
+    // Order matches RootMotionMode's declaration, the same contract CAudioSource's
+    // attenuation combo has -- but SHIFTED BY ONE, because Inherit is enumerator 0 and
+    // is deliberately not offered here: it means "use the component's mode" and is
+    // only meaningful on a controller STATE. So index 0 is Baked, and the +1/-1 is
+    // what keeps the combo honest rather than silently writing Inherit.
     static const char* const c_rootMotionNames[] = { "Baked", "Applied", "In Place" };
 
-    int rootMotionIndex = static_cast<int>(cAnimator->rootMotion);
+    int rootMotionIndex = static_cast<int>(cAnimator->rootMotion) - 1;
+    rootMotionIndex = glm::clamp(rootMotionIndex, 0, 2);   // an Inherit-valued component reads as Baked
+
     if (ImGui::Combo("Root Motion", &rootMotionIndex, c_rootMotionNames, 3))
-        cAnimator->rootMotion = static_cast<RootMotionMode>(rootMotionIndex);
+        cAnimator->rootMotion = static_cast<RootMotionMode>(rootMotionIndex + 1);
 
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Baked: travel stays in the pose (the character drifts).\n"

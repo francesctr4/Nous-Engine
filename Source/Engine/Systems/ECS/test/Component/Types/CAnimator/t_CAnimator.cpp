@@ -1217,6 +1217,66 @@ TEST_F(t_CAnimator, ParametersAreNotSerialized)
 }
 
 // =============================================================================
+// Per-state speed
+// =============================================================================
+
+// Four multiplicands, and the factors are chosen so that dropping ANY ONE of them
+// gives a distinct wrong answer: clip 2.0 x state 1.5 x parameter 0.5 x multiplier
+// 4.0 = 6.0, against 3.0 / 4.0 / 12.0 / 1.5 for the four omissions. A formula this
+// shape is easy to get subtly wrong and impossible to see at runtime.
+TEST_F(t_CAnimator, TheRateIsTheProductOfAllFourFactors)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+    anim.settings.speed = 2.0f;
+
+    ResourceAnimationController aCtrl(940);
+    SetClips(aCtrl, { &anim });
+    aCtrl.graph.states[0].speed          = 1.5f;
+    aCtrl.graph.states[0].speedParameter = "rate";
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton        = &rig;
+    a.controller      = &aCtrl;
+    a.speedMultiplier = 4.0f;
+    a.parameters.SetFloat("rate", 0.5f);
+    a.OnUpdate(0.0f);
+
+    a.OnUpdate(0.1f);   // 0.1s x 6.0 = 0.6s into a 1s slide
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 6.0f);
+}
+
+// The rate is a PRODUCT, so the absent-parameter fallback has to be 1.0f -- reading
+// AnimParameters' own 0.0f default would multiply the whole rate to zero and freeze
+// the character. A state naming a parameter no script has written yet is the normal
+// case on the first frames of a scene, not an error.
+TEST_F(t_CAnimator, AnAbsentSpeedParameterIsFactorOneNotZero)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeSlideClip(animA, "Child");  animA.SetName("Plain");
+    ResourceAnimation animB(3); MakeSlideClip(animB, "Child");  animB.SetName("Ghost");
+
+    ResourceAnimationController aCtrl(941);
+    SetClips(aCtrl, { &animA, &animB });
+    aCtrl.graph.states[1].speedParameter = "neverSet";
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.OnUpdate(0.0f);
+
+    a.OnUpdate(0.5f);   // no speedParameter at all
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+
+    ASSERT_TRUE(a.CrossFade("Ghost", 0.0f));
+    a.OnUpdate(0.0f);
+    a.OnUpdate(0.5f);   // names a parameter nothing has set
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+}
+
+// =============================================================================
 // Root motion
 // =============================================================================
 
@@ -1399,6 +1459,87 @@ TEST_F(t_CAnimator, InPlaceKeepsTheTurnInThePose)
     const glm::vec3 forward = go.GetComponent<CTransform>().orientation
                             * glm::vec3(0.0f, 0.0f, 1.0f);
     EXPECT_NEAR(forward.x, 0.0f, 1e-4f);   // the object itself never turns
+}
+
+// A state left at Inherit -- which every state is until someone changes it, since
+// Inherit is enumerator 0 and ControllerState::rootMotion defaults to 0 -- behaves
+// exactly as the character did before per-state overrides existed.
+TEST_F(t_CAnimator, InheritRootMotionResolvesToTheComponentMode)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Root");
+
+    ResourceAnimationController aCtrl(942);
+    SetClips(aCtrl, { &anim });
+    ASSERT_EQ(aCtrl.graph.states[0].rootMotion, 0);   // Inherit, untouched
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.rootMotion = RootMotionMode::Applied;
+
+    a.OnUpdate(0.5f);
+
+    EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, 5.0f);
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[0]), 0.0f);
+}
+
+// The feature: an attack that must not slide the character, inside a character whose
+// locomotion is Applied. The override is on the state, so it costs nothing anywhere
+// else in the graph.
+TEST_F(t_CAnimator, AnExplicitStateRootMotionOverridesTheComponent)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Root");
+
+    ResourceAnimationController aCtrl(943);
+    SetClips(aCtrl, { &anim });
+    aCtrl.graph.states[0].rootMotion = static_cast<int>(RootMotionMode::InPlace);
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.rootMotion = RootMotionMode::Applied;
+
+    a.OnUpdate(0.5f);
+
+    EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, 0.0f);
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[0]), 0.0f);   // stripped, not applied
+}
+
+// Design §5, and THE test that pins ApplyRootMotion having no mode gate of its own.
+// The outgoing track is Applied and the incoming one InPlace, so deltaFrom is the
+// full travel and deltaTo is zero; BlendRootDelta then walks the travel out ACROSS
+// the transition instead of cutting it on the transition's first frame. Both gates an
+// earlier draft proposed -- on the component mode, or on m_currentState -- produce a
+// snap, and a snap is invisible in a still frame.
+TEST_F(t_CAnimator, FadingFromAppliedToInPlaceFadesTheTravelOutRatherThanSnapping)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeSlideClip(animA, "Root");  animA.SetName("Walk");
+    ResourceAnimation animB(3); MakeSlideClip(animB, "Root");  animB.SetName("Attack");
+
+    ResourceAnimationController aCtrl(944);
+    SetClips(aCtrl, { &animA, &animB });
+    aCtrl.graph.states[1].rootMotion = static_cast<int>(RootMotionMode::InPlace);
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.rootMotion = RootMotionMode::Applied;
+    a.OnUpdate(0.0f);
+
+    ASSERT_TRUE(a.CrossFade("Attack", 1.0f));
+    a.OnUpdate(0.5f);
+
+    // Half way through the fade: half of Walk's 5.0 of travel, none of Attack's.
+    EXPECT_FLOAT_EQ(a.GetRootMotionDelta().translation.x, 2.5f);
+    EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, 2.5f);
+    EXPECT_GT(a.GetRootMotionDelta().translation.x, 0.0f);
+    EXPECT_LT(a.GetRootMotionDelta().translation.x, 5.0f);
 }
 
 // =============================================================================
