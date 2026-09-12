@@ -3,14 +3,14 @@
     "version": 1,
     "GameObjects": [
         {
-            "uid": 3849404792,
+            "uid": 4053445852,
             "name": "RumbaDancing_WithSkin.fbx",
             "parent": 0,
             "components": [
                 {
                     "type": "CTransform",
                     "position": [
-                        0,
+                        -159.28144836425781,
                         0,
                         0
                     ],
@@ -36,13 +36,9 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
                     "skeletonUID": 408757248,
-                    "clips": [
-                        {
-                            "assetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
-                            "libraryPath": "Library\/Animations\/3875098274.nanim",
-                            "uid": 3875098274
-                        }
-                    ],
+                    "controllerAssetPath": "Assets\/Skeletal_Animation\/Thriller.nctrl",
+                    "controllerLibraryPath": "Library\/AnimationControllers\/729402859.nctrl",
+                    "controllerUID": 729402859,
                     "fadeSeconds": 0.20000000298023224,
                     "speedMultiplier": 1,
                     "rootMotion": "Baked"
@@ -50,9 +46,9 @@
             ]
         },
         {
-            "uid": 1866509879,
+            "uid": 1486440403,
             "name": "Beta_Surface",
-            "parent": 3849404792,
+            "parent": 4053445852,
             "components": [
                 {
                     "type": "CTransform",
@@ -94,9 +90,9 @@
             ]
         },
         {
-            "uid": 3476760889,
+            "uid": 694690816,
             "name": "Beta_Joints",
-            "parent": 3849404792,
+            "parent": 4053445852,
             "components": [
                 {
                     "type": "CTransform",

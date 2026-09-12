@@ -99,6 +99,7 @@ add_library(EditorUI STATIC
 target_sources(EditorUI PRIVATE
         include/EditorUI/IEditorWindow.h
         include/EditorUI/AnimationControllerBuild.h
+        include/EditorUI/AnimationControllerEditor.h
         include/EditorUI/AssetsBrowser.h
         include/EditorUI/AudioGraphEditor.h
         include/EditorUI/AudioGraphLinearize.h

@@ -309,10 +309,16 @@ std::vector<AudioNode*> AudioGraphEditor::ChainOrderedNodes()
 
 void AudioGraphEditor::LoadFromResource(ResourceAudioGraph* graph)
 {
-    // Release the previously-open asset's ref before swapping.
-    if (ModuleResourceManager* rm = ResourceManager())
-        if (m_graph && m_graph != graph)
-            rm->UnloadResource(m_graph->GetUID());
+    // ACQUIRE-THEN-RELEASE, UNCONDITIONALLY. The caller (OpenAsset / NewAsset) has
+    // already acquired `graph`, so the previous one is released here -- held aside
+    // first, because it may BE `graph`.
+    //
+    // The `m_graph != graph` guard this replaced leaked in exactly the common case,
+    // which is re-dropping the .nafx that is already open: CreateResource finds it
+    // resident and only INCREMENTS, so a change-detecting release never fires and the
+    // References column climbs one per drop. Same rule, same reason, as
+    // ImporterMaterial's texture slots.
+    ResourceAudioGraph* previousGraph = m_graph;
 
     m_nodes.clear();
     m_links.clear();
@@ -321,6 +327,12 @@ void AudioGraphEditor::LoadFromResource(ResourceAudioGraph* graph)
     m_framesSinceOpen  = 0;
     m_graph            = graph;
     m_dirty            = false;
+
+    // AFTER the assignment, so the count cannot transiently hit 0 and queue a
+    // spurious eviction of the very graph being opened.
+    if (ModuleResourceManager* rm = ResourceManager())
+        if (previousGraph)
+            rm->UnloadResource(previousGraph->GetUID());
 
     if (!graph)
         return;

@@ -30,6 +30,7 @@
 #include <EditorUI/ConsoleWindow.h>
 #include <EditorUI/MemoryWindow.h>
 #include <EditorUI/TextEditorWindow.h>
+#include <EditorUI/AnimationControllerEditor.h>
 #include <EditorUI/AudioGraphEditor.h>
 #include <EditorUI/AudioMixerWindow.h>
 
@@ -166,6 +167,7 @@ bool ModuleEditor::Awake()
 	AddEditorWindow(NOUS_NEW<TextEditorWindow>(MemoryTag::EDITOR, "Text Editor", this));
 	AddEditorWindow(NOUS_NEW<AudioGraphEditor>(MemoryTag::EDITOR, "Audio Graph Editor", this));
 	AddEditorWindow(NOUS_NEW<AudioMixerWindow>(MemoryTag::EDITOR, "Audio Mixer", this));
+	AddEditorWindow(NOUS_NEW<AnimationControllerEditor>(MemoryTag::EDITOR, "Animation Controller", this));
 
 	return true;
 }

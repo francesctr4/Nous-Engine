@@ -36,13 +36,7 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
                     "skeletonUID": 3484759968,
-                    "clips": [
-                        {
-                            "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
-                            "libraryPath": "Library\/Animations\/1380512761.nanim",
-                            "uid": 1380512761
-                        }
-                    ],
+                    "controllerAssetPath": "",
                     "fadeSeconds": 0.20000000298023224,
                     "speedMultiplier": 1,
                     "rootMotion": "Baked"
@@ -81,7 +75,7 @@
                 {
                     "type": "CPrefab",
                     "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab",
-                    "syncedHash": "ecd17a6d7390e8ca"
+                    "syncedHash": "87c8570f1120947f"
                 },
                 {
                     "type": "CPrefabLink",
@@ -92,13 +86,9 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
                     "skeletonUID": 408757248,
-                    "clips": [
-                        {
-                            "assetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
-                            "libraryPath": "Library\/Animations\/3875098274.nanim",
-                            "uid": 3875098274
-                        }
-                    ],
+                    "controllerAssetPath": "Assets\/Skeletal_Animation\/Thriller.nctrl",
+                    "controllerLibraryPath": "Library\/AnimationControllers\/729402859.nctrl",
+                    "controllerUID": 729402859,
                     "fadeSeconds": 0.20000000298023224,
                     "speedMultiplier": 1,
                     "rootMotion": "Baked"
@@ -106,7 +96,7 @@
             ]
         },
         {
-            "uid": 1866509879,
+            "uid": 3165611196,
             "name": "Beta_Surface",
             "parent": 3849404792,
             "components": [
@@ -149,12 +139,12 @@
                 },
                 {
                     "type": "CPrefabLink",
-                    "prefabObjectID": 1957431030
+                    "prefabObjectID": 1486440403
                 }
             ]
         },
         {
-            "uid": 3476760889,
+            "uid": 2074354315,
             "name": "Beta_Joints",
             "parent": 3849404792,
             "components": [
@@ -197,7 +187,7 @@
                 },
                 {
                     "type": "CPrefabLink",
-                    "prefabObjectID": 2250380075
+                    "prefabObjectID": 694690816
                 }
             ]
         },
@@ -291,6 +281,18 @@
                             "m_fade": {
                                 "type": 0,
                                 "value": 1
+                            },
+                            "m_stateA": {
+                                "type": 4,
+                                "value": "Idle"
+                            },
+                            "m_stateB": {
+                                "type": 4,
+                                "value": "Run"
+                            },
+                            "m_stateC": {
+                                "type": 4,
+                                "value": "Attack"
                             }
                         }
                     }
@@ -298,7 +300,7 @@
                 {
                     "type": "CPrefab",
                     "prefabSourcePath": "Assets\/Skeletal_Animation\/Espada\/Cypher Walking with Sword.nprefab",
-                    "syncedHash": "ff06f02e7c5a9c6c"
+                    "syncedHash": "222b03cc7b09d82d"
                 },
                 {
                     "type": "CPrefabLink",
@@ -309,23 +311,9 @@
                     "skeletonAssetPath": "Assets\/Meshes\/Unarmed Walk Forward (1).nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/1988096775.nskel",
                     "skeletonUID": 1988096775,
-                    "clips": [
-                        {
-                            "assetPath": "Assets\/Meshes\/Unarmed Walk Forward (1)@mixamo_com.nanim",
-                            "libraryPath": "Library\/Animations\/2386521433.nanim",
-                            "uid": 2386521433
-                        },
-                        {
-                            "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
-                            "libraryPath": "Library\/Animations\/1380512761.nanim",
-                            "uid": 1380512761
-                        },
-                        {
-                            "assetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
-                            "libraryPath": "Library\/Animations\/3875098274.nanim",
-                            "uid": 3875098274
-                        }
-                    ],
+                    "controllerAssetPath": "Assets\/Skeletal_Animation\/NewController.nctrl",
+                    "controllerLibraryPath": "Library\/AnimationControllers\/3179012071.nctrl",
+                    "controllerUID": 3179012071,
                     "fadeSeconds": 1,
                     "speedMultiplier": 1,
                     "rootMotion": "Baked"
@@ -595,7 +583,7 @@
                 {
                     "type": "CPrefab",
                     "prefabSourcePath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.fbx.nprefab",
-                    "syncedHash": "ecd17a6d7390e8ca"
+                    "syncedHash": "87c8570f1120947f"
                 },
                 {
                     "type": "CPrefabLink",
@@ -606,13 +594,9 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/408757248.nskel",
                     "skeletonUID": 408757248,
-                    "clips": [
-                        {
-                            "assetPath": "Assets\/Skeletal_Animation\/Thriller Part 3@mixamo_com.nanim",
-                            "libraryPath": "Library\/Animations\/3875098274.nanim",
-                            "uid": 3875098274
-                        }
-                    ],
+                    "controllerAssetPath": "Assets\/Skeletal_Animation\/Thriller.nctrl",
+                    "controllerLibraryPath": "Library\/AnimationControllers\/729402859.nctrl",
+                    "controllerUID": 729402859,
                     "fadeSeconds": 0.20000000298023224,
                     "speedMultiplier": 1,
                     "rootMotion": "Baked"
