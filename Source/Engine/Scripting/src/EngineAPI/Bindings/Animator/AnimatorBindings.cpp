@@ -4,11 +4,9 @@
 #include <ECS/GameObject.h>
 #include <ECS/Scene/Scene.h>
 #include <Logger/Logger.h>
-#include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
 #include <Scripting/iScriptSceneHost.h>
 
-#include <cstring>
-#include <string>
+#include <string_view>
 
 static IScriptSceneHost* s_scene = nullptr;
 
@@ -51,13 +49,9 @@ void SetupAnimatorBindings(AnimatorAPI& animator, IScriptSceneHost* sceneHost)
         if (CAnimator* a = GetAnimator(id); a && name) a->parameters.ResetTrigger(name);
     };
 
-    // MVP-F Task 10 replaces this whole slot with CrossFade(stateName, fade). It is
-    // inert for exactly one task: CAnimator::Play is gone with the clip list it
-    // searched, and CrossFade does not exist until Task 7. Returning false is the
-    // honest answer in the meantime -- a script asking for a clip by name cannot be
-    // served by a graph addressed by state name.
-    animator.Play = [](uint32_t, const char*, float) -> bool {
-        return false;
+    animator.CrossFade = [](uint32_t id, const char* name, float fadeSeconds) -> bool {
+        CAnimator* a = GetAnimator(id);
+        return (a && name) ? a->CrossFade(name, fadeSeconds) : false;
     };
 
     animator.IsFading = [](uint32_t id) -> bool {
@@ -65,17 +59,18 @@ void SetupAnimatorBindings(AnimatorAPI& animator, IScriptSceneHost* sceneHost)
         return a && a->IsFading();
     };
 
-    animator.GetCurrentClip = [](uint32_t id, char* buffer, int bufferSize) {
+    animator.GetCurrentState = [](uint32_t id, char* buffer, int bufferSize) {
         if (!buffer || bufferSize <= 0) return;
-        buffer[0] = '\0';   // "nothing playing" and "no animator" read the same, by design
+        buffer[0] = '\0';   // "no state" and "no animator" read the same, by design
 
         const CAnimator* a = GetAnimator(id);
         if (!a) return;
 
-        const ResourceAnimation* current = a->CurrentClip();
-        if (!current) return;
+        // A string_view over the state's own name, NOT null-terminated -- so it is
+        // copied by length. strncpy on .data() would read past the view.
+        const std::string_view name = a->GetCurrentStateName();
+        if (name.empty()) return;
 
-        const std::string name = current->GetName();
         const size_t copied = name.copy(buffer, static_cast<size_t>(bufferSize) - 1);
         buffer[copied] = '\0';
     };

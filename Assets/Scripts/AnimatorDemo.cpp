@@ -20,7 +20,10 @@
 // the animation scripting API: before it, only the Inspector's Play buttons could
 // trigger a transition, so no shipped game could animate anything.
 //
-// Keys 1/2/3 cross-fade to the first three clips in the animator's list.
+// Keys 1/2/3 cross-fade to three named STATES of the animator's controller. Addressing
+// states rather than clips is what makes a script and the graph speak about the same
+// thing: a CrossFade wins for its frame and the graph resumes from the state it
+// entered, so there is never a frame with two writers.
 class AnimatorDemo : public IScript
 {
 public:
@@ -52,8 +55,9 @@ public:
             return;
         }
 
-        // Round-trips a parameter so the blackboard is exercised even though nothing
-        // consumes it until the controller graph exists.
+        // The parameter surface is the PRIMARY one: a transition condition on "speed"
+        // is what a player controller should be written against, with CrossFade below
+        // reserved for the cases a graph edge cannot express.
         Nous_Engine->Animator->SetFloat(m_ownerID, "speed", 1.0f);
         Nous_Engine->Logger->Info("[AnimatorDemo] speed parameter reads back as %.2f",
                                   Nous_Engine->Animator->GetFloat(m_ownerID, "speed"));
@@ -63,9 +67,9 @@ public:
     void Update(float deltaTime) override
     {
         /*coding_start::AnimatorDemo::Update*/
-        PlayOnKey(NOUS_SCANCODE::Num1, m_clipA);
-        PlayOnKey(NOUS_SCANCODE::Num2, m_clipB);
-        PlayOnKey(NOUS_SCANCODE::Num3, m_clipC);
+        CrossFadeOnKey(NOUS_SCANCODE::Num1, m_stateA);
+        CrossFadeOnKey(NOUS_SCANCODE::Num2, m_stateB);
+        CrossFadeOnKey(NOUS_SCANCODE::Num3, m_stateC);
 
         // Once a second, so the log stays readable at 60 fps.
         m_logTimer += deltaTime;
@@ -73,10 +77,10 @@ public:
         {
             m_logTimer = 0.0f;
 
-            char clip[128] = {};
-            Nous_Engine->Animator->GetCurrentClip(m_ownerID, clip, sizeof(clip));
-            Nous_Engine->Logger->Info("[AnimatorDemo] clip='%s' t=%.2f fading=%d",
-                                      clip,
+            char state[128] = {};
+            Nous_Engine->Animator->GetCurrentState(m_ownerID, state, sizeof(state));
+            Nous_Engine->Logger->Info("[AnimatorDemo] state='%s' t=%.2f fading=%d",
+                                      state,
                                       Nous_Engine->Animator->GetNormalizedTime(m_ownerID),
                                       Nous_Engine->Animator->IsFading(m_ownerID) ? 1 : 0);
         }
@@ -115,15 +119,18 @@ public:
 
     // ----- METHODS ----- //
     /*coding_start::AnimatorDemo*/
-    void PlayOnKey(NOUS_SCANCODE key, const std::string& clipName)
+    void CrossFadeOnKey(NOUS_SCANCODE key, const std::string& stateName)
     {
-        if (clipName.empty()) return;
+        if (stateName.empty()) return;
         if (Nous_Engine->Input->GetKey(key) != InputAPI::KeyState::DOWN) return;
 
-        // False means no clip in the animator's list has that RESOURCE name -- the
-        // most likely mistake here, so it is worth logging rather than ignoring.
-        if (!Nous_Engine->Animator->Play(m_ownerID, clipName.c_str(), m_fade))
-            Nous_Engine->Logger->Info("[AnimatorDemo] no clip named '%s'", clipName.c_str());
+        // False means the animator has no controller, or its graph has no state by
+        // that name -- the most likely mistake here, and silent otherwise, so it is
+        // worth logging. A state name is not a clip name: it is whatever the .nctrl
+        // calls the state, which is why these are Inspector fields rather than
+        // hard-coded strings.
+        if (!Nous_Engine->Animator->CrossFade(m_ownerID, stateName.c_str(), m_fade))
+            Nous_Engine->Logger->Info("[AnimatorDemo] no state named '%s'", stateName.c_str());
     }
     /*coding_end::AnimatorDemo*/
 
@@ -135,9 +142,12 @@ private:
     float m_logTimer = 0.0f;
 
     SCRIPT_FIELD(float, m_fade, 0.3f)
-    SCRIPT_FIELD(std::string, m_clipA, "")
-    SCRIPT_FIELD(std::string, m_clipB, "")
-    SCRIPT_FIELD(std::string, m_clipC, "")
+
+    // Defaulted to the names the demo controller uses (Task 16), so the script does
+    // something the moment it is dropped on a character that has one.
+    SCRIPT_FIELD(std::string, m_stateA, "Idle")
+    SCRIPT_FIELD(std::string, m_stateB, "Run")
+    SCRIPT_FIELD(std::string, m_stateC, "Attack")
     /*coding_end::AnimatorDemo*/
 };
 
