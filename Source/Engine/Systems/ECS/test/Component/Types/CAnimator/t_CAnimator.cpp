@@ -54,6 +54,23 @@ namespace
         controller.graph.defaultState = controller.graph.states.empty() ? -1 : 0;
     }
 
+    // Appends one transition and hands it back so the caller can push conditions onto
+    // it. An empty condition list is satisfied, so a transition added and left alone
+    // fires the first frame its source state is current -- which is exactly what the
+    // arbitration tests need to prove a CrossFade held the graph off.
+    nous::engine::animation_system::ControllerTransition&
+    AddTransition(ResourceAnimationController& controller,
+                  const int from, const int to, const float duration)
+    {
+        nous::engine::animation_system::ControllerTransition t;
+        t.fromState = from;
+        t.toState   = to;
+        t.duration  = duration;
+
+        controller.graph.transitions.push_back(std::move(t));
+        return controller.graph.transitions.back();
+    }
+
     // Two bones: "Root" (index 0, no parent) and "Child" (index 1, parent 0).
     //
     // Bind locals are identity, so a bone the clip does not drive stays at the
@@ -797,6 +814,181 @@ TEST_F(t_CAnimator, CrossFadeMatchesTheStateNameNotTheClipName)
 }
 
 // =============================================================================
+// Graph evaluation and arbitration
+// =============================================================================
+
+// Design §4: the current state becomes the DESTINATION the instant a transition
+// starts. The outgoing side is a pose, not a state -- which is what makes a later
+// exit-time transition measure the clip that is arriving rather than the one that
+// is leaving, so "when the attack finishes" means the attack.
+TEST_F(t_CAnimator, AFiredTransitionMakesTheDESTINATIONTheCurrentState)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("Idle");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("Run");
+
+    ResourceAnimationController aCtrl(930);
+    SetClips(aCtrl, { &animA, &animB });
+    AddTransition(aCtrl, 0, 1, 1.0f).conditions.push_back(
+        { "speed", nous::engine::animation_system::ConditionComparator::Greater, 0.5f });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+
+    a.OnUpdate(0.0f);
+    ASSERT_EQ(a.GetCurrentStateName(), "Idle");   // the condition is not satisfied yet
+    ASSERT_FALSE(a.IsFading());
+
+    a.parameters.SetFloat("speed", 1.0f);
+    a.OnUpdate(0.0f);
+
+    EXPECT_EQ(a.GetCurrentStateName(), "Run");
+    EXPECT_TRUE(a.IsFading());
+}
+
+// An exit-time transition measures the INCOMING state's progress, which is only
+// meaningful because the destination became current when the fade started.
+TEST_F(t_CAnimator, ExitTimeMeasuresTheStateThatWasEntered)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("Idle");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("Attack");
+
+    ResourceAnimationController aCtrl(931);
+    SetClips(aCtrl, { &animA, &animB });
+
+    auto& toAttack = AddTransition(aCtrl, 0, 1, 0.0f);   // snap in on a trigger
+    toAttack.conditions.push_back(
+        { "attack", nous::engine::animation_system::ConditionComparator::TriggerSet, 0.0f });
+
+    auto& backToIdle = AddTransition(aCtrl, 1, 0, 0.0f);
+    backToIdle.hasExitTime = true;
+    backToIdle.exitTime    = 0.8f;
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+
+    a.OnUpdate(0.0f);
+    a.parameters.SetTrigger("attack");
+    a.OnUpdate(0.0f);
+    ASSERT_EQ(a.GetCurrentStateName(), "Attack");
+
+    // The graph is evaluated BEFORE the clocks advance, so it reads the progress the
+    // previous frame left behind. That one-frame lag is deliberate -- evaluating
+    // against a pose that has not been sampled yet would fire on a state the animator
+    // has not rendered even once.
+    a.OnUpdate(0.5f);   // evaluated at 0.0; Attack is now 0.5 through
+    EXPECT_EQ(a.GetCurrentStateName(), "Attack");
+
+    a.OnUpdate(0.4f);   // evaluated at 0.5 -- still below the exit time
+    EXPECT_EQ(a.GetCurrentStateName(), "Attack");
+
+    a.OnUpdate(0.0f);   // evaluated at 0.9 -- past it
+    EXPECT_EQ(a.GetCurrentStateName(), "Idle");
+}
+
+// The arbitration rule (design §7), enforced by code rather than by a comment: a
+// direct CrossFade wins for ITS frame even when a graph transition out of the state
+// it entered is satisfied, and the graph resumes on the very next frame. The
+// unconditional Attack -> Run edge here is satisfied every frame Attack is current,
+// so a single frame of suppression is the whole difference between the two ticks.
+TEST_F(t_CAnimator, CrossFadeWinsForItsFrameAndTheGraphResumesTheNext)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child",  0.0f);  animA.SetName("Idle");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("Attack");
+    ResourceAnimation animC(4); MakeHoldClip(animC, "Child", 20.0f);  animC.SetName("Run");
+
+    ResourceAnimationController aCtrl(932);
+    SetClips(aCtrl, { &animA, &animB, &animC });
+    AddTransition(aCtrl, 1, 2, 0.0f);   // Attack -> Run, unconditional
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+
+    a.OnUpdate(0.0f);
+    ASSERT_EQ(a.GetCurrentStateName(), "Idle");
+
+    ASSERT_TRUE(a.CrossFade("Attack", 0.0f));
+    a.OnUpdate(0.0f);
+    EXPECT_EQ(a.GetCurrentStateName(), "Attack") << "the graph overrode the script";
+
+    a.OnUpdate(0.0f);
+    EXPECT_EQ(a.GetCurrentStateName(), "Run") << "suppression outlasted its one frame";
+}
+
+TEST_F(t_CAnimator, CrossFadeToAnUnknownStateChangesNothing)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("Idle");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("Run");
+
+    ResourceAnimationController aCtrl(933);
+    SetClips(aCtrl, { &animA, &animB });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+    a.OnUpdate(0.0f);
+
+    EXPECT_FALSE(a.CrossFade("NoSuchState", 0.2f));
+    EXPECT_EQ(a.GetCurrentStateName(), "Idle");
+    EXPECT_FALSE(a.IsFading());
+
+    // A rejected CrossFade must not arm the suppression either, or a typo'd state
+    // name would silently cost the graph a frame.
+    a.OnUpdate(0.0f);
+    EXPECT_EQ(a.GetCurrentStateName(), "Idle");
+}
+
+// A graph transition firing while a fade is in flight goes through the same fold as
+// a re-triggered CrossFade -- MVP-E's two-track ceiling IS the interruption model.
+// hold(0) -> hold(10) half way is x = 5; interrupting toward hold(20) and running
+// half of the new fade must give 5 + (20-5)/2 = 12.5.
+TEST_F(t_CAnimator, AnInterruptedTransitionFoldsTheBlendAndStaysAtTwoTracks)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child",  0.0f);  animA.SetName("Idle");
+    ResourceAnimation animB(3); MakeHoldClip(animB, "Child", 10.0f);  animB.SetName("Walk");
+    ResourceAnimation animC(4); MakeHoldClip(animC, "Child", 20.0f);  animC.SetName("Run");
+
+    ResourceAnimationController aCtrl(934);
+    SetClips(aCtrl, { &animA, &animB, &animC });
+
+    AddTransition(aCtrl, 0, 1, 1.0f).conditions.push_back(
+        { "walk", nous::engine::animation_system::ConditionComparator::TriggerSet, 0.0f });
+    AddTransition(aCtrl, 1, 2, 1.0f).conditions.push_back(
+        { "run", nous::engine::animation_system::ConditionComparator::TriggerSet, 0.0f });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+
+    a.OnUpdate(0.0f);
+    a.parameters.SetTrigger("walk");
+    a.OnUpdate(0.0f);
+    ASSERT_EQ(a.GetCurrentStateName(), "Walk");
+
+    a.OnUpdate(0.5f);
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+
+    a.parameters.SetTrigger("run");
+    a.OnUpdate(0.5f);
+
+    EXPECT_EQ(a.GetCurrentStateName(), "Run");
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 12.5f);
+    EXPECT_FALSE(a.GetPalette().empty());
+}
+
+// =============================================================================
 // Interrupted transitions
 // =============================================================================
 
@@ -964,11 +1156,12 @@ TEST_F(t_CAnimator, NormalizedTimeTracksTheClip)
     EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.75f);
 }
 
-// Pins the wart the spec accepted knowingly: CurrentClip() is the OUTGOING clip
-// during a fade, and normalized time follows the same clip for consistency. If
-// CurrentClip's meaning is ever changed, this test says so instead of the two
-// quietly disagreeing.
-TEST_F(t_CAnimator, NormalizedTimeFollowsTheOutgoingClipDuringAFade)
+// Replaces NormalizedTimeFollowsTheOutgoingClipDuringAFade, which pinned the wart
+// MVP-E accepted knowingly and only the graph could resolve. The current state is
+// the DESTINATION from the instant a transition starts (design §4), so the clip the
+// animator reports -- and the progress an exit-time transition measures -- is the
+// INCOMING one. The two read the same track by construction, so they cannot drift.
+TEST_F(t_CAnimator, NormalizedTimeFollowsTheINCOMINGClipDuringAFade)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
     ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f);   animA.SetName("A");
@@ -986,8 +1179,8 @@ TEST_F(t_CAnimator, NormalizedTimeFollowsTheOutgoingClipDuringAFade)
     a.OnUpdate(0.2f);                    // both advance by 0.2
 
     ASSERT_TRUE(a.IsFading());
-    EXPECT_EQ(a.CurrentClip(), &animA);
-    EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.6f);   // A's progress, not B's 0.2
+    EXPECT_EQ(a.CurrentClip(), &animB);
+    EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.2f);   // B's progress, not A's 0.6
 }
 
 // =============================================================================

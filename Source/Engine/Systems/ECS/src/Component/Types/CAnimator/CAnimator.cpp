@@ -1,6 +1,7 @@
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
 
 #include <AnimationSystem/Blending.h>
+#include <AnimationSystem/Controller.h>
 #include <AnimationSystem/Palette.h>
 #include <AnimationSystem/Sampling.h>
 #include <AnimationSystem/RootMotion.h>
@@ -57,20 +58,22 @@ namespace
 // Binding
 // ---------------------------------------------------------------------------
 
-const ResourceAnimation* CAnimator::CurrentClip() const { return m_from.clip; }
+const ResourceAnimation* CAnimator::CurrentClip() const { return CurrentTrack().clip; }
 
 float CAnimator::GetNormalizedTime() const
 {
-    // Follows m_from -- the same track CurrentClip() reports -- so the two can never
-    // describe different clips.
-    if (!m_from.clip || m_from.boundClip == 0)
+    // The same track CurrentClip() reports, taken from the one selector, so the two
+    // can never describe different clips.
+    const ClipTrack& track = CurrentTrack();
+
+    if (!track.clip || track.boundClip == 0)
         return 0.0f;
 
-    const float duration = m_from.clip->clip.duration;
+    const float duration = track.clip->clip.duration;
     if (duration <= 0.0f)
         return 0.0f;   // a zero-duration clip has no meaningful progress
 
-    return m_from.instance.time / duration;
+    return track.instance.time / duration;
 }
 
 ResourceAnimation* CAnimator::ClipForState(const int stateIndex) const
@@ -141,6 +144,11 @@ bool CAnimator::CrossFade(const std::string_view stateName, const float fadeSeco
         return false;
 
     EnterState(target, fadeSeconds);
+
+    // The override half of the arbitration rule. Set only on success: a call naming a
+    // state that does not exist must not cost the graph a frame, or a typo would show
+    // up as the state machine intermittently stalling rather than as a bad name.
+    m_graphSuppressedThisFrame = true;
     return true;
 }
 
@@ -353,6 +361,31 @@ void CAnimator::OnUpdate(const float deltaTime)
 
     if (UIDOf(m_from.clip) != m_from.boundClip) RebindTrack(m_from);
     if (UIDOf(m_to.clip)   != m_to.boundClip)   RebindTrack(m_to);
+
+    // ---- THE GRAPH ----
+    //
+    // Evaluated every frame unless a script already spoke, and BEFORE the clocks
+    // advance -- so it reads the progress the previous frame left behind. Firing
+    // against a pose that has not been sampled yet would let a transition leave a
+    // state the animator never rendered once.
+    //
+    // Placed ahead of the !IsBound() early return on purpose: a state whose clip did
+    // not resolve leaves the animator unbound, and skipping evaluation there would
+    // strand it in that state forever with no way out. EnterState rebinds both tracks
+    // itself, so a transition INTO a state with a clip recovers on this same frame.
+    if (controller && !m_graphSuppressedThisFrame)
+    {
+        const anim::TransitionResult result = anim::EvaluateController(
+            controller->graph, m_currentState, GetNormalizedTime(), parameters);
+
+        if (result.fired)
+            EnterState(result.toState, result.duration);
+    }
+
+    // Cleared at the END rather than at the top: that is what makes a CrossFade's
+    // override last exactly one frame. Before the early return below, so an unbound
+    // animator cannot leave the flag stuck set.
+    m_graphSuppressedThisFrame = false;
 
     if (!IsBound())
     {

@@ -155,8 +155,10 @@ public:
     [[nodiscard]] NOUS_ENGINE_API bool IsBound() const
     { return m_from.boundClip != 0 && m_boundSkeleton != 0; }
 
-    // The clip currently driving the pose. During a fade this is the OUTGOING clip;
-    // it becomes the incoming one when the fade completes. Null when nothing is bound.
+    // The clip of the CURRENT STATE -- during a fade the INCOMING one, because the
+    // destination becomes current the instant a transition starts (design §4). The
+    // outgoing side is a pose with no state behind it, so it has no progress anyone
+    // could act on. Null when nothing is bound.
     [[nodiscard]] NOUS_ENGINE_API const ResourceAnimation* CurrentClip() const;
 
     // Cross-fades to the named STATE of the controller's graph over fadeSeconds.
@@ -165,8 +167,9 @@ public:
     //
     // ARBITRATION (design §7): the graph evaluates every frame; a direct CrossFade
     // WINS for that frame and re-enters the graph at the named state. There is never
-    // a frame with two writers. The suppression half of that rule arrives with graph
-    // evaluation itself in Task 7.
+    // a frame with two writers -- a successful call suppresses the graph for exactly
+    // the next OnUpdate, after which the graph evaluates normally from the state this
+    // put the animator in. A REJECTED call suppresses nothing.
     //
     // fadeSeconds <= 0 snaps. Calling this while a fade is already running folds the
     // in-flight blend into the outgoing pose and starts a new fade from it, so the
@@ -182,14 +185,14 @@ public:
 
     [[nodiscard]] NOUS_ENGINE_API bool IsFading() const { return m_fadeDuration > 0.0f; }
 
-    // 0..1 through the CURRENT clip -- the one CurrentClip() names, which during a
-    // fade is the OUTGOING one. Returns 0 when unbound or the clip has no duration.
+    // 0..1 through the clip CurrentClip() names -- the INCOMING one during a fade.
+    // Returns 0 when unbound or the clip has no duration.
     //
-    // The fade case is a known wart, accepted rather than fixed: the fix is a second
-    // query whose meaning changes once the controller graph lands, and normalized
-    // time is mostly a pre-graph idiom -- afterwards the idiom is a trigger plus a
-    // transition with exit time. Pinned by
-    // t_CAnimator.NormalizedTimeFollowsTheOutgoingClipDuringAFade.
+    // This is what a transition's exit time is measured against, which is the whole
+    // reason it follows the incoming side: "when the attack finishes" has to mean the
+    // attack, and the attack is the clip being faded IN. Both queries read the track
+    // CurrentTrack() picks, so they cannot describe different clips. Pinned by
+    // t_CAnimator.NormalizedTimeFollowsTheINCOMINGClipDuringAFade.
     [[nodiscard]] NOUS_ENGINE_API float GetNormalizedTime() const;
 
     // This frame's blended root motion, in the ANIMATION's space -- before the
@@ -245,9 +248,15 @@ private:
     [[nodiscard]] ResourceAnimation* ClipForState(int stateIndex) const;
 
     // Makes `stateIndex` current and starts the fade into its clip. THE ONLY WRITER
-    // of m_currentState besides the controller bind -- CrossFade and (from Task 7)
-    // the graph both go through here, or the two paths drift.
+    // of m_currentState besides the controller bind -- CrossFade and the graph both
+    // go through here, or the two paths drift.
     void EnterState(int stateIndex, float fadeSeconds);
+
+    // The track carrying the CURRENT state's clip: m_to while a fade is running,
+    // m_from otherwise. CurrentClip and GetNormalizedTime both go through this, which
+    // is what makes it impossible for them to name different clips.
+    [[nodiscard]] const ClipTrack& CurrentTrack() const
+    { return (m_fadeDuration > 0.0f && m_to.clip) ? m_to : m_from; }
 
     // ---- ONE LAYER'S RUNTIME ----
     //
@@ -263,6 +272,16 @@ private:
     float                                m_fadeElapsed  = 0.0f;
     float                                m_fadeDuration = 0.0f;   // 0 == not fading
     // ---- end layer runtime ----
+
+    // Set by a successful CrossFade, cleared at the END of the next OnUpdate. That
+    // ordering is the arbitration rule itself: clearing at the end rather than at the
+    // top is what makes the override last exactly one frame, and makes a CrossFade
+    // called from anywhere -- a script's Update, an Inspector button, a future
+    // animation event -- hold off the graph for the frame that follows it.
+    //
+    // NOT part of the layer runtime block above: arbitration is per animator, and a
+    // second layer would share this flag rather than carry its own.
+    bool m_graphSuppressedThisFrame = false;
 
     std::vector<glm::mat4> m_globals;
     std::vector<glm::mat4> m_palette;
