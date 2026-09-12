@@ -195,6 +195,16 @@ public:
 
     [[nodiscard]] NOUS_ENGINE_API bool IsFading() const { return m_fadeDuration > 0.0f; }
 
+    // 0..1 through the current cross-fade; 0 when not fading. Derived from state that
+    // already exists rather than recorded, so there is nothing to keep in sync.
+    //
+    // Worth exposing for the Inspector specifically: a fade advances on simDt, so one
+    // armed while the scene is STOPPED sits at 0 forever. That is the behaviour most
+    // likely to be read as a bug, and a readout pinned at 0% is what distinguishes it
+    // from a fade that is simply fast.
+    [[nodiscard]] NOUS_ENGINE_API float GetFadeProgress() const
+    { return m_fadeDuration > 0.0f ? glm::clamp(m_fadeElapsed / m_fadeDuration, 0.0f, 1.0f) : 0.0f; }
+
     // 0..1 through the clip CurrentClip() names -- the INCOMING one during a fade.
     // Returns 0 when unbound or the clip has no duration.
     //

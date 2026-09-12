@@ -25,6 +25,7 @@
 #include <array>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include <ECS/Component/Types/CAudioSource/CAudioSource.h>
@@ -637,12 +638,8 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
         }
     }
 
-    // Controller slot. MVP-F Task 11 adds the derived state -> clip readout beneath
-    // it, the per-state Play buttons and the runtime state line; for now this is the
-    // one control that makes an animator playable at all.
-    //
-    // The per-clip Loop/Speed editors that used to live here go with it -- they
-    // belong on the derived state rows, since a clip is now reached through a state.
+    // Controller slot -- the one control that makes an animator playable at all. The
+    // state rows below are DERIVED from it every frame.
     ImGui::Spacing();
     ImGui::TextDisabled("Controller");
 
@@ -694,22 +691,143 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
                           "Applied: travel moves the GameObject.\n"
                           "In Place: travel is discarded.");
 
+    // ---- STATES ----
+    //
+    // DERIVED from the controller every frame, never stored. A cached copy would go
+    // stale the moment the asset changed, which is the whole reason the controller
+    // owns the clips rather than the component. Read-only apart from the Play button
+    // and the per-clip settings: which clip a state plays is the .nctrl's business,
+    // authored in the Animation Controller editor.
+    if (cAnimator->controller)
+    {
+        const auto& graph = cAnimator->controller->graph;
+        const std::string_view currentName = cAnimator->GetCurrentStateName();
+
+        ImGui::Spacing();
+        ImGui::TextDisabled("States (%zu)", graph.states.size());
+
+        if (graph.states.empty())
+            ImGui::TextDisabled("This controller has no states yet.");
+
+        for (int i = 0; i < static_cast<int>(graph.states.size()); ++i)
+        {
+            const auto& state = graph.states[i];
+            ImGui::PushID(i);
+
+            // Arms a transition; it only ADVANCES once the scene is playing, because a
+            // fade runs on simDt. That is the single most bug-looking behaviour here,
+            // hence the label on the group and the tooltip.
+            if (ImGui::Button("Play", ImVec2(50.0f, 0.0f)))
+                cAnimator->CrossFade(state.name, cAnimator->fadeSeconds);
+
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Cross-fades to this state.\n"
+                                  "While the scene is STOPPED this only arms the\n"
+                                  "transition -- fades advance on simulation time.");
+
+            ImGui::SameLine();
+
+            // The default state is where every bind and every failed restore lands, so
+            // it is worth being able to see at a glance which one it is.
+            const bool isDefault = (i == graph.defaultState);
+            const bool isCurrent = !currentName.empty() && currentName == state.name;
+
+            if (isCurrent) ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.45f, 1.0f), "%s", state.name.c_str());
+            else           ImGui::Text("%s", state.name.c_str());
+
+            if (isDefault)
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled("(default)");
+            }
+
+            // clipIndex, never i: the two coincide today because the importer fills one
+            // clip slot per state, but clipIndex is what the graph carries and it is -1
+            // for any state whose .nanim did not resolve.
+            ResourceAnimation* clip = nullptr;
+            if (state.clipIndex >= 0
+                && static_cast<size_t>(state.clipIndex) < cAnimator->controller->clips.size())
+                clip = cAnimator->controller->clips[state.clipIndex];
+
+            ImGui::Indent();
+
+            if (!clip)
+            {
+                // Not a cosmetic gap: a state with no clip plays nothing, and the
+                // character stands in bind pose with no other symptom.
+                ImGui::TextDisabled("(no clip)");
+            }
+            else
+            {
+                ImGui::TextDisabled("%s   %.2f s   %zu channels",
+                                    clip->GetName().c_str(),
+                                    clip->clip.duration,
+                                    clip->clip.ChannelCount());
+
+                // Loop and Speed belong to the CLIP, not to the state and not to the
+                // animator: one controller routinely holds an idle that must loop and
+                // an attack that must not. They are edited here because a clip is now
+                // reached THROUGH a state -- and they are the only controls in this
+                // inspector that touch disk, writing through to both the .nanim stub
+                // and the library binary so the value survives a scene reload and a
+                // Library/ nuke alike.
+                bool  clipLoop  = clip->settings.loop;
+                float clipSpeed = clip->settings.speed;
+                bool  commit    = false;
+
+                if (ImGui::Checkbox("Loop", &clipLoop))
+                {
+                    clip->settings.loop = clipLoop;
+                    commit = true;
+                }
+
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(120.0f);
+
+                // The in-memory value follows the drag frame by frame, so the preview
+                // stays live -- CAnimator reseeds both tracks from their clips every
+                // OnUpdate. The DISK write waits for the mouse to be released:
+                // DragFloat reports an edit on every frame it is held, and SaveSettings
+                // rewrites two files.
+                if (ImGui::DragFloat("Speed", &clipSpeed, 0.01f, -4.0f, 4.0f, "%.2f"))
+                    clip->settings.speed = clipSpeed;
+
+                if (ImGui::IsItemDeactivatedAfterEdit())
+                    commit = true;
+
+                if (commit)
+                    ImporterAnimation::SaveSettings(*clip);
+            }
+
+            ImGui::Unindent();
+            ImGui::PopID();
+        }
+
+        // ---- RUNTIME ----
+        ImGui::Spacing();
+        if (!currentName.empty())
+        {
+            ImGui::Text("State: %.*s", static_cast<int>(currentName.size()), currentName.data());
+
+            // Only the destination and the weight. The outgoing side is a pose with no
+            // state behind it, so naming it would need a member kept purely for this
+            // line -- and the controller editor's active-state highlight shows the same
+            // thing better.
+            if (cAnimator->IsFading())
+                ImGui::Text("Transitioning in: %.0f%%", cAnimator->GetFadeProgress() * 100.0f);
+        }
+    }
+
     // What the bind actually produced. This is the readout that says WHY nothing
     // is dancing: a clip binds to a skeleton by bone NAME, so a mismatched pair
     // shows plausible counts here and still animates nothing.
     ImGui::Spacing();
     if (cAnimator->skeleton)
         ImGui::Text("Bones: %zu", cAnimator->skeleton->skeleton.BoneCount());
-    if (const ResourceAnimation* current = cAnimator->CurrentClip())
-    {
-        ImGui::Text("Duration: %.2f s   Channels: %zu",
-                    current->clip.duration,
-                    current->clip.ChannelCount());
-        ImGui::Text("Playing: %s%s", current->GetName().c_str(),
-                    cAnimator->IsFading() ? "  (fading)" : "");
-    }
+
     if (!cAnimator->IsBound())
-        ImGui::TextDisabled("Not bound — assign a skeleton and at least one clip.");
+        ImGui::TextDisabled("Not bound — assign a skeleton and a controller whose "
+                            "current state has a clip.");
 
     ImGui::Unindent();
 }
