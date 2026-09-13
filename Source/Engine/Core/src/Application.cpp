@@ -3,7 +3,6 @@
 
 #include <ResourceManager/Core/ImporterManager.h>
 #include <ResourceManager/Core/TypeRegistry.h>
-#include <ResourceManager/Types/ResourceAudio/ResourceAudio.h>
 
 #include <ModuleWindow/ModuleWindow.h>
 #include <ModuleInput/ModuleInput.h>
@@ -28,10 +27,7 @@
 #include <Logger/Logger.h>
 #include <Scripting/ScriptManager.h>
 #include <ECS/ComponentServices.h>
-#include <NOUS_Multithreading/NOUS_Thread.h>
 
-#include <chrono>
-#include <cmath>
 #include <vector>
 #include <string>
 
@@ -277,144 +273,6 @@ UpdateStatus Application::PrepareUpdate()
     return UpdateStatus::CONTINUE;
 }
 
-// ---------------------------------------------------------------------------
-// DEBUG — temporary development shortcuts. Remove when editor UI covers these.
-// ---------------------------------------------------------------------------
-static void HandleDebugKeys(const ModuleInput* input, ModuleScene* scene, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
-    ModuleResourceManager* resourceManager, ModuleAudio* audio)
-{
-    if (input->GetKey(SDL_SCANCODE_Z) == KeyState::DOWN)
-        scene->SaveScene(scene->GetCurrentScenePath());
-
-    if (input->GetKey(SDL_SCANCODE_X) == KeyState::DOWN)
-        scene->ClearScene();
-
-    if (input->GetKey(SDL_SCANCODE_C) == KeyState::DOWN)
-        scene->LoadSceneAsync(scene->GetCurrentScenePath());
-
-    if (input->GetKey(SDL_SCANCODE_F1) == KeyState::DOWN)
-        jobSystem->SubmitJob([scene] { scene->SpawnMeshAsHierarchy("Assets/Meshes/Lagiacrus_Head.fbx"); },    "Spawn Lagiacrus");
-
-    if (input->GetKey(SDL_SCANCODE_F2) == KeyState::DOWN)
-        jobSystem->SubmitJob([scene] { scene->SpawnMeshAsHierarchy("Assets/Meshes/Cypher_S0_Skelmesh.fbx"); }, "Spawn Cypher");
-
-    if (input->GetKey(SDL_SCANCODE_F3) == KeyState::DOWN)
-        jobSystem->SubmitJob([scene] { scene->SpawnMeshAsHierarchy("Assets/Meshes/Queen_Xenomorph.fbx"); },   "Spawn Queen Xenomorph");
-
-    if (input->GetKey(SDL_SCANCODE_F4) == KeyState::DOWN)
-        jobSystem->SubmitJob([scene] { scene->SpawnMeshAsHierarchy("Assets/Meshes/Wolf.obj"); },              "Spawn Wolf");
-
-    if (input->GetKey(SDL_SCANCODE_F5) == KeyState::DOWN)
-    {
-        constexpr auto meshPaths = std::to_array<std::string_view>({
-            "Assets/Meshes/Lagiacrus_Head.fbx",
-            "Assets/Meshes/Cypher_S0_Skelmesh.fbx",
-            "Assets/Meshes/Queen_Xenomorph.fbx",
-            "Assets/Meshes/Wolf.obj"
-        });
-
-        for (const auto& path : meshPaths)
-            jobSystem->SubmitJob([scene, path] { scene->SpawnMeshAsHierarchy(path.data()); }, "Spawn Model");
-    }
-
-    if (input->GetKey(SDL_SCANCODE_F6) == KeyState::DOWN)
-        scene->ClearScene();
-
-    if (input->GetKey(SDL_SCANCODE_F7) == KeyState::DOWN)
-        jobSystem->SubmitJob([] { nous::engine::multithreading::NOUS_Thread::SleepMS(5000); }, "Test Sleep");
-
-    if (input->GetKey(SDL_SCANCODE_F8) == KeyState::DOWN)
-    {
-        for (int i = 0; i < 100; ++i)
-        {
-            jobSystem->SubmitJob([]
-            {
-                constexpr std::chrono::milliseconds duration(500);
-                const auto start = std::chrono::steady_clock::now();
-                while (std::chrono::steady_clock::now() - start < duration)
-                    (void)std::sqrt(123.456);
-            }, "Stress Test");
-        }
-    }
-
-    if (input->GetKey(SDL_SCANCODE_F9) == KeyState::DOWN)
-    {
-        NOUS_INFO("Initiating script hot-reload...");
-        jobSystem->SubmitJob([scene] { scene->RecompileScripts(); }, "Scripts Hot-Reload");
-    }
-
-    // F10 — load Assets/Audio/SFX/test.wav through the ResourceManager, log its
-    // probed metadata, and play it via ModuleAudio. Validates the full import →
-    // deserialize → probe → play path.
-    if (input->GetKey(SDL_SCANCODE_F10) == KeyState::DOWN && resourceManager && audio)
-    {
-        constexpr const char* c_testAudio = "Assets/Audio/SFX/test.wav";
-        ResourceBase* res = resourceManager->CreateResource(c_testAudio);
-        if (!res || res->GetType() != ResourceType::AUDIO)
-        {
-            NOUS_WARN("[AudioDebug] Failed to load '%s' through ResourceManager.", c_testAudio);
-        }
-        else
-        {
-            auto* rAudio = static_cast<ResourceAudio*>(res);
-            NOUS_INFO("[AudioDebug] '%s' UID=%u  fileType=%d  streaming=%d  %.2fs  %uHz  %uch",
-                rAudio->GetName().c_str(),
-                rAudio->GetUID(),
-                static_cast<int>(rAudio->GetFileType()),
-                static_cast<int>(rAudio->GetStreamingMode()),
-                rAudio->GetDurationSec(),
-                rAudio->GetSampleRate(),
-                static_cast<uint32_t>(rAudio->GetChannelCount()));
-            audio->PlayAudio(rAudio);
-        }
-
-        constexpr const char* c_testMusic = "Assets/Audio/Music/music.ogg";
-        ResourceBase* res2 = resourceManager->CreateResource(c_testMusic);
-        if (!res2 || res2->GetType() != ResourceType::AUDIO)
-        {
-            NOUS_WARN("[AudioDebug] Failed to load '%s' through ResourceManager.", c_testMusic);
-        }
-        else
-        {
-            auto* rAudio = static_cast<ResourceAudio*>(res2);
-            NOUS_INFO("[AudioDebug] '%s' UID=%u  fileType=%d  streaming=%d  %.2fs  %uHz  %uch",
-                rAudio->GetName().c_str(),
-                rAudio->GetUID(),
-                static_cast<int>(rAudio->GetFileType()),
-                static_cast<int>(rAudio->GetStreamingMode()),
-                rAudio->GetDurationSec(),
-                rAudio->GetSampleRate(),
-                static_cast<uint32_t>(rAudio->GetChannelCount()));
-            audio->PlayAudio(rAudio);
-        }
-    }
-
-    // F11 — list every loaded ResourceAudio in the registry with its probe data.
-    if (input->GetKey(SDL_SCANCODE_F11) == KeyState::DOWN && resourceManager)
-    {
-        const auto map = resourceManager->GetResourcesMap();
-        NOUS_INFO("[AudioDebug] Loaded audio resources:");
-        uint32_t audioCount = 0;
-        for (const auto& [uid, res] : map)
-        {
-            if (!res || res->GetType() != ResourceType::AUDIO) continue;
-            const auto* rAudio = static_cast<const ResourceAudio*>(res);
-            NOUS_INFO("  UID=%u  name='%s'  asset='%s'  lib='%s'  %.2fs  %uHz  %uch  refs=%u  state=%d",
-                rAudio->GetUID(),
-                rAudio->GetName().c_str(),
-                rAudio->GetAssetsPath().c_str(),
-                rAudio->GetLibraryPath().c_str(),
-                rAudio->GetDurationSec(),
-                rAudio->GetSampleRate(),
-                static_cast<uint32_t>(rAudio->GetChannelCount()),
-                rAudio->GetReferenceCount(),
-                static_cast<int>(rAudio->GetState()));
-            ++audioCount;
-        }
-        NOUS_INFO("[AudioDebug] Total: %u audio resource(s).", audioCount);
-    }
-}
-
 UpdateStatus Application::Update()
 {
     auto ret = UpdateStatus::CONTINUE;
@@ -456,10 +314,6 @@ UpdateStatus Application::Update()
                 ret = listModules[i]->Update(dt);
         }
 
-        // Editor-only authoring shortcuts (spawn debug meshes, clear scene,
-        // hot-reload scripts, ...). Disabled in standalone GAME builds.
-        if (ret == UpdateStatus::CONTINUE && !m_isGameMode)
-            HandleDebugKeys(input, scene, jobSystem, resourceManager, audio);
     }
 
     // -------------- PostUpdate --------------

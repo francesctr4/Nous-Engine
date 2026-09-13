@@ -142,6 +142,42 @@ TEST(t_RootMotion, ALoopWrapYieldsOneFrameForwardNotOneCycleBack)
     EXPECT_FLOAT_EQ(d.translation.x, 1.0f);
 }
 
+// The same seam, crossed the other way. Advance() already handles a clip played
+// backwards -- it detects the wrap at BOTH ends -- but the split here was
+// forward-only, and a forward split applied to a backward wrap does not merely get
+// the sign wrong: it reads roughly +2x the clip's whole travel, because both halves
+// measure almost the entire clip in the wrong direction. On an Applied state that is
+// a visible forward lurch once per cycle.
+TEST(t_RootMotion, ABackwardLoopWrapYieldsOneFrameBackNotTwoCyclesForward)
+{
+    const Transform clipStart = At(0.0f, 0.0f, 0.0f);
+    const Transform clipEnd   = At(10.0f, 0.0f, 0.0f);
+
+    // Playing in reverse: was at 0.5 near the start; wrapped through 0 and is now at
+    // 9.5, just short of the end. The real motion is 0.5 back to the start plus 0.5
+    // back from the end = 1.0 BACKWARD.
+    const RootMotionDelta d = ComputeRootDelta(At(0.5f, 0.0f, 0.0f),
+                                               At(9.5f, 0.0f, 0.0f),
+                                               clipStart, clipEnd, true, /*reversed=*/true);
+
+    EXPECT_FLOAT_EQ(d.translation.x, -1.0f);
+}
+
+// Reverse playback WITHOUT a wrap is just an ordinary frame -- the `reversed` flag
+// must change nothing off the seam, or every backward frame is subtly wrong rather
+// than only the one per cycle.
+TEST(t_RootMotion, ReversePlaybackOffTheSeamIsAPlainSubtraction)
+{
+    const Transform clipStart = At(0.0f, 0.0f, 0.0f);
+    const Transform clipEnd   = At(10.0f, 0.0f, 0.0f);
+
+    const RootMotionDelta d = ComputeRootDelta(At(6.0f, 0.0f, 0.0f),
+                                               At(5.5f, 0.0f, 0.0f),
+                                               clipStart, clipEnd, false, /*reversed=*/true);
+
+    EXPECT_FLOAT_EQ(d.translation.x, -0.5f);
+}
+
 // The delta comes back in the ROOT'S OWN frame, because the consumer rotates it
 // by the GameObject's orientation -- which already carries every yaw previously
 // handed back. Left in the clip's fixed frame the turn is applied twice: a clip

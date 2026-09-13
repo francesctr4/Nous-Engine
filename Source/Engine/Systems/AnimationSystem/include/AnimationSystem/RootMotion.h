@@ -52,12 +52,21 @@ namespace nous::engine::animation_system
      * just walked, every loop. clipStart/clipEnd are the root's transform at t=0
      * and t=duration; they never change for a bound clip, so the caller caches
      * them at bind time and this stays pure arithmetic.
+     *
+     * `reversed` says the instance is playing at a NEGATIVE rate, and it matters
+     * only on a wrapped frame: the seam is then crossed the other way, so the
+     * split runs previous -> clipStart, clipEnd -> current. Applying the forward
+     * split to a backward wrap does not merely flip a sign -- both halves measure
+     * almost the entire clip the wrong way, giving roughly +2x its travel, which on
+     * an Applied state is a forward lurch once per cycle. Off the seam the flag
+     * changes nothing; a reverse frame is an ordinary subtraction.
      */
     [[nodiscard]] RootMotionDelta ComputeRootDelta(const Transform& previous,
                                                    const Transform& current,
                                                    const Transform& clipStart,
                                                    const Transform& clipEnd,
-                                                   bool             wrapped);
+                                                   bool             wrapped,
+                                                   bool             reversed = false);
 
     /**
      * @brief Moves the pose's root to its bind-pose horizontal placement and yaw.

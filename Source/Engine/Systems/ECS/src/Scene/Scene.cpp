@@ -23,6 +23,8 @@
 #include <Utils/Serialization/JsonFile.h>
 #include <Utils/Serialization/JsonArray.h>
 #include <functional>
+#include <unordered_map>
+#include <vector>
 #include <queue>
 
 // ── Constructor / Destructor ──────────────────────────────────────────────────
@@ -101,6 +103,98 @@ GameObject Scene::CreateGameObjectDetached(const std::string& name, GameObject* 
     }
 
     return go;
+}
+
+GameObject Scene::DuplicateGameObject(GameObject source)
+{
+    if (!source.IsValid())
+        return {};
+
+    // Structural registry mutation -- main thread only, like every other creation
+    // path here.
+    NOUS_ASSERT_MAIN_THREAD();
+
+    // BFS, so the root is first and a parent is always copied before its children.
+    std::vector<GameObject> subtree;
+    {
+        std::queue<GameObject> pending;
+        pending.push(source);
+        while (!pending.empty())
+        {
+            GameObject current = pending.front();
+            pending.pop();
+            subtree.push_back(current);
+
+            for (const GameObject& child : current.GetChildren())
+                pending.push(child);
+        }
+    }
+
+    // Original id -> its copy. The serialized "parent" field names the ORIGINALS, so
+    // wiring straight from it would hang the copies off the source's hierarchy.
+    std::unordered_map<uint32_t, GameObject> originalToCopy;
+    std::vector<std::pair<GameObject, uint32_t>> copies;   // copy + original parent id
+
+    originalToCopy.reserve(subtree.size());
+    copies.reserve(subtree.size());
+
+    for (const GameObject& original : subtree)
+    {
+        const JsonObject data = original.Serialize();
+
+        // Detached with NO preferred uid: a fresh one, because the original still
+        // holds its own. Registered together at the end, as the prefab path does.
+        GameObject copy = CreateGameObjectDetached(original.GetName());
+        if (!copy.IsValid())
+            continue;
+
+        // Components by name, which is what makes this work for component types
+        // this function has never heard of -- and their Deserialize is what
+        // acquires each one's resource references.
+        const JsonArray components = data.GetArray("components");
+        if (!components.IsEmpty())
+        {
+            const int count = components.Count();
+            for (int i = 0; i < count; ++i)
+            {
+                const JsonObject componentData = components.GetObject(i);
+                const std::string type = componentData.GetString("type");
+                if (type.empty()) continue;
+
+                if (Component* c = ComponentTypes::AddByName(copy, type))
+                    c->Deserialize(componentData);
+                else
+                    NOUS_WARN("[Scene] Duplicate: unknown component type '%s'", type.c_str());
+            }
+        }
+
+        originalToCopy[original.GetID()] = copy;
+        copies.emplace_back(copy, original.GetParentID());
+    }
+
+    if (copies.empty())
+        return {};
+
+    // Children hang off their COPIED parent. The root is skipped here -- its
+    // original parent is outside the subtree, so it is placed below.
+    for (auto& [copy, originalParentID] : copies)
+    {
+        const auto it = originalToCopy.find(originalParentID);
+        if (it != originalToCopy.end())
+            it->second.AddChild(copy);
+    }
+
+    GameObject rootCopy = originalToCopy[source.GetID()];
+
+    // Same parent as the original, so a duplicate lands beside what it copied rather
+    // than at the scene root.
+    if (GameObject sourceParent = source.GetParent(); sourceParent.IsValid() && rootCopy.IsValid())
+        sourceParent.AddChild(rootCopy);
+
+    for (auto& [copy, originalParentID] : copies)
+        RegisterGameObject(copy);
+
+    return rootCopy;
 }
 
 void Scene::RegisterGameObject(GameObject go) {

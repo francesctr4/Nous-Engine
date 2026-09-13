@@ -324,8 +324,12 @@ anim::RootMotionDelta CAnimator::ExtractTrackRootMotion(ClipTrack& track, const 
     // first would measure zero travel.
     const anim::Transform current = track.pose.bones[track.binding.rootBone];
 
+    // The composed rate decides the direction, not the clip's authored speed alone:
+    // a state speed of -1 over a forward clip plays it backwards just as an authored
+    // -1 does, and the seam has to be split the way the clip is actually moving.
     const anim::RootMotionDelta delta = anim::ComputeRootDelta(
-        track.previousRoot, current, track.rootAtStart, track.rootAtEnd, wrapped);
+        track.previousRoot, current, track.rootAtStart, track.rootAtEnd, wrapped,
+        track.instance.speed < 0.0f);
 
     track.previousRoot = current;
 

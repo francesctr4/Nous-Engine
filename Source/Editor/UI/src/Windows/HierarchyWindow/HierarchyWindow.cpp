@@ -2,8 +2,6 @@
 
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
-#include <ECS/Component/Types/CCamera/CCamera.h>
-#include <ECS/Component/Types/CLight/CLight.h>
 #include <ECS/Component/Types/CPrefab/CPrefab.h>
 #include <PrefabManager/PrefabManager.h>
 
@@ -39,7 +37,6 @@ void HierarchyWindow::DrawContent()
     HandleHierarchyDragDropPayloads();
 
     // Right-click on the scene root to create objects.
-    HandleSceneContextMenu();
 
     if (opened)
     {
@@ -120,32 +117,6 @@ void HierarchyWindow::HandleHierarchyDragDropPayloads()
         }
     }
     ImGui::EndDragDropTarget();
-}
-
-void HierarchyWindow::HandleSceneContextMenu()
-{
-    if (ImGui::BeginPopupContextItem("##SceneContextMenu"))
-    {
-        if (ImGui::MenuItem("Create Empty"))
-        {
-            GameObject go = m_Scene->CreateGameObject("GameObject", nullptr);
-            editorContext->GetScene()->SetSelection(go);
-        }
-        if (ImGui::MenuItem("Create Camera"))
-        {
-            GameObject go = m_Scene->CreateGameObject("Main Camera", nullptr);
-            auto& cam = go.AddComponent<CCamera>();
-            cam.isMainCamera = true;
-            editorContext->GetScene()->SetSelection(go);
-        }
-        if (ImGui::MenuItem("Create Light"))
-        {
-            GameObject go = m_Scene->CreateGameObject("Directional Light", nullptr);
-            go.AddComponent<CLight>();
-            editorContext->GetScene()->SetSelection(go);
-        }
-        ImGui::EndPopup();
-    }
 }
 
 void HierarchyWindow::HandleEmptyClickSelection() const
@@ -273,6 +244,21 @@ void HierarchyWindow::HandleGameObjectNodeContextMenu(GameObject obj)
 {
     if (!ImGui::BeginPopupContextItem())
         return;
+
+    // Deep-copies the object and its whole subtree under the same parent, and selects
+    // the copy -- so a second Duplicate copies the copy, which is how you lay out a
+    // row of something.
+    //
+    // Deliberately NOT applied to the whole multi-selection: duplicating a parent and
+    // one of its own children would copy that child twice, once inside the parent's
+    // subtree and once on its own, and the sensible answer to that needs a rule about
+    // pruning the selection down to its topmost members.
+    if (ImGui::MenuItem("Duplicate"))
+    {
+        ModuleScene* scene = editorContext->GetScene();
+        if (GameObject copy = m_Scene->DuplicateGameObject(obj); copy.IsValid())
+            scene->SetSelection(copy);
+    }
 
     if (ImGui::MenuItem("Delete"))
     {

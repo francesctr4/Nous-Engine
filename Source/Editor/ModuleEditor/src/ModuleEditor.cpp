@@ -325,6 +325,25 @@ void ModuleEditor::InternalDrawEditor()
 	{
 		win->Draw();
 	}
+
+	// Claim the startup focus explicitly, once the dock layout has settled.
+	//
+	// The saved layout already selects Scene, and ImGui overrides it on the first
+	// frames: when a dock node's tab bar gains tabs, it selects the LAST one added,
+	// and tabs are added in the order the windows call Begin -- which is registration
+	// order. So whichever window is registered last in the central node wins the tab,
+	// and adding the Animation Controller quietly took the editor's opening view.
+	//
+	// Deferred a few frames rather than done on frame 0 because the tab bar is still
+	// being built while the layout applies; focusing into that does nothing.
+	if (m_startupFocusFrames >= 0)
+	{
+		if (++m_startupFocusFrames > 3)
+		{
+			ImGui::SetWindowFocus("Scene");
+			m_startupFocusFrames = -1;   // once, not every frame -- it would pin the tab
+		}
+	}
 }
 
 void ModuleEditor::EndFrame(const RendererBackendType backendType) const
@@ -363,6 +382,20 @@ void ModuleEditor::AddEditorWindow(IEditorWindow* editorWindow)
 	editorWindows.push_back(editorWindow);
 }
 
+void ModuleEditor::ForEachEditorWindow(const std::function<void(IEditorWindow&)>& fn) const
+{
+	if (!fn) return;
+
+	for (IEditorWindow* window : editorWindows)
+	{
+		// Null-guarded: registration is manual, and a failed NOUS_NEW would
+		// otherwise take out whatever is walking the list rather than skipping one
+		// row of a menu.
+		if (window)
+			fn(*window);
+	}
+}
+
 void ModuleEditor::UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath)
 {
     mModuleRenderer3D->UpdateShaderWatcherPath(oldPath, newPath);
@@ -378,6 +411,14 @@ std::string ModuleEditor::GetAssetsBrowserDirectory() const
     if (IEditorWindow* w = const_cast<ModuleEditor*>(this)->GetEditorWindowByName("Assets"))
         return static_cast<AssetsBrowser*>(w)->current_directory;
     return "Assets";
+}
+
+IEditorWindow* ModuleEditor::GetEditorWindow(const char* title) const
+{
+	// const_cast because the lookup itself is const -- it hands back a window the
+	// caller may then drive, which is the point, and mirrors what
+	// GetAssetsBrowserDirectory already does one function above.
+	return title ? const_cast<ModuleEditor*>(this)->GetEditorWindowByName(title) : nullptr;
 }
 
 IEditorWindow* ModuleEditor::GetEditorWindowByName(const std::string& name)

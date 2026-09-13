@@ -20,6 +20,7 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <cfloat>    // FLT_MIN -- the "full width, no label space" item width
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -89,6 +90,15 @@ namespace
     bool TakesValue(const as::ConditionComparator c)
     {
         return c == as::ConditionComparator::Greater || c == as::ConditionComparator::Less;
+    }
+
+    // A label ABOVE its control, not after it. ImGui draws a widget's label to the
+    // RIGHT of the widget, so a full-width control pushes its own label off the
+    // panel's edge -- which looks fine in a wide window and leaves every setting an
+    // unlabelled box once the panel is narrow, exactly where the labels matter most.
+    void FieldLabel(const char* text)
+    {
+        ImGui::TextDisabled("%s", text);
     }
 
     std::string WarningText(const nous::anim_editor::ValidationWarning& w)
@@ -758,12 +768,21 @@ void AnimationControllerEditor::DrawParametersSection()
         char buf[64];
         std::snprintf(buf, sizeof(buf), "%s", decl.name.c_str());
 
-        ImGui::SetNextItemWidth(110.0f);
+        // Derived from what is actually available rather than fixed: the panel is now
+        // as narrow as 200px in a docked column, and three hard-coded widths in a row
+        // overflow it and clip the remove button off the edge.
+        const float rowWidth = ImGui::GetContentRegionAvail().x;
+        const float typeWidth = 72.0f;
+        const float killWidth = 22.0f;
+        const float spacing   = ImGui::GetStyle().ItemSpacing.x;
+        const float nameWidth = std::max(56.0f, rowWidth - typeWidth - killWidth - spacing * 2.0f);
+
+        ImGui::SetNextItemWidth(nameWidth);
         if (ImGui::InputText("##pname", buf, sizeof(buf)))
             RenameParameter(i, buf);
 
         ImGui::SameLine();
-        ImGui::SetNextItemWidth(80.0f);
+        ImGui::SetNextItemWidth(typeWidth);
 
         // Order matches AnimParamType's declaration -- the combo indexes the enum by
         // value, the same contract that has already bitten CAudioSource's attenuation
@@ -790,7 +809,7 @@ void AnimationControllerEditor::DrawParametersSection()
         const auto type = static_cast<as::AnimParamType>(decl.type);
         if (type == as::AnimParamType::Float)
         {
-            ImGui::SetNextItemWidth(110.0f);
+            ImGui::SetNextItemWidth(nameWidth);
             if (ImGui::DragFloat("default##pdef", &decl.defaultValue, 0.01f))
                 m_dirty = true;
         }
@@ -863,9 +882,10 @@ void AnimationControllerEditor::DrawStateDetails(ControllerNode& node)
         m_dirty = true;
     }
 
-    // Clip slot -- a labelled button doubling as a .nanim drop target.
-    ImGui::TextDisabled("Clip");
-    ImGui::SetNextItemWidth(-1.0f);
+    // Clip slot -- a labelled button doubling as a .nanim drop target. A Button takes
+    // its width from its own size argument, not from SetNextItemWidth, so -1 goes
+    // there.
+    FieldLabel("Clip");
     ImGui::Button(node.clip ? node.clip->GetName().c_str() : "(none -- drop a .nanim)",
                   ImVec2(-1.0f, 0.0f));
 
@@ -882,8 +902,9 @@ void AnimationControllerEditor::DrawStateDetails(ControllerNode& node)
 
     ImGui::Spacing();
 
-    ImGui::SetNextItemWidth(-1.0f);
-    if (ImGui::DragFloat("Speed##sspeed", &node.state.speed, 0.01f, -4.0f, 4.0f, "%.2f"))
+    FieldLabel("Speed");
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if (ImGui::DragFloat("##sspeed", &node.state.speed, 0.01f, -4.0f, 4.0f, "%.2f"))
         m_dirty = true;
 
     if (ImGui::IsItemHovered())
@@ -905,8 +926,9 @@ void AnimationControllerEditor::DrawStateDetails(ControllerNode& node)
             if (node.state.speedParameter == names[static_cast<size_t>(i)])
                 current = i;
 
-        ImGui::SetNextItemWidth(-1.0f);
-        if (ImGui::Combo("Speed Param##sspeedparam", &current, names.data(),
+        FieldLabel("Speed Parameter");
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if (ImGui::Combo("##sspeedparam", &current, names.data(),
                          static_cast<int>(names.size())))
         {
             node.state.speedParameter = current == 0 ? std::string() : names[static_cast<size_t>(current)];
@@ -918,8 +940,9 @@ void AnimationControllerEditor::DrawStateDetails(ControllerNode& node)
     // state it is the meaningful default -- "whatever the character is set to".
     static const char* const c_rootMotionNames[] = { "Inherit", "Baked", "Applied", "In Place" };
     int rootMotionIndex = std::clamp(node.state.rootMotion, 0, 3);
-    ImGui::SetNextItemWidth(-1.0f);
-    if (ImGui::Combo("Root Motion##srm", &rootMotionIndex, c_rootMotionNames, 4))
+    FieldLabel("Root Motion");
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if (ImGui::Combo("##srm", &rootMotionIndex, c_rootMotionNames, 4))
     {
         node.state.rootMotion = rootMotionIndex;
         m_dirty = true;
@@ -948,8 +971,9 @@ void AnimationControllerEditor::DrawTransitionDetails(ControllerLink& link)
 
     if (t.hasExitTime)
     {
-        ImGui::SetNextItemWidth(-1.0f);
-        if (ImGui::DragFloat("Exit Time##texit", &t.exitTime, 0.01f, 0.0f, 1.0f, "%.2f"))
+        FieldLabel("Exit Time");
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if (ImGui::DragFloat("##texit", &t.exitTime, 0.01f, 0.0f, 1.0f, "%.2f"))
             m_dirty = true;
 
         if (ImGui::IsItemHovered())
@@ -957,8 +981,9 @@ void AnimationControllerEditor::DrawTransitionDetails(ControllerLink& link)
                               "Measured against the state being LEFT.");
     }
 
-    ImGui::SetNextItemWidth(-1.0f);
-    if (ImGui::DragFloat("Duration##tdur", &t.duration, 0.01f, 0.0f, 5.0f, "%.2f"))
+    FieldLabel("Duration (s)");
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if (ImGui::DragFloat("##tdur", &t.duration, 0.01f, 0.0f, 5.0f, "%.2f"))
         m_dirty = true;
 
     ImGui::Spacing();
@@ -1623,15 +1648,43 @@ void AnimationControllerEditor::DrawContent()
     DrawMenuBar();
     DrawNewAssetPopup();
 
-    // The left panel is also load-bearing as layout: imgui-node-editor's canvas-rect
-    // calculation needs a real MEASURED item in the host window before ed::Begin, and
-    // an ImGui::Dummy does not satisfy it. A SIBLING child is fine -- what must never
-    // happen is wrapping ed::Begin itself in a BeginChild.
-    ImGui::BeginChild("##controllerLeft", ImVec2(280.0f, 0.0f), true);
-    DrawLeftPanel();
-    ImGui::EndChild();
+    // A TOOLBAR ROW, not a side rail, and the shape is load-bearing rather than
+    // cosmetic. imgui-node-editor sizes its canvas from the host window's layout and
+    // needs a real measured item -- a Button, Text, Separator -- to have gone through
+    // ImGui's normal item path before ed::Begin.
+    //
+    // A full-height BeginChild followed by SameLine() does NOT serve: with the panel
+    // open the panel child happened to leave the layout in a state the canvas could
+    // read, and the moment the panel collapsed and a 24px rail was all that preceded
+    // it, the canvas latched onto the wrong rect and drew as a narrow strip. A plain
+    // button on its own row is the pattern AudioGraphEditor uses and is known good.
+    if (ImGui::Button(m_leftPanelOpen ? "< Panel" : "> Panel", ImVec2(80.0f, 0.0f)))
+        m_leftPanelOpen = !m_leftPanelOpen;
+
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip(m_leftPanelOpen ? "Hide the panel"
+                                          : "Show parameters, selection and warnings");
 
     ImGui::SameLine();
+    ImGui::TextDisabled("RMB-drag: pan   |   Wheel: zoom   |   Supr: delete selection");
+
+    ImGui::Separator();
+
+    if (m_leftPanelOpen)
+    {
+        // A FRACTION of what is actually available, clamped. A fixed width is fine
+        // until the window is docked into a narrow column -- which is where this
+        // editor usually lives -- and then it is most of the window, leaving the
+        // graph a strip too small to read.
+        const float available = ImGui::GetContentRegionAvail().x;
+        const float panelWidth = std::clamp(available * 0.42f, 200.0f, 320.0f);
+
+        ImGui::BeginChild("##controllerLeft", ImVec2(panelWidth, 0.0f), true);
+        DrawLeftPanel();
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+    }
 
     // Captured BEFORE ed::Begin advances the cursor, so the whole remaining window
     // area can be wired as a drop target once the canvas has drawn.

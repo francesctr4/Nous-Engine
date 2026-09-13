@@ -57,7 +57,8 @@ namespace nous::engine::animation_system
                                      const Transform& current,
                                      const Transform& clipStart,
                                      const Transform& clipEnd,
-                                     const bool       wrapped)
+                                     const bool       wrapped,
+                                     const bool       reversed)
     {
         RootMotionDelta delta;
 
@@ -79,15 +80,22 @@ namespace nous::engine::animation_system
             return delta;
         }
 
-        // Split the frame at the seam: previous -> end of clip, then start -> now.
-        // Each half is de-rotated by the yaw in force at ITS start.
-        const float yawFirst  = WrapAngle(ExtractYaw(clipEnd.rotation) - previousYaw);
-        const float yawSecond = WrapAngle(ExtractYaw(current.rotation) - ExtractYaw(clipStart.rotation));
+        // Split the frame at the seam. FORWARD: previous -> end of clip, then start
+        // -> now. REVERSED: the seam is crossed the other way, so it is previous ->
+        // start of clip, then end -> now. Only the two endpoints swap; the
+        // composition below is identical, because "the half before the seam, then the
+        // half after" is the same statement in both directions.
+        const Transform& firstEnd    = reversed ? clipStart : clipEnd;
+        const Transform& secondStart = reversed ? clipEnd   : clipStart;
 
-        const glm::vec3 first  = RotateAboutUp(Horizontal(clipEnd.position - previous.position),
+        // Each half is de-rotated by the yaw in force at ITS start.
+        const float yawFirst  = WrapAngle(ExtractYaw(firstEnd.rotation) - previousYaw);
+        const float yawSecond = WrapAngle(ExtractYaw(current.rotation) - ExtractYaw(secondStart.rotation));
+
+        const glm::vec3 first  = RotateAboutUp(Horizontal(firstEnd.position - previous.position),
                                                -previousYaw);
-        const glm::vec3 second = RotateAboutUp(Horizontal(current.position - clipStart.position),
-                                               -ExtractYaw(clipStart.rotation));
+        const glm::vec3 second = RotateAboutUp(Horizontal(current.position - secondStart.position),
+                                               -ExtractYaw(secondStart.rotation));
 
         // The second half happens after the first half's turn has been applied, so
         // it is expressed relative to that, not to the frame the frame started in.

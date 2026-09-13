@@ -20,6 +20,10 @@
 // the animation scripting API: before it, only the Inspector's Play buttons could
 // trigger a transition, so no shipped game could animate anything.
 //
+// W/S drive the `speed` parameter and A/D turn the character; root motion does the
+// actual travelling, along whatever direction he is facing. ThirdPersonCamera only
+// watches -- the character's own script is what decides where he goes.
+//
 // Keys 1/2/3 cross-fade to three named STATES of the animator's controller. Addressing
 // states rather than clips is what makes a script and the graph speak about the same
 // thing: a CrossFade wins for its frame and the graph resumes from the state it
@@ -55,18 +59,56 @@ public:
             return;
         }
 
-        // The parameter surface is the PRIMARY one: a transition condition on "speed"
-        // is what a player controller should be written against, with CrossFade below
-        // reserved for the cases a graph edge cannot express.
-        Nous_Engine->Animator->SetFloat(m_ownerID, "speed", 1.0f);
-        Nous_Engine->Logger->Info("[AnimatorDemo] speed parameter reads back as %.2f",
-                                  Nous_Engine->Animator->GetFloat(m_ownerID, "speed"));
+        Nous_Engine->Logger->Info("[AnimatorDemo] W/S = move, A/D = turn, Space = attack, "
+                                  "1/2/3 = direct CrossFade");
         /*coding_end::AnimatorDemo::Start*/
     }
 
     void Update(float deltaTime) override
     {
         /*coding_start::AnimatorDemo::Update*/
+
+        // THE PRIMARY SURFACE. A player controller says what is TRUE of the character
+        // -- it is moving, it was asked to attack -- and the controller graph decides
+        // what that means for playback. Nothing here names a clip or a state.
+        //
+        // Written every frame, not on the key edge: a transition condition is a
+        // question asked continuously, so "speed" has to describe the current frame
+        // rather than the last time the key changed.
+        //
+        // ONE SIGNED parameter rather than a second "backwards" flag. The sign is
+        // what the graph already needs to distinguish the two directions, and a
+        // separate bool would let the two disagree -- forward and backward both true
+        // is a state the character cannot be in.
+        float speed = 0.0f;
+        if (IsHeld(NOUS_SCANCODE::W)) speed += 1.0f;
+        if (IsHeld(NOUS_SCANCODE::S)) speed -= 1.0f;
+
+        Nous_Engine->Animator->SetFloat(m_ownerID, "speed", speed);
+
+        // A/D yaw the CHARACTER, not the camera. Root motion travels along the
+        // character's own facing, so turning him is what steers -- and it is why this
+        // lives here rather than in the camera script: the camera observes, the
+        // character's own script decides where he faces.
+        //
+        // Degrees, and scaled by deltaTime so the turn rate does not depend on frame
+        // rate. Rotate pre-multiplies in WORLD space, which is what keeps a yaw about
+        // world up from drifting into a roll as the character turns.
+        float turn = 0.0f;
+        if (IsHeld(NOUS_SCANCODE::A)) turn += m_turnSpeed * deltaTime;
+        if (IsHeld(NOUS_SCANCODE::D)) turn -= m_turnSpeed * deltaTime;
+
+        if (turn != 0.0f)
+            Nous_Engine->GameObject->Rotate(m_ownerID, 0.0f, turn, 0.0f);
+
+        // A trigger stays set until a transition consumes it, so this is set on the
+        // key EDGE -- setting it every frame while held would re-arm it the instant
+        // the Attack transition consumed it, and the character would never leave.
+        if (Nous_Engine->Input->GetKey(NOUS_SCANCODE::Space) == InputAPI::KeyState::DOWN)
+            Nous_Engine->Animator->SetTrigger(m_ownerID, "attack");
+
+        // The OVERRIDE, kept beside the parameters on purpose: these win for their
+        // frame and the graph resumes from the state they entered on the next one.
         CrossFadeOnKey(NOUS_SCANCODE::Num1, m_stateA);
         CrossFadeOnKey(NOUS_SCANCODE::Num2, m_stateB);
         CrossFadeOnKey(NOUS_SCANCODE::Num3, m_stateC);
@@ -119,6 +161,13 @@ public:
 
     // ----- METHODS ----- //
     /*coding_start::AnimatorDemo*/
+    // DOWN is the press edge and REPEAT every frame after it, so "held" is both.
+    bool IsHeld(NOUS_SCANCODE key) const
+    {
+        const int state = Nous_Engine->Input->GetKey(key);
+        return state == InputAPI::KeyState::DOWN || state == InputAPI::KeyState::REPEAT;
+    }
+
     void CrossFadeOnKey(NOUS_SCANCODE key, const std::string& stateName)
     {
         if (stateName.empty()) return;
@@ -142,6 +191,10 @@ private:
     float m_logTimer = 0.0f;
 
     SCRIPT_FIELD(float, m_fade, 0.3f)
+
+    // Degrees per second. Independent of the animation's own speed on purpose: how
+    // fast a character pivots is a control feel, not a property of the walk clip.
+    SCRIPT_FIELD(float, m_turnSpeed, 140.0f)
 
     // Defaulted to the names the demo controller uses (Task 16), so the script does
     // something the moment it is dropped on a character that has one.

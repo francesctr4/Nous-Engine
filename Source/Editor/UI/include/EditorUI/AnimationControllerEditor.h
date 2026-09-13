@@ -210,6 +210,12 @@ private:
     bool m_showNewAssetPopup = false;
     char m_newAssetName[128] = {};
 
+    // The panel is worth a fixed ~280px in a wide window and is half the window in a
+    // narrow docked column, which is where this editor usually ends up. Collapsing it
+    // gives the canvas the whole width; the rail that toggles it stays visible so the
+    // panel is one click away rather than lost.
+    bool m_leftPanelOpen = true;
+
     ImVec2 m_spawnPosition{ 40.0f, 40.0f };
     int    m_spawnStrideCount = 0;
 };
