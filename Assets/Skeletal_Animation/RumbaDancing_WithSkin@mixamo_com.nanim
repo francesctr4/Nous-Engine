@@ -1,5 +1,5 @@
 {
-    "source": "Assets\\RumbaDancing_WithSkin.fbx",
+    "source": "Assets\\Skeletal_Animation\\RumbaDancing_WithSkin.fbx",
     "clip": "mixamo.com",
     "loop": true,
     "speed": 1
