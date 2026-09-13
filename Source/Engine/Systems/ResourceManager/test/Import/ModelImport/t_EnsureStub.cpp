@@ -135,7 +135,7 @@ TEST(t_EnsureStub, WritesTheStubWhenThereIsNone)
 }
 
 // A skeleton stub carries no clip name, and an empty one must not be written as a
-// key -- ReadSettingsFromStub and the fallback re-parse both treat an absent key as
+// key -- ReadAuthoringFromStub and the fallback re-parse both treat an absent key as
 // "not a clip stub", which an empty string would not satisfy.
 TEST(t_EnsureStub, AnEmptyClipNameIsNotWrittenAsAKey)
 {

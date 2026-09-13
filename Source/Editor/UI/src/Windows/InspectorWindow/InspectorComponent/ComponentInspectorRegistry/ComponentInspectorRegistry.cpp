@@ -796,7 +796,7 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
                     commit = true;
 
                 if (commit)
-                    ImporterAnimation::SaveSettings(*clip);
+                    ImporterAnimation::SaveAuthoring(*clip);
             }
 
             ImGui::Unindent();

@@ -3,6 +3,7 @@
 #include <ResourceManager/Core/MetaFileData.h>
 #include <ResourceManager/Types/ResourceAnimation/ImporterAnimation.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
+#include <Utils/Serialization/JsonArray.h>
 #include <Utils/Serialization/JsonFile.h>
 #include <Utils/Serialization/JsonObject.h>
 
@@ -12,6 +13,7 @@
 
 using nous::engine::animation_system::AnimChannel;
 using nous::engine::animation_system::AnimClipData;
+using nous::engine::animation_system::AnimationEvent;
 
 namespace
 {
@@ -222,9 +224,9 @@ TEST(t_ImporterAnimation, RoundTripsPerClipSettings)
 {
     const MetaFileData meta = MetaFor("t_ImporterAnimation_settings.nanim");
 
-    AnimationSettings authored;
-    authored.loop  = false;
-    authored.speed = 2.5f;
+    ClipAuthoring authored;
+    authored.settings.loop  = false;
+    authored.settings.speed = 2.5f;
 
     ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip(), authored));
 
@@ -257,9 +259,10 @@ TEST(t_ImporterAnimation, ReadsDefaultSettingsFromAStubThatDeclaresNone)
         ASSERT_TRUE(JsonFile::SaveToFile(json, stub));
     }
 
-    const AnimationSettings settings = ImporterAnimation::ReadSettingsFromStub(stub);
-    EXPECT_TRUE(settings.loop);
-    EXPECT_FLOAT_EQ(settings.speed, 1.0f);
+    const ClipAuthoring authoring = ImporterAnimation::ReadAuthoringFromStub(stub);
+    EXPECT_TRUE(authoring.settings.loop);
+    EXPECT_FLOAT_EQ(authoring.settings.speed, 1.0f);
+    EXPECT_TRUE(authoring.events.empty());
 
     std::filesystem::remove(stub);
 }
@@ -276,18 +279,18 @@ TEST(t_ImporterAnimation, WritingSettingsToAStubKeepsItsSourceAndClipKeys)
         ASSERT_TRUE(JsonFile::SaveToFile(json, stub));
     }
 
-    AnimationSettings edited;
-    edited.loop  = false;
-    edited.speed = 0.25f;
-    ASSERT_TRUE(ImporterAnimation::WriteSettingsToStub(stub, edited));
+    ClipAuthoring edited;
+    edited.settings.loop  = false;
+    edited.settings.speed = 0.25f;
+    ASSERT_TRUE(ImporterAnimation::WriteAuthoringToStub(stub, edited));
 
     const JsonObject reloaded = JsonFile::LoadFromFile(stub);
     EXPECT_EQ(reloaded.GetString("source"), "Assets/Rig.fbx");
     EXPECT_EQ(reloaded.GetString("clip"),   "mixamo.com");
 
-    const AnimationSettings readBack = ImporterAnimation::ReadSettingsFromStub(stub);
-    EXPECT_FALSE(readBack.loop);
-    EXPECT_FLOAT_EQ(readBack.speed, 0.25f);
+    const ClipAuthoring readBack = ImporterAnimation::ReadAuthoringFromStub(stub);
+    EXPECT_FALSE(readBack.settings.loop);
+    EXPECT_FLOAT_EQ(readBack.settings.speed, 0.25f);
 
     std::filesystem::remove(stub);
 }
@@ -296,7 +299,7 @@ TEST(t_ImporterAnimation, WritingSettingsToAStubKeepsItsSourceAndClipKeys)
 // different readers (the stub survives a Library/ nuke, the binary is what a shipped
 // game reads), so writing one and not the other leaves them disagreeing until the
 // next re-import silently picks a winner.
-TEST(t_ImporterAnimation, SaveSettingsUpdatesBothTheStubAndTheBinary)
+TEST(t_ImporterAnimation, SaveAuthoringUpdatesBothTheStubAndTheBinary)
 {
     const std::string stub    = ScratchPath("t_ImporterAnimation_both.nanim");
     const std::string library = ScratchPath("t_ImporterAnimation_both_lib.nanim");
@@ -314,11 +317,11 @@ TEST(t_ImporterAnimation, SaveSettingsUpdatesBothTheStubAndTheBinary)
     animation.settings.loop  = false;
     animation.settings.speed = 1.75f;
 
-    ASSERT_TRUE(ImporterAnimation::SaveSettings(animation));
+    ASSERT_TRUE(ImporterAnimation::SaveAuthoring(animation));
 
-    const AnimationSettings fromStub = ImporterAnimation::ReadSettingsFromStub(stub);
-    EXPECT_FALSE(fromStub.loop);
-    EXPECT_FLOAT_EQ(fromStub.speed, 1.75f);
+    const ClipAuthoring fromStub = ImporterAnimation::ReadAuthoringFromStub(stub);
+    EXPECT_FALSE(fromStub.settings.loop);
+    EXPECT_FLOAT_EQ(fromStub.settings.speed, 1.75f);
 
     ResourceAnimation loaded(42);
     ImporterAnimation importer;
@@ -352,10 +355,149 @@ TEST(t_ImporterAnimation, SaveWritesTheResourcesOwnSettings)
     std::filesystem::remove(meta.libraryPath);
 }
 
+// =============================================================================
+// Animation events
+// =============================================================================
+
+// Events ride in the binary because that is the copy an exported game ships. The
+// assertion on the first channel's bone name AFTER them is the point: a writer and
+// reader that disagreed on the events block's size would shift every channel that
+// follows, and only a post-events check catches that.
+TEST(t_ImporterAnimation, EventsRoundTripThroughTheRealWriter)
+{
+    const MetaFileData meta = MetaFor("t_ImporterAnimation_events.nanim");
+    const AnimClipData source = Clip();
+
+    ClipAuthoring authoring;
+    authoring.settings.loop  = false;
+    authoring.settings.speed = 1.5f;
+    authoring.events.push_back({ 0.25f, "Footstep", 0.0f, "L" });
+    authoring.events.push_back({ 0.75f, "Footstep", 1.0f, "R" });
+    authoring.events.push_back({ 1.00f, "Hit",      3.5f, "" });
+
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, source, authoring));
+
+    ResourceAnimation loaded(meta.uid);
+    ImporterAnimation importer;
+    ASSERT_TRUE(importer.Deserialize(meta.libraryPath, &loaded));
+
+    ASSERT_EQ(loaded.events.size(), 3u);
+    EXPECT_FLOAT_EQ(loaded.events[0].time, 0.25f);
+    EXPECT_EQ(loaded.events[0].name, "Footstep");
+    EXPECT_EQ(loaded.events[0].stringParam, "L");
+    EXPECT_FLOAT_EQ(loaded.events[2].floatParam, 3.5f);
+    EXPECT_EQ(loaded.events[2].name, "Hit");
+    EXPECT_TRUE(loaded.events[2].stringParam.empty());
+
+    EXPECT_FALSE(loaded.settings.loop);
+    EXPECT_FLOAT_EQ(loaded.settings.speed, 1.5f);
+
+    // Everything AFTER the events block must still line up.
+    ASSERT_EQ(loaded.clip.ChannelCount(), source.channels.size());
+    EXPECT_EQ(loaded.clip.channels[0].boneName, source.channels[0].boneName);
+
+    std::filesystem::remove(meta.libraryPath);
+}
+
+TEST(t_ImporterAnimation, AClipWithNoEventsRoundTripsEmpty)
+{
+    const MetaFileData meta = MetaFor("t_ImporterAnimation_noevents.nanim");
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip(), ClipAuthoring{}));
+
+    ResourceAnimation loaded(meta.uid);
+    ImporterAnimation importer;
+    ASSERT_TRUE(importer.Deserialize(meta.libraryPath, &loaded));
+
+    EXPECT_TRUE(loaded.events.empty());
+
+    std::filesystem::remove(meta.libraryPath);
+}
+
+// The writer sorts, so the runtime's emission order is time order no matter how the
+// stub or the timeline window happened to append them.
+TEST(t_ImporterAnimation, TheWriterSortsEventsByTime)
+{
+    const MetaFileData meta = MetaFor("t_ImporterAnimation_sortevents.nanim");
+
+    ClipAuthoring authoring;
+    authoring.events.push_back({ 0.9f, "late",  0.0f, "" });
+    authoring.events.push_back({ 0.1f, "early", 0.0f, "" });
+
+    ASSERT_TRUE(ImporterAnimation::SaveClip(meta, Clip(), authoring));
+
+    ResourceAnimation loaded(meta.uid);
+    ImporterAnimation importer;
+    ASSERT_TRUE(importer.Deserialize(meta.libraryPath, &loaded));
+
+    ASSERT_EQ(loaded.events.size(), 2u);
+    EXPECT_EQ(loaded.events[0].name, "early");
+
+    std::filesystem::remove(meta.libraryPath);
+}
+
+// The stub is the authoring copy and the ONLY thing that survives a Library/ nuke.
+// Read-modify-write, so the keys the fallback re-parse needs are preserved.
+TEST(t_ImporterAnimation, TheStubRoundTripsEventsAndKeepsSourceAndClip)
+{
+    const std::string stub = ScratchPath("t_ImporterAnimation_stubevents.nanim");
+    {
+        JsonObject json;
+        json.Set("source", "Assets/Walk.fbx");
+        json.Set("clip",   "mixamo.com");
+        ASSERT_TRUE(JsonFile::SaveToFile(json, stub));
+    }
+
+    ClipAuthoring authoring;
+    authoring.settings.speed = 2.0f;
+    authoring.events.push_back({ 0.4f, "Footstep", 0.0f, "L" });
+    ASSERT_TRUE(ImporterAnimation::WriteAuthoringToStub(stub, authoring));
+
+    const ClipAuthoring read = ImporterAnimation::ReadAuthoringFromStub(stub);
+    ASSERT_EQ(read.events.size(), 1u);
+    EXPECT_EQ(read.events[0].name, "Footstep");
+    EXPECT_EQ(read.events[0].stringParam, "L");
+    EXPECT_FLOAT_EQ(read.events[0].time, 0.4f);
+    EXPECT_FLOAT_EQ(read.settings.speed, 2.0f);
+
+    const JsonObject after = JsonFile::LoadFromFile(stub);
+    EXPECT_EQ(after.GetString("source"), "Assets/Walk.fbx");
+    EXPECT_EQ(after.GetString("clip"),   "mixamo.com");
+
+    std::filesystem::remove(stub);
+}
+
+// An unnamed event can match nothing a script tests for, so it is authoring noise
+// rather than data -- dropping it keeps the runtime list meaningful.
+TEST(t_ImporterAnimation, AnUnnamedStubEventIsDropped)
+{
+    // The stub must exist first: WriteAuthoringToStub is read-modify-write, so that
+    // the "source"/"clip" keys the fallback re-parse needs survive. EnsureStub is
+    // what creates it in the real pipeline.
+    const std::string stub = ScratchPath("t_ImporterAnimation_unnamed.nanim");
+    {
+        JsonObject json;
+        json.Set("source", "Assets/Rig.fbx");
+        json.Set("clip",   "mixamo.com");
+        ASSERT_TRUE(JsonFile::SaveToFile(json, stub));
+    }
+
+    ClipAuthoring authoring;
+    authoring.events.push_back({ 0.4f, "",      0.0f, "" });
+    authoring.events.push_back({ 0.6f, "Named", 0.0f, "" });
+    ASSERT_TRUE(ImporterAnimation::WriteAuthoringToStub(stub, authoring));
+
+    const ClipAuthoring read = ImporterAnimation::ReadAuthoringFromStub(stub);
+    ASSERT_EQ(read.events.size(), 1u);
+    EXPECT_EQ(read.events[0].name, "Named");
+
+    std::filesystem::remove(stub);
+}
+
 TEST(t_ImporterAnimation, HasNoGpuResidency)
 {
     ResourceAnimation resource(1);
     resource.clip = Clip();
+    resource.events.push_back({ 0.5f, "Hit", 0.0f, "" });
 
     ImporterAnimation importer;
     EXPECT_TRUE(importer.Upload(&resource, nullptr));
@@ -363,4 +505,5 @@ TEST(t_ImporterAnimation, HasNoGpuResidency)
 
     importer.Evict(&resource);
     EXPECT_EQ(resource.clip.ChannelCount(), 0u);
+    EXPECT_TRUE(resource.events.empty());
 }

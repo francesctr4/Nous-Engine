@@ -1,10 +1,12 @@
 #pragma once
 
 #include <AnimationSystem/AnimClip.h>
+#include <AnimationSystem/AnimationEvents.h>
 #include <EngineCore/EngineExport.h>
 #include <ResourceManager/Core/ResourceBase.h>
 
 #include <cstdint>
+#include <vector>
 
 // One animation clip.
 //
@@ -33,6 +35,17 @@ struct AnimationSettings
     float speed = 1.0f;   // negative plays backwards; the sampler's cursor handles it
 };
 
+// Everything about a clip that a HUMAN authored, as opposed to what the exporter
+// produced. Bundled rather than passed as separate parameters because SaveClip's
+// settings argument is deliberately REQUIRED -- ModelImport must read the existing
+// values back or a re-import silently resets them -- and a fourth required
+// parameter is the version of that which drifts.
+struct ClipAuthoring
+{
+    AnimationSettings                                           settings;
+    std::vector<nous::engine::animation_system::AnimationEvent> events;
+};
+
 // NO GPU RESIDENCY. See ImporterAnimation.
 class ResourceAnimation : public ResourceBase
 {
@@ -42,4 +55,9 @@ public:
     nous::engine::animation_system::AnimClipData clip;
 
     AnimationSettings settings;
+
+    // Named markers the runtime fires as the clip plays. No generation counter: the
+    // animator reads this vector directly every frame, so an Inspector or timeline
+    // edit is live with nothing to invalidate.
+    std::vector<nous::engine::animation_system::AnimationEvent> events;
 };

@@ -174,13 +174,14 @@ namespace nous::engine::resource_manager
             const auto& clip = model->clips[planned.clipIndex];
 
             // Read back from the stub rather than defaulting: EnsureStub above left
-            // an existing stub alone, so this is where a user's authored loop/speed
-            // survives a re-import (or a deleted Library/). Defaulting here would
-            // silently reset every clip's settings whenever the FBX was touched.
-            const AnimationSettings settings =
-                ImporterAnimation::ReadSettingsFromStub(planned.stubPath);
+            // an existing stub alone, so this is where a user's authored loop, speed
+            // AND event markers survive a re-import (or a deleted Library/).
+            // Defaulting here would silently reset every clip's authoring whenever
+            // the FBX was touched.
+            const ClipAuthoring authoring =
+                ImporterAnimation::ReadAuthoringFromStub(planned.stubPath);
 
-            if (ImporterAnimation::SaveClip(clipMeta, clip, settings))
+            if (ImporterAnimation::SaveClip(clipMeta, clip, authoring))
             {
                 NOUS_INFO_C(CURRENT_CHANNEL, "ImportModel: '%s' -> %zu channel(s), %.2fs.",
                             planned.stubPath.c_str(), clip.ChannelCount(),
