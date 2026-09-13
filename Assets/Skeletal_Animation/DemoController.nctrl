@@ -7,6 +7,11 @@
             "default": 0
         },
         {
+            "name": "moveSpeed",
+            "type": "Float",
+            "default": 1
+        },
+        {
             "name": "attack",
             "type": "Trigger",
             "default": 0
@@ -31,7 +36,7 @@
         {
             "name": "Run",
             "speed": 1.5,
-            "speedParameter": "",
+            "speedParameter": "moveSpeed",
             "rootMotion": "Applied",
             "clip": {
                 "assetPath": "Assets\/Skeletal_Animation\/Walking@mixamo_com.nanim",

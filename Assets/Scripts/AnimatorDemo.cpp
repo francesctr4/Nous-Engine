@@ -59,7 +59,8 @@ public:
             return;
         }
 
-        Nous_Engine->Logger->Info("[AnimatorDemo] W/S = move, A/D = turn, Space = attack, "
+        Nous_Engine->Logger->Info("[AnimatorDemo] W/S = move, A/D = turn, Shift = sprint, "
+                                  "Space = attack, F = attack (held, QA), "
                                   "1/2/3 = direct CrossFade");
         /*coding_end::AnimatorDemo::Start*/
     }
@@ -86,6 +87,26 @@ public:
 
         Nous_Engine->Animator->SetFloat(m_ownerID, "speed", speed);
 
+        // The FOURTH rate factor, and the only one with no other way to reach it.
+        // Playback rate is clip.speed x state.speed x THIS x CAnimator::speedMultiplier;
+        // the other three are authored on assets or the component, so without a state
+        // naming a speed parameter the product is never exercised at full width.
+        // `Run` names this one, `Walk Back` deliberately does not -- holding Shift must
+        // retime the run and leave the backward walk alone, which is what shows the
+        // factor is per STATE rather than per animator.
+        //
+        // Ramped rather than switched, because the point of a Float parameter is that it
+        // varies continuously; a binary would be indistinguishable from a second state.
+        // This is also the honest limit of `speedParameter` as the blend-tree stand-in --
+        // it is a sped-up run, not a walk->run blend, and it reads fine to about 1.75x.
+        const float sprintTarget = IsHeld(NOUS_SCANCODE::LShift) ? m_sprintScale : 1.0f;
+
+        float k = deltaTime * 6.0f;
+        if (k > 1.0f) k = 1.0f;              // a frame hitch must not overshoot the ramp
+        m_moveSpeed += (sprintTarget - m_moveSpeed) * k;
+
+        Nous_Engine->Animator->SetFloat(m_ownerID, "moveSpeed", m_moveSpeed);
+
         // A/D yaw the CHARACTER, not the camera. Root motion travels along the
         // character's own facing, so turning him is what steers -- and it is why this
         // lives here rather than in the camera script: the camera observes, the
@@ -105,6 +126,19 @@ public:
         // key EDGE -- setting it every frame while held would re-arm it the instant
         // the Attack transition consumed it, and the character would never leave.
         if (Nous_Engine->Input->GetKey(NOUS_SCANCODE::Space) == InputAPI::KeyState::DOWN)
+            Nous_Engine->Animator->SetTrigger(m_ownerID, "attack");
+
+        // F is the WRONG way to do it, kept on purpose: it re-arms the trigger every
+        // frame it is held, which is exactly the input pattern the Any State rule
+        // "never re-enter the state already current" exists to survive. Held down, the
+        // attack must play through ONCE and reach its exit time -- if it restarts every
+        // frame the character freezes on the attack's first pose, which is Unity's
+        // classic canTransitionToSelf stutter.
+        //
+        // Space (the edge) is what a real player controller does, so the rule is
+        // unreachable through normal play; this key is what makes it testable without
+        // editing a script mid-QA.
+        if (IsHeld(NOUS_SCANCODE::F))
             Nous_Engine->Animator->SetTrigger(m_ownerID, "attack");
 
         // The OVERRIDE, kept beside the parameters on purpose: these win for their
@@ -190,7 +224,16 @@ private:
     /*coding_start::AnimatorDemo*/
     float m_logTimer = 0.0f;
 
+    // Held across frames because the ramp is relative to where it already was. Starts
+    // at the controller's declared default for `moveSpeed`, so the first frame does not
+    // lurch before the ramp has run.
+    float m_moveSpeed = 1.0f;
+
     SCRIPT_FIELD(float, m_fade, 0.3f)
+
+    // What Shift ramps `moveSpeed` up to. Exposed rather than hard-coded so the upper
+    // end of the usable range can be found by dragging during QA.
+    SCRIPT_FIELD(float, m_sprintScale, 1.75f)
 
     // Degrees per second. Independent of the animation's own speed on purpose: how
     // fast a character pivots is a control feel, not a property of the walk clip.
