@@ -52,6 +52,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         # break shows up in a consumer, not here.
         EngineCore_headers
         Core_headers
+        CrashHandler_headers
         AudioSystem_headers
         FileSystem_headers
         EventSystem_headers
@@ -72,8 +73,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         RendererFrontend_headers
         RendererBackend_headers
         VulkanBackend_headers
+        AnimationSystem_headers
         ModuleBase_headers
         ModuleAudio_headers
+        ModuleUI_headers
+        ModuleAI_headers
+        ModulePhysics_headers
+        ModuleParticles_headers
         ModuleCamera3D_headers
         ModuleInput_headers
         ModuleRenderer3D_headers

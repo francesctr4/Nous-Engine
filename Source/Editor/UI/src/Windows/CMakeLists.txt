@@ -1,3 +1,4 @@
+add_subdirectory(AnimationControllerEditor)
 add_subdirectory(AssetsBrowser)
 add_subdirectory(AudioGraphEditor)
 add_subdirectory(AudioMixer)

@@ -1,0 +1,60 @@
+{
+    "uniforms": [
+        {
+            "name": "aoIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "emissiveColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "normalStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "shininessScale",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "specularIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        }
+    ],
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/Textures\/cypher_tex.png",
+            "uid": 211668797,
+            "library_path": "Library\/Textures\/211668797.png"
+        }
+    ]
+}

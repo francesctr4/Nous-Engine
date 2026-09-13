@@ -34,6 +34,14 @@ public:
     // texture first). Triggers WaitForGPUIdle only when at least one surface is destroyed.
     void Reconcile(RendererFrontend* frontend);
 
+    // Drop every surface bound into `material`, restoring its slot texture first.
+    //
+    // THE lifetime hook: boundMaterial is non-owning, so this must be driven by whatever
+    // actually retires the material, while it is still alive. Reconcile cannot serve that
+    // role -- it is keyed on "was this UID submitted this frame", which has no defined
+    // ordering against the resource system's deferred free.
+    void DropForMaterial(RendererFrontend* frontend, const ResourceMaterial* material);
+
     // Shutdown: destroy every dynamic texture. Call after ReleaseFrameResources (GPU idle) and
     // BEFORE the owning materials are torn down (Destroy restores the original slot pointer).
     void DestroyAll(RendererFrontend* frontend);

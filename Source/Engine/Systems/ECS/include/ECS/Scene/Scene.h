@@ -38,6 +38,24 @@ public:
                                                         uint32_t preferredUID = 0);
     NOUS_ENGINE_API void       RegisterGameObject(GameObject go);
 
+    /**
+     * @brief Deep-copies `source` and its whole subtree under the same parent.
+     *
+     * Returns the copied root, or an invalid handle if `source` is not valid.
+     *
+     * Components are copied by SERIALIZING each object and deserializing into the
+     * copy, so a component type needs nothing new to be duplicable -- and its
+     * resource references are acquired by its own Deserialize, which is what keeps
+     * the counts right without this function knowing any resource exists.
+     *
+     * Every copy gets a FRESH id. GameObject::Deserialize writes the serialized uid
+     * verbatim with no collision check, so replaying the data as-is would put two
+     * objects in the scene under one id; parents are therefore remapped through an
+     * old-id -> copy table rather than through the serialized parent field, which
+     * still names the originals.
+     */
+    NOUS_ENGINE_API GameObject DuplicateGameObject(GameObject source);
+
     // Update
     void Update(float deltaTime);
     NOUS_ENGINE_API void UpdateWorldMatrices();

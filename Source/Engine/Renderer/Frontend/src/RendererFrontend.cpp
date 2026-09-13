@@ -221,14 +221,19 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 #ifdef _PROFILING
 				ZoneScopedN("DrawGeometryBatched (Scene)");
 #endif
-				// Scene pass uses SSBO range [0, c_maxInstances).
-				const GroupedGeometries grouped = GroupGeometries(packet->geometries, 0);
+				// Scene pass uses SSBO range [0, c_maxInstances) and the scene palette region.
+				const GroupedGeometries grouped =
+					GroupGeometries(packet->geometries, 0, c_paletteRegionScene);
 				if (!grouped.matrices.empty())
 				{
-					mBackend->UploadInstanceMatrices(
+					mBackend->UploadInstanceData(
 						grouped.matrices.data(),
+						grouped.paletteBases.data(),
 						static_cast<uint32_t>(grouped.matrices.size()),
-						0);
+						0,
+						grouped.palettes.data(),
+						static_cast<uint32_t>(grouped.palettes.size()),
+						c_paletteRegionScene);
 				}
 				for (const auto& batch : grouped.batches)
 					success &= mBackend->DrawGeometryBatched(sceneRenderpass, batch);
@@ -266,6 +271,12 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 				success &= mBackend->DrawCameraFrustums(
 					sceneRenderpass, sceneProj, sceneView, mCameraFrustums);
 			}
+
+			if (!mDebugLines.empty())
+			{
+				success &= mBackend->DrawDebugLines(sceneRenderpass, sceneProj, sceneView,
+					mDebugLines, glm::vec4(0.2f, 0.8f, 1.0f, 1.0f));   // cyan
+			}
 		});
 	}
 
@@ -293,15 +304,20 @@ FrameResult RendererFrontend::DrawFrame(RenderPacket* packet) const
 				const auto& gameList = (mRenderMode == RenderMode::EDITOR)
 				    ? packet->gameGeometries
 				    : packet->geometries;
-				// Game pass uses SSBO range [c_maxInstances, 2*c_maxInstances) to avoid
-				// overwriting scene matrices that the GPU hasn't consumed yet.
-				const GroupedGeometries groupedGame = GroupGeometries(gameList, c_maxInstances);
+				// Game pass uses SSBO range [c_maxInstances, 2*c_maxInstances) and the game
+				// palette region, to avoid overwriting scene data the GPU hasn't consumed yet.
+				const GroupedGeometries groupedGame =
+					GroupGeometries(gameList, c_maxInstances, c_paletteRegionGame);
 				if (!groupedGame.matrices.empty())
 				{
-					mBackend->UploadInstanceMatrices(
+					mBackend->UploadInstanceData(
 						groupedGame.matrices.data(),
+						groupedGame.paletteBases.data(),
 						static_cast<uint32_t>(groupedGame.matrices.size()),
-						c_maxInstances);
+						c_maxInstances,
+						groupedGame.palettes.data(),
+						static_cast<uint32_t>(groupedGame.palettes.size()),
+						c_paletteRegionGame);
 				}
 				for (const auto& batch : groupedGame.batches)
 					success &= mBackend->DrawGeometryBatched(gameRenderpass, batch);
@@ -408,6 +424,11 @@ bool RendererFrontend::SubmitDynamicSurface(uint32_t objectUID,
 void RendererFrontend::ReconcileDynamicSurfaces()
 {
 	m_dynamicSurfaces.Reconcile(this);
+}
+
+void RendererFrontend::DropDynamicSurfacesForMaterial(const ResourceMaterial* material)
+{
+	m_dynamicSurfaces.DropForMaterial(this, material);
 }
 
 void RendererFrontend::DestroyDynamicSurfaces()
@@ -636,6 +657,13 @@ void RendererFrontend::SetWireframeInstances(WireframeMesh mesh,
 void RendererFrontend::SetCameraFrustums(const std::vector<CameraFrustumData>& frustums)
 {
 	mCameraFrustums = frustums;
+}
+
+void RendererFrontend::SetDebugLines(const std::vector<Vertex3D>& vertices)
+{
+	// Assign, not move-from-caller: both this buffer and the caller's keep their
+	// capacity across frames, so a per-frame overlay allocates nothing after warmup.
+	mDebugLines = vertices;
 }
 
 void RendererFrontend::SetEditorOverlay(IEditorOverlay *overlay)

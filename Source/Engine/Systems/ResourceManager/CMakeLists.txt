@@ -63,6 +63,11 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Runtime/ScenePreloader.h
 
         include/${CLASS_NAME}/Types/ResourceType.h
+        include/${CLASS_NAME}/Types/ResourceAnimation/ResourceAnimation.h
+        include/${CLASS_NAME}/Types/ResourceAnimation/ImporterAnimation.h
+
+        include/${CLASS_NAME}/Types/ResourceAnimationController/ResourceAnimationController.h
+        include/${CLASS_NAME}/Types/ResourceAnimationController/ImporterAnimationController.h
         include/${CLASS_NAME}/Types/ResourceAudio/ResourceAudio.h
         include/${CLASS_NAME}/Types/ResourceAudioGraph/ResourceAudioGraph.h
         include/${CLASS_NAME}/Types/ResourceAudioGraph/ImporterAudioGraph.h
@@ -72,6 +77,8 @@ target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/Types/ResourceMesh/ImporterMesh.h
         include/${CLASS_NAME}/Types/ResourceMesh/SubMeshCache.h
         include/${CLASS_NAME}/Types/ResourceShader/ResourceShader.h
+        include/${CLASS_NAME}/Types/ResourceSkeleton/ResourceSkeleton.h
+        include/${CLASS_NAME}/Types/ResourceSkeleton/ImporterSkeleton.h
         include/${CLASS_NAME}/Types/ResourceTexture/ResourceTexture.h
         include/${CLASS_NAME}/Types/ResourceVideo/ResourceVideo.h
 )
@@ -97,6 +104,11 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         Renderer          # IGPUResourceFactory / RendererTypes in public headers
         AudioSystem_headers  # ResourceAudioGraph.h names AudioGraphDesc
         Utils_headers     # ResourceMesh.h / ImporterMesh.h include <Utils/Math/Vertex.inl>
+        AnimationSystem   # SkeletonBuild.h / ClipBuild.h expose SkeletonData +
+                          # AnimClipData BY VALUE, and SkeletonBuild.cpp calls
+                          # RebuildLookup, so this is needed in both halves.
+                          # AnimationSystem links only glm, so no cycle: the edge
+                          # runs ResourceManager -> AnimationSystem and stops.
 )
 
 # AudioSystem + VideoSystem close cycles: the Resource* types live here, the
@@ -112,6 +124,7 @@ target_link_libraries(${CLASS_NAME} PRIVATE
 )
 
 add_subdirectory(src/Core)
+add_subdirectory(src/Import)
 add_subdirectory(src/Runtime)
 add_subdirectory(src/Types)
 

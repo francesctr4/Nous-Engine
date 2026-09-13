@@ -1,10 +1,16 @@
 #include <ModuleRenderer3D/ModuleRenderer3D.h>
+#include <ModuleRenderer3D/SkinningPairing.h>
 
 #include "RenderPacketPolicy.h"
+#include <EngineCore/Casts.h>        // down_cast — was arriving transitively via iRenderResourceProvider.h
 #include <EngineCore/InvalidID.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+// glm::rotation lives in a gtx/ header. Repo convention: the define goes
+// immediately above the include and ONLY in a .cpp, never a header.
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
 #include <cmath>
 #include <ModuleWindow/ModuleWindow.h>
 #include <ModuleCamera3D/ModuleCamera3D.h>
@@ -23,7 +29,12 @@
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/Component/Types/CCamera/CCamera.h>
 #include <ECS/Component/Types/CLight/CLight.h>
+#include <ECS/Component/Types/CAnimator/CAnimator.h>
 #include <ECS/ECSInternalComponents.h>
+#include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
+#include <AnimationSystem/Bounds.h>
+#include <AnimationSystem/Palette.h>
+#include <Utils/Math/Vertex.inl>
 
 #include <MemoryManager/MemoryManager.h>
 #include <EventSystem/EventSystem.h>
@@ -48,6 +59,61 @@
 #endif
 
 constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_MODULE_RENDERER3D;
+
+void ApplySkinningToGeometry(const entt::registry& registry, const entt::entity entity,
+                             const ResourceMesh& mesh, GeometryRenderData& data)
+{
+	if (!mesh.hasSkinning)
+		return;
+
+	const auto* hierarchy = registry.try_get<CHierarchy>(entity);
+	if (!hierarchy || hierarchy->parent == entt::null)
+		return;
+
+	// Both halves are load-bearing: a rigged mesh with no animator must render
+	// statically, and an animator that has not bound yet publishes an empty palette
+	// which must not be mistaken for a pose.
+	const auto* animator = registry.try_get<CAnimator>(hierarchy->parent);
+	if (!animator || animator->GetPalette().empty())
+		return;
+
+	// Refuse a rig this mesh was not skinned against. Nothing else pairs the two --
+	// CAnimator's skeleton slot is filled by hand, so dropping the wrong .nskel is a
+	// normal mistake, and the result is geometry torn apart by bone indices that mean
+	// something else entirely. Skipping renders the BIND POSE instead, matching what a
+	// shader without the palette bindings does: wrong-but-legible plus one warning,
+	// never silent garbage.
+	//
+	// A zero hash on either side means "unknown rig", not "mismatch": a mesh binary
+	// written before this field existed is rejected by the magic, but a skeleton built
+	// by a test or a fallback path can legitimately have none.
+	if (animator->skeleton && animator->skeleton->nameHash != 0 && mesh.skeletonNameHash != 0
+	    && animator->skeleton->nameHash != mesh.skeletonNameHash)
+	{
+		if (!animator->warnedSkeletonMismatch)
+		{
+			animator->warnedSkeletonMismatch = true;
+			NOUS_WARN_C(CURRENT_CHANNEL,
+				"[Skinning] Mesh '%s' is skinned to a different rig than the skeleton '%s' "
+				"assigned to its CAnimator (bone-name hash %llu vs %llu); it renders in bind "
+				"pose. Assign the .nskel that came from the same model.",
+				mesh.GetName().c_str(),
+				animator->skeleton->GetName().c_str(),
+				static_cast<unsigned long long>(mesh.skeletonNameHash),
+				static_cast<unsigned long long>(animator->skeleton->nameHash));
+		}
+		return;
+	}
+
+	data.palette = &animator->GetPalette();
+
+	// The palette already maps mesh space -> animated MODEL space, so the only
+	// transform left to apply is where the rig sits in the world -- the ANIMATOR
+	// ROOT's world matrix, not this child's. Using the child's composes its FBX node
+	// transform a second time.
+	if (const auto* rootTransform = registry.try_get<CTransform>(hierarchy->parent))
+		data.model = rootTransform->worldMatrix;
+}
 
 ModuleRenderer3D::ModuleRenderer3D(EventSystem* eventSystem, nous::engine::multithreading::NOUS_JobSystem* jobSystem,
 	ModuleWindow* moduleWindow, ModuleCamera3D* moduleCamera,
@@ -338,6 +404,19 @@ UpdateStatus ModuleRenderer3D::PreUpdate(float dt)
 		for (auto& [type, resource] : mResourceGpuSync->TakePendingReleases())
 		{
 			if (resource->GetReferenceCount() > 0) continue; // re-acquired since queuing; skip
+
+			// A dynamic video surface holds a NON-OWNING ResourceMaterial* so it can restore
+			// the slot texture it overwrote. This is the only point with a defined ordering
+			// against the free: the material is retired HERE, and is still fully alive on
+			// this line. Doing it from PostUpdate's Reconcile instead keys the cleanup on
+			// frame state ("is a scene loading", "was this UID submitted"), which races the
+			// deferred release -- Reconcile then ran against a freed material and faulted
+			// inside textureMaps.find(). Covers every path that retires a material: scene
+			// clear, a mid-playback material swap, and eviction.
+			if (type == ResourceType::MATERIAL)
+				mRendererFrontend->DropDynamicSurfacesForMaterial(
+					down_cast<const ResourceMaterial*>(resource));
+
 			importer->Release(type, resource, mRendererFrontend);
 			resource->SetState(ResourceState::CPU_READY);
 			mResourceGpuSync->EvictResource(type, resource);
@@ -375,7 +454,10 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Sphere, {});
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Pyramid, {});
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Cone, {});
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Bone, {});
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Joint, {});
 		mRendererFrontend->SetCameraFrustums({});
+		mRendererFrontend->SetDebugLines({});
 	}
 
 	// Video surfaces: hand each playing CVideoPlayer's latest frame to the renderer, which owns
@@ -428,10 +510,17 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 		std::vector<GeometryRenderData> outlinedGeometries;
 		for (auto go : sceneData.selectedObjects)
 		{
-			if (!go.HasComponent<CMesh>()) continue;
+			auto* m = go.TryGetComponent<CMesh>();
+			if (!m || !m->mesh) continue;
+
 			GeometryRenderData data{};
-			if (auto* t = go.TryGetComponent<CTransform>()) data.model    = t->worldMatrix;
-			if (auto* m = go.TryGetComponent<CMesh>())      data.geometry = m->mesh;
+			if (auto* t = go.TryGetComponent<CTransform>()) data.model = t->worldMatrix;
+			data.geometry = m->mesh;
+
+			// Without this the outline traces the BIND pose while the mesh deforms --
+			// a halo standing beside the character rather than around it.
+			ApplySkinningToGeometry(*sceneData.registry, go.GetEntity(), *m->mesh, data);
+
 			outlinedGeometries.push_back(data);
 		}
 		mRendererFrontend->SetOutlinedGeometries(outlinedGeometries);
@@ -468,19 +557,59 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 				glm::vec3 worldMin, worldMax;
 
+				// A skinned mesh's TRANSFORM never changes while it animates -- the pose
+				// moves, not the object -- so the m_worldDirty cache would freeze it on
+				// frame one's box and the character would pop out of view mid-animation.
+				// Skinned meshes recompute every frame instead.
+				const CAnimator* animator = nullptr;
+				if (meshComp.mesh->hasSkinning)
+				{
+					const auto* hierarchy = sceneData.registry->try_get<CHierarchy>(entity);
+					if (hierarchy && hierarchy->parent != entt::null)
+						animator = sceneData.registry->try_get<CAnimator>(hierarchy->parent);
+				}
+				const bool isSkinned = animator && !animator->GetPalette().empty();
+
+				// The box the corners are built from. For a skinned mesh both the extents
+				// and the placing matrix come from the pose, not the bind data.
+				glm::vec3 srcMin    = localMin;
+				glm::vec3 srcMax    = localMax;
+				glm::mat4 srcMatrix = worldMatrix;
+
+				if (isSkinned)
+				{
+					glm::vec3 skinnedMin, skinnedMax;
+					if (nous::engine::animation_system::ComputeSkinnedBounds(
+							meshComp.mesh->boneAABBMin, meshComp.mesh->boneAABBMax,
+							animator->GetPalette(), skinnedMin, skinnedMax))
+					{
+						srcMin = skinnedMin;
+						srcMax = skinnedMax;
+
+						// The palette outputs MODEL space, so the box is placed by the
+						// animator root's world matrix -- the same matrix the skinned
+						// draw uses, not this child's.
+						if (const auto* rootTransform = sceneData.registry->try_get<CTransform>(
+								sceneData.registry->get<CHierarchy>(entity).parent))
+						{
+							srcMatrix = rootTransform->worldMatrix;
+						}
+					}
+				}
+
 				// Only recompute the 8-corner AABB transform when the world matrix changed.
 				// Static objects reuse the cached result from the previous frame.
-				if (transform.m_worldDirty || mMeshAABBCache.find(id) == mMeshAABBCache.end())
+				if (isSkinned || transform.m_worldDirty || mMeshAABBCache.find(id) == mMeshAABBCache.end())
 				{
 					const glm::vec3 corners[8] = {
-						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMin.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMin.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMin.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMin.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMin.y, localMax.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMin.y, localMax.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMin.x, localMax.y, localMax.z, 1.0f)),
-						glm::vec3(worldMatrix * glm::vec4(localMax.x, localMax.y, localMax.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMin.x, srcMin.y, srcMin.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMax.x, srcMin.y, srcMin.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMin.x, srcMax.y, srcMin.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMax.x, srcMax.y, srcMin.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMin.x, srcMin.y, srcMax.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMax.x, srcMin.y, srcMax.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMin.x, srcMax.y, srcMax.z, 1.0f)),
+						glm::vec3(srcMatrix * glm::vec4(srcMax.x, srcMax.y, srcMax.z, 1.0f)),
 					};
 
 					worldMin = corners[0];
@@ -504,9 +633,12 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 				// Editor-only: generate OBB and AABB overlay geometry.
 				if (m_renderMode == RenderMode::EDITOR && mRendererFrontend->showBoundingBoxes)
 				{
-					const glm::vec3 localCenter  = (localMin + localMax) * 0.5f;
-					const glm::vec3 localExtents = localMax - localMin;
-					glm::mat4 obbTransform = worldMatrix
+					// srcMin/srcMax/srcMatrix, not the bind-pose local box: for a skinned
+					// mesh these are the posed extents and the animator root's matrix, so
+					// the OBB follows the animation like the AABB does.
+					const glm::vec3 localCenter  = (srcMin + srcMax) * 0.5f;
+					const glm::vec3 localExtents = srcMax - srcMin;
+					glm::mat4 obbTransform = srcMatrix
 						* glm::translate(glm::mat4(1.0f), localCenter)
 						* glm::scale(glm::mat4(1.0f), localExtents);
 
@@ -676,6 +808,275 @@ UpdateStatus ModuleRenderer3D::PostUpdate(float dt)
 
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Pyramid, dirLightDebugs);
 		mRendererFrontend->SetWireframeInstances(WireframeMesh::Cone, spotLightDebugs);
+	}
+
+	// ── Skeleton debug lines (one instanced segment per bone with a parent) ──────
+	//
+	// Built HERE rather than in an animation module on purpose: ModuleRenderer3D is
+	// allowed to know ECS components, so the lines never cross a Systems/ ->
+	// Modules/ edge. CAnimator keeps its pose internal and this is the only reader.
+	//
+	// CAnimator's globals are MODEL space, so each joint is composed with the
+	// owning object's world matrix before the segment is built.
+	if (m_renderMode == RenderMode::EDITOR && mRendererFrontend->showSkeletons && sceneData.registry)
+	{
+#ifdef _PROFILING
+		ZoneScopedN("BuildSkeletonDebugShards");
+#endif
+		std::vector<WireframeInstance> boneShards;
+		std::vector<WireframeInstance> jointMarkers;
+		std::vector<glm::vec3>         jointWorld;   // reused per animator
+		std::vector<float>             boneLength;  // distance to parent, 0 for roots
+		std::vector<float>             jointScale;  // shortest bone touching each joint
+		std::vector<float>             jointRadius; // per-joint marker radius
+
+		auto animView = sceneData.registry->view<CAnimator, CTransform>();
+		for (auto entity : animView)
+		{
+			const CAnimator&  animator = animView.get<CAnimator>(entity);
+			const auto&       globals  = animator.GetBoneGlobals();
+
+			if (globals.empty() || !animator.skeleton)
+				continue;
+
+			const auto& parents = animator.skeleton->skeleton.parents;
+			if (parents.size() != globals.size())
+				continue;   // slot swapped mid-frame; skip rather than index past the end
+
+			const glm::mat4& world = animView.get<CTransform>(entity).worldMatrix;
+
+			// Column 3 of a bone global IS its translation (w == 1), so this is the
+			// world-space joint position without building a vec4 or multiplying the
+			// whole matrix. Computed once here and read by both the segments and the
+			// joint markers.
+			jointWorld.clear();
+			jointWorld.reserve(globals.size());
+			for (const glm::mat4& g : globals)
+				jointWorld.emplace_back(glm::vec3(world * g[3]));
+
+			// PASS 1 — measure the rig before drawing any of it.
+			//
+			// The shard's thickness is the rig's marker radius, which needs the MEAN
+			// bone length, which is only known once every bone has been visited. So
+			// measuring has to finish before emitting starts; a single fused loop
+			// would have to guess the radius for the bones it reached first.
+			// Each bone's length is kept so pass 2 does not recompute it.
+			float    boneLengthTotal = 0.0f;
+			uint32_t boneLengthCount = 0;
+
+			boneLength.assign(globals.size(), 0.0f);
+
+			for (size_t i = 0; i < globals.size(); ++i)
+			{
+				if (parents[i] < 0)
+					continue;   // root bone has no segment to draw
+
+				const float length = glm::length(
+					jointWorld[i] - jointWorld[static_cast<size_t>(parents[i])]);
+				if (length < 1e-6f)
+					continue;   // coincident joints — a _End terminator, or a bad bind
+
+				boneLength[i]    = length;
+				boneLengthTotal += length;
+				++boneLengthCount;
+			}
+
+			// Size is DERIVED from the rig's own mean bone length, never a constant:
+			// Mixamo exports are in centimetres (hips at y ~= 104) while a
+			// metres-authored model puts them at y ~= 1.04, so any fixed radius is
+			// invisible on one and swallows the rig on the other.
+			if (boneLengthCount == 0)
+				continue;
+
+			const float markerRadius = (boneLengthTotal / static_cast<float>(boneLengthCount)) * 0.12f;
+
+			// PASS 2 — per-joint radii, and the markers that use them directly.
+			//
+			// Size is PER JOINT, scaled by the SHORTEST bone touching that joint. A
+			// Mixamo hand packs ~20 finger joints into the space of one forearm, so
+			// rig-mean markers there overlap into a solid blob that hides the bones
+			// underneath — the densest part of the rig became the least readable,
+			// which is exactly backwards.
+			//
+			// "Shortest touching", not "the bone that arrives": a knuckle is the far
+			// end of the metacarpal spanning the whole palm AND the near end of a tiny
+			// finger bone. Sized by the arriving bone alone it swells to palm scale and
+			// swallows the fingers hanging off it. Every joint that reads as too big is
+			// this shape — wrist, elbow, knuckle — so each bone pulls its PARENT down
+			// as well as sizing its own joint. In uniform regions like the spine the
+			// arriving and leaving bones already match, so nothing moves.
+			jointScale.assign(globals.size(), 0.0f);
+
+			for (size_t i = 0; i < globals.size(); ++i)
+			{
+				const float length = boneLength[i];
+				if (length < 1e-6f)
+					continue;   // root, or a coincident-joint terminator
+
+				const size_t parent = static_cast<size_t>(parents[i]);
+
+				// 0 is the "unset" marker, so the first bone to reach a joint claims it
+				// outright and later ones can only shrink it.
+				jointScale[i]      = (jointScale[i]      < 1e-6f) ? length : glm::min(jointScale[i],      length);
+				jointScale[parent] = (jointScale[parent] < 1e-6f) ? length : glm::min(jointScale[parent], length);
+			}
+
+			// Clamped at both ends: the cap keeps a long spine bone from ballooning
+			// past the rig-wide look, and the floor keeps zero-length _End terminators
+			// visible instead of collapsing them to nothing.
+			jointRadius.assign(globals.size(), markerRadius);
+
+			for (size_t i = 0; i < jointWorld.size(); ++i)
+			{
+				const float ownRadius = (jointScale[i] > 1e-6f)
+					? jointScale[i] * 0.12f
+					: markerRadius;   // isolated joint — no bone at all to measure
+
+				jointRadius[i] = glm::clamp(ownRadius, markerRadius * 0.25f, markerRadius);
+
+				jointMarkers.emplace_back(
+					glm::translate(glm::mat4(1.0f), jointWorld[i]) *
+					glm::scale(glm::mat4(1.0f), glm::vec3(jointRadius[i])),
+					glm::vec4(1.0f, 0.8f, 0.2f, 1.0f));   // amber
+			}
+
+			// PASS 3 — emit the shards, sized to the joints they connect.
+			for (size_t i = 0; i < globals.size(); ++i)
+			{
+				const float length = boneLength[i];
+				if (length < 1e-6f)
+					continue;   // root, or a coincident-joint terminator
+
+				const size_t     parent = static_cast<size_t>(parents[i]);
+				const glm::vec3& head   = jointWorld[parent];
+				const glm::vec3& tail   = jointWorld[i];
+
+				// The collar takes the SMALLER of the two joints it spans, so a shard
+				// can never be wider than either sphere it connects. Taking only its
+				// own end lets a long bone hanging off a small joint flare out past it
+				// — which is the same "fat bones, tiny spheres" mismatch one level down.
+				const float collar = glm::min(jointRadius[i], jointRadius[parent]);
+
+				// NON-UNIFORM on purpose: Y spans the bone, X/Z carry the collar.
+				// Scaling uniformly by length would make a long thigh bone as fat as it
+				// is long while finger bones vanish.
+				boneShards.emplace_back(
+					glm::translate(glm::mat4(1.0f), head) *
+					glm::mat4_cast(glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), (tail - head) / length)) *
+					glm::scale(glm::mat4(1.0f), glm::vec3(collar, length, collar)),
+					glm::vec4(0.2f, 1.0f, 0.4f, 1.0f));   // green
+			}
+		}
+
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Bone,  boneShards);
+		mRendererFrontend->SetWireframeInstances(WireframeMesh::Joint, jointMarkers);
+	}
+
+	// Normals visualization — SELECTED OBJECT ONLY. Per-vertex normals for every
+	// visible mesh would be hundreds of thousands of segments rebuilt per frame; one
+	// selected mesh is a fixed budget and is what you actually want while inspecting.
+	if (m_renderMode == RenderMode::EDITOR && !isLoadingScene &&
+	    mRendererFrontend->showNormals && sceneData.registry)
+	{
+#ifdef _PROFILING
+		ZoneScopedN("BuildNormalDebugLines");
+#endif
+		// Reused across frames: the overlay rebuilds every frame while enabled, and a
+		// fresh vector per frame is a multi-megabyte allocation each time.
+		m_normalLines.clear();
+
+		for (auto go : sceneData.selectedObjects)
+		{
+			auto* meshComp = go.TryGetComponent<CMesh>();
+			if (!meshComp || !meshComp->mesh || meshComp->mesh->vertices.empty())
+				continue;
+
+			const ResourceMesh& mesh = *meshComp->mesh;
+
+			GeometryRenderData data{};
+			if (auto* t = go.TryGetComponent<CTransform>()) data.model = t->worldMatrix;
+			ApplySkinningToGeometry(*sceneData.registry, go.GetEntity(), mesh, data);
+
+			// Length is DERIVED from the mesh's own bind extent, never a constant --
+			// the same centimetres-versus-metres problem that forced the joint-marker
+			// radius to be derived. A fixed length is invisible on a Mixamo character
+			// and swallows a metre-scale prop.
+			const glm::vec3 extent = mesh.localAABBMax - mesh.localAABBMin;
+			const float     length = glm::max(glm::max(extent.x, extent.y), extent.z) * 0.02f;
+
+			// Stride, not truncation. A truncated field shows normals on part of the
+			// mesh and none on the rest, which reads as "skinning failed over there".
+			//
+			// The budget is a DISPLAY budget, deliberately far below the vertex buffer's
+			// capacity. Striding at the buffer limit meant ~20k segments rebuilt, skinned
+			// and uploaded every frame -- several MB per frame, which costs more than it
+			// shows: at that density the overlay is a solid mass of lines anyway.
+			constexpr size_t k_MaxNormalSegments = 4096;
+			static_assert(k_MaxNormalSegments * 2 <= c_maxDebugLineVertices,
+				"Normal segments must fit the debug line buffer.");
+
+			const size_t capacity = k_MaxNormalSegments;
+			const size_t stride   = (mesh.vertices.size() + capacity - 1) / capacity;
+
+			const bool skinned = data.palette != nullptr;
+
+			const auto emit = [&](const glm::vec3& localPos, const glm::vec3& localNrm)
+			{
+				const glm::vec3 p = glm::vec3(data.model * glm::vec4(localPos, 1.0f));
+				const glm::vec3 n = glm::normalize(glm::mat3(data.model) * localNrm);
+
+				Vertex3D a{}, b{};
+				a.position = p;
+				b.position = p + n * length;
+				m_normalLines.push_back(a);
+				m_normalLines.push_back(b);
+			};
+
+			if (skinned)
+			{
+				// SkinVertices takes de-interleaved spans and deliberately does not
+				// name Vertex3D, to keep AnimationSystem dependency-free -- so scatter
+				// into reusable members rather than forking the tested maths here.
+				m_normalScratchPos.clear();
+				m_normalScratchNrm.clear();
+				m_normalScratchIDs.clear();
+				m_normalScratchWts.clear();
+
+				for (size_t i = 0; i < mesh.vertices.size(); i += stride)
+				{
+					const Vertex3D& v = mesh.vertices[i];
+					m_normalScratchPos.push_back(v.position);
+					m_normalScratchNrm.push_back(v.normal);
+					m_normalScratchIDs.push_back(v.boneIDs);
+					m_normalScratchWts.push_back(v.boneWeights);
+				}
+
+				m_normalScratchOutPos.assign(m_normalScratchPos.size(), glm::vec3(0.0f));
+				m_normalScratchOutNrm.assign(m_normalScratchPos.size(), glm::vec3(0.0f));
+
+				if (!nous::engine::animation_system::SkinVertices(
+						*data.palette, m_normalScratchPos, m_normalScratchNrm,
+						m_normalScratchIDs, m_normalScratchWts,
+						m_normalScratchOutPos, m_normalScratchOutNrm))
+					continue;
+
+				for (size_t i = 0; i < m_normalScratchOutPos.size(); ++i)
+					emit(m_normalScratchOutPos[i], m_normalScratchOutNrm[i]);
+			}
+			else
+			{
+				for (size_t i = 0; i < mesh.vertices.size(); i += stride)
+					emit(mesh.vertices[i].position, mesh.vertices[i].normal);
+			}
+		}
+
+		// By const ref, not moved: moving would hand away this buffer's capacity and
+		// leave the member empty, so the allocation would come back every frame.
+		mRendererFrontend->SetDebugLines(m_normalLines);
+	}
+	else if (m_renderMode == RenderMode::EDITOR && !isLoadingScene)
+	{
+		mRendererFrontend->SetDebugLines({});
 	}
 
 	{
@@ -893,6 +1294,8 @@ bool ModuleRenderer3D::BuildRenderPacket(RenderPacket* packet, const SceneRender
 		data.objectUID   = info ? info->id : 0u;
 		data.model       = transform.worldMatrix;
 		data.geometry    = mesh.mesh;
+
+		ApplySkinningToGeometry(*sceneData.registry, entity, *mesh.mesh, data);
 
 		if (const auto* mat = sceneData.registry->try_get<CMaterial>(entity))
 			data.material = mat->material;

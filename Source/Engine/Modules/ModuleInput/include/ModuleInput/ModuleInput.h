@@ -59,7 +59,12 @@ public:
 private:
 
 	KeyState* keyboard;
-	KeyState mouseButtons[MAX_MOUSE_BUTTONS];
+
+	// Indexed by SDL BUTTON NUMBER, which is 1-based (SDL_BUTTON_LEFT == 1 ...
+	// SDL_BUTTON_X2 == 5) -- every caller passes those constants straight to
+	// GetMouseButton. Hence MAX_MOUSE_BUTTONS + 1 slots, with [0] unused: sized to
+	// MAX_MOUSE_BUTTONS the X2 slot fell one past the end.
+	KeyState mouseButtons[MAX_MOUSE_BUTTONS + 1];
 
 	float mouseX;
 	float mouseY;

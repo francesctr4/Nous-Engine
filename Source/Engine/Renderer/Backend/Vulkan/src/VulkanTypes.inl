@@ -296,15 +296,20 @@ struct VulkanContext
     // ── Built-in shaders via the ResourceShader / VulkanShader system ─────────
     // Loaded in Initialize(); destroyed in Shutdown().
     // internalData points to a heap-allocated VulkanShader.
+    // ONE material shader, drawn in BOTH viewports. There is deliberately no game
+    // clone: global set=0 resources are per (renderpass, image), and the scene and
+    // game renderpasses are render-pass compatible, so a single shader and a single
+    // pipeline serve both. See the note in VulkanBackend::CreateShader.
     class ResourceShader* builtInMaterialShader = nullptr;
-    class ResourceShader* builtInGameShader     = nullptr;
     class ResourceShader* builtInPickShader     = nullptr;
     class ResourceShader* builtInOutlineShader  = nullptr; // Scene renderpass only; ResourceManager-owned
     class ResourceShader* builtInGridShader     = nullptr; // Scene renderpass only; ResourceManager-owned
 
     // ── Background gradient shader ─────────────────────────────────────────────
-    class ResourceShader* builtInSceneBackgroundShader = nullptr; // Scene renderpass; ResourceManager-owned
-    class ResourceShader* builtInGameBackgroundShader  = nullptr; // Game renderpass; VulkanBackend-owned clone
+    // ONE background shader for BOTH viewports. It declares no descriptor sets at all,
+    // so it never needed a per-viewport clone even before global set=0 resources became
+    // per (renderpass, image); the clone only ever existed for a gameRenderpass pipeline.
+    class ResourceShader* builtInBackgroundShader = nullptr; // ResourceManager-owned
 
     // ── Editor grid resources ──────────────────────────────────────────────────
     VulkanBuffer gridVertexBuffer{};
@@ -320,6 +325,20 @@ struct VulkanContext
     // inheritance note in iRendererBackend.h.
     bool wireframeGlobalSetThisFrame = false;
 
+    // ── Per-pass global world state ───────────────────────────────────────────
+    // UpdateGlobalWorldState is the only place the GlobalUBO block arrives, but the
+    // geometry loop needs it too now that each shader updates its OWN set=0. Cached
+    // per renderpass rather than passed down, so DrawGeometryBatched's signature --
+    // and IRendererBackend's -- stay unchanged.
+    std::array<GlobalUBO, c_renderpassCount> passGlobalUBO{};
+    std::array<bool,      c_renderpassCount> passGlobalUBOValid{};
+
+    // Monotonic stamp, bumped once per BeginRenderpass. A shader whose lastGlobalStamp
+    // differs needs its set=0 UBO written for this pass; one that matches only needs a
+    // rebind. Monotonic rather than a per-pass bool so scene and game passes in the
+    // same frame never collide.
+    uint32_t globalUpdateStamp = 1;
+
     // ── Bounding box unit-cube wireframe (static, shared for all boxes) ────────
     VulkanBuffer boundingBoxVertexBuffer{};
     uint32_t       boundingBoxVertexCount = 0;
@@ -328,6 +347,13 @@ struct VulkanContext
     // Capacity: k_MaxCameraFrustums (8) × 24 vertices (12 edges × 2 endpoints)
     VulkanBuffer frustumVertexBuffer{};
     uint32_t       frustumVertexCapacity = 0; // in vertices
+
+    // ── Debug line segments (dynamic, updated each frame) ──────────────────────
+    // Arbitrary world-space segments with no shared shape to instance -- normals
+    // today. The wireframe family cannot serve this: it draws one push-constant +
+    // draw call PER INSTANCE, which is ~60k draw calls for one character's normals.
+    VulkanBuffer debugLineVertexBuffer{};
+    uint32_t       debugLineVertexCapacity = 0; // in vertices
 
     // ── Point light debug sphere wireframe (static, shared for all lights) ─────
     // 3 great-circle rings (XY, XZ, YZ planes) as line lists; scaled per-draw.
@@ -344,11 +370,30 @@ struct VulkanContext
     VulkanBuffer spotLightConeVertexBuffer{};
     uint32_t       spotLightConeVertexCount = 0;
 
+    // ── Bone line wireframe (static, shared by every skeleton bone) ──────────────
+    // Maya-style bone shard: a point at the parent joint flaring to a square collar,
+    // then converging to a point at the child joint. 12 edges / 24 vertices,
+    // LINE_LIST, in unit space (origin -> +Y, collar at unit radius in X/Z). Each
+    // bone is one instance, scaled NON-uniformly — Y by the bone's length, X/Z by
+    // the rig's marker radius — so thickness stays constant across the skeleton.
+    VulkanBuffer boneShardVertexBuffer{};
+    uint32_t       boneShardVertexCount = 0;
+
     // ── Per-frame instance SSBO (model matrices for GPU instancing) ────────────
     // One buffer per frame-in-flight (triple-buffered). Persistently mapped.
     // Layout: mat4[c_maxInstances] — indexed by gl_InstanceIndex in the shader.
     std::array<VulkanBuffer, 3> instanceSSBO{};
     std::array<void*, 3>        instanceSSBOMapped{};
+
+    // ── Per-frame skinning SSBOs ───────────────────────────────────────────────
+    // Parallel to instanceSSBO: one uint palette base per instance
+    // (c_noSkinPalette when unskinned) at set=0 binding 2, and every skinned
+    // instance's bone palette concatenated at binding 3. Same 3-slot ring, same
+    // scene/game split, same imageIndex % 3 selection rule.
+    std::array<VulkanBuffer, 3> paletteBaseSSBO{};
+    std::array<void*, 3>        paletteBaseSSBOMapped{};
+    std::array<VulkanBuffer, 3> paletteSSBO{};
+    std::array<void*, 3>        paletteSSBOMapped{};
 
     // TODO: make dynamic
     std::array<VulkanGeometryData, VULKAN_MAX_GEOMETRY_COUNT> geometries;

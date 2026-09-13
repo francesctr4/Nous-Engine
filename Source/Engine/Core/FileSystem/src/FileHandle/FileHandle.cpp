@@ -285,6 +285,57 @@ std::optional<uint64_t> FileHandle::Write(std::span<const std::byte> data)
 
 // --------------------------------------------------------------------------------------------------------------- //
 
+bool FileHandle::Seek(uint64_t offset)
+{
+    if (!IsOpen())
+    {
+        NOUS_ERROR("Attempted to seek in a closed or invalid file.");
+        return false;
+    }
+
+    if (mode != FileMode::READ && mode != FileMode::READ_AND_WRITE)
+    {
+        NOUS_ERROR("File is not opened in read mode.");
+        return false;
+    }
+
+    // Clear first: a stream that has already hit EOF refuses to seek until the
+    // flags are reset, so without this a handle becomes unusable the moment a
+    // caller reads to the end once.
+    fileStream->clear();
+    fileStream->seekg(static_cast<std::streamoff>(offset), std::ios::beg);
+
+    if (fileStream->fail())
+    {
+        NOUS_ERROR("Failed to seek to offset %llu in '%s'.",
+                   static_cast<unsigned long long>(offset), path.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+std::optional<uint64_t> FileHandle::Size()
+{
+    if (!IsOpen()) return std::nullopt;
+
+    const std::streampos current = fileStream->tellg();
+
+    fileStream->clear();
+    fileStream->seekg(0, std::ios::end);
+
+    const std::streampos end = fileStream->tellg();
+
+    fileStream->clear();
+    fileStream->seekg(current, std::ios::beg);
+
+    if (end < 0) return std::nullopt;
+
+    return static_cast<uint64_t>(end);
+}
+
+// --------------------------------------------------------------------------------------------------------------- //
+
 std::string FileHandle::GetPath()
 {
     return path;

@@ -20,6 +20,7 @@ target_link_libraries(${TEST_NAME}
         ResourceManager
         Utils
         MemoryManager
+        AnimationSystem   # ModelImportData holds SkeletonData + AnimClipData by value
         GTest::gtest
         GTest::gtest_main
 )

@@ -38,7 +38,6 @@ private:
 
     void HandleHierarchyDragDropPayloads();
 
-    void HandleSceneContextMenu();
 
     void HandleEmptyClickSelection() const;
 

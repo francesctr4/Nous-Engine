@@ -25,12 +25,22 @@
 #include <array>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include <ECS/Component/Types/CAudioSource/CAudioSource.h>
 #include <ECS/Component/Types/CAudioListener/CAudioListener.h>
 #include <ECS/Component/Types/CVideoPlayer/CVideoPlayer.h>
+#include <ECS/Component/Types/CAnimator/CAnimator.h>
+#include <ECS/Component/Types/CBoneAttachment/CBoneAttachment.h>
+#include <ECS/Component/Types/CPrefab/CPrefab.h>
+#include <ECS/Component/Types/CPrefabLink/CPrefabLink.h>
+#include <PrefabManager/PrefabManager.h>
 #include <ResourceManager/Types/ResourceAudioGraph/ResourceAudioGraph.h>
+#include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
+#include <ResourceManager/Types/ResourceAnimation/ImporterAnimation.h>
+#include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
+#include <ResourceManager/Types/ResourceAnimationController/ResourceAnimationController.h>
 #include <ResourceManager/Types/ResourceVideo/ResourceVideo.h>
 #include <ResourceManager/Types/ResourceShader/ResourceShader.h>
 #include <VideoSystem/AudioExtract/AudioExtract.h>
@@ -260,8 +270,14 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
     // Clip slot — assignable by dragging a .wav/.ogg from the Assets Browser.
     ImGui::Text("Clip:");
     ImGui::SameLine();
-    ImGui::Button(cAudioSource->clip ? cAudioSource->clip->GetName().c_str() : "None",
-                  ImVec2(200.0f, 0.0f));
+    // The "##" suffix keeps the ImGui ID unique. ImGui derives a widget's ID from its
+    // LABEL, and an empty slot renders the literal text "None" -- so two empty slots in
+    // one component collide ("2 visible items with conflicting ID"), and so would two
+    // slots holding resources that happen to share a name. InspectorWindow's per-component
+    // PushID(c) scopes components against each other, not slots within one component.
+    std::string clipLabel = cAudioSource->clip ? cAudioSource->clip->GetName() : std::string("None");
+    clipLabel += "##audioClipSlot";
+    ImGui::Button(clipLabel.c_str(), ImVec2(200.0f, 0.0f));
     if (ImGui::BeginDragDropTarget())
     {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
@@ -302,8 +318,9 @@ static void DrawAudioSource(const InspectorCtx& ctx, Component* c)
     ImGui::Spacing();
     ImGui::Text("Effect Graph:");
     ImGui::SameLine();
-    ImGui::Button(cAudioSource->effectGraph ? cAudioSource->effectGraph->GetName().c_str() : "None",
-                  ImVec2(200.0f, 0.0f));
+    std::string graphLabel = cAudioSource->effectGraph ? cAudioSource->effectGraph->GetName() : std::string("None");
+    graphLabel += "##audioEffectGraphSlot";
+    ImGui::Button(graphLabel.c_str(), ImVec2(200.0f, 0.0f));
     if (ImGui::BeginDragDropTarget())
     {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
@@ -562,6 +579,391 @@ static void DrawVideoPlayer(const InspectorCtx& ctx, Component* c)
     ImGui::Unindent();
 }
 
+static void DrawAnimator(const InspectorCtx& ctx, Component* c)
+{
+    auto* cAnimator = static_cast<CAnimator*>(c);
+    ModuleResourceManager* rm = ctx.rm;
+
+    if (!ImGui::CollapsingHeader("Animator", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ImGui::Indent();
+
+    // Returns the dropped asset's path when one matches `ext`, else empty. Same
+    // ASSETS_BROWSER_ITEMS walk the audio slots use, factored out because this
+    // component has two slots taking two different extensions.
+    const auto acceptDrop = [](const char* ext) -> std::string
+    {
+        std::string result;
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSETS_BROWSER_ITEMS"))
+            {
+                const auto* data = static_cast<const char*>(payload->Data);
+                const char* end = data + payload->DataSize;
+                while (data < end)
+                {
+                    std::string path(data);
+                    data += path.size() + 1;
+                    if (std::filesystem::path(path).extension().string() == ext)
+                    {
+                        result = std::move(path);
+                        break;
+                    }
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
+        return result;
+    };
+
+    // Skeleton slot — assignable by dragging a .nskel from the Assets Browser.
+    ImGui::Text("Skeleton:");
+    ImGui::SameLine();
+    // The "##" suffix keeps the ImGui ID unique. ImGui derives a widget's ID from its
+    // LABEL, and an empty slot renders the literal text "None" -- so two empty slots in
+    // one component collide ("2 visible items with conflicting ID"), and so would two
+    // slots holding resources that happen to share a name. InspectorWindow's per-component
+    // PushID(c) scopes components against each other, not slots within one component.
+    std::string skeletonLabel = cAnimator->skeleton ? cAnimator->skeleton->GetName() : std::string("None");
+    skeletonLabel += "##animSkeletonSlot";
+    ImGui::Button(skeletonLabel.c_str(), ImVec2(200.0f, 0.0f));
+    if (const std::string dropped = acceptDrop(".nskel"); !dropped.empty())
+    {
+        if (ResourceBase* r = rm->CreateResource(dropped))
+        {
+            if (cAnimator->skeleton)
+                rm->UnloadResource(cAnimator->skeleton->GetUID());
+            cAnimator->skeleton = down_cast<ResourceSkeleton*>(r);
+        }
+    }
+
+    // Controller slot -- the one control that makes an animator playable at all. The
+    // state rows below are DERIVED from it every frame.
+    ImGui::Spacing();
+    ImGui::TextDisabled("Controller");
+
+    std::string controllerLabel = cAnimator->controller
+                                      ? cAnimator->controller->GetName()
+                                      : std::string("None");
+    controllerLabel += "##animControllerSlot";
+    ImGui::Button(controllerLabel.c_str(), ImVec2(200.0f, 0.0f));
+    if (const std::string dropped = acceptDrop(".nctrl"); !dropped.empty())
+    {
+        if (ResourceBase* r = rm->CreateResource(dropped))
+        {
+            // Acquire, then release what the slot held -- the same order the
+            // importer's clip slots follow, for the same reason.
+            if (cAnimator->controller)
+                rm->UnloadResource(cAnimator->controller->GetUID());
+            cAnimator->controller = down_cast<ResourceAnimationController*>(r);
+        }
+    }
+
+    ImGui::Spacing();
+    ImGui::DragFloat("Fade (s)", &cAnimator->fadeSeconds, 0.01f, 0.0f, 5.0f, "%.2f");
+
+    // Per CHARACTER, so it lives on the component and in the scene -- unlike the
+    // per-clip Speed above, which is on the shared resource and written to the
+    // .nanim. Two characters playing one clip retime independently only through this.
+    ImGui::DragFloat("Speed Multiplier", &cAnimator->speedMultiplier, 0.01f, -4.0f, 4.0f, "%.2f");
+
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Scales every clip's own authored speed, for THIS character only.\n"
+                          "1 = as authored. The per-clip Speed above is shared by every\n"
+                          "character playing that clip.");
+
+    // Order matches RootMotionMode's declaration, the same contract CAudioSource's
+    // attenuation combo has -- but SHIFTED BY ONE, because Inherit is enumerator 0 and
+    // is deliberately not offered here: it means "use the component's mode" and is
+    // only meaningful on a controller STATE. So index 0 is Baked, and the +1/-1 is
+    // what keeps the combo honest rather than silently writing Inherit.
+    static const char* const c_rootMotionNames[] = { "Baked", "Applied", "In Place" };
+
+    int rootMotionIndex = static_cast<int>(cAnimator->rootMotion) - 1;
+    rootMotionIndex = glm::clamp(rootMotionIndex, 0, 2);   // an Inherit-valued component reads as Baked
+
+    if (ImGui::Combo("Root Motion", &rootMotionIndex, c_rootMotionNames, 3))
+        cAnimator->rootMotion = static_cast<RootMotionMode>(rootMotionIndex + 1);
+
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Baked: travel stays in the pose (the character drifts).\n"
+                          "Applied: travel moves the GameObject.\n"
+                          "In Place: travel is discarded.");
+
+    // ---- STATES ----
+    //
+    // DERIVED from the controller every frame, never stored. A cached copy would go
+    // stale the moment the asset changed, which is the whole reason the controller
+    // owns the clips rather than the component. Read-only apart from the Play button
+    // and the per-clip settings: which clip a state plays is the .nctrl's business,
+    // authored in the Animation Controller editor.
+    if (cAnimator->controller)
+    {
+        const auto& graph = cAnimator->controller->graph;
+        const std::string_view currentName = cAnimator->GetCurrentStateName();
+
+        ImGui::Spacing();
+        ImGui::TextDisabled("States (%zu)", graph.states.size());
+
+        if (graph.states.empty())
+            ImGui::TextDisabled("This controller has no states yet.");
+
+        for (int i = 0; i < static_cast<int>(graph.states.size()); ++i)
+        {
+            const auto& state = graph.states[i];
+            ImGui::PushID(i);
+
+            // Arms a transition; it only ADVANCES once the scene is playing, because a
+            // fade runs on simDt. That is the single most bug-looking behaviour here,
+            // hence the label on the group and the tooltip.
+            if (ImGui::Button("Play", ImVec2(50.0f, 0.0f)))
+                cAnimator->CrossFade(state.name, cAnimator->fadeSeconds);
+
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Cross-fades to this state.\n"
+                                  "While the scene is STOPPED this only arms the\n"
+                                  "transition -- fades advance on simulation time.");
+
+            ImGui::SameLine();
+
+            // The default state is where every bind and every failed restore lands, so
+            // it is worth being able to see at a glance which one it is.
+            const bool isDefault = (i == graph.defaultState);
+            const bool isCurrent = !currentName.empty() && currentName == state.name;
+
+            if (isCurrent) ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.45f, 1.0f), "%s", state.name.c_str());
+            else           ImGui::Text("%s", state.name.c_str());
+
+            if (isDefault)
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled("(default)");
+            }
+
+            // clipIndex, never i: the two coincide today because the importer fills one
+            // clip slot per state, but clipIndex is what the graph carries and it is -1
+            // for any state whose .nanim did not resolve.
+            ResourceAnimation* clip = nullptr;
+            if (state.clipIndex >= 0
+                && static_cast<size_t>(state.clipIndex) < cAnimator->controller->clips.size())
+                clip = cAnimator->controller->clips[state.clipIndex];
+
+            ImGui::Indent();
+
+            if (!clip)
+            {
+                // Not a cosmetic gap: a state with no clip plays nothing, and the
+                // character stands in bind pose with no other symptom.
+                ImGui::TextDisabled("(no clip)");
+            }
+            else
+            {
+                ImGui::TextDisabled("%s   %.2f s   %zu channels",
+                                    clip->GetName().c_str(),
+                                    clip->clip.duration,
+                                    clip->clip.ChannelCount());
+
+                // Loop and Speed belong to the CLIP, not to the state and not to the
+                // animator: one controller routinely holds an idle that must loop and
+                // an attack that must not. They are edited here because a clip is now
+                // reached THROUGH a state -- and they are the only controls in this
+                // inspector that touch disk, writing through to both the .nanim stub
+                // and the library binary so the value survives a scene reload and a
+                // Library/ nuke alike.
+                bool  clipLoop  = clip->settings.loop;
+                float clipSpeed = clip->settings.speed;
+                bool  commit    = false;
+
+                if (ImGui::Checkbox("Loop", &clipLoop))
+                {
+                    clip->settings.loop = clipLoop;
+                    commit = true;
+                }
+
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(120.0f);
+
+                // The in-memory value follows the drag frame by frame, so the preview
+                // stays live -- CAnimator reseeds both tracks from their clips every
+                // OnUpdate. The DISK write waits for the mouse to be released:
+                // DragFloat reports an edit on every frame it is held, and SaveSettings
+                // rewrites two files.
+                if (ImGui::DragFloat("Speed", &clipSpeed, 0.01f, -4.0f, 4.0f, "%.2f"))
+                    clip->settings.speed = clipSpeed;
+
+                if (ImGui::IsItemDeactivatedAfterEdit())
+                    commit = true;
+
+                if (commit)
+                    ImporterAnimation::SaveSettings(*clip);
+            }
+
+            ImGui::Unindent();
+            ImGui::PopID();
+        }
+
+        // ---- RUNTIME ----
+        ImGui::Spacing();
+        if (!currentName.empty())
+        {
+            ImGui::Text("State: %.*s", static_cast<int>(currentName.size()), currentName.data());
+
+            // Only the destination and the weight. The outgoing side is a pose with no
+            // state behind it, so naming it would need a member kept purely for this
+            // line -- and the controller editor's active-state highlight shows the same
+            // thing better.
+            if (cAnimator->IsFading())
+                ImGui::Text("Transitioning in: %.0f%%", cAnimator->GetFadeProgress() * 100.0f);
+        }
+    }
+
+    // What the bind actually produced. This is the readout that says WHY nothing
+    // is dancing: a clip binds to a skeleton by bone NAME, so a mismatched pair
+    // shows plausible counts here and still animates nothing.
+    ImGui::Spacing();
+    if (cAnimator->skeleton)
+        ImGui::Text("Bones: %zu", cAnimator->skeleton->skeleton.BoneCount());
+
+    if (!cAnimator->IsBound())
+        ImGui::TextDisabled("Not bound — assign a skeleton and a controller whose "
+                            "current state has a clip.");
+
+    ImGui::Unindent();
+}
+
+static void DrawBoneAttachment(const InspectorCtx& ctx, Component* c)
+{
+    auto* attachment = static_cast<CBoneAttachment*>(c);
+
+    if (!ImGui::CollapsingHeader("Bone Attachment", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ImGui::Indent();
+
+    // The same nearest-ancestor walk ComputeParentWorld performs. Done in GameObject
+    // terms here because that is what the Inspector holds; the engine side works in
+    // entities. Both stop at the FIRST animator found.
+    CAnimator* animator = nullptr;
+    if (ctx.go)
+    {
+        for (GameObject p = ctx.go->GetParent(); p.IsValid(); p = p.GetParent())
+        {
+            if (CAnimator* found = p.TryGetComponent<CAnimator>())
+            {
+                animator = found;
+                break;
+            }
+        }
+    }
+
+    // The most likely user error by far is adding this component before parenting the
+    // prop. An empty combo with no explanation is the one genuinely confusing failure,
+    // so say what is missing instead.
+    if (!animator)
+    {
+        ImGui::TextWrapped("No Animator above this object. Parent it under a GameObject "
+                           "that has an Animator component.");
+        ImGui::Unindent();
+        return;
+    }
+    if (!animator->skeleton)
+    {
+        ImGui::TextWrapped("The Animator above this object has no skeleton assigned. "
+                           "Drop a .nskel into its Skeleton slot.");
+        ImGui::Unindent();
+        return;
+    }
+
+    const std::vector<std::string>& boneNames = animator->skeleton->skeleton.names;
+
+    std::vector<const char*> items;
+    items.reserve(boneNames.size() + 1);
+    items.push_back("(none)");
+    for (const std::string& name : boneNames)
+        items.push_back(name.c_str());
+
+    int current = 0;   // 0 is "(none)", so bone i sits at i + 1
+    for (std::size_t i = 0; i < boneNames.size(); ++i)
+    {
+        if (boneNames[i] == attachment->boneName)
+        {
+            current = static_cast<int>(i) + 1;
+            break;
+        }
+    }
+
+    if (ImGui::Combo("Bone", &current, items.data(), static_cast<int>(items.size())))
+    {
+        attachment->boneName = (current == 0) ? std::string{} : boneNames[current - 1];
+
+        // A new name gets its own warning; otherwise correcting one mistake and then
+        // making a second would warn about neither.
+        attachment->warnedUnresolved = false;
+    }
+
+    // A bone the rig does not have is not visible in the combo, which otherwise just
+    // shows "(none)" and looks like nothing is set.
+    if (!attachment->boneName.empty() && current == 0)
+        ImGui::TextWrapped("Bone '%s' is not in this skeleton.", attachment->boneName.c_str());
+
+    ImGui::TextDisabled("This object's Transform is its offset, in bone space.");
+
+    ImGui::Unindent();
+}
+
+static void DrawPrefab(const InspectorCtx& ctx, Component* c)
+{
+    auto* cprefab = static_cast<CPrefab*>(c);
+
+    if (!ImGui::CollapsingHeader("Prefab", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ImGui::Indent();
+
+    ImGui::TextDisabled("Source");
+    ImGui::TextWrapped("%s", cprefab->prefabSourcePath.c_str());
+    ImGui::Spacing();
+
+    // Three states, and the third is not a failure: an instance from a scene saved
+    // before prefab overrides has no links, and Update relinks it once.
+    const bool linked = ctx.go && ctx.go->HasComponent<CPrefabLink>();
+    if (!linked)
+        ImGui::TextWrapped("Not linked — Update will rebuild this instance once to link it.");
+    else if (cprefab->isStale)
+        ImGui::TextWrapped("Out of date — the prefab asset has changed since this instance was synced.");
+    else
+        ImGui::TextDisabled("In sync.");
+
+    ImGui::Spacing();
+
+    if (ImGui::Button("Update from Prefab"))
+        PrefabManager::UpdateFromPrefab(*ctx.go, ctx.scene);
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Apply to Prefab"))
+        PrefabManager::ApplyToPrefab(*ctx.go, ctx.scene);
+
+    ImGui::TextDisabled("Update overwrites objects the prefab owns; your additions are kept.");
+
+    ImGui::Unindent();
+}
+
+// Read-only: this is engine bookkeeping, and showing it is what makes "which objects
+// will Update overwrite?" answerable.
+static void DrawPrefabLink(const InspectorCtx&, Component* c)
+{
+    auto* link = static_cast<CPrefabLink*>(c);
+
+    if (!ImGui::CollapsingHeader("Prefab Link"))
+        return;
+
+    ImGui::Indent();
+    ImGui::TextDisabled("Owned by the prefab, object id %u.", link->prefabObjectID);
+    ImGui::Unindent();
+}
+
 static const ComponentUI k_ui[] = {
     {"CTransform", "Transform", false, &DrawTransform},
     {"CMesh",      "Mesh",      true,  &DrawMesh},
@@ -572,6 +974,13 @@ static const ComponentUI k_ui[] = {
     {"CAudioSource",    "Audio Source",    true,  &DrawAudioSource},
     {"CAudioListener",  "Audio Listener",  true,  &DrawAudioListener},
     {"CVideoPlayer",    "Video Player",    true,  &DrawVideoPlayer},
+    {"CAnimator",       "Animator",        true,  &DrawAnimator},
+    {"CBoneAttachment", "Bone Attachment", true,  &DrawBoneAttachment},
+    // Neither is user-addable: CPrefab is attached by InstantiatePrefab, and a
+    // hand-added CPrefabLink would claim prefab ownership of an object the prefab
+    // has never heard of.
+    {"CPrefab",         "Prefab",          false, &DrawPrefab},
+    {"CPrefabLink",     "Prefab Link",     false, &DrawPrefabLink},
 };
 
 const ComponentUI* FindComponentUI(std::string_view typeName)

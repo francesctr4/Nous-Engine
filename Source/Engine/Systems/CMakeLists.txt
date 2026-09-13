@@ -9,6 +9,7 @@ add_subdirectory(ResourceManager)
 add_subdirectory(ShaderSystem)
 add_subdirectory(AudioSystem)
 add_subdirectory(VideoSystem)
+add_subdirectory(AnimationSystem)
 
 # SystemManager is genuinely private: its only includer is its own .cpp, so this
 # target publishes no headers at all and gets no include/ dir.
@@ -39,6 +40,7 @@ target_link_libraries(Systems PUBLIC
         ShaderSystem
         AudioSystem
         VideoSystem
+        AnimationSystem
 )
 
 target_link_libraries(Systems PRIVATE Logger)

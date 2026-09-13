@@ -7,6 +7,7 @@
 #include <ResourceManager/Core/IImporterDispatcher.h>
 #include <ResourceManager/Core/TypeRegistry.h>
 #include <ResourceManager/Core/TypeRegistry.h>
+#include <ResourceManager/Import/ModelImport/ModelImport.h>
 #include <VideoSystem/AudioExtract/AudioExtract.h>
 #include <Utils/Serialization/Random.h>
 #include <Utils/Serialization/JsonObject.h>
@@ -16,6 +17,7 @@
 #include <filesystem>
 #include <format>
 #include <latch>
+#include <unordered_set>
 #include <vector>
 
 constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMANAGER;
@@ -67,11 +69,74 @@ static std::filesystem::file_time_type GetLibraryTime(const std::filesystem::pat
 
 ImportPipeline::ImportPipeline(IImporterDispatcher* importerManager,
                                                const TypeRegistry& typeRegistry,
-                                               nous::engine::multithreading::NOUS_JobSystem* jobSystem)
+                                               nous::engine::multithreading::NOUS_JobSystem* jobSystem,
+                                               IResourceLoader* resources)
     : m_importerManager(importerManager)
     , m_typeRegistry(&typeRegistry)
     , m_jobSystem(jobSystem)
+    , m_resources(resources)
 {
+}
+
+bool ImportPipeline::EnsureMeta(const std::string& assetsPath, const ResourceType type,
+                                MetaFileData& outMeta) const
+{
+    const std::string metaFilePath = nous::engine::asset_paths::MakeMetaFilePath(assetsPath);
+
+    // An existing .meta wins: re-minting a UID for an asset that already has one is
+    // how stable references into Library/ get broken.
+    if (nous::engine::filesystem::Exists(metaFilePath))
+        return ReadMetaFile(metaFilePath, outMeta);
+
+    const TypeDescriptor* desc = m_typeRegistry->Get(type);
+    if (!desc)
+    {
+        NOUS_ERROR_C(CURRENT_CHANNEL, "EnsureMeta: no registry descriptor for '%s'.",
+                     assetsPath.c_str());
+        return false;
+    }
+
+    const auto resourceUID = static_cast<uint32_t>(Random::Generate());
+
+    outMeta.name         = nous::engine::filesystem::GetFilename(assetsPath);
+    outMeta.uid          = resourceUID;
+    outMeta.resourceType = type;
+    outMeta.assetsPath   = assetsPath;
+    outMeta.libraryPath  = BuildLibraryFilename(*desc, resourceUID,
+                                nous::engine::filesystem::GetExtension(assetsPath));
+
+    if (CreateMetaFile(metaFilePath, outMeta)) return true;
+
+    NOUS_ERROR_C(CURRENT_CHANNEL, "EnsureMeta: could not create '%s'.", metaFilePath.c_str());
+    return false;
+}
+
+bool ImportPipeline::ImportModelFile(const MetaFileData& modelMeta) const
+{
+    nous::engine::resource_manager::ModelImportContext context;
+    context.resources  = m_resources;
+    context.ensureMeta = [this](const std::string& path, const ResourceType type,
+                                MetaFileData& out) { return EnsureMeta(path, type, out); };
+
+    return ImportModel(modelMeta, context);
+}
+
+bool ImportPipeline::Dispatch(const MetaFileData& metaFileData) const
+{
+    // A model file is not "a mesh": it is a mesh AND a skeleton AND N clips, all
+    // produced by ONE ParseModel call. Sending it through the per-type dispatcher
+    // would give ImporterMesh the parse and throw the rest away.
+    //
+    // The MESH check alone is not enough -- a .nmesh (procedural geometry saved back
+    // out) is also ResourceType::MESH and has no model file behind it.
+    if (metaFileData.resourceType == ResourceType::MESH &&
+        nous::engine::resource_manager::IsModelExtension(
+            nous::engine::filesystem::GetExtension(metaFileData.assetsPath)))
+    {
+        return ImportModelFile(metaFileData);
+    }
+
+    return m_importerManager->Import(metaFileData.resourceType, metaFileData);
 }
 
 // Descriptors store libraryFolder with a trailing slash for path concatenation
@@ -150,7 +215,7 @@ void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
                 continue;
             m_jobSystem->SubmitJob([this, item, &doneLatch]()
             {
-                m_importerManager->Import(item.resourceType, item);
+                Dispatch(item);
                 doneLatch.count_down();
             }, item.name);
         }
@@ -160,7 +225,7 @@ void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
             m_jobSystem->SubmitJob([this, meshWork = std::move(meshWork), &doneLatch]()
             {
                 for (const auto& mesh : meshWork)
-                    m_importerManager->Import(mesh.resourceType, mesh);
+                    Dispatch(mesh);
                 doneLatch.count_down();
             }, "MeshImports");
         }
@@ -170,7 +235,7 @@ void ImportPipeline::ScanAndImportAssets(const bool parallelImports)
     else
     {
         for (const auto& item : pendingWork)
-            m_importerManager->Import(item.resourceType, item);
+            Dispatch(item);
     }
 
     // Scenes are now imported generically by the per-type pipeline above:
@@ -370,6 +435,36 @@ void ImportPipeline::CollectPendingImports(const std::string& directory,
             }
         }
     }
+
+    // A .nskel/.nanim stub whose SOURCE MODEL is also pending would otherwise have
+    // its fallback re-parse race the model import that is about to write the same
+    // binary. Both writes are idempotent so the race is survivable, but deterministic
+    // dedup beats relying on that -- and it also saves a redundant multi-megabyte
+    // parse per stub.
+    //
+    // In the steady state this rarely matters: a stub's timestamp check compares the
+    // stub against its own binary, the stub never changes, and the binary is always
+    // newer. It bites on a Library/ nuke, where model and stubs go pending together.
+    std::unordered_set<std::string> pendingModels;
+    for (const MetaFileData& item : outPending)
+    {
+        if (item.resourceType == ResourceType::MESH)
+            pendingModels.insert(item.assetsPath);
+    }
+
+    if (pendingModels.empty()) return;
+
+    std::erase_if(outPending, [&pendingModels](const MetaFileData& item)
+    {
+        if (item.resourceType != ResourceType::SKELETON &&
+            item.resourceType != ResourceType::ANIMATION)
+        {
+            return false;
+        }
+
+        const JsonObject stub = JsonFile::LoadFromFile(item.assetsPath);
+        return pendingModels.contains(stub.GetString("source"));
+    });
 }
 
 bool ImportPipeline::ImportDirectory(const std::string& directory)
@@ -489,13 +584,13 @@ bool ImportPipeline::ImportCase1_NewAsset(const std::string_view relativePath, c
         return false;
     }
 
-    m_importerManager->Import(metaFileData.resourceType, metaFileData);
+    Dispatch(metaFileData);
     return true;
 }
 
 bool ImportPipeline::ImportCase2_MissingLibrary(const MetaFileData& metaFileData) const
 {
-    m_importerManager->Import(metaFileData.resourceType, metaFileData);
+    Dispatch(metaFileData);
     return true;
 }
 
@@ -509,7 +604,7 @@ bool ImportPipeline::ImportCase3_TimestampCheck(const MetaFileData& metaFileData
             "[ImportFile] '%s' modified since last import — regenerating library binary.",
             metaFileData.name.c_str());
 
-        m_importerManager->Import(metaFileData.resourceType, metaFileData);
+        Dispatch(metaFileData);
     }
 
     return true;

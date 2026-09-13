@@ -3,6 +3,7 @@
 #include <EngineCore/EngineExport.h>
 #include <ECS/GameObject.h>
 
+#include <cstdint>
 #include <string>
 
 class Scene;
@@ -25,4 +26,30 @@ public:
     // destroys all current children and re-instantiates them from the source .nprefab file.
     // The instanceRoot GO itself (and its CTransform) is preserved.
     NOUS_ENGINE_API static void ReloadPrefabInstance(GameObject instanceRoot, Scene* scene);
+
+    // FNV-1a over the file's bytes. Returns 0 when the file cannot be read, which
+    // callers must treat as "cannot tell" rather than as "changed" -- a missing
+    // prefab asset should not flag every instance stale.
+    //
+    // Hashing rather than comparing timestamps because this repo is shared through
+    // git: a fresh clone rewrites mtimes and would mark every instance stale.
+    NOUS_ENGINE_API static uint64_t HashPrefabFile(const std::string& path);
+
+    // Applies the .nprefab back onto an existing instance, MERGING rather than
+    // rebuilding: objects the prefab owns (those carrying CPrefabLink) are refreshed,
+    // created or destroyed to match the asset, while objects the user added are left
+    // untouched. Components the asset does not declare are also left untouched -- a
+    // component carries no link, so it is indistinguishable from a user addition.
+    //
+    // An instance with no links at all predates this feature and is rebuilt once by
+    // ReloadPrefabInstance, which establishes them.
+    NOUS_ENGINE_API static void UpdateFromPrefab(GameObject instanceRoot, Scene* scene);
+
+    // Overwrites the instance's .nprefab with the instance's own subtree, so local
+    // additions become part of the prefab. Objects newly included gain a CPrefabLink,
+    // and other instances of the same prefab in this scene are marked stale.
+    //
+    // Nested prefab instances inside the subtree are FLATTENED into ordinary objects,
+    // because SavePrefab strips CPrefab. Preserving nesting is a separate feature.
+    NOUS_ENGINE_API static void ApplyToPrefab(GameObject instanceRoot, Scene* scene);
 };

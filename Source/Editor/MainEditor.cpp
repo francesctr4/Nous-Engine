@@ -1,4 +1,5 @@
 #include <Core/Application.h>
+#include <CrashHandler/CrashHandler.h>
 #include <EngineCore/AppConfig.h>
 #include <Logger/Logger.h>
 #include <NOUS_Multithreading/NOUS_Multithreading.h>
@@ -20,6 +21,10 @@ constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_EDITOR_MAIN;
 
 int main(/*int argc, char** argv*/)
 {
+    // Before everything, including the memory system: it must outrank anything it
+    // may have to report on, and it depends on nothing the engine sets up.
+    nous::engine::crash::InstallCrashHandler("EditorApp");
+
     StartLogTimer(); // must be first — anchors all log timestamps to program start
 
     // Specify the amount of memory available for the project

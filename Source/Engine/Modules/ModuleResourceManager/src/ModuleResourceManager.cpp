@@ -45,7 +45,10 @@ ModuleResourceManager::ModuleResourceManager(EventSystem* eventSystem, nous::eng
     : Module(eventSystem, jobSystem)
     , mImporterManager(importerManager)
     , mTypeRegistry(&typeRegistry)
-    , m_importPipeline(importerManager, typeRegistry, jobSystem)
+    // `this` as the IResourceLoader: the pipeline forwards it to ParseModel for the
+    // glTF material/texture fan-out. Safe in a member-init list because the pipeline
+    // only stores the pointer -- it is not dereferenced until an import runs.
+    , m_importPipeline(importerManager, typeRegistry, jobSystem, this)
     , m_scenePreloader(this)
     , m_hotReloader(importerManager, typeRegistry, jobSystem)
     , m_subMeshCache(m_table, m_pendingUploads)
@@ -246,6 +249,8 @@ ResourceBase* ModuleResourceManager::LoadResourceIntoSlot(const uint32_t uid, Re
 	m_hotReloader.TrackAsset(assetsPath, uid, type);
 	m_pendingUploads.Push(type, resource);
 	resource->IncreaseReferenceCount();
+	NOUS_DEBUG("[RefTrace] LOAD  uid=%u type=%d '%s'  (fresh slot -- importer Deserialize ran)",
+	           uid, static_cast<int>(type), name.c_str());
 	return resource;
 }
 
@@ -379,6 +384,9 @@ bool ModuleResourceManager::EvictResource(ResourceType type, ResourceBase* resou
         evictedAssetsPath = resource->GetAssetsPath();
         lock.Map().erase(resource->GetUID());
     }
+
+    NOUS_DEBUG("[RefTrace] EVICT uid=%u type=%d '%s'",
+               resource->GetUID(), static_cast<int>(type), resource->GetName().c_str());
 
     m_hotReloader.UntrackAsset(evictedAssetsPath);
     mImporterManager->Evict(type, resource);

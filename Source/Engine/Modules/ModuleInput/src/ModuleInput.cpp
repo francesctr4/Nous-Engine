@@ -26,7 +26,7 @@ ModuleInput::ModuleInput(EventSystem* eventSystem, nous::engine::multithreading:
 	keyboard = NOUS_NEW_ARRAY<KeyState>(MAX_KEYBOARD_KEYS, MemoryTag::INPUT);
 
 	nous::engine::memory::SetMemory(keyboard, static_cast<int32_t>(KeyState::IDLE), sizeof(KeyState) * MAX_KEYBOARD_KEYS);
-	nous::engine::memory::SetMemory(mouseButtons, static_cast<int32_t>(KeyState::IDLE), sizeof(KeyState) * MAX_MOUSE_BUTTONS);
+	nous::engine::memory::SetMemory(mouseButtons, static_cast<int32_t>(KeyState::IDLE), sizeof(mouseButtons));
 
 	mouseX = 0;
 	mouseY = 0;
@@ -81,7 +81,13 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 
 	mouseZ = 0;
 
-	for (int i = 0; i < MAX_MOUSE_BUTTONS; ++i)
+	// From 1, not 0: SDL button numbers are 1-based and SDL_BUTTON_MASK(X) is
+	// (1u << ((X)-1)), so i == 0 shifted by -1 -- undefined behaviour. Debug got away
+	// with it (x86 masks the count to 31, so the bit was simply never set), but at /Ob2
+	// clang unrolls this loop, constant-folds the bad iteration to `unreachable`, and
+	// emits an int3 that DISCARDS THE REST OF PreUpdate. That was an instant 0x80000003
+	// on the first frame in Release only.
+	for (int i = 1; i <= MAX_MOUSE_BUTTONS; ++i)
 		mouseButtons[i] = AdvanceKeyState(mouseButtons[i], (buttons & SDL_BUTTON_MASK(i)) != 0);
 
 	mouseXMotion = 0;
@@ -174,7 +180,7 @@ UpdateStatus ModuleInput::PreUpdate(float dt)
 		if (keyboard[i] == KeyState::DOWN)
 			NOUS_TRACE("[ModuleInput] Key DOWN — scancode %d (%s)", i, SDL_GetScancodeName(static_cast<SDL_Scancode>(i)));
 	}
-	for (int i = 0; i < MAX_MOUSE_BUTTONS; ++i)
+	for (int i = 1; i <= MAX_MOUSE_BUTTONS; ++i)
 	{
 		if (mouseButtons[i] == KeyState::DOWN)
 			NOUS_TRACE("[ModuleInput] Mouse button DOWN — button %d", i);
@@ -200,13 +206,26 @@ void ModuleInput::OnEvent(const Event& event)
 	}
 }
 
+// Both accessors are reached from SCRIPT with a raw int (InputBindings' GetKey /
+// GetMouseButton forward whatever the script passes), so the index is untrusted and
+// an out-of-range one is an out-of-bounds read of engine memory. Report IDLE instead
+// -- the same answer a key nobody is pressing gives, so a script asking for a
+// nonexistent button reads as "not pressed" rather than as garbage.
+
 KeyState ModuleInput::GetKey(int id) const
 {
+	if (id < 0 || id >= MAX_KEYBOARD_KEYS)
+		return KeyState::IDLE;
+
 	return keyboard[id];
 }
 
 KeyState ModuleInput::GetMouseButton(int id) const
 {
+	// 1-based: see the mouseButtons declaration. Slot 0 exists only as padding.
+	if (id < 1 || id > MAX_MOUSE_BUTTONS)
+		return KeyState::IDLE;
+
 	return mouseButtons[id];
 }
 

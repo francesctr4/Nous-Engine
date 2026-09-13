@@ -1,0 +1,60 @@
+{
+    "uniforms": [
+        {
+            "name": "aoIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "diffuseColor",
+            "type": "vec4",
+            "value": [
+                0.43805307149887085,
+                0,
+                0,
+                1
+            ]
+        },
+        {
+            "name": "emissiveColor",
+            "type": "vec4",
+            "value": [
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        {
+            "name": "normalStrength",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "shininessScale",
+            "type": "float",
+            "value": [
+                1
+            ]
+        },
+        {
+            "name": "specularIntensity",
+            "type": "float",
+            "value": [
+                1
+            ]
+        }
+    ],
+    "texture_maps": [
+        {
+            "name": "diffuseSampler",
+            "asset_path": "Assets\/Textures\/Light_Gold_Normal.png",
+            "uid": 2199313228,
+            "library_path": "Library\/Textures\/2199313228.png"
+        }
+    ]
+}

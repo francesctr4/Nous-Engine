@@ -188,7 +188,34 @@ static void DeserializeTextureMaps(const JsonObject& root, ResourceMaterial* mat
             rm->CreateResourceFromLibrary(texUID, ResourceType::TEXTURE, texName, assetPath, libPath));
 
         if (tex)
+        {
+            // Release whatever this slot already held. Deserialize is NOT called only on
+            // a fresh resource: ModuleRenderer3D's asset hot-reload path re-deserializes
+            // a LIVE material in place, so without this each reload took another
+            // reference on every texture and dropped the one the slot held on the floor.
+            // The textures then never evicted and their counts climbed forever.
+            //
+            // Deliberately NOT gated on `previous != tex`: re-deserializing resolves the
+            // SAME texture, and CreateResourceFromLibrary above has already taken a
+            // reference for it, so the one this slot was holding must be given back
+            // either way. Releasing only when the resource CHANGED is the obvious
+            // version and leaks in exactly the common case.
+            //
+            // Order is load-bearing: the release happens AFTER the acquire, so the count
+            // never transiently hits 0 and queues a spurious eviction.
+            if (ResourceTexture* previous = material->textureMaps[name].texture)
+            {
+                NOUS_DEBUG("[RefTrace] -TEX uid=%u refs=%u  (slot '%s' of material '%s' reassigned)",
+                           previous->GetUID(), previous->GetReferenceCount(),
+                           name.c_str(), material->GetName().c_str());
+                rm->UnloadResource(previous->GetUID());
+            }
+
             material->textureMaps[name].texture = tex;
+            NOUS_DEBUG("[RefTrace] +TEX uid=%u '%s' refs=%u  (material '%s' deserialized)",
+                       tex->GetUID(), texName.c_str(), tex->GetReferenceCount(),
+                       material->GetName().c_str());
+        }
         else
             NOUS_WARN("ImporterMaterial::Deserialize() — texture '%s' (slot '%s') could not be loaded.",
                       assetPath.c_str(), name.c_str());
@@ -218,6 +245,16 @@ static void DeserializeShader(const JsonObject& root, ResourceMaterial* material
 
     if (ResourceShader* loadedShader = r ? down_cast<ResourceShader*>(r) : nullptr)
     {
+        // Release the previous shader for the same reason as the texture slots above.
+        // Same reasoning as the texture slots: the acquire above is unconditional, so
+        // the release must be too.
+        if (ResourceShader* previous = material->shader)
+        {
+            NOUS_DEBUG("[RefTrace] -SHADER uid=%u  (material '%s' re-deserialized in place)",
+                       previous->GetUID(), material->GetName().c_str());
+            rm->UnloadResource(previous->GetUID());
+        }
+
         material->SetShader(loadedShader);
     }
     else
@@ -269,6 +306,9 @@ void ImporterMaterial::Evict(ResourceBase* inResource)
     {
         if (map.texture)
         {
+            NOUS_DEBUG("[RefTrace] -TEX uid=%u refs=%u  (material '%s' evicted)",
+                       map.texture->GetUID(), map.texture->GetReferenceCount(),
+                       material->GetName().c_str());
             if (m_resources)
                 m_resources->UnloadResource(map.texture->GetUID());
             map.texture = nullptr;

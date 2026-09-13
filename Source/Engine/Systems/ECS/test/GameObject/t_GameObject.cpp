@@ -219,3 +219,59 @@ TEST_F(t_GameObject, ViewFilter_OnlyYieldsEntitiesWithBothComponents)
     });
     EXPECT_EQ(count, 1);
 }
+
+// =============================================================================
+// AddComponent over an existing component
+// =============================================================================
+//
+// AddComponent uses emplace_or_replace, which destroys the existing component of
+// that type -- and entt knows nothing about OnDestroy. Every component holding a
+// resource reference (CMesh, CMaterial, CAudioSource, CVideoPlayer, CAnimator)
+// releases it there, so a replace that skips the hook leaks one reference.
+//
+// The path that hits this is PrefabManager::RefreshPrefabInstances, which
+// re-deserializes a prefab ROOT's components in place on every scene load.
+
+namespace
+{
+    // Counts its own teardown. A local type rather than a real component: this is
+    // about AddComponent's contract, not about any one component's payload.
+    struct RecordingComponent : Component
+    {
+        static inline int destroyCount = 0;
+
+        void OnDestroy() override { ++destroyCount; }
+
+        std::string_view GetType()                  const override { return "RecordingComponent"; }
+        JsonObject       Serialize()                const override { return JsonObject{}; }
+        void             Deserialize(const JsonObject&)   override {}
+    };
+}
+
+TEST_F(t_GameObject, AddComponentOverExisting_FiresOnDestroyForTheReplaced)
+{
+    RecordingComponent::destroyCount = 0;
+
+    GameObject go = scene->CreateGameObject("Test");
+    go.AddComponent<RecordingComponent>();
+    EXPECT_EQ(RecordingComponent::destroyCount, 0) << "nothing was replaced yet";
+
+    go.AddComponent<RecordingComponent>();
+    EXPECT_EQ(RecordingComponent::destroyCount, 1) << "the replaced component must be torn down";
+
+    go.AddComponent<RecordingComponent>();
+    EXPECT_EQ(RecordingComponent::destroyCount, 2) << "once per replace, not once ever";
+}
+
+TEST_F(t_GameObject, AddComponentFirstTime_DoesNotFireOnDestroy)
+{
+    RecordingComponent::destroyCount = 0;
+
+    GameObject a = scene->CreateGameObject("A");
+    GameObject b = scene->CreateGameObject("B");
+    a.AddComponent<RecordingComponent>();
+    b.AddComponent<RecordingComponent>();
+
+    // Same component type, different entities -- neither replaces the other.
+    EXPECT_EQ(RecordingComponent::destroyCount, 0);
+}

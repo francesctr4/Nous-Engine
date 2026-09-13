@@ -50,9 +50,13 @@ public:
 
 	bool DrawGeometry(RenderpassType renderpassID, const GeometryRenderData& renderData) override;
 
-    void UploadInstanceMatrices(const glm::mat4* matrices,
-                                uint32_t count,
-                                uint32_t instanceOffset) override;
+    void UploadInstanceData(const glm::mat4* matrices,
+                            const uint32_t*  paletteBases,
+                            uint32_t         count,
+                            uint32_t         instanceOffset,
+                            const glm::mat4* palettes,
+                            uint32_t         boneCount,
+                            uint32_t         paletteOffset) override;
 
     bool DrawGeometryBatched(RenderpassType renderpassID,
                              const InstancedBatch& batch) override;
@@ -103,6 +107,12 @@ public:
 	                        const glm::mat4& projection,
 	                        const glm::mat4& view,
 	                        const std::vector<CameraFrustumData>& frustums) override;
+
+	bool DrawDebugLines(RenderpassType renderpassID,
+	                    const glm::mat4& projection,
+	                    const glm::mat4& view,
+	                    const std::vector<Vertex3D>& vertices,
+	                    const glm::vec4& color) override;
 
 	IEditorRenderBridge* GetEditorBridge() noexcept override { return this; }
 

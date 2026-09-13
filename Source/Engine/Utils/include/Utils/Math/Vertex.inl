@@ -15,7 +15,20 @@ struct Vertex3D
     glm::vec4 tangent;      // location 5 — xyz: tangent direction, w: bitangent handedness sign (±1) for TBN
     glm::vec2 texCoord2;    // location 6 — UV1: lightmap / baked AO
 
-    static const uint16_t ATTRIBUTE_COUNT = 7;
+    // Skinning influences, up to 4 per vertex — the cap assimp's
+    // aiProcess_LimitBoneWeights enforces (and renormalizes to) at import.
+    // boneIDs index the ResourceSkeleton's bone array, NOT anything mesh-local.
+    //
+    // ZERO-INITIALIZED, and that is the design: an unskinned mesh writes zeros
+    // rather than using a second vertex layout, so there is exactly one Vertex3D,
+    // one stride and one pipeline vertex-input description in the engine. All-zero
+    // weights mean "no influence", which the skinning path treats as a passthrough
+    // (see SkinVertices in AnimationSystem/Palette.h). The cost is 32 bytes per
+    // vertex on static geometry; the alternative is two vertex formats forever.
+    glm::uvec4 boneIDs{ 0u };       // location 7
+    glm::vec4  boneWeights{ 0.0f }; // location 8
+
+    static const uint16_t ATTRIBUTE_COUNT = 9;
 
     bool operator==(const Vertex3D& other) const
     {
@@ -25,7 +38,9 @@ struct Vertex3D
                texCoord == other.texCoord &&
                smoothNormal == other.smoothNormal &&
                tangent == other.tangent &&
-               texCoord2 == other.texCoord2;
+               texCoord2 == other.texCoord2 &&
+               boneIDs == other.boneIDs &&
+               boneWeights == other.boneWeights;
     }
 };
 

@@ -44,16 +44,58 @@ enum class FrameResult : uint8_t
 
 struct GeometryRenderData
 {
-    GeometryRenderData() : objectUID(0), model(1.0f), geometry(nullptr), material(nullptr), color(1.0f) {}
+    GeometryRenderData() : objectUID(0), model(1.0f), geometry(nullptr), material(nullptr), color(1.0f),
+                           palette(nullptr) {}
 
     uint32_t objectUID;
     glm::mat4 model;
     ResourceMesh* geometry;
     ResourceMaterial* material;
     glm::vec4 color;
+
+    // Borrowed bone palette for this frame, owned by the CAnimator on the owning
+    // GameObject's parent. Null means "not skinned".
+    //
+    // ModuleRenderer3D evaluates the full skinned test once — mesh->hasSkinning,
+    // an animator on the parent, and a non-empty palette — and sets this only when
+    // it passes. So GroupGeometries branches on the pointer ALONE and never names
+    // an ECS type, which is what keeps it a pure function and keeps ECS knowledge
+    // at the module layer. Valid for the frame only.
+    const std::vector<glm::mat4>* palette;
 };
 
 static constexpr uint32_t c_maxInstances = 4096;
+
+// Total bone matrices uploadable per pass. 4096 is roughly 62 Mixamo rigs (66 bones)
+// visible simultaneously; past it a character falls back to bind pose with a warning
+// rather than reading past the buffer.
+static constexpr uint32_t c_maxSkinnedBones = 4096;
+
+// Per-instance palette base meaning "this instance is not skinned". The shader
+// checks it BEFORE touching the palette buffer, which is what makes a rigged mesh
+// with no bound animator safe — its weights are non-zero, so a weights-only test
+// would index into a palette that was never uploaded.
+static constexpr uint32_t c_noSkinPalette = 0xFFFFFFFFu;
+
+// The palette SSBO is divided into four fixed regions of c_maxSkinnedBones matrices.
+// Each pass packs independently: the scene pass orders by (material, mesh) while the
+// per-object pick and outline passes iterate natural order, so their bases cannot be
+// shared even though outlined objects are a subset of scene objects.
+static constexpr uint32_t c_paletteRegionScene   = 0;
+static constexpr uint32_t c_paletteRegionGame    = 1 * c_maxSkinnedBones;
+static constexpr uint32_t c_paletteRegionOutline = 2 * c_maxSkinnedBones;
+static constexpr uint32_t c_paletteRegionPick    = 3 * c_maxSkinnedBones;
+static constexpr uint32_t c_paletteRegionCount   = 4;
+
+// 4096 segments — sized to the normals overlay's display budget, which is what
+// bounds this buffer in practice (see k_MaxNormalSegments in ModuleRenderer3D; a
+// static_assert there keeps the two in step). Deliberately NOT sized to what the
+// buffer could hold: at 20k segments the overlay is an unreadable mass of lines
+// that costs several MB of upload per frame to draw.
+//
+// Vertex3D rather than a leaner debug vertex so the shared bounding-box shader's
+// vertex input description applies unchanged.
+static constexpr uint32_t c_maxDebugLineVertices = 8192;
 
 struct InstancedBatch
 {
@@ -61,6 +103,13 @@ struct InstancedBatch
     ResourceMaterial* material      = nullptr;
     uint32_t          firstInstance = 0;
     uint32_t          instanceCount = 0;
+
+    // True when ANY instance folded into this batch carries a usable palette. Drives
+    // the "this shader declares no bone palette" warning. ANY rather than ALL: two
+    // characters sharing a mesh and material collapse into one batch, and a batch
+    // holding one skinned instance needs the palette bindings regardless of what
+    // else is in it.
+    bool              hasSkinnedInstances = false;
 };
 
 enum class RenderpassType : uint8_t
@@ -69,6 +118,11 @@ enum class RenderpassType : uint8_t
     GAME,
     UI
 };
+
+// Number of RenderpassType values. Global set=0 resources are allocated per pass
+// per image, and the pass dimension is indexed by the enum value directly — no
+// mapping table to fall out of sync with the enum.
+static constexpr uint32_t c_renderpassCount = 3;
 
 // -----------------------------------------------------------------------------
 // Light data (std140-safe: all members use vec4/ivec4, no vec3)
@@ -187,6 +241,14 @@ struct CameraFrustumData
  *   Sphere  — point-light position markers and range spheres
  *   Pyramid — directional-light direction indicators
  *   Cone    — spot-light marker and full-angle cones
+ *   Bone    — skeleton bones (a Maya-style tapered shard, oriented per instance)
+ *   Joint   — skeleton joint markers
+ *
+ * NOTE: a value identifies an INSTANCE CHANNEL, and two channels may share the
+ * same geometry. Joint and Sphere both draw the unit sphere; they are separate
+ * values because RendererFrontend keeps exactly one instance vector per value and
+ * SetWireframeInstances REPLACES it, so joints and point-light markers sharing a
+ * value would mean two unrelated builders fighting over one vector.
  */
 enum class WireframeMesh : uint8_t
 {
@@ -194,6 +256,8 @@ enum class WireframeMesh : uint8_t
     Sphere,
     Pyramid,
     Cone,
+    Bone,
+    Joint,
 
     COUNT
 };

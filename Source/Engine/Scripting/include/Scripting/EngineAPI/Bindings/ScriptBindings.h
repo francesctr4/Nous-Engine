@@ -11,6 +11,7 @@
 #include <Scripting/EngineAPI/Bindings/MaterialBindings.h>
 #include <Scripting/EngineAPI/Bindings/CameraBindings.h>
 #include <Scripting/EngineAPI/Bindings/SceneBindings.h>
+#include <Scripting/EngineAPI/Bindings/AnimatorBindings.h>
 
 struct EngineAPI;
 class IScriptInput;

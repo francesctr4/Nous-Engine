@@ -50,3 +50,12 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         MemoryManager
         SDL3::SDL3
 )
+
+# ModuleCamera3D.cpp includes <tracy/Tracy.hpp> under _PROFILING. The vcpkg tracy
+# port installs its headers at include/tracy/tracy/Tracy.hpp, so that spelling
+# resolves ONLY through the include dir Tracy::TracyClient carries -- it is not
+# reachable from the vcpkg_installed/include root.
+if (ENABLE_PROFILING)
+    find_package(Tracy CONFIG REQUIRED)
+    target_link_libraries(${CLASS_NAME} PRIVATE Tracy::TracyClient)
+endif()

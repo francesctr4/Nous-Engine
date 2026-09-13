@@ -1,7 +1,7 @@
 {
     "uniforms": [
         {
-            "name": "aoIntensity",
+            "name": "contrast",
             "type": "float",
             "value": [
                 1
@@ -18,36 +18,15 @@
             ]
         },
         {
-            "name": "emissiveColor",
-            "type": "vec4",
-            "value": [
-                1,
-                1,
-                1,
-                1
-            ]
-        },
-        {
-            "name": "normalStrength",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
-            "name": "shininessScale",
-            "type": "float",
-            "value": [
-                1
-            ]
-        },
-        {
-            "name": "specularIntensity",
+            "name": "saturation",
             "type": "float",
             "value": [
                 1
             ]
         }
     ],
-    "texture_maps": []
+    "texture_maps": [],
+    "shader_uid": 3359372340,
+    "shader_asset_path": "Assets\/Shaders\/UnlitVideo.glsl",
+    "shader_library_path": "Library\/Shaders\/3359372340"
 }

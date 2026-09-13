@@ -1,0 +1,162 @@
+{
+    "defaultState": "Idle",
+    "parameters": [
+        {
+            "name": "speed",
+            "type": "Float",
+            "default": 0
+        },
+        {
+            "name": "moveSpeed",
+            "type": "Float",
+            "default": 1
+        },
+        {
+            "name": "attack",
+            "type": "Trigger",
+            "default": 0
+        }
+    ],
+    "states": [
+        {
+            "name": "Idle",
+            "speed": 1,
+            "speedParameter": "",
+            "rootMotion": "InPlace",
+            "clip": {
+                "assetPath": "Assets\/Skeletal_Animation\/Zombie Idle@mixamo_com.nanim",
+                "libraryPath": "Library\/Animations\/2151084448.nanim",
+                "uid": 2151084448
+            },
+            "editor": {
+                "x": 600,
+                "y": 279
+            }
+        },
+        {
+            "name": "Run",
+            "speed": 1.5,
+            "speedParameter": "moveSpeed",
+            "rootMotion": "Applied",
+            "clip": {
+                "assetPath": "Assets\/Skeletal_Animation\/Walking@mixamo_com.nanim",
+                "libraryPath": "Library\/Animations\/2978884136.nanim",
+                "uid": 2978884136
+            },
+            "editor": {
+                "x": 584,
+                "y": 55
+            }
+        },
+        {
+            "name": "Attack",
+            "speed": 2,
+            "speedParameter": "",
+            "rootMotion": "Applied",
+            "clip": {
+                "assetPath": "Assets\/Skeletal_Animation\/Standing Melee Attack Downward@mixamo_com.nanim",
+                "libraryPath": "Library\/Animations\/2213659713.nanim",
+                "uid": 2213659713
+            },
+            "editor": {
+                "x": 264,
+                "y": 279
+            }
+        },
+        {
+            "name": "Walk Back",
+            "speed": -1.5,
+            "speedParameter": "",
+            "rootMotion": "Applied",
+            "clip": {
+                "assetPath": "Assets\/Skeletal_Animation\/Walking@mixamo_com.nanim",
+                "libraryPath": "Library\/Animations\/2978884136.nanim",
+                "uid": 2978884136
+            },
+            "editor": {
+                "x": 920,
+                "y": 279
+            }
+        }
+    ],
+    "transitions": [
+        {
+            "from": "AnyState",
+            "to": "Attack",
+            "hasExitTime": false,
+            "exitTime": 0.80000001192092896,
+            "duration": 0.10000000149011612,
+            "conditions": [
+                {
+                    "parameter": "attack",
+                    "comparator": "TriggerSet",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "from": "Idle",
+            "to": "Run",
+            "hasExitTime": false,
+            "exitTime": 0.80000001192092896,
+            "duration": 0.15000000596046448,
+            "conditions": [
+                {
+                    "parameter": "speed",
+                    "comparator": "Greater",
+                    "value": 0.10000000149011612
+                }
+            ]
+        },
+        {
+            "from": "Run",
+            "to": "Idle",
+            "hasExitTime": false,
+            "exitTime": 0.80000001192092896,
+            "duration": 0.15000000596046448,
+            "conditions": [
+                {
+                    "parameter": "speed",
+                    "comparator": "Less",
+                    "value": 0.10000000149011612
+                }
+            ]
+        },
+        {
+            "from": "Idle",
+            "to": "Walk Back",
+            "hasExitTime": false,
+            "exitTime": 0.80000001192092896,
+            "duration": 0.15000000596046448,
+            "conditions": [
+                {
+                    "parameter": "speed",
+                    "comparator": "Less",
+                    "value": -0.10000000149011612
+                }
+            ]
+        },
+        {
+            "from": "Walk Back",
+            "to": "Idle",
+            "hasExitTime": false,
+            "exitTime": 0.80000001192092896,
+            "duration": 0.15000000596046448,
+            "conditions": [
+                {
+                    "parameter": "speed",
+                    "comparator": "Greater",
+                    "value": -0.10000000149011612
+                }
+            ]
+        },
+        {
+            "from": "Attack",
+            "to": "Idle",
+            "hasExitTime": true,
+            "exitTime": 0.89999997615814209,
+            "duration": 0.15000000596046448,
+            "conditions": []
+        }
+    ]
+}

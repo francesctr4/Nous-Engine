@@ -4,6 +4,7 @@
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CLight/CLight.h>
+#include <ECS/Component/Types/CAnimator/CAnimator.h>
 #include <ECS/Component/Types/CCamera/CCamera.h>
 #include <ECS/Component/Types/CMesh/CMesh.h>
 #include <ECS/Component/Types/CScript/CScript.h>
@@ -39,5 +40,10 @@ void SetupComponentBindings(ComponentAPI& component, IScriptSceneHost* sceneHost
     component.HasScript = [](uint32_t goId) -> bool {
         GameObject go = ResolveGO(goId);
         return go.IsValid() && go.HasComponent<CScript>();
+    };
+
+    component.HasAnimator = [](uint32_t goId) -> bool {
+        GameObject go = ResolveGO(goId);
+        return go.IsValid() && go.HasComponent<CAnimator>();
     };
 }
