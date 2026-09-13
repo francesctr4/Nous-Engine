@@ -1,0 +1,22 @@
+{
+    "defaultState": "RumbaDancing_WithSkin@mixamo_com",
+    "parameters": [],
+    "states": [
+        {
+            "name": "RumbaDancing_WithSkin@mixamo_com",
+            "speed": 1,
+            "speedParameter": "",
+            "rootMotion": "Inherit",
+            "clip": {
+                "assetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithSkin@mixamo_com.nanim",
+                "libraryPath": "Library\/Animations\/1380512761.nanim",
+                "uid": 1380512761
+            },
+            "editor": {
+                "x": 280,
+                "y": 103
+            }
+        }
+    ],
+    "transitions": []
+}

@@ -36,7 +36,9 @@
                     "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
                     "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
                     "skeletonUID": 3484759968,
-                    "controllerAssetPath": "",
+                    "controllerAssetPath": "Assets\/Skeletal_Animation\/Test.nctrl",
+                    "controllerLibraryPath": "Library\/AnimationControllers\/3020217909.nctrl",
+                    "controllerUID": 3020217909,
                     "fadeSeconds": 0.20000000298023224,
                     "speedMultiplier": 1,
                     "rootMotion": "Baked"
@@ -315,6 +317,10 @@
                             "m_fade": {
                                 "type": 0,
                                 "value": 1
+                            },
+                            "m_sprintScale": {
+                                "type": 0,
+                                "value": 1.75
                             },
                             "m_stateA": {
                                 "type": 4,
@@ -734,6 +740,92 @@
                 {
                     "type": "CPrefabLink",
                     "prefabObjectID": 3476760889
+                }
+            ]
+        },
+        {
+            "uid": 3259291098,
+            "name": "GameObject2",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        67.880462646484375,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAnimator",
+                    "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
+                    "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
+                    "skeletonUID": 3484759968,
+                    "controllerAssetPath": "Assets\/Skeletal_Animation\/Test.nctrl",
+                    "controllerLibraryPath": "Library\/AnimationControllers\/3020217909.nctrl",
+                    "controllerUID": 3020217909,
+                    "fadeSeconds": 0.20000000298023224,
+                    "speedMultiplier": 1,
+                    "rootMotion": "Baked"
+                }
+            ]
+        },
+        {
+            "uid": 1492695641,
+            "name": "GameObject2",
+            "parent": 0,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        181.91136169433594,
+                        0,
+                        0
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAnimator",
+                    "skeletonAssetPath": "Assets\/Skeletal_Animation\/RumbaDancing_WithoutSkin.nskel",
+                    "skeletonLibraryPath": "Library\/Skeletons\/3484759968.nskel",
+                    "skeletonUID": 3484759968,
+                    "controllerAssetPath": "Assets\/Skeletal_Animation\/Test.nctrl",
+                    "controllerLibraryPath": "Library\/AnimationControllers\/3020217909.nctrl",
+                    "controllerUID": 3020217909,
+                    "fadeSeconds": 0.20000000298023224,
+                    "speedMultiplier": 1,
+                    "rootMotion": "Baked"
                 }
             ]
         }
