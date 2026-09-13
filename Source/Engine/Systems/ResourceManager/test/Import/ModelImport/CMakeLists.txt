@@ -31,3 +31,34 @@ target_link_libraries(${TEST_NAME} PRIVATE
 add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+# ===========================================
+# EnsureStub - Unit Tests
+# ===========================================
+#
+# A SECOND executable in this leaf rather than more cases on the one above: that one
+# is pure (no file on disk), and these drive real stub files through scratch paths.
+# Links Utils because a stub is JSON.
+set(STUB_TEST_NAME "t_ResourceManager_EnsureStub")
+
+add_executable(${STUB_TEST_NAME} t_EnsureStub.cpp)
+
+set_target_properties(${STUB_TEST_NAME} PROPERTIES
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+target_compile_definitions(${STUB_TEST_NAME} PRIVATE NOUS_ENGINE_STATIC)
+
+target_link_libraries(${STUB_TEST_NAME} PRIVATE
+        ResourceManager
+        Utils             # the stub is JSON: JsonFile / JsonObject
+        GTest::gtest
+        GTest::gtest_main
+)
+
+add_test(NAME ${STUB_TEST_NAME} COMMAND ${STUB_TEST_NAME}
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)

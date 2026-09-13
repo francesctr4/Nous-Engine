@@ -1341,20 +1341,41 @@ void AnimationControllerEditor::HandleCreateAndDelete()
 {
     if (ed::BeginCreate())
     {
-        ed::PinId inputPinID, outputPinID;
-        if (ed::QueryNewLink(&inputPinID, &outputPinID))
+        // These two come back in DRAG order -- the pin the drag started on, then the
+        // one it ended on -- NOT as (input, output). Naming them after the kinds is
+        // what broke out->in drags: that is the normal gesture, and it puts an INPUT
+        // pin id in the variable called "output", so the output lookup resolved to
+        // null and every such link was rejected. in->out worked only because the drag
+        // order happened to match the assumed order.
+        ed::PinId startPinID, endPinID;
+        if (ed::QueryNewLink(&startPinID, &endPinID))
         {
-            if (inputPinID && outputPinID)
+            if (startPinID && endPinID)
             {
-                // BY KIND: the source end must be some node's OUTPUT and the target
-                // end some node's INPUT. Releasing a drag over the Any State node
-                // snaps to its only registered pin -- its output -- so without this
-                // the pair resolves output-to-output, both ends find a real node, and
-                // the check below inspects the wrong one. The link then draws on the
-                // canvas and BuildGraph drops it on save: a transition that looks
-                // real and is not. Failing to resolve is what rejects it.
+                // BY KIND, and in EITHER drag direction: the link needs one end that
+                // is some node's OUTPUT and one that is some node's INPUT. Try the
+                // drag as given, then reversed; whichever assignment resolves both
+                // ends is the real edge.
+                //
+                // Resolution is still what rejects the bad case. Releasing a drag over
+                // the Any State node snaps to its only registered pin -- its output --
+                // so an output-to-output pair fails BOTH assignments and never
+                // resolves. Without that it would draw on the canvas and BuildGraph
+                // would drop it on save: a transition that looks real and is not.
+                ed::PinId outputPinID = startPinID;
+                ed::PinId inputPinID  = endPinID;
+
                 const ControllerNode* from = FindNodeByOutputPin(outputPinID);
                 const ControllerNode* to   = FindNodeByInputPin(inputPinID);
+
+                if (!from || !to)
+                {
+                    outputPinID = endPinID;
+                    inputPinID  = startPinID;
+
+                    from = FindNodeByOutputPin(outputPinID);
+                    to   = FindNodeByInputPin(inputPinID);
+                }
 
                 // Three rules, and only the first differs from a plain node graph:
                 //  - nothing transitions INTO Any State (it is a source, not a place).

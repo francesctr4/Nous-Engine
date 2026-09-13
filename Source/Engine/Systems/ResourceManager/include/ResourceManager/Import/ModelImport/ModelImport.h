@@ -20,6 +20,29 @@ namespace nous::engine::resource_manager
     // skeleton and no clips.
     [[nodiscard]] bool IsModelExtension(std::string_view extensionWithDot);
 
+    // Writes the sibling stub for a skeleton or a clip, and RECONCILES one that is
+    // already there.
+    //
+    // The file is never replaced: the .meta beside it is keyed to the stub, so
+    // rewriting it would throw away the UID and every authored key -- a .nanim's
+    // loop/speed, which the user set in the Inspector. `source` is the one exception
+    // and is rewritten when it disagrees with the model actually being imported. It
+    // is a DERIVED back-pointer rather than authored data, and this unit knows its
+    // true current value on every import.
+    //
+    // Without that reconcile, MOVING a model file leaves each of its sibling stubs
+    // naming the old path forever. Nothing notices, because `source` is read only by
+    // the stub importers' fallback re-parse -- so the damage stays invisible until
+    // Library/ is deleted, and then surfaces as assimp refusing to open a path the
+    // user has not used for weeks. Found in QA 2026-09-13 on the RumbaDancing assets.
+    //
+    // Public, but deliberately NOT NOUS_ENGINE_API: there is no caller outside this
+    // unit, and t_ResourceManager_EnsureStub drives it directly. Same call as
+    // HotReloader::DispatchReimportJob.
+    [[nodiscard]] bool EnsureStub(const std::string& stubPath,
+                                  const std::string& sourceModelPath,
+                                  const std::string& clipName);
+
     struct ModelImportContext
     {
         // Handed to ParseModel, which uses it for the glTF material/texture

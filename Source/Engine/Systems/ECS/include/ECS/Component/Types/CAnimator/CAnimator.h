@@ -303,6 +303,22 @@ private:
     [[nodiscard]] const ClipTrack& CurrentTrack() const
     { return (m_fadeDuration > 0.0f && m_to.clip) ? m_to : m_from; }
 
+    // What the GRAPH is told about the current state's progress, which is NOT always
+    // what GetNormalizedTime() reports to scripts.
+    //
+    // A state whose clip did not resolve has nothing to play, so it is trivially
+    // FINISHED and reports 1.0 -- otherwise an exit-time edge out of it reads the
+    // structural 0.0 that GetNormalizedTime returns with no clip, `progress >=
+    // threshold` never becomes true, and the animator is stranded in a state it can
+    // only leave through a condition edge. Task 7 put EvaluateController ahead of the
+    // !IsBound() return to stop exactly that dead end; this completes it for the
+    // progress-driven half.
+    //
+    // The public getter deliberately keeps returning 0.0: it is a shipped script
+    // binding, and telling a script a clip finished when there was no clip is a lie
+    // that would surface far from here.
+    [[nodiscard]] float GraphProgress() const;
+
     // ---- ONE LAYER'S RUNTIME ----
     //
     // These six are the complete state of one animation layer. Layers are out of

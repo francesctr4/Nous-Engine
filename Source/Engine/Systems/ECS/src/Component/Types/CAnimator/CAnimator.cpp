@@ -81,6 +81,19 @@ float CAnimator::GetNormalizedTime() const
     return track.instance.time / duration;
 }
 
+float CAnimator::GraphProgress() const
+{
+    // Same predicate as the guard in GetNormalizedTime, opposite answer. A state with
+    // no clip is finished rather than at zero, so an exit-time edge out of it can
+    // fire; see the header for why the script-facing getter does not do this.
+    const ClipTrack& track = CurrentTrack();
+
+    if (!track.clip || track.boundClip == 0)
+        return 1.0f;
+
+    return GetNormalizedTime();
+}
+
 ResourceAnimation* CAnimator::ClipForState(const int stateIndex) const
 {
     if (!controller || !controller->graph.IsValidState(stateIndex))
@@ -536,7 +549,7 @@ void CAnimator::OnUpdate(const float deltaTime)
     if (controller && !m_graphSuppressedThisFrame)
     {
         const anim::TransitionResult result = anim::EvaluateController(
-            controller->graph, m_currentState, GetNormalizedTime(), parameters);
+            controller->graph, m_currentState, GraphProgress(), parameters);
 
         if (result.fired)
             EnterState(result.toState, result.duration);

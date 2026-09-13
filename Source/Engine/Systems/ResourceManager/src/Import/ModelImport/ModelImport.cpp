@@ -18,37 +18,79 @@ constexpr auto CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_CORE_MODULE_RESOURCEMAN
 
 namespace nous::engine::resource_manager
 {
-    namespace
+    // Contract and reasoning live on the declaration in ModelImport.h.
+    bool EnsureStub(const std::string& stubPath,
+                    const std::string& sourceModelPath,
+                    const std::string& clipName)
     {
-        // Writes a stub only when one is not already there.
-        //
-        // NEVER OVERWRITING is the rule .nmat already follows, and it is what keeps
-        // UIDs stable across a re-import: the .meta sits beside the stub and is
-        // keyed to it, so replacing the stub would also throw away any edits made to
-        // it. Only the library binary is regenerated.
-        bool EnsureStub(const std::string& stubPath,
-                        const std::string& sourceModelPath,
-                        const std::string& clipName)
+        // NEVER REPLACING an existing stub is the rule .nmat already follows, and it
+        // is what keeps UIDs stable across a re-import: the .meta sits beside the
+        // stub and is keyed to it. Only the library binary is regenerated -- and the
+        // one derived key below.
+        if (nous::engine::filesystem::Exists(stubPath))
         {
-            if (nous::engine::filesystem::Exists(stubPath)) return true;
+            JsonObject existing = JsonFile::LoadFromFile(stubPath);
 
-            JsonObject stub;
-            stub.Set("source", sourceModelPath);
-
-            // The clip's ORIGINAL name, not the sanitized filename: the fallback
-            // re-parse matches this against the aiScene, where "mixamo.com" still
-            // has its dot.
-            if (!clipName.empty()) stub.Set("clip", clipName);
-
-            if (!JsonFile::SaveToFile(stub, stubPath))
+            // A stub that does not parse is LEFT ALONE. Reconciling means reading the
+            // object and writing it back with one key changed, so a failed parse would
+            // hand back an empty object and quietly reduce the file to a lone
+            // `source` -- destroying the authored settings in the one situation where
+            // the user most needs the file intact to see what went wrong.
+            if (!existing.HasKey("source"))
             {
-                NOUS_ERROR_C(CURRENT_CHANNEL, "ImportModel: could not write stub '%s'.",
+                NOUS_WARN_C(CURRENT_CHANNEL,
+                    "ImportModel: stub '%s' could not be read and was left untouched; "
+                    "delete it to have it regenerated.", stubPath.c_str());
+                return true;
+            }
+
+            // Compared NORMALIZED, never as raw strings. Stubs on disk carry Windows
+            // backslashes while a scanned assetsPath may use forward slashes, and a
+            // raw comparison would call every stub in the project stale -- rewriting
+            // all of them on every launch, for a difference that names the same file.
+            // A separator flip is not a move.
+            const std::string stale = existing.GetString("source");
+
+            if (nous::engine::filesystem::NormalizePath(stale) ==
+                nous::engine::filesystem::NormalizePath(sourceModelPath))
+                return true;
+
+            // Only the derived back-pointer moves. `clip` and a .nanim's authored
+            // loop/speed are the user's and ride through untouched, which is the
+            // whole reason this reads-modifies-writes instead of rebuilding.
+            existing.Set("source", sourceModelPath);
+
+            if (!JsonFile::SaveToFile(existing, stubPath))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "ImportModel: could not reconcile stub '%s'.",
                              stubPath.c_str());
                 return false;
             }
 
+            NOUS_INFO_C(CURRENT_CHANNEL,
+                "ImportModel: stub '%s' pointed at '%s' and now points at '%s' "
+                "(the model moved).",
+                stubPath.c_str(), stale.c_str(), sourceModelPath.c_str());
+
             return true;
         }
+
+        JsonObject stub;
+        stub.Set("source", sourceModelPath);
+
+        // The clip's ORIGINAL name, not the sanitized filename: the fallback
+        // re-parse matches this against the aiScene, where "mixamo.com" still
+        // has its dot.
+        if (!clipName.empty()) stub.Set("clip", clipName);
+
+        if (!JsonFile::SaveToFile(stub, stubPath))
+        {
+            NOUS_ERROR_C(CURRENT_CHANNEL, "ImportModel: could not write stub '%s'.",
+                         stubPath.c_str());
+            return false;
+        }
+
+        return true;
     }
 
     bool IsModelExtension(const std::string_view extensionWithDot)

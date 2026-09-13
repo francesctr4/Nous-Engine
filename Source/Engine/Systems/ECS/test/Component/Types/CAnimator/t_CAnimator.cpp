@@ -891,6 +891,61 @@ TEST_F(t_CAnimator, ExitTimeMeasuresTheStateThatWasEntered)
     EXPECT_EQ(a.GetCurrentStateName(), "Idle");
 }
 
+// A state whose clip did not resolve must not be a DEAD END.
+//
+// Task 7 already places EvaluateController ahead of the !IsBound() early return so a
+// clipless state can be left at all -- but that only buys an escape through CONDITION
+// edges. An exit-time edge reads normalized time, which is structurally 0.0 forever
+// with no clip to measure, so `progress >= threshold` could never become true.
+//
+// Found in QA 2026-09-13, and the session isolated it by accident: deleting the attack
+// .nanim and pressing attack stranded the character in Attack with no way back, while
+// Walk Back -- whose edge out is a CONDITION -- escaped fine. The control and the
+// experiment, one keypress apart.
+//
+// A state with nothing to play is trivially finished, so it reports complete progress
+// to the graph. GetNormalizedTime() itself keeps reporting the honest 0.0: it is a
+// script-facing binding and must not claim a clip ran.
+TEST_F(t_CAnimator, ACliplessStateIsStillLeftByAnExitTimeEdge)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation animA(2); MakeHoldClip(animA, "Child", 0.0f); animA.SetName("Idle");
+
+    ResourceAnimationController aCtrl(977);
+    SetClips(aCtrl, { &animA, nullptr });
+
+    // The shape ResolveClips actually produces for a .nanim the user deleted:
+    // clipIndex -1 AND a null in clips, not merely one of the two.
+    aCtrl.graph.states[1].name      = "Attack";
+    aCtrl.graph.states[1].clipIndex = -1;
+
+    auto& toAttack = AddTransition(aCtrl, 0, 1, 0.0f);
+    toAttack.conditions.push_back(
+        { "attack", nous::engine::animation_system::ConditionComparator::TriggerSet, 0.0f });
+
+    // Exit time ONLY -- no condition. This is the edge that used to be unreachable.
+    auto& backToIdle = AddTransition(aCtrl, 1, 0, 0.0f);
+    backToIdle.hasExitTime = true;
+    backToIdle.exitTime    = 0.9f;
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &aCtrl;
+
+    a.OnUpdate(0.0f);
+    a.parameters.SetTrigger("attack");
+    a.OnUpdate(0.0f);
+    ASSERT_EQ(a.GetCurrentStateName(), "Attack");   // entered the unplayable state
+    ASSERT_FALSE(a.IsBound());                      // and is unbound, as expected
+
+    // The script-facing value stays honest even while the graph is told "finished".
+    EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.0f);
+
+    a.OnUpdate(0.0f);
+    EXPECT_EQ(a.GetCurrentStateName(), "Idle");     // recovered, not stranded
+}
+
 // The arbitration rule (design §7), enforced by code rather than by a comment: a
 // direct CrossFade wins for ITS frame even when a graph transition out of the state
 // it entered is satisfied, and the graph resumes on the very next frame. The
