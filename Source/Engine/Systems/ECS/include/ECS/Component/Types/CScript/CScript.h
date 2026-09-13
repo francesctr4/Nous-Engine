@@ -55,6 +55,13 @@ public:
     // Called by ScriptManager::DispatchFixedUpdate at a fixed timestep
     void FixedUpdate(float fixedDt);
 
+    // Broadcasts one animation event to every live script instance on this object.
+    // Called by CAnimator when a clip reaches an authored marker.
+    //
+    // Exported because t_ECS_CScript drives it and a future editor test may too.
+    NOUS_ENGINE_API void DispatchAnimationEvent(const char* name, float floatParam,
+                                                const char* stringParam);
+
     // Runtime script attachment (safe to call before or after OnStart)
     NOUS_ENGINE_API void AddScript(const std::string& scriptName);
     NOUS_ENGINE_API void RemoveScript(const std::string& scriptName);

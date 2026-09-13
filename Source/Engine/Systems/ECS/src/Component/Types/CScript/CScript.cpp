@@ -91,6 +91,25 @@ void CScript::FixedUpdate(float fixedDt)
         if (inst) inst->FixedUpdate(fixedDt);
 }
 
+void CScript::DispatchAnimationEvent(const char* name, const float floatParam,
+                                     const char* stringParam)
+{
+    // The SAME guard OnUpdate / LateUpdate / FixedUpdate carry, and it is load-bearing
+    // rather than cautious: hot-reload destroys these DLL instances on a worker
+    // thread, so iterating m_instances while that runs is a use-after-free. A new
+    // iteration site that forgets reproduces that crash on the one path nobody tests
+    // -- reloading scripts while a character is walking.
+    if (m_reloading.load(std::memory_order_seq_cst)) return;
+
+    // Never hand a script a null: the parameters are borrowed pointers into a
+    // resource, and a script comparing them with strcmp must not have to check.
+    const char* safeName   = name        ? name        : "";
+    const char* safeString = stringParam ? stringParam : "";
+
+    for (auto* inst : m_instances)
+        if (inst) inst->OnAnimationEvent(safeName, floatParam, safeString);
+}
+
 void CScript::OnDestroy()
 {
     // Unregister only if we actually registered — avoids calling into the scene

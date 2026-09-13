@@ -117,6 +117,19 @@ public:
 
     // Called when the object is destroyed/removed
     virtual void OnDestroy() = 0;
+
+    // Called when an animation event on this GameObject's CAnimator is reached.
+    //
+    // `name` and `stringParam` are BORROWED for the duration of the call -- they point
+    // at the ResourceAnimation's own strings. Copy them if you need to keep them.
+    // Neither is ever null; an unset string arrives as "".
+    //
+    // Appended at the END of this interface deliberately, and given an empty body, so
+    // no existing script changes and the vtable layout stays stable.
+    //
+    // Ordering: CScript ticks before CAnimator in UpdatableComponentTypes, so this
+    // lands AFTER this script's own Update() for the frame and BEFORE its LateUpdate().
+    virtual void OnAnimationEvent(const char* name, float floatParam, const char* stringParam) {}
 };
 
 #endif // NOUS_ENGINE_ISCRIPT_INL

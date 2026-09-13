@@ -30,7 +30,17 @@ namespace
         static inline int s_starts = 0;
         static inline int s_updates = 0;
 
-        static void Reset() { s_awakes = 0; s_starts = 0; s_updates = 0; }
+        // Animation events arrive through this vtable, exactly as Update does -- the
+        // engine already calls outward here every frame.
+        static inline std::vector<std::string> s_events;
+        static inline std::vector<float>       s_floats;
+        static inline std::vector<std::string> s_strings;
+
+        static void Reset()
+        {
+            s_awakes = 0; s_starts = 0; s_updates = 0;
+            s_events.clear(); s_floats.clear(); s_strings.clear();
+        }
 
         void Awake()            override { ++s_awakes; }
         void Start()            override { ++s_starts; }
@@ -39,6 +49,13 @@ namespace
         void OnEnable()         override {}
         void OnDisable()        override {}
         void OnDestroy()        override {}
+
+        void OnAnimationEvent(const char* name, float f, const char* s) override
+        {
+            s_events.push_back(name ? name : "");
+            s_floats.push_back(f);
+            s_strings.push_back(s ? s : "");
+        }
     };
 
     struct RecordingRegistry final : public IScriptRegistry
@@ -141,4 +158,56 @@ TEST_F(t_CScript, StartIsNotFiredTwice)
     cs.StartInstances();                    // PressPlay arriving afterwards
 
     EXPECT_EQ(RecordingScript::s_starts, 1);
+}
+
+// =============================================================================
+// Animation event dispatch
+// =============================================================================
+
+TEST_F(t_CScript, DispatchAnimationEventReachesEveryInstance)
+{
+    GameObject go = scene->CreateGameObject("Character");
+    go.AddComponent<CScript>();
+    CScript& cs = go.GetComponent<CScript>();
+
+    JsonObject obj;
+    JsonArray  scripts;
+    scripts.Append("AnimatorDemo");
+    scripts.Append("ThirdPersonCamera");
+    obj.Set("scripts", std::move(scripts));
+    cs.Deserialize(obj);
+
+    cs.DispatchAnimationEvent("Footstep", 1.5f, "L");
+
+    // Two instances, so the event is broadcast twice.
+    ASSERT_EQ(RecordingScript::s_events.size(), 2u);
+    EXPECT_EQ(RecordingScript::s_events[0], "Footstep");
+    EXPECT_FLOAT_EQ(RecordingScript::s_floats[0], 1.5f);
+    EXPECT_EQ(RecordingScript::s_strings[1], "L");
+}
+
+// Null-safety matters because the parameters are BORROWED pointers into a resource;
+// a script must never receive a raw nullptr to strcmp against.
+TEST_F(t_CScript, DispatchAnimationEventPassesEmptyStringsRatherThanNull)
+{
+    GameObject go = scene->CreateGameObject("Character");
+    go.AddComponent<CScript>();
+    CScript& cs = go.GetComponent<CScript>();
+    cs.Deserialize(MakeSceneJson("AnimatorDemo"));
+
+    cs.DispatchAnimationEvent(nullptr, 0.0f, nullptr);
+
+    ASSERT_EQ(RecordingScript::s_events.size(), 1u);
+    EXPECT_EQ(RecordingScript::s_events[0], "");
+    EXPECT_EQ(RecordingScript::s_strings[0], "");
+}
+
+TEST_F(t_CScript, DispatchAnimationEventOnAComponentWithNoScriptsDoesNothing)
+{
+    GameObject go = scene->CreateGameObject("Character");
+    go.AddComponent<CScript>();
+
+    go.GetComponent<CScript>().DispatchAnimationEvent("Hit", 0.0f, "");
+
+    EXPECT_TRUE(RecordingScript::s_events.empty());
 }
