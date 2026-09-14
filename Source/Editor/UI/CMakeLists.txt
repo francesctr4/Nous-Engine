@@ -101,6 +101,7 @@ target_sources(EditorUI PRIVATE
         include/EditorUI/AnimationControllerBuild.h
         include/EditorUI/AnimationControllerEditor.h
         include/EditorUI/AnimationTimelineLayout.h
+        include/EditorUI/AnimationTimelineWindow.h
         include/EditorUI/AssetsBrowser.h
         include/EditorUI/AudioGraphEditor.h
         include/EditorUI/AudioGraphLinearize.h
