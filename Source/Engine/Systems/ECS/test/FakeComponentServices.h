@@ -59,6 +59,7 @@ struct FakeAudioBroker : IAudioBroker
     mutable std::array<float, 3>     lastListenerPosition{ 0.0f, 0.0f, 0.0f };
     mutable bool                     playing = false;
     mutable double                   cursor  = 0.0;
+    mutable double                   lastSeek = -1.0;
 
     bool Called(const char* name) const {
         return std::find(calls.begin(), calls.end(), name) != calls.end();
@@ -76,6 +77,9 @@ struct FakeAudioBroker : IAudioBroker
 
     void StartSound(SoundHandle) const override { calls.push_back("StartSound"); playing = true; }
     void StopSound (SoundHandle) const override { calls.push_back("StopSound");  playing = false; }
+
+    void SeekSound (SoundHandle, double seconds) const override
+    { calls.push_back("SeekSound"); lastSeek = seconds; }
 
     // ── Voice parameters ──
     void SetSoundVolume (SoundHandle, float v) const override { calls.push_back("SetSoundVolume");  lastVolume = v; }

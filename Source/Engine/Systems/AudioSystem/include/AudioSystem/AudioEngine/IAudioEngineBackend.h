@@ -29,6 +29,11 @@ public:
     virtual void        StartSound(SoundHandle sound) = 0;
     virtual void        StopSound(SoundHandle sound) = 0;
 
+    // Moves the playback cursor, in seconds. StopSound retains the cursor (see
+    // GetCursorSeconds below), so seeking to 0 is the only way to replay a voice
+    // from the top -- what a gameplay one-shot retriggered mid-playback needs.
+    virtual void        SeekSound(SoundHandle sound, double seconds) = 0;
+
     virtual void        SetSoundVolume(SoundHandle sound, float volume) = 0;
     virtual void        SetSoundPitch(SoundHandle sound, float pitch) = 0;
     virtual void        SetSoundLooping(SoundHandle sound, bool looping) = 0;

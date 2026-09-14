@@ -45,6 +45,7 @@ public:
 
     NOUS_ENGINE_API void        StartSound(SoundHandle sound) const override;
     NOUS_ENGINE_API void        StopSound(SoundHandle sound) const override;
+    NOUS_ENGINE_API void        SeekSound(SoundHandle sound, double seconds) const override;
 
     NOUS_ENGINE_API void        SetSoundVolume(SoundHandle sound, float volume) const override;
     NOUS_ENGINE_API void        SetSoundPitch(SoundHandle sound, float pitch) const override;

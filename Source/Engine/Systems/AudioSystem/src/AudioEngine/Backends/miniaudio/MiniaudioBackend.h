@@ -25,6 +25,7 @@ public:
 
     void        StartSound(SoundHandle sound) override;
     void        StopSound(SoundHandle sound) override;
+    void        SeekSound(SoundHandle sound, double seconds) override;
 
     void        SetSoundVolume(SoundHandle sound, float volume) override;
     void        SetSoundPitch(SoundHandle sound, float pitch) override;

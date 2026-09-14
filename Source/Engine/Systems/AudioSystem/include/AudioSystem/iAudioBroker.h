@@ -33,6 +33,12 @@ public:
     virtual void        StartSound(SoundHandle sound) const = 0;
     virtual void        StopSound(SoundHandle sound) const = 0;
 
+    // Moves the playback cursor. StopSound RETAINS the cursor -- that is what makes
+    // scene pause/resume work -- so stop+start resumes rather than restarts, and
+    // seeking to 0 is the only way to replay a voice from the beginning. A one-shot
+    // retriggered while still playing (a footstep) needs exactly that.
+    virtual void        SeekSound(SoundHandle sound, double seconds) const = 0;
+
     // ─────────────────────────────── Voice parameters ────────────────────────
     virtual void        SetSoundVolume(SoundHandle sound, float volume) const = 0;
     virtual void        SetSoundPitch(SoundHandle sound, float pitch) const = 0;

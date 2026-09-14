@@ -68,6 +68,21 @@ public:
     NOUS_ENGINE_API void PreviewStop();
     NOUS_ENGINE_API bool IsPreviewPlaying() const;
 
+    // Script-driven one-shot playback, for a sound triggered by gameplay rather than
+    // by the scene starting: an animation event's footstep or sword hit.
+    //
+    // RESTARTS from the beginning when already playing, which is what a footstep
+    // wants -- two steps in quick succession must sound like two steps. StopSound
+    // alone cannot do that: it RETAINS the cursor, which is how scene pause works,
+    // so a stop+start resumes. Hence the explicit seek.
+    //
+    // Set playOnAwake = false on a source driven this way. The sim-state machine in
+    // OnUpdate then creates no voice of its own, and its per-frame volume/pitch/
+    // spatialization push applies to the voice this created -- which is wanted. A
+    // scene STOP still tears the voice down, so nothing leaks across a play session.
+    NOUS_ENGINE_API void Play();
+    NOUS_ENGINE_API void Stop();
+
     // Sibling-sync surface (read by a CVideoPlayer on the same GameObject):
     // IsVoicePlaying() is true only while the play-driven voice is actively
     // playing — it goes false once the clip finishes or is stopped, so a sibling

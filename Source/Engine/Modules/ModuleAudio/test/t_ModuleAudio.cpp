@@ -110,6 +110,7 @@ TEST_F(t_ModuleAudio, VoiceMutatorsAreNoOpsWithoutABackend)
     EXPECT_NO_FATAL_FAILURE(audio->DestroySound(none));
     EXPECT_NO_FATAL_FAILURE(audio->StartSound(none));
     EXPECT_NO_FATAL_FAILURE(audio->StopSound(none));
+    EXPECT_NO_FATAL_FAILURE(audio->SeekSound(none, 0.0));
     EXPECT_NO_FATAL_FAILURE(audio->SetSoundVolume(none, 0.5f));
     EXPECT_NO_FATAL_FAILURE(audio->SetSoundPitch(none, 2.0f));
     EXPECT_NO_FATAL_FAILURE(audio->SetSoundLooping(none, true));
@@ -274,4 +275,5 @@ TEST_F(t_ModuleAudio, IsUsableThroughIAudioBroker)
     EXPECT_FALSE(broker.IsSoundPlaying(nullptr));
     EXPECT_DOUBLE_EQ(broker.GetCursorSeconds(nullptr), 0.0);
     EXPECT_NO_FATAL_FAILURE(broker.StopSound(nullptr));
+    EXPECT_NO_FATAL_FAILURE(broker.SeekSound(nullptr, 0.0));
 }

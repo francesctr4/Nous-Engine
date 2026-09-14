@@ -147,6 +147,20 @@ void MiniaudioBackend::StopSound(SoundHandle sound)
         ma_sound_stop(AsSound(sound));
 }
 
+void MiniaudioBackend::SeekSound(SoundHandle sound, double seconds)
+{
+    if (!sound) return;
+
+    // Frames, not seconds: ma_sound_seek_to_pcm_frame is the only seek miniaudio
+    // offers, so the engine's sample rate is what converts. A negative request
+    // clamps to the start rather than wrapping into a huge unsigned frame index.
+    const ma_uint32 rate  = ma_engine_get_sample_rate(&m_audioEngine);
+    const double    clamped = seconds > 0.0 ? seconds : 0.0;
+
+    ma_sound_seek_to_pcm_frame(AsSound(sound),
+                               static_cast<ma_uint64>(clamped * static_cast<double>(rate)));
+}
+
 void MiniaudioBackend::SetSoundVolume(SoundHandle sound, float volume)
 {
     if (sound)
