@@ -378,4 +378,14 @@ private:
 
     // Adds m_rootDelta to the owning GameObject's transform. Applied mode only.
     void ApplyRootMotion();
+
+    // Fires the authored events the track crossed this frame, in the order it crossed
+    // them, to every script on the owning GameObject.
+    //
+    // `timeBefore` must be the instance's time BEFORE Advance, and `wrapped` Advance's
+    // return value -- the same two inputs ExtractTrackRootMotion needs, for the same
+    // reason: the loop seam is where a naive interval is wrong. The remaining two
+    // collector flags are DERIVED here rather than passed, so no call site can supply
+    // one that disagrees with the instance it just advanced.
+    void FireTrackEvents(const ClipTrack& track, float timeBefore, bool wrapped);
 };

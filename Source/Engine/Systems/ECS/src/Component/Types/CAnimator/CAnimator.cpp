@@ -1,11 +1,13 @@
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
 
+#include <AnimationSystem/AnimationEvents.h>
 #include <AnimationSystem/Blending.h>
 #include <AnimationSystem/Controller.h>
 #include <AnimationSystem/Palette.h>
 #include <AnimationSystem/Sampling.h>
 #include <AnimationSystem/RootMotion.h>
 #include <EngineCore/Casts.h>
+#include <ECS/Component/Types/CScript/CScript.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>
 #include <ECS/ComponentServices.h>
 #include <ECS/GameObject.h>
@@ -368,6 +370,44 @@ anim::RootMotionDelta CAnimator::ExtractTrackRootMotion(ClipTrack& track, const 
     return delta;
 }
 
+// ---------------------------------------------------------------------------
+// Animation events
+// ---------------------------------------------------------------------------
+
+void CAnimator::FireTrackEvents(const ClipTrack& track, const float timeBefore,
+                                const bool wrapped)
+{
+    if (!track.clip || track.clip->events.empty()) return;
+
+    // Derived, never parameters. `reversed` is the COMPOSED rate, so a controller
+    // state's speed of -1 over a forward clip counts as reversed exactly like an
+    // authored -1; `finished` is what closes the interval on a non-looping clip's
+    // last frame so an event authored at the very end is reachable at all.
+    const bool reversed = track.instance.speed < 0.0f;
+    const bool finished = anim::IsFinished(track.instance);
+
+    std::vector<int> fired;
+    anim::CollectFiredEvents(track.clip->events, timeBefore, track.instance.time,
+                             track.clip->clip.duration, wrapped, reversed, finished,
+                             fired);
+
+    if (fired.empty()) return;
+
+    // No CScript is the normal state while authoring, so this is silent rather than
+    // warned -- a warning here would fire on every footstep of an unscripted test
+    // scene.
+    GameObject go = GetGameObject();
+    CScript* scripts = go.IsValid() ? go.TryGetComponent<CScript>() : nullptr;
+    if (!scripts) return;
+
+    for (const int index : fired)
+    {
+        const anim::AnimationEvent& event = track.clip->events[index];
+        scripts->DispatchAnimationEvent(event.name.c_str(), event.floatParam,
+                                        event.stringParam.c_str());
+    }
+}
+
 void CAnimator::ApplyRootMotion()
 {
     if (m_rootDelta.translation == glm::vec3(0.0f) && m_rootDelta.yaw == 0.0f) return;
@@ -591,20 +631,31 @@ void CAnimator::OnUpdate(const float deltaTime)
     anim::RootMotionDelta deltaFrom;
     anim::RootMotionDelta deltaTo;
 
+    // BOTH advancing tracks fire their events, outgoing included: an attack
+    // interrupted at 90% has visually landed its hit, and a run fading out should
+    // still place the footstep its leg is completing. A FROZEN track advances nothing
+    // and so fires nothing, which falls out of this branch rather than being a rule.
+    // Accepted cost: a footstep can double up mid-blend when both clips carry one at
+    // a similar phase.
+    //
     // A frozen track holds a captured blend; advancing or sampling it would replace
     // that pose with the clip's own, which is exactly what the capture avoided.
     if (!m_from.frozen)
     {
-        const bool wrapped = anim::Advance(m_from.instance, deltaTime);
+        const float timeBefore = m_from.instance.time;
+        const bool  wrapped    = anim::Advance(m_from.instance, deltaTime);
         anim::Sample(m_from.instance, skeleton->skeleton, m_boundSkeleton, m_from.pose);
         deltaFrom = ExtractTrackRootMotion(m_from, wrapped);
+        FireTrackEvents(m_from, timeBefore, wrapped);
     }
 
     if (m_fadeDuration > 0.0f && m_to.boundClip != 0)
     {
-        const bool wrapped = anim::Advance(m_to.instance, deltaTime);
+        const float timeBefore = m_to.instance.time;
+        const bool  wrapped    = anim::Advance(m_to.instance, deltaTime);
         anim::Sample(m_to.instance, skeleton->skeleton, m_boundSkeleton, m_to.pose);
         deltaTo = ExtractTrackRootMotion(m_to, wrapped);
+        FireTrackEvents(m_to, timeBefore, wrapped);
 
         m_fadeElapsed += deltaTime;
         const float weight = glm::clamp(m_fadeElapsed / m_fadeDuration, 0.0f, 1.0f);

@@ -3,7 +3,10 @@
 #include <ECS/Scene/Scene.h>
 #include <ECS/GameObject.h>
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
+#include <ECS/Component/Types/CScript/CScript.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>
+#include <Scripting/Internal/IScript.inl>
+#include <Scripting/iScriptRegistry.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
 #include <ResourceManager/Types/ResourceAnimationController/ResourceAnimationController.h>
@@ -175,6 +178,82 @@ namespace
         anim.clip.channels = { ch };
     }
 
+    // A 2-second clip holding "Child" at the origin, carrying one event at
+    // `eventTime`. Holding rather than moving keeps the pose out of the way: these
+    // tests are about WHEN the event fires, not what the bone does.
+    void MakeEventClip(ResourceAnimation& anim, const float eventTime)
+    {
+        anim.clip.name     = "WithEvent";
+        anim.clip.duration = 2.0f;
+
+        AnimChannel ch;
+        ch.boneName  = "Child";
+        ch.posTimes  = { 0.0f, 2.0f };
+        ch.posValues = { glm::vec3(0.0f), glm::vec3(0.0f) };
+        anim.clip.channels = { ch };
+
+        anim.events.push_back({ eventTime, "Hit", 7.0f, "payload" });
+    }
+
+    // FakeScriptRegistry always reports "script not found", which is right for the
+    // other component tests but useless here -- the event has to land somewhere
+    // observable. Mirrors t_CScript's recording pair; the two fixtures are
+    // independent, so the duplication is deliberate.
+    struct EventRecordingScript final : public IScript
+    {
+        static inline std::vector<std::string> s_names;
+        static void Reset() { s_names.clear(); }
+
+        void Awake()           override {}
+        void Start()           override {}
+        void Update(float)     override {}
+        void LateUpdate(float) override {}
+        void OnEnable()        override {}
+        void OnDisable()       override {}
+        void OnDestroy()       override {}
+
+        void OnAnimationEvent(const char* name, float, const char*) override
+        { s_names.push_back(name ? name : ""); }
+    };
+
+    struct EventRecordingRegistry final : public IScriptRegistry
+    {
+        void RegisterScriptComponent(CScript*)   override {}
+        void UnregisterScriptComponent(CScript*) override {}
+        IScript* CreateScriptInstance(const std::string&) override
+        { return new EventRecordingScript(); }   // released via IScript::Destroy()
+    };
+
+    // Attaches one recording script to `go`, the shape CScript::Serialize produces.
+    void AddRecordingScript(GameObject& go)
+    {
+        go.AddComponent<CScript>();
+
+        JsonObject obj;
+        JsonArray  scripts;
+        scripts.Append("AnimatorDemo");
+        obj.Set("scripts", std::move(scripts));
+
+        go.GetComponent<CScript>().Deserialize(obj);
+    }
+
+    // A GameObject with an animator bound to `anim` through a one-state controller,
+    // plus one recording script.
+    GameObject MakeAnimatedCharacter(Scene& scene, ResourceSkeleton& rig,
+                                     ResourceAnimationController& controller,
+                                     ResourceAnimation& anim)
+    {
+        SetClips(controller, { &anim });
+
+        GameObject go = scene.CreateGameObject("Character");
+        auto& a = go.AddComponent<CAnimator>();
+        a.skeleton   = &rig;
+        a.controller = &controller;
+
+        AddRecordingScript(go);
+        return go;
+    }
+
     bool IsIdentity(const glm::mat4& m)
     {
         const glm::mat4 identity(1.0f);
@@ -192,6 +271,10 @@ protected:
     void SetUp() override
     {
         nous::engine::memory::InitializeMemory(MiB(16));
+
+        EventRecordingScript::Reset();
+        fakes.services.scripts = &scriptRegistry;
+
         scene = NOUS_NEW<Scene>(MemoryTag::SCENE, "TestScene", &fakes.services);
     }
 
@@ -201,9 +284,10 @@ protected:
         nous::engine::memory::ShutdownMemory();
     }
 
-    // Declared before `scene` so it outlives it -- the Scene holds a pointer into it.
-    FakeServices fakes;
-    Scene*       scene = nullptr;
+    // Declared before `scene` so both outlive it -- the Scene holds a pointer in.
+    FakeServices            fakes;
+    EventRecordingRegistry  scriptRegistry;
+    Scene*                  scene = nullptr;
 };
 
 // =============================================================================
@@ -1895,4 +1979,114 @@ TEST_F(t_CAnimator, TwoAnimatorsSharingAClipRetimeIndependently)
 
     EXPECT_FLOAT_EQ(TranslationX(slow.GetBoneGlobals()[1]), 2.5f);
     EXPECT_FLOAT_EQ(TranslationX(fast.GetBoneGlobals()[1]), 5.0f);
+}
+
+// =============================================================================
+// Animation events
+// =============================================================================
+
+TEST_F(t_CAnimator, AnEventInsideTheAdvancedIntervalFires)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeEventClip(anim, 0.5f);
+    ResourceAnimationController ctrl(901);
+
+    GameObject go = MakeAnimatedCharacter(*scene, rig, ctrl, anim);
+    CAnimator& a = go.GetComponent<CAnimator>();
+
+    a.OnUpdate(0.4f);                                  // 0.0 -> 0.4, before the event
+    EXPECT_TRUE(EventRecordingScript::s_names.empty());
+
+    a.OnUpdate(0.4f);                                  // 0.4 -> 0.8, crosses 0.5
+    EXPECT_EQ(EventRecordingScript::s_names, std::vector<std::string>({ "Hit" }));
+
+    a.OnUpdate(0.4f);                                  // 0.8 -> 1.2, past it
+    EXPECT_EQ(EventRecordingScript::s_names.size(), 1u);
+}
+
+// A STOPPED or PAUSED scene passes simDt == 0, and this must fire nothing -- with no
+// simulation-state query anywhere in CAnimator, which watches no sim edges by design.
+TEST_F(t_CAnimator, AZeroDeltaFiresNothing)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeEventClip(anim, 0.0f);   // at the very start
+    ResourceAnimationController ctrl(901);
+
+    GameObject go = MakeAnimatedCharacter(*scene, rig, ctrl, anim);
+    CAnimator& a = go.GetComponent<CAnimator>();
+
+    a.OnUpdate(0.0f);
+    a.OnUpdate(0.0f);
+
+    EXPECT_TRUE(EventRecordingScript::s_names.empty());
+}
+
+// The loop seam. A 2-second clip with an event at 1.5, advanced past the wrap: the
+// event must fire exactly once per cycle, not twice and not zero times.
+TEST_F(t_CAnimator, AnEventNearTheLoopSeamFiresOncePerCycle)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeEventClip(anim, 1.5f);
+    anim.settings.loop = true;
+    ResourceAnimationController ctrl(901);
+
+    GameObject go = MakeAnimatedCharacter(*scene, rig, ctrl, anim);
+    CAnimator& a = go.GetComponent<CAnimator>();
+
+    // 0.3 s per frame over two full cycles (4 s) = 14 frames.
+    for (int frame = 0; frame < 14; ++frame)
+        a.OnUpdate(0.3f);
+
+    EXPECT_EQ(EventRecordingScript::s_names.size(), 2u)
+        << "one per cycle -- more means the seam double-fires, fewer means it drops";
+}
+
+// An animator on an object with no CScript is the normal state while authoring, so it
+// must not crash and must not warn.
+TEST_F(t_CAnimator, AnEventWithNoScriptComponentIsHarmless)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeEventClip(anim, 0.5f);
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &anim });
+
+    GameObject go = scene->CreateGameObject("Character");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.4f);
+    a.OnUpdate(0.4f);   // crosses the event
+
+    EXPECT_TRUE(EventRecordingScript::s_names.empty());
+}
+
+// A frozen track holds a captured blend and advances nothing, so it must contribute no
+// events -- the property falls out of it never entering the advance branch.
+TEST_F(t_CAnimator, AFrozenTrackFiresNothing)
+{
+    ResourceSkeleton  rig(1);    MakeTwoBoneRig(rig);
+    ResourceAnimation idle(2);   MakeEventClip(idle, 0.5f);           idle.SetName("idle");
+    ResourceAnimation attack(3); MakeHoldClip(attack, "Child", 10.0f); attack.SetName("attack");
+
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &idle, &attack });
+
+    GameObject go = scene->CreateGameObject("Character");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+    AddRecordingScript(go);
+
+    a.OnUpdate(0.4f);                        // idle at 0.4, event not yet crossed
+    ASSERT_TRUE(a.CrossFade("attack", 1.0f));
+    ASSERT_TRUE(a.CrossFade("idle", 1.0f));  // re-trigger: folds the blend, freezes m_from
+
+    EventRecordingScript::Reset();
+    for (int frame = 0; frame < 3; ++frame)
+        a.OnUpdate(0.4f);
+
+    // The frozen outgoing track holds idle's pose but must not replay idle's event.
+    // The incoming idle track starts at 0 and DOES cross 0.5, so exactly one fires.
+    EXPECT_EQ(EventRecordingScript::s_names.size(), 1u);
 }
