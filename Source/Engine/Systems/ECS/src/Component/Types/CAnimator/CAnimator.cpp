@@ -382,7 +382,16 @@ void CAnimator::SetPreview(const ResourceAnimation* clip, const float time)
 
 void CAnimator::ApplyPreview()
 {
-    if (!m_previewClip || !skeleton) return;
+    // CONSUMED, not latched: an arm survives exactly one OnUpdate. This is what makes
+    // "closing the window stops the preview" true BY CONSTRUCTION rather than by a
+    // cleanup path -- and a cleanup path is not even available, because IEditorWindow
+    // stops calling a closed window entirely (not even Update()), so a window that
+    // latched this could never take it back. Latching froze the character forever the
+    // first time the timeline was closed while scrubbing.
+    const ResourceAnimation* const previewClip = m_previewClip;
+    m_previewClip = nullptr;
+
+    if (!previewClip || !skeleton) return;
 
     // Borrow m_from rather than carry a third ClipTrack. OnUpdate re-derives its CLIP
     // from the current state every frame, so a preview of another clip is undone by
@@ -393,7 +402,7 @@ void CAnimator::ApplyPreview()
     ResourceAnimation* const previous     = m_from.clip;
     const float              previousTime = m_from.instance.time;
 
-    m_from.clip = const_cast<ResourceAnimation*>(m_previewClip);
+    m_from.clip = const_cast<ResourceAnimation*>(previewClip);
     if (UIDOf(m_from.clip) != m_from.boundClip) RebindTrack(m_from);
 
     if (m_from.boundClip == 0)

@@ -27,7 +27,7 @@ class AnimationTimelineWindow : public IEditorWindow
 {
 public:
     NOUS_EDITOR_API explicit AnimationTimelineWindow(const char* title, EditorContext* context,
-                                                     bool start_open = false);
+                                                     bool start_open = true);
 
     // Releases the dropped clip's reference. The window is deleted by ModuleEditor at
     // shutdown, which is before the resource manager goes away.
@@ -67,6 +67,21 @@ private:
     // controller. OWNED: there is no non-acquiring path lookup on the resource manager,
     // so showing a clip means holding a reference to it.
     ResourceAnimation* m_droppedClip = nullptr;
+
+    // Whether scrubbing drives the character's pose.
+    //
+    // OFF BY DEFAULT, unlike most toggles, because the window itself opens by default:
+    // an on-by-default preview would hold every selected character at its playhead from
+    // the moment the editor starts, which reads as the animation being broken rather
+    // than as a preview being on. Opting in costs one click at the point where the user
+    // already means to scrub.
+    //
+    // It OVERRIDES the graph, so while the scene is playing the character visibly stops
+    // animating and holds the playhead's pose. That is the feature, not a freeze, and
+    // this is the switch that turns it off; closing the window does the same, since the
+    // arm expires on its own. Suppressing it by simulation state instead was tried and
+    // removed the case the window is most used in.
+    bool  m_preview       = false;
 
     float m_playhead      = 0.0f;
     int   m_selectedEvent = -1;

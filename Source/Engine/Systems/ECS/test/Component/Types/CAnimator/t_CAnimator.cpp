@@ -2218,3 +2218,32 @@ TEST_F(t_CAnimator, SetPreviewAppliesNoRootMotion)
 
     EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, before.x);
 }
+
+// An arm lasts exactly ONE OnUpdate. The window that armed it cannot take it back --
+// IEditorWindow stops calling a closed window entirely, not even Update() -- so a
+// latched preview would freeze the character permanently the first time the timeline
+// was closed mid-scrub. Expiry is what makes closing the window sufficient.
+TEST_F(t_CAnimator, APreviewExpiresAfterOneUpdate)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &anim });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.0f);
+
+    a.SetPreview(&anim, 0.75f);
+    a.OnUpdate(0.0f);
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 7.5f);
+
+    // No second arm -- the window closed. The very next frame is back to the graph,
+    // with no SetPreview(nullptr) from anyone.
+    a.OnUpdate(0.0f);
+
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 0.0f);
+}

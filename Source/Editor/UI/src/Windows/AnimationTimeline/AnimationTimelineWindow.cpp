@@ -269,10 +269,21 @@ void AnimationTimelineWindow::DrawRuler(CAnimator& animator, ResourceAnimation& 
     draw->AddLine(ImVec2(playheadX, top), ImVec2(playheadX, bottom),
                   IM_COL32(240, 240, 240, 255), 2.0f);
 
-    // Arm the preview EVERY FRAME while this window is open. OnUpdate re-derives the
-    // real pose each frame, so a single arm would be overwritten -- and a stale arm
-    // cannot linger, because closing the window stops re-arming it.
-    animator.SetPreview(&clip, m_playhead);
+    // Re-armed EVERY FRAME, because an arm lasts exactly one OnUpdate. That expiry is
+    // what makes closing this window enough to release the character -- a closed
+    // IEditorWindow is not called at all, so there is no hook here that could disarm.
+    //
+    // Gated on the CHECKBOX ALONE, deliberately not on the simulation state. Holding
+    // the pose is what a preview IS, in either state: while stopped it is the only way
+    // to see the frame a marker sits on, and while playing it is how a marker is
+    // checked against a pose the graph is actually producing. A stopped-scene-only rule
+    // was tried and simply removed the case the window is most used in.
+    if (m_preview)
+        animator.SetPreview(&clip, m_playhead);
+
+    ImGui::Checkbox("Preview", &m_preview);
+    ImGui::SameLine();
+    ImGui::TextDisabled("(holds the pose at the playhead)");
 
     ImGui::SetNextItemWidth(160.0f);
     ImGui::SliderFloat("Time", &m_playhead, 0.0f, clip.clip.duration, "%.3f s");

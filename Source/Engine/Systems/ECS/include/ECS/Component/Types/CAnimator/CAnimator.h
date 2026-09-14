@@ -240,10 +240,17 @@ public:
     // Fires NO events (a scrub is a discontinuity, so there is no interval to collect)
     // and applies NO root motion (a scrub would walk an Applied character).
     //
-    // Re-arm it every frame while scrubbing. The preview SAVES AND RESTORES the track's
-    // playback cursor, so disarming restores the real pose by itself -- there is
-    // deliberately no cleanup path and no third ClipTrack, which would cost every
-    // character in a shipped game its memory for an editor-only feature.
+    // THE ARM LASTS EXACTLY ONE OnUpdate and must be re-armed every frame while
+    // scrubbing. That is what makes it impossible to leave a character frozen: a
+    // latched preview cannot be taken back, because IEditorWindow stops calling a
+    // closed window entirely -- not even Update() -- so the window that armed it has
+    // no way to disarm it once the user closes it. A one-shot arm needs no cleanup
+    // path at all; it simply stops being renewed.
+    //
+    // The preview also SAVES AND RESTORES the borrowed track's playback cursor, so a
+    // scrub neither sticks the pose nor jumps a clip that is playing. No third
+    // ClipTrack, which would cost every character in a shipped game its memory for an
+    // editor-only feature.
     NOUS_ENGINE_API void SetPreview(const ResourceAnimation* clip, float time);
 
 private:
