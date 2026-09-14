@@ -16,6 +16,7 @@ void ScriptBindings::InitializeBindings(EngineAPI*& api)
     api->Camera     = NOUS_NEW<CameraAPI>    (MemoryTag::SCRIPTING_SYSTEM);
     api->Scene      = NOUS_NEW<SceneAPI>     (MemoryTag::SCRIPTING_SYSTEM);
     api->Animator   = NOUS_NEW<AnimatorAPI>  (MemoryTag::SCRIPTING_SYSTEM);
+    api->Audio      = NOUS_NEW<AudioAPI>     (MemoryTag::SCRIPTING_SYSTEM);
 }
 
 void ScriptBindings::SetupAllBindings(EngineAPI& api, IScriptInput* input, IScriptSceneHost* sceneHost)
@@ -30,11 +31,13 @@ void ScriptBindings::SetupAllBindings(EngineAPI& api, IScriptInput* input, IScri
     SetupCameraBindings    (*api.Camera, sceneHost);
     SetupSceneBindings     (*api.Scene, sceneHost);
     SetupAnimatorBindings  (*api.Animator, sceneHost);
+    SetupAudioBindings     (*api.Audio, sceneHost);
 }
 
 void ScriptBindings::DeleteBindings(EngineAPI*& api)
 {
     if (!api) return;
+    NOUS_DELETE(api->Audio,     MemoryTag::SCRIPTING_SYSTEM);
     NOUS_DELETE(api->Animator,  MemoryTag::SCRIPTING_SYSTEM);
     NOUS_DELETE(api->Scene,     MemoryTag::SCRIPTING_SYSTEM);
     NOUS_DELETE(api->Camera,    MemoryTag::SCRIPTING_SYSTEM);

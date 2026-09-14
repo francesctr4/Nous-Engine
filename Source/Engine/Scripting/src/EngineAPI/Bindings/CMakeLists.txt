@@ -3,6 +3,7 @@ target_sources(Scripting PRIVATE
 )
 
 add_subdirectory(Animator)
+add_subdirectory(Audio)
 add_subdirectory(Camera)
 add_subdirectory(Component)
 add_subdirectory(GameObject)

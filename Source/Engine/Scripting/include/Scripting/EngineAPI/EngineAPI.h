@@ -12,6 +12,7 @@ struct MaterialAPI;
 struct CameraAPI;
 struct SceneAPI;
 struct AnimatorAPI;
+struct AudioAPI;
 
 // --- Engine API (root) ---
 struct EngineAPI
@@ -26,6 +27,7 @@ struct EngineAPI
     CameraAPI*     Camera;
     SceneAPI*      Scene;
     AnimatorAPI*   Animator;
+    AudioAPI*      Audio;
 };
 
 // Only declare here
