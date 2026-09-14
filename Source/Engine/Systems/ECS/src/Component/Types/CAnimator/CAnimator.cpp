@@ -371,6 +371,56 @@ anim::RootMotionDelta CAnimator::ExtractTrackRootMotion(ClipTrack& track, const 
 }
 
 // ---------------------------------------------------------------------------
+// Editor pose preview
+// ---------------------------------------------------------------------------
+
+void CAnimator::SetPreview(const ResourceAnimation* clip, const float time)
+{
+    m_previewClip = clip;
+    m_previewTime = time;
+}
+
+void CAnimator::ApplyPreview()
+{
+    if (!m_previewClip || !skeleton) return;
+
+    // Borrow m_from rather than carry a third ClipTrack. OnUpdate re-derives its CLIP
+    // from the current state every frame, so a preview of another clip is undone by
+    // itself -- but it does NOT rewind the cursor, and previewing the clip the state
+    // already plays rebinds nothing. Hence the explicit save/restore below: without it
+    // a scrub seeks the live track permanently, so disarming leaves the pose stuck at
+    // the last scrubbed frame and a preview during play jumps the playing clip.
+    ResourceAnimation* const previous     = m_from.clip;
+    const float              previousTime = m_from.instance.time;
+
+    m_from.clip = const_cast<ResourceAnimation*>(m_previewClip);
+    if (UIDOf(m_from.clip) != m_from.boundClip) RebindTrack(m_from);
+
+    if (m_from.boundClip == 0)
+    {
+        m_from.clip = previous;
+        return;
+    }
+
+    m_from.frozen           = false;
+    m_from.instance.binding = &m_from.binding;
+    m_from.instance.Seek(m_previewTime);   // resets the cursor; a scrub jumps freely
+
+    anim::Sample(m_from.instance, skeleton->skeleton, m_boundSkeleton, m_from.pose);
+    m_blended = m_from.pose;
+
+    // No FireTrackEvents and no ApplyRootMotion here, deliberately -- see SetPreview.
+    if (!anim::BuildGlobals(skeleton->skeleton, m_blended, m_globals) ||
+        !anim::BuildPalette(skeleton->skeleton, m_globals, m_palette))
+    {
+        m_palette.clear();
+    }
+
+    m_from.clip = previous;
+    m_from.instance.Seek(previousTime);
+}
+
+// ---------------------------------------------------------------------------
 // Animation events
 // ---------------------------------------------------------------------------
 
@@ -605,6 +655,7 @@ void CAnimator::OnUpdate(const float deltaTime)
         m_globals.clear();
         m_palette.clear();
         m_rootDelta = {};
+        ApplyPreview();   // a clip can be previewed before the graph binds one
         return;
     }
 
@@ -720,6 +771,9 @@ void CAnimator::OnUpdate(const float deltaTime)
     {
         m_palette.clear();
     }
+
+    // LAST, so it overrides the frame's real pose rather than being overwritten by it.
+    ApplyPreview();
 }
 
 // ---------------------------------------------------------------------------

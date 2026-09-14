@@ -2090,3 +2090,131 @@ TEST_F(t_CAnimator, AFrozenTrackFiresNothing)
     // The incoming idle track starts at 0 and DOES cross 0.5, so exactly one fires.
     EXPECT_EQ(EventRecordingScript::s_names.size(), 1u);
 }
+
+// =============================================================================
+// Editor pose preview
+// =============================================================================
+
+// Scrubbing must move the pose while the scene is STOPPED, which is what makes
+// placing an event on the frame the sword is lowest possible at all.
+TEST_F(t_CAnimator, SetPreviewSamplesThePoseWithZeroDelta)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");   // x: 0 -> 10 over 1 s
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &anim });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.0f);                       // bind; pose at t = 0
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 0.0f);
+
+    a.SetPreview(&anim, 0.75f);
+    a.OnUpdate(0.0f);                       // simDt is 0 -- a STOPPED scene
+
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 7.5f);
+    EXPECT_FALSE(a.GetPalette().empty()) << "the renderer's skinned test is this";
+}
+
+// Scrubbing is a DISCONTINUITY, so "the interval traversed" has no meaning -- and
+// delivering a game callback from an editor drag would let a script mutate a stopped
+// scene.
+TEST_F(t_CAnimator, SetPreviewFiresNoEvents)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeEventClip(anim, 0.5f);
+    ResourceAnimationController ctrl(901);
+
+    GameObject go = MakeAnimatedCharacter(*scene, rig, ctrl, anim);
+    CAnimator& a = go.GetComponent<CAnimator>();
+
+    a.OnUpdate(0.0f);
+    EventRecordingScript::Reset();
+
+    a.SetPreview(&anim, 0.2f);   a.OnUpdate(0.0f);
+    a.SetPreview(&anim, 1.8f);   a.OnUpdate(0.0f);   // scrubbed straight past the event
+    a.SetPreview(&anim, 0.1f);   a.OnUpdate(0.0f);   // and back
+
+    EXPECT_TRUE(EventRecordingScript::s_names.empty());
+}
+
+// Disarming restores the real pose with no cleanup path. The preview must therefore
+// leave the track's PLAYBACK CURSOR untouched -- re-deriving m_from from the current
+// state each frame does not rewind it, and previewing the clip the state already
+// plays rebinds nothing, so a preview that seeked in place would stick there forever.
+TEST_F(t_CAnimator, DisarmingThePreviewRestoresTheGraphPose)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &anim });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.0f);
+    a.SetPreview(&anim, 0.75f);
+    a.OnUpdate(0.0f);
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 7.5f);
+
+    a.SetPreview(nullptr, 0.0f);
+    a.OnUpdate(0.0f);
+
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 0.0f);
+}
+
+// A preview while the sim RUNS must not steal the playing clip's cursor either: the
+// same save/restore that makes disarming work covers it.
+TEST_F(t_CAnimator, PreviewDoesNotDisturbThePlayingCursor)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Child");
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &anim });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.0f);
+    a.OnUpdate(0.25f);                      // playing, cursor at 0.25
+
+    a.SetPreview(&anim, 0.9f);
+    a.OnUpdate(0.0f);                       // preview shows 0.9 ...
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 9.0f);
+
+    a.SetPreview(nullptr, 0.0f);
+    a.OnUpdate(0.25f);                      // ... and the clip resumes from 0.25, not 0.9
+
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+}
+
+// Root motion must not run on this path: a scrub would walk an Applied character
+// across the scene.
+TEST_F(t_CAnimator, SetPreviewAppliesNoRootMotion)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2);  MakeSlideClip(anim, "Root");
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &anim });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+    a.rootMotion = RootMotionMode::Applied;
+
+    a.OnUpdate(0.0f);
+    const glm::vec3 before = go.GetComponent<CTransform>().position;
+
+    a.SetPreview(&anim, 0.9f);
+    a.OnUpdate(0.0f);
+
+    EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, before.x);
+}

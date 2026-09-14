@@ -227,6 +227,25 @@ public:
     [[nodiscard]] NOUS_ENGINE_API const nous::engine::animation_system::RootMotionDelta&
     GetRootMotionDelta() const { return m_rootDelta; }
 
+    // EDITOR ONLY. Arms a pose preview: the next OnUpdate seeks `clip` to `time`,
+    // samples it and rebuilds the globals and palette, AFTER its normal work.
+    // A null clip disarms.
+    //
+    // It ARMS rather than samples because the window cannot do this itself:
+    // ModuleRenderer3D::PostUpdate builds the render packet from GetPalette(), and
+    // editor windows draw AFTER it -- so a pose written at draw time appears one frame
+    // late, and scrubbing feels laggy in a way that reads as a sampling bug. Consuming
+    // the flag inside the animator's own update removes the ordering question.
+    //
+    // Fires NO events (a scrub is a discontinuity, so there is no interval to collect)
+    // and applies NO root motion (a scrub would walk an Applied character).
+    //
+    // Re-arm it every frame while scrubbing. The preview SAVES AND RESTORES the track's
+    // playback cursor, so disarming restores the real pose by itself -- there is
+    // deliberately no cleanup path and no third ClipTrack, which would cost every
+    // character in a shipped game its memory for an editor-only feature.
+    NOUS_ENGINE_API void SetPreview(const ResourceAnimation* clip, float time);
+
 private:
     // One playing clip plus everything needed to sample it. Two of these is the whole
     // blend model -- a re-trigger folds the in-flight blend into m_from rather than
@@ -351,6 +370,15 @@ private:
     // NOT part of the layer runtime block above: arbitration is per animator, and a
     // second layer would share this flag rather than carry its own.
     bool m_graphSuppressedThisFrame = false;
+
+    // Armed by SetPreview, consumed at the end of OnUpdate. NOT part of the layer
+    // runtime block: previewing is per animator, and a second layer would share it.
+    const ResourceAnimation* m_previewClip = nullptr;
+    float                    m_previewTime = 0.0f;
+
+    // Samples m_previewClip at m_previewTime into m_globals / m_palette, borrowing
+    // m_from and putting its cursor back afterwards.
+    void ApplyPreview();
 
     std::vector<glm::mat4> m_globals;
     std::vector<glm::mat4> m_palette;
