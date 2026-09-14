@@ -100,6 +100,7 @@ target_sources(EditorUI PRIVATE
         include/EditorUI/IEditorWindow.h
         include/EditorUI/AnimationControllerBuild.h
         include/EditorUI/AnimationControllerEditor.h
+        include/EditorUI/AnimationTimelineLayout.h
         include/EditorUI/AssetsBrowser.h
         include/EditorUI/AudioGraphEditor.h
         include/EditorUI/AudioGraphLinearize.h
@@ -208,6 +209,7 @@ target_link_libraries(EditorUI PUBLIC
 # whole suite is visible in one place (see CONVENTIONS.md).
 if (NOUS_BUILD_TESTS)
     add_subdirectory(test/Windows/AnimationControllerEditor)
+    add_subdirectory(test/Windows/AnimationTimeline)
     add_subdirectory(test/Windows/AudioGraphEditor)
     add_subdirectory(test/Windows/InspectorWindow/ComponentInspectorRegistry)
 endif()
