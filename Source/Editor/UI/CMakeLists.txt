@@ -152,7 +152,11 @@ target_link_libraries(EditorUI PUBLIC
         AudioSystem_headers
         # CAnimator.h -- reached through ComponentTypes.h, which the editor
         # windows include -- holds AnimInstance/AnimationBinding/Pose by value.
-        # Headers only: EditorUI links no AnimationSystem objects.
+        #
+        # Headers are all MOST of this target needs; three leaves also need the
+        # ARCHIVE, for out-of-line symbols the engine DLL does not export
+        # (AnimationControllerEditor, AnimationTimeline, ComponentInspectorRegistry).
+        # Each declares it itself -- see the reasoning in the first of those.
         AnimationSystem_headers
         # The foundation targets, converted 2026-08-27. Same story: the editor
         # windows have always included Logger/MemoryManager/FileSystem/the job

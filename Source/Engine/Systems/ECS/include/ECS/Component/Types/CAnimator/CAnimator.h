@@ -99,31 +99,40 @@ public:
     // It is here rather than on the resource because ResourceAnimation is SHARED:
     // slowing one character by writing into the clip would retime every other
     // character playing it. This is the ONLY per-character speed axis there is -- a
-    // controller asset (MVP-F) is shared between characters exactly as a clip is, so
-    // it cannot host one either.
+    // controller asset is shared between characters exactly as a clip is, so it
+    // cannot host one either. Do not "move it into the controller".
     //
     // SERIALIZED, unlike `parameters`: "this character moves heavily" is authoring.
     // That does not reintroduce the deleted CAnimator::speed, which was ABSOLUTE and
     // so competed with each clip's own value; a multiplier composes with it and
     // applies uniformly to every clip by design.
     //
-    // Per-character AND per-clip variation is MVP-F's job: a controller state's speed
-    // driven by an AnimParameter. Do not grow a second multiplier here for it.
+    // Per-character AND per-clip variation is the CONTROLLER's job, and it is built:
+    // a state's own `speed`, optionally scaled by the Float parameter named in its
+    // `speedParameter`. SeedPlaybackSettings multiplies all four axes together, so do
+    // not grow a second multiplier here for any of them.
     float speedMultiplier = 1.0f;
 
     // Fade duration the Inspector's Play buttons use. Authoring convenience only --
-    // Play() takes its duration as a parameter, so a future script API and a future
-    // controller graph each supply their own.
+    // every other caller supplies its own: CrossFade takes one as a parameter, the
+    // script API passes it through, and a graph transition carries its own `duration`.
     float fadeSeconds = 0.2f;
 
     // Authoring, unlike `parameters` -- serialized, because a character silently
     // reverting to Baked on load would look like the feature failing.
     RootMotionMode rootMotion = RootMotionMode::Baked;
 
-    // Named values scripts write and the controller graph (MVP-F) reads. Runtime
-    // state, deliberately NOT serialized -- defaults belong in the controller asset
-    // once one exists. Survives script hot-reload, which recreates script instances
-    // but not components.
+    // Named values the controller graph's transition conditions read. Written by
+    // scripts, by the Inspector's live parameter panel, and seeded from the
+    // controller's declared defaults on every bind and re-save.
+    //
+    // Runtime state, deliberately NOT serialized: the defaults live in the controller
+    // asset, which is the one place they can be authored for every character using it.
+    // Survives script hot-reload, which recreates script instances but not components.
+    //
+    // PUBLIC because it is the whole surface -- AnimatorBindings forwards straight to
+    // it, and the Inspector panel drives it directly rather than through a set of
+    // forwarders on this class that would say nothing extra.
     nous::engine::animation_system::AnimParameters parameters;
 
     // Set once ApplySkinningToGeometry has reported a mesh whose rig does not match
@@ -247,10 +256,11 @@ public:
     // no way to disarm it once the user closes it. A one-shot arm needs no cleanup
     // path at all; it simply stops being renewed.
     //
-    // The preview also SAVES AND RESTORES the borrowed track's playback cursor, so a
-    // scrub neither sticks the pose nor jumps a clip that is playing. No third
-    // ClipTrack, which would cost every character in a shipped game its memory for an
-    // editor-only feature.
+    // It samples through a LOCAL binding, instance and pose, touching none of the
+    // animator's playback state -- so a scrub cannot stick the pose, jump a clip that
+    // is playing, or disturb an in-flight cross-fade, and there is no save/restore pair
+    // to keep correct. No third ClipTrack either: the scratch lives on the stack for
+    // the duration of the call, so a shipped game carries nothing for this.
     NOUS_ENGINE_API void SetPreview(const ResourceAnimation* clip, float time);
 
 private:
@@ -383,8 +393,8 @@ private:
     const ResourceAnimation* m_previewClip = nullptr;
     float                    m_previewTime = 0.0f;
 
-    // Samples m_previewClip at m_previewTime into m_globals / m_palette, borrowing
-    // m_from and putting its cursor back afterwards.
+    // Samples m_previewClip at m_previewTime into m_globals / m_palette through a
+    // scratch binding + instance + pose, leaving every track untouched.
     void ApplyPreview();
 
     std::vector<glm::mat4> m_globals;

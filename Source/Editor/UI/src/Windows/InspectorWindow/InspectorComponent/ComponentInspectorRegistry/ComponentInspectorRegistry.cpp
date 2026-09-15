@@ -803,6 +803,105 @@ static void DrawAnimator(const InspectorCtx& ctx, Component* c)
             ImGui::PopID();
         }
 
+        // ---- PARAMETERS ----
+        //
+        // The DECLARATIONS drive the rows, never the values the animator happens to
+        // hold: the declared set is what the graph's conditions can test, and
+        // CAnimator::SeedDeclaredParameters has already given each one a value, so a
+        // getter here reads the live value rather than a fallback. Listing held entries
+        // instead would show a script's typo as a legitimate parameter and hide a
+        // declared one nothing has written.
+        //
+        // Editable, unlike the states above, because that is the point: without this
+        // panel a condition- or trigger-driven graph cannot be exercised in the editor
+        // at all -- authoring it requires writing a script first, and the graph then
+        // looks broken in exactly the way a mistyped parameter name looks broken.
+        //
+        // WORKS WHILE STOPPED. ModuleScene::Update calls Scene::Update unconditionally
+        // (simDt is 0, not skipped), so CAnimator::OnUpdate still evaluates the graph
+        // and a condition satisfied here transitions immediately. Only the CLOCK stops,
+        // which is why an exit-time edge needs Play and a condition edge does not.
+        if (!graph.parameters.empty())
+        {
+            using nous::engine::animation_system::AnimParamType;
+
+            ImGui::Spacing();
+            ImGui::TextDisabled("Parameters (%zu)", graph.parameters.size());
+
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Live values this animator holds. Scripts write the same\n"
+                                  "store; edits here are NOT saved with the scene.");
+
+            ImGui::Indent();
+
+            for (size_t i = 0; i < graph.parameters.size(); ++i)
+            {
+                const auto& decl = graph.parameters[i];
+
+                // By INDEX, not by name: two declarations can share a name while the
+                // controller editor is mid-rename, and a duplicated ImGui id makes the
+                // second row's widget drive the first one's value.
+                ImGui::PushID(static_cast<int>(i));
+
+                switch (static_cast<AnimParamType>(decl.type))
+                {
+                    case AnimParamType::Float:
+                    {
+                        float value = cAnimator->parameters.GetFloat(decl.name, decl.defaultValue);
+
+                        ImGui::SetNextItemWidth(120.0f);
+
+                        // Written on every frame of the drag, deliberately unlike the
+                        // clip settings above: this touches no file, and a condition
+                        // testing it should fire while the slider is still moving.
+                        if (ImGui::DragFloat(decl.name.c_str(), &value, 0.01f))
+                            cAnimator->parameters.SetFloat(decl.name, value);
+                        break;
+                    }
+
+                    case AnimParamType::Bool:
+                    {
+                        bool value = cAnimator->parameters.GetBool(decl.name,
+                                                                   decl.defaultValue != 0.0f);
+
+                        if (ImGui::Checkbox(decl.name.c_str(), &value))
+                            cAnimator->parameters.SetBool(decl.name, value);
+                        break;
+                    }
+
+                    case AnimParamType::Trigger:
+                    {
+                        // A trigger is CONSUMED by the transition that fires on it, so
+                        // its set state is the one parameter value worth showing as well
+                        // as setting: a trigger that stays lit is one no transition
+                        // matched, which is the symptom of a condition on the wrong
+                        // state -- and it will fire the moment that state is entered.
+                        const bool set = cAnimator->parameters.IsTriggerSet(decl.name);
+
+                        if (ImGui::Button(set ? "Reset" : "Set", ImVec2(60.0f, 0.0f)))
+                        {
+                            if (set) cAnimator->parameters.ResetTrigger(decl.name);
+                            else     cAnimator->parameters.SetTrigger(decl.name);
+                        }
+
+                        ImGui::SameLine();
+                        ImGui::Text("%s", decl.name.c_str());
+
+                        if (set)
+                        {
+                            ImGui::SameLine();
+                            ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.35f, 1.0f), "(set)");
+                        }
+                        break;
+                    }
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::Unindent();
+        }
+
         // ---- RUNTIME ----
         ImGui::Spacing();
         if (!currentName.empty())

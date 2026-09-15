@@ -13,13 +13,26 @@ namespace nous::engine::animation_system
     /**
      * @brief The named-value blackboard a script writes and a controller graph reads.
      *
-     * Scripts set values ("speed", "isGrounded", "jump"); the controller graph
-     * (MVP-F) tests them in transition conditions. This type is the whole reason
-     * the graph's evaluator can live in this pure library and be tested headless --
-     * keep it free of engine dependencies.
+     * Scripts and the Inspector's parameter panel set values ("speed",
+     * "isGrounded", "jump"); the controller graph tests them in transition
+     * conditions. This type is the whole reason the graph's evaluator can live in
+     * this pure library and be tested headless -- keep it free of engine
+     * dependencies.
      *
-     * Parameters are UNDECLARED for now: any name can be set. MVP-F's controller
-     * asset will declare names, types and defaults, and validation arrives with it.
+     * THE STORE ITSELF IS UNDECLARED, and stays that way on purpose. A controller
+     * asset declares names, types and defaults -- ControllerGraph::parameters, which
+     * CAnimator::SeedDeclaredParameters seeds from on every bind and re-save -- but
+     * nothing here validates a name against that declaration, so any name can still
+     * be set. Two consequences worth knowing:
+     *
+     *   - A script setting a name the asset does not declare is SILENT. It lands in
+     *     this store, no condition ever reads it, and nothing reports it. That is why
+     *     the controller editor offers a dropdown over declared names rather than a
+     *     text field, and why the Inspector panel lists DECLARATIONS rather than the
+     *     entries held here.
+     *   - Validating would mean this type holding a pointer back to the graph it
+     *     belongs to, which is a coupling the pure layer does not need: the declared
+     *     side is already the editor's business, where a mistyped name is visible.
      */
     class AnimParameters
     {
@@ -32,7 +45,9 @@ namespace nous::engine::animation_system
 
         // A trigger is a bool a transition CONSUMES when it fires. It stays set until
         // consumed or reset -- Unity's semantics, chosen so anyone arriving from Unity
-        // carries the right mental model. Nothing consumes triggers until MVP-F.
+        // carries the right mental model. EvaluateController consumes the triggers of
+        // the transition it fires, and only that one: at most one per frame, since the
+        // first satisfied transition wins.
         void SetTrigger(std::string_view name);
         void ResetTrigger(std::string_view name);
         [[nodiscard]] bool IsTriggerSet(std::string_view name) const;
@@ -60,10 +75,14 @@ namespace nous::engine::animation_system
             AnimParamType type  = AnimParamType::Float;
             float         value = 0.0f;
 
-            // Kept beside the hash purely for diagnostics -- a mistyped parameter is
-            // otherwise a silent hash miss, and MVP-F's editor will want to list what a
-            // running animator actually holds. Once the controller asset declares
-            // parameters, values can move to index-addressed storage and this can go.
+            // NOTHING READS THIS -- it is written by FindOrAdd and kept for the
+            // debugger alone, where a store of bare hashes is unreadable and a
+            // mistyped parameter is otherwise invisible. Worth the string per entry
+            // (about five per animator) for exactly that.
+            //
+            // It also leaves the door open to hardening Find, which compares HASHES
+            // ONLY: a collision today returns another parameter's value silently. 64
+            // bits make that vanishingly unlikely rather than impossible.
             std::string   name;
         };
 

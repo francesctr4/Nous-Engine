@@ -131,8 +131,7 @@ namespace nous::engine::animation_system
      * offers a dropdown over declared names rather than a text field: a mistyped
      * name in an IsFalse condition produces a transition that always fires.
      */
-    [[nodiscard]] bool ConditionsSatisfied(const ControllerGraph&      graph,
-                                           const ControllerTransition& transition,
+    [[nodiscard]] bool ConditionsSatisfied(const ControllerTransition& transition,
                                            const AnimParameters&       params);
 
     struct TransitionResult

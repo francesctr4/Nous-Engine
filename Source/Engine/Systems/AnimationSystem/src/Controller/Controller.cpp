@@ -38,12 +38,9 @@ namespace nous::engine::animation_system
         return -1;
     }
 
-    bool ConditionsSatisfied(const ControllerGraph&      graph,
-                             const ControllerTransition& transition,
+    bool ConditionsSatisfied(const ControllerTransition& transition,
                              const AnimParameters&       params)
     {
-        (void)graph;   // reserved for declaration-aware validation; see design §2
-
         for (const ControllerCondition& c : transition.conditions)
         {
             bool ok = false;
@@ -110,7 +107,7 @@ namespace nous::engine::animation_system
                 if (!ExitTimeReached(t, normalizedTime))
                     continue;
 
-                if (!ConditionsSatisfied(graph, t, params))
+                if (!ConditionsSatisfied(t, params))
                     continue;
 
                 // FIRST SATISFIED WINS: consume and return, so exactly one

@@ -168,7 +168,20 @@ void CAnimator::EnterState(const int stateIndex, const float fadeSeconds)
 
     ResourceAnimation* target = ClipForState(stateIndex);
 
-    if (fadeSeconds <= 0.0f)
+    // A FADE TO NOTHING SNAPS, and that is load-bearing rather than tidy. The fade
+    // branch in OnUpdate is gated on `m_to.boundClip != 0`, so a target track with no
+    // clip never advances m_fadeElapsed and never clears m_fadeDuration -- the animator
+    // would stay "fading" forever: IsFading() stuck true with its progress readout
+    // pinned at 0, the per-frame re-derive of m_from suppressed (so later assigning a
+    // clip to the state would not be picked up), and GraphProgress() reporting the
+    // OUTGOING clip's progress instead of the 1.0 that lets an exit-time edge leave a
+    // clipless state. That last one is the 2026-09-13 QA bug: the fix for it only ever
+    // covered the snap path, and every transition takes this one by default (0.2 s).
+    //
+    // Snapping instead puts a state whose .nanim did not resolve on exactly the path
+    // ACliplessStateIsStillLeftByAnExitTimeEdge pins -- unbound, bind pose, and left by
+    // the next frame's graph evaluation.
+    if (fadeSeconds <= 0.0f || !target)
     {
         m_from.clip       = target;
         m_from.stateIndex = stateIndex;
@@ -334,6 +347,14 @@ anim::RootMotionDelta CAnimator::ExtractTrackRootMotion(ClipTrack& track, const 
     if (track.frozen || track.binding.rootBone < 0) return {};
     if (static_cast<size_t>(track.binding.rootBone) >= track.pose.bones.size()) return {};
 
+    // bindLocals as well as the pose, because the strip target is read out of it
+    // below. Sample() already treats a short bindLocals as "no bind pose" rather than
+    // as a precondition, so a skeleton that reaches here with one is a case the
+    // sampler tolerates and this would have read past the end of -- the two must
+    // agree on what is guaranteed. Every importer fills it; a hand-built rig need not.
+    if (static_cast<size_t>(track.binding.rootBone) >= skeleton->skeleton.bindLocals.size())
+        return {};
+
     // BY VALUE, not by reference: StripRootMotion mutates this very bone, so a
     // reference would be read back already stripped and every frame after the
     // first would measure zero travel.
@@ -393,40 +414,45 @@ void CAnimator::ApplyPreview()
 
     if (!previewClip || !skeleton) return;
 
-    // Borrow m_from rather than carry a third ClipTrack. OnUpdate re-derives its CLIP
-    // from the current state every frame, so a preview of another clip is undone by
-    // itself -- but it does NOT rewind the cursor, and previewing the clip the state
-    // already plays rebinds nothing. Hence the explicit save/restore below: without it
-    // a scrub seeks the live track permanently, so disarming leaves the pose stuck at
-    // the last scrubbed frame and a preview during play jumps the playing clip.
-    ResourceAnimation* const previous     = m_from.clip;
-    const float              previousTime = m_from.instance.time;
+    // ENTIRELY LOCAL: its own binding, its own instance, its own pose. NOTHING of the
+    // animator's playback state is read or written, so there is no save/restore pair to
+    // get wrong and nothing a scrub can leave behind.
+    //
+    // It used to BORROW m_from, on the reasoning that OnUpdate re-derives that track's
+    // clip every frame and so undoes the preview by itself. It does -- but only the
+    // `clip` POINTER. Everything else the borrow touched stayed: `boundClip` kept the
+    // PREVIEW clip's uid, so the next frame's uid compare rebound the track, and
+    // RebindTrack goes through AnimInstance::SetClip, which resets `time` to 0. So
+    // previewing any clip OTHER than the one the current state plays -- which is the
+    // window's normal case, since its state picker is free -- restarted the playing
+    // clip from zero EVERY FRAME, and re-fired every event near t = 0 with it. The
+    // borrow also cleared `frozen` and overwrote the captured pose behind an in-flight
+    // cross-fade.
+    //
+    // Cost of owning the three pieces instead: one binding build (a name lookup per
+    // channel) and two small vectors, per frame, on an editor-only path that only runs
+    // while someone is dragging. There is still no third ClipTrack on the component --
+    // a shipped game pays nothing for this.
+    const uint32_t clipUID = UIDOf(previewClip);
 
-    m_from.clip = const_cast<ResourceAnimation*>(previewClip);
-    if (UIDOf(m_from.clip) != m_from.boundClip) RebindTrack(m_from);
+    const anim::AnimationBinding binding = anim::CreateBinding(
+        previewClip->clip, clipUID, skeleton->skeleton, m_boundSkeleton);
 
-    if (m_from.boundClip == 0)
-    {
-        m_from.clip = previous;
-        return;
-    }
+    anim::AnimInstance instance;
+    instance.SetClip(&previewClip->clip, clipUID, &binding);
+    instance.Seek(m_previewTime);   // resets the cursor; a scrub jumps freely
 
-    m_from.frozen           = false;
-    m_from.instance.binding = &m_from.binding;
-    m_from.instance.Seek(m_previewTime);   // resets the cursor; a scrub jumps freely
-
-    anim::Sample(m_from.instance, skeleton->skeleton, m_boundSkeleton, m_from.pose);
-    m_blended = m_from.pose;
+    anim::Pose previewPose;
+    anim::Sample(instance, skeleton->skeleton, m_boundSkeleton, previewPose);
 
     // No FireTrackEvents and no ApplyRootMotion here, deliberately -- see SetPreview.
-    if (!anim::BuildGlobals(skeleton->skeleton, m_blended, m_globals) ||
+    // m_blended is left alone as well: its only other reader is the re-trigger fold in
+    // EnterState, which must capture the pose the GRAPH produced, not a scrubbed one.
+    if (!anim::BuildGlobals(skeleton->skeleton, previewPose, m_globals) ||
         !anim::BuildPalette(skeleton->skeleton, m_globals, m_palette))
     {
         m_palette.clear();
     }
-
-    m_from.clip = previous;
-    m_from.instance.Seek(previousTime);
 }
 
 // ---------------------------------------------------------------------------

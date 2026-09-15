@@ -2247,3 +2247,149 @@ TEST_F(t_CAnimator, APreviewExpiresAfterOneUpdate)
 
     EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 0.0f);
 }
+
+// EVERY other preview test previews the clip the current state already plays, which is
+// the one case the old borrow-m_from implementation survived: the uid matched, so it
+// rebound nothing. The timeline's state picker is free, so previewing ANOTHER clip is
+// the window's normal case -- and it left m_from.boundClip holding the PREVIEW clip's
+// uid, so the next frame's uid compare rebound the track and AnimInstance::SetClip
+// reset its time to 0. The playing clip restarted from zero on every frame of a scrub.
+TEST_F(t_CAnimator, PreviewingAnotherClipDoesNotRestartThePlayingOne)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation playing(2);  MakeSlideClip(playing, "Child"); playing.SetName("Walk");
+    ResourceAnimation scrubbed(3); MakeHoldClip(scrubbed, "Child", 4.0f); scrubbed.SetName("Attack");
+
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &playing, &scrubbed });   // default state 0 plays `playing`
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.0f);   // bind
+
+    // Two frames of scrubbing the OTHER clip while the graph's own clip plays.
+    a.SetPreview(&scrubbed, 0.4f);
+    a.OnUpdate(0.25f);
+    a.SetPreview(&scrubbed, 0.4f);
+    a.OnUpdate(0.25f);
+
+    // 0.25 twice, not 0.25 forever.
+    EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.5f);
+
+    // And what the viewport shows is still the scrubbed pose, not the playing one.
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 4.0f);
+}
+
+// The audible half of the same bug, and how it would actually be noticed: a restarted
+// clock re-crosses the start of the clip every frame, so an event authored near t = 0
+// fires once per frame for as long as the scrub lasts.
+TEST_F(t_CAnimator, PreviewingAnotherClipDoesNotReFireThePlayingClipsEvents)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation playing(2);  MakeEventClip(playing, 0.1f); playing.SetName("Walk");
+    ResourceAnimation scrubbed(3); MakeHoldClip(scrubbed, "Child", 0.0f); scrubbed.SetName("Attack");
+
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &playing, &scrubbed });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+    AddRecordingScript(go);
+
+    a.OnUpdate(0.0f);
+    EventRecordingScript::Reset();
+
+    for (int frame = 0; frame < 4; ++frame)
+    {
+        a.SetPreview(&scrubbed, 0.4f);
+        a.OnUpdate(0.25f);   // 4 x 0.25 = 1.0 s of a 2 s clip: the event is crossed once
+    }
+
+    EXPECT_EQ(EventRecordingScript::s_names.size(), 1u);
+}
+
+// A scrub must not damage an in-flight cross-fade either: the borrow cleared `frozen`
+// and overwrote the pose captured by a re-trigger, so the fade's source became a track
+// advancing under it.
+TEST_F(t_CAnimator, PreviewingDuringAnInterruptedFadeLeavesTheFrozenPoseAlone)
+{
+    ResourceSkeleton  rig(1);    MakeTwoBoneRig(rig);
+    ResourceAnimation a0(2);  MakeHoldClip(a0, "Child", 0.0f);  a0.SetName("A");
+    ResourceAnimation a10(3); MakeHoldClip(a10, "Child", 10.0f); a10.SetName("B");
+    ResourceAnimation a20(4); MakeHoldClip(a20, "Child", 20.0f); a20.SetName("C");
+
+    ResourceAnimationController ctrl(901);
+    SetClips(ctrl, { &a0, &a10, &a20 });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.0f);                    // in A (x = 0)
+
+    a.CrossFade("B", 1.0f);
+    a.OnUpdate(0.5f);                    // halfway A -> B: x = 5
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 5.0f);
+
+    a.CrossFade("C", 1.0f);              // folds x = 5 into the frozen outgoing track
+    a.SetPreview(&a20, 0.0f);            // ... and scrub while it runs
+    a.OnUpdate(0.5f);
+
+    a.OnUpdate(0.0f);                    // preview expired; back to the real blend
+
+    // Halfway from the frozen 5 to C's 20. A frozen track whose pose the scrub had
+    // overwritten -- and whose `frozen` flag it had cleared -- reports 10 instead: A
+    // resampled at 0 on the frame after, blended against C.
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 12.5f);
+}
+
+// The other half of the 2026-09-13 QA bug. ACliplessStateIsStillLeftByAnExitTimeEdge
+// covers a SNAP into the unplayable state; every transition authored in the editor has
+// a duration (0.2 s by default) and took the other path, where OnUpdate's fade branch
+// -- gated on the target track having a clip -- never advanced or cleared the fade. The
+// animator stayed "fading" forever, and the exit-time edge then measured the OUTGOING
+// clip's progress rather than the 1.0 a clipless state is supposed to report.
+TEST_F(t_CAnimator, AFadeIntoACliplessStateSnapsRatherThanFadingForever)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation idle(2);  MakeHoldClip(idle, "Child", 0.0f); idle.SetName("Idle");
+
+    ResourceAnimationController ctrl(977);
+    SetClips(ctrl, { &idle, nullptr });
+
+    // The shape ResolveClips produces for a .nanim the user deleted.
+    ctrl.graph.states[1].name      = "Attack";
+    ctrl.graph.states[1].clipIndex = -1;
+
+    // A REAL duration, unlike the snap the earlier test uses.
+    auto& toAttack = AddTransition(ctrl, 0, 1, 0.2f);
+    toAttack.conditions.push_back(
+        { "attack", nous::engine::animation_system::ConditionComparator::TriggerSet, 0.0f });
+
+    auto& backToIdle = AddTransition(ctrl, 1, 0, 0.2f);
+    backToIdle.hasExitTime = true;
+    backToIdle.exitTime    = 0.9f;
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.0f);
+    a.parameters.SetTrigger("attack");
+    a.OnUpdate(0.0f);
+
+    ASSERT_EQ(a.GetCurrentStateName(), "Attack");
+    EXPECT_FALSE(a.IsFading()) << "there is nothing to fade INTO";
+    EXPECT_FALSE(a.IsBound()) << "the state has no clip: bind pose, as on the snap path";
+
+    // And the exit-time edge can still see 1.0, so the state is left rather than held.
+    a.OnUpdate(0.0f);
+    EXPECT_EQ(a.GetCurrentStateName(), "Idle");
+}

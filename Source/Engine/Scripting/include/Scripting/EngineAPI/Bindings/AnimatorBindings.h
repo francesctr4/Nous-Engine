@@ -10,7 +10,10 @@
 // drive any animator in the scene, not only its owner's.
 struct AnimatorAPI
 {
-    // Parameters -- set by scripts, read by the controller graph (MVP-F).
+    // Parameters -- set by scripts, read by the controller graph's transition
+    // conditions. A name the controller does not declare is accepted and never read:
+    // the declared list is in the .nctrl, and the editor's dropdown is where a typo
+    // is meant to be caught.
     void  (*SetFloat)  (uint32_t goId, const char* name, float value) = nullptr;
     float (*GetFloat)  (uint32_t goId, const char* name) = nullptr;   // 0 when unset
     void  (*SetBool)   (uint32_t goId, const char* name, bool value) = nullptr;

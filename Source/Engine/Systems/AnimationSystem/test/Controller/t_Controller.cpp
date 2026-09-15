@@ -55,10 +55,10 @@ TEST(Controller, FloatGreaterIsSatisfiedOnlyAboveTheThreshold)
     anim::AnimParameters params;
 
     params.SetFloat("speed", 0.0f);
-    EXPECT_FALSE(anim::ConditionsSatisfied(g, g.transitions[0], params));
+    EXPECT_FALSE(anim::ConditionsSatisfied(g.transitions[0], params));
 
     params.SetFloat("speed", 0.5f);
-    EXPECT_TRUE(anim::ConditionsSatisfied(g, g.transitions[0], params));
+    EXPECT_TRUE(anim::ConditionsSatisfied(g.transitions[0], params));
 }
 
 TEST(Controller, MultipleConditionsAreAnded)
@@ -77,10 +77,10 @@ TEST(Controller, MultipleConditionsAreAnded)
 
     // One of two satisfied is not enough -- AND, never OR. OR is authored as a
     // second transition between the same pair.
-    EXPECT_FALSE(anim::ConditionsSatisfied(g, g.transitions[0], params));
+    EXPECT_FALSE(anim::ConditionsSatisfied(g.transitions[0], params));
 
     params.SetBool("isGrounded", true);
-    EXPECT_TRUE(anim::ConditionsSatisfied(g, g.transitions[0], params));
+    EXPECT_TRUE(anim::ConditionsSatisfied(g.transitions[0], params));
 }
 
 TEST(Controller, ATransitionWithNoConditionsIsAlwaysSatisfied)
@@ -88,7 +88,7 @@ TEST(Controller, ATransitionWithNoConditionsIsAlwaysSatisfied)
     const anim::ControllerGraph g = TwoStateGraph();
     const anim::AnimParameters params;
 
-    EXPECT_TRUE(anim::ConditionsSatisfied(g, g.transitions[0], params));
+    EXPECT_TRUE(anim::ConditionsSatisfied(g.transitions[0], params));
 }
 
 TEST(Controller, ConditionsSatisfiedDoesNotConsumeATrigger)
@@ -103,13 +103,13 @@ TEST(Controller, ConditionsSatisfiedDoesNotConsumeATrigger)
     anim::AnimParameters params;
     params.SetTrigger("attack");
 
-    EXPECT_TRUE(anim::ConditionsSatisfied(g, g.transitions[0], params));
+    EXPECT_TRUE(anim::ConditionsSatisfied(g.transitions[0], params));
 
     // Still set: consumption happens when a transition FIRES (Task 2), not when a
     // predicate is merely evaluated. A trigger named by three transitions must not
     // be eaten by whichever is checked first.
     EXPECT_TRUE(params.IsTriggerSet("attack"));
-    EXPECT_TRUE(anim::ConditionsSatisfied(g, g.transitions[0], params));
+    EXPECT_TRUE(anim::ConditionsSatisfied(g.transitions[0], params));
 }
 
 TEST(Controller, IsFalseIsSatisfiedByAnAbsentParameter)
@@ -126,10 +126,10 @@ TEST(Controller, IsFalseIsSatisfiedByAnAbsentParameter)
     g.transitions[0].conditions.push_back(notGrounded);
 
     anim::AnimParameters params;
-    EXPECT_TRUE(anim::ConditionsSatisfied(g, g.transitions[0], params));
+    EXPECT_TRUE(anim::ConditionsSatisfied(g.transitions[0], params));
 
     params.SetBool("isGrounded", true);
-    EXPECT_FALSE(anim::ConditionsSatisfied(g, g.transitions[0], params));
+    EXPECT_FALSE(anim::ConditionsSatisfied(g.transitions[0], params));
 }
 
 TEST(Controller, FindStateMatchesByNameAndReportsMissesAsMinusOne)
