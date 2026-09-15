@@ -8,6 +8,7 @@
 #include <Scripting/EngineAPI/Bindings/ScriptBindings.h>
 #include <ECS/Component/Types/CScript/CScript.h>
 
+#include <cstdint>
 #include <fstream>
 #include <sstream>
 #include <filesystem>
@@ -506,7 +507,13 @@ void ScriptManager::UnloadLibrary(void* handle) {
 
 void* ScriptManager::GetSymbol(void* handle, const std::string& symbol) {
 #ifdef _WIN32
-    return GetProcAddress(static_cast<HMODULE>(handle), symbol.c_str());
+    // GetProcAddress returns FARPROC (a function pointer). Converting one to void*
+    // is conditionally-supported, not implicit, so route it through an integer to
+    // keep clang-cl from flagging it as a Microsoft extension. Callers immediately
+    // cast it back to the right function type, so the round-trip is well-defined
+    // on every platform this builds for.
+    return reinterpret_cast<void*>(
+        reinterpret_cast<std::uintptr_t>(GetProcAddress(static_cast<HMODULE>(handle), symbol.c_str())));
 #else
     return dlsym(handle, symbol.c_str());
 #endif

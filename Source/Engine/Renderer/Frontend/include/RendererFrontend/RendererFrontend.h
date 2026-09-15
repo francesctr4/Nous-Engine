@@ -7,6 +7,9 @@
 #include <Renderer/IGPUResourceFactory.h>
 #include <ShaderSystem/ShaderLoader/ShaderLoaderTypes.h>
 #include <EngineCore/EngineExport.h>
+// RendererTypes.h only forward-declares Vertex3D, and mDebugLines holds them BY
+// VALUE -- a vector member needs the complete type at destruction.
+#include <Utils/Math/Vertex.inl>
 
 #include <array>
 #include <atomic>
@@ -88,6 +91,15 @@ public:
 	// Drop dynamic surfaces whose UID was not submitted this frame (player stopped / object
 	// removed). Call once after the per-object SubmitDynamicSurface() loop.
 	NOUS_ENGINE_API void ReconcileDynamicSurfaces();
+
+	// Drop any dynamic surface bound into `material`, restoring the slot texture it overwrote.
+	//
+	// MUST be called while the material is still alive, from the point that actually retires it
+	// (ModuleRenderer3D's pending-release loop). A surface holds a NON-OWNING ResourceMaterial*,
+	// and every other cleanup path here is keyed on frame state -- "is a scene loading", "was
+	// this UID submitted this frame" -- which has no defined ordering against the resource
+	// system's DEFERRED free. That race is what made Reconcile dereference a freed material.
+	NOUS_ENGINE_API void DropDynamicSurfacesForMaterial(const ResourceMaterial* material);
 
 	// Destroy every dynamic surface. Call after ReleaseFrameResources() and BEFORE the owning
 	// materials / scene are torn down (restores each surface's original slot texture first).
@@ -188,6 +200,10 @@ public:
 	// computation in ModuleRenderer3D and the GPU draw calls entirely.
 	bool showBoundingBoxes = true;
 
+	// Toggle the skeleton bone-line overlay drawn for each CAnimator. Same deal:
+	// when false, ModuleRenderer3D skips the CPU build and emits no instances.
+	bool showSkeletons = true;
+
 	// ---------------------------------------------------------------------
 	// Camera Frustums
 	// ---------------------------------------------------------------------
@@ -197,6 +213,20 @@ public:
 	 *        Passing an empty vector disables frustum rendering.
 	 */
 	NOUS_ENGINE_API void SetCameraFrustums(const std::vector<CameraFrustumData>& frustums);
+
+	// ---------------------------------------------------------------------
+	// Debug Lines
+	// ---------------------------------------------------------------------
+	/**
+	 * @brief Sets the world-space line segments drawn in the Scene View each frame
+	 *        (a LINE_LIST: two vertices per segment). REPLACES the previous set,
+	 *        like SetWireframeInstances; passing an empty vector disables the draw.
+	 */
+	NOUS_ENGINE_API void SetDebugLines(const std::vector<Vertex3D>& vertices);
+
+	// Toggle the per-vertex normals overlay. Off by default, unlike the other two:
+	// it is an inspection tool for one selected mesh, not an always-on gizmo.
+	bool showNormals = false;
 
 	// ---------------------------------------------------------------------
 	// Accessors
@@ -245,7 +275,7 @@ private:
 	// Monotonic GPU frame counter — advanced after each successful EndFrame. Previously
 	// lived on the deleted RendererBackend wrapper. mutable so it can tick from const
 	// EndFrame(). Note: it is NOT the instance-SSBO ring index — that is chosen from the
-	// swapchain image index in UploadInstanceMatrices so it can't desync on resize.
+	// swapchain image index in UploadInstanceData so it can't desync on resize.
 	mutable uint64_t mFrameNumber = 0;
 
 	// Cached dependencies — applied to the backend after Create() inside Initialize()
@@ -290,6 +320,9 @@ private:
 
 	// Camera frustums — populated each frame by SetCameraFrustums().
 	std::vector<CameraFrustumData> mCameraFrustums;
+
+	// World-space debug line segments — populated each frame by SetDebugLines().
+	std::vector<Vertex3D> mDebugLines;
 
 };
 

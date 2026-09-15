@@ -12,9 +12,11 @@
 #include <Renderer/iEditorRenderBridge.h>
 
 #include <ECS/Component/Types/CTransform/CTransform.h>
+#include <ECS/Component/Types/CBoneAttachment/CBoneAttachment.h>
 #include <ECS/Component/Types/CMesh/CMesh.h>
 #include <ModuleScene/ModuleScene.h>
 #include <ModuleInput/ModuleInput.h>
+#include <ModuleRenderer3D/SkinningPairing.h>
 #include <ECS/GameObject.h>
 #include <ECS/Scene/Scene.h>
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
@@ -408,13 +410,14 @@ void SceneViewport::DrawGizmo(const ImVec2& viewportPos, const ImVec2& viewportS
 
     if (count == 1)
     {
-        // Single-object path — factor out the parent's world transform to get local matrix.
+        // Single-object path — factor out the effective parent transform to get the
+        // local matrix. ComputeParentWorld is the SAME function Scene::UpdateWorldMatrices
+        // uses, so a bone attachment's drag decomposes into an offset in bone space
+        // rather than into garbage. It returns the plain parent world for an ordinary
+        // object and identity for a root, which is exactly what this used to compute.
         auto parentInverse = glm::mat4(1.0f);
-        if (GameObject parent = selected.GetParent(); parent.IsValid())
-        {
-            if (const CTransform* pt = parent.TryGetComponent<CTransform>())
-                parentInverse = glm::inverse(pt->worldMatrix);
-        }
+        if (Scene* scene = selected.GetScene())
+            parentInverse = glm::inverse(ComputeParentWorld(scene->GetRegistry(), selected.GetEntity()));
 
         const glm::mat4 newLocalMatrix = parentInverse * objectMatrix;
 
@@ -505,10 +508,11 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
                                 0, framebufferHeight - 1);
 
     // Build geometry list (same logic as ModuleRenderer3D::BuildRenderPacket)
-    if (!editorContext->GetScene()->activeScene)
+    Scene* activeScene = editorContext->GetScene()->activeScene;
+    if (!activeScene)
         return;
 
-    const auto gameObjects = editorContext->GetScene()->activeScene->GetGameObjectsSnapshot();
+    const auto gameObjects = activeScene->GetGameObjectsSnapshot();
     std::vector<GeometryRenderData> geometries;
     geometries.reserve(gameObjects.size());
 
@@ -522,8 +526,15 @@ void SceneViewport::HandleMousePicking(const ImVec2& viewportPos, const ImVec2& 
         if (auto const* transform = go.TryGetComponent<CTransform>())
             data.model = transform->worldMatrix;
 
-        if (auto* mesh = go.TryGetComponent<CMesh>())
-            data.geometry = mesh->mesh;
+        auto* mesh = go.TryGetComponent<CMesh>();
+        if (mesh) data.geometry = mesh->mesh;
+
+        // The pick shader skins from this palette, so without it a click tests the
+        // BIND pose of an animating character -- the mesh moves and the clickable
+        // silhouette stays behind. Shared with the scene builder rather than copied:
+        // this list already drifted from BuildRenderPacket once by being a hand-copy.
+        if (mesh && mesh->mesh)
+            ApplySkinningToGeometry(activeScene->GetRegistry(), go.GetEntity(), *mesh->mesh, data);
 
         geometries.emplace_back(data);
     }

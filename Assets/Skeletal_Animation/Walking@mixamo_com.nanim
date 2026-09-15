@@ -1,0 +1,20 @@
+{
+    "source": "Assets\\Skeletal_Animation\\Walking.fbx",
+    "clip": "mixamo.com",
+    "loop": true,
+    "speed": 1,
+    "events": [
+        {
+            "time": 0.3333333432674408,
+            "name": "Footstep",
+            "float": 0,
+            "string": "L"
+        },
+        {
+            "time": 1.0666667222976685,
+            "name": "Footstep",
+            "float": 0,
+            "string": "R"
+        }
+    ]
+}

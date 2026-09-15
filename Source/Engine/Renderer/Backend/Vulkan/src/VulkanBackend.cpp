@@ -4,6 +4,7 @@
 #include <EngineCore/AppConfig.h>
 #include <EngineCore/InvalidID.h>
 #include <EngineCore/Casts.h>
+#include <Renderer/PackPalettes.h>
 #include "VulkanTypes.inl"
 
 #include "Core/Device/VulkanDevice.h"
@@ -307,8 +308,8 @@ bool VulkanBackend::Initialize()
 
     // BuiltIn shaders are loaded via the ResourceManager in ModuleRenderer3D::Awake(),
     // which calls ImporterShader::Load → CreateShader → VulkanBackend::CreateShader.
-    // vkContext->builtInMaterialShader and builtInGameShader are assigned automatically
-    // when the built-in asset path is recognised there.
+    // vkContext->builtInMaterialShader and friends are assigned automatically when the
+    // built-in asset path is recognised there.
 
     // Create Vulkan Buffers
     NOUS_DEBUG_C(CURRENT_CHANNEL, "Creating Vulkan Buffers...");
@@ -350,6 +351,48 @@ bool VulkanBackend::Initialize()
                         &vkContext->instanceSSBOMapped[i]);
         }
         NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Instance SSBOs created (3 × %llu bytes, scene+game split).", (unsigned long long)ssboSize);
+    }
+
+    // ── Palette SSBOs (per-frame, triple-buffered, persistently mapped) ─────────
+    // Same scene/game split as the instance SSBO: scene uses the first half of each,
+    // game the second, so a game-pass upload cannot overwrite scene data the GPU has
+    // not read yet.
+    {
+        const VkDeviceSize baseSize    = 2 * c_maxInstances * sizeof(uint32_t);
+        // Four palette regions, not two: the per-object pick and outline passes pack
+        // their own bases in their own iteration order, so they cannot share the
+        // scene pass's region.
+        const VkDeviceSize paletteSize = c_paletteRegionCount * c_maxSkinnedBones * sizeof(glm::mat4);
+
+        for (uint32_t i = 0; i < 3; ++i)
+        {
+            if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, baseSize,
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    true, &vkContext->paletteBaseSSBO[i]))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[Initialize] Failed to create palette base SSBO %u.", i);
+                return false;
+            }
+            vkMapMemory(vkContext->device.logicalDevice,
+                        vkContext->paletteBaseSSBO[i].memory, 0, baseSize, 0,
+                        &vkContext->paletteBaseSSBOMapped[i]);
+
+            if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, paletteSize,
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    true, &vkContext->paletteSSBO[i]))
+            {
+                NOUS_ERROR_C(CURRENT_CHANNEL, "[Initialize] Failed to create palette SSBO %u.", i);
+                return false;
+            }
+            vkMapMemory(vkContext->device.logicalDevice,
+                        vkContext->paletteSSBO[i].memory, 0, paletteSize, 0,
+                        &vkContext->paletteSSBOMapped[i]);
+        }
+        NOUS_INFO_C(CURRENT_CHANNEL,
+            "[Initialize] Palette SSBOs created (3 × %llu + 3 × %llu bytes, scene+game split).",
+            (unsigned long long)baseSize, (unsigned long long)paletteSize);
     }
 
     if (vkContext->renderMode == RenderMode::GAME)
@@ -616,6 +659,66 @@ bool VulkanBackend::Initialize()
         }
     }
 
+    // ── Create bone shard wireframe vertex buffer ────────────────────────────
+    // Maya's joint display: a tapered four-sided shard running the length of the
+    // bone. A point at the PARENT joint flares out to a square collar a short way
+    // along, then converges to a point at the CHILD joint — which is what makes a
+    // bone's direction readable at a glance, the thing a bare segment cannot do.
+    //
+    // Unit space is origin -> +Y with the collar at unit radius in X/Z. The
+    // instance transform scales Y by the bone's length and X/Z by the rig's marker
+    // radius INDEPENDENTLY, so shard thickness stays constant across the skeleton
+    // instead of making long bones fat. See the builder in ModuleRenderer3D.
+    {
+        constexpr float k_CollarY = 0.12f;   // fraction of bone length
+
+        const glm::vec3 base{ 0.0f, 0.0f, 0.0f };
+        const glm::vec3 tip { 0.0f, 1.0f, 0.0f };
+        const glm::vec3 collar[4] = {
+            {  1.0f, k_CollarY,  0.0f },
+            {  0.0f, k_CollarY,  1.0f },
+            { -1.0f, k_CollarY,  0.0f },
+            {  0.0f, k_CollarY, -1.0f },
+        };
+
+        std::vector<Vertex3D> shardVerts;
+        shardVerts.reserve(24);   // 12 edges × 2 endpoints, LINE_LIST
+
+        const auto edge = [&shardVerts](const glm::vec3& a, const glm::vec3& b)
+        {
+            Vertex3D va{}, vb{};
+            va.position = a;
+            vb.position = b;
+            shardVerts.push_back(va);
+            shardVerts.push_back(vb);
+        };
+
+        for (int i = 0; i < 4; ++i)
+        {
+            edge(base,      collar[i]);              // parent joint -> collar
+            edge(collar[i], tip);                    // collar -> child joint
+            edge(collar[i], collar[(i + 1) % 4]);    // collar ring
+        }
+
+        vkContext->boneShardVertexCount = static_cast<uint32_t>(shardVerts.size());
+        const uint64_t bufSize = shardVerts.size() * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, bufSize,
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->boneShardVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create bone shard vertex buffer.");
+        }
+        else
+        {
+            NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->boneShardVertexBuffer,
+                0, bufSize, 0, shardVerts.data());
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Bone shard vertex buffer created (%u vertices).",
+                vkContext->boneShardVertexCount);
+        }
+    }
+
     // ── Create camera frustum wireframe vertex buffer (dynamic, host-visible) ─
     // Capacity: 8 frustums × 24 vertices (12 edges × 2 endpoints per frustum).
     {
@@ -635,6 +738,26 @@ bool VulkanBackend::Initialize()
             vkContext->frustumVertexCapacity = k_FrustumVertCapacity;
             NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Camera frustum vertex buffer created (capacity %u vertices).",
                 k_FrustumVertCapacity);
+        }
+    }
+
+    // ── Create debug line vertex buffer (dynamic, host-visible) ───────────────
+    // Arbitrary world-space segments, rebuilt per frame — the normals overlay today.
+    {
+        constexpr uint64_t debugLineBufSize = c_maxDebugLineVertices * sizeof(Vertex3D);
+
+        if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, debugLineBufSize,
+            static_cast<VkBufferUsageFlagBits>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true, &vkContext->debugLineVertexBuffer))
+        {
+            NOUS_WARN_C(CURRENT_CHANNEL, "[Initialize] Failed to create debug line vertex buffer.");
+        }
+        else
+        {
+            vkContext->debugLineVertexCapacity = c_maxDebugLineVertices;
+            NOUS_INFO_C(CURRENT_CHANNEL, "[Initialize] Debug line vertex buffer created (capacity %u vertices).",
+                c_maxDebugLineVertices);
         }
     }
 
@@ -667,43 +790,10 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInMaterialShader pointer still set — ResourceManager may not have cleared resources.");
     vkContext->builtInMaterialShader = nullptr;
 
-    // In EDITOR mode, builtInGameShader is a VulkanBackend-owned clone (not in ResourceManager).
-    // In GAME mode, it is ResourceManager-owned and will be released by ClearResources().
-    if (vkContext->renderMode == RenderMode::EDITOR)
-    {
-        if (vkContext->builtInGameShader)
-        {
-            if (vkContext->builtInGameShader->internalData)
-            {
-                vkContext->builtInGameShader->internalData->Destroy();
-                vkContext->builtInGameShader->internalData = nullptr;
-            }
-            NOUS_DELETE(vkContext->builtInGameShader, MemoryTag::RESOURCE_SHADER);
-            vkContext->builtInGameShader = nullptr;
-        }
-
-        if (vkContext->builtInGameBackgroundShader)
-        {
-            if (vkContext->builtInGameBackgroundShader->internalData)
-            {
-                vkContext->builtInGameBackgroundShader->internalData->Destroy();
-                vkContext->builtInGameBackgroundShader->internalData = nullptr;
-            }
-            NOUS_DELETE(vkContext->builtInGameBackgroundShader, MemoryTag::RESOURCE_SHADER);
-            vkContext->builtInGameBackgroundShader = nullptr;
-        }
-    }
-    else
-    {
-        // GAME mode: ResourceManager-owned; guard against unexpected state.
-        if (vkContext->builtInGameShader)
-            NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInGameShader pointer still set — ResourceManager may not have cleared resources.");
-        vkContext->builtInGameShader = nullptr;
-
-        if (vkContext->builtInGameBackgroundShader)
-            NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInGameBackgroundShader pointer still set — ResourceManager may not have cleared resources.");
-        vkContext->builtInGameBackgroundShader = nullptr;
-    }
+    // No backend-owned shader CLONES remain. builtInPickShader is still backend-owned,
+    // but it is a genuinely separate shader (BuiltIn.PickShader.glsl) targeting
+    // pickRenderpass, whose R8G8B8A8_UNORM format makes it render-pass INCOMPATIBLE with
+    // the scene pass -- so its pipeline really cannot be shared.
 
     // builtInPickShader is an internal clone for mouse picking, also owned by VulkanBackend.
     if (vkContext->builtInPickShader)
@@ -728,10 +818,10 @@ void VulkanBackend::Shutdown() noexcept
         NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInGridShader pointer still set — ResourceManager may not have cleared resources.");
     vkContext->builtInGridShader = nullptr;
 
-    // builtInSceneBackgroundShader is ResourceManager-owned.
-    if (vkContext->builtInSceneBackgroundShader)
-        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInSceneBackgroundShader pointer still set — ResourceManager may not have cleared resources.");
-    vkContext->builtInSceneBackgroundShader = nullptr;
+    // builtInBackgroundShader is ResourceManager-owned.
+    if (vkContext->builtInBackgroundShader)
+        NOUS_WARN_C(CURRENT_CHANNEL, "[Shutdown] builtInBackgroundShader pointer still set — ResourceManager may not have cleared resources.");
+    vkContext->builtInBackgroundShader = nullptr;
 
     // Destroy the editor grid vertex buffer (not managed by ResourceManager).
     if (vkContext->gridVertexBuffer.handle != VK_NULL_HANDLE)
@@ -762,6 +852,14 @@ void VulkanBackend::Shutdown() noexcept
         vkContext->frustumVertexCapacity = 0;
     }
 
+    // Destroy the debug line vertex buffer.
+    if (vkContext->debugLineVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->debugLineVertexBuffer);
+        vkContext->debugLineVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->debugLineVertexCapacity = 0;
+    }
+
     // Destroy the point light debug sphere vertex buffer (not managed by ResourceManager).
     if (vkContext->pointLightSphereVertexBuffer.handle != VK_NULL_HANDLE)
     {
@@ -784,7 +882,14 @@ void VulkanBackend::Shutdown() noexcept
         vkContext->spotLightConeVertexCount = 0;
     }
 
-    // Destroy instance SSBOs.
+    if (vkContext->boneShardVertexBuffer.handle != VK_NULL_HANDLE)
+    {
+        NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->boneShardVertexBuffer);
+        vkContext->boneShardVertexBuffer.handle = VK_NULL_HANDLE;
+        vkContext->boneShardVertexCount = 0;
+    }
+
+    // Destroy instance + palette SSBOs.
     for (uint32_t i = 0; i < 3; ++i)
     {
         if (vkContext->instanceSSBO[i].handle != VK_NULL_HANDLE)
@@ -792,6 +897,18 @@ void VulkanBackend::Shutdown() noexcept
             vkUnmapMemory(vkContext->device.logicalDevice, vkContext->instanceSSBO[i].memory);
             vkContext->instanceSSBOMapped[i] = nullptr;
             NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->instanceSSBO[i]);
+        }
+        if (vkContext->paletteBaseSSBO[i].handle != VK_NULL_HANDLE)
+        {
+            vkUnmapMemory(vkContext->device.logicalDevice, vkContext->paletteBaseSSBO[i].memory);
+            vkContext->paletteBaseSSBOMapped[i] = nullptr;
+            NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->paletteBaseSSBO[i]);
+        }
+        if (vkContext->paletteSSBO[i].handle != VK_NULL_HANDLE)
+        {
+            vkUnmapMemory(vkContext->device.logicalDevice, vkContext->paletteSSBO[i].memory);
+            vkContext->paletteSSBOMapped[i] = nullptr;
+            NOUS_VulkanBuffer::DestroyBuffer(vkContext, &vkContext->paletteSSBO[i]);
         }
     }
 
@@ -1165,6 +1282,9 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
         }
     }
 
+    // New pass: every shader's set=0 UBO is stale for it.
+    vkContext->globalUpdateStamp++;
+
     NOUS_VulkanCommandBuffer::CommandBufferReset(commandBuffer);
     NOUS_VulkanCommandBuffer::CommandBufferBegin(commandBuffer, false, false, false);
 
@@ -1207,8 +1327,9 @@ bool VulkanBackend::BeginRenderpass(RenderpassType renderpassID)
 
     switch (renderpassID)
     {
+        // One shader for both viewports -- see the no-clone note in CreateShader.
         case RenderpassType::SCENE: TryBind(vkContext->builtInMaterialShader); break;
-        case RenderpassType::GAME:  TryBind(vkContext->builtInGameShader);     break;
+        case RenderpassType::GAME:  TryBind(vkContext->builtInMaterialShader); break;
         case RenderpassType::UI:    break; // ImGui uses its own imgui_impl_vulkan pipeline
     }
 
@@ -1374,9 +1495,16 @@ bool VulkanBackend::UpdateGlobalWorldState(
 #ifdef _PROFILING
     ZoneScopedN("UpdateGlobalWorldState");
 #endif
-    const ResourceShader* rShader = (renderpassID == RenderpassType::GAME)
-        ? vkContext->builtInGameShader
-        : vkContext->builtInMaterialShader;
+    // Cache before the early-outs: the geometry loop needs this block even in the
+    // frames where the base shader is not ready.
+    const auto passIndex = static_cast<size_t>(renderpassID);
+    if (passIndex < vkContext->passGlobalUBO.size())
+    {
+        vkContext->passGlobalUBO[passIndex]      = globalUBO;
+        vkContext->passGlobalUBOValid[passIndex] = true;
+    }
+
+    const ResourceShader* rShader = vkContext->builtInMaterialShader;
 
     if (!rShader || !rShader->internalData) return false;
 
@@ -1385,7 +1513,14 @@ bool VulkanBackend::UpdateGlobalWorldState(
 
     NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vs);
     NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
-        vkContext->imageIndex, &globalUBO, sizeof(GlobalUBO));
+        renderpassID, vkContext->imageIndex, &globalUBO, sizeof(GlobalUBO));
+
+    // Claim the stamp for the base shader. It has just written -- and bound -- the very
+    // slot the geometry loop is about to reach, with the very block that was cached
+    // above. Without this the loop's first batch would see a stale stamp and update a
+    // set that is already bound in this recording command buffer, which invalidates it
+    // (UNASSIGNED-CoreValidation-DrawState-InvalidCommandBuffer-VkDescriptorSet).
+    vs->lastGlobalStamp = vkContext->globalUpdateStamp;
 
     return true;
 }
@@ -1442,9 +1577,7 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
         return true;
 
     // The base shader owns the instance pool and descriptor state.
-    ResourceShader* baseShader = (renderpassID == RenderpassType::GAME)
-        ? vkContext->builtInGameShader
-        : vkContext->builtInMaterialShader;
+    ResourceShader* baseShader = vkContext->builtInMaterialShader;
 
     if (!baseShader || !baseShader->internalData) return false;
 
@@ -1677,24 +1810,54 @@ bool VulkanBackend::DrawGeometry(RenderpassType renderpassID, const GeometryRend
     return true;
 }
 
-void VulkanBackend::UploadInstanceMatrices(const glm::mat4* matrices,
-                                            uint32_t count,
-                                            uint32_t instanceOffset)
+void VulkanBackend::UploadInstanceData(const glm::mat4* matrices,
+                                        const uint32_t*  paletteBases,
+                                        uint32_t         count,
+                                        uint32_t         instanceOffset,
+                                        const glm::mat4* palettes,
+                                        uint32_t         boneCount,
+                                        uint32_t         paletteOffset)
 {
-    if (count == 0 || !matrices) return;
-    const uint32_t capacity  = 2 * c_maxInstances;
-    const uint32_t safeCount = nous::engine::renderer::vulkan::ClampInstanceWriteCount(
-            count, instanceOffset, capacity);
-    if (safeCount == 0) return;
-
-    // Select the SSBO ring slot by swapchain image index, matching the static binding
-    // globalDescriptorSets[i] -> instanceSSBO[i % 3] (WriteInstanceSSBODescriptor). This makes
+    // Select the ring slot by swapchain image index, matching the static binding
+    // GlobalSlot(vs, pass, image) -> ...SSBO[image % 3] (WriteGlobalStorageDescriptors, which
+    // walks pass x image explicitly so the ring follows the IMAGE, not the flat slot). This makes
     // the buffer the draw reads identical to the one we write — unlike indexing by a CPU frame
     // counter, which desyncs from imageIndex after a swapchain recreate (currentFrame resets to 0
     // while the frame counter keeps advancing) and made meshes read stale matrices post-resize.
     const uint32_t slot = nous::engine::renderer::vulkan::ChooseInstanceSSBOSlot(vkContext->imageIndex);
-    auto* base = static_cast<glm::mat4*>(vkContext->instanceSSBOMapped[slot]);
-    std::memcpy(base + instanceOffset, matrices, safeCount * sizeof(glm::mat4));
+
+    if (count > 0 && matrices)
+    {
+        const uint32_t capacity  = 2 * c_maxInstances;
+        const uint32_t safeCount = nous::engine::renderer::vulkan::ClampInstanceWriteCount(
+                count, instanceOffset, capacity);
+        if (safeCount > 0)
+        {
+            auto* base = static_cast<glm::mat4*>(vkContext->instanceSSBOMapped[slot]);
+            std::memcpy(base + instanceOffset, matrices, safeCount * sizeof(glm::mat4));
+
+            // Bases are parallel to the matrices, so they share safeCount by
+            // construction — an instance whose matrix was clamped away must not
+            // keep a palette base pointing at live bone data.
+            if (paletteBases)
+            {
+                auto* bases = static_cast<uint32_t*>(vkContext->paletteBaseSSBOMapped[slot]);
+                std::memcpy(bases + instanceOffset, paletteBases, safeCount * sizeof(uint32_t));
+            }
+        }
+    }
+
+    if (boneCount > 0 && palettes)
+    {
+        const uint32_t paletteCapacity = c_paletteRegionCount * c_maxSkinnedBones;
+        const uint32_t safeBones = nous::engine::renderer::vulkan::ClampInstanceWriteCount(
+                boneCount, paletteOffset, paletteCapacity);
+        if (safeBones > 0)
+        {
+            auto* bones = static_cast<glm::mat4*>(vkContext->paletteSSBOMapped[slot]);
+            std::memcpy(bones + paletteOffset, palettes, safeBones * sizeof(glm::mat4));
+        }
+    }
 }
 
 bool VulkanBackend::DrawGeometryBatched(RenderpassType renderpassID,
@@ -1707,9 +1870,7 @@ bool VulkanBackend::DrawGeometryBatched(RenderpassType renderpassID,
         return true;
 
     // The base shader owns the instance pool and global descriptor sets.
-    ResourceShader* baseShader = (renderpassID == RenderpassType::GAME)
-        ? vkContext->builtInGameShader
-        : vkContext->builtInMaterialShader;
+    ResourceShader* baseShader = vkContext->builtInMaterialShader;
 
     if (!baseShader || !baseShader->internalData) return false;
 
@@ -1730,6 +1891,50 @@ bool VulkanBackend::DrawGeometryBatched(RenderpassType renderpassID,
 
     // Bind pipeline.
     NOUS_VulkanShader::BindPipeline(commandBuffer->handle, vsDraw);
+
+    // Each shader binds its OWN set=0, with its OWN pipeline layout. This is what makes
+    // a custom shader's set=0 layout its own business: it used to inherit whatever
+    // UpdateGlobalWorldState left bound, which is only valid while the layouts are
+    // identical -- and no custom shader matches MaterialShader's four bindings.
+    const auto     passIndex  = static_cast<size_t>(renderpassID);
+    const uint32_t globalSlot = NOUS_VulkanShader::GlobalSlot(
+        vsDraw, renderpassID, vkContext->imageIndex);
+
+    bool globalBound = false;
+
+    if (vsDraw->lastGlobalStamp != vkContext->globalUpdateStamp &&
+        passIndex < vkContext->passGlobalUBO.size() &&
+        vkContext->passGlobalUBOValid[passIndex])
+    {
+        // First draw with this shader in this pass: write the UBO (which also binds).
+        // Re-updating a set already bound in a recording command buffer invalidates
+        // the buffer, so this happens once per shader per pass and never per draw.
+        NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vsDraw,
+            renderpassID, vkContext->imageIndex,
+            &vkContext->passGlobalUBO[passIndex], sizeof(GlobalUBO));
+        vsDraw->lastGlobalStamp = vkContext->globalUpdateStamp;
+        globalBound = true;
+    }
+
+    // NOT an `else`: the branch above is also skipped when the pass has no cached UBO
+    // yet, and in that case set 0 still has to be bound or this draw reads whatever the
+    // previous shader left there. Rebinding per draw is required anyway -- another
+    // shader's draw in between replaces set 0.
+    if (!globalBound && globalSlot < vsDraw->globalDescriptorSets.size())
+    {
+        vkCmdBindDescriptorSets(commandBuffer->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vsDraw->pipeline.pipelineLayout, 0, 1,
+            &vsDraw->globalDescriptorSets[globalSlot], 0, nullptr);
+    }
+
+    if (batch.hasSkinnedInstances && !vsDraw->supportsSkinning && !vsDraw->warnedMissingSkinning)
+    {
+        vsDraw->warnedMissingSkinning = true;
+        NOUS_WARN_C(CURRENT_CHANNEL,
+            "[DrawGeometryBatched] Shader '%s' is drawing a skinned mesh but declares no bone "
+            "palette (set=0 bindings 2 and 3); the mesh renders in bind pose.",
+            drawShader->GetAssetsPath().c_str());
+    }
 
     // Resolve material (same fallback logic as DrawGeometry).
     ResourceMaterial* material = batch.material;
@@ -2068,9 +2273,7 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
             poolOwner = material->shader;
     }
     if (!poolOwner)
-        poolOwner = vkContext->builtInMaterialShader
-                    ? vkContext->builtInMaterialShader
-                    : vkContext->builtInGameShader;
+        poolOwner = vkContext->builtInMaterialShader;
 
     if (!poolOwner || !poolOwner->internalData)
     {
@@ -2088,16 +2291,10 @@ bool VulkanBackend::CreateMaterial(ResourceMaterial* material)
     material->internalID      = instanceID;
     material->poolOwnerShader = poolOwner;
 
-    // In EDITOR mode, also acquire a matching slot in the game shader clone so both
-    // pools stay in sync — but only for materials using the built-in shader.
-    // Custom-shader materials are drawn directly from their own pool in both renderpasses.
-    if (poolOwner == vkContext->builtInMaterialShader
-        && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
-    {
-        auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
-        uint32_t gameID = 0;
-        NOUS_VulkanShader::AcquireInstanceSlot(vkContext, vsGame, &gameID);
-    }
+    // ONE instance slot, serving both viewports -- exactly how custom-shader materials
+    // have always worked. The built-in path used to mirror the slot into the game
+    // clone's pool and trust the two pools to hand back the SAME index, which nothing
+    // enforced; deleting the clone deletes that assumption with it.
 
     NOUS_INFO_C(CURRENT_CHANNEL, "Material created (instance %u, pool: %s).",
                 material->internalID, poolOwner->GetName().c_str());
@@ -2126,15 +2323,6 @@ void VulkanBackend::DestroyMaterial(ResourceMaterial* material) noexcept
     {
         auto* vs = down_cast<VulkanShader*>(material->poolOwnerShader->internalData);
         NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vs, material->internalID);
-    }
-
-    // Release game clone slot only for built-in shader materials (custom shaders share
-    // one pool between scene and game renderpasses — no clone slot to release).
-    if (material->poolOwnerShader == vkContext->builtInMaterialShader
-        && vkContext->builtInGameShader && vkContext->builtInGameShader->internalData)
-    {
-        auto* vsGame = down_cast<VulkanShader*>(vkContext->builtInGameShader->internalData);
-        NOUS_VulkanShader::ReleaseInstanceSlot(vkContext, vsGame, material->internalID);
     }
 
     material->internalID      = INVALID_ID;
@@ -2290,50 +2478,134 @@ void VulkanBackend::DestroyGeometry(ResourceMesh* geometry) noexcept
 // ─────────────────────────────── Shaders ─────────────────────────────────
 
 // Returns true if this shader declares the per-frame instance SSBO at set=0 binding=1.
-static bool HasGlobalSSBOBinding(const ResourceShader* shader)
+// True when set=0 declares a storage buffer at `binding`. Per-binding rather than a
+// single "has the SSBO" flag because scenery shaders declare only a subset — and
+// writing a descriptor for a binding a shader does not have is a validation error.
+static bool HasGlobalStorageBinding(const ResourceShader* shader, uint32_t binding)
 {
     auto it = shader->reflection.descriptorSets.find(0);
     if (it == shader->reflection.descriptorSets.end()) return false;
     for (const auto& rb : it->second)
-        if (rb.binding == 1 && rb.type == DescriptorType::StorageBuffer)
+        if (rb.binding == binding && rb.type == DescriptorType::StorageBuffer)
             return true;
     return false;
 }
 
-// Writes the per-frame instance SSBO into set=0 binding=1 of every global descriptor set owned by vs.
+// Writes the three per-frame storage buffers into set=0 of every global descriptor
+// set owned by vs: binding 1 = instance matrices, 2 = per-instance palette bases,
+// 3 = bone palettes. Each is written only if the caller found it in reflection.
+//
 // Must be called after AllocateGlobalResources (which creates globalDescriptorSets)
-// AND after the instanceSSBO buffers are created.
-static void WriteInstanceSSBODescriptor(VulkanContext* vkContext, VulkanShader* vs)
+// AND after the SSBO buffers are created.
+static void WriteGlobalStorageDescriptors(VulkanContext* vkContext, VulkanShader* vs,
+                                          bool hasInstances, bool hasBases, bool hasPalette)
 {
-    const VkDeviceSize ssboSize = 2 * c_maxInstances * sizeof(glm::mat4);
-    const VkDevice     dev      = vkContext->device.logicalDevice;
-    const uint32_t     count    = static_cast<uint32_t>(vs->globalDescriptorSets.size());
+    const VkDeviceSize instanceSize = 2 * c_maxInstances * sizeof(glm::mat4);
+    const VkDeviceSize baseSize     = 2 * c_maxInstances * sizeof(uint32_t);
+    const VkDeviceSize paletteSize  = c_paletteRegionCount * c_maxSkinnedBones * sizeof(glm::mat4);
 
-    for (uint32_t i = 0; i < count; ++i)
+    const VkDevice dev = vkContext->device.logicalDevice;
+
+    for (uint32_t pass = 0; pass < c_renderpassCount; ++pass)
     {
-        VkDescriptorBufferInfo bufInfo{};
-        bufInfo.buffer = vkContext->instanceSSBO[i % 3].handle;
-        bufInfo.offset = 0;
-        bufInfo.range  = ssboSize;
+        for (uint32_t image = 0; image < vs->globalImageCount; ++image)
+        {
+            const uint32_t slot = NOUS_VulkanShader::GlobalSlot(
+                vs, static_cast<RenderpassType>(pass), image);
+            if (slot >= vs->globalDescriptorSets.size()) continue;
 
-        VkWriteDescriptorSet write{};
-        write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet          = vs->globalDescriptorSets[i];
-        write.dstBinding      = 1;
-        write.dstArrayElement = 0;
-        write.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        write.descriptorCount = 1;
-        write.pBufferInfo     = &bufInfo;
+            VkDescriptorBufferInfo infos[3]{};
+            VkWriteDescriptorSet   writes[3]{};
+            uint32_t               n = 0;
 
-        vkUpdateDescriptorSets(dev, 1, &write, 0, nullptr);
+            const auto push = [&](uint32_t binding, VkBuffer buffer, VkDeviceSize range)
+            {
+                infos[n].buffer = buffer;
+                infos[n].offset = 0;
+                infos[n].range  = range;
+
+                writes[n].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writes[n].dstSet          = vs->globalDescriptorSets[slot];
+                writes[n].dstBinding      = binding;
+                writes[n].dstArrayElement = 0;
+                writes[n].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                writes[n].descriptorCount = 1;
+                writes[n].pBufferInfo     = &infos[n];
+                ++n;
+            };
+
+            // The ring slot follows the IMAGE, never the flat slot: the SSBOs are a
+            // 3-deep per-frame ring shared by all passes, exactly as UploadInstanceData
+            // writes them (ChooseInstanceSSBOSlot(imageIndex)).
+            const uint32_t ring = image % 3;
+
+            if (hasInstances) push(1, vkContext->instanceSSBO[ring].handle,    instanceSize);
+            if (hasBases)     push(2, vkContext->paletteBaseSSBO[ring].handle, baseSize);
+            if (hasPalette)   push(3, vkContext->paletteSSBO[ring].handle,     paletteSize);
+
+            if (n > 0)
+                vkUpdateDescriptorSets(dev, n, writes, 0, nullptr);
+        }
     }
 }
 
-// Convenience: checks reflection for SSBO binding then writes if present.
-static void TryWriteInstanceSSBODescriptor(VulkanContext* vkContext, ResourceShader* shader)
+// Convenience: checks reflection per binding, then writes whatever is present.
+static void TryWriteGlobalStorageDescriptors(VulkanContext* vkContext, ResourceShader* shader)
 {
-    if (!shader || !shader->internalData || !HasGlobalSSBOBinding(shader)) return;
-    WriteInstanceSSBODescriptor(vkContext, down_cast<VulkanShader*>(shader->internalData));
+    if (!shader || !shader->internalData) return;
+
+    const bool hasInstances = HasGlobalStorageBinding(shader, 1);
+    const bool hasBases     = HasGlobalStorageBinding(shader, 2);
+    const bool hasPalette   = HasGlobalStorageBinding(shader, 3);
+
+    auto* vs = down_cast<VulkanShader*>(shader->internalData);
+
+    // Recorded even when nothing is written, so a shader declaring no storage bindings
+    // at all still reports supportsSkinning == false rather than keeping a stale value
+    // from before a hot-reload.
+    vs->supportsSkinning      = hasPalette;
+    vs->warnedMissingSkinning = false;
+
+    if (!hasInstances && !hasBases && !hasPalette) return;
+
+    WriteGlobalStorageDescriptors(vkContext, vs, hasInstances, hasBases, hasPalette);
+}
+
+// The ONE place a built-in shader's pipeline settings are declared.
+//
+// CreateShader and ReloadShader each dispatch on the same name substrings, and they used
+// to carry their OWN copy of the VulkanShaderCreateInfo. A mismatch between the two does
+// not fail -- the reload simply builds a lesser shader, with no error and no log.
+// BuiltIn.BoundingBoxShader's reload branch had silently lost createNoDepthVariant, which
+// turned the skeleton debug draw's draw-through off: BindNoDepthPipeline falls back to the
+// depth-tested pipeline, so the rig just started rendering inside the character mesh after
+// any Ctrl+R. Both paths now resolve through this table, so the two cannot disagree.
+//
+// The names are not prefixes of one another, so match order is irrelevant.
+struct BuiltInShaderSettings
+{
+    const char*            nameFragment;
+    VulkanShaderCreateInfo createInfo;
+};
+
+static constexpr BuiltInShaderSettings k_builtInShaderSettings[] = {
+    { "BuiltIn.MaterialShader",    {} },
+    { "BuiltIn.PickShader",        { .disableBlending        = true } },
+    { "BuiltIn.OutlineShader",     { .createOutlinePipelines = true } },
+    { "BuiltIn.GridShader",        { .useLineTopology        = true } },
+    { "BuiltIn.BackgroundShader",  { .noDepthTest            = true } },
+    { "BuiltIn.BoundingBoxShader", { .useLineTopology        = true,
+                                     .createNoDepthVariant   = true } },
+};
+
+// Defaults for a user shader, which declares no special pipeline state.
+[[nodiscard]] static VulkanShaderCreateInfo BuiltInSettingsFor(const std::string& assetPath)
+{
+    for (const auto& entry : k_builtInShaderSettings)
+        if (assetPath.find(entry.nameFragment) != std::string::npos)
+            return entry.createInfo;
+
+    return {};
 }
 
 bool VulkanBackend::CreateShader(ResourceShader* shader)
@@ -2343,50 +2615,35 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
 
     const std::string assetPath = shader->GetAssetsPath();
 
-    // ── BuiltIn.MaterialShader → scene renderpass (primary) ───────────────────
-    //    Also creates an internal clone for the game renderpass so both viewports
-    //    have independent global UBO buffers and descriptor sets.
+    // Pipeline settings come from k_builtInShaderSettings, never from a literal here --
+    // see the table's comment for what a divergence between create and reload costs.
+    const VulkanShaderCreateInfo settings = BuiltInSettingsFor(assetPath);
+
+    // ── BuiltIn.MaterialShader → ONE shader, drawn in both viewports ──────────
+    //    There is no game-renderpass clone. It existed to give the game viewport its
+    //    own set=0 UBO + descriptor sets, which global resources being per (renderpass,
+    //    image) now provides on a single shader. Its second job -- a pipeline built
+    //    against gameRenderpass -- was never needed either: the scene and game
+    //    renderpasses are created with identical attachment formats and load ops, so
+    //    they are render-pass COMPATIBLE and one pipeline is valid in both.
+    //
+    //    Do NOT reintroduce the clone. If the two renderpasses ever diverge
+    //    structurally, the fix is a second pipeline on this shader (as the outline and
+    //    no-depth variants already are), not a second ResourceShader.
     if (assetPath.find("BuiltIn.MaterialShader") != std::string::npos)
     {
-        VulkanRenderpass* gameRenderpassTarget = vkContext->renderMode == RenderMode::GAME
+        // GAME mode has no sceneRenderpass; compile against the swapchain instead.
+        VulkanRenderpass* target = vkContext->renderMode == RenderMode::GAME
             ? &vkContext->gameSwapchainRenderpass
-            : &vkContext->gameRenderpass;
+            : &vkContext->sceneRenderpass;
 
-        if (vkContext->renderMode == RenderMode::GAME)
-        {
-            // GAME mode: compile directly against swapchain renderpass; no scene clone needed.
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader))
-                return false;
-            vkContext->builtInGameShader = shader;
-            TryWriteInstanceSSBODescriptor(vkContext, shader);
-            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to gameSwapchainRenderpass (GAME mode).");
-        }
-        else
-        {
-            // EDITOR mode: primary → sceneRenderpass, clone → gameRenderpass.
-            if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader))
-                return false;
-            vkContext->builtInMaterialShader = shader;
-            TryWriteInstanceSSBODescriptor(vkContext, shader);
-            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to sceneRenderpass.");
+        if (!NOUS_VulkanShader::Create(vkContext, target, shader, settings))
+            return false;
 
-            auto* gameShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
-            gameShader->stagesData = shader->stagesData;
-            gameShader->reflection = shader->reflection;
-
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, gameShader))
-            {
-                NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create game-renderpass variant; game viewport will be unavailable.");
-                NOUS_DELETE(gameShader, MemoryTag::RESOURCE_SHADER);
-            }
-            else
-            {
-                vkContext->builtInGameShader = gameShader;
-                TryWriteInstanceSSBODescriptor(vkContext, gameShader);
-                NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader clone assigned to gameRenderpass.");
-            }
-        }
-
+        vkContext->builtInMaterialShader = shader;
+        TryWriteGlobalStorageDescriptors(vkContext, shader);
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.MaterialShader assigned to %s.",
+                    vkContext->renderMode == RenderMode::GAME ? "gameSwapchainRenderpass" : "sceneRenderpass");
         return true;
     }
 
@@ -2398,7 +2655,7 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         pickShader->stagesData = shader->stagesData;
         pickShader->reflection = shader->reflection;
 
-        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->pickRenderpass, pickShader, {.disableBlending = true}))
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->pickRenderpass, pickShader, settings))
         {
             NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create BuiltIn.PickShader.");
             NOUS_DELETE(pickShader, MemoryTag::RESOURCE_SHADER);
@@ -2406,6 +2663,12 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
         }
 
         vkContext->builtInPickShader = pickShader;
+
+        // The pick shader now declares set=0 binding 3. Without this the layout entry
+        // exists (reflection builds it) but the descriptor is never written, so the
+        // draw reads an unbound buffer.
+        TryWriteGlobalStorageDescriptors(vkContext, pickShader);
+
         NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.PickShader assigned to pickRenderpass.");
         return true;
     }
@@ -2414,10 +2677,13 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     //    The outline effect is an editor-only feature; no game renderpass clone needed.
     if (assetPath.find("BuiltIn.OutlineShader") != std::string::npos)
     {
-        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
-                                        {.createOutlinePipelines = true}))
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
             return false;
         vkContext->builtInOutlineShader = shader;
+
+        // The outline shader now declares set=0 binding 3 for the bone palette.
+        TryWriteGlobalStorageDescriptors(vkContext, shader);
+
         NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.OutlineShader assigned to sceneRenderpass.");
         return true;
     }
@@ -2426,57 +2692,30 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     //    Uses LINE_LIST topology. No game renderpass clone needed.
     if (assetPath.find("BuiltIn.GridShader") != std::string::npos)
     {
-        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
-                                        {.useLineTopology = true}))
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
             return false;
         vkContext->builtInGridShader = shader;
         NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.GridShader assigned to sceneRenderpass (LINE_LIST).");
         return true;
     }
 
-    // ── BuiltIn.BackgroundShader → scene + game renderpass (viewport background) ─
-    //    Fullscreen gradient with depth test OFF. Also creates a game renderpass clone.
+    // ── BuiltIn.BackgroundShader → ONE shader, drawn in both viewports ────────
+    //    Fullscreen gradient with depth test OFF. No game clone: this shader declares
+    //    NO descriptor sets at all (a push constant and nothing else), so it never had
+    //    even the set=0 reason the material clone had -- only a pipeline built against
+    //    gameRenderpass, and the scene and game renderpasses are compatible.
     if (assetPath.find("BuiltIn.BackgroundShader") != std::string::npos)
     {
-        VulkanRenderpass* gameRenderpassTarget = vkContext->renderMode == RenderMode::GAME
+        VulkanRenderpass* target = vkContext->renderMode == RenderMode::GAME
             ? &vkContext->gameSwapchainRenderpass
-            : &vkContext->gameRenderpass;
+            : &vkContext->sceneRenderpass;
 
-        if (vkContext->renderMode == RenderMode::GAME)
-        {
-            // GAME mode: compile directly against swapchain renderpass; no scene clone needed.
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, shader,
-                                            {.noDepthTest = true}))
-                return false;
-            vkContext->builtInGameBackgroundShader = shader;
-            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader assigned to gameSwapchainRenderpass (GAME mode).");
-        }
-        else
-        {
-            // EDITOR mode: primary → sceneRenderpass, clone → gameRenderpass.
-            if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
-                                            {.noDepthTest = true}))
-                return false;
-            vkContext->builtInSceneBackgroundShader = shader;
-            NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader assigned to sceneRenderpass.");
+        if (!NOUS_VulkanShader::Create(vkContext, target, shader, settings))
+            return false;
 
-            auto* gameBackgroundShader = NOUS_NEW<ResourceShader>(MemoryTag::RESOURCE_SHADER);
-            gameBackgroundShader->stagesData = shader->stagesData;
-            gameBackgroundShader->reflection = shader->reflection;
-
-            if (!NOUS_VulkanShader::Create(vkContext, gameRenderpassTarget, gameBackgroundShader,
-                                            {.noDepthTest = true}))
-            {
-                NOUS_WARN_C(CURRENT_CHANNEL, "[CreateShader] Failed to create game-renderpass background variant.");
-                NOUS_DELETE(gameBackgroundShader, MemoryTag::RESOURCE_SHADER);
-            }
-            else
-            {
-                vkContext->builtInGameBackgroundShader = gameBackgroundShader;
-                NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader clone assigned to gameRenderpass.");
-            }
-        }
-
+        vkContext->builtInBackgroundShader = shader;
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BackgroundShader assigned to %s.",
+                    vkContext->renderMode == RenderMode::GAME ? "gameSwapchainRenderpass" : "sceneRenderpass");
         return true;
     }
 
@@ -2484,11 +2723,14 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     //    Uses LINE_LIST topology. Scene viewport only; no game renderpass clone needed.
     if (assetPath.find("BuiltIn.BoundingBoxShader") != std::string::npos)
     {
-        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader,
-                                        {.useLineTopology = true}))
+        // createNoDepthVariant builds a second, depth-off pipeline on the same shader.
+        // The whole wireframe debug family shares this shader, and the skeleton
+        // channels (Line, Joint) draw through the character mesh while bounding boxes
+        // and light gizmos stay correctly occluded — see DrawWireframeMeshInstances.
+        if (!NOUS_VulkanShader::Create(vkContext, &vkContext->sceneRenderpass, shader, settings))
             return false;
         vkContext->builtInBoundingBoxShader = shader;
-        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BoundingBoxShader assigned to sceneRenderpass (LINE_LIST).");
+        NOUS_INFO_C(CURRENT_CHANNEL, "[CreateShader] BuiltIn.BoundingBoxShader assigned to sceneRenderpass (LINE_LIST, +no-depth variant).");
         return true;
     }
 
@@ -2497,9 +2739,9 @@ bool VulkanBackend::CreateShader(ResourceShader* shader)
     VulkanRenderpass* targetRenderpass = vkContext->renderMode == RenderMode::GAME
         ? &vkContext->gameSwapchainRenderpass
         : &vkContext->sceneRenderpass;
-    if (!NOUS_VulkanShader::Create(vkContext, targetRenderpass, shader))
+    if (!NOUS_VulkanShader::Create(vkContext, targetRenderpass, shader, settings))
         return false;
-    TryWriteInstanceSSBODescriptor(vkContext, shader);
+    TryWriteGlobalStorageDescriptors(vkContext, shader);
     return true;
 }
 
@@ -2512,11 +2754,9 @@ void VulkanBackend::DestroyShader(ResourceShader* shader) noexcept
     if (shader == vkContext->builtInMaterialShader)         vkContext->builtInMaterialShader         = nullptr;
     if (shader == vkContext->builtInOutlineShader)          vkContext->builtInOutlineShader           = nullptr;
     if (shader == vkContext->builtInGridShader)             vkContext->builtInGridShader              = nullptr;
-    if (shader == vkContext->builtInSceneBackgroundShader)  vkContext->builtInSceneBackgroundShader   = nullptr;
+    if (shader == vkContext->builtInBackgroundShader)  vkContext->builtInBackgroundShader   = nullptr;
     if (shader == vkContext->builtInBoundingBoxShader)      vkContext->builtInBoundingBoxShader       = nullptr;
     // In GAME mode these are ResourceManager-owned and point directly to the shader being destroyed.
-    if (shader == vkContext->builtInGameShader)             vkContext->builtInGameShader             = nullptr;
-    if (shader == vkContext->builtInGameBackgroundShader)   vkContext->builtInGameBackgroundShader   = nullptr;
 
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
@@ -2560,14 +2800,21 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
 
     const std::string& assetPath = shader->GetAssetsPath();
 
+    // Same table CreateShader reads. Resolving here rather than writing a literal per
+    // branch is what makes a create/reload divergence impossible.
+    const VulkanShaderCreateInfo settings = BuiltInSettingsFor(assetPath);
+
     // ── GPU drain ─────────────────────────────────────────────────────────────
     // Called once here; covers all destroy/create work below.
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
     // Helper: destroys existing GPU data on `s` (if any) and recreates it.
     // GPU is already idle — vkDeviceWaitIdle was called above.
+    // No default argument for createInfo, deliberately: an omitted one silently built a
+    // lesser shader, which is exactly how BoundingBoxShader lost its no-depth variant.
+    // Every caller now names it, so forgetting is a compile error.
     auto recreate = [&](ResourceShader* s, VulkanRenderpass* rp,
-                        const VulkanShaderCreateInfo& settings = {}) -> bool
+                        const VulkanShaderCreateInfo& createInfo) -> bool
     {
         if (s->internalData)
         {
@@ -2575,7 +2822,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             NOUS_VulkanShader::Destroy(vkContext, oldVS);
             s->internalData = nullptr;
         }
-        return NOUS_VulkanShader::Create(vkContext, rp, s, settings);
+        return NOUS_VulkanShader::Create(vkContext, rp, s, createInfo);
     };
 
     // Helper: re-acquires descriptor-set instance slots for every loaded material.
@@ -2584,12 +2831,27 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     auto reacquireMaterialInstances = [&]
     {
         if (!vkContext->resourceManager) return;
-        vkContext->resourceManager->ForEachMaterial([this](ResourceMaterial* mat)
+
+        const auto reacquire = [this](ResourceMaterial* mat)
         {
+            if (!mat) return;
             mat->internalID      = INVALID_ID;  // bypass the "already acquired" guard
             mat->poolOwnerShader = nullptr;      // let CreateMaterial re-derive the pool owner
             CreateMaterial(mat);
-        });
+        };
+
+        // The default material FIRST, and explicitly: it is a standalone BuiltinResources
+        // object that was never inserted into the resource table, so ForEachMaterial (which
+        // walks a table snapshot) cannot see it. Missing it does not merely leave it
+        // unrendered -- it keeps a slot index from the DESTROYED pool, which the loop below
+        // then hands to a real material, so the two alias one VkDescriptorSet. Both draw in
+        // the same command buffer, the second one's write invalidates the first one's bind
+        // (UNASSIGNED-CoreValidation-DrawState-InvalidCommandBuffer-VkDescriptorSet), and the
+        // visible result is a mesh wearing another object's material. It only surfaces once
+        // something draws with the fallback -- i.e. the frame a new mesh is dropped in.
+        reacquire(vkContext->resourceManager->GetDefaultMaterial());
+
+        vkContext->resourceManager->ForEachMaterial(reacquire);
     };
 
     // ── Recreate GPU resources (mirrors CreateShader path selection) ──────────
@@ -2599,36 +2861,24 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     {
         if (vkContext->renderMode == RenderMode::GAME)
         {
-            if (!recreate(shader, &vkContext->gameSwapchainRenderpass))
+            if (!recreate(shader, &vkContext->gameSwapchainRenderpass, settings))
             {
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (GAME mode).");
                 return false;
             }
-            TryWriteInstanceSSBODescriptor(vkContext, shader);
+            TryWriteGlobalStorageDescriptors(vkContext, shader);
             reacquireMaterialInstances();
             NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] MaterialShader reloaded (GAME mode, gen=%u).", shader->generation);
             return true;
         }
 
         // EDITOR mode: primary on sceneRenderpass.
-        if (!recreate(shader, &vkContext->sceneRenderpass))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader (scene).");
             return false;
         }
-        TryWriteInstanceSSBODescriptor(vkContext, shader);
-
-        // Game clone on gameRenderpass.
-        if (vkContext->builtInGameShader)
-        {
-            vkContext->builtInGameShader->stagesData = shader->stagesData;
-            vkContext->builtInGameShader->reflection = shader->reflection;
-            vkContext->builtInGameShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInGameShader, &vkContext->gameRenderpass))
-                NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate MaterialShader game clone.");
-            else
-                TryWriteInstanceSSBODescriptor(vkContext, vkContext->builtInGameShader);
-        }
+        TryWriteGlobalStorageDescriptors(vkContext, shader);
 
         // NOTE: builtInPickShader is NOT updated here. It is a separate independent shader
         // (BuiltIn.PickShader.glsl) that outputs object IDs for mouse picking — it is NOT
@@ -2651,11 +2901,16 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
             vkContext->builtInPickShader->stagesData = shader->stagesData;
             vkContext->builtInPickShader->reflection = shader->reflection;
             vkContext->builtInPickShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInPickShader, &vkContext->pickRenderpass, {.disableBlending = true}))
+            if (!recreate(vkContext->builtInPickShader, &vkContext->pickRenderpass, settings))
             {
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate PickShader.");
                 return false;
             }
+
+            // Reload destroyed and rebuilt the descriptor pool, so the create-time
+            // write is gone with it — the palette binding must be written again or
+            // picking reads an unbound buffer after the first shader edit.
+            TryWriteGlobalStorageDescriptors(vkContext, vkContext->builtInPickShader);
         }
         NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] PickShader reloaded.");
         return true;
@@ -2664,11 +2919,16 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     // ── BuiltIn.OutlineShader ─────────────────────────────────────────────────
     if (assetPath.find("BuiltIn.OutlineShader") != std::string::npos)
     {
-        if (!recreate(shader, &vkContext->sceneRenderpass, {.createOutlinePipelines = true}))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate OutlineShader.");
             return false;
         }
+
+        // Reload rebuilt the descriptor pool, so the create-time palette write is
+        // gone with it and must be reissued.
+        TryWriteGlobalStorageDescriptors(vkContext, shader);
+
         NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] OutlineShader reloaded.");
         return true;
     }
@@ -2676,7 +2936,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     // ── BuiltIn.GridShader ────────────────────────────────────────────────────
     if (assetPath.find("BuiltIn.GridShader") != std::string::npos)
     {
-        if (!recreate(shader, &vkContext->sceneRenderpass, {.useLineTopology = true}))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate GridShader.");
             return false;
@@ -2690,7 +2950,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     {
         if (vkContext->renderMode == RenderMode::GAME)
         {
-            if (!recreate(shader, &vkContext->gameSwapchainRenderpass, {.noDepthTest = true}))
+            if (!recreate(shader, &vkContext->gameSwapchainRenderpass, settings))
             {
                 NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader (GAME mode).");
                 return false;
@@ -2700,20 +2960,10 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
         }
 
         // EDITOR mode: primary on sceneRenderpass.
-        if (!recreate(shader, &vkContext->sceneRenderpass, {.noDepthTest = true}))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader (scene).");
             return false;
-        }
-
-        // Game background clone on gameRenderpass.
-        if (vkContext->builtInGameBackgroundShader)
-        {
-            vkContext->builtInGameBackgroundShader->stagesData = shader->stagesData;
-            vkContext->builtInGameBackgroundShader->reflection = shader->reflection;
-            vkContext->builtInGameBackgroundShader->generation = shader->generation;
-            if (!recreate(vkContext->builtInGameBackgroundShader, &vkContext->gameRenderpass, {.noDepthTest = true}))
-                NOUS_WARN_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BackgroundShader game clone.");
         }
 
         NOUS_INFO_C(CURRENT_CHANNEL, "[ShaderHotReload] BackgroundShader reloaded (EDITOR mode).");
@@ -2723,7 +2973,7 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     // ── BuiltIn.BoundingBoxShader ─────────────────────────────────────────────
     if (assetPath.find("BuiltIn.BoundingBoxShader") != std::string::npos)
     {
-        if (!recreate(shader, &vkContext->sceneRenderpass, {.useLineTopology = true}))
+        if (!recreate(shader, &vkContext->sceneRenderpass, settings))
         {
             NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate BoundingBoxShader.");
             return false;
@@ -2736,12 +2986,12 @@ bool VulkanBackend::ApplyCompiledShader(ResourceShader* shader) noexcept
     VulkanRenderpass* reloadTargetRenderpass = vkContext->renderMode == RenderMode::GAME
         ? &vkContext->gameSwapchainRenderpass
         : &vkContext->sceneRenderpass;
-    if (!recreate(shader, reloadTargetRenderpass))
+    if (!recreate(shader, reloadTargetRenderpass, settings))
     {
         NOUS_ERROR_C(CURRENT_CHANNEL, "[ShaderHotReload] Failed to recreate shader '%s'.", assetPath.c_str());
         return false;
     }
-    TryWriteInstanceSSBODescriptor(vkContext, shader);
+    TryWriteGlobalStorageDescriptors(vkContext, shader);
 
     // Custom shaders own their own instance pool when used as poolOwnerShader for a
     // material (see CreateMaterial: it picks the custom shader's pool if it is
@@ -2780,6 +3030,26 @@ uint32_t VulkanBackend::PickObjectAt(int32_t pixelX, int32_t pixelY,
     // Wait for all GPU work to complete before using the pick resources.
     vkDeviceWaitIdle(vkContext->device.logicalDevice);
 
+    // Pack this pass's palettes in the SAME order the draw loop below iterates.
+    std::vector<const GeometryRenderData*> ordered;
+    ordered.reserve(geometries.size());
+    for (const auto& geo : geometries)
+        ordered.push_back(&geo);
+
+    const PackedPalettes packed = PackPalettes(ordered, c_paletteRegionPick);
+
+    // SLOT 0, not imageIndex. UpdateGlobal below passes (SCENE, image 0), so this draw
+    // reads GlobalSlot == 0, which is statically wired to paletteSSBO[0].
+    // Using the current image's slot would read another frame's data, intermittently.
+    // The vkDeviceWaitIdle above makes slot 0 safe to overwrite.
+    if (!packed.palettes.empty() && vkContext->paletteSSBOMapped[0])
+    {
+        auto* bones = static_cast<glm::mat4*>(vkContext->paletteSSBOMapped[0]);
+        std::memcpy(bones + c_paletteRegionPick,
+                    packed.palettes.data(),
+                    packed.palettes.size() * sizeof(glm::mat4));
+    }
+
     // --- Allocate single-use command buffer ---
     VulkanCommandBuffer cmdBuffer{};
     VkCommandPool pool = vkContext->device.mainGraphicsCommandPool;
@@ -2814,25 +3084,37 @@ uint32_t VulkanBackend::PickObjectAt(int32_t pixelX, int32_t pixelY,
 
     // --- Update global UBO (projection + view) ---
     struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
-    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuffer.handle, pickVS, 0, &ubo, sizeof(ubo));
+    // SCENE, not a pass of its own: the pick pass reads image index 0, so keeping it on
+    // one fixed pass makes its slot stable and matches the palette written to ring slot 0.
+    NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuffer.handle, pickVS,
+        RenderpassType::SCENE, 0, &ubo, sizeof(ubo));
 
     // --- Draw each geometry with objectUID push constant ---
     struct PickPushConstants
     {
         glm::mat4 model;
-        uint32_t objectID;
+        uint32_t  objectID;
+        uint32_t  paletteBase;
     };
+
+    // Advances once per geometry, BEFORE any skip, so it stays in lockstep with
+    // `packed.bases` — which was packed from the full list. Advancing it only for
+    // drawn geometries would shift every later object onto another character's palette.
+    size_t index = 0;
 
     for (const auto& geo : geometries)
     {
+        const size_t baseIndex = index++;
+
         if (!geo.geometry || geo.geometry->internalID == INVALID_ID)
             continue;
 
         VulkanGeometryData* bufferData = &vkContext->geometries[geo.geometry->internalID];
 
         PickPushConstants pc{};
-        pc.model = geo.model;
-        pc.objectID = geo.objectUID;
+        pc.model       = geo.model;
+        pc.objectID    = geo.objectUID;
+        pc.paletteBase = packed.bases[baseIndex];
 
         vkCmdPushConstants(cmdBuffer.handle, pickVS->pipeline.pipelineLayout,
             VK_SHADER_STAGE_VERTEX_BIT,
@@ -3079,7 +3361,7 @@ bool VulkanBackend::DrawGrid(const RenderpassType renderpassID,
 
     const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
     NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-        vkContext->imageIndex, &ubo, sizeof(ubo));
+        renderpassID, vkContext->imageIndex, &ubo, sizeof(ubo));
 
     // Push identity model matrix (grid lives at the world origin).
     constexpr glm::mat4 identity(1.0f);
@@ -3110,12 +3392,10 @@ bool VulkanBackend::DrawBackground(const RenderpassType renderpassID,
 #ifdef _PROFILING
     ZoneScopedN("DrawBackground");
 #endif
-    // Select the shader for this renderpass.
-    const ResourceShader* rShader = nullptr;
-    if (renderpassID == RenderpassType::SCENE)
-        rShader = vkContext->builtInSceneBackgroundShader;
-    else if (renderpassID == RenderpassType::GAME)
-        rShader = vkContext->builtInGameBackgroundShader;
+    // One shader for both viewports -- see the no-clone note in CreateShader. The UI
+    // pass draws no background, so an unexpected renderpassID simply draws it anyway
+    // rather than silently skipping; DrawBackground is only called for SCENE and GAME.
+    const ResourceShader* rShader = vkContext->builtInBackgroundShader;
 
     if (!rShader || !rShader->internalData)
         return true; // Shader not loaded yet — skip gracefully.
@@ -3208,9 +3488,16 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
         return true; // Shader not loaded yet — skip gracefully.
 
     // Map the mesh kind to its shared static vertex buffer + line width.
+    //
+    // drawThroughGeometry selects the shader's depth-off pipeline variant. Only the
+    // skeleton channels set it: a rig lives INSIDE the character mesh, so with depth
+    // testing on it is invisible exactly when it is most wanted. Bounding boxes and
+    // light gizmos stay depth-tested — they describe where something is in space,
+    // and floating them over everything would misreport that.
     const VulkanBuffer* vertexBuffer = nullptr;
     uint32_t vertexCount = 0;
     float  lineWidth   = 1.5f;
+    bool   drawThroughGeometry = false;
     switch (mesh)
     {
         case WireframeMesh::Cube:
@@ -3230,6 +3517,26 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
             vertexBuffer = &vkContext->spotLightConeVertexBuffer;
             vertexCount  = vkContext->spotLightConeVertexCount;
             break;
+        case WireframeMesh::Bone:
+            vertexBuffer = &vkContext->boneShardVertexBuffer;
+            vertexCount  = vkContext->boneShardVertexCount;
+            // Thin on purpose. A bone used to be a single segment with no enclosing
+            // shape to read it against, which is why this was once 5.0; the shard IS
+            // that shape now, and heavy strokes just fill its outline in solid and
+            // hide the taper that makes bone direction readable.
+            lineWidth    = 4.0f;
+            drawThroughGeometry = true;
+            break;
+        case WireframeMesh::Joint:
+            // Deliberately the SAME buffer as Sphere -- a joint marker IS a unit
+            // sphere. The separate enum value buys a separate instance vector, not
+            // separate geometry, so joint markers and point-light markers can both
+            // be on screen without one builder overwriting the other's instances.
+            vertexBuffer = &vkContext->pointLightSphereVertexBuffer;
+            vertexCount  = vkContext->pointLightSphereVertexCount;
+            lineWidth    = 2.0f;
+            drawThroughGeometry = true;
+            break;
         default:
             return true;
     }
@@ -3240,7 +3547,14 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
     const VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
     const auto vs = down_cast<VulkanShader*>(rShader->internalData);
 
-    NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
+    // Both variants belong to the SAME VulkanShader, so they share one pipeline
+    // layout and one set of set=0 descriptor sets — which is why switching between
+    // them costs nothing and leaves the wireframeGlobalSetThisFrame logic below
+    // untouched. A second shader clone would have needed its own set=0 update.
+    if (drawThroughGeometry)
+        NOUS_VulkanShader::BindNoDepthPipeline(cmdBuf->handle, vs);
+    else
+        NOUS_VulkanShader::BindPipeline(cmdBuf->handle, vs);
 
     if (vkContext->wireframeGlobalSetThisFrame)
     {
@@ -3249,13 +3563,14 @@ bool VulkanBackend::DrawWireframeMeshInstances(const RenderpassType renderpassID
         // (same projection/view). See the set=0 inheritance note in iRendererBackend.h.
         vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
             vs->pipeline.pipelineLayout, 0, 1,
-            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+            &vs->globalDescriptorSets[NOUS_VulkanShader::GlobalSlot(
+                vs, renderpassID, vkContext->imageIndex)], 0, nullptr);
     }
     else
     {
         const struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
         NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-            vkContext->imageIndex, &ubo, sizeof(ubo));
+            renderpassID, vkContext->imageIndex, &ubo, sizeof(ubo));
         vkContext->wireframeGlobalSetThisFrame = true;
     }
 
@@ -3357,14 +3672,15 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
         // projection/view matrices).
         vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
             vs->pipeline.pipelineLayout, 0, 1,
-            &vs->globalDescriptorSets[vkContext->imageIndex], 0, nullptr);
+            &vs->globalDescriptorSets[NOUS_VulkanShader::GlobalSlot(
+                vs, renderpassID, vkContext->imageIndex)], 0, nullptr);
     }
     else
     {
         // First (or only) use of this shader this frame — full update.
         struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
         NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
-            vkContext->imageIndex, &ubo, sizeof(ubo));
+            renderpassID, vkContext->imageIndex, &ubo, sizeof(ubo));
         vkContext->wireframeGlobalSetThisFrame = true;
     }
 
@@ -3385,6 +3701,89 @@ bool VulkanBackend::DrawCameraFrustums(RenderpassType renderpassID,
 
         vkCmdDraw(cmdBuf->handle, 24, 1, i * 24, 0);
     }
+
+    return true;
+}
+
+bool VulkanBackend::DrawDebugLines(RenderpassType renderpassID,
+                                    const glm::mat4& projection,
+                                    const glm::mat4& view,
+                                    const std::vector<Vertex3D>& vertices,
+                                    const glm::vec4& color)
+{
+#ifdef _PROFILING
+    ZoneScopedN("DrawDebugLines");
+#endif
+    // Debug lines are scene-viewport only, like the frustums they follow.
+    if (renderpassID != RenderpassType::SCENE)
+        return true;
+
+    if (vertices.empty())
+        return true;
+
+    // Reuse the bounding box shader: same vertex format (Vertex3D.position), same
+    // GlobalUBO (projection + view), same push constants (model + color).
+    ResourceShader* rShader = vkContext->builtInBoundingBoxShader;
+    if (!rShader || !rShader->internalData)
+        return true;
+
+    if (vkContext->debugLineVertexBuffer.handle == VK_NULL_HANDLE ||
+        vkContext->debugLineVertexCapacity == 0)
+        return true;
+
+    const auto totalVerts = static_cast<uint32_t>(vertices.size());
+    if (totalVerts > vkContext->debugLineVertexCapacity)
+    {
+        NOUS_WARN_C(CURRENT_CHANNEL, "[DrawDebugLines] Vertex count (%u) exceeds buffer capacity (%u). Skipping.",
+            totalVerts, vkContext->debugLineVertexCapacity);
+        return true;
+    }
+
+    NOUS_VulkanBuffer::LoadData(vkContext, &vkContext->debugLineVertexBuffer,
+        0, totalVerts * sizeof(Vertex3D), 0, vertices.data());
+
+    VulkanCommandBuffer* cmdBuf = GetCommandBufferByRenderpassID(renderpassID);
+    auto vs = down_cast<VulkanShader*>(rShader->internalData);
+
+    // Depth-off, like the skeleton channels: normals belong to a surface that is
+    // usually facing away or occluded, and an overlay you can only see head-on is
+    // not an inspection tool.
+    NOUS_VulkanShader::BindNoDepthPipeline(cmdBuf->handle, vs);
+
+    if (vkContext->wireframeGlobalSetThisFrame)
+    {
+        // A prior wireframe draw already called UpdateGlobal this frame, which bound
+        // set=0 into this command buffer. Updating it again would invalidate the CB —
+        // rebind only. Same projection/view.
+        vkCmdBindDescriptorSets(cmdBuf->handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vs->pipeline.pipelineLayout, 0, 1,
+            &vs->globalDescriptorSets[NOUS_VulkanShader::GlobalSlot(
+                vs, renderpassID, vkContext->imageIndex)], 0, nullptr);
+    }
+    else
+    {
+        struct GlobalUBO { glm::mat4 projection; glm::mat4 view; } ubo{ projection, view };
+        NOUS_VulkanShader::UpdateGlobal(vkContext, cmdBuf->handle, vs,
+            renderpassID, vkContext->imageIndex, &ubo, sizeof(ubo));
+        vkContext->wireframeGlobalSetThisFrame = true;
+    }
+
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdBuf->handle, 0, 1, &vkContext->debugLineVertexBuffer.handle, &offset);
+
+    const bool supportsWideLines = vkContext->device.features.wideLines == VK_TRUE;
+    vkCmdSetLineWidth(cmdBuf->handle, supportsWideLines ? 1.5f : 1.0f);
+
+    // model = identity: the segments are already in world space. ONE draw call for
+    // the whole batch, which is the entire reason this exists rather than another
+    // WireframeMesh channel.
+    struct DebugLinePushConstants { glm::mat4 model; glm::vec4 color; };
+    DebugLinePushConstants pc{ glm::mat4(1.0f), color };
+
+    vkCmdPushConstants(cmdBuf->handle, vs->pipeline.pipelineLayout,
+        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(DebugLinePushConstants), &pc);
+
+    vkCmdDraw(cmdBuf->handle, totalVerts, 1, 0, 0);
 
     return true;
 }
@@ -3411,6 +3810,29 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
     const VulkanCommandBuffer* commandBuffer = GetCommandBufferByRenderpassID(renderpassID);
     const auto vs = down_cast<VulkanShader*>(rOutlineShader->internalData);
 
+    // Pack this pass's palettes in the order BOTH loops below iterate.
+    std::vector<const GeometryRenderData*> ordered;
+    ordered.reserve(outlinedGeometries.size());
+    for (const auto& g : outlinedGeometries)
+        ordered.push_back(&g);
+
+    const PackedPalettes packed = PackPalettes(ordered, c_paletteRegionOutline);
+
+    // This pass runs inside the scene renderpass on the current image, so its ring
+    // slot follows imageIndex like every other per-frame upload -- unlike the pick
+    // pass, which always reads set 0.
+    if (!packed.palettes.empty())
+    {
+        const uint32_t slot = nous::engine::renderer::vulkan::ChooseInstanceSSBOSlot(vkContext->imageIndex);
+        if (vkContext->paletteSSBOMapped[slot])
+        {
+            auto* bones = static_cast<glm::mat4*>(vkContext->paletteSSBOMapped[slot]);
+            std::memcpy(bones + c_paletteRegionOutline,
+                        packed.palettes.data(),
+                        packed.palettes.size() * sizeof(glm::mat4));
+        }
+    }
+
     // Upload the outline global UBO: projection + view + outlineColor.
     const struct OutlineGlobalUBO { glm::mat4 projection; glm::mat4 view; glm::vec4 outlineColor; }
         globalUBO{ projection, view, settings.color };
@@ -3425,10 +3847,16 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
         NOUS_VulkanShader::BindStencilWriteNoDepthPipeline(commandBuffer->handle, vs);
 
     NOUS_VulkanShader::UpdateGlobal(vkContext, commandBuffer->handle, vs,
-        vkContext->imageIndex, &globalUBO, sizeof(globalUBO));
+        renderpassID, vkContext->imageIndex, &globalUBO, sizeof(globalUBO));
+
+    // Advances once per geometry, BEFORE any skip, so it stays in lockstep with
+    // `packed.bases`, which was packed from the full list.
+    size_t stencilIndex = 0;
 
     for (const auto& renderData : outlinedGeometries)
     {
+        const size_t baseIndex = stencilIndex++;
+
         if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID) continue;
 
         const VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
@@ -3438,8 +3866,9 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
         struct OutlinePushConstant
         {
             glm::mat4 model;
-            float thickness;
-        } pc{.model = renderData.model, .thickness = 0.0f};
+            float     thickness;
+            uint32_t  paletteBase;
+        } pc{.model = renderData.model, .thickness = 0.0f, .paletteBase = packed.bases[baseIndex]};
 
         vkCmdPushConstants(
     commandBuffer->handle,
@@ -3475,8 +3904,13 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
     else
         NOUS_VulkanShader::BindOutlineNoDepthPipeline(commandBuffer->handle, vs);
 
+    // Same list, so the same lockstep rule as pass 1.
+    size_t outlineIndex = 0;
+
     for (const auto& renderData : outlinedGeometries)
     {
+        const size_t baseIndex = outlineIndex++;
+
         if (!renderData.geometry || renderData.geometry->internalID == INVALID_ID) continue;
 
         const VulkanGeometryData* bufferData = &vkContext->geometries[renderData.geometry->internalID];
@@ -3484,8 +3918,9 @@ bool VulkanBackend::DrawOutlinedGeometries(const RenderpassType renderpassID,
         struct OutlinePushConstant
         {
             glm::mat4 model;
-            float thickness;
-        } pc{.model = renderData.model, .thickness = settings.width};
+            float     thickness;
+            uint32_t  paletteBase;
+        } pc{.model = renderData.model, .thickness = settings.width, .paletteBase = packed.bases[baseIndex]};
 
         vkCmdPushConstants(
     commandBuffer->handle,

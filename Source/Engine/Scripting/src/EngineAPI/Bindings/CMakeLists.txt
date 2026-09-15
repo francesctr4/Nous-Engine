@@ -2,6 +2,8 @@ target_sources(Scripting PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ScriptBindings.cpp
 )
 
+add_subdirectory(Animator)
+add_subdirectory(Audio)
 add_subdirectory(Camera)
 add_subdirectory(Component)
 add_subdirectory(GameObject)

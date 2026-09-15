@@ -134,8 +134,11 @@ static bool AllocateGlobalResources(VulkanContext* vkContext, VulkanShader* vs,
 
     vs->globalUBOStride = uboBlockSize;
 
-    // One global descriptor set + UBO buffer per swapchain image (runtime count).
+    // One global descriptor set + UBO buffer per (renderpass, swapchain image).
     const uint32_t imageCount = static_cast<uint32_t>(vkContext->swapChain.swapChainImages.size());
+    const uint32_t slotCount  = c_renderpassCount * imageCount;
+    vs->globalImageCount      = imageCount;
+
     VkDevice dev = vkContext->device.logicalDevice;
 
     // ── Descriptor pool ───────────────────────────────────────────────────────
@@ -144,7 +147,7 @@ static bool AllocateGlobalResources(VulkanContext* vkContext, VulkanShader* vs,
     {
         VkDescriptorPoolSize ps{};
         ps.type            = ToVkDescriptorType(rb.type);
-        ps.descriptorCount = imageCount * rb.count;
+        ps.descriptorCount = slotCount * rb.count;
         poolSizes.push_back(ps);
     }
 
@@ -152,7 +155,7 @@ static bool AllocateGlobalResources(VulkanContext* vkContext, VulkanShader* vs,
     poolCI.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolCI.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolCI.pPoolSizes    = poolSizes.data();
-    poolCI.maxSets       = imageCount;
+    poolCI.maxSets       = slotCount;
 
     VK_CHECK(vkCreateDescriptorPool(dev, &poolCI, vkContext->allocator, &vs->globalPool));
 
@@ -160,8 +163,8 @@ static bool AllocateGlobalResources(VulkanContext* vkContext, VulkanShader* vs,
     const uint32_t deviceLocalBits = vkContext->device.supportsDeviceLocalHostVisible
                                       ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0;
 
-    vs->globalUBOBuffers.resize(imageCount);
-    for (uint32_t i = 0; i < imageCount; ++i)
+    vs->globalUBOBuffers.resize(slotCount);
+    for (uint32_t i = 0; i < slotCount; ++i)
     {
         if (!NOUS_VulkanBuffer::CreateBuffer(vkContext, vs->globalUBOStride,
                 VkBufferUsageFlagBits(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
@@ -175,20 +178,20 @@ static bool AllocateGlobalResources(VulkanContext* vkContext, VulkanShader* vs,
         }
     }
 
-    // ── Descriptor sets (one per image) ───────────────────────────────────────
-    std::vector<VkDescriptorSetLayout> layouts(imageCount, vs->descriptorSetLayouts[0]);
-    vs->globalDescriptorSets.resize(imageCount);
+    // ── Descriptor sets (one per pass × image) ────────────────────────────────
+    std::vector<VkDescriptorSetLayout> layouts(slotCount, vs->descriptorSetLayouts[0]);
+    vs->globalDescriptorSets.resize(slotCount);
 
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool     = vs->globalPool;
-    allocInfo.descriptorSetCount = imageCount;
+    allocInfo.descriptorSetCount = slotCount;
     allocInfo.pSetLayouts        = layouts.data();
 
     VK_CHECK(vkAllocateDescriptorSets(dev, &allocInfo, vs->globalDescriptorSets.data()));
 
     // Write initial buffer descriptors so the sets are valid from the start.
-    for (uint32_t i = 0; i < imageCount; ++i)
+    for (uint32_t i = 0; i < slotCount; ++i)
     {
         VkDescriptorBufferInfo bufInfo{};
         bufInfo.buffer = vs->globalUBOBuffers[i].handle;
@@ -432,6 +435,8 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
         static_cast<uint32_t>(offsetof(Vertex3D, smoothNormal)), // location 4
         static_cast<uint32_t>(offsetof(Vertex3D, tangent)),      // location 5
         static_cast<uint32_t>(offsetof(Vertex3D, texCoord2)),    // location 6
+        static_cast<uint32_t>(offsetof(Vertex3D, boneIDs)),      // location 7
+        static_cast<uint32_t>(offsetof(Vertex3D, boneWeights)),  // location 8
     };
     static constexpr uint32_t k_Vertex3DLocationCount =
         sizeof(k_Vertex3DOffsets) / sizeof(k_Vertex3DOffsets[0]);
@@ -615,6 +620,40 @@ bool NOUS_VulkanShader::Create(VulkanContext* vkContext, VulkanRenderpass* rende
         return false;
     }
 
+    // ── 6a-2. Optional depth-off variant of the main pipeline ─────────────────
+    // Same state as `pipeline` with depth test AND depth write both disabled, so
+    // one shader can draw some instances occluded and others through geometry.
+    // The wireframe debug family uses it: bounding boxes and light gizmos keep
+    // their depth test while the skeleton draws through the character mesh.
+    //
+    // Disabling the WRITE matters as much as the test here. Unlike the outline
+    // variants below — whose base state already has depthWriteEnable == FALSE —
+    // the ordinary base state above writes depth. A pipeline that writes depth it
+    // never tested against would occlude whatever is drawn afterwards, which in
+    // the scene pass means the camera-frustum draw.
+    if (settings.createNoDepthVariant)
+    {
+        VkPipelineDepthStencilStateCreateInfo noDepthCI = depthCI;
+        noDepthCI.depthTestEnable  = VK_FALSE;
+        noDepthCI.depthWriteEnable = VK_FALSE;
+
+        pipelineCI.pDepthStencilState = &noDepthCI;
+
+        vs->noDepthPipeline.pipelineLayout = VK_NULL_HANDLE; // owned by vs->pipeline
+        result = vkCreateGraphicsPipelines(dev, VK_NULL_HANDLE, 1,
+            &pipelineCI, vkContext->allocator, &vs->noDepthPipeline.handle);
+
+        // Restore the depth-aware state for any pipeline built after this one.
+        pipelineCI.pDepthStencilState = &depthCI;
+
+        if (result != VK_SUCCESS)
+        {
+            NOUS_ERROR("[VulkanShader] Failed to create no-depth pipeline (%d).", result);
+            Destroy(vkContext, vs);
+            return false;
+        }
+    }
+
     // ── 6b. Extra outline pipelines (outline shaders only) ────────────────────
     // When createOutlinePipelines is true, `pipeline` above is the depth-aware
     // outline-draw pipeline.  We build three more variants here:
@@ -768,6 +807,11 @@ void NOUS_VulkanShader::Destroy(VulkanContext* vkContext, VulkanShader* vs)
 
     // Pipeline and layout
     // Extra outline pipelines: all share pipelineLayout with main pipeline — only destroy handles.
+    if (vs->noDepthPipeline.handle != VK_NULL_HANDLE)
+    {
+        vkDestroyPipeline(dev, vs->noDepthPipeline.handle, allocator);
+        vs->noDepthPipeline.handle = VK_NULL_HANDLE;
+    }
     if (vs->stencilWriteNoDepthPipeline.handle != VK_NULL_HANDLE)
     {
         vkDestroyPipeline(dev, vs->stencilWriteNoDepthPipeline.handle, allocator);
@@ -837,11 +881,33 @@ void NOUS_VulkanShader::BindStencilWriteNoDepthPipeline(VkCommandBuffer cmdBuffe
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->stencilWriteNoDepthPipeline.handle);
 }
 
+void NOUS_VulkanShader::BindNoDepthPipeline(VkCommandBuffer cmdBuffer, VulkanShader* vs)
+{
+    // Fall back to the depth-tested pipeline rather than binding nothing: a caller
+    // that forgot createNoDepthVariant gets an occluded overlay, not a command
+    // buffer with no pipeline bound at draw time.
+    const VkPipeline handle = vs->noDepthPipeline.handle != VK_NULL_HANDLE
+                                ? vs->noDepthPipeline.handle
+                                : vs->pipeline.handle;
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, handle);
+}
+
+uint32_t NOUS_VulkanShader::GlobalSlot(const VulkanShader* vs, const RenderpassType renderpassID,
+                                       const uint32_t imageIndex)
+{
+    return static_cast<uint32_t>(renderpassID) * vs->globalImageCount + imageIndex;
+}
+
 void NOUS_VulkanShader::UpdateGlobal(VulkanContext* vkContext, VkCommandBuffer cmdBuffer,
-                                      VulkanShader* vs, uint32_t imageIndex,
+                                      VulkanShader* vs, const RenderpassType renderpassID,
+                                      const uint32_t imageIndex,
                                       const void* data, uint64_t size)
 {
-    if (!vs->globalPool || imageIndex >= vs->globalDescriptorSets.size()) return;
+    if (!vs->globalPool || vs->globalImageCount == 0 || imageIndex >= vs->globalImageCount)
+        return;
+
+    const uint32_t slot = GlobalSlot(vs, renderpassID, imageIndex);
+    if (slot >= vs->globalDescriptorSets.size()) return;
 
     // Guardrail against reflected-vs-CPU UBO size mismatches.
     // The reflected block size (globalUBOStride) determines both the UBO buffer's
@@ -865,17 +931,17 @@ void NOUS_VulkanShader::UpdateGlobal(VulkanContext* vkContext, VkCommandBuffer c
         size = vs->globalUBOStride;
     }
 
-    NOUS_VulkanBuffer::LoadData(vkContext, &vs->globalUBOBuffers[imageIndex],
+    NOUS_VulkanBuffer::LoadData(vkContext, &vs->globalUBOBuffers[slot],
         0, size, 0, const_cast<void*>(data));
 
     VkDescriptorBufferInfo bufInfo{};
-    bufInfo.buffer = vs->globalUBOBuffers[imageIndex].handle;
+    bufInfo.buffer = vs->globalUBOBuffers[slot].handle;
     bufInfo.offset = 0;
     bufInfo.range  = vs->globalUBOStride;
 
     VkWriteDescriptorSet write{};
     write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.dstSet          = vs->globalDescriptorSets[imageIndex];
+    write.dstSet          = vs->globalDescriptorSets[slot];
     write.dstBinding      = 0;
     write.dstArrayElement = 0;
     write.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -886,7 +952,7 @@ void NOUS_VulkanShader::UpdateGlobal(VulkanContext* vkContext, VkCommandBuffer c
 
     vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
         vs->pipeline.pipelineLayout, 0, 1,
-        &vs->globalDescriptorSets[imageIndex], 0, nullptr);
+        &vs->globalDescriptorSets[slot], 0, nullptr);
 }
 
 // ─────────────────────────────── Instance management ─────────────────────────

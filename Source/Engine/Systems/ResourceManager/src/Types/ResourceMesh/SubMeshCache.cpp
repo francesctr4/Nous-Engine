@@ -116,15 +116,18 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
     const std::string& assetsPath,
     uint32_t hintUID)
 {
-    const auto hierarchy = ImporterMesh::LoadHierarchy(libraryPath);
-    if (submeshIndex < 0 || submeshIndex >= static_cast<int32_t>(hierarchy.size()))
+    // Reads ONLY this submesh. It used to call LoadHierarchy, which deserialized
+    // every submesh in the file and then kept one -- and since SpawnMeshAsHierarchy
+    // fans this call out across worker threads, one N-submesh model was parsed N+1
+    // times, N of them concurrently: O(N^2) bytes for an O(N) result. The V4 offset
+    // directory is what makes a single-submesh read possible.
+    SubMeshData sub;
+    if (!ImporterMesh::LoadSubmesh(libraryPath, submeshIndex, sub))
     {
-        NOUS_ERROR("SubMeshCache::BuildAndRegister: index %d out of range (count=%zu) for '%s'",
-            submeshIndex, hierarchy.size(), libraryPath.c_str());
+        NOUS_ERROR("SubMeshCache::BuildAndRegister: failed to load submesh %d of '%s'",
+            submeshIndex, libraryPath.c_str());
         return nullptr;
     }
-
-    const SubMeshData& sub = hierarchy[static_cast<size_t>(submeshIndex)];
 
     auto* mesh = NOUS_NEW<ResourceMesh>(MemoryTag::RESOURCE_MESH);
     mesh->SetName(sub.name);
@@ -133,19 +136,16 @@ ResourceMesh* SubMeshCache::BuildAndRegister(
     if (!assetsPath.empty())
         mesh->SetAssetsPath(assetsPath);
 
-    mesh->vertices = sub.vertices;
+    // `sub` is a local now, not a reference into a shared vector, so the geometry
+    // moves instead of copying.
+    mesh->vertices = std::move(sub.vertices);
     mesh->indices.assign(sub.indices.begin(), sub.indices.end());
+    mesh->skeletonNameHash = sub.skeletonNameHash;
 
-    if (!mesh->vertices.empty())
-    {
-        mesh->localAABBMin = mesh->vertices[0].position;
-        mesh->localAABBMax = mesh->vertices[0].position;
-        for (const auto& v : mesh->vertices)
-        {
-            mesh->localAABBMin = glm::min(mesh->localAABBMin, v.position);
-            mesh->localAABBMax = glm::max(mesh->localAABBMax, v.position);
-        }
-    }
+    // Local AABB + hasSkinning. This is the path SpawnMeshAsHierarchy uses, so it
+    // produces the per-submesh ResourceMesh that ends up on each CMesh -- and
+    // therefore the one whose hasSkinning the renderer reads.
+    mesh->RecomputeDerivedData();
 
     mesh->SetState(ResourceState::CPU_READY);
 

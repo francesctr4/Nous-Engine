@@ -35,10 +35,12 @@ add_subdirectory(Frontend)
 
 add_library(${CLASS_NAME} STATIC
         src/${CLASS_NAME}Types.cpp
+        src/PackPalettes.cpp
 )
 
 target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/RendererTypes.h
+        include/${CLASS_NAME}/PackPalettes.h
         include/${CLASS_NAME}/IGPUResourceFactory.h
         include/${CLASS_NAME}/iEditorRenderBridge.h
         include/${CLASS_NAME}/iRenderWindow.h
@@ -74,3 +76,14 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         # vulkan headers happened to be on the path already.
         Vulkan::Vulkan
 )
+
+# PackPalettes.cpp warns once per pass when a scene exceeds the bone budget. Logger
+# is PRIVATE: the warning is an implementation detail of the packer, and no public
+# header here names a LogChannel.
+target_link_libraries(${CLASS_NAME} PRIVATE
+        Logger
+)
+
+if (NOUS_BUILD_TESTS)
+    add_subdirectory(test)
+endif()

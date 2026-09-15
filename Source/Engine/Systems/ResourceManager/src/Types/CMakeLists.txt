@@ -6,11 +6,14 @@ target_sources(ResourceManager PRIVATE
         RegisterResourceTypes.cpp
 )
 
+add_subdirectory(ResourceAnimation)
+add_subdirectory(ResourceAnimationController)
 add_subdirectory(ResourceAudio)
 add_subdirectory(ResourceAudioGraph)
 add_subdirectory(ResourceMaterial)
 add_subdirectory(ResourceMesh)
 add_subdirectory(ResourceScene)
 add_subdirectory(ResourceShader)
+add_subdirectory(ResourceSkeleton)
 add_subdirectory(ResourceTexture)
 add_subdirectory(ResourceVideo)

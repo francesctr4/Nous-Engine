@@ -124,6 +124,12 @@ void ModuleAudio::StopSound(SoundHandle sound) const
         m_backend->StopSound(sound);
 }
 
+void ModuleAudio::SeekSound(SoundHandle sound, double seconds) const
+{
+    if (m_backend)
+        m_backend->SeekSound(sound, seconds);
+}
+
 void ModuleAudio::SetSoundVolume(SoundHandle sound, float volume) const
 {
     if (m_backend)

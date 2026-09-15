@@ -251,6 +251,49 @@ void CAudioSource::OnDestroy()
 }
 
 // ---------------------------------------------------------------------------
+// Gameplay one-shots (scripts, animation events)
+// ---------------------------------------------------------------------------
+
+void CAudioSource::Play()
+{
+    const IAudioBroker* audio = Services().audio;
+    if (!audio || !clip)
+        return;
+
+    if (!m_sound)
+    {
+        m_sound = AudioVoice(audio, audio->CreateSound(clip, targetBus));
+        if (!m_sound)
+            return;
+
+        BuildChain(*audio, m_sound, m_chain);   // splice effects between the voice and its bus
+    }
+    else
+    {
+        // Restart, not resume: StopSound retains the cursor, so replaying a voice
+        // that is still running needs an explicit rewind. Seeking a stopped voice is
+        // what makes two footsteps in quick succession sound like two footsteps.
+        audio->StopSound(m_sound.Get());
+        audio->SeekSound(m_sound.Get(), 0.0);
+    }
+
+    audio->SetSoundLooping(m_sound.Get(), loop);
+    audio->SetSoundVolume(m_sound.Get(), volume);
+    audio->SetSoundPitch(m_sound.Get(), pitch);
+    audio->StartSound(m_sound.Get());
+}
+
+void CAudioSource::Stop()
+{
+    const IAudioBroker* audio = Services().audio;
+    if (!audio || !m_sound)
+        return;
+
+    audio->StopSound(m_sound.Get());
+    audio->SeekSound(m_sound.Get(), 0.0);   // so the next Play starts from the top
+}
+
+// ---------------------------------------------------------------------------
 // Editor preview (edit-mode auditioning)
 // ---------------------------------------------------------------------------
 

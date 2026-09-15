@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, audio-engine-2.0]
+    branches: [main, develop, audio-engine-2.0, skeletal-animation]
   pull_request:
     branches: [main]
 
@@ -41,26 +41,51 @@ jobs:
 
       # Persist vcpkg's file-based binary cache across runs so later runs skip
       # recompiling unchanged ports (ffmpeg/assimp/shaderc/...). vcpkg's binary-archive
-      # names embed an ABI hash that includes the COMPILER version, so the cache key MUST
-      # roll when the runner image's toolchain changes — otherwise an image rotation (e.g.
-      # windows-latest -> windows-2025-vs2026) leaves the key constant while every archive
-      # ABI-mismatches: the stale cache keeps restoring (exact hit), vcpkg rebuilds all
-      # ports from source, and actions/cache refuses to re-save on an exact-key hit, so the
-      # rebuild repeats every run forever (~55 min on Windows). Including ImageOS/ImageVersion
-      # makes the key roll per image; on a bump the exact key misses, restore-keys partial-
-      # restores the previous cache (archives still reused if the ABI is unchanged, rebuilt
-      # only if it genuinely changed), and a fresh entry is SAVED under the new key. Same
-      # mechanism absorbs a vcpkg.json change.
+      # names embed an ABI hash that includes the COMPILER version, so a cache key that
+      # never changes is a trap: when the runner image rotates its toolchain, every
+      # archive ABI-mismatches, vcpkg rebuilds all ports from source (~55 min on
+      # Windows), and actions/cache refuses to save on an exact-key hit — so the rebuild
+      # repeats every run FOREVER. That is not hypothetical: on 2026-09-11 Windows and
+      # macOS both logged an exact key hit followed by `Restored 0 package(s)` and a
+      # full from-source rebuild that could never be saved back.
+      #
+      # The key was ALREADY meant to roll per image — but it embedded
+      # `env.ImageOS`/`env.ImageVersion`, which resolve to the EMPTY STRING in the env
+      # context (they are runner-process variables, not workflow env), so the key came
+      # out as the literal `vcpkg-Linux---<hash>` and never rolled at all. The
+      # "Identify runner image" step below reads them where they actually exist — the
+      # step's process environment — and republishes them through GITHUB_ENV, which IS
+      # visible to the expression context. It echoes what it resolved so an empty value
+      # is visible in the log instead of silently collapsing the key again.
+      #
+      # Key is otherwise deliberately stable (no github.run_id suffix): the steady
+      # state is ONE cache entry per OS, reused indefinitely and re-saved only when it
+      # was not an exact hit. See the save step.
+      #
+      # RESTORE AND SAVE ARE SEPARATE STEPS ON PURPOSE: actions/cache declares
+      # `post-if: success()`, so its combined form saves NOTHING when any later step
+      # fails. A single failing unit test therefore costs a full from-source rebuild on
+      # every subsequent run until it is fixed, and nothing repopulates the cache in the
+      # meantime. The save step below runs unless the job was cancelled.
+      # (`save-always` is the deprecated fix for this; the restore/save split is the
+      # supported one.)
+      #
       # NOTE: the compiled binaries only land here because the "Use vcpkg files binary
       # cache" step below overrides run-vcpkg's default (removed) x-gha backend.
-      - name: Cache vcpkg binary archives
-        uses: actions/cache@v5
+      - name: Identify runner image
+        shell: bash
+        run: |
+          echo "Runner image: ImageOS='${ImageOS:-}' ImageVersion='${ImageVersion:-}'"
+          echo "RUNNER_IMAGE_TAG=${ImageOS:-unknownos}-${ImageVersion:-unknownver}" >> "$GITHUB_ENV"
+
+      - name: Restore vcpkg binary archives
+        id: vcpkg_cache
+        uses: actions/cache/restore@v5
         with:
           path: ${{ github.workspace }}/vcpkg_binary_cache
-          key: vcpkg-${{ runner.os }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-${{ hashFiles('vcpkg.json') }}
+          key: vcpkg-${{ runner.os }}-${{ env.RUNNER_IMAGE_TAG }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-
-            vcpkg-${{ runner.os }}-${{ env.ImageOS }}-
+            vcpkg-${{ runner.os }}-${{ env.RUNNER_IMAGE_TAG }}-
             vcpkg-${{ runner.os }}-
 
       # Clone vcpkg as a sibling of the repo — matches the toolchainFile path in CMakePresets.json
@@ -146,3 +171,20 @@ jobs:
 
       - name: Test
         run: ctest --test-dir Build/${{ matrix.preset }} --output-on-failure --parallel
+
+      # Last step, and deliberately NOT conditioned on the build or the tests passing:
+      # the ports vcpkg just compiled are worth keeping regardless of whether OUR code
+      # compiled or OUR tests went green. That is the whole reason restore and save are
+      # split — the combined action would skip this. Skipped only on cancellation,
+      # where the runner tears the job down anyway.
+      #
+      # `cache-hit != 'true'` keeps the steady state at one entry per OS: an exact hit
+      # means the cache is already current, so re-uploading it would only duplicate.
+      # A partial (restore-keys) hit or a miss DOES save, which is what lets an image
+      # rotation or a vcpkg.json bump cost one slow run instead of every run.
+      - name: Save vcpkg binary archives
+        if: ${{ !cancelled() && steps.vcpkg_cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ github.workspace }}/vcpkg_binary_cache
+          key: vcpkg-${{ runner.os }}-${{ env.RUNNER_IMAGE_TAG }}-${{ hashFiles('vcpkg.json') }}

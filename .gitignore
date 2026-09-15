@@ -110,3 +110,9 @@ http-client.private.env.json
 # Python bytecode from Tools/ scripts (check_header_layout.py)
 __pycache__/
 *.pyc
+
+# Minidumps written by CrashHandler. It now writes beside the executable (under
+# Build/, already ignored), but a dump predating that fix, or one from a copy of
+# the app run from the repo root, lands here.
+Crashes/
+*.dmp

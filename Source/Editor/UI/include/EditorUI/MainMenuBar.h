@@ -19,6 +19,11 @@ public:
     }
     void End() override { ImGui::EndMainMenuBar(); }
 
+    // The menu bar is a registered window like any other, so it would otherwise list
+    // ITSELF under Windows -- offering the one close that cannot be undone, because
+    // this menu is the only way to reopen anything.
+    bool ShowInWindowsMenu() const override { return false; }
+
     bool UpdatesWhenCollapsed() const override;
     void Update() override;
     void DrawContent() override;
@@ -37,9 +42,10 @@ private:
     void DrawBuildSettingsPopup();
 
     // ── Scene popup triggers ──────────────────────────────────────────────
-    bool openSaveAs   = false;
-    bool openOpen     = false;
-    bool openNewScene = false;
+    bool openSaveAs    = false;
+    bool openOpen      = false;
+    bool openNewScene  = false;
+    bool openClearScene = false;
 
     // ── Build trigger flags (set in DrawContent, consumed in FinishUpdate) ──
     bool        m_openBuild         = false;
@@ -55,11 +61,19 @@ private:
     std::string m_buildStartupScene;
     std::vector<std::string> m_buildLog;
 
+    // ── Editor layout (window positions, docking, sizes) ──────────────────
+    //
+    // The file ModuleEditor::Awake copies over imgui.ini at startup, so saving here
+    // is what makes the current arrangement the one the editor OPENS with. Same
+    // relative path as that copy, and so the same working-directory assumption.
+    static constexpr const char* kEditorLayoutFile   = "Assets/Settings/imgui.ini";
+
     static constexpr const char* kScenesDir          = "Assets/Scenes";
     static constexpr const char* kSceneExt           = ".nous";
     static constexpr const char* kSaveAsPopup        = "Save Scene As";
     static constexpr const char* kOpenPopup          = "Open Scene";
     static constexpr const char* kNewScenePopup      = "New Scene";
+    static constexpr const char* kClearScenePopup    = "Clear Scene";
     static constexpr const char* kBuildModal         = "###BuildGameModal";
     static constexpr const char* kBuildSettingsPopup = "Build Settings";
 };

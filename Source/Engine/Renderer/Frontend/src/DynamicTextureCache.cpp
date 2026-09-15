@@ -93,6 +93,27 @@ void DynamicTextureCache::Reconcile(RendererFrontend* frontend)
     m_liveThisFrame.clear();
 }
 
+void DynamicTextureCache::DropForMaterial(RendererFrontend* frontend, const ResourceMaterial* material)
+{
+    if (!material) return;
+
+    bool idled = false;
+    for (auto it = m_surfaces.begin(); it != m_surfaces.end(); )
+    {
+        if (it->second.boundMaterial == material)
+        {
+            if (!idled) { frontend->WaitForGPUIdle(); idled = true; }   // one idle for the whole batch
+            Destroy(frontend, it->second);
+            it = m_surfaces.erase(it);
+        }
+        else ++it;
+    }
+
+    // The UID is deliberately NOT removed from m_liveThisFrame: if the object still exists and
+    // is still playing, next frame's Submit simply rebuilds the surface against whatever material
+    // the object now carries. That is also what makes a mid-playback material swap work.
+}
+
 void DynamicTextureCache::DestroyAll(RendererFrontend* frontend)
 {
     for (auto& [uid, s] : m_surfaces)

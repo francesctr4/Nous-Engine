@@ -1,4 +1,5 @@
 #include <Core/Application.h>
+#include <CrashHandler/CrashHandler.h>
 #include <EngineCore/AppConfig.h>
 #include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
@@ -55,6 +56,11 @@ static GameConfig LoadGameConfig(const char* argv0)
 
 int main(int argc, char** argv)
 {
+    // Before everything, including the memory system. It matters more here than in
+    // the editor: a shipped game has no console.log (InitializeLogging(false) below),
+    // so on a player's machine the dump under Crashes/ is the only artifact.
+    nous::engine::crash::InstallCrashHandler("GameApp");
+
     StartLogTimer();
 
     nous::engine::memory::InitializeMemory(MiB(300));
@@ -137,7 +143,7 @@ int main(int argc, char** argv)
                 // sim and never received Awake/Start.
                 //
                 // m_isLoadingScene is set before LoadSceneAsync returns and cleared
-                // inside the main-thread task, after Deserialize + RefreshPrefabInstances,
+                // inside the main-thread task, after Deserialize + UpdatePrefabStaleFlags,
                 // so it covers the whole handoff. It also self-clears when the scene
                 // path fails to resolve, so a bad startScene still reaches Update.
                 if (!sceneReady && !App->GetScene()->IsLoadingScene())

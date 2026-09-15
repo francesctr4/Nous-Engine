@@ -3,15 +3,20 @@
 #include <EditorUI/TextEditorWindow.h>
 
 #include <algorithm>
-#include <cstdio>
-#include <format>
-#include <cmath>
 #include <chrono>
+#include <cmath>
+#include <cstring>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <string>
 
 #include <FileSystem/FileSystem.h>
 #include <ModuleResourceManager/ModuleResourceManager.h>
 #include <ResourceManager/Runtime/ImportPipeline.h>
 #include <ResourceManager/Core/MetaFileData.h>
+#include <ResourceManager/Types/ResourceAudioGraph/ImporterAudioGraph.h>
+#include <ResourceManager/Types/ResourceAnimationController/ImporterAnimationController.h>
 #include <Utils/Serialization/JsonFile.h>
 #include <Utils/Serialization/JsonObject.h>
 #include <Scripting/ScriptManager.h>
@@ -54,7 +59,17 @@ static const std::unordered_map<std::string, FileType> extensionToFileType =
     {".mp4",    FileType::VIDEO},
     {".gif",    FileType::GIF},
 
-    {".nafx",   FileType::AUDIO_GRAPH}
+    {".nafx",   FileType::AUDIO_GRAPH},
+
+    // Sibling stubs emitted beside a model by ModelParser: one .nskel for the rig,
+    // one .nanim per clip. They share the model stem, so distinct icons are the
+    // only thing separating them at a glance in the browser.
+    {".nskel",  FileType::SKELETON},
+    {".nanim",  FileType::ANIMATION},
+
+    // Authored, not emitted beside a model: a controller is created in its own
+    // editor and references the .nanim stubs above by path.
+    {".nctrl",  FileType::ANIMATION_CONTROLLER}
 };
 
 static const std::unordered_map<FileType, const char*> icon_type_glyphs =
@@ -75,6 +90,11 @@ static const std::unordered_map<FileType, const char*> icon_type_glyphs =
     {FileType::VIDEO,    "\xEF\x80\xBD"},   // U+F03D fa-video
     {FileType::GIF,      "\xEF\x80\x88"},   // U+F008 fa-film
     {FileType::AUDIO_GRAPH, "\xEF\x87\x9E"},// U+F1DE fa-sliders
+    {FileType::SKELETON,    "\xEF\x97\x97"},// U+F5D7 fa-bone
+    {FileType::ANIMATION,   "\xEF\x9C\x8C"},// U+F70C fa-running
+    // U+F542 fa-project-diagram -- nodes joined by links, which is literally what
+    // the asset is. Inside the font range loaded in ModuleEditor (0xE000-0xF8FF).
+    {FileType::ANIMATION_CONTROLLER, "\xEF\x95\x82"},
 };
 
 static const std::unordered_map<FileType, uint32_t> icon_type_overlay_colors =
@@ -95,6 +115,12 @@ static const std::unordered_map<FileType, uint32_t> icon_type_overlay_colors =
     {FileType::VIDEO,    IM_COL32(153,  76, 237, 255)},   // purple — matches the Video registry asset color
     {FileType::GIF,      IM_COL32( 46, 204, 113, 255)},   // emerald — distinct from the purple .mp4 sibling
     {FileType::AUDIO_GRAPH, IM_COL32(51, 217, 217, 255)}, // cyan — matches the AUDIO_GRAPH registry asset color
+    {FileType::SKELETON,    IM_COL32(232, 220, 184, 255)}, // ivory: bone; distinct from META pure white
+    {FileType::ANIMATION,   IM_COL32(244, 114,  92, 255)}, // coral: distinct from its .nskel sibling and SCENE red
+    // violet — matches the ANIMATION_CONTROLLER registry asset color (0.55, 0.45,
+    // 0.95), the same rule VIDEO and AUDIO_GRAPH follow. The browser and the
+    // Resources window show the same asset, so they must agree on its colour.
+    {FileType::ANIMATION_CONTROLLER, IM_COL32(140, 115, 242, 255)},
 };
 
 static void HelpMarker(const char* desc)
@@ -184,6 +210,71 @@ void AssetsBrowser::StopDirectoryWatcher()
     m_pollThreadStop.store(true);
     if (m_pollThread.joinable())
         m_pollThread.join();
+}
+
+void AssetsBrowser::DrawCreateAssetPopup(const char* popupTitle,
+                                         const char* nameLabel,
+                                         const char* extension,
+                                         char*       nameBuffer,
+                                         const size_t bufferSize,
+                                         bool      (*createFile)(const std::string& assetPath))
+{
+    if (!ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    ImGui::Text("Create in: %s", current_directory.c_str());
+    ImGui::Spacing();
+    ImGui::Text("%s:", nameLabel);
+    ImGui::SetNextItemWidth(300.0f);
+
+    const bool enterPressed = ImGui::InputText("##AssetName", nameBuffer, static_cast<int>(bufferSize),
+                                               ImGuiInputTextFlags_EnterReturnsTrue);
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    const bool nameEmpty = strlen(nameBuffer) == 0;
+
+    ImGui::BeginDisabled(nameEmpty);
+    if (ImGui::Button("Create", ImVec2(120, 0)) || (enterPressed && !nameEmpty))
+    {
+        // Suffixed on collision rather than overwriting, the same rule both editors'
+        // File > New follows. Silently replacing an asset the user already authored
+        // is not a thing a Create action should be able to do.
+        std::string path = current_directory + "/" + nameBuffer + extension;
+        for (int i = 1; std::filesystem::exists(path); ++i)
+        {
+            if (i > 9999) break;
+            path = current_directory + "/" + nameBuffer + "_" + std::to_string(i) + extension;
+        }
+
+        if (createFile(path))
+        {
+            // Imported immediately so it has a UID and a Library/ copy, and can be
+            // dropped straight onto a slot without a rescan.
+            editorContext->GetResourceManager()->ImportFile(path);
+            NOUS_INFO("[AssetsBrowser] Created %s", path.c_str());
+            AddItemsFromDirectory(current_directory);
+        }
+        else
+        {
+            NOUS_ERROR("[AssetsBrowser] Failed to create %s", path.c_str());
+        }
+
+        memset(nameBuffer, 0, bufferSize);
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndDisabled();
+
+    ImGui::SetItemDefaultFocus();
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel", ImVec2(120, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape))
+    {
+        memset(nameBuffer, 0, bufferSize);
+        ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
 }
 
 void AssetsBrowser::ClearItems()
@@ -354,38 +445,10 @@ void AssetsBrowser::DrawContent()
 {
     if (ImGui::BeginMenuBar())
     {
-        if (ImGui::BeginMenu("Actions"))
-        {
-            if (ImGui::MenuItem("Refresh Assets"))
-            {
-                editorContext->GetJobSystem()->SubmitJob([this]()
-                {
-                    std::system("cmake --build ./ --target CopyAssets");
-                    AddItemsFromDirectory(current_directory);
-                }, "Refresh Assets");
-            }
-
-            {
-                const bool isRunning = m_isRegeneratingLibrary.load();
-                ImGui::BeginDisabled(isRunning);
-                if (ImGui::MenuItem(isRunning ? "Regenerating Library..." : "Regenerate Library"))
-                {
-                    m_isRegeneratingLibrary = true;
-                    auto* resourceManager = editorContext->GetResourceManager();
-                    editorContext->GetJobSystem()->SubmitJob([this, resourceManager]()
-                    {
-                        resourceManager->RegenerateLibrary();
-                        m_isRegeneratingLibrary = false;
-                        m_dirChanged.store(true, std::memory_order_release);
-                    }, "Regenerate Library");
-                }
-                ImGui::EndDisabled();
-            }
-
-            if (ImGui::MenuItem("Clear items"))
-                ClearItems();
-            ImGui::EndMenu();
-        }
+        // The "Actions" menu that used to sit here -- Refresh Assets, Regenerate
+        // Library, Clear items -- moved to the main menu bar's Assets menu. Those act
+        // on the project rather than on this panel, so they belong with the other
+        // project-wide actions; the state they touch still lives here.
         if (ImGui::BeginMenu("Edit"))
         {
             if (ImGui::MenuItem("Delete", "Del", false, Selection.Size > 0))
@@ -725,6 +788,16 @@ void AssetsBrowser::DrawContent()
         }
         clipper.End();
 
+        // An empty directory gives LayoutLineCount == 0, so the clipper runs zero
+        // iterations and NOTHING is submitted after the SetCursorScreenPos above --
+        // which leaves ImGui's DC.IsSetPos set with CursorPos past CursorMaxPos, and
+        // EndChild then trips ErrorCheckUsingSetCursorPosToExtendParentBoundaries.
+        // Submitting an item closes that, and an empty folder gets a real empty state
+        // instead of a blank panel. (ImGui's own demo browser never has zero items,
+        // which is why the case is unhandled upstream.)
+        if (Items.empty())
+            ImGui::TextDisabled("This folder is empty.");
+
         // Flush deferred moves (accumulated during folder drop targets above)
         for (const auto& [src, destDir] : m_pendingMoves)
             MoveAsset(src, destDir);
@@ -737,33 +810,63 @@ void AssetsBrowser::DrawContent()
             ImGui::Text("Selection: %d items", Selection.Size);
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Create Folder"))
+            // Outside the Create submenu on purpose: a folder is not an asset, it is
+            // where assets go, and it is the entry reached most often.
+            if (ImGui::MenuItem("New Folder"))
             {
                 memset(folder_name_buffer, 0, sizeof(folder_name_buffer));
                 show_create_folder_popup = true;
                 ImGui::CloseCurrentPopup();
             }
 
-            if (ImGui::MenuItem("Create Script"))
+            // Everything the EDITOR authors from nothing. Imported types are absent
+            // by definition -- a mesh or a texture arrives as a file you drop in --
+            // and so are the types authored from something else: a .nprefab comes
+            // from a GameObject, a .nskel and .nanim are emitted beside a model.
+            if (ImGui::BeginMenu("Create"))
             {
-                script_creation_path = current_directory;
-                memset(script_name_buffer, 0, sizeof(script_name_buffer));
-                show_create_script_popup = true;
-                ImGui::CloseCurrentPopup();
-            }
+                if (ImGui::MenuItem("Script"))
+                {
+                    script_creation_path = current_directory;
+                    memset(script_name_buffer, 0, sizeof(script_name_buffer));
+                    show_create_script_popup = true;
+                    ImGui::CloseCurrentPopup();
+                }
 
-            if (ImGui::MenuItem("Create Material"))
-            {
-                memset(material_name_buffer, 0, sizeof(material_name_buffer));
-                show_create_material_popup = true;
-                ImGui::CloseCurrentPopup();
-            }
+                if (ImGui::MenuItem("Material"))
+                {
+                    memset(material_name_buffer, 0, sizeof(material_name_buffer));
+                    show_create_material_popup = true;
+                    ImGui::CloseCurrentPopup();
+                }
 
-            if (ImGui::MenuItem("Create Shader"))
-            {
-                memset(shader_name_buffer, 0, sizeof(shader_name_buffer));
-                show_create_shader_popup = true;
-                ImGui::CloseCurrentPopup();
+                if (ImGui::MenuItem("Shader"))
+                {
+                    memset(shader_name_buffer, 0, sizeof(shader_name_buffer));
+                    show_create_shader_popup = true;
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::Separator();
+
+                // Both of these could only be made from their own editor's File > New
+                // until now, which meant opening a window to create the asset you
+                // wanted to open in it.
+                if (ImGui::MenuItem("Audio Graph"))
+                {
+                    memset(audio_graph_name_buffer, 0, sizeof(audio_graph_name_buffer));
+                    show_create_audio_graph_popup = true;
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Animation Controller"))
+                {
+                    memset(controller_name_buffer, 0, sizeof(controller_name_buffer));
+                    show_create_controller_popup = true;
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndMenu();
             }
 
             ImGui::Separator();
@@ -771,6 +874,26 @@ void AssetsBrowser::DrawContent()
                 RequestDelete = true;
             ImGui::EndPopup();
         }
+
+        if (show_create_audio_graph_popup)
+        {
+            ImGui::OpenPopup("Create New Audio Graph");
+            show_create_audio_graph_popup = false;
+        }
+
+        DrawCreateAssetPopup("Create New Audio Graph", "Audio Graph Name", ".nafx",
+                             audio_graph_name_buffer, sizeof(audio_graph_name_buffer),
+                             &ImporterAudioGraph::CreateNewAudioGraphFile);
+
+        if (show_create_controller_popup)
+        {
+            ImGui::OpenPopup("Create New Animation Controller");
+            show_create_controller_popup = false;
+        }
+
+        DrawCreateAssetPopup("Create New Animation Controller", "Controller Name", ".nctrl",
+                             controller_name_buffer, sizeof(controller_name_buffer),
+                             &ImporterAnimationController::CreateNewControllerFile);
 
         if (show_create_folder_popup)
         {
@@ -841,10 +964,12 @@ void AssetsBrowser::DrawContent()
                     "    \"texture_maps\": []\n"
                     "}\n";
 
-                if (std::FILE* f = std::fopen(matPath.c_str(), "w"))
+                std::ofstream matFile(matPath);
+                matFile << defaultContent;
+                matFile.close();
+
+                if (matFile)
                 {
-                    std::fputs(defaultContent, f);
-                    std::fclose(f);
                     editorContext->GetResourceManager()->ImportFile(matPath);
                     NOUS_INFO("Created material: %s", matPath.c_str());
                     AddItemsFromDirectory(current_directory);
@@ -894,10 +1019,12 @@ void AssetsBrowser::DrawContent()
             {
                 const std::string shaderPath = current_directory + "/" + shader_name_buffer + ".glsl";
 
-                if (std::FILE* f = std::fopen(shaderPath.c_str(), "w"))
+                std::ofstream shaderFile(shaderPath);
+                shaderFile << TextEditorWindow::k_DefaultShaderSource;
+                shaderFile.close();
+
+                if (shaderFile)
                 {
-                    std::fputs(TextEditorWindow::k_DefaultShaderSource, f);
-                    std::fclose(f);
                     editorContext->GetResourceManager()->ImportFile(shaderPath);
                     editorContext->WatchShaderFile(shaderPath);
                     NOUS_INFO("Created shader: %s", shaderPath.c_str());
