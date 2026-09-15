@@ -15,6 +15,7 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <filesystem>
 #include <vector>
@@ -24,8 +25,25 @@ using nous::engine::animation_system::AnimationEvent;
 
 namespace
 {
-    constexpr float c_rulerHeight = 46.0f;
-    constexpr float c_grabRadius  = 7.0f;
+    constexpr float c_rulerHeight   = 74.0f;
+    constexpr float c_grabRadius    = 7.0f;
+    constexpr float c_handleHeight  = 10.0f;   // the playhead's draggable caret
+    constexpr float c_labelRow      = 15.0f;   // text row above the track
+    constexpr float c_fieldWidth    = 220.0f;  // marker panel fields
+
+    // A label needs room for its own text plus a gap; below this two labels touch and
+    // the ruler reads as noise. Feeds ChooseTickStep, which is what keeps the grid
+    // legible at any window width.
+    constexpr float c_minLabelSpacing = 64.0f;
+
+    const ImU32 c_colTrack      = IM_COL32( 30,  30,  34, 255);
+    const ImU32 c_colTrackEdge  = IM_COL32( 64,  64,  72, 255);
+    const ImU32 c_colTickMajor  = IM_COL32(112, 112, 120, 255);
+    const ImU32 c_colTickMinor  = IM_COL32( 70,  70,  78, 255);
+    const ImU32 c_colLabel      = IM_COL32(150, 150, 158, 255);
+    const ImU32 c_colMarker     = IM_COL32(120, 190, 255, 255);
+    const ImU32 c_colMarkerSel  = IM_COL32(255, 196,  64, 255);
+    const ImU32 c_colPlayhead   = IM_COL32(244, 100,  92, 255);
 
     // The Assets Browser payload is a NUL-separated LIST, not one string -- a
     // multi-select drop carries several paths. Reading it as a bare c-string would
@@ -202,42 +220,77 @@ void AnimationTimelineWindow::DrawRuler(CAnimator& animator, ResourceAnimation& 
     const bool hovered = ImGui::IsItemHovered();
 
     ImDrawList* draw = ImGui::GetWindowDrawList();
-    const float top    = origin.y + 6.0f;
-    const float bottom = origin.y + c_rulerHeight - 6.0f;
 
-    draw->AddRectFilled(ImVec2(ruler.x, top), ImVec2(ruler.x + ruler.width, bottom),
-                        IM_COL32(38, 38, 42, 255));
+    // Three bands, top to bottom: the caret's handle, the labelled tick row, and the
+    // track the markers live in. Separating the handle from the marker lane is what
+    // lets the playhead be grabbed even when it sits on top of a marker.
+    const float top      = origin.y + 3.0f;
+    const float labelTop = top + c_handleHeight;
+    const float trackTop = labelTop + c_labelRow;
+    const float bottom   = origin.y + c_rulerHeight - 6.0f;
 
-    // One tick per snap step, or per tenth of the clip when snapping is off. Skipped
-    // entirely when the steps would be closer than 3 px: a 60/s grid on a long clip is
-    // a solid bar that hides the markers it exists to help place.
-    const float step = m_snapPerSecond > 0.0f ? 1.0f / m_snapPerSecond
-                                              : clip.clip.duration * 0.1f;
-    if (step > 0.0f && clip.clip.duration > 0.0f && (ruler.width * step / clip.clip.duration) > 3.0f)
+    draw->AddRectFilled(ImVec2(ruler.x, trackTop), ImVec2(ruler.x + ruler.width, bottom),
+                        c_colTrack, 4.0f);
+    draw->AddRect(ImVec2(ruler.x, trackTop), ImVec2(ruler.x + ruler.width, bottom),
+                  c_colTrackEdge, 4.0f);
+
+    // A LABELLED grid, derived from the ruler's own width rather than from the snap
+    // setting. The old version drew one bare tick per snap step, so a 30/s grid over a
+    // 2 s clip was 60 identical marks that said nothing about where you were.
+    const float step = ChooseTickStep(clip.clip.duration, ruler.width, c_minLabelSpacing);
+    if (step > 0.0f)
+    {
+        // Four subdivisions per labelled step, and only while they stay 4 px apart --
+        // below that they fill in solid and hide the markers they sit behind.
+        const float minorStep = step * 0.25f;
+        const bool  drawMinor = (ruler.width * minorStep / clip.clip.duration) > 4.0f;
+
         for (float t = 0.0f; t <= clip.clip.duration; t += step)
         {
             const float x = TimeToX(ruler, t);
-            draw->AddLine(ImVec2(x, bottom - 5.0f), ImVec2(x, bottom),
-                          IM_COL32(90, 90, 96, 255));
+            draw->AddLine(ImVec2(x, trackTop), ImVec2(x, bottom), c_colTickMajor);
+
+            // Whole seconds lose their decimals: "2 s" reads faster than "2.00 s", and
+            // a sub-second step needs exactly as many places as the step itself has.
+            char label[32];
+            std::snprintf(label, sizeof(label), step >= 1.0f ? "%.0f s" : "%.2f s", t);
+            draw->AddText(ImVec2(x + 3.0f, labelTop), c_colLabel, label);
+
+            if (drawMinor)
+                for (int m = 1; m < 4; ++m)
+                {
+                    const float mx = TimeToX(ruler, t + minorStep * static_cast<float>(m));
+                    if (mx > ruler.x + ruler.width) break;
+                    draw->AddLine(ImVec2(mx, bottom - 6.0f), ImVec2(mx, bottom),
+                                  c_colTickMinor);
+                }
         }
+    }
 
     std::vector<float> times;
     times.reserve(clip.events.size());
     for (const AnimationEvent& event : clip.events) times.push_back(event.time);
 
-    const float mouseX = ImGui::GetIO().MousePos.x;
+    const float mouseX    = ImGui::GetIO().MousePos.x;
+    const float playheadX = TimeToX(ruler, m_playhead);
+    const int   hovering  = hovered ? HitTestMarker(ruler, times, mouseX, c_grabRadius) : -1;
 
     if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
     {
-        const int hit = HitTestMarker(ruler, times, mouseX, c_grabRadius);
-        if (hit >= 0)
+        // A MARKER WINS over the playhead when the two overlap. Markers are what this
+        // window edits, and a scrub is recoverable in one click while a marker dragged
+        // by accident has already moved.
+        if (hovering >= 0)
         {
-            m_selectedEvent = hit;
-            m_draggedEvent  = hit;
+            m_selectedEvent = hovering;
+            m_draggedEvent  = hovering;
         }
         else
         {
-            m_playhead      = ClampTime(XToTime(ruler, mouseX), clip.clip.duration);
+            // Clicking bare track begins a scrub as well as jumping to it, so grabbing
+            // the caret and dragging the track are the same gesture rather than two --
+            // there is nothing to discover, and no dead zone to miss.
+            m_scrubbing     = true;
             m_selectedEvent = -1;
         }
     }
@@ -252,22 +305,50 @@ void AnimationTimelineWindow::DrawRuler(CAnimator& animator, ResourceAnimation& 
         m_dirty    = true;
     }
 
-    if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) m_draggedEvent = -1;
+    // Read from the mouse EVERY frame of the drag, not once on the click. Snapped like
+    // a marker is, because the playhead is where Add Event places one -- an unsnapped
+    // scrub would author markers off the grid the snap setting exists to impose.
+    if (m_scrubbing)
+        m_playhead = ClampTime(SnapTime(XToTime(ruler, mouseX), m_snapPerSecond),
+                               clip.clip.duration);
+
+    if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+    {
+        m_draggedEvent = -1;
+        m_scrubbing    = false;
+    }
+
+    // Says "this is draggable" before it is tried, which is the whole reason the caret
+    // has a handle wide enough to aim at.
+    const bool overPlayhead = hovered && std::abs(mouseX - playheadX) <= c_grabRadius;
+    if (m_scrubbing || m_draggedEvent >= 0 || overPlayhead || hovering >= 0)
+        ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
 
     for (size_t i = 0; i < clip.events.size(); ++i)
     {
-        const float x = TimeToX(ruler, clip.events[i].time);
-        const ImU32 colour = (static_cast<int>(i) == m_selectedEvent)
-                           ? IM_COL32(255, 196, 64, 255) : IM_COL32(120, 190, 255, 255);
+        const float x        = TimeToX(ruler, clip.events[i].time);
+        const bool  selected = static_cast<int>(i) == m_selectedEvent;
+        const ImU32 colour   = selected ? c_colMarkerSel : c_colMarker;
 
-        draw->AddTriangleFilled(ImVec2(x, top), ImVec2(x - 5.0f, top + 9.0f),
-                                ImVec2(x + 5.0f, top + 9.0f), colour);
-        draw->AddLine(ImVec2(x, top + 9.0f), ImVec2(x, bottom), colour);
+        draw->AddLine(ImVec2(x, trackTop + 2.0f), ImVec2(x, bottom), colour,
+                      selected ? 2.0f : 1.0f);
+        draw->AddTriangleFilled(ImVec2(x, trackTop + 12.0f),
+                                ImVec2(x - 5.0f, trackTop + 2.0f),
+                                ImVec2(x + 5.0f, trackTop + 2.0f), colour);
     }
 
-    const float playheadX = TimeToX(ruler, m_playhead);
-    draw->AddLine(ImVec2(playheadX, top), ImVec2(playheadX, bottom),
-                  IM_COL32(240, 240, 240, 255), 2.0f);
+    if (hovering >= 0 && m_draggedEvent < 0)
+        ImGui::SetTooltip("%s  @ %.3f s", clip.events[hovering].name.c_str(),
+                          clip.events[hovering].time);
+
+    // Drawn LAST so it reads as being on top of the markers it crosses, and with its
+    // handle above the marker lane so the two never compete for the same pixels.
+    draw->AddLine(ImVec2(playheadX, labelTop), ImVec2(playheadX, bottom), c_colPlayhead, 2.0f);
+    draw->AddTriangleFilled(ImVec2(playheadX - 6.0f, top),
+                            ImVec2(playheadX + 6.0f, top),
+                            ImVec2(playheadX, top + c_handleHeight), c_colPlayhead);
+
+    if (m_scrubbing) ImGui::SetTooltip("%.3f s", m_playhead);
 
     // Re-armed EVERY FRAME, because an arm lasts exactly one OnUpdate. That expiry is
     // what makes closing this window enough to release the character -- a closed
@@ -281,14 +362,26 @@ void AnimationTimelineWindow::DrawRuler(CAnimator& animator, ResourceAnimation& 
     if (m_preview)
         animator.SetPreview(&clip, m_playhead);
 
+    // ONE toolbar row. Scrubbing lives on the ruler now, so what is left here is the
+    // typed-time escape hatch and the three things that act on the playhead.
+    //
+    // A DragFloat rather than the SliderFloat it replaced: a slider is a second way to
+    // do what the ruler already does better, while a drag field's ctrl-click is how an
+    // exact time gets typed -- the one thing dragging a caret cannot do.
+    ImGui::SetNextItemWidth(90.0f);
+    if (ImGui::DragFloat("##time", &m_playhead, 0.005f, 0.0f, clip.clip.duration, "%.3f s"))
+        m_playhead = ClampTime(m_playhead, clip.clip.duration);
+
+    ImGui::SameLine();
+    ImGui::TextDisabled("/ %.3f s", clip.clip.duration);
+
+    ImGui::SameLine(0.0f, 16.0f);
     ImGui::Checkbox("Preview", &m_preview);
-    ImGui::SameLine();
-    ImGui::TextDisabled("(holds the pose at the playhead)");
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Holds the character at the playhead's pose, in either\n"
+                          "simulation state. Expires when this window closes.");
 
-    ImGui::SetNextItemWidth(160.0f);
-    ImGui::SliderFloat("Time", &m_playhead, 0.0f, clip.clip.duration, "%.3f s");
-
-    ImGui::SameLine();
+    ImGui::SameLine(0.0f, 16.0f);
     ImGui::SetNextItemWidth(110.0f);
     const char* snapNames[]  = { "Snap: off", "24 / s", "30 / s", "60 / s" };
     const float snapValues[] = { 0.0f, 24.0f, 30.0f, 60.0f };
@@ -297,7 +390,7 @@ void AnimationTimelineWindow::DrawRuler(CAnimator& animator, ResourceAnimation& 
     if (ImGui::Combo("##snap", &snapIndex, snapNames, 4))
         m_snapPerSecond = snapValues[snapIndex];
 
-    ImGui::SameLine();
+    ImGui::SameLine(0.0f, 16.0f);
     if (ImGui::Button("Add Event"))
     {
         clip.events.push_back({ ClampTime(m_playhead, clip.clip.duration),
@@ -307,11 +400,20 @@ void AnimationTimelineWindow::DrawRuler(CAnimator& animator, ResourceAnimation& 
     }
 
     ImGui::SameLine();
-    if (ImGui::Button(m_dirty ? "Save *" : "Save"))
+    if (ImGui::Button("Save"))
     {
         // Writes the stub AND the binary in one call -- they are only correct
         // together, and a disagreement stays until the next re-import picks a winner.
         if (ImporterAnimation::SaveAuthoring(clip)) m_dirty = false;
+    }
+
+    // Beside the button rather than inside its label: a label that changes width makes
+    // everything after it move, and the state being reported is the CLIP's, not the
+    // button's.
+    if (m_dirty)
+    {
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(1.0f, 0.77f, 0.25f, 1.0f), "unsaved");
     }
 }
 
@@ -325,8 +427,18 @@ void AnimationTimelineWindow::DrawSelectedMarkerPanel(ResourceAnimation& clip)
 
     AnimationEvent& event = clip.events[m_selectedEvent];
 
+    // The selected marker's own colour, so the panel and the flag on the ruler are
+    // visibly the same object.
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.77f, 0.25f, 1.0f));
+    ImGui::SeparatorText(event.name.empty() ? "Marker" : event.name.c_str());
+    ImGui::PopStyleColor();
+
+    // EVERY field gets an explicit width. ImGui puts a label to the RIGHT of its
+    // widget, so a full-width field pushes its own label to the far edge of the
+    // window -- which is what made this panel read as a broken table.
     char nameBuffer[64] = {};
     std::snprintf(nameBuffer, sizeof(nameBuffer), "%s", event.name.c_str());
+    ImGui::SetNextItemWidth(c_fieldWidth);
     if (ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer)))
     {
         event.name = nameBuffer;
@@ -334,22 +446,57 @@ void AnimationTimelineWindow::DrawSelectedMarkerPanel(ResourceAnimation& clip)
     }
 
     float time = event.time;
+    ImGui::SetNextItemWidth(c_fieldWidth);
     if (ImGui::DragFloat("Time", &time, 0.005f, 0.0f, clip.clip.duration, "%.3f s"))
     {
         event.time = ClampTime(time, clip.clip.duration);
         m_dirty    = true;
     }
 
-    if (ImGui::DragFloat("Float", &event.floatParam, 0.01f)) m_dirty = true;
+    // Seconds AND the frame it lands on, because markers are authored against frames --
+    // a foot plants on a frame, not at 0.916 s. Only while snapping is on: with no grid
+    // there is no frame rate to count in, and inventing one (30?) would be a number the
+    // clip never agreed to.
+    if (m_snapPerSecond > 0.0f)
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled("frame %d", static_cast<int>(event.time * m_snapPerSecond + 0.5f));
+    }
+
+    // NAMED AFTER THE SCRIPT'S PARAMETERS, not after their types. "Float" says what it
+    // is; "floatParam" says where it arrives -- it is the identifier in
+    // OnAnimationEvent(name, floatParam, stringParam), so the panel and the handler
+    // spell the payload the same way.
+    ImGui::SetNextItemWidth(c_fieldWidth);
+    if (ImGui::DragFloat("floatParam", &event.floatParam, 0.01f)) m_dirty = true;
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Passed to OnAnimationEvent untouched. The engine never\n"
+                          "reads it -- what it means is the script's decision.");
 
     char stringBuffer[64] = {};
     std::snprintf(stringBuffer, sizeof(stringBuffer), "%s", event.stringParam.c_str());
-    if (ImGui::InputText("String", stringBuffer, sizeof(stringBuffer)))
+    ImGui::SetNextItemWidth(c_fieldWidth);
+    // A hint rather than a placeholder value: an empty payload is the common case, and
+    // this is what tells it apart from a field that failed to load.
+    if (ImGui::InputTextWithHint("stringParam", "optional -- L / R, surface, ...",
+                                 stringBuffer, sizeof(stringBuffer)))
     {
         event.stringParam = stringBuffer;
         m_dirty           = true;
     }
 
+    // THE CALL THIS MARKER MAKES, in the engine's own syntax. The panel cannot say what
+    // a payload MEANS -- that is the script's business and deliberately unknown here --
+    // but it can say exactly what crosses into the script DLL, which is the question a
+    // handler is written against. It is also the fastest way to spot a payload left
+    // over from another marker.
+    ImGui::Spacing();
+    char call[192];
+    std::snprintf(call, sizeof(call), "OnAnimationEvent(\"%s\", %.3ff, \"%s\")",
+                  event.name.c_str(), event.floatParam, event.stringParam.c_str());
+    ImGui::TextDisabled("%s", call);
+
+    ImGui::Spacing();
     if (ImGui::Button("Delete Event"))
     {
         clip.events.erase(clip.events.begin() + m_selectedEvent);

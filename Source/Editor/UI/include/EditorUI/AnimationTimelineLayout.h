@@ -57,6 +57,33 @@ namespace nous::editor::timeline
         return std::round(time * snapPerSecond) / snapPerSecond;
     }
 
+    // Seconds between LABELLED ticks on the ruler, or 0 for "draw no grid".
+    //
+    // Two constraints, and neither is satisfiable by the snap grid the ruler used to
+    // draw from: a step must be ROUND enough to read as a label (the 1-2-5 ladder, so
+    // never 0.3333 s) and WIDE enough that its label clears its neighbour's
+    // (`minSpacingPx`, which is the part the caller cannot work out for itself).
+    //
+    // Derived from the ruler rather than the snap setting on purpose -- snapping is
+    // about where a marker may LAND, which is a different question from what the ruler
+    // can legibly say about where you are. A 30/s snap over a 2 s clip is 60 identical
+    // unlabelled marks; this gives 0.5 s steps that carry a number.
+    [[nodiscard]] inline float ChooseTickStep(const float duration, const float width,
+                                              const float minSpacingPx)
+    {
+        if (duration <= 0.0f || width <= 0.0f) return 0.0f;
+
+        // The narrowest step that still clears the spacing, before rounding it to a
+        // readable number. Rounding can only go UP from here, so the constraint holds.
+        const float minStep = duration * (minSpacingPx / width);
+        const float decade  = std::pow(10.0f, std::floor(std::log10(minStep)));
+
+        for (const float mantissa : { 1.0f, 2.0f, 5.0f })
+            if (decade * mantissa >= minStep) return decade * mantissa;
+
+        return decade * 10.0f;   // next decade's 1, e.g. minStep 6 -> 10
+    }
+
     // Index of the marker nearest `mouseX` within `grabRadius` pixels, or -1.
     //
     // NEAREST rather than first-within-radius: markers routinely sit within a few

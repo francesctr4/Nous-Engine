@@ -86,6 +86,12 @@ private:
     float m_playhead      = 0.0f;
     int   m_selectedEvent = -1;
     int   m_draggedEvent  = -1;
+
+    // Held across frames because a scrub is a DRAG, not a click: the ruler only ever
+    // reacted to IsMouseClicked, which is why the playhead jumped to the cursor and
+    // then stopped following it. Mirrors m_draggedEvent, and is released by the same
+    // mouse-up, so the two can never both be live.
+    bool  m_scrubbing     = false;
     float m_snapPerSecond = 30.0f;   // 0 = off
     bool  m_dirty         = false;   // unsaved marker edits
 };

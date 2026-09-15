@@ -78,3 +78,66 @@ TEST(t_AnimationTimelineLayout, HitTestPrefersTheCloserOfTwoOverlappingMarkers)
     EXPECT_EQ(HitTestMarker(ruler, times, 152.5f, 6.0f), 1);
     EXPECT_EQ(HitTestMarker(ruler, times, 149.5f, 6.0f), 0);
 }
+
+// ---------------------------------------------------------------------------
+// ChooseTickStep -- the labelled grid on the ruler.
+//
+// The ruler used to draw one unlabelled tick per snap step, which says nothing
+// about WHERE you are: a 30/s grid over a 2 s clip is 60 identical marks. A
+// labelled grid has to pick a step that is round enough to read and wide enough
+// to fit its own text, which is what this decides.
+// ---------------------------------------------------------------------------
+
+// Steps come from the 1-2-5 ladder, so a label is always a number a person reads
+// at a glance (0.5 s, 2 s, 20 s) and never 0.3333 s.
+TEST(t_AnimationTimelineLayout, TickStepComesFromTheOneTwoFiveLadder)
+{
+    for (const float duration : { 0.4f, 2.0f, 7.5f, 33.0f, 240.0f })
+    {
+        const float step = ChooseTickStep(duration, 600.0f, 60.0f);
+        ASSERT_GT(step, 0.0f);
+
+        // Reduce to its mantissa: dividing out the power of ten must leave 1, 2 or 5.
+        const float decade   = std::pow(10.0f, std::floor(std::log10(step)));
+        const float mantissa = step / decade;
+
+        EXPECT_TRUE(std::abs(mantissa - 1.0f) < 1e-3f ||
+                    std::abs(mantissa - 2.0f) < 1e-3f ||
+                    std::abs(mantissa - 5.0f) < 1e-3f)
+            << "duration " << duration << " gave step " << step;
+    }
+}
+
+// The whole point of the minimum: a label must not be drawn on top of its
+// neighbour. The step's pixel width is what the caller cannot compute for itself.
+TEST(t_AnimationTimelineLayout, TickStepIsNeverNarrowerThanTheMinimumSpacing)
+{
+    for (const float duration : { 0.4f, 2.0f, 7.5f, 33.0f, 240.0f })
+        for (const float width : { 120.0f, 600.0f, 1800.0f })
+        {
+            const float step     = ChooseTickStep(duration, width, 60.0f);
+            const float stepPx   = width * (step / duration);
+
+            EXPECT_GE(stepPx, 60.0f)
+                << "duration " << duration << " width " << width << " step " << step;
+        }
+}
+
+// A wider ruler earns a FINER grid -- the step may only shrink as pixels are added,
+// never grow. Without this the ruler could coarsen as the window is dragged wider.
+TEST(t_AnimationTimelineLayout, AWiderRulerNeverGetsACoarserStep)
+{
+    const float narrow = ChooseTickStep(2.0f, 200.0f,  60.0f);
+    const float wide   = ChooseTickStep(2.0f, 1200.0f, 60.0f);
+
+    EXPECT_LE(wide, narrow);
+}
+
+// Same degenerate contract as the rest of this header: 0 means "draw no grid",
+// which is what a clip whose Library/ entry failed to load produces.
+TEST(t_AnimationTimelineLayout, ADegenerateRulerAsksForNoGrid)
+{
+    EXPECT_FLOAT_EQ(ChooseTickStep(0.0f,  600.0f, 60.0f), 0.0f);
+    EXPECT_FLOAT_EQ(ChooseTickStep(-1.0f, 600.0f, 60.0f), 0.0f);
+    EXPECT_FLOAT_EQ(ChooseTickStep(2.0f,  0.0f,   60.0f), 0.0f);
+}
