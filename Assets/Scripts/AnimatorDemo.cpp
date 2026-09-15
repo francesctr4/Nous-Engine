@@ -14,6 +14,7 @@
 
 // ----- HEADER FILES ----- //
 /*coding_start::AnimatorDemo*/
+#include <cstring>
 /*coding_end::AnimatorDemo*/
 
 // Drives the owning GameObject's CAnimator from script, which is the whole point of
@@ -195,6 +196,29 @@ public:
 
     // ----- METHODS ----- //
     /*coding_start::AnimatorDemo*/
+    // The inward end of the event path: a marker on the clip reaches CAnimator, which
+    // hands it to CScript, which calls this on every instance it owns. Nothing here
+    // knows when the sound plays -- the ANIMATION decides that, which is the whole
+    // point: a footstep authored on the frame the foot plants stays in sync through
+    // every speed factor, cross-fade and loop wrap without a timer in this file.
+    void OnAnimationEvent(const char* name, float floatParam, const char* stringParam) override
+    {
+        if (std::strcmp(name, "Footstep") == 0 && m_footstepSource)
+        {
+            // A little pitch variation, so repeated footsteps do not sound mechanical.
+            // stringParam is "L" or "R", which is what makes the two feet distinct
+            // without needing two event names.
+            const float variation = (std::strcmp(stringParam, "L") == 0) ? 0.95f : 1.05f;
+            Nous_Engine->Audio->SetPitch(m_footstepSource, variation);
+            Nous_Engine->Audio->Play(m_footstepSource);
+        }
+        else if (std::strcmp(name, "Hit") == 0 && m_hitSource)
+        {
+            Nous_Engine->Audio->SetVolume(m_hitSource, floatParam > 0.0f ? floatParam : 1.0f);
+            Nous_Engine->Audio->Play(m_hitSource);
+        }
+    }
+
     // DOWN is the press edge and REPEAT every frame after it, so "held" is both.
     bool IsHeld(NOUS_SCANCODE key) const
     {
@@ -244,6 +268,12 @@ private:
     SCRIPT_FIELD(std::string, m_stateA, "Idle")
     SCRIPT_FIELD(std::string, m_stateB, "Run")
     SCRIPT_FIELD(std::string, m_stateC, "Attack")
+
+    // Two CAudioSource children on the character, each with playOnAwake OFF so the
+    // scene's own state machine creates no voice and only these events start one.
+    // 0 means "not wired", and the handler is a no-op rather than a crash when it is.
+    SCRIPT_GAMEOBJECT(m_footstepSource, 0)
+    SCRIPT_GAMEOBJECT(m_hitSource, 0)
     /*coding_end::AnimatorDemo*/
 };
 

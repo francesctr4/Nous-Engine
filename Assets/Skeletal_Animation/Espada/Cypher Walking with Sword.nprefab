@@ -54,6 +54,18 @@
                                 "type": 0,
                                 "value": 1
                             },
+                            "m_footstepSource": {
+                                "type": 3,
+                                "value": 1564795716
+                            },
+                            "m_hitSource": {
+                                "type": 3,
+                                "value": 2916187791
+                            },
+                            "m_sprintScale": {
+                                "type": 0,
+                                "value": 1.75
+                            },
                             "m_stateA": {
                                 "type": 4,
                                 "value": "Idle"
@@ -167,6 +179,100 @@
             ]
         },
         {
+            "uid": 1564795716,
+            "name": "FootstepsSFX",
+            "parent": 2797316622,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -1.0700225830078125,
+                        0,
+                        0.26404571533203125
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAudioSource",
+                    "assetPath": "Assets\/Skeletal_Animation\/footstep.wav",
+                    "libraryPath": "Library\/Audio\/2376978759.wav",
+                    "resourceUID": 2376978759,
+                    "effectGraphAssetPath": "",
+                    "volume": 0.10000000149011612,
+                    "pitch": 1,
+                    "loop": false,
+                    "playOnAwake": false,
+                    "spatialize": false,
+                    "minDistance": 1,
+                    "maxDistance": 50,
+                    "attenuation": "Inverse",
+                    "targetBus": "SFX"
+                }
+            ]
+        },
+        {
+            "uid": 2916187791,
+            "name": "HitSFX",
+            "parent": 2797316622,
+            "components": [
+                {
+                    "type": "CTransform",
+                    "position": [
+                        -1.0700225830078125,
+                        0,
+                        0.26404571533203125
+                    ],
+                    "orientation": [
+                        1,
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        -0,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "type": "CAudioSource",
+                    "assetPath": "Assets\/Skeletal_Animation\/hit.wav",
+                    "libraryPath": "Library\/Audio\/3113887959.wav",
+                    "resourceUID": 3113887959,
+                    "effectGraphAssetPath": "",
+                    "volume": 1,
+                    "pitch": 1,
+                    "loop": false,
+                    "playOnAwake": false,
+                    "spatialize": false,
+                    "minDistance": 1,
+                    "maxDistance": 50,
+                    "attenuation": "Inverse",
+                    "targetBus": "SFX"
+                }
+            ]
+        },
+        {
             "uid": 965004993,
             "name": "Cube.005",
             "parent": 2594028970,
@@ -199,7 +305,7 @@
                     "type": "CMesh",
                     "assetPath": "Assets\/Skeletal_Animation\/Espada\/Espada.fbx",
                     "libraryPath": "Library\/Meshes\/525630795.nmesh",
-                    "resourceUID": 1282696470,
+                    "resourceUID": 3310093459,
                     "submeshIndex": 0
                 },
                 {

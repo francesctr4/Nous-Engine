@@ -1,4 +1,14 @@
 {
     "source": "Assets\\Skeletal_Animation\\Standing Melee Attack Downward.fbx",
-    "clip": "mixamo.com"
+    "clip": "mixamo.com",
+    "loop": true,
+    "speed": 1,
+    "events": [
+        {
+            "time": 0.91600000858306885,
+            "name": "Hit",
+            "float": 0.60000002384185791,
+            "string": "Hit"
+        }
+    ]
 }
