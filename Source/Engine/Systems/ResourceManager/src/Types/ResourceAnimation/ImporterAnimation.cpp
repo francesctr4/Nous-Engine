@@ -6,7 +6,7 @@
 #include <ResourceManager/Core/MetaFileData.h>
 #include <ResourceManager/Import/ModelParser/ModelParser.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>
-#include <AnimationSystem/AnimationEvents.h>
+#include <AnimationSystem/Events/AnimationEvents.h>
 #include <Utils/Serialization/JsonArray.h>
 #include <Utils/Serialization/JsonFile.h>
 #include <Utils/Serialization/JsonObject.h>

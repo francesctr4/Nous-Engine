@@ -75,7 +75,7 @@ target_include_directories(EditorUI_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR
 target_link_libraries(EditorUI_headers INTERFACE EngineCore_headers)
 
 # AnimationControllerBuild.h -- a PUBLIC header -- includes
-# <AnimationSystem/Controller.h> and holds ControllerState/ControllerTransition BY
+# <AnimationSystem/Controller/Controller.h> and holds ControllerState/ControllerTransition BY
 # VALUE, so anyone handed EditorUI's API dir alone needs that dir too. It does NOT
 # arrive through ECS_headers: that handle carries only EngineCore_headers, and
 # AnimationSystem_headers rides on the ECS archive target instead. Header-only, so

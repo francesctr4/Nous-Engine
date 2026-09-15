@@ -1,11 +1,11 @@
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
 
-#include <AnimationSystem/AnimationEvents.h>
-#include <AnimationSystem/Blending.h>
-#include <AnimationSystem/Controller.h>
-#include <AnimationSystem/Palette.h>
-#include <AnimationSystem/Sampling.h>
-#include <AnimationSystem/RootMotion.h>
+#include <AnimationSystem/Events/AnimationEvents.h>
+#include <AnimationSystem/Sampling/Blending.h>
+#include <AnimationSystem/Controller/Controller.h>
+#include <AnimationSystem/Skinning/Palette.h>
+#include <AnimationSystem/Sampling/Sampling.h>
+#include <AnimationSystem/RootMotion/RootMotion.h>
 #include <EngineCore/Casts.h>
 #include <ECS/Component/Types/CScript/CScript.h>
 #include <ECS/Component/Types/CTransform/CTransform.h>

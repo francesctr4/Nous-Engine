@@ -1,0 +1,1 @@
+add_animation_test(t_AnimationEvents.cpp)

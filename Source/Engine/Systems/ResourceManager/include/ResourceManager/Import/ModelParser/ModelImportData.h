@@ -1,7 +1,7 @@
 #pragma once
 
-#include <AnimationSystem/AnimClip.h>
-#include <AnimationSystem/Skeleton.h>
+#include <AnimationSystem/Clip/AnimClip.h>
+#include <AnimationSystem/Skeleton/Skeleton.h>
 #include <ResourceManager/Types/ResourceMesh/ImporterMesh.h>
 
 #include <string>

@@ -4,7 +4,7 @@
 // ParameterDecl::type is a raw uint8_t and Controller.h only forward-declares
 // AnimParameters -- the ENUM those bytes mean lives here, which is what lets the
 // pure layer carry declarations without depending on the blackboard.
-#include <AnimationSystem/AnimParameters.h>
+#include <AnimationSystem/Controller/AnimParameters.h>
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
 #include <ECS/GameObject.h>
 #include <EditorCore/EditorContext.h>

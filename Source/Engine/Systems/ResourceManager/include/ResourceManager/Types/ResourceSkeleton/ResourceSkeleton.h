@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AnimationSystem/Skeleton.h>
+#include <AnimationSystem/Skeleton/Skeleton.h>
 #include <EngineCore/EngineExport.h>
 #include <ResourceManager/Core/ResourceBase.h>
 

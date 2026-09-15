@@ -32,8 +32,8 @@
 #include <ECS/Component/Types/CAnimator/CAnimator.h>
 #include <ECS/ECSInternalComponents.h>
 #include <ResourceManager/Types/ResourceSkeleton/ResourceSkeleton.h>
-#include <AnimationSystem/Bounds.h>
-#include <AnimationSystem/Palette.h>
+#include <AnimationSystem/Skinning/Bounds.h>
+#include <AnimationSystem/Skinning/Palette.h>
 #include <Utils/Math/Vertex.inl>
 
 #include <MemoryManager/MemoryManager.h>

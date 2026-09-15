@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AnimationSystem/AnimClip.h>
+#include <AnimationSystem/Clip/AnimClip.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>

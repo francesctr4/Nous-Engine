@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AnimationSystem/AnimClip.h>
+#include <AnimationSystem/Clip/AnimClip.h>
 #include <EngineCore/EngineExport.h>
 #include <ResourceManager/Core/IImporter.h>
 #include <ResourceManager/Types/ResourceAnimation/ResourceAnimation.h>   // AnimationSettings

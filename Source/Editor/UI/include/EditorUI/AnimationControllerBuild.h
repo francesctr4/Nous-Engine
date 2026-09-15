@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AnimationSystem/Controller.h>
+#include <AnimationSystem/Controller/Controller.h>
 
 #include <cstdint>
 #include <string>

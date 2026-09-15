@@ -1,7 +1,7 @@
 #pragma once
 
-#include <AnimationSystem/AnimClip.h>
-#include <AnimationSystem/AnimationEvents.h>
+#include <AnimationSystem/Clip/AnimClip.h>
+#include <AnimationSystem/Events/AnimationEvents.h>
 #include <EngineCore/EngineExport.h>
 #include <ResourceManager/Core/ResourceBase.h>
 

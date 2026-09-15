@@ -1,11 +1,11 @@
 #pragma once
 
 #include <ECS/Component/Component.h>
-#include <AnimationSystem/AnimInstance.h>
-#include <AnimationSystem/AnimParameters.h>
-#include <AnimationSystem/Binding.h>
+#include <AnimationSystem/Clip/AnimInstance.h>
+#include <AnimationSystem/Controller/AnimParameters.h>
+#include <AnimationSystem/Sampling/Binding.h>
 #include <AnimationSystem/Pose.h>
-#include <AnimationSystem/RootMotion.h>
+#include <AnimationSystem/RootMotion/RootMotion.h>
 #include <EngineCore/EngineExport.h>
 
 #include <glm/glm.hpp>

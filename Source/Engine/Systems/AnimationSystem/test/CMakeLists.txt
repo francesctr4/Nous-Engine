@@ -1,7 +1,7 @@
 find_package(GTest CONFIG REQUIRED)
 include(GoogleTest)
 
-# These four cover a library with no engine dependencies, and their link lines say
+# These cover a library with no engine dependencies, and their link lines say
 # so: the AnimationSystem archive, gtest, and nothing else. No NousEngine::Engine,
 # no NousEngine::Editor, no window, no device -- which is the whole reason the
 # spec's build order puts the maths first. If one of these ever needs another
@@ -12,10 +12,18 @@ include(GoogleTest)
 # without the STATIC state a test TU would emit __imp_-prefixed references the
 # linker will not pull an archive member in to satisfy. See the three-state macro
 # note in .claude/CLAUDE.md -- LNK4217 is that failure in its warning form.
-foreach (ANIM_TEST Interpolate Sampling Blending Palette Bounds AnimParameters RootMotion Controller AnimationEvents)
-    set(TEST_NAME "t_AnimationSystem_${ANIM_TEST}")
+#
+# Defined HERE and called from the unit leaves below, rather than copied into each
+# of them: the link policy above is a property of this whole target, so it should
+# have exactly one place to be got wrong. The leaves still exist, and still own
+# which tests they build -- that is the unit boundary.
+function(add_animation_test TEST_SOURCE)
+    get_filename_component(TEST_STEM ${TEST_SOURCE} NAME_WE)
+    string(REGEX REPLACE "^t_" "" TEST_STEM ${TEST_STEM})
 
-    add_executable(${TEST_NAME} t_${ANIM_TEST}.cpp)
+    set(TEST_NAME "t_AnimationSystem_${TEST_STEM}")
+
+    add_executable(${TEST_NAME} ${TEST_SOURCE})
 
     set_target_properties(${TEST_NAME} PROPERTIES
             CXX_STANDARD 23
@@ -35,4 +43,14 @@ foreach (ANIM_TEST Interpolate Sampling Blending Palette Bounds AnimParameters R
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
             WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     )
-endforeach ()
+endfunction()
+
+# Mirrors src/ and include/. Clip/ and Skeleton/ have no directory here because
+# they have no tests of their own -- they are exercised through Sampling and
+# Skinning, which is where their output becomes checkable.
+add_subdirectory(Transform)
+add_subdirectory(Sampling)
+add_subdirectory(Skinning)
+add_subdirectory(Controller)
+add_subdirectory(RootMotion)
+add_subdirectory(Events)

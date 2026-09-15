@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AnimationSystem/Skeleton.h>
+#include <AnimationSystem/Skeleton/Skeleton.h>
 #include <AnimationSystem/Transform.h>
 
 #include <glm/glm.hpp>

@@ -23,7 +23,7 @@ struct Vertex3D
     // rather than using a second vertex layout, so there is exactly one Vertex3D,
     // one stride and one pipeline vertex-input description in the engine. All-zero
     // weights mean "no influence", which the skinning path treats as a passthrough
-    // (see SkinVertices in AnimationSystem/Palette.h). The cost is 32 bytes per
+    // (see SkinVertices in AnimationSystem/Skinning/Palette.h). The cost is 32 bytes per
     // vertex on static geometry; the alternative is two vertex formats forever.
     glm::uvec4 boneIDs{ 0u };       // location 7
     glm::vec4  boneWeights{ 0.0f }; // location 8

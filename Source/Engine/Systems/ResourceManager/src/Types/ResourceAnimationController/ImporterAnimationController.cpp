@@ -7,7 +7,7 @@
 #include <ResourceManager/Core/IResourceLoader.h>
 #include <ResourceManager/Runtime/ImportPipeline.h>
 
-#include <AnimationSystem/AnimParameters.h>
+#include <AnimationSystem/Controller/AnimParameters.h>
 
 #include <FileSystem/FileSystem.h>
 #include <Logger/Logger.h>
