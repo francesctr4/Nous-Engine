@@ -2456,3 +2456,13 @@ TEST_F(t_CAnimator, AFadeOUTOfACliplessStateDoesNotStrandTheAnimator)
     ASSERT_EQ(a.GetBoneGlobals().size(), 2u);
     EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 7.0f) << "Idle, not bind pose";
 }
+
+// A graph change that ANNOUNCES ITSELF is preserved by name -- covered above by
+// AGenerationBumpPreservesTheCurrentStateByName, which reorders exactly this way.
+//
+// One that does NOT announce itself cannot be, and deliberately so: CAnimator detects a
+// rebuild with an integer compare, which is what makes checking it every frame for every
+// character free. So the invariant lives at the writer, not here -- every path that
+// replaces graph.states must bump `generation`. The asset hot-reload path did not, and
+// t_ImporterAnimationController.DeserializeBumpsTheGenerationForTheHotReloadPath pins
+// the fix. Found in the 2026-09-16 seam QA pass; see .claude/CLAUDE.md.

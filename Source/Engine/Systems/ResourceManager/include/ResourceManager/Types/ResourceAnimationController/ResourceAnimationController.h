@@ -73,8 +73,15 @@ public:
     // than on ControllerState so the pure layer stays free of view-state.
     std::vector<glm::vec2> editorPositions;
 
-    // Bumped on every editor save. CAnimator compares it each frame and rebuilds
-    // when it changes, which is what makes tuning a transition reach a character
-    // that is already playing. Same mechanism as ResourceAudioGraph.
+    // Bumped whenever THE GRAPH IS REBUILT: by the editor's save, and by
+    // ImporterAnimationController::Deserialize, which the asset hot-reload path re-runs
+    // on a live controller when the .nctrl changes on disk. CAnimator compares it each
+    // frame and re-enters its current state BY NAME when it changes, which is what makes
+    // tuning a transition reach a character that is already playing -- and what stops a
+    // reordered states array silently moving that character to another animation.
+    //
+    // Both writers are required: the editor edits the in-memory graph without going
+    // through Deserialize, and Deserialize runs for edits the editor never saw. Same
+    // mechanism as ResourceAudioGraph.
     uint32_t generation = 0;
 };

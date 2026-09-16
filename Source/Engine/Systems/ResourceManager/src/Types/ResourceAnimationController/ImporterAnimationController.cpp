@@ -296,6 +296,31 @@ bool ImporterAnimationController::Deserialize(const std::string& libraryPath, Re
 
     ResolveClips(controller);
 
+    // THE GRAPH JUST CHANGED IDENTITY, so say so. Deserialize is not called only on a
+    // fresh resource: `.nctrl` is hotReloadable, so an external edit to the file --
+    // a text editor, a git checkout, a merge -- re-runs this on the LIVE controller and
+    // replaces graph.states wholesale.
+    //
+    // Before this, `generation` was bumped ONLY by the controller editor's Save, so that
+    // path announced itself and this one did not. A live CAnimator saw an unchanged UID
+    // and an unchanged generation, skipped its entire preserve-by-name block, and went
+    // on indexing a states array that had been swapped underneath it: reordering two
+    // states externally moved the character to a different animation silently, which is
+    // precisely what m_currentStateName exists to prevent. Deleting the current state
+    // externally was worse -- m_currentState went out of range, EvaluateController
+    // returned immediately, and nothing outside the bind and generation blocks
+    // re-derives it, so the character stood in bind pose permanently.
+    //
+    // Bumping HERE rather than at the hot-reload call site is what makes it structural:
+    // the counter now belongs to "the graph was rebuilt" rather than to "one particular
+    // caller remembered". The editor's own bump stays -- it edits the in-memory graph
+    // without going through Deserialize at all.
+    //
+    // Bumping on a FIRST load is harmless: CAnimator seeds m_boundGeneration from
+    // whatever it reads when it binds, so there is nothing to disagree with. The counter
+    // is a change marker, never a count of anything.
+    controller->generation += 1;
+
     return true;
 }
 

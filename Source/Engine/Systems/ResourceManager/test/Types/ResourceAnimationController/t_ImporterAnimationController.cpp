@@ -236,6 +236,48 @@ TEST_F(ImporterAnimationControllerTest, EndpointsAreNamesSoReorderingStatesDoesN
     EXPECT_EQ(1, read.graph.defaultState);
 }
 
+// The other half of the test above, and the one whose absence made that one's
+// reassurance hollow. Endpoints surviving a reorder ON DISK is worthless if a LIVE
+// CAnimator never learns the reorder happened.
+//
+// `.nctrl` is hotReloadable, so an external edit -- a text editor, a git checkout, a
+// merge -- re-runs Deserialize on a controller a character is already playing and
+// replaces graph.states wholesale. CAnimator detects a rebuild by comparing
+// `generation`, which was bumped ONLY by the controller editor's Save. So that path
+// announced itself and this one did not: reordering two states externally moved the
+// character to a different animation silently, and deleting the current state left
+// m_currentState out of range with nothing outside the bind and generation blocks to
+// re-derive it -- bind pose, permanently.
+//
+// Found in the 2026-09-16 seam QA pass. The in-engine repro could not show it: the demo
+// graph is condition-driven, so the swap was undone by the next frame's edge, leaving
+// only a clip that restarted for no visible reason.
+TEST_F(ImporterAnimationControllerTest, DeserializeBumpsTheGenerationForTheHotReloadPath)
+{
+    ResourceAnimationController written(1);
+    written.graph = SampleGraph();
+
+    const std::string path = "t_AnimationController_generation.nctrl";
+    ASSERT_TRUE(ImporterAnimationController::WriteControllerToFile(written, path));
+
+    ResourceAnimationController read(2);
+    ImporterAnimationController importer;
+
+    const uint32_t before = read.generation;
+    ASSERT_TRUE(importer.Deserialize(path, &read));
+    const uint32_t afterFirst = read.generation;
+
+    EXPECT_NE(before, afterFirst) << "a first load is a rebuild like any other";
+
+    // The one that matters: re-deserializing IN PLACE, which is exactly what the asset
+    // hot-reload path does to a controller a character is playing right now.
+    ASSERT_TRUE(importer.Deserialize(path, &read));
+
+    EXPECT_NE(afterFirst, read.generation)
+        << "a live graph was replaced without announcing it; every CAnimator bound to "
+           "this controller is still indexing the states array it had before";
+}
+
 TEST_F(ImporterAnimationControllerTest, ABrokenTransitionEndpointLoadsAsMinusOneRatherThanFailing)
 {
     // A link the editor left pointing at a deleted state must cost that link, not
