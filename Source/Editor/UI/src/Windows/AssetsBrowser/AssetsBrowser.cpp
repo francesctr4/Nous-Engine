@@ -23,6 +23,16 @@
 #include <NOUS_Multithreading/NOUS_JobSystem.h>
 #include <Logger/Logger.h>
 
+// The file manager's own name -- "Reveal in Explorer" means nothing on the
+// other two platforms, and this menu entry is the only place it is user-visible.
+#ifdef _WIN32
+static constexpr const char* c_fileManagerName = "Explorer";
+#elif defined(__APPLE__)
+static constexpr const char* c_fileManagerName = "Finder";
+#else
+static constexpr const char* c_fileManagerName = "File Manager";
+#endif
+
 static const std::unordered_map<std::string, FileType> extensionToFileType =
 {
     {".fbx",     FileType::MODEL},
@@ -593,6 +603,13 @@ void AssetsBrowser::DrawContent()
         const int item_curr_idx_to_focus = want_delete ? Selection.ApplyDeletionPreLoop(ms_io, static_cast<int>(Items.size())) : -1;
         RequestDelete = false;
 
+        // Cleared before the items are submitted and re-stamped by whichever one
+        // is hovered below, so a right-click on void leaves it empty and the
+        // context menu falls back to the current folder. IsMouseClicked stays true
+        // for the whole frame, so the loop that follows still sees this click.
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+            m_contextItemPath.clear();
+
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(LayoutSelectableSpacing, LayoutSelectableSpacing));
 
         const ImU32 icon_bg_color = ImGui::GetColorU32(IM_COL32(35, 35, 35, 220));
@@ -664,6 +681,9 @@ void AssetsBrowser::DrawContent()
                     {
                         ImGui::Selectable("", item_is_selected, ImGuiSelectableFlags_None, LayoutItemSize);
                     }
+
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                        m_contextItemPath = item_data->path;
 
                     if (ImGui::IsItemToggledSelection())
                         item_is_selected = !item_is_selected;
@@ -870,6 +890,21 @@ void AssetsBrowser::DrawContent()
             }
 
             ImGui::Separator();
+
+            // Acts on the item the menu was opened over. A right-click on void
+            // has no asset to mean, so it falls back to the folder on show --
+            // and the label says which, rather than silently doing the other one.
+            const bool hasContextItem = !m_contextItemPath.empty();
+            const std::string revealLabel = hasContextItem
+                                                ? std::format("Reveal in {}", c_fileManagerName)
+                                                : std::format("Open Folder in {}", c_fileManagerName);
+
+            if (ImGui::MenuItem(revealLabel.c_str()))
+            {
+                nous::engine::filesystem::RevealInFileManager(
+                    hasContextItem ? m_contextItemPath : current_directory);
+            }
+
             if (ImGui::MenuItem("Delete", "Del", false, Selection.Size > 0))
                 RequestDelete = true;
             ImGui::EndPopup();

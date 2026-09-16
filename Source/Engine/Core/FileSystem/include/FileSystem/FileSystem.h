@@ -1,5 +1,4 @@
-#ifndef FILEMANAGER_H
-#define FILEMANAGER_H
+#pragma once
 
 #include <filesystem>
 #include <string>
@@ -22,6 +21,14 @@ namespace nous::engine::filesystem
 	// Returns the path with all backslashes replaced by forward slashes.
 	NOUS_ENGINE_API std::string NormalizePath(const std::string& path);
 
+	// The counterpart to NormalizePath: returns the path spelled the way the OS
+	// spells it, for handing to an OS API that parses the string literally.
+	// Engine-internal paths stay normalized; convert only at the handoff.
+	//
+	// On POSIX this is the identity, deliberately — a backslash there is a legal
+	// filename character, so rewriting one names a different file.
+	NOUS_ENGINE_API std::string ToNativePath(const std::string& path);
+
 	// Directory operations
 	NOUS_ENGINE_API bool CreateDirectory(const std::filesystem::path& path);
 	NOUS_ENGINE_API bool DeleteDirectory(const std::filesystem::path& path);
@@ -30,6 +37,14 @@ namespace nous::engine::filesystem
 	NOUS_ENGINE_API bool CopyFile(const std::string& source, const std::string& destination);
 	NOUS_ENGINE_API bool MoveFile(const std::string& source, const std::string& destination);
 	NOUS_ENGINE_API bool DeleteFile(const std::string& path);
-}
 
-#endif // FILEMANAGER_H
+	// Shell integration
+
+	// Opens the OS file manager at `path`, accepting an engine-relative path. A
+	// file is revealed with the file itself selected; a directory is opened.
+	//
+	// Returns false when the path does not exist or the file manager could not be
+	// launched. On POSIX a true means only that the helper was spawned — whether
+	// xdg-open/open then honoured it is not reported back.
+	NOUS_ENGINE_API bool RevealInFileManager(const std::string& path);
+}

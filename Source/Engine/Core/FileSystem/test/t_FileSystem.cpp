@@ -53,6 +53,51 @@ TEST(t_FileSystem, GetExtension_DotFile_ReturnsFull)
 }
 
 // =============================================================================
+// ToNativePath — the one part of RevealInFileManager that fails silently
+//
+// Explorer's /select, takes the path literally: hand it forward slashes and it
+// opens Documents instead of erroring, so nothing downstream reports it. These
+// cases are platform-split because the CONVERSION ITSELF is platform-specific,
+// not merely the separator: on POSIX a backslash is a legal filename character,
+// so rewriting one names a different file.
+// =============================================================================
+
+#ifdef _WIN32
+TEST(t_FileSystem, ToNativePath_ConvertsForwardSlashesForExplorer)
+{
+    EXPECT_EQ(nous::engine::filesystem::ToNativePath("C:/Projects/Nous/Assets/Foo.fbx"),
+              "C:\\Projects\\Nous\\Assets\\Foo.fbx");
+}
+
+TEST(t_FileSystem, ToNativePath_AlreadyNativePath_Unchanged)
+{
+    EXPECT_EQ(nous::engine::filesystem::ToNativePath("C:\\Projects\\Foo.fbx"),
+              "C:\\Projects\\Foo.fbx");
+}
+
+TEST(t_FileSystem, ToNativePath_MixedSeparators_AllConverted)
+{
+    // GetAbsolutePath composes a native cwd with an engine-relative path, so a
+    // mixed result is the NORMAL input here, not a malformed one.
+    EXPECT_EQ(nous::engine::filesystem::ToNativePath("C:\\Projects\\Nous/Assets/Foo.fbx"),
+              "C:\\Projects\\Nous\\Assets\\Foo.fbx");
+}
+#else
+TEST(t_FileSystem, ToNativePath_PosixPathIsAlreadyNative)
+{
+    EXPECT_EQ(nous::engine::filesystem::ToNativePath("/home/user/Nous/Assets/Foo.fbx"),
+              "/home/user/Nous/Assets/Foo.fbx");
+}
+
+TEST(t_FileSystem, ToNativePath_PosixBackslashIsPartOfTheNameAndSurvives)
+{
+    // Converting here would reveal a file that does not exist.
+    EXPECT_EQ(nous::engine::filesystem::ToNativePath("/home/user/odd\\name.fbx"),
+              "/home/user/odd\\name.fbx");
+}
+#endif
+
+// =============================================================================
 // Fixture — uses a temp directory created fresh per test
 // =============================================================================
 

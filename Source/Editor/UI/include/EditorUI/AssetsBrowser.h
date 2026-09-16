@@ -215,4 +215,13 @@ private:
     void ImportExternalFile(const std::string& srcPath);
 
     std::vector<std::pair<std::string, std::string>> m_pendingMoves;
+
+    // The item the context menu was opened over, or empty when the right-click
+    // landed on void. Right-clicking does not change the selection here (the
+    // items are MultiSelect Selectables, which only react to the left button),
+    // so the menu has no other way to know what it was opened on.
+    //
+    // A path rather than an index into Items: the vector is rebuilt whenever the
+    // directory is re-scanned, and an index would then name a different asset.
+    std::string m_contextItemPath;
 };
