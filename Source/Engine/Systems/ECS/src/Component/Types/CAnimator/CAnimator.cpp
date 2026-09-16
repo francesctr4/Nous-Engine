@@ -181,7 +181,29 @@ void CAnimator::EnterState(const int stateIndex, const float fadeSeconds)
     // Snapping instead puts a state whose .nanim did not resolve on exactly the path
     // ACliplessStateIsStillLeftByAnExitTimeEdge pins -- unbound, bind pose, and left by
     // the next frame's graph evaluation.
-    if (fadeSeconds <= 0.0f || !target)
+    //
+    // A FADE WITH NO SOURCE SNAPS TOO, for the mirror-image reason, and leaving this
+    // half out stranded the animator just as badly (found in the 2026-09-16 seam QA
+    // pass). Leaving a clipless state by a transition that carries a duration armed a
+    // fade whose OUTGOING track had no clip and therefore no pose -- and OnUpdate's fade
+    // branch sits behind the !IsBound() early return, which asks only about m_from. So
+    // the fade never advanced, never cleared, and never rendered: stuck fading with the
+    // per-frame re-derive of m_from suppressed (it is gated on not fading), the palette
+    // cleared every frame, and GraphProgress reading m_to so no exit-time edge could
+    // fire again. The character stood in bind pose while the editor's active-state
+    // highlight named a state whose clip was resident and perfectly playable.
+    //
+    // There is nothing a blend could do here anyway: an empty source pose fails
+    // ArePosesCompatible, so Blend would report failure and snap to m_to one frame
+    // later. Snapping up front makes that the rule rather than the recovery.
+    //
+    // A FROZEN track is NOT sourceless: it carries the captured blend from a re-trigger,
+    // which is a real pose with no clip advancing behind it. Testing boundClip alone
+    // would turn every interrupted transition into a snap and delete the fold's whole
+    // purpose.
+    const bool nothingToFadeFrom = (m_from.boundClip == 0 && !m_from.frozen);
+
+    if (fadeSeconds <= 0.0f || !target || nothingToFadeFrom)
     {
         m_from.clip       = target;
         m_from.stateIndex = stateIndex;

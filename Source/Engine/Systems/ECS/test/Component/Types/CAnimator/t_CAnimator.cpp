@@ -2393,3 +2393,66 @@ TEST_F(t_CAnimator, AFadeIntoACliplessStateSnapsRatherThanFadingForever)
     a.OnUpdate(0.0f);
     EXPECT_EQ(a.GetCurrentStateName(), "Idle");
 }
+
+// The OTHER direction, and the one the test above stops one tick short of: leaving a
+// clipless state by a transition that carries a duration. Found in the 2026-09-16 seam
+// QA pass, in-engine, on the demo controller's AnyState -> Attack (trigger) with Attack
+// -> Idle (exit time 0.9, duration 0.15) after Attack's clip was cleared.
+//
+// The fade branch in OnUpdate sits BEHIND the !IsBound() early return, and IsBound()
+// asks only about m_from -- which on this path is the clipless track the animator is
+// leaving. So the fade was armed and then never advanced, never cleared, and never
+// rendered: m_fadeDuration stuck at 0.15 forever, the per-frame re-derive of m_from
+// suppressed (it is gated on not fading), the palette cleared every frame, and
+// GraphProgress reading m_to so no exit-time edge could ever fire again. The character
+// stood in bind pose while the editor's active-state highlight said Idle -- a state
+// whose clip was resident and perfectly playable.
+TEST_F(t_CAnimator, AFadeOUTOfACliplessStateDoesNotStrandTheAnimator)
+{
+    ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
+    ResourceAnimation idle(2);  MakeHoldClip(idle, "Child", 7.0f); idle.SetName("Idle");
+
+    ResourceAnimationController ctrl(978);
+    SetClips(ctrl, { &idle, nullptr });
+
+    ctrl.graph.states[1].name      = "Attack";
+    ctrl.graph.states[1].clipIndex = -1;
+
+    auto& toAttack = AddTransition(ctrl, 0, 1, 0.2f);
+    toAttack.conditions.push_back(
+        { "attack", nous::engine::animation_system::ConditionComparator::TriggerSet, 0.0f });
+
+    // A REAL duration on the way OUT as well -- which is what every editor-authored
+    // transition has, and what makes this path the normal one rather than the corner.
+    auto& backToIdle = AddTransition(ctrl, 1, 0, 0.15f);
+    backToIdle.hasExitTime = true;
+    backToIdle.exitTime    = 0.9f;
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.0f);
+    a.parameters.SetTrigger("attack");
+    a.OnUpdate(0.0f);
+    ASSERT_EQ(a.GetCurrentStateName(), "Attack");
+
+    // The exit-time edge fires here and arms the fade back to Idle.
+    a.OnUpdate(0.0f);
+    ASSERT_EQ(a.GetCurrentStateName(), "Idle");
+
+    // Well past the 0.15 s fade. There is nothing to blend FROM -- the outgoing track
+    // has no clip and therefore no pose -- so this snaps, exactly as a fade INTO a
+    // clipless state does.
+    a.OnUpdate(0.5f);
+
+    EXPECT_FALSE(a.IsFading()) << "a fade with no source must not stay in flight";
+    EXPECT_TRUE(a.IsBound())   << "Idle's clip is resident and playable";
+    EXPECT_FALSE(a.GetPalette().empty()) << "a cleared palette renders the bind pose";
+
+    // ASSERT, not EXPECT: the failing version of this leaves the globals cleared, and
+    // indexing them then takes the whole test runner down with it.
+    ASSERT_EQ(a.GetBoneGlobals().size(), 2u);
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 7.0f) << "Idle, not bind pose";
+}
