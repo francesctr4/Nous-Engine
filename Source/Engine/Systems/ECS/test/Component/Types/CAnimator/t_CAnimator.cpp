@@ -1393,6 +1393,95 @@ TEST_F(t_CAnimator, AGenerationBumpPreservesTheCurrentStateByName)
     EXPECT_EQ(a.CurrentClip(), &animB);
 }
 
+// Tuning a transition while the scene plays is the whole point of the generation bump,
+// and a re-save that restarts the clip from t = 0 partly defeats it -- on a long clip you
+// lose your place on every edit. The restart was never a decision: the bump re-enters the
+// state through EnterState -> RebindTrack -> AnimInstance::SetClip, which resets `time`.
+//
+// So the cursor is carried across a re-save when the state still plays the SAME clip.
+TEST_F(t_CAnimator, AGenerationBumpKeepsTheCursorWhenTheClipIsUnchanged)
+{
+    ResourceSkeleton  rig(1);  MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2); MakeSlideClip(anim, "Child");   // x = 10 * t over 1 s
+
+    ResourceAnimationController ctrl(980);
+    SetClips(ctrl, { &anim });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.4f);
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 4.0f);
+
+    // The editor saved the asset underneath a playing animator.
+    ++ctrl.generation;
+    a.OnUpdate(0.0f);
+
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 4.0f)
+        << "the clip restarted from zero, losing the place the user was tuning at";
+}
+
+// The other half, and the reason the carry is conditional: a re-save that REPOINTS the
+// state at another clip has no cursor to preserve. Carrying the old time into a clip that
+// never ran would start it mid-way for no reason the user could see.
+TEST_F(t_CAnimator, AGenerationBumpRestartsWhenTheStatesClipChanged)
+{
+    ResourceSkeleton  rig(1);  MakeTwoBoneRig(rig);
+    ResourceAnimation before(2); MakeSlideClip(before, "Child");
+    ResourceAnimation after(3);  MakeSlideClip(after,  "Child");
+
+    ResourceAnimationController ctrl(981);
+    SetClips(ctrl, { &before });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+
+    a.OnUpdate(0.4f);
+    ASSERT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 4.0f);
+
+    ctrl.clips[0] = &after;   // the state now plays a different clip
+    ++ctrl.generation;
+    a.OnUpdate(0.0f);
+
+    EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 0.0f)
+        << "a clip that never ran must start at its beginning";
+}
+
+// THE HAZARD THE CARRY INTRODUCES, and the reason this is not a two-line change.
+// RebindTrack sets previousRoot to the root at t = 0, because a rebind starts there.
+// Moving the cursor without moving previousRoot leaves the next frame measuring travel
+// from the clip's START to the restored time -- one frame of root motion worth most of
+// the clip, which teleports an Applied character on every editor save.
+TEST_F(t_CAnimator, AGenerationBumpDoesNotLurchAnAppliedCharacter)
+{
+    ResourceSkeleton  rig(1);  MakeTwoBoneRig(rig);
+    ResourceAnimation anim(2); MakeSlideClip(anim, "Root");
+
+    ResourceAnimationController ctrl(982);
+    SetClips(ctrl, { &anim });
+
+    GameObject go = scene->CreateGameObject("Rig");
+    auto& a = go.AddComponent<CAnimator>();
+    a.skeleton   = &rig;
+    a.controller = &ctrl;
+    a.rootMotion = RootMotionMode::Applied;
+
+    a.OnUpdate(0.6f);
+    ASSERT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, 6.0f);
+
+    ++ctrl.generation;
+    a.OnUpdate(0.0f);
+
+    // Zero elapsed time means zero travel, re-save or not.
+    EXPECT_FLOAT_EQ(a.GetRootMotionDelta().translation.x, 0.0f)
+        << "the re-save reported travel the character never made";
+    EXPECT_FLOAT_EQ(go.GetComponent<CTransform>().position.x, 6.0f);
+}
+
 TEST_F(t_CAnimator, AGenerationBumpFallsBackToDefaultWhenTheStateIsGone)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);

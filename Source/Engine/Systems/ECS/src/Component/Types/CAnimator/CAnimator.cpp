@@ -299,6 +299,31 @@ void CAnimator::SeedPlaybackSettings(ClipTrack& track) const
     track.instance.speed = rate;
 }
 
+void CAnimator::SeekTrackTo(ClipTrack& track, const float time)
+{
+    if (!track.clip || track.boundClip == 0 || !skeleton) return;
+
+    // Clamped, because the clip behind this cursor may have been re-imported shorter
+    // while the animator held a time inside the OLD duration.
+    const float duration = track.clip->clip.duration;
+    track.instance.Seek(duration > 0.0f ? glm::clamp(time, 0.0f, duration) : 0.0f);
+
+    // previousRoot MUST follow the cursor. RebindTrack leaves it at the clip's START,
+    // which is correct for a rebind and wrong the instant the cursor moves elsewhere:
+    // the next frame would then measure travel from t = 0 to the restored time and hand
+    // an Applied character most of a clip's displacement in one frame.
+    if (track.binding.rootBone < 0) return;
+
+    anim::AnimInstance probe = track.instance;
+    probe.binding = &track.binding;
+
+    anim::Pose probePose;
+    anim::Sample(probe, skeleton->skeleton, m_boundSkeleton, probePose);
+
+    if (static_cast<size_t>(track.binding.rootBone) < probePose.bones.size())
+        track.previousRoot = probePose.bones[track.binding.rootBone];
+}
+
 void CAnimator::RebindTrack(ClipTrack& track)
 {
     track.boundClip = UIDOf(track.clip);
@@ -599,6 +624,16 @@ void CAnimator::OnUpdate(const float deltaTime)
     {
         m_boundGeneration = controller->generation;
 
+        // Captured before the re-enter below throws it away. A re-save is an EDITOR
+        // action on a running scene, not a reason to restart the animation: tuning a
+        // transition's duration is only meaningful while it plays, and losing your place
+        // in the clip on every save is most of that value gone. The restart was never
+        // chosen -- it fell out of EnterState -> RebindTrack -> SetClip, which resets
+        // `time`. Carried back only when the state still plays the SAME clip; a state
+        // repointed at another clip has no cursor to preserve.
+        const uint32_t heldClip = m_from.boundClip;
+        const float    heldTime = m_from.instance.time;
+
         // Preserved BY NAME, from the name REMEMBERED at enter. The index is
         // meaningless across a re-save: inserting a state above this one shifts it,
         // and reading states[m_currentState].name now would report whatever state has
@@ -626,6 +661,10 @@ void CAnimator::OnUpdate(const float deltaTime)
         RebindTrack(m_to);
 
         EnterState(restored, 0.0f);
+
+        if (heldClip != 0 && m_from.boundClip == heldClip)
+            SeekTrackTo(m_from, heldTime);
+
         SeedDeclaredParameters();
     }
 

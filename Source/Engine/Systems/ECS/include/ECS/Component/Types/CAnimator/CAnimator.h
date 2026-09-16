@@ -305,6 +305,16 @@ private:
     // sizes its pose. Clears the track when either side is null.
     void RebindTrack(ClipTrack& track);
 
+    // Moves a bound track's cursor, clamped to the clip, AND re-establishes previousRoot
+    // at that time. The second half is the whole reason this is a function: RebindTrack
+    // leaves previousRoot at the clip's start, which is right for a rebind and wrong the
+    // moment the cursor goes anywhere else -- the next frame would measure travel from
+    // t = 0 to here and move an Applied character by most of a clip in one frame.
+    //
+    // Used by the re-save path to carry the cursor across a graph rebuild. Any future
+    // caller that repositions a playing track must come through here for the same reason.
+    void SeekTrackTo(ClipTrack& track, float time);
+
     // Pushes the track's clip's authored loop onto its AnimInstance, and composes its
     // playback rate from FOUR factors: the clip's authored speed, the state's speed,
     // the state's optional speed parameter, and the animator's speedMultiplier. Called
