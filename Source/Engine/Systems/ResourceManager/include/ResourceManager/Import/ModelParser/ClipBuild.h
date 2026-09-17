@@ -39,11 +39,9 @@ namespace nous::engine::resource_manager
     // negatives and non-finite values alike.
     [[nodiscard]] double ResolveTicksPerSecond(double reported);
 
-    // Converts every track to seconds and drops the tick rate on the floor.
-    //
-    // The rate deliberately does NOT survive into AnimClipData: if it did, every
-    // downstream site would have to remember to divide, and the one that forgets
-    // plays at 25x. One conversion, here, at the boundary.
+    // Converts every track to seconds and drops the tick rate. It deliberately does NOT
+    // survive into AnimClipData: every downstream site would then have to remember to
+    // divide, and the one that forgets plays at 25x.
     //
     // Channels whose three tracks are inconsistent (times and values of different
     // lengths) are dropped rather than fixed -- a half-written channel would sample

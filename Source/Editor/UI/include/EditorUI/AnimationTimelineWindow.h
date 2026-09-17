@@ -62,35 +62,28 @@ private:
     // Index into the controller's state list whose clip is shown.
     int m_stateIndex = 0;
 
-    // A clip dragged in from the Assets Browser, for one no state plays yet -- which is
-    // also the only way to reach this window's editing at all when the character has no
-    // controller. OWNED: there is no non-acquiring path lookup on the resource manager,
-    // so showing a clip means holding a reference to it.
+    // A clip dragged in from the Assets Browser, for one no state plays yet -- also the
+    // only way to edit at all when the character has no controller. OWNED: there is no
+    // non-acquiring path lookup, so showing a clip means holding a reference.
     ResourceAnimation* m_droppedClip = nullptr;
 
     // Whether scrubbing drives the character's pose.
     //
-    // OFF BY DEFAULT, unlike most toggles, because the window itself opens by default:
-    // an on-by-default preview would hold every selected character at its playhead from
-    // the moment the editor starts, which reads as the animation being broken rather
-    // than as a preview being on. Opting in costs one click at the point where the user
-    // already means to scrub.
+    // OFF BY DEFAULT because the window itself opens by default: an on-by-default preview
+    // would hold every selected character at its playhead from the moment the editor
+    // starts, which reads as the animation being broken.
     //
-    // It OVERRIDES the graph, so while the scene is playing the character visibly stops
-    // animating and holds the playhead's pose. That is the feature, not a freeze, and
-    // this is the switch that turns it off; closing the window does the same, since the
-    // arm expires on its own. Suppressing it by simulation state instead was tried and
-    // removed the case the window is most used in.
+    // It OVERRIDES the graph, so a playing character visibly stops and holds the
+    // playhead's pose -- the feature, not a freeze. This switch turns it off, and so does
+    // closing the window, since the arm expires on its own.
     bool  m_preview       = false;
 
     float m_playhead      = 0.0f;
     int   m_selectedEvent = -1;
     int   m_draggedEvent  = -1;
 
-    // Held across frames because a scrub is a DRAG, not a click: the ruler only ever
-    // reacted to IsMouseClicked, which is why the playhead jumped to the cursor and
-    // then stopped following it. Mirrors m_draggedEvent, and is released by the same
-    // mouse-up, so the two can never both be live.
+    // Held across frames because a scrub is a DRAG, not a click. Mirrors m_draggedEvent
+    // and is released by the same mouse-up, so the two can never both be live.
     bool  m_scrubbing     = false;
     float m_snapPerSecond = 30.0f;   // 0 = off
     bool  m_dirty         = false;   // unsaved marker edits

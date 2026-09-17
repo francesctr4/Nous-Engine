@@ -11,10 +11,10 @@
 /**
  * @brief Pure canvas-graph -> ControllerGraph, and the validation rules.
  *
- * Operates on plain node/link proxies naming NO imgui-node-editor types, so the same
- * code the editor runs is the code the unit tests drive. Mirrors AudioGraphLinearize,
- * and for the same reason: a flattening pass that only ever runs behind a live ImGui
- * context is a pass nobody can test, and this one decides which transition wins.
+ * Operates on plain node/link proxies naming NO imgui-node-editor types, so the code the
+ * editor runs is the code the tests drive. Mirrors AudioGraphLinearize: a flattening pass
+ * that only runs behind a live ImGui context is one nobody can test, and this one decides
+ * which transition wins.
  */
 namespace nous::anim_editor
 {
@@ -59,9 +59,9 @@ namespace nous::anim_editor
     /**
      * @brief Flattens canvas nodes and links into a graph.
      *
-     * LINK ORDER IS PRESERVED, because authored order is the transition priority
-     * (design §3) -- the evaluator walks transitions in order and the first satisfied
-     * one wins. Never sort or group them, however tidy it would look.
+     * LINK ORDER IS PRESERVED, because authored order is the transition priority: the
+     * evaluator walks transitions in order and the first satisfied one wins. Never sort
+     * or group them, however tidy it would look.
      *
      * The AnyState node is not a state: it is skipped when building the state array,
      * and links out of it become `c_anyState` transitions. Including it would shift
@@ -163,9 +163,8 @@ namespace nous::anim_editor
         for (const as::ControllerTransition& t : graph.transitions)
         {
             // An undeclared name reads through AnimParameters' fallback, so Greater,
-            // Less, IsTrue and TriggerSet are simply never satisfied -- but IsFalse
-            // IS. So a mistyped name can produce a transition that ALWAYS fires, and
-            // nothing at runtime says why.
+            // Less, IsTrue and TriggerSet are never satisfied -- but IsFalse IS, so a
+            // mistyped name can produce a transition that ALWAYS fires.
             for (const as::ControllerCondition& c : t.conditions)
                 if (!declared.contains(c.parameter))
                     out.push_back({ WarningKind::UndeclaredParameter, c.parameter });

@@ -35,8 +35,8 @@ namespace
 {
     uint32_t UIDOf(const ResourceBase* resource) { return resource ? resource->GetUID() : 0u; }
 
-    // Serialized as a STRING, like CLight's and CAudioSource's enums: the numeric
-    // value would silently change meaning if a mode were ever inserted mid-enum.
+    // Serialized as a STRING, like CLight's enums: a numeric value would silently change
+    // meaning if a mode were ever inserted mid-enum.
     const char* RootMotionToString(const RootMotionMode m)
     {
         switch (m)
@@ -55,9 +55,7 @@ namespace
         if (s == "Applied") return RootMotionMode::Applied;
         if (s == "InPlace") return RootMotionMode::InPlace;
 
-        // Baked, not Inherit, for anything unrecognised: a scene saved before Inherit
-        // existed has no such value to read and must keep behaving identically.
-        return RootMotionMode::Baked;
+        return RootMotionMode::Baked;   // unrecognised, including a scene predating Inherit
     }
 }
 
@@ -69,8 +67,6 @@ const ResourceAnimation* CAnimator::CurrentClip() const { return CurrentTrack().
 
 float CAnimator::GetNormalizedTime() const
 {
-    // The same track CurrentClip() reports, taken from the one selector, so the two
-    // can never describe different clips.
     const ClipTrack& track = CurrentTrack();
 
     if (!track.clip || track.boundClip == 0)
@@ -78,16 +74,15 @@ float CAnimator::GetNormalizedTime() const
 
     const float duration = track.clip->clip.duration;
     if (duration <= 0.0f)
-        return 0.0f;   // a zero-duration clip has no meaningful progress
+        return 0.0f;
 
     return track.instance.time / duration;
 }
 
 float CAnimator::GraphProgress() const
 {
-    // Same predicate as the guard in GetNormalizedTime, opposite answer. A state with
-    // no clip is finished rather than at zero, so an exit-time edge out of it can
-    // fire; see the header for why the script-facing getter does not do this.
+    // Same predicate as GetNormalizedTime's guard, opposite answer: a state with no clip
+    // is finished rather than at zero, so an exit-time edge out of it can fire.
     const ClipTrack& track = CurrentTrack();
 
     if (!track.clip || track.boundClip == 0)
@@ -101,9 +96,8 @@ ResourceAnimation* CAnimator::ClipForState(const int stateIndex) const
     if (!controller || !controller->graph.IsValidState(stateIndex))
         return nullptr;
 
-    // clipIndex, never the state index: the two coincide today because the importer
-    // fills one clip slot per state, but clipIndex is what the pure layer carries
-    // and it is -1 for any state whose clip did not resolve.
+    // clipIndex, never the state index: they coincide today only because the importer
+    // fills one clip slot per state, and it is -1 for a state whose clip did not resolve.
     const int clipIndex = controller->graph.states[stateIndex].clipIndex;
     if (clipIndex < 0 || static_cast<size_t>(clipIndex) >= controller->clips.size())
         return nullptr;
@@ -117,12 +111,9 @@ void CAnimator::SeedDeclaredParameters()
 
     for (const anim::ParameterDecl& decl : controller->graph.parameters)
     {
-        // ABSENCE is the whole condition, and Contains is the only thing that can
-        // state it. A sentinel fallback cannot: every getter returns the fallback for
-        // a CROSS-TYPE entry as well as a missing one, so it cannot tell "not held"
-        // from "held as a Bool" -- and the obvious GetBool double-read with
-        // disagreeing fallbacks is exactly inverted, skipping the absent name it is
-        // meant to seed while overwriting a script's `false`.
+        // Contains is the only thing that can state absence: every getter returns its
+        // fallback for a CROSS-TYPE entry as well as a missing one, so no sentinel can
+        // tell "not held" from "held as a Bool".
         if (parameters.Contains(decl.name))
             continue;
 
@@ -155,52 +146,25 @@ RootMotionMode CAnimator::ResolveRootMotion(const int stateIndex) const
 
 void CAnimator::EnterState(const int stateIndex, const float fadeSeconds)
 {
-    // The destination becomes current IMMEDIATELY -- design §4. There is only ever
-    // one current state; the outgoing side is a pose, not a state. That is what
-    // makes exit time and conditions measure the INCOMING clip from the frame it is
-    // entered, which is the only reading under which "when the attack finishes"
-    // means the attack.
+    // The destination becomes current IMMEDIATELY: the outgoing side is a
+    // pose, not a state, which is what makes exit time measure the incoming clip.
     m_currentState = stateIndex;
 
-    // Captured HERE, while the index still refers to the graph it was resolved in.
-    // Deriving it later is what a re-save breaks -- see the member's comment.
+    // Captured while the index still refers to the graph it was resolved in; deriving it
+    // later is what a re-save breaks.
     m_currentStateName.assign(GetCurrentStateName());
 
     ResourceAnimation* target = ClipForState(stateIndex);
 
-    // A FADE TO NOTHING SNAPS, and that is load-bearing rather than tidy. The fade
-    // branch in OnUpdate is gated on `m_to.boundClip != 0`, so a target track with no
-    // clip never advances m_fadeElapsed and never clears m_fadeDuration -- the animator
-    // would stay "fading" forever: IsFading() stuck true with its progress readout
-    // pinned at 0, the per-frame re-derive of m_from suppressed (so later assigning a
-    // clip to the state would not be picked up), and GraphProgress() reporting the
-    // OUTGOING clip's progress instead of the 1.0 that lets an exit-time edge leave a
-    // clipless state. That last one is the 2026-09-13 QA bug: the fix for it only ever
-    // covered the snap path, and every transition takes this one by default (0.2 s).
+    // A FADE WITH NOTHING AT EITHER END SNAPS, and both halves are load-bearing. OnUpdate's
+    // fade branch is gated on m_to.boundClip and sits behind the !IsBound() return, which
+    // asks only about m_from -- so a fade to or from a clipless state would never advance,
+    // never clear and never render: stuck fading, the per-frame re-derive of m_from
+    // suppressed, and GraphProgress reading the wrong track so no exit-time edge could fire
+    // again. Blending could not help anyway; an empty pose fails ArePosesCompatible.
     //
-    // Snapping instead puts a state whose .nanim did not resolve on exactly the path
-    // ACliplessStateIsStillLeftByAnExitTimeEdge pins -- unbound, bind pose, and left by
-    // the next frame's graph evaluation.
-    //
-    // A FADE WITH NO SOURCE SNAPS TOO, for the mirror-image reason, and leaving this
-    // half out stranded the animator just as badly (found in the 2026-09-16 seam QA
-    // pass). Leaving a clipless state by a transition that carries a duration armed a
-    // fade whose OUTGOING track had no clip and therefore no pose -- and OnUpdate's fade
-    // branch sits behind the !IsBound() early return, which asks only about m_from. So
-    // the fade never advanced, never cleared, and never rendered: stuck fading with the
-    // per-frame re-derive of m_from suppressed (it is gated on not fading), the palette
-    // cleared every frame, and GraphProgress reading m_to so no exit-time edge could
-    // fire again. The character stood in bind pose while the editor's active-state
-    // highlight named a state whose clip was resident and perfectly playable.
-    //
-    // There is nothing a blend could do here anyway: an empty source pose fails
-    // ArePosesCompatible, so Blend would report failure and snap to m_to one frame
-    // later. Snapping up front makes that the rule rather than the recovery.
-    //
-    // A FROZEN track is NOT sourceless: it carries the captured blend from a re-trigger,
-    // which is a real pose with no clip advancing behind it. Testing boundClip alone
-    // would turn every interrupted transition into a snap and delete the fold's whole
-    // purpose.
+    // A FROZEN track is not sourceless -- it carries a re-trigger's captured blend, a real
+    // pose with no clip behind it. Testing boundClip alone would snap every interruption.
     const bool nothingToFadeFrom = (m_from.boundClip == 0 && !m_from.frozen);
 
     if (fadeSeconds <= 0.0f || !target || nothingToFadeFrom)
@@ -220,15 +184,10 @@ void CAnimator::EnterState(const int stateIndex, const float fadeSeconds)
         return;
     }
 
-    // A fade is already running: fold the CURRENT blended pose into the outgoing
-    // track and fade from there. That keeps the animator at exactly two tracks under
-    // arbitrary re-triggering, and it is why ClipTrack has `frozen` at all -- a
-    // frozen track is a pose with no clip advancing behind it. The two-track ceiling
-    // IS the interruption model, deliberately, not a limitation being worked around.
-    //
-    // RebindTrack clears `frozen`, so the capture must happen BEFORE rebinding the
-    // target -- and m_from must never be rebound on this path, since that would
-    // resample it and throw the captured pose away.
+    // Already fading: fold the current blended pose into the outgoing track and fade from
+    // there, which is what keeps the animator at two tracks under arbitrary re-triggering.
+    // RebindTrack clears `frozen`, so the capture must happen BEFORE rebinding the target,
+    // and m_from must never be rebound on this path.
     if (m_fadeDuration > 0.0f)
     {
         m_from.pose   = m_blended;
@@ -255,9 +214,8 @@ bool CAnimator::CrossFade(const std::string_view stateName, const float fadeSeco
 
     EnterState(target, fadeSeconds);
 
-    // The override half of the arbitration rule. Set only on success: a call naming a
-    // state that does not exist must not cost the graph a frame, or a typo would show
-    // up as the state machine intermittently stalling rather than as a bad name.
+    // Set only on success: a call naming a state that does not exist must not cost the
+    // graph a frame, or a typo reads as the state machine intermittently stalling.
     m_graphSuppressedThisFrame = true;
     return true;
 }
@@ -276,11 +234,8 @@ void CAnimator::SeedPlaybackSettings(ClipTrack& track) const
 
     track.instance.loop = track.clip->settings.loop;
 
-    // FOUR factors, and they are deliberately different axes rather than one setting
-    // fighting for the same job: the clip's authored speed is per clip for every
-    // character, the state's is per clip WITHIN this controller, the parameter makes
-    // that state's rate follow input, and the multiplier is per character for every
-    // clip. Nothing here overrides anything -- it is a product, so each axis composes.
+    // Four independent axes, composed as a product: per clip, per state, per state
+    // following input, per character. Nothing here overrides anything.
     float rate = track.clip->settings.speed * speedMultiplier;
 
     if (controller && controller->graph.IsValidState(track.stateIndex))
@@ -288,10 +243,8 @@ void CAnimator::SeedPlaybackSettings(ClipTrack& track) const
         const auto& state = controller->graph.states[track.stateIndex];
         rate *= state.speed;
 
-        // Fallback 1.0f, NOT AnimParameters' own 0.0f default. The rate is a product,
-        // so reading zero for a parameter no script has written yet would freeze the
-        // character -- and an unset parameter is the normal state of a scene's first
-        // frames, not an error.
+        // Fallback 1.0f, not AnimParameters' own 0.0f: the rate is a product, so reading
+        // zero for a parameter no script has written yet would freeze the character.
         if (!state.speedParameter.empty())
             rate *= parameters.GetFloat(state.speedParameter, 1.0f);
     }
@@ -303,15 +256,14 @@ void CAnimator::SeekTrackTo(ClipTrack& track, const float time)
 {
     if (!track.clip || track.boundClip == 0 || !skeleton) return;
 
-    // Clamped, because the clip behind this cursor may have been re-imported shorter
-    // while the animator held a time inside the OLD duration.
+    // Clamped: the clip may have been re-imported shorter while the animator held a time
+    // inside the old duration.
     const float duration = track.clip->clip.duration;
     track.instance.Seek(duration > 0.0f ? glm::clamp(time, 0.0f, duration) : 0.0f);
 
-    // previousRoot MUST follow the cursor. RebindTrack leaves it at the clip's START,
-    // which is correct for a rebind and wrong the instant the cursor moves elsewhere:
-    // the next frame would then measure travel from t = 0 to the restored time and hand
-    // an Applied character most of a clip's displacement in one frame.
+    // previousRoot MUST follow the cursor -- RebindTrack leaves it at the clip's start, so
+    // without this the next frame measures travel from t = 0 and hands an Applied character
+    // most of a clip's displacement in one frame.
     if (track.binding.rootBone < 0) return;
 
     anim::AnimInstance probe = track.instance;
@@ -343,14 +295,12 @@ void CAnimator::RebindTrack(ClipTrack& track)
 
     track.instance.SetClip(&track.clip->clip, track.boundClip, &track.binding);
 
-    // Preallocate here rather than resizing per character per frame. Sample()
-    // would size the pose itself, but only on its first call.
+    // Preallocate here rather than letting Sample() size it on its first call.
     track.pose.skeleton = m_boundSkeleton;
     track.pose.bones.assign(skeleton->skeleton.BoneCount(), anim::Transform{});
 
-    // The root's transform at t=0 and t=duration, sampled once here so the
-    // loop-seam split costs nothing per frame. Sampling the whole skeleton twice
-    // is wasteful in the abstract and free in practice -- binding is rare, and
+    // The root at t=0 and t=duration, sampled once so the loop-seam split costs nothing per
+    // frame. Sampling the whole skeleton twice is free in practice -- binding is rare, and
     // reusing the tested sampler beats a bespoke single-channel path.
     track.previousRoot = anim::Transform{};
     track.rootAtStart  = anim::Transform{};
@@ -371,9 +321,7 @@ void CAnimator::RebindTrack(ClipTrack& track)
         anim::Sample(probe, skeleton->skeleton, m_boundSkeleton, probePose);
         track.rootAtEnd = probePose.bones[track.binding.rootBone];
 
-        // The instance is at t=0 after a rebind, so the first frame's delta is
-        // measured from the clip's start rather than from a stale pose.
-        track.previousRoot = track.rootAtStart;
+        track.previousRoot = track.rootAtStart;   // the instance is at t=0 after a rebind
     }
 }
 
@@ -384,54 +332,41 @@ void CAnimator::RebindTrack(ClipTrack& track)
 anim::RootMotionDelta CAnimator::ExtractTrackRootMotion(ClipTrack& track, const bool wrapped)
 {
     // The TRACK's resolved mode, never the component's: during a cross-fade the two
-    // tracks routinely disagree, and that disagreement is what makes the travel of an
-    // outgoing Applied state fade out against an incoming InPlace one instead of
-    // snapping off. Inherit is impossible here (ResolveRootMotion has already turned
-    // it into the component's mode) but is treated as "no travel" for safety.
+    // routinely disagree, which is what fades an outgoing Applied state's travel out
+    // against an incoming InPlace one instead of snapping it off.
     if (track.mode != RootMotionMode::Applied && track.mode != RootMotionMode::InPlace)
         return {};
 
     if (track.frozen || track.binding.rootBone < 0) return {};
     if (static_cast<size_t>(track.binding.rootBone) >= track.pose.bones.size()) return {};
 
-    // bindLocals as well as the pose, because the strip target is read out of it
-    // below. Sample() already treats a short bindLocals as "no bind pose" rather than
-    // as a precondition, so a skeleton that reaches here with one is a case the
-    // sampler tolerates and this would have read past the end of -- the two must
-    // agree on what is guaranteed. Every importer fills it; a hand-built rig need not.
+    // bindLocals too, since the strip target is read out of it below. Sample() treats a
+    // short bindLocals as "no bind pose" rather than a precondition, so the two must agree
+    // on what is guaranteed. Every importer fills it; a hand-built rig need not.
     if (static_cast<size_t>(track.binding.rootBone) >= skeleton->skeleton.bindLocals.size())
         return {};
 
-    // BY VALUE, not by reference: StripRootMotion mutates this very bone, so a
-    // reference would be read back already stripped and every frame after the
-    // first would measure zero travel.
+    // BY VALUE: StripRootMotion mutates this very bone, so a reference would be read back
+    // already stripped and every frame after the first would measure zero travel.
     const anim::Transform current = track.pose.bones[track.binding.rootBone];
 
-    // The composed rate decides the direction, not the clip's authored speed alone:
-    // a state speed of -1 over a forward clip plays it backwards just as an authored
-    // -1 does, and the seam has to be split the way the clip is actually moving.
+    // The COMPOSED rate decides direction: a state speed of -1 over a forward clip plays it
+    // backwards just as an authored -1 does, and the seam splits the way it is moving.
     const anim::RootMotionDelta delta = anim::ComputeRootDelta(
         track.previousRoot, current, track.rootAtStart, track.rootAtEnd, wrapped,
         track.instance.speed < 0.0f);
 
     track.previousRoot = current;
 
-    // Applied takes the yaw out of the pose because it is about to go onto the
-    // GameObject; InPlace keeps it, because a discarded yaw is not "not
-    // travelling" but deleted animation -- a turning clip would face one way
-    // forever. Same line Mixamo's own In Place export draws.
+    // Applied takes the yaw out of the pose because it is about to go onto the GameObject;
+    // InPlace keeps it, since a discarded yaw is deleted animation rather than "not
+    // travelling" -- a turning clip would face one way forever. Mixamo draws the same line.
     anim::StripRootMotion(track.pose, track.binding.rootBone,
                           skeleton->skeleton.bindLocals[track.binding.rootBone],
                           track.mode == RootMotionMode::Applied);
 
-    // ONLY Applied reports travel. InPlace strips it -- which is the work above -- and
-    // then DISCARDS it, which is this line: the delta exists to reach the transform,
-    // and an InPlace track has nothing to say to it.
-    //
-    // Load-bearing now that ApplyRootMotion has no mode gate of its own. The per-track
-    // mode is the only thing deciding whether an object moves, so a non-zero delta
-    // from an InPlace track would move it -- and because the modes resolve per track,
-    // that reads as "InPlace works on this character but not that one".
+    // Only Applied reports travel. Load-bearing now that ApplyRootMotion has no mode gate:
+    // the per-track mode is the only thing deciding whether an object moves.
     if (track.mode != RootMotionMode::Applied)
         return {};
 
@@ -450,36 +385,19 @@ void CAnimator::SetPreview(const ResourceAnimation* clip, const float time)
 
 void CAnimator::ApplyPreview()
 {
-    // CONSUMED, not latched: an arm survives exactly one OnUpdate. This is what makes
-    // "closing the window stops the preview" true BY CONSTRUCTION rather than by a
-    // cleanup path -- and a cleanup path is not even available, because IEditorWindow
-    // stops calling a closed window entirely (not even Update()), so a window that
-    // latched this could never take it back. Latching froze the character forever the
-    // first time the timeline was closed while scrubbing.
+    // CONSUMED, not latched -- which is what makes "closing the window stops the preview"
+    // true by construction. A closed window is not called at all, so one that latched this
+    // could never take it back.
     const ResourceAnimation* const previewClip = m_previewClip;
     m_previewClip = nullptr;
 
     if (!previewClip || !skeleton) return;
 
-    // ENTIRELY LOCAL: its own binding, its own instance, its own pose. NOTHING of the
-    // animator's playback state is read or written, so there is no save/restore pair to
-    // get wrong and nothing a scrub can leave behind.
-    //
-    // It used to BORROW m_from, on the reasoning that OnUpdate re-derives that track's
-    // clip every frame and so undoes the preview by itself. It does -- but only the
-    // `clip` POINTER. Everything else the borrow touched stayed: `boundClip` kept the
-    // PREVIEW clip's uid, so the next frame's uid compare rebound the track, and
-    // RebindTrack goes through AnimInstance::SetClip, which resets `time` to 0. So
-    // previewing any clip OTHER than the one the current state plays -- which is the
-    // window's normal case, since its state picker is free -- restarted the playing
-    // clip from zero EVERY FRAME, and re-fired every event near t = 0 with it. The
-    // borrow also cleared `frozen` and overwrote the captured pose behind an in-flight
-    // cross-fade.
-    //
-    // Cost of owning the three pieces instead: one binding build (a name lookup per
-    // channel) and two small vectors, per frame, on an editor-only path that only runs
-    // while someone is dragging. There is still no third ClipTrack on the component --
-    // a shipped game pays nothing for this.
+    // ENTIRELY LOCAL -- its own binding, instance and pose. It used to borrow m_from, on the
+    // reasoning that OnUpdate re-derives that track's clip anyway. It does, but only the
+    // POINTER: boundClip kept the preview clip's uid, so the next frame's compare rebound
+    // the track and SetClip reset its time. Previewing any clip other than the playing one
+    // therefore restarted it from zero every frame, re-firing every event near t = 0.
     const uint32_t clipUID = UIDOf(previewClip);
 
     const anim::AnimationBinding binding = anim::CreateBinding(
@@ -492,9 +410,8 @@ void CAnimator::ApplyPreview()
     anim::Pose previewPose;
     anim::Sample(instance, skeleton->skeleton, m_boundSkeleton, previewPose);
 
-    // No FireTrackEvents and no ApplyRootMotion here, deliberately -- see SetPreview.
-    // m_blended is left alone as well: its only other reader is the re-trigger fold in
-    // EnterState, which must capture the pose the GRAPH produced, not a scrubbed one.
+    // No events and no root motion here (see SetPreview). m_blended is left alone too: its
+    // other reader is EnterState's fold, which must capture the pose the GRAPH produced.
     if (!anim::BuildGlobals(skeleton->skeleton, previewPose, m_globals) ||
         !anim::BuildPalette(skeleton->skeleton, m_globals, m_palette))
     {
@@ -511,10 +428,9 @@ void CAnimator::FireTrackEvents(const ClipTrack& track, const float timeBefore,
 {
     if (!track.clip || track.clip->events.empty()) return;
 
-    // Derived, never parameters. `reversed` is the COMPOSED rate, so a controller
-    // state's speed of -1 over a forward clip counts as reversed exactly like an
-    // authored -1; `finished` is what closes the interval on a non-looping clip's
-    // last frame so an event authored at the very end is reachable at all.
+    // Derived, never passed in, so no call site can supply a flag that disagrees with the
+    // instance it just advanced. `finished` is what closes the interval on a non-looping
+    // clip's last frame, making an event authored at the very end reachable at all.
     const bool reversed = track.instance.speed < 0.0f;
     const bool finished = anim::IsFinished(track.instance);
 
@@ -525,9 +441,8 @@ void CAnimator::FireTrackEvents(const ClipTrack& track, const float timeBefore,
 
     if (fired.empty()) return;
 
-    // No CScript is the normal state while authoring, so this is silent rather than
-    // warned -- a warning here would fire on every footstep of an unscripted test
-    // scene.
+    // Silent rather than warned: no CScript is the normal state while authoring, and a
+    // warning here would fire on every footstep of an unscripted test scene.
     GameObject go = GetGameObject();
     CScript* scripts = go.IsValid() ? go.TryGetComponent<CScript>() : nullptr;
     if (!scripts) return;
@@ -557,10 +472,9 @@ void CAnimator::ApplyRootMotion()
         return;
     }
 
-    // The delta is in the animation's space: rotate it into the object's and scale
-    // it, or a character that is turned walks sideways and a scaled one footskates.
-    // Through the setters, never the raw fields -- they are what mark the transform
-    // dirty for UpdateWorldMatrices.
+    // The delta is in the animation's space: rotate it into the object's and scale it, or a
+    // turned character walks sideways and a scaled one footskates. Through the setters, not
+    // the raw fields -- they are what mark the transform dirty for UpdateWorldMatrices.
     transform->Translate(transform->orientation * (m_rootDelta.translation * transform->scale));
 
     if (m_rootDelta.yaw != 0.0f)
@@ -576,18 +490,14 @@ void CAnimator::ApplyRootMotion()
 
 void CAnimator::OnUpdate(const float deltaTime)
 {
-    // The CONTROLLER is now the source of truth for what may play -- the authored
-    // clip list it replaced is gone, and with it the per-frame reseeding that
-    // policed it. A clip leaving the graph is handled one level up: the controller
-    // releases it, and the bind below repoints both tracks.
     const uint32_t controllerUID = UIDOf(controller);
     if (controllerUID != m_boundController)
     {
         m_boundController = controllerUID;
         m_boundGeneration = controller ? controller->generation : 0;
 
-        // A new graph invalidates any in-flight transition: the outgoing frozen pose
-        // belongs to a state that may not exist in this graph at all.
+        // A new graph invalidates any in-flight transition: the frozen outgoing pose belongs
+        // to a state that may not exist in this graph at all.
         m_fadeElapsed  = 0.0f;
         m_fadeDuration = 0.0f;
         m_to.clip      = nullptr;
@@ -595,10 +505,9 @@ void CAnimator::OnUpdate(const float deltaTime)
 
         m_currentState = controller ? controller->graph.defaultState : -1;
 
-        // defaultState may not resolve -- a renamed or deleted state, or an asset
-        // that never named one. Falling back to the first state keeps the character
-        // animating and lets the editor report the problem, rather than presenting a
-        // bind-pose statue that looks like a broken rig.
+        // defaultState may not resolve -- renamed, deleted, or never named. Falling back to
+        // the first state keeps the character animating and lets the editor report the
+        // problem, rather than presenting a bind-pose statue that looks like a broken rig.
         if (controller && !controller->graph.IsValidState(m_currentState)
                        && !controller->graph.states.empty())
             m_currentState = 0;
@@ -614,46 +523,34 @@ void CAnimator::OnUpdate(const float deltaTime)
         SeedDeclaredParameters();
     }
 
-    // A generation bump means the asset was RE-SAVED underneath a live animator.
-    // Rebuilding without stopping the scene is most of this feature's value: tuning a
-    // transition's duration or exit time is only meaningful while it is playing.
-    //
-    // Not folded into the block above, because a re-save is not a slot change -- the
-    // controller UID is identical, so nothing there would notice it.
+    // A generation bump means the asset was RE-SAVED under a live animator. Not folded into
+    // the block above: the controller UID is identical, so nothing there would notice.
     if (controller && controller->generation != m_boundGeneration)
     {
         m_boundGeneration = controller->generation;
 
-        // Captured before the re-enter below throws it away. A re-save is an EDITOR
-        // action on a running scene, not a reason to restart the animation: tuning a
-        // transition's duration is only meaningful while it plays, and losing your place
-        // in the clip on every save is most of that value gone. The restart was never
-        // chosen -- it fell out of EnterState -> RebindTrack -> SetClip, which resets
-        // `time`. Carried back only when the state still plays the SAME clip; a state
-        // repointed at another clip has no cursor to preserve.
+        // Captured before the re-enter below throws it away. The restart was never chosen --
+        // it falls out of EnterState -> RebindTrack -> SetClip, which resets `time` -- and
+        // tuning a transition is only meaningful while the clip plays.
         const uint32_t heldClip = m_from.boundClip;
         const float    heldTime = m_from.instance.time;
 
-        // Preserved BY NAME, from the name REMEMBERED at enter. The index is
-        // meaningless across a re-save: inserting a state above this one shifts it,
-        // and reading states[m_currentState].name now would report whatever state has
-        // taken that index -- so reordering two states would swap the character
-        // between them with nothing to show it happened.
+        // By NAME, from the name remembered at enter: a re-save replaces the graph in place,
+        // so reading states[m_currentState].name now would report whatever state has taken
+        // that index and reordering two states would swap the character between them.
         int restored = m_currentStateName.empty()
                      ? -1
                      : controller->graph.FindState(m_currentStateName);
 
-        // Same two-step fallback the bind path uses: the authored default, then the
-        // first state, so a renamed or deleted state leaves a character animating
-        // rather than presenting a bind-pose statue that looks like a broken rig.
+        // Same two-step fallback the bind path uses.
         if (!controller->graph.IsValidState(restored))
             restored = controller->graph.defaultState;
         if (!controller->graph.IsValidState(restored) && !controller->graph.states.empty())
             restored = 0;
 
-        // An in-flight transition is cancelled rather than carried across: preserving
-        // it would mean reconciling two graphs' transition identities for one frame of
-        // visual continuity during an editor action.
+        // An in-flight transition is cancelled rather than carried across: preserving it
+        // would mean reconciling two graphs' transition identities for one frame of visual
+        // continuity during an editor action.
         m_fadeElapsed  = 0.0f;
         m_fadeDuration = 0.0f;
         m_to.clip      = nullptr;
@@ -668,47 +565,38 @@ void CAnimator::OnUpdate(const float deltaTime)
         SeedDeclaredParameters();
     }
 
-    // When no transition is in flight, m_from IS the current state's clip -- RE-DERIVED
-    // every frame rather than remembered. This is what replaces the authored-list
-    // reseeding the clip vector needed, and it self-heals every path that can change
-    // what a state points at: the editor rebinding a state's clip, a clip that
-    // resolved after the controller did, a state whose clip was cleared. None of
-    // those change the controller's UID, so nothing else here would notice them.
+    // With no transition in flight, m_from IS the current state's clip -- re-derived every
+    // frame rather than remembered, which self-heals every path that can change what a state
+    // points at (the editor rebinding a clip, a clip that resolved late, a cleared slot).
+    // None of those change the controller's UID, so nothing else here would notice them.
     //
-    // Only when NOT fading: mid-fade m_from is the OUTGOING pose and m_currentState
-    // is already the destination (design §4), so re-deriving there would overwrite
-    // the very thing the fade is blending away from.
+    // Only when NOT fading: mid-fade m_from is the outgoing pose while m_currentState is
+    // already the destination, so re-deriving would overwrite what the fade blends away from.
     if (m_fadeDuration <= 0.0f)
     {
         m_from.clip       = ClipForState(m_currentState);
         m_from.stateIndex = m_currentState;
 
-        // Re-resolved here as well as at enter, which does NOT contradict the mode
-        // being fixed per track: the guard above means m_from IS the current state, so
-        // there is no second track to disagree with. It is what makes an edit to the
-        // state's mode -- or to the component's -- reach a character that is already
-        // standing in that state, and it covers the controller-bind path, which
-        // reaches m_from without going through EnterState.
+        // Re-resolved here as well as at enter, which does not contradict the mode being
+        // fixed per track: the guard above means m_from IS the current state, so there is no
+        // second track to disagree with. It is what makes an edit to either mode reach a
+        // character already standing in that state.
         m_from.mode = ResolveRootMotion(m_currentState);
     }
 
-    // Rebind on a UID mismatch rather than on an explicit call. Integer comparisons,
-    // and they cover every path that can change a slot -- Inspector drop, Inspector
-    // clear, Deserialize, a resource going away -- with no "remember to call Bind()"
-    // contract for a future call site to forget.
+    // Rebind on a UID mismatch rather than on an explicit call: integer compares covering
+    // every path that can change a slot, with no "remember to call Bind()" contract.
     const uint32_t skeletonUID = UIDOf(skeleton);
     if (skeletonUID != m_boundSkeleton)
     {
         m_boundSkeleton = skeletonUID;
 
-        // The rig changed, so any mesh/rig mismatch reported against the previous
-        // skeleton is stale. Without this, correcting one wrong .nskel and then
-        // dropping a second wrong one would warn about neither.
+        // Any mismatch reported against the previous skeleton is stale. Without this,
+        // correcting one wrong .nskel then dropping a second would warn about neither.
         warnedSkeletonMismatch = false;
 
-        // Cancel any fade: a frozen source pose belongs to the OLD skeleton and would
-        // fail ArePosesCompatible against a freshly sized target. Cancelling makes
-        // that unreachable by construction instead of leaning on the Blend guard.
+        // Cancel any fade: a frozen source pose belongs to the OLD skeleton and would fail
+        // ArePosesCompatible, so this makes the Blend guard unreachable by construction.
         m_fadeElapsed  = 0.0f;
         m_fadeDuration = 0.0f;
         m_to.clip      = nullptr;
@@ -721,17 +609,10 @@ void CAnimator::OnUpdate(const float deltaTime)
     if (UIDOf(m_from.clip) != m_from.boundClip) RebindTrack(m_from);
     if (UIDOf(m_to.clip)   != m_to.boundClip)   RebindTrack(m_to);
 
-    // ---- THE GRAPH ----
-    //
-    // Evaluated every frame unless a script already spoke, and BEFORE the clocks
-    // advance -- so it reads the progress the previous frame left behind. Firing
-    // against a pose that has not been sampled yet would let a transition leave a
-    // state the animator never rendered once.
-    //
-    // Placed ahead of the !IsBound() early return on purpose: a state whose clip did
-    // not resolve leaves the animator unbound, and skipping evaluation there would
-    // strand it in that state forever with no way out. EnterState rebinds both tracks
-    // itself, so a transition INTO a state with a clip recovers on this same frame.
+    // Evaluated BEFORE the clocks advance, so it reads the progress the previous frame left:
+    // firing against an unsampled pose would let a transition leave a state that never
+    // rendered. Ahead of the !IsBound() return on purpose -- a state whose clip did not
+    // resolve leaves the animator unbound, and skipping evaluation would strand it there.
     if (controller && !m_graphSuppressedThisFrame)
     {
         const anim::TransitionResult result = anim::EvaluateController(
@@ -741,9 +622,8 @@ void CAnimator::OnUpdate(const float deltaTime)
             EnterState(result.toState, result.duration);
     }
 
-    // Cleared at the END rather than at the top: that is what makes a CrossFade's
-    // override last exactly one frame. Before the early return below, so an unbound
-    // animator cannot leave the flag stuck set.
+    // Cleared at the END, which is what makes a CrossFade's override last exactly one frame.
+    // Before the early return, so an unbound animator cannot leave the flag stuck set.
     m_graphSuppressedThisFrame = false;
 
     if (!IsBound())
@@ -755,38 +635,26 @@ void CAnimator::OnUpdate(const float deltaTime)
         return;
     }
 
-    // Each track takes loop/speed from ITS OWN clip, which is the whole point of the
-    // settings living on the resource: during a cross-fade the two tracks routinely
-    // disagree. Pushed every frame rather than seeded in RebindTrack so an Inspector
-    // edit reaches a clip that is already playing -- nothing about the slot changes
-    // when the user ticks the checkbox, so RebindTrack would never run.
+    // Per frame rather than in RebindTrack: nothing about the slot changes when the user
+    // ticks the Inspector checkbox, so a rebind-only seed would never see the edit.
     SeedPlaybackSettings(m_from);
     SeedPlaybackSettings(m_to);
 
-    // LOAD-BEARING, and reassigned EVERY frame for BOTH tracks rather than once in
-    // RebindTrack.
-    //
-    // instance.binding points at a member of THIS object, and EnTT relocates
-    // components by memcpy when a pool grows -- so a pointer stored once survives the
-    // move as a dangling read into vacated memory. One assignment per frame makes the
-    // self-reference self-healing at no meaningful cost. Missing ONE track reproduces
-    // the bug on the interrupted-transition path only, which would look like
-    // "transitions break once the scene gets big enough" rather than a pointer bug.
+    // LOAD-BEARING, and for BOTH tracks. instance.binding points at a member of THIS object,
+    // and EnTT relocates components by memcpy when a pool grows -- so a pointer stored once
+    // survives the move as a dangling read. Missing one track reproduces the bug on the
+    // interrupted-transition path only, which reads as "transitions break once the scene
+    // gets big enough" rather than as a pointer bug.
     m_from.instance.binding = &m_from.binding;
     m_to.instance.binding   = &m_to.binding;
 
     anim::RootMotionDelta deltaFrom;
     anim::RootMotionDelta deltaTo;
 
-    // BOTH advancing tracks fire their events, outgoing included: an attack
-    // interrupted at 90% has visually landed its hit, and a run fading out should
-    // still place the footstep its leg is completing. A FROZEN track advances nothing
-    // and so fires nothing, which falls out of this branch rather than being a rule.
-    // Accepted cost: a footstep can double up mid-blend when both clips carry one at
-    // a similar phase.
-    //
-    // A frozen track holds a captured blend; advancing or sampling it would replace
-    // that pose with the clip's own, which is exactly what the capture avoided.
+    // Both advancing tracks fire their events, outgoing included: an attack interrupted at
+    // 90% has visually landed its hit. A frozen track advances nothing and so fires nothing,
+    // which falls out of this branch rather than being a rule. Accepted cost: a footstep can
+    // double up mid-blend when both clips carry one at a similar phase.
     if (!m_from.frozen)
     {
         const float timeBefore = m_from.instance.time;
@@ -807,19 +675,17 @@ void CAnimator::OnUpdate(const float deltaTime)
         m_fadeElapsed += deltaTime;
         const float weight = glm::clamp(m_fadeElapsed / m_fadeDuration, 0.0f, 1.0f);
 
-        // Both poses are already stripped, so the blended pose carries no travel --
-        // which also removes the hip-slide the position sweep would otherwise put
-        // into the pose itself.
+        // Blend the DELTAS, not the blended pose: the root position sweeping from one clip's
+        // hips to the other's is an artifact of blending, not motion, and a positional delta
+        // cannot tell the difference.
         m_rootDelta = anim::BlendRootDelta(deltaFrom, deltaTo, weight);
 
         bool blendFailed = false;
         if (!anim::Blend(m_from.pose, m_to.pose, weight, m_blended))
         {
-            // Reachable only with mismatched skeleton UIDs or bone counts, which the
-            // skeleton-swap cancel makes unreachable in practice; it stays as defence
-            // because Blend is [[nodiscard]] and the result must be consumed anyway.
-            // Snapping rather than asserting: an assert here would kill a shipped
-            // game over something recoverable.
+            // Reachable only on mismatched skeleton UIDs or bone counts, which the
+            // skeleton-swap cancel above makes unreachable in practice. Snapping rather than
+            // asserting: an assert here would kill a shipped game over something recoverable.
             m_blended   = m_to.pose;
             blendFailed = true;
         }
@@ -827,9 +693,7 @@ void CAnimator::OnUpdate(const float deltaTime)
         if (weight >= 1.0f || blendFailed)
         {
             // Blend is bit-exact at weight 1, so promoting introduces no pop. The move
-            // takes the pose and cursor vectors rather than copying them; it also
-            // invalidates m_from.instance.binding, which the next frame's
-            // unconditional re-point above repairs -- that is why it is per-frame.
+            // invalidates m_from.instance.binding, which the per-frame re-point repairs.
             m_from = std::move(m_to);
             m_to   = ClipTrack{};
             m_fadeElapsed  = 0.0f;
@@ -842,26 +706,15 @@ void CAnimator::OnUpdate(const float deltaTime)
         m_rootDelta = deltaFrom;
     }
 
-    // NO mode gate here, and that is load-bearing. ExtractTrackRootMotion already
-    // returns a zero delta for every track whose resolved mode is not Applied, so the
-    // per-track modes are the only thing deciding -- a Baked character, an InPlace
-    // state and an unbound track all produce nothing by construction.
-    //
-    // Gating on the component's mode would make a per-state Applied unreachable, which
-    // is the feature; gating on m_currentState would apply nothing during a fade OUT
-    // of Applied, because the current state is the DESTINATION from the instant the
-    // transition starts -- so travel would snap off on the transition's first frame
-    // instead of fading out across it (design §5).
+    // NO mode gate here, deliberately: ExtractTrackRootMotion already zeroes every track that
+    // is not Applied. Gating on the component's mode would make a per-state Applied
+    // unreachable; gating on m_currentState would snap travel off on a transition's first
+    // frame, since the current state is the destination from that instant.
     ApplyRootMotion();
 
-    // Guarded rather than fire-and-forget: on failure the globals are stale, and a
-    // palette built from them would deform the mesh to a pose that was never
-    // sampled. Clearing is what makes the renderer skip this animator instead --
-    // GetPalette().empty() is its skinned-geometry test.
-    //
-    // rootGlobalInverse is left at its identity default: `offsets` and `globals` are
-    // built in the same node space, so globals[b] * offsets[b] already maps mesh
-    // space to animated model space. See the note on BuildPalette in Palette.h.
+    // Guarded: on failure the globals are stale, and a palette built from them would deform
+    // the mesh to a pose that was never sampled. Clearing is what makes the renderer skip
+    // this animator instead.
     if (!anim::BuildGlobals(skeleton->skeleton, m_blended, m_globals) ||
         !anim::BuildPalette(skeleton->skeleton, m_globals, m_palette))
     {
@@ -875,9 +728,8 @@ void CAnimator::OnUpdate(const float deltaTime)
 // ---------------------------------------------------------------------------
 // Serialization
 //
-// assetPath + libraryPath + UID per slot -- the CMesh / CAudioSource shape, which
-// is what lets GameApp resolve both resources with no .meta files, from a
-// Library/ that ships without Assets/.
+// assetPath + libraryPath + UID per slot -- the CMesh / CAudioSource shape, which is what
+// lets GameApp resolve both resources from a Library/ that ships without Assets/.
 // ---------------------------------------------------------------------------
 
 JsonObject CAnimator::Serialize() const
@@ -892,9 +744,6 @@ JsonObject CAnimator::Serialize() const
         root.Set("skeletonUID",         static_cast<double>(skeleton->GetUID()));
     }
 
-    // One slot, in the same three-field shape as the skeleton. The clip list that
-    // used to live here belongs to the controller's states now, so a scene carries
-    // no clip references of its own at all.
     root.Set("controllerAssetPath", controller ? controller->GetAssetsPath() : "");
     if (controller)
     {
@@ -902,10 +751,7 @@ JsonObject CAnimator::Serialize() const
         root.Set("controllerUID",         static_cast<double>(controller->GetUID()));
     }
 
-    // No "speed"/"loop" here -- they moved to ResourceAnimation::settings, which the
-    // .nanim stub and the library binary carry. A scene that predates the move loses
-    // whatever it had set; scenes are authored data, but a per-animator value has no
-    // per-clip destination to migrate INTO.
+    // No "speed"/"loop": they live on ResourceAnimation::settings now.
     root.Set("fadeSeconds",     fadeSeconds);
     root.Set("speedMultiplier", speedMultiplier);
     root.Set("rootMotion",  RootMotionToString(rootMotion));
@@ -921,9 +767,8 @@ void CAnimator::OnDestroy()
     if (skeleton && skeleton->IsLoaded())
         rm->UnloadResource(skeleton->GetUID());
 
-    // The controller only. Its OWN clip references are released by
-    // ImporterAnimationController::Evict when the controller itself evicts -- this
-    // component never acquired them and must not give back what it does not hold.
+    // The controller only. Its own clip references are released by
+    // ImporterAnimationController::Evict -- this component never acquired them.
     if (controller && controller->IsLoaded())
         rm->UnloadResource(controller->GetUID());
 }
@@ -938,8 +783,7 @@ void CAnimator::Deserialize(const JsonObject& obj)
     if (!rm)
         return;   // headless scene -- slots stay null and OnUpdate no-ops
 
-    // GAME path first (straight from Library, no .meta read), then the EDITOR
-    // path / fallback via the asset path.
+    // GAME path first (straight from Library, no .meta read), then the EDITOR path.
     const auto resolve = [rm](const std::string& assetPath,
                               const std::string& libraryPath,
                               const uint32_t     uid,
@@ -971,10 +815,7 @@ void CAnimator::Deserialize(const JsonObject& obj)
                                   ResourceType::ANIMATION_CONTROLLER))
         controller = down_cast<ResourceAnimationController*>(r);
 
-    // MVP-E's "clips" array and the pre-MVP-E "clipAssetPath" fallback are both GONE
-    // rather than migrated. That compatibility path existed to carry a per-animator
-    // clip list forward, and there is no longer any such list to carry it into: the
-    // clips belong to a controller asset that the scene cannot invent. An animator in
-    // an older scene loads with no controller and plays nothing until one is assigned,
-    // which is the honest outcome and is visible immediately.
+    // The old per-animator "clips" array and "clipAssetPath" are gone rather than migrated:
+    // there is no longer a per-animator clip list to carry them into. An animator in an
+    // older scene loads with no controller and plays nothing until one is assigned.
 }

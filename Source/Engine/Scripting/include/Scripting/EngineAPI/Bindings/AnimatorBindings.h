@@ -28,10 +28,9 @@ struct AnimatorAPI
     // Cross-fades to the named STATE of the animator's controller over fadeSeconds;
     // <= 0 snaps. False when the animator has no controller or no state has that name.
     //
-    // ARBITRATION: the controller graph evaluates every frame; this call WINS for that
-    // frame, and the graph resumes on the next one from the state this entered. There
-    // is never a frame with two writers. Prefer parameters: a graph edge says when a
-    // transition may happen once, where a script saying it says so at one call site.
+    // ARBITRATION: the graph evaluates every frame, but this call WINS for that frame and
+    // the graph resumes on the next one from the state this entered. Prefer parameters --
+    // a graph edge states a transition once, where a script states it per call site.
     bool  (*CrossFade)(uint32_t goId, const char* stateName, float fadeSeconds) = nullptr;
 
     // Query
@@ -50,14 +49,10 @@ struct AnimatorAPI
     // clip, matching GetCurrentState.
     float (*GetNormalizedTime)(uint32_t goId) = nullptr;
 
-    // A MULTIPLIER over each clip's own authored speed (1 = as authored, 0.5 = half,
-    // negative plays backwards), not an absolute rate -- so slow motion works without
-    // knowing what any clip was authored at. The authored value lives in the .nanim
-    // and is edited in the Inspector; this scales it for THIS animator only.
-    //
-    // Per CHARACTER, not per clip: two characters sharing one clip retime
-    // independently. The scene's authored value is the starting point; a script
-    // setting it overrides that for the session.
+    // A MULTIPLIER over each clip's authored speed (1 = as authored, negative plays
+    // backwards), not an absolute rate -- so slow motion works without knowing what any
+    // clip was authored at. Per CHARACTER, not per clip: two characters sharing one clip
+    // retime independently.
     void  (*SetSpeed)(uint32_t goId, float speed) = nullptr;
     float (*GetSpeed)(uint32_t goId) = nullptr;
 };

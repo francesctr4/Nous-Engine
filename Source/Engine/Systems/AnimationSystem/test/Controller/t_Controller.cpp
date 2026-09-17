@@ -105,7 +105,7 @@ TEST(Controller, ConditionsSatisfiedDoesNotConsumeATrigger)
 
     EXPECT_TRUE(anim::ConditionsSatisfied(g.transitions[0], params));
 
-    // Still set: consumption happens when a transition FIRES (Task 2), not when a
+    // Still set: consumption happens when a transition FIRES, not when a
     // predicate is merely evaluated. A trigger named by three transitions must not
     // be eaten by whichever is checked first.
     EXPECT_TRUE(params.IsTriggerSet("attack"));

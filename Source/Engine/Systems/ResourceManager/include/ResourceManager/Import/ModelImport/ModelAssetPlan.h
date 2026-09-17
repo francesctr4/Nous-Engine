@@ -8,11 +8,10 @@
 // The PURE half of the model import: given everything a model file turned out to
 // contain, decide which sibling assets it implies and what they are called.
 //
-// NO FILE I/O, NO ASSIMP, NO IMPORTERS -- the same line SkeletonBuild.h and
-// ClipBuild.h draw, for the same reason. Every decision on this side has a filename
-// trap or an off-by-one in it, and t_ResourceManager_ModelAssetPlan drives all of
-// them from a hand-built ModelImportData. The executor on the other side of the
-// line (ModelImport.h) is deliberately thin.
+// NO FILE I/O, NO ASSIMP, NO IMPORTERS -- the same line SkeletonBuild.h and ClipBuild.h
+// draw. Every decision on this side has a filename trap or an off-by-one in it, and its
+// test drives all of them from a hand-built ModelImportData; the executor on the other
+// side of the line is deliberately thin.
 namespace nous::engine::resource_manager
 {
     struct PlannedClip
@@ -51,11 +50,10 @@ namespace nous::engine::resource_manager
     // modelAssetsPath is the Assets/-relative path of the model file; every stub is
     // planned as a sibling of it, in its own directory.
     //
-    // CLIPS WITH ZERO CHANNELS ARE DROPPED, and that is not defensive coding.
-    // Mixamo's skinned FBX carries a second AnimationStack ("Take 001") bound to an
-    // empty layer -- a real 3.33s duration and no curve nodes at all. Assimp reports
-    // it faithfully, and without this it becomes a phantom animation resource
-    // sitting next to the real one.
+    // CLIPS WITH ZERO CHANNELS ARE DROPPED, and that is not defensive coding: Mixamo's
+    // skinned FBX carries a second AnimationStack ("Take 001") bound to an empty layer --
+    // a real 3.33s duration and no curve nodes at all -- which assimp reports faithfully
+    // and which would otherwise become a phantom animation resource.
     [[nodiscard]] ModelAssetPlan PlanModelAssets(const ModelImportData& model,
                                                   const std::string& modelAssetsPath);
 }

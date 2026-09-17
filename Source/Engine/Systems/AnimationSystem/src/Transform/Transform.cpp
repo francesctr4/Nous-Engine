@@ -23,8 +23,7 @@ namespace nous::engine::animation_system
         result.position = glm::mix(a.position, b.position, t);
         result.scale    = glm::mix(a.scale,    b.scale,    t);
 
-        // glm::slerp negates the target when dot(a, b) < 0, so this takes the short
-        // arc. Pinned by t_Interpolate.SlerpTakesShortArc.
+        // glm::slerp negates the target when dot(a, b) < 0, so this takes the short arc.
         result.rotation = glm::normalize(glm::slerp(a.rotation, b.rotation, t));
 
         return result;

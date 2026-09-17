@@ -10,13 +10,11 @@ namespace nous::engine::animation_system
     struct AnimClipData;
     struct AnimationBinding;
 
-    // One playing clip. CAnimator holds two (current + next) and cross-fades them.
+    // One playing clip. CAnimator holds two and cross-fades them.
     //
-    // Neither pointer is owned: `clip` is storage inside a ResourceAnimation and
-    // `binding` is owned by whoever drives the instance -- today CAnimator's own
-    // m_binding member, a shared BindingCache entry once one exists. Both outlive the
-    // instance under the normal lifetimes -- but a resource reload invalidates
-    // both, which is exactly why the cache exposes InvalidateAnimation().
+    // Neither pointer is owned: `clip` is storage inside a ResourceAnimation, `binding`
+    // belongs to whoever drives the instance. Both outlive the instance under normal
+    // lifetimes, but a resource reload invalidates both.
     struct AnimInstance
     {
         const AnimClipData*     clip    = nullptr;
@@ -27,15 +25,13 @@ namespace nous::engine::animation_system
         float speed = 1.0f;   // negative plays backwards; the cursor handles it
         bool  loop  = true;
 
-        // Last key index per channel, as (position, rotation, scale). Forward
-        // playback then costs O(1) per channel instead of a binary search per bone
-        // per frame -- the single biggest constant-factor win in the sampler,
-        // because the common case advances by zero or one key.
+        // Last key index per channel, as (position, rotation, scale), which makes forward
+        // playback O(1) per channel instead of a binary search per bone per frame -- the
+        // single biggest constant-factor win in the sampler.
         //
-        // Parallel to clip->channels. MUST be reset whenever time jumps
-        // discontinuously: on loop wrap and on any seek. FindKey() also self-heals
-        // if it detects it has been left behind, so a missed reset degrades to a
-        // rescan rather than to wrong output -- but do not lean on that.
+        // Parallel to clip->channels. MUST be reset whenever time jumps discontinuously: on
+        // loop wrap and on any seek. FindKey() self-heals if left behind, so a missed reset
+        // degrades to a rescan rather than to wrong output -- but do not lean on that.
         std::vector<glm::uvec3> cursor;
 
         // Points the instance at a clip and sizes the cursor. Call before Sample().
@@ -44,8 +40,8 @@ namespace nous::engine::animation_system
 
         void ResetCursor();
 
-        // Jumps to an absolute time and resets the cursor. Use this rather than
-        // writing `time` directly, unless you are also resetting the cursor.
+        // Jumps to an absolute time and resets the cursor. Use this rather than writing
+        // `time` directly, unless you are also resetting the cursor.
         void Seek(float seconds);
     };
 }

@@ -31,11 +31,10 @@ namespace nous::engine::resource_manager
         {
             JsonObject existing = JsonFile::LoadFromFile(stubPath);
 
-            // A stub that does not parse is LEFT ALONE. Reconciling means reading the
-            // object and writing it back with one key changed, so a failed parse would
-            // hand back an empty object and quietly reduce the file to a lone
-            // `source` -- destroying the authored settings in the one situation where
-            // the user most needs the file intact to see what went wrong.
+            // A stub that does not parse is LEFT ALONE: reconciling is read-modify-write,
+            // so a failed parse hands back an empty object and would reduce the file to a
+            // lone `source` -- destroying the authored data in the one case the user needs
+            // it intact to diagnose.
             if (!existing.HasKey("source"))
             {
                 NOUS_WARN_C(CURRENT_CHANNEL,
@@ -44,10 +43,9 @@ namespace nous::engine::resource_manager
                 return true;
             }
 
-            // Compared NORMALIZED, never as raw strings. Stubs on disk carry Windows
-            // backslashes while a scanned assetsPath may use forward slashes, and a
-            // raw comparison would call every stub in the project stale -- rewriting
-            // all of them on every launch, for a difference that names the same file.
+            // Compared NORMALIZED, never as raw strings: stubs on disk carry Windows
+            // backslashes while a scanned assetsPath may use forward slashes, so a raw
+            // comparison would call every stub stale and rewrite them all on every launch.
             // A separator flip is not a move.
             const std::string stale = existing.GetString("source");
 

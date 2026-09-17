@@ -332,12 +332,9 @@ void AnimationControllerEditor::SetNodeClip(ControllerNode& node, const std::str
             acquired = down_cast<ResourceAnimation*>(r);
     }
 
-    // ACQUIRE, THEN RELEASE -- the third place in this feature where a slot changes
-    // owner, and the same rule as the other two. Releasing first would let the count
-    // transiently hit 0 and queue a spurious eviction of the very clip being kept;
-    // and the release must be unconditional, because re-resolving the SAME clip
-    // finds it resident and only increments, so a `previous != acquired` guard never
-    // fires in the common case.
+    // ACQUIRE, THEN RELEASE, unconditionally -- the same rule the importer's clip slots
+    // follow. Releasing first would let the count transiently hit 0 and queue a spurious
+    // eviction of the very clip being kept.
     ResourceAnimation* previous = node.clip;
     node.clip = acquired;
 
@@ -423,15 +420,11 @@ void AnimationControllerEditor::LoadFromResource(ResourceAnimationController* co
 
     ReleaseNodeClips();
 
-    // ACQUIRE-THEN-RELEASE, UNCONDITIONALLY. The caller (OpenAsset / NewAsset) has
-    // already acquired `controller`, so the previous one is released here -- held
-    // aside first, because it may BE `controller`.
-    //
-    // The obvious `m_controller != controller` guard is wrong and leaks in exactly
-    // the common case, which is re-dropping the asset that is already open:
-    // CreateResource finds it resident and only INCREMENTS, so a change-detecting
-    // release never fires and the count climbs one per drop. Same rule, same reason,
-    // as ImporterMaterial's texture slots and ResolveClips' clip slots.
+    // ACQUIRE-THEN-RELEASE, UNCONDITIONALLY. The caller has already acquired
+    // `controller`, so the previous one is released here -- held aside first, because it
+    // may BE `controller`. The obvious `m_controller != controller` guard leaks in the
+    // common case of re-dropping the asset already open: CreateResource finds it resident
+    // and only increments, so a change-detecting release never fires.
     ResourceAnimationController* previousController = m_controller;
 
     m_nodes.clear();
@@ -535,18 +528,14 @@ bool AnimationControllerEditor::SaveToOpenAsset()
 
     m_controller->graph = std::move(graph);
 
-    // clips / clipSlots / editorPositions are all parallel to states and are rebuilt
-    // wholesale, in the SAME convention ResolveClips uses (clipIndex == state index
-    // when a clip resolved, -1 otherwise). A different convention here would load
-    // back as a different graph.
+    // clips / clipSlots / editorPositions are parallel to states and rebuilt wholesale, in
+    // the SAME convention ResolveClips uses -- a different one here would load back as a
+    // different graph.
     //
-    // THE CONTROLLER OWNS ITS OWN REFERENCES, separately from this window's. They
-    // were acquired by ResolveClips, so simply clearing the vector would leak one per
-    // clip on every save -- and would leave Evict later releasing counts the
-    // controller never took. Held aside and drained after the refill, the same
-    // structure ResolveClips uses and for the same two reasons: unconditional,
-    // because nothing compares old against new; and after, because a clip present in
-    // both sets must never transiently reach 0.
+    // THE CONTROLLER OWNS ITS OWN REFERENCES, separately from this window's: they were
+    // acquired by ResolveClips, so clearing the vector would leak one per clip per save.
+    // Held aside and drained after the refill, the same structure and for the same two
+    // reasons ResolveClips gives.
     ModuleResourceManager* rm = ResourceManager();
 
     std::vector<ResourceAnimation*> previousClips;
@@ -610,7 +599,7 @@ bool AnimationControllerEditor::SaveToOpenAsset()
 
     // AFTER the write, and by the editor rather than by WriteControllerToFile: the
     // round-trip test writes without perturbing generation, and a playing CAnimator
-    // compares it every frame to decide whether to rebuild (Task 9).
+    // compares it every frame to decide whether to rebuild.
     m_controller->generation += 1;
 
     m_dirty = false;
@@ -1352,16 +1341,11 @@ void AnimationControllerEditor::HandleCreateAndDelete()
         {
             if (startPinID && endPinID)
             {
-                // BY KIND, and in EITHER drag direction: the link needs one end that
-                // is some node's OUTPUT and one that is some node's INPUT. Try the
-                // drag as given, then reversed; whichever assignment resolves both
-                // ends is the real edge.
-                //
-                // Resolution is still what rejects the bad case. Releasing a drag over
-                // the Any State node snaps to its only registered pin -- its output --
-                // so an output-to-output pair fails BOTH assignments and never
-                // resolves. Without that it would draw on the canvas and BuildGraph
-                // would drop it on save: a transition that looks real and is not.
+                // BY KIND, in EITHER drag direction: the link needs one end that is some
+                // node's OUTPUT and one that is some node's INPUT, so try the drag as
+                // given, then reversed. Resolution is also what rejects the bad case --
+                // releasing over Any State snaps to its only pin, its output, and an
+                // output-to-output pair resolves under neither assignment.
                 ed::PinId outputPinID = startPinID;
                 ed::PinId inputPinID  = endPinID;
 
@@ -1377,15 +1361,10 @@ void AnimationControllerEditor::HandleCreateAndDelete()
                     to   = FindNodeByInputPin(inputPinID);
                 }
 
-                // Three rules, and only the first differs from a plain node graph:
-                //  - nothing transitions INTO Any State (it is a source, not a place).
-                //    Belt and braces now: Any State draws no input pin, so no link can
-                //    legitimately name one;
-                //  - a state may have MANY outgoing transitions, unlike an audio
-                //    chain's one, which is the whole shape of a state machine;
-                //  - a self-transition is rejected -- re-entering the current state
-                //    is what CrossFade expresses explicitly, and as a graph edge it
-                //    would fire forever.
+                // Nothing transitions INTO Any State (a source, not a place); a state may
+                // have MANY outgoing transitions, which is the shape of a state machine;
+                // and a self-transition is rejected, since re-entry is what CrossFade
+                // expresses explicitly and as an edge it would fire forever.
                 const bool valid = from && to
                                 && to->kind != ControllerNodeKind::AnyState
                                 && from->id != to->id;
@@ -1669,16 +1648,11 @@ void AnimationControllerEditor::DrawContent()
     DrawMenuBar();
     DrawNewAssetPopup();
 
-    // A TOOLBAR ROW, not a side rail, and the shape is load-bearing rather than
-    // cosmetic. imgui-node-editor sizes its canvas from the host window's layout and
-    // needs a real measured item -- a Button, Text, Separator -- to have gone through
-    // ImGui's normal item path before ed::Begin.
-    //
-    // A full-height BeginChild followed by SameLine() does NOT serve: with the panel
-    // open the panel child happened to leave the layout in a state the canvas could
-    // read, and the moment the panel collapsed and a 24px rail was all that preceded
-    // it, the canvas latched onto the wrong rect and drew as a narrow strip. A plain
-    // button on its own row is the pattern AudioGraphEditor uses and is known good.
+    // A TOOLBAR ROW, not a side rail, and load-bearing rather than cosmetic:
+    // imgui-node-editor sizes its canvas from the host window's layout and needs a real
+    // measured item to have gone through ImGui's item path before ed::Begin. A full-height
+    // BeginChild plus SameLine() does not serve -- once the panel collapsed to a 24px rail,
+    // the canvas latched onto the wrong rect and drew as a narrow strip.
     if (ImGui::Button(m_leftPanelOpen ? "< Panel" : "> Panel", ImVec2(80.0f, 0.0f)))
         m_leftPanelOpen = !m_leftPanelOpen;
 

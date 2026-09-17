@@ -19,11 +19,10 @@ class ResourceMesh;
 // would be applied twice. Mixamo's children are identity, so the wrong version looks
 // correct and only breaks on a model authored with a real offset.
 //
-// It is a free function on a public header rather than a private helper because FOUR
-// builders need the identical pairing and every one of them is a place it can be
-// forgotten: the scene packet, the outlined-geometry list, the normals visualization,
-// and -- the one that was missed -- the editor's mouse-pick list in SceneViewport,
-// which is a hand-copy of the scene builder living in another target entirely.
+// A free function on a public header rather than a private helper because FOUR builders
+// need the identical pairing: the scene packet, the outlined-geometry list, the normals
+// visualization, and -- the one that was missed -- SceneViewport's mouse-pick list, which
+// is a hand-copy of the scene builder in another target entirely.
 NOUS_ENGINE_API void ApplySkinningToGeometry(const entt::registry& registry,
                                              entt::entity entity,
                                              const ResourceMesh& mesh,

@@ -40,10 +40,9 @@ namespace nous::engine::animation_system
             return &it->second;
         }
 
-        // unordered_map nodes are stable, so pointers handed out earlier survive
-        // this insert. AnimInstance holds one of those pointers for as long as it
-        // plays, which is why that stability matters and why Clear() is the one
-        // operation that must not run while anything is playing.
+        // unordered_map nodes are stable, so pointers handed out earlier survive this
+        // insert. An AnimInstance holds one for as long as it plays, which is why
+        // Clear() is the one operation that must not run while anything is playing.
         const auto [inserted, ok] =
             m_entries.emplace(key, CreateBinding(clip, clipUID, skeleton, skeletonUID));
 

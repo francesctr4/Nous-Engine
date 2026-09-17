@@ -80,12 +80,9 @@ TEST(t_AnimationTimelineLayout, HitTestPrefersTheCloserOfTwoOverlappingMarkers)
 }
 
 // ---------------------------------------------------------------------------
-// ChooseTickStep -- the labelled grid on the ruler.
-//
-// The ruler used to draw one unlabelled tick per snap step, which says nothing
-// about WHERE you are: a 30/s grid over a 2 s clip is 60 identical marks. A
-// labelled grid has to pick a step that is round enough to read and wide enough
-// to fit its own text, which is what this decides.
+// ChooseTickStep -- the labelled grid on the ruler. A step has to be round enough to read
+// and wide enough to fit its own text; one tick per snap step says nothing about WHERE you
+// are, since a 30/s grid over a 2 s clip is 60 identical marks.
 // ---------------------------------------------------------------------------
 
 // Steps come from the 1-2-5 ladder, so a label is always a number a person reads

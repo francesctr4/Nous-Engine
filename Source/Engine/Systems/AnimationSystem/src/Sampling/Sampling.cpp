@@ -11,9 +11,8 @@ namespace nous::engine::animation_system
 {
     namespace
     {
-        // Interpolates one track given an already-located key pair. Split out so the
-        // three tracks share the boundary handling instead of open-coding it three
-        // times with three chances to get an edge case wrong.
+        // Interpolates one track given an already-located key pair, so the three tracks
+        // share the boundary handling instead of open-coding it three times.
         template <typename T, typename LerpFn>
         T SampleTrack(const std::vector<float>& times, const std::vector<T>& values,
                       float t, uint32_t& cursor, const T& fallback, LerpFn lerp)
@@ -40,9 +39,8 @@ namespace nous::engine::animation_system
         size_t i = cursor;
         if (i >= times.size()) i = times.size() - 1;   // stale cursor from a shorter track
 
-        // Backwards seek: the cursor's forward-only premise is broken, so rescan
-        // from the start. Self-healing on purpose -- a caller that forgets to reset
-        // after a seek gets a slow frame, not wrong output.
+        // Backwards seek: the cursor's forward-only premise is broken, so rescan from
+        // the start. A caller that forgets to reset gets a slow frame, not wrong output.
         if (t < times[i]) i = 0;
 
         while (i + 1 < times.size() && times[i + 1] <= t) ++i;
@@ -126,9 +124,8 @@ namespace nous::engine::animation_system
         outPose.bones.resize(boneCount);
 
         // Start from the bind pose so bones this clip does not touch hold their rest
-        // transform. Leaving them default-constructed would collapse every
-        // undriven joint onto the origin -- and the symptom (a rig folding in on
-        // itself) reads as a skinning bug, not a sampling one.
+        // transform. Default-constructing them collapses every undriven joint onto the
+        // origin, and that reads as a skinning bug rather than a sampling one.
         const bool haveBindPose = skeleton.bindLocals.size() == boneCount;
 
         for (size_t b = 0; b < boneCount; ++b)

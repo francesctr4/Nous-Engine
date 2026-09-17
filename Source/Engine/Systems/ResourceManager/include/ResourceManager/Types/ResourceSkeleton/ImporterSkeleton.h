@@ -36,11 +36,9 @@ struct ImporterSkeleton : IResourceImporter
     NOUS_ENGINE_API bool Upload(ResourceBase* resource, IGPUResourceFactory* gpu) override;
     NOUS_ENGINE_API void Release(ResourceBase* resource, IGPUResourceFactory* gpu) override;
 
-    // Writes an already-parsed SkeletonData to metaFileData.libraryPath.
-    //
-    // The entry point ImportModel uses, and the one the round-trip test drives --
-    // tests go through the REAL writer so a fixture cannot silently stop describing
-    // the format, which is what happened to t_ImporterMesh when Vertex3D grew.
+    // Writes an already-parsed SkeletonData to metaFileData.libraryPath: the entry point
+    // ImportModel uses, and what the round-trip test drives, so a fixture cannot silently
+    // stop describing the format.
     static NOUS_ENGINE_API bool SaveSkeleton(const MetaFileData& metaFileData,
                                              const nous::engine::animation_system::SkeletonData& skeleton);
 };

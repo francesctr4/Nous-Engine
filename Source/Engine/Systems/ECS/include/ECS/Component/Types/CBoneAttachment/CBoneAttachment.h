@@ -46,11 +46,9 @@ public:
  * Its parent's worldMatrix, post-multiplied by the attached bone's MODEL-space
  * global when a CBoneAttachment resolves. Identity when the entity has no parent.
  *
- * ONE FUNCTION, TWO CALL SITES, and that is the load-bearing part:
- * Scene::UpdateWorldMatrices computes where an attached prop goes, and
- * SceneViewport's gizmo inverts the very same matrix to turn a drag back into the
- * prop's local offset. Two derivations of "what is this object's parent" would
- * drift, and the symptom -- dragging a prop puts it somewhere else -- reads as a
- * gizmo bug rather than as a disagreement.
+ * ONE FUNCTION, TWO CALL SITES, and that is the load-bearing part: UpdateWorldMatrices
+ * computes where an attached prop goes, and the gizmo inverts the same matrix to turn a
+ * drag back into the prop's local offset. Two derivations would drift, and the symptom --
+ * dragging a prop puts it elsewhere -- reads as a gizmo bug rather than a disagreement.
  */
 NOUS_ENGINE_API glm::mat4 ComputeParentWorld(const entt::registry& registry, entt::entity entity);

@@ -66,25 +66,19 @@ namespace nous::engine::animation_system
 
         if (!wrapped)
         {
-            // DE-ROTATED into the root's own frame at the previous sample, and this
-            // is load-bearing. The caller rotates the delta by the GameObject's
-            // orientation, which already carries every yaw this function has handed
-            // back so far -- so a delta left in the clip's fixed frame gets the
-            // clip's own turning applied to it a SECOND time. A clip that turns 180
-            // degrees and then walks forward therefore drives the transform exactly
-            // backwards, while the pose walks forwards: the two disagree by the
-            // square of the turn.
+            // DE-ROTATED into the root's own frame at the previous sample: the caller
+            // rotates the delta by the GameObject's orientation, which already carries
+            // every yaw handed back so far, so a delta left in the clip's fixed frame
+            // would get the clip's own turning applied a SECOND time.
             delta.translation = RotateAboutUp(Horizontal(current.position - previous.position),
                                               -previousYaw);
             delta.yaw = WrapAngle(ExtractYaw(current.rotation) - previousYaw);
             return delta;
         }
 
-        // Split the frame at the seam. FORWARD: previous -> end of clip, then start
-        // -> now. REVERSED: the seam is crossed the other way, so it is previous ->
-        // start of clip, then end -> now. Only the two endpoints swap; the
-        // composition below is identical, because "the half before the seam, then the
-        // half after" is the same statement in both directions.
+        // Split the frame at the seam. FORWARD: previous -> clip end, then clip start
+        // -> now. REVERSED: the seam is crossed the other way, so the two endpoints
+        // swap. The composition below is identical either way.
         const Transform& firstEnd    = reversed ? clipStart : clipEnd;
         const Transform& secondStart = reversed ? clipEnd   : clipStart;
 

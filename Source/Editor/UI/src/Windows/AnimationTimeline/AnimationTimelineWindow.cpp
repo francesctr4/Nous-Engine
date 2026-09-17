@@ -350,24 +350,19 @@ void AnimationTimelineWindow::DrawRuler(CAnimator& animator, ResourceAnimation& 
 
     if (m_scrubbing) ImGui::SetTooltip("%.3f s", m_playhead);
 
-    // Re-armed EVERY FRAME, because an arm lasts exactly one OnUpdate. That expiry is
-    // what makes closing this window enough to release the character -- a closed
-    // IEditorWindow is not called at all, so there is no hook here that could disarm.
+    // Re-armed EVERY FRAME, because an arm lasts exactly one OnUpdate -- that expiry is
+    // what makes closing this window enough to release the character, since a closed
+    // window is not called at all and has no hook that could disarm.
     //
-    // Gated on the CHECKBOX ALONE, deliberately not on the simulation state. Holding
-    // the pose is what a preview IS, in either state: while stopped it is the only way
-    // to see the frame a marker sits on, and while playing it is how a marker is
-    // checked against a pose the graph is actually producing. A stopped-scene-only rule
-    // was tried and simply removed the case the window is most used in.
+    // Gated on the CHECKBOX ALONE, not on the simulation state: while stopped the preview
+    // is the only way to see the frame a marker sits on, and while playing it is how a
+    // marker is checked against the pose the graph is producing.
     if (m_preview)
         animator.SetPreview(&clip, m_playhead);
 
-    // ONE toolbar row. Scrubbing lives on the ruler now, so what is left here is the
-    // typed-time escape hatch and the three things that act on the playhead.
-    //
-    // A DragFloat rather than the SliderFloat it replaced: a slider is a second way to
-    // do what the ruler already does better, while a drag field's ctrl-click is how an
-    // exact time gets typed -- the one thing dragging a caret cannot do.
+    // Scrubbing lives on the ruler, so what is left here is the typed-time escape hatch
+    // and the three things that act on the playhead. A DragFloat rather than a slider:
+    // ctrl-click is how an exact time gets typed, the one thing dragging a caret cannot do.
     ImGui::SetNextItemWidth(90.0f);
     if (ImGui::DragFloat("##time", &m_playhead, 0.005f, 0.0f, clip.clip.duration, "%.3f s"))
         m_playhead = ClampTime(m_playhead, clip.clip.duration);

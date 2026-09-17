@@ -304,9 +304,8 @@ TEST_F(t_CBoneAttachment, ObjectWithoutTheComponentYieldsThePlainParentWorld)
 // =============================================================================
 // The Scene::UpdateWorldMatrices hook -- end to end through the real pipeline
 //
-// Scene::Update ticks CAnimator::OnUpdate (sampling the pose); UpdateWorldMatrices
-// then propagates. That is the real per-frame order: ModuleScene calls Update
-// during its own Update and UpdateWorldMatrices in PostUpdate.
+// Scene::Update samples the pose, UpdateWorldMatrices then propagates -- the real
+// per-frame order, since ModuleScene calls them from Update and PostUpdate.
 // =============================================================================
 
 TEST_F(t_CBoneAttachment, AttachedPropFollowsTheAnimatedBone)

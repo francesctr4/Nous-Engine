@@ -7,10 +7,9 @@
 /**
  * @brief Pure time<->pixel arithmetic for the animation event timeline.
  *
- * ImGui-free, runtime-free, fully inline: the AudioGraphLinearize split. The window
- * that consumes this is untestable (it needs a live editor and a renderer), so
- * everything that can be decided without drawing lives here instead, and the tests
- * drive the SAME code the editor runs.
+ * ImGui-free, runtime-free, fully inline: the AudioGraphLinearize split. The window that
+ * consumes it needs a live editor and a renderer to run, so everything decidable without
+ * drawing lives here and the tests drive the SAME code the editor runs.
  */
 namespace nous::editor::timeline
 {
@@ -59,15 +58,12 @@ namespace nous::editor::timeline
 
     // Seconds between LABELLED ticks on the ruler, or 0 for "draw no grid".
     //
-    // Two constraints, and neither is satisfiable by the snap grid the ruler used to
-    // draw from: a step must be ROUND enough to read as a label (the 1-2-5 ladder, so
-    // never 0.3333 s) and WIDE enough that its label clears its neighbour's
-    // (`minSpacingPx`, which is the part the caller cannot work out for itself).
+    // Two constraints: a step must be ROUND enough to read as a label (the 1-2-5 ladder,
+    // so never 0.3333 s) and WIDE enough that its label clears its neighbour's.
     //
-    // Derived from the ruler rather than the snap setting on purpose -- snapping is
-    // about where a marker may LAND, which is a different question from what the ruler
-    // can legibly say about where you are. A 30/s snap over a 2 s clip is 60 identical
-    // unlabelled marks; this gives 0.5 s steps that carry a number.
+    // Derived from the ruler rather than the snap setting, because snapping is about where
+    // a marker may LAND -- a different question from what the ruler can legibly say. A
+    // 30/s snap over a 2 s clip is 60 identical unlabelled marks.
     [[nodiscard]] inline float ChooseTickStep(const float duration, const float width,
                                               const float minSpacingPx)
     {

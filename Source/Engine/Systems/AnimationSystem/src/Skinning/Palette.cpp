@@ -41,9 +41,9 @@ namespace nous::engine::animation_system
 
         for (size_t i = 0; i < boneCount; ++i)
         {
-            // offsets[i] carries a vertex from mesh space into bone i's space at
-            // bind; globals[i] puts it back where the bone is now. At bind pose the
-            // two cancel to identity, which is what t_Palette pins.
+            // offsets[i] carries a vertex from mesh space into bone i's space at bind;
+            // globals[i] puts it back where the bone is now. At bind pose they cancel
+            // to identity.
             outPalette[i] = rootGlobalInverse * globals[i] * skeleton.offsets[i];
         }
 
@@ -91,10 +91,9 @@ namespace nous::engine::animation_system
                 const uint32_t bone = ids[i];
 
                 // An out-of-range index means the mesh's bone IDs and the skeleton
-                // disagree -- the exact failure the spec's shared BuildSkeleton and
-                // bone-name hash exist to prevent. Skip rather than read past the
-                // palette; a limb that does not move is a far better symptom than a
-                // heap overread.
+                // disagree -- what the shared bone ordering and the name hash exist to
+                // prevent. Skip rather than read past the palette: a limb that does not
+                // move is a far better symptom than a heap overread.
                 if (bone >= palette.size()) continue;
 
                 skin += palette[bone] * weight;

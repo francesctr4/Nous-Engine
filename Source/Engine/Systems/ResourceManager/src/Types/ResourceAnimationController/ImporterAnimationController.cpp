@@ -214,9 +214,9 @@ bool ImporterAnimationController::Deserialize(const std::string& libraryPath, Re
         state.speedParameter = s.GetString("speedParameter");
         state.rootMotion     = RootMotionFromToken(s.GetString("rootMotion", "Inherit"));
 
-        // clipIndex is NOT serialized: it is derived when the clip resolves (Task 5).
-        // A controller read with no resource manager therefore has every state
-        // unplayable rather than pointing into an empty clips array.
+        // clipIndex is NOT serialized: it is derived when the clip resolves. A controller
+        // read with no resource manager therefore has every state unplayable rather than
+        // pointing into an empty clips array.
         state.clipIndex = -1;
 
         const JsonObject clip = s.GetObject("clip");
@@ -296,29 +296,17 @@ bool ImporterAnimationController::Deserialize(const std::string& libraryPath, Re
 
     ResolveClips(controller);
 
-    // THE GRAPH JUST CHANGED IDENTITY, so say so. Deserialize is not called only on a
-    // fresh resource: `.nctrl` is hotReloadable, so an external edit to the file --
-    // a text editor, a git checkout, a merge -- re-runs this on the LIVE controller and
-    // replaces graph.states wholesale.
-    //
-    // Before this, `generation` was bumped ONLY by the controller editor's Save, so that
-    // path announced itself and this one did not. A live CAnimator saw an unchanged UID
-    // and an unchanged generation, skipped its entire preserve-by-name block, and went
-    // on indexing a states array that had been swapped underneath it: reordering two
-    // states externally moved the character to a different animation silently, which is
-    // precisely what m_currentStateName exists to prevent. Deleting the current state
-    // externally was worse -- m_currentState went out of range, EvaluateController
-    // returned immediately, and nothing outside the bind and generation blocks
-    // re-derives it, so the character stood in bind pose permanently.
+    // THE GRAPH JUST CHANGED IDENTITY, so say so. `.nctrl` is hotReloadable, so an
+    // external edit re-runs this on the LIVE controller and replaces graph.states
+    // wholesale -- with no bump, a CAnimator sees an unchanged UID and generation, skips
+    // its preserve-by-name block, and goes on indexing an array that was swapped
+    // underneath it. Reordering two states externally then moves the character to another
+    // animation silently; deleting the current one leaves it in bind pose permanently.
     //
     // Bumping HERE rather than at the hot-reload call site is what makes it structural:
-    // the counter now belongs to "the graph was rebuilt" rather than to "one particular
-    // caller remembered". The editor's own bump stays -- it edits the in-memory graph
-    // without going through Deserialize at all.
-    //
-    // Bumping on a FIRST load is harmless: CAnimator seeds m_boundGeneration from
-    // whatever it reads when it binds, so there is nothing to disagree with. The counter
-    // is a change marker, never a count of anything.
+    // the counter belongs to "the graph was rebuilt", not to "one caller remembered". The
+    // editor's own bump stays, since it edits the in-memory graph without coming through
+    // here. Bumping on a first load is harmless -- it is a change marker, not a count.
     controller->generation += 1;
 
     return true;
@@ -336,22 +324,18 @@ void ImporterAnimationController::ResolveClips(ResourceAnimationController* cont
         return;
     }
 
-    // THE HAZARD, on the record because this exact bug has shipped twice in this
-    // tree: Deserialize is NOT called only on a fresh resource -- the asset
-    // hot-reload path re-deserializes a LIVE controller in place. Every pass
-    // re-acquires each clip, so every pass must give back what the slots already
-    // held, UNCONDITIONALLY and AFTER the acquire.
+    // THE HAZARD, on the record because this bug has shipped twice in this tree: the
+    // asset hot-reload path re-deserializes a LIVE controller in place, so every pass
+    // re-acquires each clip and must give back what the slots already held,
+    // UNCONDITIONALLY and AFTER the acquire.
     //
-    // Holding the old vector aside and draining it at the end makes both halves of
-    // that structural rather than per-slot:
-    //   - unconditional, because nothing here compares old against new. The
-    //     `previous != clip` guard is the obvious version and leaks in exactly the
-    //     common case: re-resolving finds the SAME clip resident and only
-    //     increments, so a change-detecting release never fires.
-    //   - after, because the drain cannot run until every acquire has. Releasing
-    //     first would let a count transiently hit 0 and queue a spurious eviction.
-    // It also survives a state being added or removed between passes, which a
-    // per-slot release keyed on index does not.
+    // Holding the old vector aside and draining it at the end makes both halves
+    // structural. Unconditional, because nothing here compares old against new -- the
+    // obvious `previous != clip` guard leaks in the common case, since re-resolving finds
+    // the same clip resident and only increments. After, because the drain cannot run
+    // until every acquire has, and releasing first would let a count transiently hit 0
+    // and queue a spurious eviction. It also survives a state added or removed between
+    // passes, which a per-slot release keyed on index does not.
     std::vector<ResourceAnimation*> previous;
     previous.swap(controller->clips);
 
@@ -362,12 +346,10 @@ void ImporterAnimationController::ResolveClips(ResourceAnimationController* cont
         as::ControllerState&      state = controller->graph.states[i];
         const ControllerClipSlot& slot  = controller->clipSlots[i];
 
-        // The null is tested BEFORE the cast, and that order is load-bearing:
-        // down_cast asserts its result is non-null, and an unresolvable slot -- a
-        // .nanim the user deleted -- is the EXPECTED outcome this loop exists to
-        // tolerate, not a type error. Casting first aborts the process on the one
-        // path the `else` branch below is written to handle. The assert is live in
-        // every Debug preset, so it is not a release-only nicety.
+        // The null is tested BEFORE the cast, and that order is load-bearing: down_cast
+        // asserts its result is non-null, while an unresolvable slot is the EXPECTED
+        // outcome this loop exists to tolerate. Casting first aborts the process on the
+        // one path the `else` below is written to handle.
         ResourceBase* resolved = nullptr;
 
         if (!slot.libraryPath.empty() && slot.uid != 0)

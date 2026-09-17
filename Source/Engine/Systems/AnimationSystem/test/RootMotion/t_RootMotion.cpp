@@ -142,12 +142,9 @@ TEST(t_RootMotion, ALoopWrapYieldsOneFrameForwardNotOneCycleBack)
     EXPECT_FLOAT_EQ(d.translation.x, 1.0f);
 }
 
-// The same seam, crossed the other way. Advance() already handles a clip played
-// backwards -- it detects the wrap at BOTH ends -- but the split here was
-// forward-only, and a forward split applied to a backward wrap does not merely get
-// the sign wrong: it reads roughly +2x the clip's whole travel, because both halves
-// measure almost the entire clip in the wrong direction. On an Applied state that is
-// a visible forward lurch once per cycle.
+// The same seam, crossed the other way. A forward split applied to a backward wrap does
+// not merely get the sign wrong: both halves measure almost the entire clip in the wrong
+// direction, giving roughly +2x its travel -- a visible forward lurch once per cycle.
 TEST(t_RootMotion, ABackwardLoopWrapYieldsOneFrameBackNotTwoCyclesForward)
 {
     const Transform clipStart = At(0.0f, 0.0f, 0.0f);
@@ -178,12 +175,13 @@ TEST(t_RootMotion, ReversePlaybackOffTheSeamIsAPlainSubtraction)
     EXPECT_FLOAT_EQ(d.translation.x, -0.5f);
 }
 
-// The delta comes back in the ROOT'S OWN frame, because the consumer rotates it
-// by the GameObject's orientation -- which already carries every yaw previously
-// handed back. Left in the clip's fixed frame the turn is applied twice: a clip
-// that turns 180 degrees and then walks forward drives the transform exactly
-// backwards while the pose walks forwards. Found in-engine, not by these tests,
-// because a clip with no rotation channel makes the de-rotation a no-op.
+// The delta comes back in the ROOT'S OWN frame, because the consumer rotates it by the
+// GameObject's orientation -- which already carries every yaw previously handed back. Left
+// in the clip's fixed frame the turn is applied twice: a clip that turns 180 degrees then
+// walks forward drives the transform exactly backwards while the pose walks forwards.
+//
+// A clip with no rotation channel makes the de-rotation a no-op, which is why every other
+// case in this file would pass without it.
 TEST(t_RootMotion, TranslationIsExpressedInTheRootsOwnFrame)
 {
     Transform previous = Yawed(glm::pi<float>());          // turned to face backwards

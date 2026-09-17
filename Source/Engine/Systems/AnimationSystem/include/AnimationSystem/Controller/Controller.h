@@ -13,13 +13,10 @@ namespace nous::engine::animation_system
     /**
      * @brief How a condition tests its parameter.
      *
-     * Deliberately small. Float gets only Greater/Less -- equality on a float a
-     * script writes every frame is a condition that never fires, so offering it
-     * would be offering a bug. Bool gets IsTrue/IsFalse rather than a value field,
-     * so an editor combo cannot produce "isGrounded == 0.5".
-     *
-     * TriggerSet carries no value: a trigger is set or it is not, and firing
-     * CONSUMES it (see EvaluateController).
+     * Deliberately small. Float gets only Greater/Less -- equality on a float a script
+     * writes every frame is a condition that never fires. Bool gets IsTrue/IsFalse rather
+     * than a value field, so an editor combo cannot produce "isGrounded == 0.5".
+     * TriggerSet carries no value, and firing CONSUMES it (see EvaluateController).
      */
     enum class ConditionComparator : uint8_t
     {
@@ -40,9 +37,8 @@ namespace nous::engine::animation_system
     /**
      * @brief One edge of the graph.
      *
-     * `fromState` is an index into ControllerGraph::states, or c_anyState for a
-     * transition evaluated from EVERY state. Storing Any State as a sentinel index
-     * rather than a separate collection is what lets the evaluator walk one
+     * `fromState` is an index into ControllerGraph::states, or c_anyState. Any State as a
+     * sentinel index rather than a separate collection is what lets the evaluator walk one
      * container and keeps authored ORDER meaningful across both kinds.
      */
     struct ControllerTransition
@@ -60,28 +56,23 @@ namespace nous::engine::animation_system
     {
         std::string name;
 
-        // Index into ResourceAnimationController's parallel clip array, or -1 for a
-        // state with no clip assigned. The pure layer never learns resources exist
-        // -- the same split that has AnimClipData carry no ResourceAnimation.
+        // Index into ResourceAnimationController's parallel clip array, or -1 for a state
+        // with no clip. The pure layer never learns resources exist.
         int clipIndex = -1;
 
-        // MULTIPLIES the clip's authored speed, never replaces it. An override would
-        // recreate exactly what killed CAnimator::speed: a field on a shared asset
-        // competing with the clip's own authored value, so two things claim to be
-        // "the speed" and the loser is whichever ran last.
+        // MULTIPLIES the clip's authored speed, never replaces it: an override would put a
+        // field on a shared asset in competition with the clip's own value, so two things
+        // would claim to be "the speed" and the loser is whichever ran last.
         float speed = 1.0f;
 
-        // Optional declared Float parameter that further scales this state's rate.
-        // Empty means factor 1. This is the cheap stand-in for the blend tree that
-        // is deliberately out of scope: "run plays faster as input grows" is
-        // otherwise unreachable, and it costs one string plus one multiply.
+        // Optional declared Float parameter further scaling this state's rate; empty means
+        // factor 1. The cheap stand-in for a blend tree -- "run plays faster as input
+        // grows" is otherwise unreachable, and it costs one string and one multiply.
         std::string speedParameter;
 
-        // Per-state root motion, as the raw enum VALUE of RootMotionMode. The pure
-        // layer must not include the ECS header that declares that enum, and giving
-        // it a parallel enum would be two things to keep in sync -- so it travels as
-        // an int the resource layer and CAnimator agree on. 0 == Inherit, matching
-        // RootMotionMode::Inherit being the first enumerator.
+        // Per-state root motion, as the raw enum VALUE of RootMotionMode: the pure layer
+        // must not include the ECS header that declares it, and a parallel enum would be
+        // two things to keep in sync. 0 == Inherit.
         int rootMotion = 0;
     };
 
@@ -95,9 +86,9 @@ namespace nous::engine::animation_system
     /**
      * @brief The whole authored state machine, free of engine types.
      *
-     * Composed BY VALUE by ResourceAnimationController, exactly as ResourceSkeleton
-     * composes SkeletonData. That is what lets t_AnimationSystem_Controller link
-     * this archive plus gtest and nothing else.
+     * Composed by value by ResourceAnimationController, as ResourceSkeleton composes
+     * SkeletonData -- which is what lets the tests link this archive plus gtest and
+     * nothing else.
      */
     struct ControllerGraph
     {
@@ -110,9 +101,9 @@ namespace nous::engine::animation_system
         // Sentinel `fromState` marking a transition evaluated from every state.
         static constexpr int c_anyState = -2;
 
-        // Index of the state with this exact name, or -1. Case-sensitive, and a miss
-        // is -1 rather than a plausible index -- CrossFade returns false on it and the
-        // editor reports it, instead of silently entering some other state.
+        // Index of the state with this exact name, or -1. Case-sensitive, and a miss is -1
+        // rather than a plausible index, so a caller reports it instead of silently
+        // entering some other state.
         [[nodiscard]] int FindState(std::string_view name) const;
 
         [[nodiscard]] bool IsValidState(const int index) const
@@ -122,14 +113,13 @@ namespace nous::engine::animation_system
     /**
      * @brief Does every condition on `transition` hold right now?
      *
-     * PURE: never consumes a trigger. An empty condition list is satisfied, which
-     * is what makes an unconditional transition fire on entry.
+     * PURE: never consumes a trigger. An empty condition list is satisfied, which is what
+     * makes an unconditional transition fire on entry.
      *
-     * A condition naming an undeclared parameter reads through AnimParameters'
-     * fallback (0 / false / not-set), so Greater, Less, IsTrue and TriggerSet are
-     * simply never satisfied -- but IsFalse IS. That asymmetry is why the editor
-     * offers a dropdown over declared names rather than a text field: a mistyped
-     * name in an IsFalse condition produces a transition that always fires.
+     * A condition naming an undeclared parameter reads through AnimParameters' fallback,
+     * so Greater, Less, IsTrue and TriggerSet are never satisfied -- but IsFalse IS. That
+     * asymmetry is why the editor offers a dropdown over declared names rather than a text
+     * field: a mistyped name in an IsFalse condition always fires.
      */
     [[nodiscard]] bool ConditionsSatisfied(const ControllerTransition& transition,
                                            const AnimParameters&       params);
@@ -144,20 +134,16 @@ namespace nous::engine::animation_system
     /**
      * @brief Decide whether to leave `currentState` this frame, and for where.
      *
-     * `normalizedTime` is 0..1 through the CURRENT state's clip. The current state
-     * is the DESTINATION from the instant a transition starts, so during a fade this
-     * is the INCOMING clip's progress -- which is what makes "when the attack
-     * finishes" measure the attack.
+     * `normalizedTime` is 0..1 through the current state's clip -- during a fade the
+     * INCOMING one, since the destination becomes current the instant a transition starts.
      *
-     * Order: Any State transitions first, in authored order, then the current
-     * state's own, in authored order. FIRST SATISFIED WINS and evaluation stops --
-     * so exactly one transition fires and at most one trigger is consumed per frame.
+     * Order: Any State transitions first, then the current state's own, both in authored
+     * order. FIRST SATISFIED WINS and evaluation stops, so exactly one transition fires
+     * and at most one trigger is consumed per frame.
      *
-     * `params` is NON-CONST because firing consumes the triggers the winning
-     * transition matched. A transition that is merely evaluated -- including one
-     * blocked on exit time -- consumes nothing.
-     *
-     * Advances no time, touches no pose, names no resource.
+     * `params` is non-const because firing consumes the triggers the winning transition
+     * matched; a transition merely evaluated -- including one blocked on exit time --
+     * consumes nothing. Advances no time, touches no pose, names no resource.
      */
     [[nodiscard]] TransitionResult EvaluateController(const ControllerGraph& graph,
                                                       int                    currentState,

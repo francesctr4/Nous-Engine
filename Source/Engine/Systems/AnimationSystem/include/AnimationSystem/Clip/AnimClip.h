@@ -9,12 +9,9 @@ namespace nous::engine::animation_system
 {
     // A clip as plain data: the sampler's entire view of "an animation".
     //
-    // The spec had AnimInstance point at `ResourceAnimation*` directly, which would
-    // have dragged ResourceManager into this library and cost it the independence
-    // that makes it testable without an Application. Same fix as SkeletonData:
-    // ResourceAnimation (step 6) holds an AnimClipData BY VALUE and the sampler
-    // never learns that resources exist. Nothing above loses anything -- the
-    // resource still owns the storage and the UID.
+    // ResourceAnimation holds one BY VALUE, so the sampler never learns that resources
+    // exist -- the same split SkeletonData uses, and what keeps ResourceManager out of this
+    // library.
     struct AnimClipData
     {
         std::string              name;

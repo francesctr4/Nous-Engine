@@ -29,15 +29,12 @@ using nous::engine::animation_system::Transform;
 
 namespace
 {
-    // The MVP-F stand-in for the deleted CAnimator::clips: a controller holding one
-    // state per clip, each state named after its clip's RESOURCE name and defaulting
-    // to the first. That naming is what lets every pre-MVP-F CrossFade("B", ...) in
-    // this file keep meaning what it meant.
+    // A controller holding one state per clip, each named after its clip's RESOURCE name
+    // and defaulting to the first.
     //
-    // The controller's UID must be NON-ZERO for the animator to bind it: CAnimator
-    // compares UIDOf(controller) against m_boundController, which starts at 0, so a
-    // uid-0 controller reads as "same as nothing" and is never picked up. Real
-    // resources always carry one; only a hand-built test controller can trip this.
+    // The controller's UID must be NON-ZERO or the animator never binds it: CAnimator
+    // compares against m_boundController, which starts at 0, so a uid-0 controller reads as
+    // "same as nothing". Only a hand-built test controller can trip this.
     void SetClips(ResourceAnimationController& controller,
                   std::initializer_list<ResourceAnimation*> clips)
     {
@@ -57,10 +54,9 @@ namespace
         controller.graph.defaultState = controller.graph.states.empty() ? -1 : 0;
     }
 
-    // Appends one transition and hands it back so the caller can push conditions onto
-    // it. An empty condition list is satisfied, so a transition added and left alone
-    // fires the first frame its source state is current -- which is exactly what the
-    // arbitration tests need to prove a CrossFade held the graph off.
+    // Appends one transition and hands it back so the caller can push conditions onto it.
+    // An empty condition list is satisfied, so one left alone fires the first frame its
+    // source state is current -- which is what the arbitration tests need.
     nous::engine::animation_system::ControllerTransition&
     AddTransition(ResourceAnimationController& controller,
                   const int from, const int to, const float duration)
@@ -74,11 +70,9 @@ namespace
         return controller.graph.transitions.back();
     }
 
-    // Two bones: "Root" (index 0, no parent) and "Child" (index 1, parent 0).
-    //
-    // Bind locals are identity, so a bone the clip does not drive stays at the
-    // origin -- which means any translation appearing in the globals demonstrably
-    // came from the clip and not from the bind pose.
+    // "Root" (index 0, no parent) and "Child" (index 1, parent 0). Bind locals are
+    // identity, so an undriven bone stays at the origin and any translation in the globals
+    // demonstrably came from the clip rather than the bind pose.
     void MakeTwoBoneRig(ResourceSkeleton& rig)
     {
         auto& s = rig.skeleton;
@@ -141,10 +135,9 @@ namespace
     // sin(yaw) of a Y-rotation matrix: the x component of its forward basis.
     float ForwardX(const glm::mat4& m) { return m[2][0]; }
 
-    // A rig whose bind pose is NOT identity: Child sits 2 units above Root, and
-    // offsets are inverse(global bind) -- which is what an importer produces. So
-    // sampling the bind pose must give an identity palette. A rig with identity
-    // bind locals would pass that test for the wrong reason.
+    // A rig whose bind pose is NOT identity: Child sits 2 units above Root and offsets are
+    // inverse(global bind), as an importer produces. A rig with identity bind locals would
+    // pass the identity-palette test for the wrong reason.
     void MakeOffsetRig(ResourceSkeleton& rig)
     {
         auto& s = rig.skeleton;
@@ -195,10 +188,8 @@ namespace
         anim.events.push_back({ eventTime, "Hit", 7.0f, "payload" });
     }
 
-    // FakeScriptRegistry always reports "script not found", which is right for the
-    // other component tests but useless here -- the event has to land somewhere
-    // observable. Mirrors t_CScript's recording pair; the two fixtures are
-    // independent, so the duplication is deliberate.
+    // FakeScriptRegistry always reports "script not found", which is right elsewhere and
+    // useless here -- the event has to land somewhere observable.
     struct EventRecordingScript final : public IScript
     {
         static inline std::vector<std::string> s_names;
@@ -408,11 +399,9 @@ TEST_F(t_CAnimator, ClearingASlotClearsThePose)
 // =============================================================================
 // EnTT pool relocation
 //
-// EnTT relocates components by memcpy when a pool grows. AnimInstance::binding
-// points at CAnimator::m_binding -- a member of the SAME object -- so a pointer
-// stored once survives the move as a dangling read into vacated memory. The fix
-// is reassigning it every OnUpdate; this test is what proves the fix is present,
-// and it is the reason this file exists.
+// EnTT relocates components by memcpy when a pool grows, and AnimInstance::binding points
+// at a member of the SAME object -- so a pointer stored once becomes a dangling read. The
+// fix is reassigning it every OnUpdate; these tests prove it is present.
 // =============================================================================
 
 TEST_F(t_CAnimator, SurvivesPoolRelocation)
@@ -456,9 +445,8 @@ TEST_F(t_CAnimator, SurvivesPoolRelocation)
 // =============================================================================
 
 // THE property test. palette[b] = globals[b] * offsets[b], and at the bind pose
-// globals[b] == inverse(offsets[b]), so every matrix is identity. This is the same
-// invariant t_AnimationSystem_Palette pins, restated one layer up -- so a CAnimator
-// that wires BuildPalette wrongly fails here without a renderer in sight.
+// globals[b] == inverse(offsets[b]), so every matrix is identity -- which catches a
+// CAnimator that wires BuildPalette wrongly, with no renderer in sight.
 TEST_F(t_CAnimator, BindPosePaletteIsIdentity)
 {
     ResourceSkeleton  rig(1);   MakeOffsetRig(rig);
@@ -525,13 +513,10 @@ TEST_F(t_CAnimator, ClearingASlotEmptiesThePalette)
 
 // =============================================================================
 // Resource lifetime — OnDestroy must release what the slots hold
-// =============================================================================
 //
-// Both ways a slot is filled take a reference: Deserialize (CreateResource /
-// CreateResourceFromLibrary) and the Inspector's drag-drop (CreateResource, which
-// also releases the slot's previous occupant). Without the matching release at
-// destruction, every play/stop cycle deserializes the scene again and leaks one
-// reference per slot per animator, so the resources never evict.
+// Both ways a slot is filled take a reference, so without the matching release every
+// play/stop cycle leaks one per slot per animator and the resources never evict.
+// =============================================================================
 
 TEST_F(t_CAnimator, OnDestroyReleasesBothSlots)
 {
@@ -682,11 +667,9 @@ TEST_F(t_CAnimator, SerializeWritesTheControllerSlot)
     EXPECT_EQ(json.GetArray("clips").Count(), 0);
 }
 
-// MVP-E's "clips" array and the pre-MVP-E "clipAssetPath" key are both GONE rather
-// than migrated, which is a deliberate break with the usual "scenes are authored
-// data" rule. There is no longer a per-animator clip list for either to load INTO:
-// the clips belong to a controller asset the scene cannot invent. An animator in an
-// older scene loads with no controller and plays nothing until one is assigned.
+// The old per-animator "clips" array and "clipAssetPath" key are GONE rather than
+// migrated: there is no longer a clip list for either to load INTO, since the clips belong
+// to a controller asset the scene cannot invent.
 TEST_F(t_CAnimator, DeserializeIgnoresTheRetiredClipKeysInsteadOfFailing)
 {
     GameObject go = scene->CreateGameObject("Rig");
@@ -728,16 +711,12 @@ TEST_F(t_CAnimator, OnDestroyReleasesTheSkeletonAndControllerButNotTheClips)
 
     a.OnDestroy();
 
-    // The two slots this component actually acquired, and ONLY those. The clips are
-    // the CONTROLLER's references, taken by ImporterAnimationController::Deserialize
-    // and given back by its Evict -- releasing them here would be giving back
-    // something this component never took, which double-frees them once the
-    // controller evicts too.
+    // The two slots this component acquired, and ONLY those: the clips are the
+    // CONTROLLER's references, so releasing them here would give back something this
+    // component never took and double-free them once the controller evicts.
     //
-    // The symmetry that matters: a component releases exactly what it acquired.
-    // AddComponent fires OnDestroy on the component it REPLACES (PrefabManager does
-    // that to a prefab root on every scene load), so both an over-release and an
-    // under-release here compound once per load.
+    // AddComponent fires OnDestroy on the component it REPLACES, which PrefabManager does
+    // to a prefab root on every scene load -- so an error either way compounds per load.
     ASSERT_EQ(fakes.resources.unloaded.size(), 2u);
     EXPECT_EQ(fakes.resources.unloaded[0], 1u);     // skeleton
     EXPECT_EQ(fakes.resources.unloaded[1], 913u);   // controller
@@ -901,10 +880,9 @@ TEST_F(t_CAnimator, CrossFadeMatchesTheStateNameNotTheClipName)
 // Graph evaluation and arbitration
 // =============================================================================
 
-// Design §4: the current state becomes the DESTINATION the instant a transition
-// starts. The outgoing side is a pose, not a state -- which is what makes a later
-// exit-time transition measure the clip that is arriving rather than the one that
-// is leaving, so "when the attack finishes" means the attack.
+// The current state becomes the DESTINATION the instant a transition starts: the outgoing
+// side is a pose, not a state, which is what makes a later exit-time transition measure the
+// clip arriving rather than the one leaving.
 TEST_F(t_CAnimator, AFiredTransitionMakesTheDESTINATIONTheCurrentState)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -961,10 +939,9 @@ TEST_F(t_CAnimator, ExitTimeMeasuresTheStateThatWasEntered)
     a.OnUpdate(0.0f);
     ASSERT_EQ(a.GetCurrentStateName(), "Attack");
 
-    // The graph is evaluated BEFORE the clocks advance, so it reads the progress the
-    // previous frame left behind. That one-frame lag is deliberate -- evaluating
-    // against a pose that has not been sampled yet would fire on a state the animator
-    // has not rendered even once.
+    // Evaluated BEFORE the clocks advance, so it reads the progress the previous frame
+    // left. The one-frame lag is deliberate: firing against an unsampled pose would leave
+    // a state the animator never rendered.
     a.OnUpdate(0.5f);   // evaluated at 0.0; Attack is now 0.5 through
     EXPECT_EQ(a.GetCurrentStateName(), "Attack");
 
@@ -977,19 +954,13 @@ TEST_F(t_CAnimator, ExitTimeMeasuresTheStateThatWasEntered)
 
 // A state whose clip did not resolve must not be a DEAD END.
 //
-// Task 7 already places EvaluateController ahead of the !IsBound() early return so a
-// clipless state can be left at all -- but that only buys an escape through CONDITION
-// edges. An exit-time edge reads normalized time, which is structurally 0.0 forever
-// with no clip to measure, so `progress >= threshold` could never become true.
+// Placing EvaluateController ahead of the !IsBound() return only buys an escape through
+// CONDITION edges: an exit-time edge reads normalized time, which is structurally 0.0 with
+// no clip, so `progress >= threshold` could never become true.
 //
-// Found in QA 2026-09-13, and the session isolated it by accident: deleting the attack
-// .nanim and pressing attack stranded the character in Attack with no way back, while
-// Walk Back -- whose edge out is a CONDITION -- escaped fine. The control and the
-// experiment, one keypress apart.
-//
-// A state with nothing to play is trivially finished, so it reports complete progress
-// to the graph. GetNormalizedTime() itself keeps reporting the honest 0.0: it is a
-// script-facing binding and must not claim a clip ran.
+// A state with nothing to play is trivially finished and reports complete progress to the
+// graph. GetNormalizedTime() keeps reporting 0.0 -- it is script-facing and must not claim
+// a clip ran.
 TEST_F(t_CAnimator, ACliplessStateIsStillLeftByAnExitTimeEdge)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -1030,11 +1001,10 @@ TEST_F(t_CAnimator, ACliplessStateIsStillLeftByAnExitTimeEdge)
     EXPECT_EQ(a.GetCurrentStateName(), "Idle");     // recovered, not stranded
 }
 
-// The arbitration rule (design §7), enforced by code rather than by a comment: a
-// direct CrossFade wins for ITS frame even when a graph transition out of the state
-// it entered is satisfied, and the graph resumes on the very next frame. The
-// unconditional Attack -> Run edge here is satisfied every frame Attack is current,
-// so a single frame of suppression is the whole difference between the two ticks.
+// The arbitration rule, enforced rather than documented: a direct CrossFade wins for ITS
+// frame even when a graph transition out of the state it entered is satisfied, and the
+// graph resumes on the next one. The unconditional Attack -> Run edge is satisfied every
+// frame Attack is current, so one frame of suppression is the whole difference.
 TEST_F(t_CAnimator, CrossFadeWinsForItsFrameAndTheGraphResumesTheNext)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -1087,10 +1057,9 @@ TEST_F(t_CAnimator, CrossFadeToAnUnknownStateChangesNothing)
     EXPECT_EQ(a.GetCurrentStateName(), "Idle");
 }
 
-// A graph transition firing while a fade is in flight goes through the same fold as
-// a re-triggered CrossFade -- MVP-E's two-track ceiling IS the interruption model.
-// hold(0) -> hold(10) half way is x = 5; interrupting toward hold(20) and running
-// half of the new fade must give 5 + (20-5)/2 = 12.5.
+// A graph transition firing mid-fade goes through the same fold as a re-triggered
+// CrossFade -- the two-track ceiling IS the interruption model. hold(0) -> hold(10) half
+// way is x = 5; interrupting toward hold(20) and running half the new fade gives 12.5.
 TEST_F(t_CAnimator, AnInterruptedTransitionFoldsTheBlendAndStaysAtTwoTracks)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -1218,9 +1187,9 @@ TEST_F(t_CAnimator, SwappingTheSkeletonMidFadeCancelsTheFade)
     EXPECT_FALSE(a.GetPalette().empty());
 }
 
-// The relocation test from MVP-A, extended: two tracks means two self-pointers, and a
-// miss on the second corrupts only the interrupted-transition path -- which would look
-// like "transitions break once the scene gets big enough" rather than a pointer bug.
+// The relocation test above, extended: two tracks means two self-pointers, and a miss on
+// the second corrupts only the interrupted-transition path -- which reads as "transitions
+// break once the scene gets big enough" rather than as a pointer bug.
 TEST_F(t_CAnimator, FadingAnimatorsSurvivePoolRelocation)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -1295,11 +1264,9 @@ TEST_F(t_CAnimator, NormalizedTimeTracksTheClip)
     EXPECT_FLOAT_EQ(a.GetNormalizedTime(), 0.75f);
 }
 
-// Replaces NormalizedTimeFollowsTheOutgoingClipDuringAFade, which pinned the wart
-// MVP-E accepted knowingly and only the graph could resolve. The current state is
-// the DESTINATION from the instant a transition starts (design §4), so the clip the
-// animator reports -- and the progress an exit-time transition measures -- is the
-// INCOMING one. The two read the same track by construction, so they cannot drift.
+// The current state is the DESTINATION from the instant a transition starts, so the clip
+// the animator reports -- and the progress an exit-time transition measures -- is the
+// INCOMING one. Both read the same track by construction, so they cannot drift.
 TEST_F(t_CAnimator, NormalizedTimeFollowsTheINCOMINGClipDuringAFade)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -1340,9 +1307,8 @@ TEST_F(t_CAnimator, ParametersRoundTripThroughTheComponent)
     EXPECT_TRUE(a.parameters.IsTriggerSet("jump"));
 }
 
-// Parameters are runtime state, like AnimInstance::time. A saved speed reloading
-// into a stopped scene would be confusing, and defaults belong in MVP-F's
-// controller asset.
+// Parameters are runtime state, like AnimInstance::time: a saved value reloading into a
+// stopped scene would be confusing, and the defaults belong on the controller asset.
 TEST_F(t_CAnimator, ParametersAreNotSerialized)
 {
     GameObject go = scene->CreateGameObject("Rig");
@@ -1359,11 +1325,9 @@ TEST_F(t_CAnimator, ParametersAreNotSerialized)
 // Live re-save (generation bump)
 // =============================================================================
 
-// Preserved BY NAME, never by index: a re-save that inserts a state above this one
-// shifts every index below it, so an index-preserving rebuild silently moves the
-// character into a different state. Resetting to the default state instead would make
-// the tuning loop useless -- adjusting a transition's duration is most of what the
-// controller editor is for, and it is only reachable while the scene plays.
+// Preserved BY NAME, never by index: a re-save that inserts a state above this one shifts
+// every index below it, so an index-preserving rebuild silently moves the character into a
+// different state. Resetting to the default instead would make the tuning loop useless.
 TEST_F(t_CAnimator, AGenerationBumpPreservesTheCurrentStateByName)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -1393,12 +1357,10 @@ TEST_F(t_CAnimator, AGenerationBumpPreservesTheCurrentStateByName)
     EXPECT_EQ(a.CurrentClip(), &animB);
 }
 
-// Tuning a transition while the scene plays is the whole point of the generation bump,
-// and a re-save that restarts the clip from t = 0 partly defeats it -- on a long clip you
-// lose your place on every edit. The restart was never a decision: the bump re-enters the
-// state through EnterState -> RebindTrack -> AnimInstance::SetClip, which resets `time`.
-//
-// So the cursor is carried across a re-save when the state still plays the SAME clip.
+// A re-save that restarts the clip from t = 0 half-defeats the generation bump, whose
+// point is tuning while the scene plays. The restart was never a decision -- it falls out
+// of EnterState -> RebindTrack -> SetClip, which resets `time` -- so the cursor is carried
+// across when the state still plays the SAME clip.
 TEST_F(t_CAnimator, AGenerationBumpKeepsTheCursorWhenTheClipIsUnchanged)
 {
     ResourceSkeleton  rig(1);  MakeTwoBoneRig(rig);
@@ -1451,11 +1413,9 @@ TEST_F(t_CAnimator, AGenerationBumpRestartsWhenTheStatesClipChanged)
         << "a clip that never ran must start at its beginning";
 }
 
-// THE HAZARD THE CARRY INTRODUCES, and the reason this is not a two-line change.
-// RebindTrack sets previousRoot to the root at t = 0, because a rebind starts there.
-// Moving the cursor without moving previousRoot leaves the next frame measuring travel
-// from the clip's START to the restored time -- one frame of root motion worth most of
-// the clip, which teleports an Applied character on every editor save.
+// THE HAZARD THE CARRY INTRODUCES, and why this is not a two-line change: RebindTrack
+// leaves previousRoot at t = 0, so moving the cursor without moving it makes the next frame
+// measure travel from the clip's START -- teleporting an Applied character on every save.
 TEST_F(t_CAnimator, AGenerationBumpDoesNotLurchAnAppliedCharacter)
 {
     ResourceSkeleton  rig(1);  MakeTwoBoneRig(rig);
@@ -1603,10 +1563,9 @@ TEST_F(t_CAnimator, SeedingNeverOverwritesAScriptsFalse)
 // Per-state speed
 // =============================================================================
 
-// Four multiplicands, and the factors are chosen so that dropping ANY ONE of them
-// gives a distinct wrong answer: clip 2.0 x state 1.5 x parameter 0.5 x multiplier
-// 4.0 = 6.0, against 3.0 / 4.0 / 12.0 / 1.5 for the four omissions. A formula this
-// shape is easy to get subtly wrong and impossible to see at runtime.
+// The factors are chosen so dropping ANY ONE gives a distinct wrong answer: clip 2.0 x
+// state 1.5 x parameter 0.5 x multiplier 4.0 = 6.0, against 3.0 / 4.0 / 12.0 / 1.5 for the
+// four omissions.
 TEST_F(t_CAnimator, TheRateIsTheProductOfAllFourFactors)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -1630,10 +1589,9 @@ TEST_F(t_CAnimator, TheRateIsTheProductOfAllFourFactors)
     EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 6.0f);
 }
 
-// The rate is a PRODUCT, so the absent-parameter fallback has to be 1.0f -- reading
-// AnimParameters' own 0.0f default would multiply the whole rate to zero and freeze
-// the character. A state naming a parameter no script has written yet is the normal
-// case on the first frames of a scene, not an error.
+// The rate is a PRODUCT, so the absent-parameter fallback must be 1.0f: AnimParameters'
+// own 0.0f default would zero the whole rate and freeze the character, and an unwritten
+// parameter is the normal case on a scene's first frames.
 TEST_F(t_CAnimator, AnAbsentSpeedParameterIsFactorOneNotZero)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -1818,10 +1776,9 @@ TEST_F(t_CAnimator, AppliedMovesTheTurnFromThePoseToTheTransform)
     EXPECT_NEAR(forward.x, std::sin(glm::quarter_pi<float>()), 1e-3f);
 }
 
-// InPlace DISCARDS the delta, so the yaw has nowhere to go and must stay in the
-// pose. Stripping it there is not "not travelling" -- it is deleting animation,
-// and a turning clip would face one direction forever. Mixamo's own In Place
-// export draws the line the same way: no root translation, rotation kept.
+// InPlace DISCARDS the delta, so the yaw has nowhere to go and must stay in the pose:
+// stripping it is deleting animation rather than travel, and a turning clip would face one
+// direction forever. Mixamo's In Place export draws the same line.
 TEST_F(t_CAnimator, InPlaceKeepsTheTurnInThePose)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -1892,12 +1849,10 @@ TEST_F(t_CAnimator, AnExplicitStateRootMotionOverridesTheComponent)
     EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[0]), 0.0f);   // stripped, not applied
 }
 
-// Design §5, and THE test that pins ApplyRootMotion having no mode gate of its own.
-// The outgoing track is Applied and the incoming one InPlace, so deltaFrom is the
-// full travel and deltaTo is zero; BlendRootDelta then walks the travel out ACROSS
-// the transition instead of cutting it on the transition's first frame. Both gates an
-// earlier draft proposed -- on the component mode, or on m_currentState -- produce a
-// snap, and a snap is invisible in a still frame.
+// THE test that pins ApplyRootMotion having no mode gate of its own. The outgoing track is
+// Applied and the incoming one InPlace, so deltaFrom is the full travel and deltaTo zero;
+// BlendRootDelta walks it out ACROSS the transition instead of cutting it on the first
+// frame. Gating on the component mode or on m_currentState both produce a snap.
 TEST_F(t_CAnimator, FadingFromAppliedToInPlaceFadesTheTravelOutRatherThanSnapping)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -2438,12 +2393,11 @@ TEST_F(t_CAnimator, PreviewingDuringAnInterruptedFadeLeavesTheFrozenPoseAlone)
     EXPECT_FLOAT_EQ(TranslationX(a.GetBoneGlobals()[1]), 12.5f);
 }
 
-// The other half of the 2026-09-13 QA bug. ACliplessStateIsStillLeftByAnExitTimeEdge
-// covers a SNAP into the unplayable state; every transition authored in the editor has
-// a duration (0.2 s by default) and took the other path, where OnUpdate's fade branch
-// -- gated on the target track having a clip -- never advanced or cleared the fade. The
-// animator stayed "fading" forever, and the exit-time edge then measured the OUTGOING
-// clip's progress rather than the 1.0 a clipless state is supposed to report.
+// The FADING counterpart of the snap case above. Every transition authored in the editor
+// carries a duration, and that path goes through OnUpdate's fade branch -- gated on the
+// target track having a clip, so it never advanced or cleared. The animator stayed
+// "fading" forever, and the exit-time edge then measured the OUTGOING clip's progress
+// rather than the 1.0 a clipless state is supposed to report.
 TEST_F(t_CAnimator, AFadeIntoACliplessStateSnapsRatherThanFadingForever)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -2483,19 +2437,14 @@ TEST_F(t_CAnimator, AFadeIntoACliplessStateSnapsRatherThanFadingForever)
     EXPECT_EQ(a.GetCurrentStateName(), "Idle");
 }
 
-// The OTHER direction, and the one the test above stops one tick short of: leaving a
-// clipless state by a transition that carries a duration. Found in the 2026-09-16 seam
-// QA pass, in-engine, on the demo controller's AnyState -> Attack (trigger) with Attack
-// -> Idle (exit time 0.9, duration 0.15) after Attack's clip was cleared.
+// The OTHER direction, one tick past where the test above stops: leaving a clipless state
+// by a transition that carries a duration.
 //
-// The fade branch in OnUpdate sits BEHIND the !IsBound() early return, and IsBound()
-// asks only about m_from -- which on this path is the clipless track the animator is
-// leaving. So the fade was armed and then never advanced, never cleared, and never
-// rendered: m_fadeDuration stuck at 0.15 forever, the per-frame re-derive of m_from
-// suppressed (it is gated on not fading), the palette cleared every frame, and
-// GraphProgress reading m_to so no exit-time edge could ever fire again. The character
-// stood in bind pose while the editor's active-state highlight said Idle -- a state
-// whose clip was resident and perfectly playable.
+// OnUpdate's fade branch sits BEHIND the !IsBound() return, and IsBound() asks only about
+// m_from -- the clipless track being left. So the fade armed and then never advanced, never
+// cleared and never rendered: stuck fading, the per-frame re-derive of m_from suppressed,
+// the palette cleared every frame, and GraphProgress reading m_to so no exit-time edge
+// could fire again.
 TEST_F(t_CAnimator, AFadeOUTOfACliplessStateDoesNotStrandTheAnimator)
 {
     ResourceSkeleton  rig(1);   MakeTwoBoneRig(rig);
@@ -2553,5 +2502,4 @@ TEST_F(t_CAnimator, AFadeOUTOfACliplessStateDoesNotStrandTheAnimator)
 // rebuild with an integer compare, which is what makes checking it every frame for every
 // character free. So the invariant lives at the writer, not here -- every path that
 // replaces graph.states must bump `generation`. The asset hot-reload path did not, and
-// t_ImporterAnimationController.DeserializeBumpsTheGenerationForTheHotReloadPath pins
-// the fix. Found in the 2026-09-16 seam QA pass; see .claude/CLAUDE.md.
+// the importer's own test pins the fix.

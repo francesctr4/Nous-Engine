@@ -39,28 +39,17 @@ using nous::engine::animation_system::AnimationEvent;
 //     rotCount:u32,   rotTimes[]:f32,   rotValues[]:4 x f32 (w,x,y,z)
 //     scaleCount:u32, scaleTimes[]:f32, scaleValues[]:3 x f32
 //
-// Each track's TIMES are written as one contiguous run BEFORE its values, which
-// preserves on disk the split-array layout the per-channel cursor scan depends on:
-// the bracketing-key search walks a dense run of floats instead of striding over
-// key structs whose values it will not read. A key-struct format would have to be
-// transposed on every load.
+// Each track's TIMES are one contiguous run BEFORE its values, preserving on disk the
+// split-array layout the per-channel cursor scan depends on. The three tracks are counted
+// independently because they ARE independent -- an exporter routinely writes position keys
+// and no scale keys.
 //
-// The three tracks are counted independently because they ARE independent -- an
-// exporter routinely writes position keys and no scale keys.
+// loop/speed/events are AUTHORING data and also live in the stub, but the binary carries
+// its own copy because an exported game ships Library/ and no Assets/. They sit before
+// channelCount so a reader reaches them without walking the channels.
 //
-// `loop`/`speed` are AUTHORING data, so they are also in the .nanim stub -- see
-// ReadAuthoringFromStub. The binary carries its own copy because an exported game
-// ships Library/ and no Assets/, exactly as CAudioSource decodes from the library
-// path. They sit before channelCount rather than at the end so a reader can reach
-// them without walking the channels.
-//
-// Events sit before channelCount for the same reason loop/speed do: a reader reaches
-// them without walking the channels. They are AUTHORING data too, so the .nanim stub
-// carries its own copy -- see ReadAuthoringFromStub.
-//
-// ONE READ PATH. Any other magic is rejected outright rather than parsed; Library/
-// is a derived cache, so regeneration IS the migration. 'NANM' -> 'NAN2' for
-// per-clip settings, 'NAN2' -> 'NAN3' for events. Delete Library/ and reimport.
+// ONE READ PATH: any other magic is rejected rather than parsed. Library/ is a derived
+// cache, so regeneration IS the migration -- delete it and reimport.
 static constexpr uint32_t ANIMATION_BINARY_MAGIC = 0x4E414E33u;   // 'NAN3'
 
 // The stub's authoring keys. Absent means default -- EnsureStub writes none of them.

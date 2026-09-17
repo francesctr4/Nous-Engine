@@ -67,13 +67,9 @@ namespace
         return g;
     }
 
-    // A ref-counting stand-in for ModuleResourceManager.
-    //
-    // A REAL manager is not an option here and that is structural, not laziness:
-    // ModuleResourceManager lives under Engine/Modules/, and nothing in Systems/
-    // may include Modules/ -- the rule check_header_layout.py enforces. IResourceLoader
-    // is precisely the seam that exists for this, so the fake implements it and
-    // moves real ResourceBase reference counts, which is what the invariant is about.
+    // A ref-counting stand-in for ModuleResourceManager. A real one is not an option:
+    // nothing in Systems/ may include Modules/, and IResourceLoader is the seam that exists
+    // for exactly this. It moves real ResourceBase counts, which is what is being tested.
     struct FakeClipLoader : IResourceLoader
     {
         std::map<uint32_t, std::unique_ptr<ResourceAnimation>> clips;
@@ -236,22 +232,14 @@ TEST_F(ImporterAnimationControllerTest, EndpointsAreNamesSoReorderingStatesDoesN
     EXPECT_EQ(1, read.graph.defaultState);
 }
 
-// The other half of the test above, and the one whose absence made that one's
-// reassurance hollow. Endpoints surviving a reorder ON DISK is worthless if a LIVE
-// CAnimator never learns the reorder happened.
+// The other half of the test above: endpoints surviving a reorder ON DISK is worthless if
+// a LIVE CAnimator never learns the reorder happened.
 //
-// `.nctrl` is hotReloadable, so an external edit -- a text editor, a git checkout, a
-// merge -- re-runs Deserialize on a controller a character is already playing and
-// replaces graph.states wholesale. CAnimator detects a rebuild by comparing
-// `generation`, which was bumped ONLY by the controller editor's Save. So that path
-// announced itself and this one did not: reordering two states externally moved the
-// character to a different animation silently, and deleting the current state left
-// m_currentState out of range with nothing outside the bind and generation blocks to
-// re-derive it -- bind pose, permanently.
-//
-// Found in the 2026-09-16 seam QA pass. The in-engine repro could not show it: the demo
-// graph is condition-driven, so the swap was undone by the next frame's edge, leaving
-// only a clip that restarted for no visible reason.
+// `.nctrl` is hotReloadable, so an external edit re-runs Deserialize on a controller a
+// character is already playing and replaces graph.states wholesale. CAnimator detects a
+// rebuild by comparing `generation` -- so without a bump here, reordering two states
+// externally moves the character to another animation silently, and deleting the current
+// one leaves m_currentState out of range with nothing to re-derive it.
 TEST_F(ImporterAnimationControllerTest, DeserializeBumpsTheGenerationForTheHotReloadPath)
 {
     ResourceAnimationController written(1);
@@ -419,13 +407,11 @@ TEST_F(ImporterAnimationControllerTest, DeserializeAcquiresOneReferencePerResolv
 
 TEST_F(ImporterAnimationControllerTest, ReDeserializingALiveControllerDoesNotChangeClipRefCounts)
 {
-    // THE test of this task. Deserialize is not called only on a fresh resource:
-    // the asset hot-reload path re-deserializes a LIVE controller in place, so each
-    // pass re-acquires every clip and must release what the slots already held.
-    //
-    // The `previous != clip` guard is the obvious version and leaks in exactly this
-    // case -- re-resolving finds the SAME clip resident and only increments, so a
-    // change-detecting release never fires and the count climbs by one per reload.
+    // Deserialize is not called only on a fresh resource: the hot-reload path
+    // re-deserializes a LIVE controller in place, so each pass re-acquires every clip and
+    // must release what the slots held. The obvious `previous != clip` guard leaks in
+    // exactly this case, since re-resolving finds the same clip resident and only
+    // increments.
     const std::string path = "t_AnimationController_refs.nctrl";
     WriteResolvableController(path);
 

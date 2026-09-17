@@ -27,14 +27,11 @@ using nous::engine::animation_system::Transform;
 //     offset:16 x f32                     (glm::mat4, column-major)
 //     bindLocal: 3 x f32 pos, 4 x f32 rot (w,x,y,z), 3 x f32 scale
 //
-// String lengths are u64 to match ImporterMesh.cpp's AppendString/ReadString. A
-// second string-length convention in a sibling format buys nothing and costs an
-// afternoon to a reader who assumes they agree.
+// String lengths are u64 to match ImporterMesh.cpp's AppendString/ReadString -- a second
+// convention in a sibling format buys nothing.
 //
-// ONE READ PATH. Any other magic is rejected outright rather than parsed:
-// Library/ is a derived cache and Assets/ is the source of truth, so regeneration
-// IS the migration and a second read path would just be a second thing to keep
-// correct. Bump the magic when the layout changes.
+// ONE READ PATH: any other magic is rejected rather than parsed. Library/ is a derived
+// cache, so regeneration IS the migration. Bump the magic when the layout changes.
 static constexpr uint32_t SKELETON_BINARY_MAGIC = 0x4E534B4Cu;
 
 namespace
@@ -95,18 +92,12 @@ namespace
         return fh.ReadBytes(std::span(reinterpret_cast<char*>(out), count * sizeof(float))).has_value();
     }
 
-    // A quaternion is written and read COMPONENT-WISE, never as raw bytes.
-    //
-    // glm::quat's default memory layout is {x, y, z, w} -- w is the LAST member, not
-    // the first. So `&quat.w` is not the start of the object, and dumping
-    // 4 * sizeof(float) from it reads twelve bytes PAST the end of the quaternion.
-    // In Transform that lands in the adjacent `scale`, which makes the bug nearly
-    // invisible: scale round-trips fine (written and restored by the same overrun)
-    // while the rotation silently loses x, y and z.
-    //
-    // The file format stores w,x,y,z -- matching the JSON convention used for
-    // CTransform elsewhere in the engine -- and these two functions are the only
-    // place that ordering is expressed.
+    // A quaternion is written and read COMPONENT-WISE, never as raw bytes: glm::quat's
+    // layout is {x,y,z,w}, so `&quat.w` is the LAST member and dumping four floats from it
+    // reads twelve bytes past the end. In a Transform that lands in the adjacent `scale`,
+    // which makes the bug nearly invisible -- scale round-trips fine while the rotation
+    // silently loses x, y and z. The format stores w,x,y,z, matching the JSON convention
+    // used elsewhere, and these two functions are the only place that is expressed.
     void AppendQuat(std::vector<std::byte>& out, const glm::quat& q)
     {
         const float wxyz[4] = { q.w, q.x, q.y, q.z };

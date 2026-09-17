@@ -8,10 +8,9 @@
 
 // A rig: bone names, parents, bind-pose offsets and bind-pose locals.
 //
-// SkeletonData is composed BY VALUE rather than having its fields redeclared here.
-// The animation library owns the shape and knows nothing about resources; this
-// class adds a UID, a path and a ref-count on top. Two declarations of the same
-// fields would be two places to drift.
+// SkeletonData is composed BY VALUE rather than having its fields redeclared here: the
+// animation library owns the shape and knows nothing about resources, while this class
+// adds a UID, a path and a ref-count on top.
 //
 // NO GPU RESIDENCY. The bone palette is per-animator and rebuilt each frame, so
 // ImporterSkeleton's Upload/Release are no-ops.
@@ -24,9 +23,8 @@ public:
 
     // FNV-1a over the joined bone names -- a cheap "is this the same rig?" check.
     //
-    // ADVISORY ONLY. The spec made this hash load-bearing because it assumed two
-    // importers would derive bone orderings independently and could disagree; with
-    // one ParseModel producing the mesh's boneIDs and this skeleton together, they
-    // cannot. It survives as a diagnostic, not as a correctness mechanism.
+    // ADVISORY ONLY: it would be load-bearing if two importers derived bone orderings
+    // independently, but one ParseModel produces the mesh's boneIDs and this skeleton
+    // together, so they cannot disagree. A diagnostic, not a correctness mechanism.
     uint64_t nameHash = 0;
 };

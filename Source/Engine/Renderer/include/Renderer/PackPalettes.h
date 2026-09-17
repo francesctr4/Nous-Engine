@@ -21,11 +21,9 @@ struct PackedPalettes
 // lists as given. One implementation keeps the sentinel and overflow rules from
 // drifting between the three.
 //
-// It lives in Renderer/ -- the shared-types target -- rather than beside
-// GroupGeometries, because the pick and outline passes that call it are inside
-// VulkanBackend. Owning it in the frontend would make the backend depend on the
-// frontend, which is the wrong direction; Renderer/ already owns GeometryRenderData
-// and sits below both.
+// It lives in Renderer/ rather than beside GroupGeometries because the pick and outline
+// passes that call it are inside VulkanBackend, and owning it in the frontend would make
+// the backend depend on the frontend.
 //
 // basePaletteSlot is the offset of this pass's region inside the shared palette
 // buffer, so a returned base is a GLOBAL index while `palettes` stays pass-local --

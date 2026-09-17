@@ -45,13 +45,11 @@ struct ControllerNode
     ControllerNodePin input;
     ControllerNodePin output;
 
-    // The authored state, mirroring ControllerState field for field, plus the clip
-    // this window resolved for it.
+    // The authored state plus the clip this window resolved for it.
     //
-    // THE CLIP CARRIES A WINDOW-OWNED REFERENCE, one per node, acquired wherever the
-    // pointer is set and released wherever it is replaced or dropped. Uniformly, and
-    // not only for clips the user drags in: making the release conditional on where a
-    // pointer came from is how the count starts climbing.
+    // THE CLIP CARRIES A WINDOW-OWNED REFERENCE, one per node, released wherever it is
+    // replaced or dropped -- uniformly, not only for clips the user drags in. Making the
+    // release conditional on where a pointer came from is how the count starts climbing.
     nous::engine::animation_system::ControllerState state;
     ResourceAnimation*                             clip = nullptr;
 };
@@ -70,12 +68,10 @@ struct ControllerLink
 /**
  * @brief Visual authoring for .nctrl animation state machines.
  *
- * Structurally AudioGraphEditor: same base class, same imgui-node-editor host, same
- * asset New/Open/Save flow, same four host requirements (see the
- * imgui-node-editor-host-setup notes). What differs is the graph shape -- a state
- * machine rather than a linear chain -- so a node may have MANY outgoing links,
- * order among them is meaningful, and the flattening lives in the separately tested
- * AnimationControllerBuild.h rather than in this file.
+ * Structurally AudioGraphEditor: same base class, same imgui-node-editor host, same asset
+ * New/Open/Save flow. What differs is the graph shape -- a state machine rather than a
+ * linear chain -- so a node may have MANY outgoing links, order among them is meaningful,
+ * and the flattening lives in the separately tested AnimationControllerBuild.h.
  */
 class AnimationControllerEditor : public IEditorWindow
 {
@@ -135,10 +131,9 @@ private:
     ControllerNode  MakeNode(ControllerNodeKind kind, ImVec2 position);
     void            SpawnState();
 
-    // Resolved BY PIN KIND, deliberately as two functions rather than one that
-    // matches either. A kind-agnostic lookup makes an output-to-output drag resolve
-    // to two real nodes and pass validation, producing a link the canvas draws and
-    // BuildGraph then drops -- a transition that appears to exist and does not.
+    // Resolved BY PIN KIND, as two functions rather than one matching either: a
+    // kind-agnostic lookup lets an output-to-output drag resolve to two real nodes and pass
+    // validation, producing a link the canvas draws and BuildGraph then drops.
     ControllerNode* FindNodeByOutputPin(ax::NodeEditor::PinId pin);
     ControllerNode* FindNodeByInputPin(ax::NodeEditor::PinId pin);
 
@@ -162,13 +157,9 @@ private:
 
     ModuleResourceManager* ResourceManager() const;
 
-    // The animator this window is watching: the selected GameObject's CAnimator, but
-    // only while the scene is simulating AND its controller is the asset open here.
-    // Null otherwise, and the highlight simply does not draw.
-    //
-    // ModuleScene::selectedGameObjects is public and already read directly by
-    // InspectorWindow, HierarchyWindow and SceneViewport, so this needs no new
-    // plumbing and no new interface -- the editor is the layer allowed to know both.
+    // The animator this window is watching: the selected GameObject's CAnimator, but only
+    // while the scene is simulating AND its controller is the asset open here. Null
+    // otherwise, and the highlight simply does not draw.
     const CAnimator* WatchedAnimator() const;
 
     // Dependency-free proxies for the pure builder. State clipIndex is filled here so
@@ -191,12 +182,9 @@ private:
     std::vector<ControllerNode> m_nodes;
     std::vector<ControllerLink> m_links;
 
-    // Neither belongs to a node, so neither is re-derived from the canvas: the
-    // parameter list is graph-wide, and the default is a property OF the graph that
-    // happens to name a state.
-    //
-    // The default is held BY NAME rather than by index because the canvas reorders
-    // and deletes nodes freely -- an index would silently retarget.
+    // Neither belongs to a node, so neither is re-derived from the canvas. The default is
+    // held BY NAME rather than by index because the canvas reorders and deletes nodes
+    // freely, and an index would silently retarget.
     std::vector<nous::engine::animation_system::ParameterDecl> m_parameters;
     std::string                                                m_defaultStateName;
 
@@ -210,10 +198,9 @@ private:
     bool m_showNewAssetPopup = false;
     char m_newAssetName[128] = {};
 
-    // The panel is worth a fixed ~280px in a wide window and is half the window in a
-    // narrow docked column, which is where this editor usually ends up. Collapsing it
-    // gives the canvas the whole width; the rail that toggles it stays visible so the
-    // panel is one click away rather than lost.
+    // A fixed ~280px, since a proportional panel is half the window in the narrow docked
+    // column this editor usually ends up in. The rail that toggles it stays visible, so a
+    // collapsed panel is one click away rather than lost.
     bool m_leftPanelOpen = true;
 
     ImVec2 m_spawnPosition{ 40.0f, 40.0f };

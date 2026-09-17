@@ -322,13 +322,10 @@ TEST(t_SkeletonBuild, AnimatedNodesAreKeptAlongWithTheirAncestors)
     EXPECT_TRUE(result->IsTopologicallySorted());
 }
 
-// THE ONE THAT PROTECTS EVERY SKINNED IMPORT THAT WORKS TODAY.
-//
-// Applied unconditionally, the fallback would promote an animated non-bone node --
-// root motion on a geometry node, a prop parented to a hand, an exporter helper --
-// into an extra "bone" with a derived, non-authoritative offset. That silently
-// changes rigs that import correctly, and breaks the property that a skinned FBX
-// and its anim-only sibling produce identical bone-name lists.
+// THE ONE THAT PROTECTS EVERY SKINNED IMPORT THAT WORKS TODAY. Applied unconditionally,
+// the fallback would promote an animated non-bone -- root motion on a geometry node, a prop
+// parented to a hand -- into an extra "bone" with a derived offset, silently changing rigs
+// that import correctly and breaking the skinned/anim-only bone-name agreement.
 TEST(t_SkeletonBuild, AnimatedFallbackIsIgnoredEntirelyWhenAnyBoneExists)
 {
     auto nodes = BonelessHierarchy();

@@ -47,7 +47,7 @@ TEST(t_AnimationControllerBuild, ALinkFromTheAnyStateNodeBecomesTheSentinel)
     EXPECT_EQ("Attack", g.states[0].name);
 }
 
-// Authored order IS the priority (design §3): the evaluator walks transitions in
+// Authored order IS the priority: the evaluator walks transitions in
 // order and the first satisfied one wins. A build that sorted or grouped links --
 // by source state, say, which is the obvious tidying -- would silently change which
 // transition fires, with nothing on screen to show it.
