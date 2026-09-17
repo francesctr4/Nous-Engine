@@ -3,6 +3,8 @@
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 4) in vec3 inSmoothNormal; // position-welded smooth normal, computed at import time
+layout(location = 7) in uvec4 inBoneIDs;
+layout(location = 8) in vec4  inBoneWeights;
 
 layout(set = 0, binding = 0) uniform globalUniformObject
 {
@@ -11,18 +13,50 @@ layout(set = 0, binding = 0) uniform globalUniformObject
     vec4 outlineColor;
 } globalUBO;
 
+// Its own region of the shared palette buffer: this pass iterates the selected
+// objects in natural order, so it cannot share the scene pass's sorted bases.
+layout(set = 0, binding = 3) readonly buffer BonePalette
+{
+    mat4 bones[];
+} bonePalette;
+
+const uint NO_SKIN = 0xFFFFFFFFu;
+
 layout(push_constant) uniform pushConstantObject
 {
 // Only guaranteed a total of 128 bytes.
-    mat4 model; // 64 bytes
-    float outlineThickness; // 4 bytes
+    mat4  model;            // 64 bytes
+    float outlineThickness; //  4 bytes
+    uint  paletteBase;      //  4 bytes
 } pushConstant;
 
 void main()
 {
+    vec3 position     = inPosition;
+    vec3 smoothNormal = inSmoothNormal;
+
+    // Two guards, covering different failures: the sentinel for a rigged mesh whose
+    // animator has not bound yet, the weight test for an unweighted vertex inside a
+    // skinned mesh.
+    if (pushConstant.paletteBase != NO_SKIN && dot(inBoneWeights, vec4(1.0)) > 0.0)
+    {
+        uint base = pushConstant.paletteBase;
+        mat4 skin = inBoneWeights.x * bonePalette.bones[base + inBoneIDs.x]
+                  + inBoneWeights.y * bonePalette.bones[base + inBoneIDs.y]
+                  + inBoneWeights.z * bonePalette.bones[base + inBoneIDs.z]
+                  + inBoneWeights.w * bonePalette.bones[base + inBoneIDs.w];
+
+        position = (skin * vec4(position, 1.0)).xyz;
+
+        // The NORMAL must be skinned too, not just the position. The extrusion below
+        // offsets along this normal, so leaving it in bind pose gives a shell that
+        // leans the wrong way on a deformed character.
+        smoothNormal = normalize(mat3(skin) * smoothNormal);
+    }
+
     // Transform to clip space first.
     vec4 clipPos = globalUBO.projection * globalUBO.view
-                 * pushConstant.model * vec4(inPosition, 1.0);
+                 * pushConstant.model * vec4(position, 1.0);
 
     if (pushConstant.outlineThickness > 0.0)
     {

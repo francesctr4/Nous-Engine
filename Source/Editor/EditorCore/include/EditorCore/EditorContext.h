@@ -1,9 +1,11 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <string>
 
 class ImFont;
+class IEditorWindow;
 
 // Forward declarations
 class ModuleScene;
@@ -43,6 +45,31 @@ public:
     [[nodiscard]] virtual IEditorRenderBridge*                           GetEditorRenderBridge() const = 0;
 
     [[nodiscard]] virtual std::string GetAssetsBrowserDirectory() const = 0;
+
+    /**
+     * @brief Visits every registered editor window, in registration order.
+     *
+     * Exists so the Windows menu can be DERIVED from the windows that actually
+     * exist rather than hand-listed beside them: a hand-listed menu is a second
+     * thing to keep in sync, and it silently drifted -- it offered windows that
+     * were never built and omitted every window added in the last year.
+     *
+     * A callback rather than a returned container, the same shape as the
+     * renderer's ForEachShader / ForEachMaterial: the list lives in a NOUS_Vector
+     * behind the custom allocator, and handing that type out would drag it into
+     * every consumer.
+     */
+    virtual void ForEachEditorWindow(const std::function<void(IEditorWindow&)>& fn) const = 0;
+
+    /**
+     * @brief The registered window with this exact title, or null.
+     *
+     * For the cases where one window drives another -- the menu bar owning the
+     * asset-pipeline actions whose state lives in the Assets Browser, say. Returns
+     * the base type: the caller knows which concrete window it asked for, and must
+     * null-check before casting, since a window can be absent.
+     */
+    [[nodiscard]] virtual IEditorWindow* GetEditorWindow(const char* title) const = 0;
 
     // Called when a .glsl file is moved in the AssetsBrowser — keeps the hot-reload watcher in sync.
     virtual void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath) = 0;

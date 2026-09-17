@@ -60,6 +60,10 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         # this is headers only. Mis-scoped until the include/ split made it fail
         # to compile in ModuleEditor.
         ShaderSystem_headers
+        # RendererFrontend.h holds a vector<Vertex3D> by value for the debug-line
+        # overlay, and RendererTypes.h only forward-declares Vertex3D -- so the API
+        # dir has to propagate. Headers only.
+        Utils_headers
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE
@@ -71,6 +75,15 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         ResourceManager
         ShaderSystem
 )
+
+# RendererFrontend.cpp includes <tracy/Tracy.hpp> under _PROFILING. The vcpkg tracy
+# port installs its headers at include/tracy/tracy/Tracy.hpp, so that spelling
+# resolves ONLY through the include dir Tracy::TracyClient carries -- it is not
+# reachable from the vcpkg_installed/include root.
+if (ENABLE_PROFILING)
+    find_package(Tracy CONFIG REQUIRED)
+    target_link_libraries(${CLASS_NAME} PRIVATE Tracy::TracyClient)
+endif()
 
 if (NOUS_BUILD_TESTS)
     add_subdirectory(test)

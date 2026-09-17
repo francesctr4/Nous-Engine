@@ -62,6 +62,10 @@ public:
     GameExporter* GetGameExporter() const override { return m_gameExporter; }
     IEditorRenderBridge*   GetEditorRenderBridge()      const override { return m_renderBridge; }
     std::string GetAssetsBrowserDirectory() const override;
+
+    void ForEachEditorWindow(const std::function<void(IEditorWindow&)>& fn) const override;
+
+    [[nodiscard]] IEditorWindow* GetEditorWindow(const char* title) const override;
     void UpdateShaderWatcherPath(const std::string& oldPath, const std::string& newPath) override;
     void WatchShaderFile(const std::string& path) override;
 
@@ -94,6 +98,10 @@ private:
 	IEditorRenderBridge* m_renderBridge = nullptr;
 
     GameExporter* m_gameExporter = nullptr;
+
+	// Counts the first frames so the startup focus can be claimed once the dock
+	// layout has settled; -1 once it has been claimed. See InternalDrawEditor.
+	int m_startupFocusFrames = 0;
 
 	// Custom allocator vector for editor windows
 	NOUS_Vector<IEditorWindow*> editorWindows;

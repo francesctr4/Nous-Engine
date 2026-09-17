@@ -27,6 +27,7 @@ target_include_directories(${CLASS_NAME}_private INTERFACE ${CMAKE_CURRENT_SOURC
 
 add_library(${CLASS_NAME} STATIC
         src/${CLASS_NAME}.cpp
+        src/RevealInFileManager.cpp
 )
 
 target_sources(${CLASS_NAME} PRIVATE
@@ -56,6 +57,12 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         Logger
         MemoryManager
 )
+
+# RevealInFileManager.cpp calls ShellExecute. shellapi.h carries no autolink
+# pragma, so the import library has to be named here.
+if (WIN32)
+    target_link_libraries(${CLASS_NAME} PRIVATE Shell32)
+endif()
 
 add_subdirectory(src/FileHandle)
 

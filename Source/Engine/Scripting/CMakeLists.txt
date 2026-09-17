@@ -51,6 +51,8 @@ target_sources(Scripting PRIVATE
         include/Scripting/EngineAPI/EngineAPI.h
         include/Scripting/EngineAPI/NOUS_SCANCODE.h
         include/Scripting/EngineAPI/Bindings/ScriptBindings.h
+        include/Scripting/EngineAPI/Bindings/AnimatorBindings.h
+        include/Scripting/EngineAPI/Bindings/AudioBindings.h
         include/Scripting/EngineAPI/Bindings/CameraBindings.h
         include/Scripting/EngineAPI/Bindings/ComponentBindings.h
         include/Scripting/EngineAPI/Bindings/GameObjectBindings.h

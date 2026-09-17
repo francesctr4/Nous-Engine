@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <ResourceManager/Import/ModelParser/ModelImportData.h>
+#include <ResourceManager/Types/ResourceMesh/ImporterMesh.h>
 #include <ResourceManager/Types/ResourceMesh/SubMeshCache.h>
 #include <ResourceManager/Types/ResourceMesh/ResourceMesh.h>
+#include <ResourceManager/Core/MetaFileData.h>
 #include <ResourceManager/Core/ResourceQueue.h>
 #include <ResourceManager/Core/ResourceTable.h>
 #include <MemoryManager/MemoryManager.h>
@@ -18,48 +21,40 @@
 // Binary / meta helpers
 // =====================================================
 
-// V2 .nmesh magic — must match ImporterMesh.cpp.
-static constexpr uint32_t k_NmeshMagic = 0xFA7C0DE1u;
-
-// Writes a minimal valid V2 .nmesh binary with one trivial vertex+index per
-// submesh. The names vector determines how many submeshes are in the file.
+// Writes a minimal .nmesh with one trivial vertex+index per submesh. The names
+// vector determines how many submeshes are in the file.
+//
+// Goes through ImporterMesh's own writer rather than hand-rolling the byte layout.
+// The previous version wrote the header by hand using the LIVE sizeof(Vertex3D),
+// which stopped describing the real format the moment Vertex3D gained bone data —
+// and would have kept "passing" while feeding the reader a stride it no longer
+// used. Round-tripping through the writer cannot drift from the reader.
 static void WriteMinimalNmeshFile(const std::filesystem::path& path,
                                    const std::vector<std::string>& submeshNames)
 {
     std::filesystem::create_directories(path.parent_path());
-    std::ofstream f(path, std::ios::binary);
-    if (!f.is_open()) return; // test will fail at subsequent nullptr check
 
-    auto write = [&](const void* d, std::streamsize n) { f.write(static_cast<const char*>(d), n); };
-    auto write32 = [&](uint32_t v) { write(&v, 4); };
-    auto write64 = [&](uint64_t v) { write(&v, 8); };
-
-    write32(k_NmeshMagic);
-    write32(static_cast<uint32_t>(submeshNames.size()));
+    nous::engine::resource_manager::ModelImportData model;
+    model.submeshes.reserve(submeshNames.size());
 
     for (const auto& name : submeshNames)
     {
-        const uint64_t nameLen = name.size();
-        write64(nameLen);
-        if (nameLen > 0) write(name.data(), static_cast<std::streamsize>(nameLen));
+        SubMeshData sub;
+        sub.name           = name;
+        sub.localTransform = glm::mat4(1.0f);
 
-        // Identity local transform (16 floats, column-major).
-        const float identity[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
-        write(identity, 16 * sizeof(float));
-
-        // One trivial vertex.
-        const uint64_t vCount = 1;
-        write64(vCount);
         Vertex3D v{};
         v.position = glm::vec3(1.0f, 0.0f, 0.0f);
-        write(&v, sizeof(Vertex3D));
+        sub.vertices.push_back(v);
+        sub.indices.push_back(0u);
 
-        // One trivial index.
-        const uint64_t iCount = 1;
-        write64(iCount);
-        const uint32_t idx = 0;
-        write(&idx, sizeof(idx));
+        model.submeshes.push_back(std::move(sub));
     }
+
+    MetaFileData meta;
+    meta.libraryPath = path.string();
+
+    ImporterMesh::SaveModel(meta, model);   // test fails later if this did not land
 }
 
 // Writes a minimal JSON .meta file for a MESH asset (ResourceType::MESH == 0).

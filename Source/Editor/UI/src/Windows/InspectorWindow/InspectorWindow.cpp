@@ -95,10 +95,27 @@ void InspectorWindow::DrawGameObjectHeader(GameObject* go)
     if (cprefab)
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
 
+    // SCOPED TO THE GAMEOBJECT, and this is load-bearing rather than tidiness. ImGui
+    // identifies a widget by ID, not by which object the caller had in mind, and an
+    // InputText that loses focus stashes its text to be re-applied ON A LATER FRAME by
+    // whatever widget claims the same ID (imgui_widgets.cpp, "Handle reapplying final
+    // data on deactivation"). With one shared "##Name", typing into object A and then
+    // clicking object B in the Hierarchy applied A's text to B -- the rename followed
+    // the selection. The edit itself never needed that path: InputText returns true on
+    // every keystroke, so SetName has already run by then.
+    ImGui::PushID(static_cast<int>(currentID));
+
     if (ImGui::InputText("##Name", m_nameBuffer.data(), m_nameBuffer.size()))
     {
-        go->SetName(m_nameBuffer);
+        // Up to the terminator, NOT the whole 256-byte edit buffer: m_nameBuffer is a
+        // std::string resized to the widget's capacity, so its size() still counts the
+        // padding ImGui left behind it. Handing that straight to SetName gives every
+        // renamed object a name with embedded NULs, which displays fine through c_str()
+        // and quietly fails every std::string comparison against it.
+        go->SetName(m_nameBuffer.c_str());
     }
+
+    ImGui::PopID();
 
     if (cprefab)
         ImGui::PopStyleColor();

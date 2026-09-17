@@ -85,6 +85,9 @@ enum class FileType : int8_t
     VIDEO,
     GIF,
     AUDIO_GRAPH,
+    SKELETON,
+    ANIMATION,
+    ANIMATION_CONTROLLER,
 
     ALL_TYPES
 };
@@ -177,9 +180,34 @@ public:
     bool show_create_shader_popup = false;
     char shader_name_buffer[128]  = "";
 
+    // Audio graph creation popup state (.nafx)
+    bool show_create_audio_graph_popup = false;
+    char audio_graph_name_buffer[128]  = "";
+
+    // Animation controller creation popup state (.nctrl)
+    bool show_create_controller_popup = false;
+    char controller_name_buffer[128]  = "";
+
     // Folder creation popup state
     bool show_create_folder_popup = false;
     char folder_name_buffer[128]  = "";
+
+    // One name-prompt modal for any authored asset type. Every one of them is the
+    // same four steps -- pick a name, write the file, import it, refresh the view --
+    // differing only in the label, the extension and the function that writes it.
+    //
+    // `createFile` is a plain function pointer because every writer is a static on
+    // its importer, which is also where a new type's belongs: the browser should not
+    // know what is inside a .nafx.
+    //
+    // The script, material and shader popups predate this and still hand-roll the
+    // same body; they can adopt it whenever one of them next needs a change.
+    void DrawCreateAssetPopup(const char* popupTitle,
+                              const char* nameLabel,
+                              const char* extension,
+                              char*       nameBuffer,
+                              size_t      bufferSize,
+                              bool      (*createFile)(const std::string& assetPath));
 
 private:
     void MoveAsset(const std::string& srcPath, const std::string& destDir);
@@ -187,4 +215,13 @@ private:
     void ImportExternalFile(const std::string& srcPath);
 
     std::vector<std::pair<std::string, std::string>> m_pendingMoves;
+
+    // The item the context menu was opened over, or empty when the right-click
+    // landed on void. Right-clicking does not change the selection here (the
+    // items are MultiSelect Selectables, which only react to the left button),
+    // so the menu has no other way to know what it was opened on.
+    //
+    // A path rather than an index into Items: the vector is rebuilt whenever the
+    // directory is re-scanned, and an index would then name a different asset.
+    std::string m_contextItemPath;
 };

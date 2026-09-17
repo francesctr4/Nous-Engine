@@ -496,6 +496,26 @@ bool IsLoggingPaused()             { return s_loggingPaused.load(); }
 
 void ReportAssertionFailure(const char* expression, const char* message, const char* file, int32_t line)
 {
+    // Emitted SYNCHRONOUSLY to stderr before anything else. The caller is about to
+    // NOUS_DebugBreak(), and LogOutput only ENQUEUES for the flush thread -- which
+    // never gets scheduled before the process dies. So the one line naming WHICH
+    // assertion fired was being lost every time, leaving a bare 0x80000003 and a
+    // console cut off mid-line. stderr is unbuffered-on-flush and needs no other
+    // thread; the fstream behind AppendToLogFile buffers, so it is not sufficient
+    // on its own.
+    char buffer[1024];
+    std::snprintf(buffer, sizeof(buffer),
+                  "[FATAL]: Assertion Failure: %s, message: '%s', in file: %s, line: %d\n",
+                  expression, message, file, line);
+
+    std::fflush(stdout);          // keep ordering with the console log above it
+    std::fputs(buffer, stderr);
+    std::fflush(stderr);
+
+    AppendToLogFile(buffer);
+
+    // Still goes through the normal path so the editor console and the ring buffer
+    // see it in the cases where the process survives the break.
     LogOutput(LOG_LEVEL_FATAL,
               "Assertion Failure: %s, message: '%s', in file: %s, line: %d",
               expression, message, file, line);

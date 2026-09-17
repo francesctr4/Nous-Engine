@@ -19,6 +19,10 @@ target_include_directories(${CLASS_NAME}_headers INTERFACE ${CMAKE_CURRENT_SOURC
 # those headers need the dir too. It is header-only, so this adds no linkage.
 target_link_libraries(${CLASS_NAME}_headers INTERFACE EngineCore_headers)
 
+# SkinningPairing.h names GeometryRenderData, so the Renderer API dir rides on the
+# _headers handle too. Headers only -- this adds no linkage.
+target_link_libraries(${CLASS_NAME}_headers INTERFACE Renderer_headers)
+
 add_library(${CLASS_NAME}_private INTERFACE)
 target_include_directories(${CLASS_NAME}_private INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -28,6 +32,7 @@ add_library(${CLASS_NAME} STATIC
 
 target_sources(${CLASS_NAME} PRIVATE
         include/${CLASS_NAME}/${CLASS_NAME}.h
+        include/${CLASS_NAME}/SkinningPairing.h
 )
 
 target_include_directories(${CLASS_NAME}
@@ -43,6 +48,9 @@ target_link_libraries(${CLASS_NAME} PUBLIC
         FileWatcher       # owns the shader hot-reload watcher
         Renderer
         EventSystem_headers   # <Module>.h implements IEventListener
+        # ModuleRenderer3D.h holds a vector<Vertex3D> by value for the normals
+        # overlay, and RendererTypes.h only forward-declares Vertex3D.
+        Utils_headers
 )
 
 target_link_libraries(${CLASS_NAME} PRIVATE
@@ -61,6 +69,15 @@ target_link_libraries(${CLASS_NAME} PRIVATE
         glm::glm
         Scripting_headers
 )
+
+# ModuleRenderer3D.cpp includes <tracy/Tracy.hpp> under _PROFILING. The vcpkg tracy
+# port installs its headers at include/tracy/tracy/Tracy.hpp, so that spelling
+# resolves ONLY through the include dir Tracy::TracyClient carries -- it is not
+# reachable from the vcpkg_installed/include root.
+if (ENABLE_PROFILING)
+    find_package(Tracy CONFIG REQUIRED)
+    target_link_libraries(${CLASS_NAME} PRIVATE Tracy::TracyClient)
+endif()
 
 
 if (NOUS_BUILD_TESTS)

@@ -64,6 +64,18 @@ std::string nous::engine::filesystem::NormalizePath(const std::string& path)
 	return result;
 }
 
+std::string nous::engine::filesystem::ToNativePath(const std::string& path)
+{
+#ifdef _WIN32
+	std::string result = path;
+	std::replace(result.begin(), result.end(), '/', '\\');
+	return result;
+#else
+	// Identity on purpose: see the declaration.
+	return path;
+#endif
+}
+
 bool nous::engine::filesystem::CreateDirectory(const std::filesystem::path& path)
 {
 	if (!Exists(path.string()))

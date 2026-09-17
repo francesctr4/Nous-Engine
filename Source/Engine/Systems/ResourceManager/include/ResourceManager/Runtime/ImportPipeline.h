@@ -7,6 +7,7 @@
 #include <vector>
 
 class IImporterDispatcher;
+class IResourceLoader;
 class TypeRegistry;
 struct MetaFileData;
 namespace nous::engine::multithreading { class NOUS_JobSystem; }
@@ -14,9 +15,14 @@ namespace nous::engine::multithreading { class NOUS_JobSystem; }
 class ImportPipeline
 {
 public:
+    // `resources` is forwarded to ParseModel for the glTF material/texture fan-out.
+    // ModuleResourceManager passes `this` from its member-init list, which is safe
+    // because the pointer is only stored here, never dereferenced during
+    // construction. Null is tolerated (tests), at the cost of that fan-out.
     NOUS_ENGINE_API ImportPipeline(IImporterDispatcher* importerManager,
                                            const TypeRegistry& typeRegistry,
-                                           nous::engine::multithreading::NOUS_JobSystem* jobSystem = nullptr);
+                                           nous::engine::multithreading::NOUS_JobSystem* jobSystem = nullptr,
+                                           IResourceLoader* resources = nullptr);
 
     // Public import entry points — called by ModuleResourceManager delegators
     // and by external consumers that formerly called ModuleResourceManager directly.
@@ -60,6 +66,20 @@ private:
     static bool CreateMetaFile(const std::string& metaFilePath, const MetaFileData& inFileData);
     static bool ReadMetaFile(const std::string& metaFilePath, MetaFileData& outFileData);
 
+    // Returns the asset's MetaFileData, creating the .meta sidecar and minting a UID
+    // when it has none. THE single place UIDs are assigned -- ModelImport reaches it
+    // through the ModelImportContext callback rather than duplicating it.
+    bool EnsureMeta(const std::string& assetsPath, ResourceType type, MetaFileData& outMeta) const;
+
+    // The one chokepoint every import goes through.
+    //
+    // A model file is not "a mesh": it is a mesh AND a skeleton AND N clips, all
+    // from one parse, so it does not go through the per-type dispatcher at all.
+    bool Dispatch(const MetaFileData& metaFileData) const;
+
+    // Parses a model file once and writes its mesh, skeleton and clips.
+    bool ImportModelFile(const MetaFileData& modelMeta) const;
+
     // Writes Library/Shaders/shader_manifest.json from the .meta files of the built-in
     // shaders. Called at the tail of ScanAndImportAssets so the manifest is always in
     // sync with the library after any import pass — initial startup, RegenerateLibrary,
@@ -79,6 +99,7 @@ private:
     IImporterDispatcher* m_importerManager = nullptr;
     const TypeRegistry* m_typeRegistry = nullptr;
     nous::engine::multithreading::NOUS_JobSystem* m_jobSystem = nullptr;
+    IResourceLoader* m_resources = nullptr;
 
     // Phase-1 scan: walks directory, handles meta file creation, and collects
     // MetaFileData for every file that actually needs import work. No imports are

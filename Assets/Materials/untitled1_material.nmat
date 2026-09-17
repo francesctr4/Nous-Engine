@@ -58,6 +58,6 @@
         }
     ],
     "shader_uid": 3735378738,
-    "shader_asset_path": "Assets\\Shaders\\CelShading.glsl",
+    "shader_asset_path": "Assets\/Shaders\/CelShading.glsl",
     "shader_library_path": "Library\/Shaders\/3735378738"
 }

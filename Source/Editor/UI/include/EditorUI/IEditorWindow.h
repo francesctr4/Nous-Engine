@@ -24,6 +24,12 @@ public:
     const char* GetTitle() const { return title; }
     const EditorContext* GetContext() const { return editorContext; }
 
+    // Does this window get a row in the Windows menu? True for everything the user
+    // may close and want back. The menu BAR overrides it to false: it is a registered
+    // window like any other, and listing it would offer the one close that cannot be
+    // undone, since the menu is the only way to reopen anything.
+    virtual bool ShowInWindowsMenu() const { return true; }
+
 protected:
     // Override points
     // NEW Hooks: Standard windows always call End(), MenuBars only if Begin returns true.

@@ -7,6 +7,7 @@
 
 #include "imgui.h"
 
+#include <cstdio>
 #include <fstream>
 #include <sstream>
 
@@ -210,16 +211,14 @@ void TextEditorWindow::CreateNew()
 {
     if (mMode == TextEditorMode::Shader)
     {
-        strncpy(mFileNameBuffer, "NewShader", sizeof(mFileNameBuffer) - 1);
-        mFileNameBuffer[sizeof(mFileNameBuffer) - 1] = '\0';
+        std::snprintf(mFileNameBuffer, sizeof(mFileNameBuffer), "%s", "NewShader");
         mTextEditor.SetText(k_DefaultShaderSource);
     }
     else
     {
         if (mFileNameBuffer[0] == '\0')
         {
-            strncpy(mFileNameBuffer, "NewScript", sizeof(mFileNameBuffer) - 1);
-            mFileNameBuffer[sizeof(mFileNameBuffer) - 1] = '\0';
+            std::snprintf(mFileNameBuffer, sizeof(mFileNameBuffer), "%s", "NewScript");
         }
         mTextEditor.SetText(GetScriptTemplate());
     }
@@ -333,8 +332,7 @@ void TextEditorWindow::LoadFile(const std::filesystem::path& filePath)
     mCurrentFilePath = filePath;
 
     std::string stem = filePath.stem().string();
-    strncpy(mFileNameBuffer, stem.c_str(), sizeof(mFileNameBuffer) - 1);
-    mFileNameBuffer[sizeof(mFileNameBuffer) - 1] = '\0';
+    std::snprintf(mFileNameBuffer, sizeof(mFileNameBuffer), "%s", stem.c_str());
 
     mTextEditor.SetText(ss.str());
     mHasUnsavedChanges = false;

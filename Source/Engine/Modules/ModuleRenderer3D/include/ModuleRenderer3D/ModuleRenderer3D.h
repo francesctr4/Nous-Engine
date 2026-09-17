@@ -20,6 +20,8 @@
 #include <FileWatcher/FileWatcher.h>
 #include <EngineCore/EngineExport.h>
 #include <Renderer/RendererTypes.h>
+// RendererTypes.h only forward-declares Vertex3D; m_normalLines holds them by value.
+#include <Utils/Math/Vertex.inl>
 
 #include <unordered_map>
 #include <utility>
@@ -141,6 +143,19 @@ private:
 	// World-space AABBs computed each frame in the bounding-box loop.
 	// Keyed by GameObject ID; consumed by BuildRenderPacket for frustum culling.
 	std::unordered_map<uint32_t, std::pair<glm::vec3, glm::vec3>> mMeshAABBCache;
+
+	// Scratch buffers for the normals visualization. Members rather than locals so
+	// the de-interleaving SkinVertices requires costs one allocation, not one per
+	// frame — the overlay rebuilds every frame while it is enabled.
+	std::vector<glm::vec3>  m_normalScratchPos;
+	std::vector<glm::vec3>  m_normalScratchNrm;
+	std::vector<glm::uvec4> m_normalScratchIDs;
+	std::vector<glm::vec4>  m_normalScratchWts;
+	std::vector<glm::vec3>  m_normalScratchOutPos;
+	std::vector<glm::vec3>  m_normalScratchOutNrm;
+
+	// The built segments themselves, kept for their capacity.
+	std::vector<Vertex3D>   m_normalLines;
 
 	// Watches Assets/Shaders/*.glsl for changes and triggers hot reload.
 	// Populated in Start() (EDITOR mode only); Poll() called in PreUpdate().

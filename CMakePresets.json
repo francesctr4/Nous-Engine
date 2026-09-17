@@ -65,7 +65,14 @@
     {
       "name": "Release-Windows",
       "displayName": "Release-Windows",
-      "inherits": [ "release-base", "windows-base" ]
+      "description": "Optimized build WITH symbols. /Zi and /DEBUG cost nothing at runtime (the PDB is a separate file and the code is unchanged) and are what make the minidumps written by CrashHandler readable -- without them a dump is the same wall of bare addresses as no dump at all. /OPT:REF and /OPT:ICF are restated because /DEBUG otherwise turns them off, which would silently make this build bigger and slower than Release is supposed to be.",
+      "inherits": [ "release-base", "windows-base" ],
+      "cacheVariables": {
+        "CMAKE_C_FLAGS_RELEASE": "/MD /O2 /Ob2 /DNDEBUG /Zi",
+        "CMAKE_CXX_FLAGS_RELEASE": "/MD /O2 /Ob2 /DNDEBUG /Zi",
+        "CMAKE_EXE_LINKER_FLAGS_RELEASE": "/DEBUG /OPT:REF /OPT:ICF",
+        "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "/DEBUG /OPT:REF /OPT:ICF"
+      }
     },
     {
       "name": "Debug-Linux",
@@ -98,6 +105,7 @@
     {
       "name": "Release-Linux",
       "displayName": "Release-Linux",
+      "description": "Optimized build WITH symbols. -g costs nothing at runtime and is what makes the core files CrashHandler re-raises for actually readable; without it a core is a wall of bare addresses. Mirrors Release-Windows, which carries /Zi for the same reason.",
       "inherits": "release-base",
       "condition": {
         "type": "equals",
@@ -106,7 +114,9 @@
       },
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "x64-linux",
-        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets"
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+        "CMAKE_C_FLAGS_RELEASE": "-O3 -DNDEBUG -g",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG -g"
       }
     },
     {
@@ -168,6 +178,7 @@
     {
       "name": "Release-macOS",
       "displayName": "Release-macOS",
+      "description": "Optimized build WITH symbols, mirroring Release-Windows and Release-Linux. Note that macOS writes cores to /cores only when that directory exists and is writable, and a hardened/signed binary will not dump at all -- the backtrace CrashHandler prints is the reliable artifact there.",
       "inherits": "release-base",
       "condition": {
         "type": "equals",
@@ -175,7 +186,9 @@
         "rhs": "Darwin"
       },
       "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "arm64-osx"
+        "VCPKG_TARGET_TRIPLET": "arm64-osx",
+        "CMAKE_C_FLAGS_RELEASE": "-O3 -DNDEBUG -g",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG -g"
       }
     }
   ]

@@ -187,6 +187,30 @@ TEST_F(t_ModuleResourceManager, UnloadResourceAboveZeroRefDoesNotQueueRelease)
     EXPECT_TRUE(rm->TakePendingReleases().empty());
 }
 
+// REGRESSION: crash on loading a scene with nested prefab instances (2026-09-06).
+//
+// A resource reaches zero references more than once before the renderer drains:
+// PrefabManager::ReloadPrefabInstance destroys a prefab subtree (release), rebuilds
+// it -- re-acquiring the SAME resident pointer, because eviction is deferred -- and
+// the enclosing prefab's refresh then destroys it again (release).
+//
+// The drain in ModuleRenderer3D::PreUpdate calls EvictResource on each entry, which
+// DELETES the resource. So two entries for one resource meant the second read a freed
+// refcount and handed a dead object to ImporterMesh::Release, where down_cast asserted.
+TEST_F(t_ModuleResourceManager, ReAcquiringBetweenTwoUnloadsQueuesOneRelease)
+{
+    const uint32_t uid = 22;
+    rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");
+    rm->TakePendingUploads();
+
+    rm->UnloadResource(uid);                                                          // 1 → 0, queues
+    rm->CreateResourceFromLibrary(uid, ResourceType::MESH, "m", "a.fbx", "l.nmesh");   // 0 → 1, same pointer
+    rm->UnloadResource(uid);                                                          // 1 → 0 again
+
+    const auto releases = rm->TakePendingReleases();
+    EXPECT_EQ(releases.size(), 1u);
+}
+
 TEST_F(t_ModuleResourceManager, TakePendingReleasesClearsQueue)
 {
     const uint32_t uid = 30;
