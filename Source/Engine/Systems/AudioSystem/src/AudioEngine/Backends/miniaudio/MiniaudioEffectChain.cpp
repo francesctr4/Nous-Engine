@@ -6,8 +6,16 @@
 // Its definitions are compiled by MiniaudioReverbNode.cpp.
 #include <ma_reverb_node.h>
 
+#include <AudioSystem/AudioGraph/AudioEffectRegistry.h>
+#include <Logger/LogChannel.h>
+#include <Logger/Logger.h>
 #include <MemoryManager/MemoryManager.h>
 #include <cstddef>
+
+namespace
+{
+constexpr LogChannel CURRENT_CHANNEL = LogChannel::NOUS_ENGINE_SYSTEM_AUDIOSYSTEM;
+}
 
 bool MiniaudioEffectChain::Build(ma_engine* engine, ma_node* source, const AudioGraphDesc& desc, ma_node* output)
 {
@@ -27,6 +35,18 @@ bool MiniaudioEffectChain::Build(ma_engine* engine, ma_node* source, const Audio
         ma_node* node = CreateNode(graph, e);
         if (!node)
         {
+            // Without this the whole chain silently fails to build and the voice
+            // just plays dry — indistinguishable from a mis-wired graph. The channel
+            // count is in the message because it is the known rejection cause:
+            // Reverb (verblib) accepts 1 or 2 channels ONLY, and the engine takes its
+            // count from the output device, so a surround-configured device fails here
+            // on a machine where stereo works.
+            NOUS_ERROR_C(CURRENT_CHANNEL,
+                         "Effect chain build failed: '%s' node would not initialize "
+                         "(engine channels: %d, sample rate: %d). Voice stays dry.",
+                         nous::audio::DisplayName(e.type),
+                         static_cast<int>(m_channels),
+                         static_cast<int>(m_sampleRate));
             CleanupNodes();   // source untouched — still on its bus
             return false;
         }
