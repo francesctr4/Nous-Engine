@@ -51,65 +51,31 @@ std::string FirstDroppedAsset(const ImGuiPayload* payload,
 // Category metadata
 // ---------------------------------------------------------------------------
 
-AudioNodeCategory AudioGraphEditor::GetCategory(AudioNodeKind kind)
+// Anchors are editor concepts; an effect's category comes from the registry, so
+// adding an effect never touches this function.
+AudioNodeCategory AudioGraphEditor::GetCategory(const AudioNode& node)
 {
-    switch (kind)
+    switch (node.role)
     {
-        case AudioNodeKind::AudioSource: return AudioNodeCategory::Source;
-        case AudioNodeKind::AudioOutput: return AudioNodeCategory::Output;
-        case AudioNodeKind::LowPass:
-        case AudioNodeKind::HighPass:
-        case AudioNodeKind::Delay:       return AudioNodeCategory::Effect;
-        case AudioNodeKind::Gain:        return AudioNodeCategory::Utility;
+        case AudioNodeRole::Source: return AudioNodeCategory::Source;
+        case AudioNodeRole::Output: return AudioNodeCategory::Output;
+        case AudioNodeRole::Effect: break;
     }
-    return AudioNodeCategory::Utility;
+
+    return nous::audio::Category(node.effect) == AudioEffectCategory::Utility
+         ? AudioNodeCategory::Utility
+         : AudioNodeCategory::Effect;
 }
 
-const char* AudioGraphEditor::GetKindLabel(AudioNodeKind kind)
+const char* AudioGraphEditor::GetNodeLabel(AudioNodeRole role, AudioEffectType effect)
 {
-    switch (kind)
+    switch (role)
     {
-        case AudioNodeKind::AudioSource: return "Audio Source";
-        case AudioNodeKind::AudioOutput: return "Audio Output";
-        case AudioNodeKind::LowPass:     return nous::audio::DisplayName(AudioEffectType::LowPass);
-        case AudioNodeKind::HighPass:    return nous::audio::DisplayName(AudioEffectType::HighPass);
-        case AudioNodeKind::Delay:       return nous::audio::DisplayName(AudioEffectType::Delay);
-        case AudioNodeKind::Gain:        return nous::audio::DisplayName(AudioEffectType::Gain);
+        case AudioNodeRole::Source: return "Audio Source";
+        case AudioNodeRole::Output: return "Audio Output";
+        case AudioNodeRole::Effect: break;
     }
-    return "Unknown";
-}
-
-// ---------------------------------------------------------------------------
-// Node-kind <-> effect-type mapping
-// ---------------------------------------------------------------------------
-
-bool AudioGraphEditor::IsEffect(AudioNodeKind kind)
-{
-    return kind != AudioNodeKind::AudioSource && kind != AudioNodeKind::AudioOutput;
-}
-
-AudioEffectType AudioGraphEditor::ToEffectType(AudioNodeKind kind)
-{
-    switch (kind)
-    {
-        case AudioNodeKind::LowPass:  return AudioEffectType::LowPass;
-        case AudioNodeKind::HighPass: return AudioEffectType::HighPass;
-        case AudioNodeKind::Delay:    return AudioEffectType::Delay;
-        case AudioNodeKind::Gain:     return AudioEffectType::Gain;
-        default:                      return AudioEffectType::Gain;   // unreachable for anchors
-    }
-}
-
-AudioNodeKind AudioGraphEditor::FromEffectType(AudioEffectType type)
-{
-    switch (type)
-    {
-        case AudioEffectType::LowPass:  return AudioNodeKind::LowPass;
-        case AudioEffectType::HighPass: return AudioNodeKind::HighPass;
-        case AudioEffectType::Delay:    return AudioNodeKind::Delay;
-        case AudioEffectType::Gain:     return AudioNodeKind::Gain;
-    }
-    return AudioNodeKind::Gain;
+    return nous::audio::DisplayName(effect);
 }
 
 // Push a live param edit to an active preview. Patches the single param in place via
@@ -124,8 +90,8 @@ void AudioGraphEditor::OnParamEdited(const AudioNode& node, int paramIndex)
     if (!audio)
         return;
 
-    const bool delayTime = IsEffect(node.kind)
-                        && ToEffectType(node.kind) == AudioEffectType::Delay
+    const bool delayTime = node.IsEffect()
+                        && node.effect == AudioEffectType::Delay
                         && paramIndex == 0;
 
     int effectIndex = -1;
@@ -150,7 +116,7 @@ int AudioGraphEditor::EffectIndexInChain(const AudioNode& node)
     int idx = 0;
     for (AudioNode* n : ordered)
     {
-        if (!IsEffect(n->kind))
+        if (!n->IsEffect())
             continue;
         if (n->id == node.id)
             return idx;
@@ -247,10 +213,10 @@ void AudioGraphEditor::BuildProxies(std::vector<nous::audio_editor::LinNode>& ou
 
     for (const AudioNode& n : m_nodes)
     {
-        const LinNodeKind k = n.kind == AudioNodeKind::AudioSource ? LinNodeKind::Source
-                            : n.kind == AudioNodeKind::AudioOutput ? LinNodeKind::Output
-                                                                   : LinNodeKind::Effect;
-        const AudioEffectType et = IsEffect(n.kind) ? ToEffectType(n.kind) : AudioEffectType::Gain;
+        const LinNodeKind k = n.role == AudioNodeRole::Source ? LinNodeKind::Source
+                            : n.role == AudioNodeRole::Output ? LinNodeKind::Output
+                                                              : LinNodeKind::Effect;
+        const AudioEffectType et = n.IsEffect() ? n.effect : AudioEffectType::Gain;
         outNodes.push_back({ static_cast<uint64_t>(n.id.Get()), k, et, n.params });
     }
 
@@ -347,20 +313,20 @@ void AudioGraphEditor::LoadFromResource(ResourceAudioGraph* graph)
         return ImVec2(fallbackX, 80.0f);
     };
 
-    m_nodes.push_back(MakeNode(AudioNodeKind::AudioSource, posAt(0, 40.0f)));
+    m_nodes.push_back(MakeNode(AudioNodeRole::Source, {}, posAt(0, 40.0f)));
 
     float x = 240.0f;
     for (size_t i = 0; i < graph->effects.size(); ++i)
     {
         const AudioEffectDesc& e = graph->effects[i];
-        AudioNode fx = MakeNode(FromEffectType(e.type), posAt(i + 1, x));
+        AudioNode fx = MakeNode(AudioNodeRole::Effect, e.type, posAt(i + 1, x));
         fx.params = e.params;                                   // asset values override defaults
         fx.params.resize(nous::audio::Params(e.type).size());  // keep schema-sized
         m_nodes.push_back(std::move(fx));
         x += 200.0f;
     }
 
-    m_nodes.push_back(MakeNode(AudioNodeKind::AudioOutput, posAt(expected - 1, x)));
+    m_nodes.push_back(MakeNode(AudioNodeRole::Output, {}, posAt(expected - 1, x)));
 
     // Chain them: source → fx0 → ... → fxN → output.
     for (size_t i = 0; i + 1 < m_nodes.size(); ++i)
@@ -397,8 +363,8 @@ bool AudioGraphEditor::SaveToOpenAsset()
         const ImVec2 p = ed::GetNodePosition(n->id);
         n->position = p;
         m_graph->editorPositions.push_back(glm::vec2(p.x, p.y));
-        if (IsEffect(n->kind))
-            m_graph->effects.push_back({ ToEffectType(n->kind), n->params });
+        if (n->IsEffect())
+            m_graph->effects.push_back({ n->effect, n->params });
     }
     ed::SetCurrentEditor(nullptr);
 
@@ -558,8 +524,8 @@ void AudioGraphEditor::Init()
     m_context = ed::CreateEditor(&config);
 
     // Seed with a default Source -> Output pair so the canvas isn't empty.
-    m_nodes.push_back(MakeNode(AudioNodeKind::AudioSource, ImVec2( 40.0f, 80.0f)));
-    m_nodes.push_back(MakeNode(AudioNodeKind::AudioOutput, ImVec2(280.0f, 80.0f)));
+    m_nodes.push_back(MakeNode(AudioNodeRole::Source, {}, ImVec2( 40.0f, 80.0f)));
+    m_nodes.push_back(MakeNode(AudioNodeRole::Output, {}, ImVec2(280.0f, 80.0f)));
 }
 
 bool AudioGraphEditor::Begin(bool& outVisible)
@@ -584,12 +550,13 @@ void AudioGraphEditor::End()
 // Node factory
 // ---------------------------------------------------------------------------
 
-AudioNode AudioGraphEditor::MakeNode(AudioNodeKind kind, ImVec2 position)
+AudioNode AudioGraphEditor::MakeNode(AudioNodeRole role, AudioEffectType effect, ImVec2 position)
 {
     AudioNode node;
     node.id              = ed::NodeId(NextID());
-    node.kind            = kind;
-    node.name            = GetKindLabel(kind);
+    node.role            = role;
+    node.effect          = effect;
+    node.name            = GetNodeLabel(role, effect);
     node.position        = position;
     node.positionPending = true;
 
@@ -602,14 +569,12 @@ AudioNode AudioGraphEditor::MakeNode(AudioNodeKind kind, ImVec2 position)
         node.outputs.push_back({ ed::PinId(NextID()), ed::PinKind::Output, name });
     };
 
-    if (IsEffect(kind))
-        node.params = nous::audio::DefaultParams(ToEffectType(kind));
-
-    switch (kind)
+    switch (role)
     {
-        case AudioNodeKind::AudioSource: addOutput("Out"); break;
-        case AudioNodeKind::AudioOutput: addInput("In");   break;
-        default:                                            // all effects: 1 in, 1 out
+        case AudioNodeRole::Source: addOutput("Out"); break;
+        case AudioNodeRole::Output: addInput("In");   break;
+        case AudioNodeRole::Effect:                     // all effects: 1 in, 1 out
+            node.params = nous::audio::DefaultParams(effect);
             addInput("In");
             addOutput("Out");
             break;
@@ -617,14 +582,14 @@ AudioNode AudioGraphEditor::MakeNode(AudioNodeKind kind, ImVec2 position)
     return node;
 }
 
-void AudioGraphEditor::SpawnNode(AudioNodeKind kind)
+void AudioGraphEditor::SpawnNode(AudioNodeRole role, AudioEffectType effect)
 {
     // Offset each successive spawn so nodes don't stack on top of each other.
     const float stride = 24.0f;
     const int   ring   = m_spawnStrideCount % 8;
     const ImVec2 jitter{ stride * ring, stride * ring };
-    m_nodes.push_back(MakeNode(kind, ImVec2(m_spawnPosition.x + jitter.x,
-                                            m_spawnPosition.y + jitter.y)));
+    m_nodes.push_back(MakeNode(role, effect, ImVec2(m_spawnPosition.x + jitter.x,
+                                                    m_spawnPosition.y + jitter.y)));
     ++m_spawnStrideCount;
 }
 
@@ -648,14 +613,14 @@ void AudioGraphEditor::DrawMenuBar()
 
     if (ImGui::BeginMenu("Add Node"))
     {
-        if (ImGui::MenuItem("Audio Source")) SpawnNode(AudioNodeKind::AudioSource);
-        if (ImGui::MenuItem("Audio Output")) SpawnNode(AudioNodeKind::AudioOutput);
+        if (ImGui::MenuItem("Audio Source")) SpawnNode(AudioNodeRole::Source, {});
+        if (ImGui::MenuItem("Audio Output")) SpawnNode(AudioNodeRole::Output, {});
         ImGui::Separator();
         // Effect palette is registry-driven — grows automatically as effects are added.
-        for (AudioEffectType t : nous::audio::k_allEffects)
+        for (const AudioEffectInfo& e : nous::audio::k_allEffects)
         {
-            if (ImGui::MenuItem(nous::audio::DisplayName(t)))
-                SpawnNode(FromEffectType(t));
+            if (ImGui::MenuItem(e.displayName))
+                SpawnNode(AudioNodeRole::Effect, e.type);
         }
         ImGui::EndMenu();
     }
@@ -700,7 +665,7 @@ void AudioGraphEditor::DrawMenuBar()
 
 void AudioGraphEditor::DrawNode(AudioNode& node)
 {
-    const AudioNodeCategory category    = GetCategory(node.kind);
+    const AudioNodeCategory category    = GetCategory(node);
     const ImU32             headerColor = GetCategoryHeaderColor(category);
     const ImColor           borderColor = GetCategoryBorderColor(category);
 
@@ -753,13 +718,13 @@ void AudioGraphEditor::DrawNode(AudioNode& node)
         ImGui::EndGroup();
 
         // --- Inline parameter widgets (effect nodes only), drawn from the schema ---
-        if (IsEffect(node.kind) && !node.params.empty())
+        if (node.IsEffect() && !node.params.empty())
         {
             ImGui::Dummy(ImVec2(0.0f, 4.0f));
             ImGui::PushID(static_cast<int>(node.id.Get()));   // disambiguate identical param labels across nodes
             ImGui::PushItemWidth(120.0f);
 
-            std::span<const AudioEffectParamDesc> schema = nous::audio::Params(ToEffectType(node.kind));
+            std::span<const AudioEffectParamDesc> schema = nous::audio::Params(node.effect);
             for (size_t i = 0; i < schema.size() && i < node.params.size(); ++i)
             {
                 const AudioEffectParamDesc& p = schema[i];

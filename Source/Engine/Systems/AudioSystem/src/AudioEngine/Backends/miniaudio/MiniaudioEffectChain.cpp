@@ -1,6 +1,11 @@
 #include "AudioEngine/Backends/miniaudio/MiniaudioEffectChain.h"
 #include "AudioEngine/Backends/miniaudio/MiniaudioGainNode.h"
 
+// Vendored from miniaudio's extras/ (downloaded at configure time into
+// ThirdParty/MiniaudioNodes) — ma_reverb_node is NOT part of miniaudio.h itself.
+// Its definitions are compiled by MiniaudioReverbNode.cpp.
+#include <ma_reverb_node.h>
+
 #include <MemoryManager/MemoryManager.h>
 #include <cstddef>
 
@@ -77,6 +82,24 @@ void MiniaudioEffectChain::SetParam(int effectIndex, int paramIndex, float value
             if (paramIndex == 0)
                 reinterpret_cast<MiniaudioGainNode*>(cn.node)->gain = value;
             break;
+        case AudioEffectType::Reverb:
+        {
+            // Unlike Delay, EVERY reverb param is live — verblib recomputes its comb
+            // and allpass coefficients in place, so no param here forces a rebuild.
+            verblib* v = &reinterpret_cast<ma_reverb_node*>(cn.node)->reverb;
+            switch (paramIndex)
+            {
+                case 0: verblib_set_room_size(v, value); break;
+                case 1: verblib_set_damping  (v, value); break;
+                case 2: verblib_set_wet      (v, value); break;
+                case 3: verblib_set_dry      (v, value); break;
+                case 4: verblib_set_width    (v, value); break;
+                default: break;
+            }
+            break;
+        }
+        case AudioEffectType::COUNT:
+            break;   // not an effect
     }
 }
 
@@ -137,6 +160,27 @@ ma_node* MiniaudioEffectChain::CreateNode(ma_node_graph* graph, const AudioEffec
             }
             return reinterpret_cast<ma_node*>(n);
         }
+        case AudioEffectType::Reverb:
+        {
+            // verblib handles 1 or 2 channels only; ma_reverb_node_init fails cleanly
+            // on anything else, which is the behaviour we want (no silent passthrough).
+            ma_reverb_node_config cfg = ma_reverb_node_config_init(m_channels, m_sampleRate);
+            if (d.params.size() > 0) cfg.roomSize  = d.params[0];
+            if (d.params.size() > 1) cfg.damping   = d.params[1];
+            if (d.params.size() > 2) cfg.wetVolume = d.params[2];
+            if (d.params.size() > 3) cfg.dryVolume = d.params[3];
+            if (d.params.size() > 4) cfg.width     = d.params[4];
+
+            auto* n = NOUS_NEW<ma_reverb_node>(MemoryTag::AUDIO_SYSTEM);
+            if (ma_reverb_node_init(graph, &cfg, nullptr, n) != MA_SUCCESS)
+            {
+                NOUS_DELETE(n, MemoryTag::AUDIO_SYSTEM);
+                return nullptr;
+            }
+            return reinterpret_cast<ma_node*>(n);
+        }
+        case AudioEffectType::COUNT:
+            break;   // not an effect
     }
     return nullptr;
 }
@@ -173,6 +217,15 @@ void MiniaudioEffectChain::DestroyNode(const ChainNode& cn) noexcept
             NOUS_DELETE(n, MemoryTag::AUDIO_SYSTEM);
             break;
         }
+        case AudioEffectType::Reverb:
+        {
+            auto* n = reinterpret_cast<ma_reverb_node*>(cn.node);
+            ma_reverb_node_uninit(n, nullptr);
+            NOUS_DELETE(n, MemoryTag::AUDIO_SYSTEM);
+            break;
+        }
+        case AudioEffectType::COUNT:
+            break;   // not an effect
     }
 }
 
