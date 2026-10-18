@@ -19,19 +19,23 @@ class ResourceAudio;
 class ModuleResourceManager;
 class ModuleAudio;
 
-// MVP palette: two fixed anchors (the voice in, the bus out) plus one node per
-// stock effect. Effect kinds map 1:1 to AudioEffectType (see ToEffectType).
-enum class AudioNodeKind
+// What a node IS structurally: one of the two fixed anchors, or an effect.
+//
+// This deliberately does NOT enumerate the effects. The predecessor enum
+// (AudioNodeKind) shadowed AudioEffectType value-for-value and forced four
+// lockstep switches in this window, so every new effect cost an editor edit.
+// An effect node now carries its AudioEffectType directly and reads everything
+// else — label, category, parameter schema — from AudioEffectRegistry.
+enum class AudioNodeRole : uint8_t
 {
-    AudioSource,   // input anchor (the voice)
-    AudioOutput,   // output anchor (the bus)
-    LowPass,
-    HighPass,
-    Delay,
-    Gain
+    Source,   // input anchor (the voice)
+    Output,   // output anchor (the bus)
+    Effect
 };
 
-enum class AudioNodeCategory
+// Presentation grouping. The two anchor values are editor-only; the other two
+// mirror AudioEffectCategory, which the registry owns.
+enum class AudioNodeCategory : uint8_t
 {
     Source,
     Output,
@@ -49,13 +53,16 @@ struct AudioNodePin
 struct AudioNode
 {
     ax::NodeEditor::NodeId    id;
-    AudioNodeKind             kind;
+    AudioNodeRole             role = AudioNodeRole::Effect;
+    AudioEffectType           effect{};   // meaningful only when role == Effect
     std::string               name;
     ImVec2                    position{};
     bool                      positionPending = true;
     std::vector<AudioNodePin> inputs;
     std::vector<AudioNodePin> outputs;
-    std::vector<float>        params;   // effect params (parallel to the kind's schema); empty for anchors
+    std::vector<float>        params;   // effect params (parallel to the effect's schema); empty for anchors
+
+    [[nodiscard]] bool IsEffect() const { return role == AudioNodeRole::Effect; }
 };
 
 struct AudioGraphLink
@@ -96,17 +103,14 @@ private:
     // Full-canvas drop target: .nafx → open graph, .wav/.ogg → preview clip.
     void HandleCanvasDrop(const ImVec2& canvasMin, const ImVec2& canvasMax);
 
-    AudioNode MakeNode(AudioNodeKind kind, ImVec2 position);
-    void      SpawnNode(AudioNodeKind kind);
+    // `effect` is ignored unless role == Effect.
+    AudioNode MakeNode(AudioNodeRole role, AudioEffectType effect, ImVec2 position);
+    void      SpawnNode(AudioNodeRole role, AudioEffectType effect);
 
-    static AudioNodeCategory GetCategory(AudioNodeKind kind);
-    static const char*       GetKindLabel(AudioNodeKind kind);
+    static AudioNodeCategory GetCategory(const AudioNode& node);
+    static const char*       GetNodeLabel(AudioNodeRole role, AudioEffectType effect);
     static ImU32             GetCategoryHeaderColor(AudioNodeCategory category);
     static ImColor           GetCategoryBorderColor(AudioNodeCategory category);
-
-    static bool            IsEffect(AudioNodeKind kind);
-    static AudioEffectType ToEffectType(AudioNodeKind kind);   // valid only when IsEffect(kind)
-    static AudioNodeKind   FromEffectType(AudioEffectType type);
 
     // Called when an inline param widget changes — pushes the value live to an
     // active preview chain by re-splicing it from the current graph.

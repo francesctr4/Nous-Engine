@@ -194,7 +194,12 @@ TEST(t_ResourceAudioGraph, UnknownEffectTypeIsSkippedAndTheRestStillLoad)
     JsonArray effects;
     {
         JsonObject unknown;
-        unknown.Set("type", "Reverb");          // not in this build's registry
+        // Deliberately a token that can never become a real effect. This read
+        // "Reverb" until Reverb shipped (Milestone A, 2026-10-18) and the test
+        // started failing by loading 2 effects instead of 1 — naming a PLAUSIBLE
+        // future effect here is a trap, so do not reach for "Chorus"/"Distortion"
+        // either; both are on the roadmap.
+        unknown.Set("type", "NotARealEffect");
         unknown.Set("params", JsonObject{});
         effects.Append(std::move(unknown));
 

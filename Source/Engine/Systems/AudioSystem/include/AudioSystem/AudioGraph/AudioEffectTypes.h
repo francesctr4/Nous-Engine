@@ -7,12 +7,19 @@
 // resource layer, the backend interface, and the editor can all name these types
 // without pulling in any backend. (Same dependency-free policy as SoundHandle.h /
 // AudioTypes.h.) Grows by one enum value per new effect.
+//
+// COUNT is never serialized and never a valid effect. It exists so the registry's
+// completeness test can prove k_allEffects covers every value — without it, adding
+// an enum value and forgetting the table row ships a silently broken menu.
 enum class AudioEffectType : uint8_t
 {
     LowPass,
     HighPass,
     Delay,
-    Gain
+    Gain,
+    Reverb,
+
+    COUNT
 };
 
 // One effect instance in a chain. `params` is parallel to this type's schema in
